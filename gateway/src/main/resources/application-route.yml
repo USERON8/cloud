@@ -1,0 +1,6 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
