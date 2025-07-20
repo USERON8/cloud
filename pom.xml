@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.cloud.alibaba</groupId>
+    <groupId>com.cloud</groupId>
     <artifactId>cloud</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>cloud</name>
@@ -12,6 +12,7 @@
     <modules>
         <module>common</module>
         <module>gateway</module>
+        <module>services</module>
     </modules>
 
     <parent>
@@ -30,7 +31,7 @@
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2023.0.3.3</spring-cloud-alibaba.version>
 
-        <mybatisPlus.version>3.5.12</mybatisPlus.version>
+        <mybatisplus.version>3.5.12</mybatisplus.version>
         <hutool.version>5.8.32</hutool.version>
         <redisson.version>3.36.0</redisson.version>
         <commons-io.version>2.19.0</commons-io.version>
