@@ -1,4 +1,4 @@
-package com.cloud.stock.module.vo;
+package domain.vo;
 
 import lombok.Data;
 

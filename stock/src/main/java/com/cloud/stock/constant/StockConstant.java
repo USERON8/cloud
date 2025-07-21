@@ -9,39 +9,16 @@ public class StockConstant {
      * 库存状态
      */
     public static class Status {
-        /**
-         * 缺货
-         */
-        public static final Integer OUT_OF_STOCK = 0;
-        /**
-         * 库存不足
-         */
-        public static final Integer LOW_STOCK = 1;
-        /**
-         * 库存充足
-         */
-        public static final Integer SUFFICIENT_STOCK = 2;
+        public static final int OUT_OF_STOCK = 0;      // 缺货
+        public static final int LOW_STOCK = 1;         // 库存不足
+        public static final int SUFFICIENT_STOCK = 2;  // 库存充足
     }
 
     /**
      * 库存阈值
      */
     public static class Threshold {
-        /**
-         * 低库存阈值
-         */
-        public static final Integer LOW_STOCK_THRESHOLD = 10;
-    }
-
-    /**
-     * 排序字段
-     */
-    public static class OrderBy {
-        public static final String STOCK_COUNT = "stock_count";
-        public static final String AVAILABLE_COUNT = "available_count";
-        public static final String FROZEN_COUNT = "frozen_count";
-        public static final String CREATE_TIME = "create_time";
-        public static final String UPDATE_TIME = "update_time";
+        public static final int LOW_STOCK_THRESHOLD = 10; // 低库存阈值
     }
 
     /**
@@ -49,8 +26,8 @@ public class StockConstant {
      */
     public static class StatusDesc {
         public static final String OUT_OF_STOCK = "缺货";
-        public static final String LOW_STOCK = "不足";
-        public static final String SUFFICIENT_STOCK = "充足";
+        public static final String LOW_STOCK = "库存不足";
+        public static final String SUFFICIENT_STOCK = "库存充足";
         public static final String UNKNOWN = "未知";
     }
 }

@@ -12,26 +12,26 @@ import java.util.function.Function;
  * 分页工具类
  */
 public class PageUtils {
-    
+
     /**
-     * 创建MyBatis-Plus分页对象
+     * 创建MyBatis-Plus分页对象（使用PageQuery）
      */
     public static <T> Page<T> buildPage(PageQuery pageQuery) {
         return new Page<>(pageQuery.getCurrent(), pageQuery.getSize());
     }
-    
+
     /**
      * IPage转换为PageResult
      */
     public static <T> PageResult<T> toPageResult(IPage<T> page) {
         return PageResult.of(
-            page.getCurrent(),
-            page.getSize(),
-            page.getTotal(),
-            page.getRecords()
+                page.getCurrent(),
+                page.getSize(),
+                page.getTotal(),
+                page.getRecords()
         );
     }
-    
+
     /**
      * IPage转换为PageResult，并转换数据类型
      */
@@ -39,15 +39,15 @@ public class PageUtils {
         List<R> records = page.getRecords().stream()
                 .map(converter)
                 .toList();
-        
+
         return PageResult.of(
-            page.getCurrent(),
-            page.getSize(),
-            page.getTotal(),
-            records
+                page.getCurrent(),
+                page.getSize(),
+                page.getTotal(),
+                records
         );
     }
-    
+
     /**
      * 创建空的分页结果
      */

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Configuration
 public class MyBatisPlusConfig implements MetaObjectHandler {
 
+
     /**
      * 插入时自动填充
      */

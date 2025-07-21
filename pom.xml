@@ -13,6 +13,7 @@
         <module>common</module>
         <module>gateway</module>
         <module>stock</module>
+        <module>auth</module>
     </modules>
 
     <parent>
@@ -79,6 +80,7 @@
                 <artifactId>httpclient</artifactId>
                 <version>4.5.14</version>
             </dependency>
+            
         </dependencies>
     </dependencyManagement>
     <build>

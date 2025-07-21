@@ -1,6 +1,9 @@
 package domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -40,22 +43,22 @@ public abstract class BaseEntity implements Serializable {
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    /**
-     * 逻辑删除标识 - 0:未删除 1:已删除
-     */
-    @TableLogic
-    @TableField(value = "deleted")
-    private Integer deleted;
-
-    /**
-     * 创建人ID
-     */
-    @TableField(value = "create_by", fill = FieldFill.INSERT)
-    private Long createBy;
-
-    /**
-     * 更新人ID
-     */
-    @TableField(value = "update_by", fill = FieldFill.INSERT_UPDATE)
-    private Long updateBy;
+//    /**
+//     * 逻辑删除标识 - 0:未删除 1:已删除
+//     */
+//    @TableLogic
+//    @TableField(value = "deleted")
+//    private Integer deleted;
+//
+//    /**
+//     * 创建人ID
+//     */
+//    @TableField(value = "create_by", fill = FieldFill.INSERT)
+//    private Long createBy;
+//
+//    /**
+//     * 更新人ID
+//     */
+//    @TableField(value = "update_by", fill = FieldFill.INSERT_UPDATE)
+//    private Long updateBy;
 }

@@ -4,3 +4,9 @@ spring:
       server:
         webflux:
           routes:
+            - id: stock-route
+              uri: lb://stock-server
+              predicates:
+                - Path=/stock/**
+
+
