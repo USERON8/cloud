@@ -12,7 +12,7 @@
     <modules>
         <module>common</module>
         <module>gateway</module>
-        <module>services</module>
+        <module>stock</module>
     </modules>
 
     <parent>

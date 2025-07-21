@@ -1,7 +1,7 @@
 package exception;
 
 import domain.Result;
-import domain.ResultCode;
+import eunms.ResultCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     /**
      * 处理业务异常
      */
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
         log.warn("业务异常: {}", e.getMessage());
         return Result.error(e.getCode(), e.getMessage());
     }
-    
+
     /**
      * 处理参数校验异常
      */
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
         log.warn("参数校验失败: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
-    
+
     /**
      * 处理绑定异常
      */
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         log.warn("参数绑定失败: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
-    
+
     /**
      * 处理参数类型不匹配异常
      */
@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
         log.warn("参数类型不匹配: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
-    
+
     /**
      * 处理数据库重复键异常
      */
@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
         log.error("数据重复异常: {}", e.getMessage());
         return Result.error(ResultCode.DB_DUPLICATE_KEY);
     }
-    
+
     /**
      * 处理SQL异常
      */
@@ -91,7 +91,7 @@ public class GlobalExceptionHandler {
         log.error("数据库异常: {}", e.getMessage(), e);
         return Result.error(ResultCode.DB_ERROR);
     }
-    
+
     /**
      * 处理空指针异常
      */
@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
         log.error("空指针异常: {}", e.getMessage(), e);
         return Result.error(ResultCode.ERROR.getCode(), "系统内部错误");
     }
-    
+
     /**
      * 处理其他未知异常
      */

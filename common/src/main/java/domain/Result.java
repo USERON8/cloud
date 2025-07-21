@@ -1,5 +1,6 @@
 package domain;
 
+import eunms.ResultCode;
 import lombok.Data;
 
 import java.io.Serial;
