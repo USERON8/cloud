@@ -1,6 +1,6 @@
 spring:
   application:
-    name: stock-service
+    name: stock-server
   cloud:
     nacos:
       discovery:
@@ -15,7 +15,7 @@ spring:
         username: nacos
         password: nacos
   config:
-    import: optional:nacos:nacos-example.yaml
+    import: optional:nacos:common
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
