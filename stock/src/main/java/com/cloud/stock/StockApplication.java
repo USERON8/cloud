@@ -3,11 +3,10 @@ package com.cloud.stock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @Slf4j
 @SpringBootApplication
-@EnableFeignClients
+
 public class StockApplication {
     public static void main(String[] args) {
         // 禁用Nacos的日志配置，避免冲突
