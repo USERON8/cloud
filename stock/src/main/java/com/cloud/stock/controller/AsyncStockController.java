@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 异步库存管理控制器
@@ -31,16 +33,20 @@ public class AsyncStockController {
     public CompletableFuture<Result<StockVO>> getByProductIdAsync(@PathVariable Long productId) {
         log.info("异步查询商品库存请求，productId: {}", productId);
 
+        if (productId == null || productId <= 0) {
+            log.warn("商品ID无效: {}", productId);
+            return CompletableFuture.completedFuture(Result.error("商品ID不能为空"));
+        }
+
         return asyncStockService.getByProductIdAsync(productId)
+                .orTimeout(3, TimeUnit.SECONDS)
                 .thenApply(stockVO -> {
-                    if (stockVO == null) {
-                        return Result.error("商品库存不存在");
-                    }
-                    return Result.success(stockVO);
+                    // 返回空库存对象代替错误
+                    return Result.success(Objects.requireNonNullElseGet(stockVO, StockVO::new));
                 })
                 .exceptionally(throwable -> {
-                    log.error("异步查询商品库存异常", throwable);
-                    return Result.error("查询失败: " + throwable.getMessage());
+                    log.error("异步查询商品库存异常, productId: {}", productId, throwable);
+                    return Result.error("查询失败，请稍后重试");
                 });
     }
 
