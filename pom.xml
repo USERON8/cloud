@@ -80,7 +80,7 @@
                 <artifactId>httpclient</artifactId>
                 <version>4.5.14</version>
             </dependency>
-            
+
         </dependencies>
     </dependencyManagement>
     <build>
@@ -101,6 +101,11 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.awt.headless>true</java.awt.headless>
+                        </systemPropertyVariables>
+                    </configuration>
                 </plugin>
 
                 <!-- Maven Surefire Plugin - 修复测试配置 -->
