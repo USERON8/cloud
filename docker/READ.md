@@ -1,0 +1,2 @@
+注意docker绑定路径bind下面的路径，请自行修改
+及nacos配置文件,可以将docker-compose.yml内配置直接复制

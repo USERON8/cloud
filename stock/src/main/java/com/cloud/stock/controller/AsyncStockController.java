@@ -115,7 +115,7 @@ public class AsyncStockController {
         return allOf.thenApply(v -> {
             List<StockVO> results = futures.stream()
                     .map(CompletableFuture::join)
-                    .filter(stockVO -> stockVO != null)
+                    .filter(Objects::nonNull)
                     .toList();
 
             log.info("并发查询完成，成功查询到 {} 个商品库存", results.size());
