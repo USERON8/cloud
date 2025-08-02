@@ -4,9 +4,24 @@ spring:
       server:
         webflux:
           routes:
+            - id: auth-route
+              uri: lb://auth-server
+              predicates:
+                - Path=/auth/**
             - id: stock-route
               uri: lb://stock-server
               predicates:
                 - Path=/stock/**
-
+            - id: user-route
+              uri: lb://user-server
+              predicates:
+                - Path=/user/**
+            - id: order-route
+              uri: lb://order-server
+              predicates:
+                - Path=/order/**
+            - id: product-route
+              uri: lb://product-server
+              predicates:
+                - Path=/product/**
 

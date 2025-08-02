@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @Configuration
-public class MyBatisPlusConfig implements MetaObjectHandler {
+public class BaseMyBatisPlusConfig implements MetaObjectHandler {
 
 
     /**
