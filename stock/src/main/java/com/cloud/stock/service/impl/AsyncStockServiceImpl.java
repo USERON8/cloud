@@ -1,14 +1,14 @@
 package com.cloud.stock.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.domain.PageResult;
+import com.cloud.common.domain.dto.StockPageDTO;
+import com.cloud.common.domain.vo.StockStatisticsVO;
+import com.cloud.common.domain.vo.StockVO;
 import com.cloud.stock.converter.StockConverter;
-import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.AsyncStockService;
-import com.cloud.stock.service.StockService;
-import domain.PageResult;
-import domain.vo.StockStatisticsVO;
-import domain.vo.StockVO;
+import com.cloud.stock.service.StockInternalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class AsyncStockServiceImpl implements AsyncStockService {
 
-    private final StockService stockService;
+    private final StockInternalService stockService;
     private final StockConverter stockConverter;
 
     /**
@@ -38,8 +38,7 @@ public class AsyncStockServiceImpl implements AsyncStockService {
                 productId, Thread.currentThread().getName());
 
         try {
-            Stock stock = stockService.getByProductId(productId);
-            StockVO stockVO = stock != null ? stockConverter.toVO(stock) : null;
+            StockVO stockVO = stockService.getByProductId(productId);
 
             log.info("异步查询商品库存完成，productId: {}, 线程: {}",
                     productId, Thread.currentThread().getName());

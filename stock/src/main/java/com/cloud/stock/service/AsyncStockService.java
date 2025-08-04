@@ -1,9 +1,9 @@
 package com.cloud.stock.service;
 
-import com.cloud.stock.module.dto.StockPageDTO;
-import domain.PageResult;
-import domain.vo.StockStatisticsVO;
-import domain.vo.StockVO;
+import com.cloud.common.domain.PageResult;
+import com.cloud.common.domain.dto.StockPageDTO;
+import com.cloud.common.domain.vo.StockStatisticsVO;
+import com.cloud.common.domain.vo.StockVO;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

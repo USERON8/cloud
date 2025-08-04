@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>gateway</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <dependencies>
 
@@ -28,7 +27,7 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>3.0.2</version>
+            <version>${nacos-client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>

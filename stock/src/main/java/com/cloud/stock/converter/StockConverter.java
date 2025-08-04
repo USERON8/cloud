@@ -1,10 +1,10 @@
 package com.cloud.stock.converter;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.domain.dto.StockPageDTO;
+import com.cloud.common.domain.vo.StockVO;
 import com.cloud.stock.constant.StockConstant;
-import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
-import domain.vo.StockVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -21,6 +21,8 @@ public interface StockConverter {
     @Mapping(target = "stockStatus", source = ".", qualifiedByName = "calculateStockStatus")
     @Mapping(target = "stockStatusDesc", source = ".", qualifiedByName = "getStockStatusDesc")
     @Mapping(target = "availableCount", expression = "java(stock.getStockCount() - stock.getFrozenCount())")
+    @Mapping(target = "createTime", source = "createdAt")
+    @Mapping(target = "updateTime", source = "updatedAt")
     StockVO toVO(Stock stock);
 
     /**
@@ -84,12 +86,12 @@ public interface StockConverter {
                 case "stock_count" -> wrapper.orderBy(true, isAsc, Stock::getStockCount);
                 case "available_count" -> wrapper.orderBy(true, isAsc, Stock::getAvailableCount);
                 case "frozen_count" -> wrapper.orderBy(true, isAsc, Stock::getFrozenCount);
-                case "create_time" -> wrapper.orderBy(true, isAsc, Stock::getCreateTime);
-                case "update_time" -> wrapper.orderBy(true, isAsc, Stock::getUpdateTime);
-                default -> wrapper.orderByDesc(Stock::getUpdateTime);
+                case "create_time" -> wrapper.orderBy(true, isAsc, Stock::getCreatedAt);
+                case "update_time" -> wrapper.orderBy(true, isAsc, Stock::getUpdatedAt);
+                default -> wrapper.orderByDesc(Stock::getUpdatedAt);
             }
         } else {
-            wrapper.orderByDesc(Stock::getUpdateTime);
+            wrapper.orderByDesc(Stock::getUpdatedAt);
         }
 
         return wrapper;

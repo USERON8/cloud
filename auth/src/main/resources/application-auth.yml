@@ -1,0 +1,32 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://your-auth-server.com # JWT发行方
+          jwk-set-uri: https://your-auth-server.com/.well-known/jwks.json # JWK端点
+      client:
+        registration:
+          wechat:
+            client-id: wx_app_id
+            client-secret: wx_app_secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/wechat"
+            scope: snsapi_login
+          alipay:
+            client-id: alipay_app_id
+            client-secret: alipay_app_secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/alipay"
+        provider:
+          wechat:
+            authorization-uri: https://open.weixin.qq.com/connect/qrconnect
+            token-uri: https://api.weixin.qq.com/sns/oauth2/access_token
+            user-info-uri: https://api.weixin.qq.com/sns/userinfo
+          alipay:
+            authorization-uri: https://openauth.alipay.com/oauth2/publicAppAuthorize.htm
+            token-uri: https://openapi.alipay.com/gateway.do
+
+# JWT密钥配置
+jwt:
+  secret: mySecretKey1234567890123456 # 至少32位的密钥

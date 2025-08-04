@@ -1,6 +1,6 @@
 package com.cloud.stock.controller;
 
-import domain.Result;
+import com.cloud.common.domain.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -29,7 +29,7 @@ public class ThreadPoolMonitorController {
     @GetMapping("/thread-pool")
     public Result<Map<String, Object>> getThreadPoolStatus() {
         ThreadPoolExecutor executor = stockQueryExecutor.getThreadPoolExecutor();
-        
+
         Map<String, Object> status = new HashMap<>();
         status.put("corePoolSize", executor.getCorePoolSize());
         status.put("maximumPoolSize", executor.getMaximumPoolSize());
@@ -38,9 +38,9 @@ public class ThreadPoolMonitorController {
         status.put("queueSize", executor.getQueue().size());
         status.put("completedTaskCount", executor.getCompletedTaskCount());
         status.put("taskCount", executor.getTaskCount());
-        
+
         log.info("线程池状态查询: {}", status);
-        
+
         return Result.success(status);
     }
 }

@@ -3,27 +3,31 @@ package com.cloud.stock.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.domain.PageResult;
+import com.cloud.common.domain.dto.StockPageDTO;
+import com.cloud.common.domain.vo.StockStatisticsVO;
+import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.utils.PageUtils;
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.mapper.StockMapper;
-import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
-import com.cloud.stock.service.StockService;
-import domain.PageResult;
-import domain.vo.StockVO;
+import com.cloud.stock.service.StockInternalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.stereotype.Service;
-import utils.PageUtils;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 库存服务实现类
  */
 @Slf4j
+@DubboService
 @Service
 @RequiredArgsConstructor
-public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements StockService {
+public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements StockInternalService {
 
     private final StockConverter stockConverter;
 
@@ -31,7 +35,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
      * 根据商品ID查询库存
      */
     @Override
-    public Stock getByProductId(Long productId) {
+    public StockVO getByProductId(Long productId) {
         log.info("查询商品库存，productId: {}", productId);
 
         LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
@@ -42,21 +46,23 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             log.warn("未找到商品库存信息，productId: {}", productId);
         }
 
-        return stock;
+        return stockConverter.toVO(stock);
     }
 
-    /**
-     * 分页查询库存
-     */
     @Override
     public PageResult<StockVO> pageQuery(StockPageDTO pageDTO) {
         log.info("分页查询库存，查询条件：{}", pageDTO);
+
+        // 转换为stock模块内部使用的DTO
+        StockPageDTO stockPageDTO = new StockPageDTO();
+        stockPageDTO.setProductId(pageDTO.getProductId());
+        toStockPageDto(pageDTO, stockPageDTO);
 
         // 1. 使用PageUtils创建MyBatis-Plus分页对象
         Page<Stock> page = PageUtils.buildPage(pageDTO);
 
         // 2. 构建查询条件
-        LambdaQueryWrapper<Stock> queryWrapper = stockConverter.buildQueryWrapper(pageDTO);
+        LambdaQueryWrapper<Stock> queryWrapper = stockConverter.buildQueryWrapper(stockPageDTO);
 
         // 3. 执行分页查询
         Page<Stock> resultPage = this.page(page, queryWrapper);
@@ -78,4 +84,52 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         return pageResult;
     }
 
+
+    @Override
+    public CompletableFuture<StockVO> getByProductIdAsync(Long productId) {
+        return CompletableFuture.supplyAsync(() -> getByProductId(productId));
+    }
+
+    @Override
+    public CompletableFuture<PageResult<StockVO>> pageQueryAsync(StockPageDTO pageDTO) {
+        return CompletableFuture.supplyAsync(() -> {
+            // 转换为stock模块内部使用的DTO
+            StockPageDTO stockPageDTO = new StockPageDTO();
+            toStockPageDto(pageDTO, stockPageDTO);
+
+            return pageQuery(stockPageDTO);
+        });
+    }
+
+
+    @Override
+    public CompletableFuture<List<StockVO>> batchQueryAsync(List<Long> productIds) {
+        return CompletableFuture.supplyAsync(() -> {
+            LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(Stock::getProductId, productIds);
+            List<Stock> stocks = list(queryWrapper);
+            return stockConverter.toVOList(stocks);
+        });
+    }
+
+    @Override
+    public CompletableFuture<StockStatisticsVO> getStatisticsAsync() {
+        return CompletableFuture.supplyAsync(() -> {
+            StockStatisticsVO statistics = new StockStatisticsVO();
+            statistics.setTotalProducts(count());
+            return statistics;
+        });
+    }
+
+    private void toStockPageDto(StockPageDTO pageDTO, StockPageDTO stockPageDTO) {
+        stockPageDTO.setProductId(pageDTO.getProductId());
+        stockPageDTO.setProductName(pageDTO.getProductName());
+        stockPageDTO.setStockStatus(pageDTO.getStockStatus());
+        stockPageDTO.setMinAvailableCount(pageDTO.getMinAvailableCount());
+        stockPageDTO.setMaxAvailableCount(pageDTO.getMaxAvailableCount());
+        stockPageDTO.setCurrent(pageDTO.getCurrent());
+        stockPageDTO.setSize(pageDTO.getSize());
+        stockPageDTO.setOrderBy(pageDTO.getOrderBy());
+        stockPageDTO.setOrderType(pageDTO.getOrderType());
+    }
 }

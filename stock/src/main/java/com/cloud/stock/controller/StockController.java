@@ -1,13 +1,11 @@
 package com.cloud.stock.controller;
 
-import com.cloud.stock.converter.StockConverter;
-import com.cloud.stock.module.dto.StockPageDTO;
-import com.cloud.stock.module.entity.Stock;
-import com.cloud.stock.service.StockService;
-import domain.PageResult;
-import domain.Result;
-import domain.vo.StockVO;
-import eunms.ResultCode;
+import com.cloud.common.domain.PageResult;
+import com.cloud.common.domain.Result;
+import com.cloud.common.domain.dto.StockPageDTO;
+import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.stock.service.StockInternalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -21,21 +19,21 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class StockController {
 
-    private final StockService stockService;
-    private final StockConverter stockConverter;
+    private final StockInternalService stockService;
+
 
     @GetMapping("/product/{productId}")
     public Result<StockVO> getProductById(@PathVariable Long productId) {
         log.info("根据商品id查询库存:{}", productId);
 
-        Stock stock = stockService.getByProductId(productId);
+        StockVO stock = stockService.getByProductId(productId);
 
         if (stock == null) {
             log.warn("商品库存不存在，productId: {}", productId);
             return Result.error(ResultCode.STOCK_NOT_FOUND);
         }
 
-        return Result.success(stockConverter.toVO(stock));
+        return Result.success(stock);
     }
 
     /**

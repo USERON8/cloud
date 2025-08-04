@@ -8,7 +8,6 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>user</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>user</name>
     <description>User Service</description>
     <properties>
@@ -18,7 +17,6 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -49,8 +47,7 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>${mysql.version}</version>
-            <scope>runtime</scope>
+
         </dependency>
         <!-- Nacos 注册与发现 -->
         <dependency>
@@ -80,7 +77,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
-
+        <!-- 资源服务器 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

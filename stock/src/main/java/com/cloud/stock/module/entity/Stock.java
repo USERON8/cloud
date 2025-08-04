@@ -2,7 +2,7 @@ package com.cloud.stock.module.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import domain.BaseEntity;
+import com.cloud.common.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
