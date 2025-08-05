@@ -10,12 +10,12 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>common</module>
+        <module>common-module</module>
         <module>gateway</module>
-        <module>stock</module>
-        <module>auth</module>
-        <module>user</module>
-        <module>api</module>
+        <module>service-stock</module>
+        <module>service-auth</module>
+        <module>service-user</module>
+        <module>api-module</module>
     </modules>
 
     <parent>
@@ -49,6 +49,9 @@
         <!-- 日志版本 -->
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.13</logback.version>
+
+        <!-- 测试框架版本 -->
+        <junit-jupiter.version>5.11.3</junit-jupiter.version>
     </properties>
 
     <dependencyManagement>
@@ -100,7 +103,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-registry-nacos</artifactId>
+                <version>3.3.5</version>
+            </dependency>
             <!-- Dubbo Triple协议支持 -->
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
@@ -108,15 +115,41 @@
                 <version>${dubbo.version}</version>
             </dependency>
 
+            <!-- JUnit 5 版本管理 -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+
             <!-- 项目内部模块版本管理 -->
             <dependency>
                 <groupId>com.cloud</groupId>
-                <artifactId>common</artifactId>
+                <artifactId>common-module</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.cloud</groupId>
-                <artifactId>api</artifactId>
+                <artifactId>api-module</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
@@ -138,11 +171,6 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                    <configuration>
-                        <systemPropertyVariables>
-                            <java.awt.headless>true</java.awt.headless> <!-- 唯一声明 -->
-                        </systemPropertyVariables>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
@@ -169,7 +197,6 @@
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
-
             </plugins>
         </pluginManagement>
 
