@@ -8,20 +8,39 @@ spring:
               uri: lb://auth-server
               predicates:
                 - Path=/auth/**
+              metadata:
+                swagger-info:
+                  title: 认证服务API
+                  description: 处理用户认证相关接口
             - id: stock-route
               uri: lb://stock-server
               predicates:
                 - Path=/stock/**
+              metadata:
+                swagger-info:
+                  title: 库存服务API
+                  description: 处理库存管理相关接口
             - id: user-route
               uri: lb://user-server
               predicates:
                 - Path=/user/**
+              metadata:
+                swagger-info:
+                  title: 用户服务API
+                  description: 处理用户管理相关接口
             - id: order-route
               uri: lb://order-server
               predicates:
                 - Path=/order/**
+              metadata:
+                swagger-info:
+                  title: 订单服务API
+                  description: 处理订单管理相关接口
             - id: product-route
               uri: lb://product-server
               predicates:
                 - Path=/product/**
-
+              metadata:
+                swagger-info:
+                  title: 产品服务API
+                  description: 处理产品管理相关接口

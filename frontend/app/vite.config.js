@@ -20,11 +20,26 @@ export default defineConfig({
         port: 5173,
         host: '0.0.0.0',
         proxy: {
-            // 代理/api开头的请求（如果需要）
+            // 代理所有API请求到网关
             '/api': {
                 target: 'http://localhost:80',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, '')
+            },
+            // 直接代理认证服务请求到网关
+            '/auth': {
+                target: 'http://localhost:80',
+                changeOrigin: true
+            },
+            // 直接代理用户服务请求到网关
+            '/users': {
+                target: 'http://localhost:80',
+                changeOrigin: true
+            },
+            // 直接代理库存服务请求到网关
+            '/stock': {
+                target: 'http://localhost:80',
+                changeOrigin: true
             }
         }
     }

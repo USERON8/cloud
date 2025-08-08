@@ -41,7 +41,8 @@
         <redis-version>3.5.3</redis-version>
         <nacos-client.version>3.0.2</nacos-client.version>
         <jedis.version>6.0.0</jedis.version>
-        <jjwt.version>0.12.3</jjwt.version>
+        <auth0.version>4.5.0</auth0.version>
+        <jjwt.version>0.12.6</jjwt.version>
         <spring-security-oauth2-authorization-server.version>1.5.1</spring-security-oauth2-authorization-server.version>
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
         <dubbo.version>3.2.14</dubbo.version>

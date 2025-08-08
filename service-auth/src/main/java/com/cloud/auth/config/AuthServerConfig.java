@@ -1,6 +1,5 @@
 package com.cloud.auth.config;
 
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -24,63 +23,91 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.UUID;
 
 @Configuration
 public class AuthServerConfig {
     private RSAKey rsaKey;
-    
+
     // 1. 授权服务器安全过滤器链
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http) throws Exception {
-
-
         OAuth2AuthorizationServerConfigurer configurer = new OAuth2AuthorizationServerConfigurer();
+        
         http
-                .securityMatcher(configurer.getEndpointsMatcher())
-                .authorizeHttpRequests(authz -> authz
-                        .anyRequest().authenticated()
-                )
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(configurer.getEndpointsMatcher()))
-                .with(new OAuth2AuthorizationServerConfigurer(), Customizer.withDefaults());  // ✅ 替代弃用方法
+            .securityMatcher(configurer.getEndpointsMatcher())
+            .authorizeHttpRequests(authorize -> authorize
+                .anyRequest().authenticated()
+            )
+            .csrf(csrf -> csrf.ignoringRequestMatchers(configurer.getEndpointsMatcher()))
+            .with(configurer, Customizer.withDefaults())
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+            );
 
-        return http
-                .formLogin(Customizer.withDefaults())
-                .build();
+        return http.build();
     }
 
-    // 2. 客户端注册仓库
+    // 2. 默认安全过滤器链
+    @Bean
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/auth/login", "/auth/register", "/auth/register-and-login").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(Customizer.withDefaults())
+            )
+            .formLogin(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    // 3. 客户端注册仓库
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("client-app")
-                .clientSecret("{bcrypt}$2a$10$...") // BCrypt 加密
+                .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .redirectUri("http://localhost:8080/login/oauth2/code/client-app")
                 .scope(OidcScopes.OPENID)
+                .scope(OidcScopes.PROFILE)
                 .scope("read_profile")
+                .scope("message.read")
+                .scope("message.write")
+                .tokenSettings(TokenSettings.builder()
+                    .accessTokenTimeToLive(Duration.ofHours(1))
+                    .refreshTokenTimeToLive(Duration.ofDays(30))
+                    .build())
                 .build();
+
         return new InMemoryRegisteredClientRepository(client);
     }
 
-    // 3. 授权服务器设置
+    // 4. 授权服务器设置
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://auth-service:8001")
+                .issuer("http://localhost:8082")
                 .build();
     }
 
-    // 4. 非对称密钥对（RSA）用于OAuth2 JWT签名
+    // 5. 非对称密钥对（RSA）用于OAuth2 JWT签名
     @Bean
     public JWKSource<SecurityContext> jwkSource() throws Exception {
         KeyPair keyPair = generateRsaKey();
@@ -92,19 +119,19 @@ public class AuthServerConfig {
                 .build();
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));
     }
-    
-    // 5. JWT编码器
+
+    // 6. JWT编码器
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
         return new NimbusJwtEncoder(jwkSource);
     }
-    
-    // 6. JWT解码器
+
+    // 7. JWT解码器
     @Bean
     public JwtDecoder jwtDecoder() {
         try {
             return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
-        } catch (JOSEException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Failed to create JWT decoder", e);
         }
     }

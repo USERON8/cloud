@@ -1,3 +1,5 @@
+server:
+  port: 8082
 spring:
   profiles:
     include: auth
@@ -28,16 +30,14 @@ spring:
       username: root
 
 
-
-server:
-  port: 8082
-
 dubbo:
   application:
     name: auth-server
     qos-enable: false
   registry:
     address: nacos://127.0.0.1:8848
+    username: nacos
+    password: nacos
   protocol:
     name: dubbo
     port: 20881
@@ -48,3 +48,24 @@ logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
+
+# Knife4j配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: auth
+      paths-to-match: /**
+      packages-to-scan: com.cloud.auth.controller
+
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: true
+    username: admin
+    password: admin123

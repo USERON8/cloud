@@ -4,6 +4,7 @@ package com.cloud.user.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,6 +19,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class ResourceServerConfig {
 
     @Value("${jwt.secret:mySecretKey1234567890123456}")
@@ -29,7 +31,7 @@ public class ResourceServerConfig {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName("roles");
+        authoritiesConverter.setAuthoritiesClaimName("AuthRole");
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
 
         http
@@ -37,9 +39,9 @@ public class ResourceServerConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/user/users/findByUsername").permitAll() // 允许auth服务访问
-                        .requestMatchers("/user/user/info").hasAuthority("ROLE_USER")
-                        .requestMatchers("/user/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/user/merchant/**").hasAuthority("ROLE_MERCHANT")
+                        .requestMatchers("/user/user/info").hasAuthority("USER")
+                        .requestMatchers("/user/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/user/merchant/**").hasAuthority("MERCHANT")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

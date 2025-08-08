@@ -1,9 +1,12 @@
 package com.cloud.auth.controller;
 
-import com.cloud.api.user.UserService;
-import com.cloud.auth.service.JwtService;
+import com.cloud.api.user.UserServiceInternal;
+import com.cloud.auth.service.AuthService;
+import com.cloud.auth.service.TokenService;
+import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.LoginRequestDTO;
 import com.cloud.common.domain.dto.LoginResponseDTO;
+import com.cloud.common.domain.dto.RegisterRequestDTO;
 import com.cloud.common.domain.dto.UserDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,213 +15,215 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin // 允许跨域
+@CrossOrigin
 @Tag(name = "认证授权", description = "用户认证和授权相关接口")
 public class AuthController {
-    @Autowired
-    private JwtService jwtService;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    
     @DubboReference
-    private UserService userService;
+    private final UserServiceInternal userServiceInternal;
+    private final AuthService authService;
+    private final TokenService tokenService;
+
+    public AuthController(UserServiceInternal userServiceInternal,
+                          AuthService authService,
+                          TokenService tokenService) {
+        this.userServiceInternal = userServiceInternal;
+        this.authService = authService;
+        this.tokenService = tokenService;
+    }
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户")
     @ApiResponse(responseCode = "200", description = "注册成功")
-    public ResponseEntity<Void> register(@Parameter(description = "用户信息") @RequestBody UserDTO userDTO) {
-        log.info("用户注册, username: {}", userDTO.getUsername());
-        userService.save(userDTO);
-        log.info("用户注册成功, username: {}", userDTO.getUsername());
-        return ResponseEntity.ok().build();
+    public Result<Void> register(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
+        try {
+            log.info("用户注册请求, username: {}", registerRequest.getUsername());
+            authService.register(registerRequest);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("注册失败, username: {}", registerRequest.getUsername(), e);
+            return Result.error("注册失败，请稍后重试");
+        }
     }
 
+    @PostMapping("/register-and-login")
+    @Operation(summary = "用户注册并登录", description = "注册新用户并自动登录")
+    @ApiResponse(responseCode = "200", description = "注册并登录成功",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponseDTO.class)))
+    public Result<LoginResponseDTO> registerAndLogin(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
+        try {
+            log.info("用户注册并登录请求, username: {}", registerRequest.getUsername());
+            LoginResponseDTO response = authService.registerAndLogin(registerRequest);
+            return Result.success(response);
+        } catch (Exception e) {
+            log.error("注册并登录失败, username: {}", registerRequest.getUsername(), e);
+            return Result.error("注册并登录失败，请稍后重试");
+        }
+    }
 
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "用户登录并获取JWT令牌")
-    @ApiResponse(responseCode = "200", description = "登录成功", 
-        content = @Content(mediaType = "application/json", 
-        schema = @Schema(implementation = LoginResponseDTO.class)))
-    public ResponseEntity<LoginResponseDTO> login(@Parameter(description = "登录请求信息") @RequestBody LoginRequestDTO loginRequest) {
-        log.info("用户登录, username: {}", loginRequest.getUsername());
-        
-        // 认证用户
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
-        
+    @Operation(summary = "用户登录", description = "用户登录系统")
+    @ApiResponse(responseCode = "200", description = "登录成功",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponseDTO.class)))
+    public Result<LoginResponseDTO> login(@Parameter(description = "登录请求信息") @Valid @RequestBody LoginRequestDTO loginRequest) {
         try {
-            // 设置认证信息到安全上下文
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserDTO userDTO = userService.findByUsername(loginRequest.getUsername());
-
-            // 使用Dubbo上下文传递用户ID
-            RpcContext.getServerAttachment().setAttachment("userId", userDTO.getId().toString());
-
-            // 生成JWT令牌，传递UserDTO用于获取用户类型
-            String token = jwtService.generateToken(authentication, userDTO);
-            long expiresIn = jwtService.getExpirationTime();
-            
-            log.info("用户登录成功, username: {}, token: {}", loginRequest.getUsername(), token);
-            return ResponseEntity.ok(new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname()));
+            log.info("用户登录请求, username: {}", loginRequest.getUsername());
+            LoginResponseDTO response = authService.login(loginRequest);
+            return Result.success(response);
         } catch (Exception e) {
-            // 清理安全上下文，防止信息泄露
-            SecurityContextHolder.clearContext();
-            log.error("登录过程中发生错误", e);
-            throw e;
+            log.error("登录失败, username: {}", loginRequest.getUsername(), e);
+            return Result.error("登录失败，请检查用户名和密码");
         }
     }
 
     @PostMapping("/change-password")
-    @Operation(summary = "修改密码", description = "修改当前用户密码")
+    @Operation(summary = "修改密码", description = "修改用户密码")
     @ApiResponse(responseCode = "200", description = "密码修改成功")
-    @ApiResponse(responseCode = "400", description = "密码修改失败")
-    public ResponseEntity<String> changePassword(@Parameter(description = "密码修改请求信息") @Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<String> changePassword(@Parameter(description = "密码修改请求信息") @Valid @RequestBody ChangePasswordRequest request,
+                                                 @RequestHeader("Authorization") String authorizationHeader) {
         log.info("修改密码请求");
-        
-        // 获取当前登录用户
-        String userIdStr = RpcContext.getServerAttachment().getAttachment("userId");
-        if (userIdStr == null) {
-            log.warn("用户未登录");
-            return ResponseEntity.badRequest().body("用户未登录");
-        }
-        
-        Long currentUserId = Long.valueOf(userIdStr);
 
-        // 获取当前用户信息
-        UserDTO currentUser = userService.findById(currentUserId);
-        if (currentUser == null) {
-            log.warn("用户不存在, userId: {}", currentUserId);
-            return ResponseEntity.badRequest().body("用户不存在");
-        }
-
-        // 验证旧密码是否正确
-        if (!passwordEncoder.matches(request.getOldPassword(), currentUser.getPassword())) {
-            log.warn("旧密码不正确, userId: {}", currentUserId);
-            return ResponseEntity.badRequest().body("旧密码不正确");
-        }
-
-        // 验证新密码复杂度
-        if (!isValidPassword(request.getNewPassword())) {
-            log.warn("新密码不符合复杂度要求, userId: {}", currentUserId);
-            return ResponseEntity.badRequest().body("密码必须至少包含8个字符，包括大小写字母、数字和特殊字符");
-        }
-
-        // 验证新密码不能与旧密码相同
-        if (request.getOldPassword().equals(request.getNewPassword())) {
-            log.warn("新密码不能与旧密码相同, userId: {}", currentUserId);
-            return ResponseEntity.badRequest().body("新密码不能与旧密码相同");
-        }
-
-        // 调用user服务更新密码
-        boolean success = userService.updatePassword(currentUserId, request.getNewPassword());
-        if (success) {
-            log.info("密码修改成功, userId: {}", currentUserId);
-            return ResponseEntity.ok("密码修改成功");
-        } else {
-            log.error("密码修改失败, userId: {}", currentUserId);
-            return ResponseEntity.badRequest().body("密码修改失败");
-        }
-    }
-
-    // 密码复杂度校验方法
-    private boolean isValidPassword(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-        
-        boolean hasUpper = false;
-        boolean hasLower = false;
-        boolean hasDigit = false;
-        boolean hasSpecial = false;
-        
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) {
-                hasUpper = true;
-            } else if (Character.isLowerCase(c)) {
-                hasLower = true;
-            } else if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else if (!Character.isLetterOrDigit(c)) {
-                hasSpecial = true;
+        try {
+            // 验证token并获取用户ID
+            Long userId = validateTokenAndGetUserId(authorizationHeader);
+            if (userId == null) {
+                return ResponseEntity.badRequest().body("无效的认证信息");
             }
+
+            userServiceInternal.updatePassword(userId, request.getNewPassword());
+            return ResponseEntity.ok("密码修改成功");
+        } catch (Exception e) {
+            log.error("修改密码失败", e);
+            return ResponseEntity.badRequest().body("密码修改失败: " + e.getMessage());
         }
-        
-        return hasUpper && hasLower && hasDigit && hasSpecial;
     }
-    
-    /**
-     * 检查用户是否有管理员权限
-     * @param userDTO 用户信息
-     * @return 是否有管理员权限
-     */
-    private boolean isAdmin(UserDTO userDTO) {
-        return userDTO != null && "ADMIN".equals(userDTO.getUserType());
+
+    @GetMapping("/user-info")
+    @Operation(summary = "获取当前用户信息", description = "根据token获取当前用户信息")
+    @ApiResponse(responseCode = "200", description = "获取用户信息成功",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class)))
+    public Result<UserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            log.info("获取当前用户信息请求");
+
+            // 验证token并获取用户ID
+            Long userId = validateTokenAndGetUserId(authorizationHeader);
+            if (userId == null) {
+                return Result.error("无效的认证信息");
+            }
+
+            UserDTO userDTO = userServiceInternal.findById(userId);
+            return Result.success(userDTO);
+        } catch (Exception e) {
+            log.error("获取用户信息失败", e);
+            return Result.error("获取用户信息失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/validate-token")
+    @Operation(summary = "验证token有效性", description = "验证JWT token是否有效")
+    @ApiResponse(responseCode = "200", description = "token验证结果")
+    public Result<Boolean> validateToken(@RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            log.info("验证token有效性请求");
+            Long userId = validateTokenAndGetUserId(authorizationHeader);
+            return Result.success(userId != null);
+        } catch (Exception e) {
+            log.error("验证token有效性失败", e);
+            return Result.error("token验证失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出系统")
     @ApiResponse(responseCode = "200", description = "登出成功")
-    public ResponseEntity<Void> logout() {
-        log.info("用户登出");
+    public Result<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            log.info("用户登出");
 
-        // 清除安全上下文
-        SecurityContextHolder.clearContext();
+            // 验证token并获取用户ID
+            Long userId = validateTokenAndGetUserId(authorizationHeader);
+            if (userId != null) {
+                String token = extractToken(authorizationHeader);
+                authService.logout(token);
+                log.info("用户token已从Redis中删除，用户ID: {}", userId);
+            } else {
+                log.warn("尝试删除无效的token");
+            }
 
-        log.info("用户登出成功");
-        return ResponseEntity.ok().build();
+            log.info("用户登出成功");
+            return Result.success();
+        } catch (Exception e) {
+            log.error("用户登出失败", e);
+            return Result.error("登出失败: " + e.getMessage());
+        }
     }
 
-    @GetMapping("/refresh")
-    @Operation(summary = "刷新令牌", description = "刷新JWT令牌")
-    @ApiResponse(responseCode = "200", description = "令牌刷新成功", 
-        content = @Content(mediaType = "application/json", 
-        schema = @Schema(implementation = LoginResponseDTO.class)))
-    public ResponseEntity<LoginResponseDTO> refresh() {
-        log.info("刷新令牌");
-        
+    @PostMapping("/refresh-token")
+    @Operation(summary = "刷新token", description = "使用现有token获取新的token")
+    @ApiResponse(responseCode = "200", description = "token刷新成功",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponseDTO.class)))
+    public Result<LoginResponseDTO> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            UserDTO userDTO = userService.findByUsername(authentication.getName());
+            log.info("刷新token请求");
 
-            // 使用Dubbo上下文传递用户ID
-            RpcContext.getServerAttachment().setAttachment("userId", userDTO.getId().toString());
+            // 验证token并获取用户ID
+            Long userId = validateTokenAndGetUserId(authorizationHeader);
+            if (userId == null) {
+                log.warn("尝试刷新token时发现无效的token");
+                return Result.error("无效的认证信息");
+            }
 
-            // 生成JWT令牌，传递UserDTO用于获取用户类型
-            String token = jwtService.generateToken(authentication, userDTO);
-            long expiresIn = jwtService.getExpirationTime();
-            
-            log.info("令牌刷新成功, username: {}, token: {}", authentication.getName(), token);
-            return ResponseEntity.ok(new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname()));
+            String token = extractToken(authorizationHeader);
+            // 刷新token有效期
+            if (tokenService.refreshToken(token)) {
+                // 获取token过期时间
+                long expiresIn = tokenService.getExpireTime(token);
+                // 创建响应对象
+                LoginResponseDTO response = new LoginResponseDTO(token, expiresIn, "", "");
+                return Result.success(response);
+            } else {
+                return Result.error("token刷新失败");
+            }
         } catch (Exception e) {
-            // 清理安全上下文，防止信息泄露
-            SecurityContextHolder.clearContext();
-            log.error("刷新令牌过程中发生错误", e);
-            throw e;
+            log.error("刷新token失败", e);
+            return Result.error("token刷新失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 从Authorization头中提取token并验证其有效性
+     * @param authorizationHeader Authorization头
+     * @return 用户ID，如果token无效则返回null
+     */
+    private Long validateTokenAndGetUserId(String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        if (token != null) {
+            return tokenService.validateToken(token);
+        }
+        return null;
+    }
+
+    /**
+     * 从Authorization头中提取token
+     * @param authorizationHeader Authorization头
+     * @return token字符串，如果无效则返回null
+     */
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
     }
 
     // 密码修改请求的数据传输对象
@@ -226,12 +231,9 @@ public class AuthController {
     @Getter
     public static class ChangePasswordRequest {
         @Parameter(description = "旧密码")
-        @NotBlank(message = "旧密码不能为空")
         private String oldPassword;
 
         @Parameter(description = "新密码")
-        @NotBlank(message = "新密码不能为空")
-        @Size(min = 8, message = "密码长度不能少于8位")
         private String newPassword;
     }
 }

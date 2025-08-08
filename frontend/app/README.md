@@ -1,6 +1,6 @@
 # Vue 3 + Vite 前端项目
 
-基于 Vue 3 + Vite + Element Plus 的云库存管理系统前端项目。
+基于 Vue 3 + Vite + Element Plus + Pinia 的云库存管理系统前端项目。
 
 ## 技术栈
 
@@ -18,13 +18,45 @@ frontend/app/
 ├── public/                 # 静态资源
 ├── src/
 │   ├── api/               # API 接口
-│   │   └── stock.js       # 库存相关 API
+│   │   ├── auth.js        # 认证相关 API
+│   │   ├── user.js        # 用户相关 API
+│   │   ├── stock.js       # 库存相关 API
+│   │   ├── product.js     # 产品相关 API
+│   │   ├── order.js       # 订单相关 API
+│   │   └── axiosInstance.js  # Axios 实例配置
 │   ├── components/        # Vue 组件
+│   │   ├── HomePage.vue        # 首页组件
+│   │   ├── LoginPage.vue       # 登录组件
+│   │   ├── MerchantLogin.vue   # 商户登录组件
+│   │   ├── UserHome.vue        # 用户主页组件
+│   │   ├── MerchantHome.vue    # 商户主页组件
+│   │   ├── AdminHome.vue       # 管理员主页组件
 │   │   ├── StockManager.vue    # 库存管理组件
-│   │   ├── Statistics.vue      # 统计报表组件
-│   │   └── HelloWorld.vue      # 示例组件
+│   │   └── Statistics.vue      # 统计报表组件
 │   ├── router/            # 路由配置
 │   │   └── index.js       # 路由定义
+│   ├── store/             # 状态管理 (Pinia)
+│   │   ├── modules/       # 模块化状态
+│   │   │   ├── auth.js    # 认证状态管理
+│   │   │   ├── user.js    # 用户状态管理
+│   │   │   ├── stock.js   # 库存状态管理
+│   │   │   ├── product.js # 产品状态管理
+│   │   │   └── order.js   # 订单状态管理
+│   │   ├── app.js         # 应用根状态
+│   │   └── index.js       # 状态管理入口
+│   ├── views/             # 页面视图
+│   │   ├── auth/          # 认证相关页面
+│   │   │   ├── Login.vue     # 登录页面
+│   │   │   └── Register.vue  # 注册页面
+│   │   ├── user/          # 用户相关页面
+│   │   │   ├── Dashboard.vue # 用户仪表板
+│   │   │   └── Profile.vue   # 用户个人资料
+│   │   ├── merchant/      # 商户相关页面
+│   │   │   ├── Dashboard.vue # 商户仪表板
+│   │   │   └── Products.vue  # 商户产品管理
+│   │   └── admin/         # 管理员相关页面
+│   │       ├── Dashboard.vue # 管理员仪表板
+│   │       └── Users.vue     # 用户管理
 │   ├── App.vue            # 根组件
 │   └── main.js            # 入口文件
 ├── index.html             # HTML 模板
@@ -80,16 +112,20 @@ export default defineConfig({
         port: 3000,
         host: '0.0.0.0',
         proxy: {
+            // 代理认证服务 API
+            '/auth': {
+                target: 'http://localhost:80',
+                changeOrigin: true
+            },
+            // 代理用户服务 API
+            '/user': {
+                target: 'http://localhost:80',
+                changeOrigin: true
+            },
             // 代理库存服务 API
             '/stock': {
                 target: 'http://localhost:80',
                 changeOrigin: true
-            },
-            // 代理通用 API
-            '/api': {
-                target: 'http://localhost:80',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
             }
         }
     }
@@ -99,7 +135,7 @@ export default defineConfig({
 ### API 配置
 
 ```javascript
-// src/api/stock.js
+// src/api/axiosInstance.js
 const request = axios.create({
     baseURL: '', // 使用相对路径，通过 Vite 代理
     timeout: 10000
@@ -111,33 +147,91 @@ const request = axios.create({
 ```javascript
 // src/router/index.js
 const routes = [
-    {path: '/', component: StockManager},
-    {path: '/stock', component: StockManager},
-    {path: '/statistics', component: () => import('../components/Statistics.vue')}
+    { path: '/', redirect: '/auth/login' },
+    { path: '/auth/login', component: () => import('../views/auth/Login.vue') },
+    { path: '/auth/register', component: () => import('../views/auth/Register.vue') },
+    // 用户路由
+    {
+        path: '/user',
+        component: () => import('../views/user/Dashboard.vue'),
+        children: [
+            { path: 'profile', component: () => import('../views/user/Profile.vue') }
+        ]
+    },
+    // 商户路由
+    {
+        path: '/merchant',
+        component: () => import('../views/merchant/Dashboard.vue'),
+        children: [
+            { path: 'products', component: () => import('../views/merchant/Products.vue') }
+        ]
+    },
+    // 管理员路由
+    {
+        path: '/admin',
+        component: () => import('../views/admin/Dashboard.vue'),
+        children: [
+            { path: 'users', component: () => import('../views/admin/Users.vue') }
+        ]
+    }
 ]
 ```
 
 ## 功能模块
 
-### 1. 库存管理 (`/stock`)
+### 1. 认证管理 (`/auth`)
+
+- **功能**：用户登录、注册、登出
+- **组件**：`Login.vue`, `Register.vue`
+- **API**：
+    - `POST /auth/login` - 用户登录
+    - `POST /auth/register` - 用户注册
+    - `POST /auth/register-and-login` - 注册并登录
+    - `POST /auth/change-password` - 修改密码
+    - `GET /auth/user-info` - 获取当前用户信息
+    - `GET /auth/validate-token` - 验证token有效性
+    - `GET /auth/logout` - 用户登出
+    - `POST /auth/refresh-token` - 刷新token
+
+### 2. 用户管理 (`/user`)
+
+- **功能**：用户个人资料管理、密码修改
+- **组件**：`Dashboard.vue`, `Profile.vue`
+- **状态管理**：`store/modules/user.js`
+- **API**：
+    - `GET /auth/user-info` - 获取用户信息
+    - `POST /auth/change-password` - 修改密码
+
+### 3. 商户管理 (`/merchant`)
+
+- **功能**：商户产品管理
+- **组件**：`Dashboard.vue`, `Products.vue`
+- **状态管理**：`store/modules/product.js`
+- **API**：
+    - 产品相关操作（待后端完善）
+
+### 4. 管理员管理 (`/admin`)
+
+- **功能**：用户管理
+- **组件**：`Dashboard.vue`, `Users.vue`
+- **状态管理**：`store/modules/user.js`
+- **API**：
+    - 用户管理相关操作（待后端完善）
+
+### 5. 库存管理 (`/stock`)
 
 - **功能**：商品库存的增删改查
 - **组件**：`StockManager.vue`
+- **状态管理**：`store/modules/stock.js`
 - **API**：
     - `GET /stock/product/{id}` - 根据商品ID查询库存
     - `POST /stock/page` - 分页查询库存
-    - `GET /stock/async/statistics` - 获取统计数据
 
-### 2. 统计报表 (`/statistics`)
+### 6. 统计报表 (`/statistics`)
 
 - **功能**：库存数据统计和图表展示
 - **组件**：`Statistics.vue`
 - **特性**：支持图表集成（可扩展 ECharts）
-
-### 3. 首页 (`/`)
-
-- **功能**：系统概览和快速导航
-- **组件**：默认显示库存管理页面
 
 ## 组件开发规范
 
@@ -378,8 +472,12 @@ pnpm add vue-i18n@9
 ## 更新日志
 
 - **v1.0.0** - 初始版本，包含库存管理和统计报表功能
-- 支持 Vue 3 + Vite + Element Plus
-- 集成路由和 API 代理配置
+- **v1.1.0** - 新增完整的用户认证和权限管理系统
+  - 支持 Vue 3 + Vite + Element Plus + Pinia
+  - 集成路由和 API 代理配置
+  - 实现基于角色的访问控制（RBAC）
+  - 添加完整的状态管理（Pinia）
+  - 实现用户、商户、管理员三种角色的界面和功能
 
 ## 贡献指南
 

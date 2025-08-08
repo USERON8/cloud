@@ -36,6 +36,11 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
+
+# JWT密钥配置
+jwt:
+  secret: mySecretKey1234567890123456 # 至少32位的密钥
+
 server:
   port: 8083
 
@@ -60,9 +65,7 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
-# JWT密钥配置
-jwt:
-  secret: mySecretKey1234567890123456
+
 minio:
   endpoint: http://localhost:9000
   access-key: minioadmin

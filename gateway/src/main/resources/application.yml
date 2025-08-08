@@ -17,7 +17,14 @@ spring:
   config:
     import: optional:nacos:common
   profiles:
-    active: route
+    include: auth, route
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: root # 若无需密码则删除此行
+      database: 0 # 默认 DB
+      username: root
 
 server:
   port: 80
@@ -28,3 +35,4 @@ logging:
     com.cloud: DEBUG
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
+

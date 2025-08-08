@@ -1,39 +1,43 @@
-import axios from './axiosInstance'; 
+import request from './axiosInstance'
 
-// 库存API
 export const stockApi = {
-    // 根据商品ID查询库存
-    getByProductId(productId) {
-        return request.get(`/stock/product/${productId}`)
-    },
+  /**
+   * 根据商品ID获取库存信息
+   * @param {number} productId 商品ID
+   * @returns {Promise} 库存信息响应
+   */
+  getStockByProductId(productId) {
+    return request({
+      url: `/stock/product/${productId}`,
+      method: 'get'
+    })
+  },
 
-    // 分页查询库存
-    pageQuery(params) {
-        return request.post('/stock/page', params)
-    },
+  /**
+   * 分页查询库存列表
+   * @param {Object} data 分页查询参数
+   * @param {number} data.page 页码
+   * @param {number} data.size 每页大小
+   * @param {string} data.productName 商品名称（可选）
+   * @returns {Promise} 库存列表响应
+   */
+  getStockList(data) {
+    return request({
+      url: '/stock/page',
+      method: 'post',
+      data
+    })
+  },
 
-    // 异步根据商品ID查询库存
-    getByProductIdAsync(productId) {
-        return request.get(`/stock/async/product/${productId}`)
-    },
-
-    // 异步分页查询库存
-    pageQueryAsync(params) {
-        return request.post('/stock/async/page', params)
-    },
-
-    // 异步批量查询库存
-    batchQueryAsync(productIds) {
-        return request.post('/stock/async/batch', productIds)
-    },
-
-    // 异步查询库存统计
-    getStatistics() {
-        return request.get('/stock/async/statistics')
-    },
-
-    // 并发查询多个商品库存
-    concurrentQuery(productIds) {
-        return request.post('/stock/async/concurrent', productIds)
-    }
+  /**
+   * 获取库存详情
+   * @param {number} id 库存ID
+   * @returns {Promise} 库存详情响应
+   */
+  getStockItem(id) {
+    return request({
+      url: `/stock/product/${id}`,
+      method: 'get'
+    })
+  }
 }
