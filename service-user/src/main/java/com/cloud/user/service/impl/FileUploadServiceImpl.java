@@ -2,6 +2,7 @@ package com.cloud.user.service.impl;
 
 import com.cloud.common.exception.BusinessException;
 import com.cloud.user.config.MinioConfig;
+import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.service.FileUploadService;
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class FileUploadServiceImpl implements FileUploadService {
     // 头像尺寸限制
     private static final int AVATAR_MAX_WIDTH = 500;
     private static final int AVATAR_MAX_HEIGHT = 500;
+    private final UserMapper userMapper;
 
     @Override
     public String uploadAvatar(MultipartFile file, Long userId) {
@@ -85,6 +87,11 @@ public class FileUploadServiceImpl implements FileUploadService {
     @Override
     public String getFileUrl(String fileName) {
         return minioConfig.getPublicEndpoint() + "/" + minioConfig.getBucketName() + "/" + fileName;
+    }
+
+    @Override
+    public void deleteFile(String avatarFileName) {
+        userMapper.delByAvatarFileNameAndAvatarUrl(avatarFileName, getFileUrl(avatarFileName));
     }
 
     /**

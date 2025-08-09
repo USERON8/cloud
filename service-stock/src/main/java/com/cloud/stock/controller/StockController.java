@@ -5,7 +5,7 @@ import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.StockPageDTO;
 import com.cloud.common.domain.vo.StockVO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.stock.service.StockInternalService;
+import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class StockController {
 
-    private final StockInternalService stockService;
+    private final StockService stockService;
 
 
     @GetMapping("/product/{productId}")

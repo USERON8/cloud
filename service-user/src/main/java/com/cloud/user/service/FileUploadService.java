@@ -28,4 +28,6 @@ public interface FileUploadService {
      * @return 访问URL
      */
     String getFileUrl(String fileName);
+
+    void deleteFile(String avatarFileName);
 }

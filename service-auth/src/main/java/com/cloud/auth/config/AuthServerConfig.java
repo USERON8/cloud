@@ -58,24 +58,7 @@ public class AuthServerConfig {
         return http.build();
     }
 
-    // 2. 默认安全过滤器链
-    @Bean
-    @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/auth/login", "/auth/register", "/auth/register-and-login").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(Customizer.withDefaults())
-            )
-            .formLogin(Customizer.withDefaults());
-
-        return http.build();
-    }
-
-    // 3. 客户端注册仓库
+    // 2. 客户端注册仓库
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -99,7 +82,7 @@ public class AuthServerConfig {
         return new InMemoryRegisteredClientRepository(client);
     }
 
-    // 4. 授权服务器设置
+    // 3. 授权服务器设置
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
@@ -107,7 +90,7 @@ public class AuthServerConfig {
                 .build();
     }
 
-    // 5. 非对称密钥对（RSA）用于OAuth2 JWT签名
+    // 4. 非对称密钥对（RSA）用于OAuth2 JWT签名
     @Bean
     public JWKSource<SecurityContext> jwkSource() throws Exception {
         KeyPair keyPair = generateRsaKey();
@@ -120,20 +103,26 @@ public class AuthServerConfig {
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));
     }
 
-    // 6. JWT编码器
+    // 5. JWT编码器
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
         return new NimbusJwtEncoder(jwkSource);
     }
 
-    // 7. JWT解码器
+    // 6. JWT解码器
     @Bean
-    public JwtDecoder jwtDecoder() {
-        try {
-            return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create JWT decoder", e);
+    public JwtDecoder jwtDecoder() throws Exception {
+        // 确保rsaKey已初始化
+        if (rsaKey == null) {
+            KeyPair keyPair = generateRsaKey();
+            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+            rsaKey = new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyID(UUID.randomUUID().toString())
+                    .build();
         }
+        return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
     }
 
     private static KeyPair generateRsaKey() throws Exception {

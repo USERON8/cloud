@@ -17,7 +17,7 @@
         <!-- 引入公共模块，包含通用的DTO、VO等 -->
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>common-module</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

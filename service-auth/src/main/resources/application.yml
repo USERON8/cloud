@@ -32,12 +32,16 @@ spring:
 
 dubbo:
   application:
-    name: auth-server
+    name: auth-server-rpc
     qos-enable: false
+    parameters:
+      services-type: dubbo-rpc
   registry:
     address: nacos://127.0.0.1:8848
     username: nacos
     password: nacos
+    parameters:
+      services-type: dubbo-rpc
   protocol:
     name: dubbo
     port: 20881

@@ -1,5 +1,6 @@
 package com.cloud.user.converter;
 
+import com.cloud.common.domain.dto.RegisterRequestDTO;
 import com.cloud.common.domain.dto.UserDTO;
 import com.cloud.user.module.entity.User;
 import org.mapstruct.Mapper;
@@ -14,6 +15,7 @@ public interface UserConverter {
 
     UserDTO toDTO(User user);
 
+    User toEntity(RegisterRequestDTO registerRequestDTO);
 
     User toEntity(UserDTO userDTO);
 }

@@ -45,7 +45,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <spring-security-oauth2-authorization-server.version>1.5.1</spring-security-oauth2-authorization-server.version>
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
-        <dubbo.version>3.2.14</dubbo.version>
+        <dubbo.version>3.3.5</dubbo.version>
 
         <!-- 日志版本 -->
         <slf4j.version>2.0.16</slf4j.version>
@@ -107,7 +107,7 @@
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
                 <artifactId>dubbo-registry-nacos</artifactId>
-                <version>3.3.5</version>
+                <version>${dubbo.version}</version>
             </dependency>
             <!-- Dubbo Triple协议支持 -->
             <dependency>

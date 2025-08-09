@@ -23,7 +23,7 @@ spring:
             - id: user-route
               uri: lb://user-server
               predicates:
-                - Path=/user/**
+                - Path=/users/**,/avatar/**,/avatar/**
               metadata:
                 swagger-info:
                   title: 用户服务API

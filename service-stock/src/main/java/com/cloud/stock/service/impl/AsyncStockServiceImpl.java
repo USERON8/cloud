@@ -8,7 +8,7 @@ import com.cloud.common.domain.vo.StockVO;
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.AsyncStockService;
-import com.cloud.stock.service.StockInternalService;
+import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class AsyncStockServiceImpl implements AsyncStockService {
 
-    private final StockInternalService stockService;
+    private final StockService stockService;
     private final StockConverter stockConverter;
 
     /**

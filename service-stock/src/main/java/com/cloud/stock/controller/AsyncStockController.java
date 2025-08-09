@@ -1,13 +1,14 @@
 package com.cloud.stock.controller;
 
+import com.cloud.api.stock.StockInternalService;
 import com.cloud.common.domain.PageResult;
 import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.StockPageDTO;
 import com.cloud.common.domain.vo.StockStatisticsVO;
 import com.cloud.common.domain.vo.StockVO;
-import com.cloud.stock.service.StockInternalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AsyncStockController {
 
+    @DubboReference
     private final StockInternalService asyncStockService;
 
     /**

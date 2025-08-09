@@ -26,6 +26,11 @@ public interface StockConverter {
     StockVO toVO(Stock stock);
 
     /**
+     * 复制StockPageDTO对象
+     */
+    StockPageDTO copyStockPageDTO(StockPageDTO source);
+
+    /**
      * 计算库存状态
      */
     @Named("calculateStockStatus")
