@@ -11,13 +11,13 @@ spring:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         group: DEFAULT_GROUP
       config:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
   config:
@@ -33,17 +33,6 @@ spring:
           max-active: 20   # 最大连接数
           max-wait: 2000ms # 最大等待时间
       username: root
-
-
-dubbo:
-  registry:
-    address: nacos://${spring.cloud.nacos.discovery.server-addr}?namespace=${spring.cloud.nacos.discovery.namespace}
-    username: nacos
-    password: nacos
-    parameters:
-      services-type: dubbo-rpc
-  consumer:
-    check: false
 
 logging:
   file:

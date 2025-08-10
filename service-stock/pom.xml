@@ -11,7 +11,7 @@
     <name>stock</name>
 
     <dependencies>
-        <!-- 通用jar -->
+
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
@@ -71,23 +71,18 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
+        <!-- Spring Cloud OpenFeign Starter -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
 
-        <!-- Dubbo注册到Nacos的依赖 -->
+        <!-- Spring Cloud LoadBalancer -->
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-registry-nacos</artifactId>
-            <version>${dubbo.version}</version>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-spring-boot-starter</artifactId>
-        </dependency>
-        <!-- Dubbo Triple协议支持 -->
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-rpc-triple</artifactId>
-            <version>${dubbo.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -108,6 +103,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.34</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

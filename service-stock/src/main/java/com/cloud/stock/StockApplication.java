@@ -1,15 +1,19 @@
 package com.cloud.stock;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @Slf4j
 @SpringBootApplication
-@EnableDubbo
+@EnableDiscoveryClient
 @EnableAsync
+@MapperScan("com.cloud.stock.mapper")
+@EnableFeignClients(basePackages = "com.cloud.api")
 public class StockApplication {
     public static void main(String[] args) {
         // 禁用Nacos的日志配置，避免冲突
@@ -21,4 +25,6 @@ public class StockApplication {
         SpringApplication.run(StockApplication.class, args);
         log.info("库存服务启动完成！");
     }
+
+
 }

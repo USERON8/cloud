@@ -1,12 +1,14 @@
 package com.cloud.auth;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableDubbo
+@EnableDiscoveryClient
+@EnableFeignClients(basePackages = "com.cloud.api")
 @Slf4j
 public class AuthApplication {
 

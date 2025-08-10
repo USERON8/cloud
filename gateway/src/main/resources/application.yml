@@ -9,7 +9,9 @@ spring:
         server-addr: 127.0.0.1:8848
         username: nacos
         password: nacos
+        namespace: public
       config:
+        namespace: public
         server-addr: 127.0.0.1:8848
         file-extension: yaml
         prefix: gateway
@@ -26,7 +28,11 @@ spring:
       port: 6379
       password: root # 若无需密码则删除此行
       database: 0 # 默认 DB
-      username: root
+      username: default
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 10
 
 server:
   port: 80

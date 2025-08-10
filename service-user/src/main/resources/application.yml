@@ -9,13 +9,13 @@ spring:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         group: DEFAULT_GROUP
       config:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
   config:
@@ -43,27 +43,6 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-dubbo:
-  application:
-    name: user-service
-    qos-enable: false
-    parameters:
-      services-type: dubbo-rpc
-  registry:
-    address: nacos://${spring.cloud.nacos.discovery.server-addr}?namespace=${spring.cloud.nacos.discovery.namespace}
-    username: nacos
-    password: nacos
-    parameters:
-      services-type: dubbo-rpc
-  provider:
-    group: provider-group
-  protocol:
-    name: dubbo
-    port: -1
-  consumer:
-    timeout: 5000
-  scan:
-    base-packages: com.cloud.user.service.impl
 logging:
   file:
     path: D:/logs/${spring.application.name}

@@ -39,13 +39,13 @@
         <mysql.version>9.3.0</mysql.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <redis-version>3.5.3</redis-version>
-        <nacos-client.version>3.0.2</nacos-client.version>
         <jedis.version>6.0.0</jedis.version>
         <auth0.version>4.5.0</auth0.version>
         <jjwt.version>0.12.6</jjwt.version>
         <spring-security-oauth2-authorization-server.version>1.5.1</spring-security-oauth2-authorization-server.version>
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
-        <dubbo.version>3.3.5</dubbo.version>
+        <openfeign.version>4.3.0</openfeign.version>
+
 
         <!-- 日志版本 -->
         <slf4j.version>2.0.16</slf4j.version>
@@ -96,25 +96,6 @@
                 <version>4.5.14</version>
             </dependency>
 
-            <!-- Dubbo依赖版本管理 -->
-            <dependency>
-                <groupId>org.apache.dubbo</groupId>
-                <artifactId>dubbo-bom</artifactId>
-                <version>${dubbo.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.dubbo</groupId>
-                <artifactId>dubbo-registry-nacos</artifactId>
-                <version>${dubbo.version}</version>
-            </dependency>
-            <!-- Dubbo Triple协议支持 -->
-            <dependency>
-                <groupId>org.apache.dubbo</groupId>
-                <artifactId>dubbo-rpc-triple</artifactId>
-                <version>${dubbo.version}</version>
-            </dependency>
 
             <!-- JUnit 5 版本管理 -->
             <dependency>

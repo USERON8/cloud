@@ -2,10 +2,8 @@ package com.cloud.common.domain.dto;
 
 import lombok.Data;
 
-import java.io.Serializable;
-
 @Data
-public class LoginRequestDTO implements Serializable {
+public class LoginRequestDTO {
     private String username;
     private String password;
 }

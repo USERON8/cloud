@@ -9,13 +9,13 @@ spring:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         group: DEFAULT_GROUP
       config:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: dev
+        namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
   config:
@@ -25,25 +25,6 @@ spring:
     url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: root
-# Dubbo配置
-dubbo:
-  application:
-    name: stock-service
-    parameters:
-      services-type: dubbo-rpc
-  registry:
-    address: nacos://${spring.cloud.nacos.discovery.server-addr}?namespace=${spring.cloud.nacos.discovery.namespace}
-    username: nacos
-    password: nacos
-    parameters:
-      services-type: dubbo-rpc
-  provider:
-    group: provider-group
-  protocol:
-    name: dubbo
-    port: -1
-  scan:
-    base-packages: com.cloud.stock.service.impl
 
 # MyBatis-Plus配置
 mybatis-plus:

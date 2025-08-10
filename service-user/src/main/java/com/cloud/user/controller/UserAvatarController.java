@@ -1,6 +1,7 @@
 package com.cloud.user.controller;
 
 import com.cloud.common.domain.Result;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.user.service.UserAvatarService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,16 +42,21 @@ public class UserAvatarController {
     @PreAuthorize("isAuthenticated()")
     public Result<Map<String, String>> uploadAvatar(
             @Parameter(description = "头像文件") @RequestParam("file") MultipartFile file) {
-        log.info("上传用户头像, file: {}", file.getOriginalFilename());
+        try {
+            log.info("上传用户头像, file: {}", file.getOriginalFilename());
 
-        if (file.isEmpty()) {
-            log.warn("上传的文件为空");
-            return Result.error("文件不能为空");
+            if (file.isEmpty()) {
+                log.warn("上传的文件为空");
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "文件不能为空");
+            }
+
+            String fileUrl = userAvatarService.uploadAvatar(file);
+            log.info("头像上传成功, url: {}", fileUrl);
+            return Result.success("上传成功", Map.of("url", fileUrl));
+        } catch (Exception e) {
+            log.error("上传用户头像失败, file: {}", file.getOriginalFilename(), e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "上传头像失败: " + e.getMessage());
         }
-
-        String fileUrl = userAvatarService.uploadAvatar(file);
-        log.info("头像上传成功, url: {}", fileUrl);
-        return Result.success("上传成功", Map.of("url", fileUrl));
     }
 
     /**
@@ -66,11 +72,20 @@ public class UserAvatarController {
                     schema = @Schema(implementation = Result.class)))
     public Result<Map<String, String>> getAvatar(
             @Parameter(description = "用户ID") @PathVariable("userId") Long userId) {
-        log.info("获取用户头像, userId: {}", userId);
+        try {
+            log.info("获取用户头像, userId: {}", userId);
+            
+            if (userId == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
 
-        String fileUrl = userAvatarService.getAvatar(userId);
-        log.info("获取用户头像成功, userId: {}, url: {}", userId, fileUrl);
-        return Result.success(Map.of("url", fileUrl));
+            String fileUrl = userAvatarService.getAvatar(userId);
+            log.info("获取用户头像成功, userId: {}, url: {}", userId, fileUrl);
+            return Result.success(Map.of("url", fileUrl));
+        } catch (Exception e) {
+            log.error("获取用户头像失败, userId: {}", userId, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取头像失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -87,10 +102,19 @@ public class UserAvatarController {
     @PreAuthorize("@permissionService.hasPermission(#userId) or hasAuthority('ROLE_ADMIN')")
     public Result<?> deleteAvatar(
             @Parameter(description = "用户ID") @PathVariable("userId") Long userId) {
-        log.info("删除用户头像, userId: {}", userId);
+        try {
+            log.info("删除用户头像, userId: {}", userId);
+            
+            if (userId == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
 
-        userAvatarService.deleteAvatar(userId);
-        log.info("用户头像删除成功, userId: {}", userId);
-        return Result.success("删除成功");
+            userAvatarService.deleteAvatar(userId);
+            log.info("用户头像删除成功, userId: {}", userId);
+            return Result.success("删除成功");
+        } catch (Exception e) {
+            log.error("删除用户头像失败, userId: {}", userId, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "删除头像失败: " + e.getMessage());
+        }
     }
 }

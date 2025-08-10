@@ -3,6 +3,7 @@ package com.cloud.user.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
@@ -47,21 +48,26 @@ public class UserManageController {
                     schema = @Schema(implementation = Result.class)))
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public Result<UserDTO> create(@Parameter(description = "用户信息") @Valid @RequestBody UserDTO userDTO) {
-        log.info("创建用户, username: {}", userDTO.getUsername());
+        try {
+            log.info("创建用户, username: {}", userDTO.getUsername());
 
-        // 检查用户名是否已存在
-        User existingUser = userService.getOne(new QueryWrapper<User>().eq("username", userDTO.getUsername()));
-        if (existingUser != null) {
-            log.warn("用户名已存在, username: {}", userDTO.getUsername());
-            return Result.error("用户名已存在");
+            // 检查用户名是否已存在
+            User existingUser = userService.getOne(new QueryWrapper<User>().eq("username", userDTO.getUsername()));
+            if (existingUser != null) {
+                log.warn("用户名已存在, username: {}", userDTO.getUsername());
+                return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名已存在");
+            }
+
+            User user = userConverter.toEntity(userDTO);
+            // 默认启用状态
+            user.setStatus(1);
+            userService.save(user);
+            log.info("用户创建成功, userId: {}, username: {}", user.getId(), user.getUsername());
+            return Result.success("创建成功", userConverter.toDTO(user));
+        } catch (Exception e) {
+            log.error("创建用户失败, username: {}", userDTO.getUsername(), e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "创建用户失败: " + e.getMessage());
         }
-
-        User user = userConverter.toEntity(userDTO);
-        // 默认启用状态
-        user.setStatus(1);
-        userService.save(user);
-        log.info("用户创建成功, userId: {}, username: {}", user.getId(), user.getUsername());
-        return Result.success("创建成功", userConverter.toDTO(user));
     }
 
     /**
@@ -79,28 +85,37 @@ public class UserManageController {
     @PreAuthorize("@permissionService.hasPermission(#id) or hasAuthority('ROLE_ADMIN')")
     public Result<UserDTO> update(@Parameter(description = "用户ID") @PathVariable("id") Long id,
                                   @Parameter(description = "用户信息") @Valid @RequestBody UserDTO userDTO) {
-        log.info("更新用户信息, userId: {}", id);
-
-        User user = userService.getById(id);
-        if (user == null) {
-            log.warn("用户不存在, userId: {}", id);
-            return Result.error("用户不存在");
-        }
-
-        // 检查用户名是否已存在（排除自己）
-        if (userDTO.getUsername() != null && !Objects.equals(user.getUsername(), userDTO.getUsername())) {
-            User existingUser = userService.getOne(new QueryWrapper<User>().eq("username", userDTO.getUsername()));
-            if (existingUser != null) {
-                log.warn("用户名已存在, username: {}", userDTO.getUsername());
-                return Result.error("用户名已存在");
+        try {
+            log.info("更新用户信息, userId: {}", id);
+            
+            if (id == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
-        }
 
-        User updateUser = userConverter.toEntity(userDTO);
-        updateUser.setId(id);
-        userService.updateById(updateUser);
-        log.info("用户信息更新成功, userId: {}", id);
-        return Result.success("更新成功", userConverter.toDTO(updateUser));
+            User user = userService.getById(id);
+            if (user == null) {
+                log.warn("用户不存在, userId: {}", id);
+                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            }
+
+            // 检查用户名是否已存在（排除自己）
+            if (userDTO.getUsername() != null && !Objects.equals(user.getUsername(), userDTO.getUsername())) {
+                User existingUser = userService.getOne(new QueryWrapper<User>().eq("username", userDTO.getUsername()));
+                if (existingUser != null) {
+                    log.warn("用户名已存在, username: {}", userDTO.getUsername());
+                    return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名已存在");
+                }
+            }
+
+            User updateUser = userConverter.toEntity(userDTO);
+            updateUser.setId(id);
+            userService.updateById(updateUser);
+            log.info("用户信息更新成功, userId: {}", id);
+            return Result.success("更新成功", userConverter.toDTO(updateUser));
+        } catch (Exception e) {
+            log.error("更新用户信息失败, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "更新用户信息失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -116,17 +131,26 @@ public class UserManageController {
                     schema = @Schema(implementation = Result.class)))
     @PreAuthorize("@permissionService.hasPermission(#id) or hasAuthority('ROLE_ADMIN')")
     public Result<?> delete(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
-        log.info("删除用户, userId: {}", id);
+        try {
+            log.info("删除用户, userId: {}", id);
+            
+            if (id == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
 
-        User user = userService.getById(id);
-        if (user == null) {
-            log.warn("用户不存在, userId: {}", id);
-            return Result.error("用户不存在");
+            User user = userService.getById(id);
+            if (user == null) {
+                log.warn("用户不存在, userId: {}", id);
+                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            }
+            user.setDeleted(1); // 逻辑删除
+            userService.updateById(user);
+            log.info("用户删除成功, userId: {}", id);
+            return Result.success("删除成功");
+        } catch (Exception e) {
+            log.error("删除用户失败, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "删除用户失败: " + e.getMessage());
         }
-        user.setDeleted(1); // 逻辑删除
-        userService.updateById(user);
-        log.info("用户删除成功, userId: {}", id);
-        return Result.success("删除成功");
     }
 
     /**
@@ -142,17 +166,26 @@ public class UserManageController {
                     schema = @Schema(implementation = Result.class)))
     @PreAuthorize("@permissionService.hasPermission(#id) or hasAuthority('ROLE_ADMIN')")
     public Result<?> disableUser(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
-        log.info("禁用用户, userId: {}", id);
+        try {
+            log.info("禁用用户, userId: {}", id);
+            
+            if (id == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
 
-        User user = userService.getById(id);
-        if (user == null) {
-            log.warn("用户不存在, userId: {}", id);
-            return Result.error("用户不存在");
+            User user = userService.getById(id);
+            if (user == null) {
+                log.warn("用户不存在, userId: {}", id);
+                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            }
+            user.setStatus(0); // 禁用
+            userService.updateById(user);
+            log.info("用户已禁用, userId: {}", id);
+            return Result.success("用户已禁用");
+        } catch (Exception e) {
+            log.error("禁用用户失败, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "禁用用户失败: " + e.getMessage());
         }
-        user.setStatus(0); // 禁用
-        userService.updateById(user);
-        log.info("用户已禁用, userId: {}", id);
-        return Result.success("用户已禁用");
     }
 
     /**
@@ -168,17 +201,25 @@ public class UserManageController {
                     schema = @Schema(implementation = Result.class)))
     @PreAuthorize("@permissionService.hasPermission(#id) or hasAuthority('ROLE_ADMIN')")
     public Result<?> enableUser(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
-        log.info("启用用户, userId: {}", id);
+        try {
+            log.info("启用用户, userId: {}", id);
+            
+            if (id == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
 
-        User user = userService.getById(id);
-        if (user == null) {
-            log.warn("用户不存在, userId: {}", id);
-            return Result.error("用户不存在");
+            User user = userService.getById(id);
+            if (user == null) {
+                log.warn("用户不存在, userId: {}", id);
+                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            }
+            user.setStatus(1); // 启用
+            userService.updateById(user);
+            log.info("用户已启用, userId: {}", id);
+            return Result.success("用户已启用");
+        } catch (Exception e) {
+            log.error("启用用户失败, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "启用用户失败: " + e.getMessage());
         }
-        user.setStatus(1); // 启用
-        userService.updateById(user);
-        log.info("用户已启用, userId: {}", id);
-        return Result.success("用户已启用");
     }
-
 }

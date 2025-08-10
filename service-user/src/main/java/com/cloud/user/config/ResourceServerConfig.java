@@ -34,6 +34,7 @@ public class ResourceServerConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/users/username/**").permitAll() // 允许auth服务访问
+                        .requestMatchers("/users/register").permitAll() // 允许auth服务访问
                         .requestMatchers("/user/user/info").hasAuthority("USER")
                         .requestMatchers("/user/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/user/merchant/**").hasAuthority("MERCHANT")
