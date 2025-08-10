@@ -65,19 +65,12 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
-
         <!-- Nacos 拉取配置依赖 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!-- Dubbo Spring Boot Starter -->
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-spring-boot-starter</artifactId>
-            <version>${dubbo.version}</version>
-        </dependency>
 
         <!-- Dubbo注册到Nacos的依赖 -->
         <dependency>
@@ -85,7 +78,10 @@
             <artifactId>dubbo-registry-nacos</artifactId>
             <version>${dubbo.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-spring-boot-starter</artifactId>
+        </dependency>
         <!-- Dubbo Triple协议支持 -->
         <dependency>
             <groupId>org.apache.dubbo</groupId>

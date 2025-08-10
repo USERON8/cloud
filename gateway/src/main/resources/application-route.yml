@@ -5,7 +5,7 @@ spring:
         webflux:
           routes:
             - id: auth-route
-              uri: lb://auth-server
+              uri: lb://auth-service
               predicates:
                 - Path=/auth/**
               metadata:
@@ -13,7 +13,7 @@ spring:
                   title: 认证服务API
                   description: 处理用户认证相关接口
             - id: stock-route
-              uri: lb://stock-server
+              uri: lb://stock-service
               predicates:
                 - Path=/stock/**
               metadata:
@@ -21,15 +21,15 @@ spring:
                   title: 库存服务API
                   description: 处理库存管理相关接口
             - id: user-route
-              uri: lb://user-server
+              uri: lb://user-service
               predicates:
-                - Path=/users/**,/avatar/**,/avatar/**
+                - Path=/users/**,/admin/**,/avatar/**
               metadata:
                 swagger-info:
                   title: 用户服务API
                   description: 处理用户管理相关接口
             - id: order-route
-              uri: lb://order-server
+              uri: lb://order-service
               predicates:
                 - Path=/order/**
               metadata:
@@ -37,10 +37,11 @@ spring:
                   title: 订单服务API
                   description: 处理订单管理相关接口
             - id: product-route
-              uri: lb://product-server
+              uri: lb://product-service
               predicates:
                 - Path=/product/**
               metadata:
                 swagger-info:
                   title: 产品服务API
                   description: 处理产品管理相关接口
+          trusted-proxies: "10\\.0\\.0\\..*|192\\.168\\..*|0:0:0:0:0:0:0:1"

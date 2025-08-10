@@ -1,20 +1,25 @@
 server:
   port: 8082
 spring:
+  application:
+    name: auth-service
   profiles:
     include: auth
-  application:
-    name: auth-server
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848
+        server-addr: localhost:8848
         username: nacos
         password: nacos
+        namespace: dev
+        group: DEFAULT_GROUP
       config:
-        server-addr: 127.0.0.1:8848
+        server-addr: localhost:8848
         username: nacos
         password: nacos
+        namespace: dev
+        file-extension: yaml
+        group: DEFAULT_GROUP
   config:
     import: optional:nacos:common
   data:
@@ -31,22 +36,14 @@ spring:
 
 
 dubbo:
-  application:
-    name: auth-server-rpc
-    qos-enable: false
-    parameters:
-      services-type: dubbo-rpc
   registry:
-    address: nacos://127.0.0.1:8848
+    address: nacos://${spring.cloud.nacos.discovery.server-addr}?namespace=${spring.cloud.nacos.discovery.namespace}
     username: nacos
     password: nacos
     parameters:
       services-type: dubbo-rpc
-  protocol:
-    name: dubbo
-    port: 20881
   consumer:
-    timeout: 5000
+    check: false
 
 logging:
   file:

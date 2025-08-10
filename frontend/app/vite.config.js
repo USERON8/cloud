@@ -19,11 +19,11 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-          '@': path.resolve(__dirname, 'src')
+            '@': path.resolve(__dirname, 'src')
         }
     },
     server: {
-        port: 3000,
+        port: 8089,
         host: '0.0.0.0',
         proxy: {
             // 代理所有API请求到网关
@@ -31,21 +31,6 @@ export default defineConfig({
                 target: 'http://localhost:80',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, '')
-            },
-            // 直接代理认证服务请求到网关
-            '/auth': {
-                target: 'http://localhost:80',
-                changeOrigin: true
-            },
-            // 直接代理用户服务请求到网关
-            '/users': {
-                target: 'http://localhost:80',
-                changeOrigin: true
-            },
-            // 直接代理库存服务请求到网关
-            '/stock': {
-                target: 'http://localhost:80',
-                changeOrigin: true
             }
         }
     }

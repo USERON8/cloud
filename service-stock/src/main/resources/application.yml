@@ -2,39 +2,46 @@ server:
   port: 8081
 spring:
   application:
-    name: stock-server
+    name: stock-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: dev
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: dev
+        file-extension: yaml
+        group: DEFAULT_GROUP
+  config:
+    import: optional:nacos:common
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: root
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8848
-        username: nacos
-        password: nacos
-      config:
-        server-addr: 127.0.0.1:8848
-        username: nacos
-        password: nacos
-  config:
-    import: optional:nacos:common
 # Dubbo配置
 dubbo:
   application:
-    name: stock-server-rpc
+    name: stock-service
     parameters:
       services-type: dubbo-rpc
   registry:
-    address: nacos://127.0.0.1:8848
+    address: nacos://${spring.cloud.nacos.discovery.server-addr}?namespace=${spring.cloud.nacos.discovery.namespace}
     username: nacos
     password: nacos
     parameters:
       services-type: dubbo-rpc
+  provider:
+    group: provider-group
   protocol:
-    name: tri
-    port: 50051
+    name: dubbo
+    port: -1
   scan:
     base-packages: com.cloud.stock.service.impl
 
@@ -47,5 +54,8 @@ mybatis-plus:
       id-type: auto
 
 logging:
+  file:
+    path: D:/logs/${spring.application.name}
+    name: ${logging.file.path}/${spring.application.name}.log
   level:
     com.cloud.stock: debug
