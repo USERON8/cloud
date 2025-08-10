@@ -25,7 +25,7 @@ public class RedisConfig {
         // 使用Jackson2JsonRedisSerializer来序列化和反序列化redis的value值
         ObjectMapper mapper = new ObjectMapper();
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        
+
         // 创建 PolymorphicTypeValidator 并使用它来激活默认类型
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(Object.class)

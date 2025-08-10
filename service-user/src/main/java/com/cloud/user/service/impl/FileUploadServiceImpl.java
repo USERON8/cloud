@@ -24,21 +24,18 @@ import java.util.UUID;
 @Slf4j
 public class FileUploadServiceImpl implements FileUploadService {
 
-    private final MinioClient minioClient;
-    private final MinioConfig minioConfig;
-    private final Tika tika = new Tika();
-
     // 支持的图片格式
     private static final String[] ALLOWED_IMAGE_TYPES = {
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
     };
-
     // 最大文件大小 5MB
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
-
     // 头像尺寸限制
     private static final int AVATAR_MAX_WIDTH = 500;
     private static final int AVATAR_MAX_HEIGHT = 500;
+    private final MinioClient minioClient;
+    private final MinioConfig minioConfig;
+    private final Tika tika = new Tika();
     private final UserMapper userMapper;
 
     @Override

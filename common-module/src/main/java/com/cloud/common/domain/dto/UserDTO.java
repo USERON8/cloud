@@ -12,5 +12,5 @@ public class UserDTO {
     private String nickname;    // 昵称
     private String avatarUrl;   // 头像URL
     private Integer status;     // 状态（0禁用，1启用）
-    
+
 }

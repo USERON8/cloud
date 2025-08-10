@@ -38,22 +38,28 @@ import java.util.UUID;
 public class AuthServerConfig {
     private RSAKey rsaKey;
 
+    private static KeyPair generateRsaKey() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        return keyPairGenerator.generateKeyPair();
+    }
+
     // 1. 授权服务器安全过滤器链
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer configurer = new OAuth2AuthorizationServerConfigurer();
-        
+
         http
-            .securityMatcher(configurer.getEndpointsMatcher())
-            .authorizeHttpRequests(authorize -> authorize
-                .anyRequest().authenticated()
-            )
-            .csrf(csrf -> csrf.ignoringRequestMatchers(configurer.getEndpointsMatcher()))
-            .with(configurer, Customizer.withDefaults())
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
-            );
+                .securityMatcher(configurer.getEndpointsMatcher())
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
+                .csrf(csrf -> csrf.ignoringRequestMatchers(configurer.getEndpointsMatcher()))
+                .with(configurer, Customizer.withDefaults())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                );
 
         return http.build();
     }
@@ -74,9 +80,9 @@ public class AuthServerConfig {
                 .scope("message.read")
                 .scope("message.write")
                 .tokenSettings(TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofHours(1))
-                    .refreshTokenTimeToLive(Duration.ofDays(30))
-                    .build())
+                        .accessTokenTimeToLive(Duration.ofHours(1))
+                        .refreshTokenTimeToLive(Duration.ofDays(30))
+                        .build())
                 .build();
 
         return new InMemoryRegisteredClientRepository(client);
@@ -123,11 +129,5 @@ public class AuthServerConfig {
                     .build();
         }
         return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
-    }
-
-    private static KeyPair generateRsaKey() throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        return keyPairGenerator.generateKeyPair();
     }
 }

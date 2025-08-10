@@ -51,7 +51,7 @@ public class JwtService {
                 .claim("roles", roles)
                 .issuedAt(now)
                 .expiresAt(now.plus(1, ChronoUnit.HOURS));
-        
+
         // 如果用户ID存在，添加到声明中
         if (userId != null) {
             claimsBuilder.claim("userId", userId.toString());

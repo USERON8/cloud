@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    
+
     <property name="LOG_PATH" value="D:/logs/gateway"/>
-    
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
-    
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/gateway.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -22,7 +22,7 @@
             <charset>UTF-8</charset>
         </encoder>
     </appender>
-    
+
     <!-- 访问日志单独输出 -->
     <appender name="ACCESS_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/access.log</file>
@@ -35,16 +35,16 @@
             <charset>UTF-8</charset>
         </encoder>
     </appender>
-    
+
     <!-- 访问日志专用Logger -->
     <logger name="ACCESS_LOG" level="INFO" additivity="false">
         <appender-ref ref="ACCESS_LOG_FILE"/>
     </logger>
-    
+
     <logger name="com.cloud" level="DEBUG"/>
     <logger name="com.alibaba.nacos" level="WARN"/>
     <logger name="org.springframework.cloud.gateway" level="INFO"/>
-    
+
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>

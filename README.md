@@ -1,43 +1,44 @@
 ### 模块说明
 
 1. **auth** - 认证授权服务
-   - 提供用户认证和权限验证功能
-   - 基于Spring Security和JWT实现
-   - 使用Feign调用user服务获取用户信息
+    - 提供用户认证和权限验证功能
+    - 基于Spring Security和JWT实现
+    - 使用Feign调用user服务获取用户信息
 
 2. **common** - 公共模块
-   - 包含通用配置、工具类、异常处理等
-   - 定义统一返回结果格式
-   - 提供基础实体类和枚举
-   - 包含DTO和VO对象用于服务间通信
+    - 包含通用配置、工具类、异常处理等
+    - 定义统一返回结果格式
+    - 提供基础实体类和枚举
+    - 包含DTO和VO对象用于服务间通信
 
 3. **gateway** - 网关服务
-   - 基于Spring Cloud Gateway实现
-   - 路由转发、负载均衡
-   - 统一入口和安全控制
-   - 集成Nacos实现动态路由配置
+    - 基于Spring Cloud Gateway实现
+    - 路由转发、负载均衡
+    - 统一入口和安全控制
+    - 集成Nacos实现动态路由配置
 
 4. **stock** - 库存服务
-   - 核心业务模块，提供库存管理功能
-   - 支持同步和异步接口调用
-   - 包含库存查询、分页、批量操作等
-   - 使用MyBatis-Plus操作数据库
-   - 集成Redis缓存提升性能
+    - 核心业务模块，提供库存管理功能
+    - 支持同步和异步接口调用
+    - 包含库存查询、分页、批量操作等
+    - 使用MyBatis-Plus操作数据库
+    - 集成Redis缓存提升性能
 
 5. **user** - 用户服务
-   - 用户信息管理服务
-   - 提供用户注册、查询等接口
-   - 使用BCrypt进行密码加密
-   - 集成MyBatis-Plus操作数据库
+    - 用户信息管理服务
+    - 提供用户注册、查询等接口
+    - 使用BCrypt进行密码加密
+    - 集成MyBatis-Plus操作数据库
 
 6. **frontend** - 前端应用
-   - 基于Vue3的单页面应用
-   - 使用Element Plus组件库
-   - 通过Axios调用后端API
+    - 基于Vue3的单页面应用
+    - 使用Element Plus组件库
+    - 通过Axios调用后端API
 
 ## 核心功能
 
 ### 库存管理功能
+
 1. 商品库存查询（同步/异步）
 2. 库存分页查询
 3. 批量库存查询
@@ -45,12 +46,14 @@
 5. 高并发场景下的并发查询
 
 ### 认证授权功能
+
 1. 用户登录认证
 2. JWT Token生成与验证
 3. 接口权限控制
 4. 用户信息管理
 
 ### 异步处理特性
+
 - 使用CompletableFuture实现异步调用
 - 支持超时控制
 - 提供异常处理机制
@@ -59,6 +62,7 @@
 ## 技术架构
 
 ### 后端技术栈
+
 - **核心框架**: Spring Boot 3.5.3, Spring Cloud 2025.0.0, Spring Cloud Alibaba 2023.0.3.3
 - **数据库**: MySQL 9.3.0, MyBatis-Plus 3.5.12
 - **缓存**: Redis 8.2-rc1
@@ -70,6 +74,7 @@
 - **其他**: Lombok, HttpClient 4.5.14
 
 ### 前端技术栈
+
 - **核心框架**: Vue 3.5.17
 - **构建工具**: Vite 7.0.4
 - **包管理**: pnpm
@@ -91,6 +96,7 @@
 ## 快速开始
 
 ### 环境要求
+
 - JDK 17+
 - Maven 3.x
 - Docker & Docker Compose
@@ -99,12 +105,14 @@
 ### 启动步骤
 
 1. 构建项目
+
 ```bash
 # 在项目根目录执行
 mvn clean install
 ```
 
 2. 启动基础服务
+
 ```bash
 # 进入docker目录
 cd docker
@@ -113,6 +121,7 @@ docker-compose up -d
 ```
 
 3. 启动应用服务
+
 ```bash
 # 分别启动各个微服务
 java -jar auth/target/auth.jar
@@ -122,6 +131,7 @@ java -jar gateway/target/gateway.jar
 ```
 
 4. 启动前端应用
+
 ```bash
 # 进入前端目录
 cd frontend/app
@@ -134,10 +144,12 @@ pnpm dev
 ### 库存服务接口
 
 #### 同步接口
+
 - `GET /stock/product/{productId}` - 根据商品ID查询库存
 - `POST /stock/page` - 分页查询库存
 
 #### 异步接口
+
 - `GET /stock/async/product/{productId}` - 异步根据商品ID查询库存
 - `POST /stock/async/page` - 异步分页查询库存
 - `POST /stock/async/batch` - 异步批量查询库存
@@ -147,6 +159,7 @@ pnpm dev
 ## 数据库设计
 
 ### 库存表 (tb_stock)
+
 系统核心数据表，存储商品库存信息：
 
 - [id](file://D:\Download\Code\sofware\cloud\common\src\main\java\domain\BaseEntity.java#L30-L31): 主键
@@ -160,6 +173,7 @@ pnpm dev
 - `update_time`: 更新时间
 
 ### 用户表 (user)
+
 存储用户基本信息：
 
 - `id`: 主键
@@ -175,6 +189,7 @@ pnpm dev
 - `deleted`: 是否删除（0-未删除，1-已删除）
 
 ### 库存变更记录表 (stock_log)
+
 记录库存变更历史：
 
 - `id`: 主键

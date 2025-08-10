@@ -1,9 +1,12 @@
+/* 全局样式 */
+#app {
+  min-height: 100vh;
+}
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
-import { ArrowDown, Box, DataAnalysis, House, Setting, Shop, User } from '@element-plus/icons-vue'
-import { onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useAuthStore } from './store/modules/auth'
+import {useRoute, useRouter} from 'vue-router'
+import {onMounted, ref, watch} from 'vue'
+import {useAuthStore} from '../../store/modules/auth'
+import {ArrowDown, Box, DataAnalysis, House, Setting, Shop, User} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -70,10 +73,9 @@ const logout = async () => {
             <span class="subtitle">基于Spring Cloud Alibaba的微服务架构</span>
           </div>
 
-          <nav class="nav" v-if="isLoggedIn">
+          <nav v-if="isLoggedIn" class="nav">
             <el-menu
-                mode="horizontal"
-                :default-active="route.path === '/' ? '1' : 
+                :default-active="route.path === '/' ? '1' :
                                  route.path === '/user' ? '4-1' :
                                  route.path === '/user/profile' ? '4-2' :
                                  route.path === '/merchant' ? '5-1' :
@@ -81,6 +83,7 @@ const logout = async () => {
                                  route.path === '/admin' ? '6-1' :
                                  route.path === '/admin/users' ? '3-2' : '1'"
                 class="nav-menu"
+                mode="horizontal"
                 @select="handleMenuSelect"
             >
               <el-menu-item index="1">
@@ -90,18 +93,18 @@ const logout = async () => {
                 首页
               </el-menu-item>
 
-              <el-sub-menu index="2" v-if="userType === 'MERCHANT' || userType === 'ADMIN'">
+              <el-sub-menu v-if="userType === 'MERCHANT' || userType === 'ADMIN'" index="2">
                 <template #title>
                   <el-icon>
                     <Box/>
                   </el-icon>
                   库存管理
                 </template>
-                <el-menu-item index="2-1" v-if="userType === 'MERCHANT'">产品管理</el-menu-item>
+                <el-menu-item v-if="userType === 'MERCHANT'" index="2-1">产品管理</el-menu-item>
                 <el-menu-item index="2-2">库存明细</el-menu-item>
               </el-sub-menu>
 
-              <el-sub-menu index="3" v-if="userType === 'MERCHANT' || userType === 'ADMIN'">
+              <el-sub-menu v-if="userType === 'MERCHANT' || userType === 'ADMIN'" index="3">
                 <template #title>
                   <el-icon>
                     <DataAnalysis/>
@@ -109,10 +112,10 @@ const logout = async () => {
                   统计报表
                 </template>
                 <el-menu-item index="3-1">销售统计</el-menu-item>
-                <el-menu-item index="3-2" v-if="userType === 'ADMIN'">用户管理</el-menu-item>
+                <el-menu-item v-if="userType === 'ADMIN'" index="3-2">用户管理</el-menu-item>
               </el-sub-menu>
 
-              <el-sub-menu index="4" v-if="userType === 'USER'">
+              <el-sub-menu v-if="userType === 'USER'" index="4">
                 <template #title>
                   <el-icon>
                     <User/>
@@ -123,7 +126,7 @@ const logout = async () => {
                 <el-menu-item index="4-2">个人资料</el-menu-item>
               </el-sub-menu>
 
-              <el-sub-menu index="5" v-if="userType === 'MERCHANT'">
+              <el-sub-menu v-if="userType === 'MERCHANT'" index="5">
                 <template #title>
                   <el-icon>
                     <Shop/>
@@ -134,7 +137,7 @@ const logout = async () => {
                 <el-menu-item index="5-2">产品管理</el-menu-item>
               </el-sub-menu>
 
-              <el-sub-menu index="6" v-if="userType === 'ADMIN'">
+              <el-sub-menu v-if="userType === 'ADMIN'" index="6">
                 <template #title>
                   <el-icon>
                     <Setting/>
@@ -147,7 +150,7 @@ const logout = async () => {
             </el-menu>
           </nav>
 
-          <div class="user-info" v-if="isLoggedIn">
+          <div v-if="isLoggedIn" class="user-info">
             <el-dropdown>
               <div class="user-dropdown">
                 <span class="user-name">{{ nickname }}</span>
@@ -163,7 +166,7 @@ const logout = async () => {
             </el-dropdown>
           </div>
 
-          <div class="auth-links" v-else>
+          <div v-else class="auth-links">
             <el-button type="primary" @click="router.push('/login')">登录</el-button>
           </div>
         </div>
@@ -271,5 +274,19 @@ const logout = async () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+</style>
+<script setup>
+import MainLayout from './components/MainLayout.vue'
+</script>
+
+<template>
+  <MainLayout />
+</template>
+
+<style>
+/* 全局样式 */
+#app {
+  min-height: 100vh;
 }
 </style>

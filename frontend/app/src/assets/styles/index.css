@@ -1,0 +1,140 @@
+/* 全局样式优化 */
+
+:root {
+  --primary-color: #1890ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #909399;
+  --text-color: #303133;
+  --text-color-secondary: #606266;
+  --border-color: #dcdfe6;
+  --background-color: #f5f7fa;
+  --card-background: #ffffff;
+  --header-height: 60px;
+  --border-radius: 4px;
+  --box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 全局样式 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: #40a9ff;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 卡片样式优化 */
+.el-card {
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  border: none;
+  transition: var(--transition);
+}
+
+.el-card:hover {
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.el-table th {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+/* 按钮样式优化 */
+.el-button {
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+/* 输入框样式优化 */
+.el-input__inner {
+  border-radius: var(--border-radius);
+}
+
+/* 下拉选择框样式优化 */
+.el-select .el-input__inner {
+  border-radius: var(--border-radius);
+}
+
+/* 对话框样式优化 */
+.el-dialog {
+  border-radius: var(--border-radius);
+}
+
+.el-dialog__header {
+  background-color: #fafafa;
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 20px;
+}
+
+.el-dialog__body {
+  padding: 20px;
+}
+
+.el-dialog__footer {
+  border-top: 1px solid var(--border-color);
+  padding: 15px 20px;
+}
+
+/* 分页样式优化 */
+.el-pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 标签页样式优化 */
+.el-tabs__nav-wrap::after {
+  height: 1px;
+}
+
+/* 加载动画优化 */
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* 提示消息样式优化 */
+.el-message {
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}

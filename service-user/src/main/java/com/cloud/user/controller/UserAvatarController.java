@@ -74,7 +74,7 @@ public class UserAvatarController {
             @Parameter(description = "用户ID") @PathVariable("userId") Long userId) {
         try {
             log.info("获取用户头像, userId: {}", userId);
-            
+
             if (userId == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
@@ -104,7 +104,7 @@ public class UserAvatarController {
             @Parameter(description = "用户ID") @PathVariable("userId") Long userId) {
         try {
             log.info("删除用户头像, userId: {}", userId);
-            
+
             if (userId == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }

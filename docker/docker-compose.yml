@@ -1,0 +1,242 @@
+services:
+  # MySQL 数据库服务 (版本 9.3.0)
+  mysql:
+    image: mysql:9.3.0
+    container_name: mysql_db
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.10
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: nacos_config
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: "nacos"
+    volumes:
+      - type: bind
+        source: D:\docker\mysql\data
+        target: /var/lib/mysql
+      - type: bind
+        source: D:\docker\mysql\conf
+        target: /etc/mysql/conf.d
+      - type: bind
+        source: D:\docker\mysql\logs
+        target: /var/log/mysql
+      - type: bind
+        source: D:\docker\mysql\init
+        target: /docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  # Redis 服务 (版本 8.2-rc1-bookworm)
+  redis:
+    image: redis:8.2-rc1-bookworm
+    container_name: redis_cache
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.20
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+    volumes:
+      - type: bind
+        source: D:\docker\redis\data
+        target: /data
+      - type: bind
+        source: D:\docker\redis\conf
+        target: /usr/local/etc/redis
+      - type: bind
+        source: D:\docker\redis\logs
+        target: /var/log/redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Nacos 服务 (版本 v3.0.2)
+  nacos:
+    image: nacos/nacos-server:v3.0.2
+    container_name: nacos_server
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.30
+    environment:
+      MODE: standalone
+      NACOS_SERVER_IP: 172.28.0.30
+
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: 172.28.0.10
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: nacos_config
+      MYSQL_SERVICE_USER: nacos
+      MYSQL_SERVICE_PASSWORD: nacos
+      MYSQL_DATABASE_NUM: 1
+      MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
+
+      # 路径修复（解决404错误）
+      NACOS_SERVER_CONTEXTPATH: /nacos  # 主服务路径
+      NACOS_CONSOLE_CONTEXTPATH: /nacos  # 控制台路径
+      NACOS_CONSOLE_REMOTE_SERVER_CONTEXT_PATH: /nacos  # 控制台连接服务端路径
+
+      # 鉴权配置
+      NACOS_AUTH_ENABLE: "true"  # 开启鉴权
+      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # 集群通信密钥
+      NACOS_AUTH_IDENTITY_VALUE: ServerIdentity_Value_123
+      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # 32位Base64密钥
+      NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # 白名单
+
+      # 管理员账号
+      NACOS_SECURITY_ADMIN_USER: root  # 自定义管理员
+      NACOS_SECURITY_ADMIN_PASSWORD: root
+
+      # 命名空间权限
+      NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
+      NACOS_CORE_AUTH_DEFAULT_RESOURCE: "public:*:*"
+      # JVM配置
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
+
+    ports:
+      - "8848:8848"
+      - "9090:9090"
+      - "9848:9848"
+    volumes:
+      - type: bind
+        source: D:\docker\nacos\logs
+        target: /home/nacos/logs
+      - type: bind
+        source: D:\docker\nacos\conf
+        target: /home/nacos/conf
+      - type: bind
+        source: D:\docker\nacos\data
+        target: /home/nacos/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9090/nacos/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  # RocketMQ NameServer (版本 5.3.3)
+  namesrv:
+    image: apache/rocketmq:5.3.3
+    container_name: rocketmq_namesrv
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.40
+    ports:
+      - "9876:9876"  # NameServer 端口
+    volumes:
+      - type: bind
+        source: D:\docker\rocketmq\namesrv\logs
+        target: /home/rocketmq/logs
+      - type: bind
+        source: D:\docker\rocketmq\namesrv\store
+        target: /home/rocketmq/store
+    command: sh mqnamesrv
+
+  # RocketMQ Broker (版本 5.3.3)
+  broker:
+    image: apache/rocketmq:5.3.3
+    container_name: rocketmq_broker
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.50
+    ports:
+      - "10909:10909"  # Broker VIP 端口
+      - "10911:10911"  # Broker 主端口
+      - "10912:10912"  # Broker HA 端口
+    environment:
+      - NAMESRV_ADDR=rocketmq_namesrv:9876
+    depends_on:
+      - namesrv
+    volumes:
+      - type: bind
+        source: D:\docker\rocketmq\broker\logs
+        target: /home/rocketmq/logs
+      - type: bind
+        source: D:\docker\rocketmq\broker\store
+        target: /home/rocketmq/store
+      - type: bind
+        source: D:\docker\rocketmq\broker\conf
+        target: /home/rocketmq/conf
+    command: sh mqbroker
+
+  # RocketMQ Proxy (版本 5.3.3)
+  proxy:
+    image: apache/rocketmq:5.3.3
+    container_name: rocketmq_proxy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.60
+    depends_on:
+      - broker
+      - namesrv
+    ports:
+      - "9877:8080"  # 将容器内8080映射到宿主机的9877
+      - "9878:8081"  # 将容器内8081映射到宿主机的9878
+    restart: on-failure
+    environment:
+      - NAMESRV_ADDR=rocketmq_namesrv:9876
+    volumes:
+      - type: bind
+        source: D:\docker\rocketmq\proxy\logs
+        target: /home/rocketmq/logs
+    command: sh mqproxy
+
+  # Nginx 反向代理 (版本 stable-perl)
+  nginx:
+    image: nginx:stable-perl
+    container_name: nginx_gateway
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.70
+    ports:
+      - "80:80"      # HTTP 服务
+      - "443:443"    # HTTPS 服务
+    volumes:
+      - type: bind
+        source: D:\docker\nginx\conf
+        target: /etc/nginx
+      - type: bind
+        source: D:\docker\nginx\logs
+        target: /var/log/nginx
+      - type: bind
+        source: D:\docker\nginx\html
+        target: /usr/share/nginx/html
+    depends_on:
+      - nacos
+      - proxy
+  # MinIO 服务 (版本 RELEASE.2023-05-05T01-05-05Z)
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
+    container_name: minio
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.80
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - type: bind
+        source: D:\docker\minio\data
+        target: /home/minio/data
+# 网络配置
+networks:
+  service_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1

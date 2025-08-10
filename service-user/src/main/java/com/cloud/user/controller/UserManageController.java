@@ -87,7 +87,7 @@ public class UserManageController {
                                   @Parameter(description = "用户信息") @Valid @RequestBody UserDTO userDTO) {
         try {
             log.info("更新用户信息, userId: {}", id);
-            
+
             if (id == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
@@ -133,7 +133,7 @@ public class UserManageController {
     public Result<?> delete(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
         try {
             log.info("删除用户, userId: {}", id);
-            
+
             if (id == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
@@ -168,7 +168,7 @@ public class UserManageController {
     public Result<?> disableUser(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
         try {
             log.info("禁用用户, userId: {}", id);
-            
+
             if (id == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
@@ -203,7 +203,7 @@ public class UserManageController {
     public Result<?> enableUser(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
         try {
             log.info("启用用户, userId: {}", id);
-            
+
             if (id == null) {
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }

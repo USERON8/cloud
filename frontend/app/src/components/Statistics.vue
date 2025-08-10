@@ -4,8 +4,10 @@
       <template #header>
         <div class="card-header">
           <span>统计报表</span>
-          <el-button type="primary" @click="loadData" :loading="loading">
-            <el-icon><Refresh /></el-icon>
+          <el-button :loading="loading" type="primary" @click="loadData">
+            <el-icon>
+              <Refresh/>
+            </el-icon>
             刷新数据
           </el-button>
         </div>
@@ -34,8 +36,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import {ref} from 'vue'
+import {Refresh} from '@element-plus/icons-vue'
 
 const loading = ref(false)
 
