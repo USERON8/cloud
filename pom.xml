@@ -12,9 +12,9 @@
     <modules>
         <module>common-module</module>
         <module>gateway</module>
-        <module>service-stock</module>
-        <module>service-auth</module>
-        <module>service-user</module>
+        <module>stock-service</module>
+        <module>auth-service</module>
+        <module>user-service</module>
         <module>api-module</module>
     </modules>
 
@@ -46,13 +46,13 @@
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
         <openfeign.version>4.3.0</openfeign.version>
 
-
+        <!-- 测试文档版本 -->
+        <swagger.version>2.2.34</swagger.version>
+        <knife4j.version>4.5.0</knife4j.version>
         <!-- 日志版本 -->
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.13</logback.version>
 
-        <!-- 测试框架版本 -->
-        <junit-jupiter.version>5.11.3</junit-jupiter.version>
     </properties>
 
     <dependencyManagement>
@@ -90,38 +90,12 @@
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>4.5.14</version>
-            </dependency>
-
-
-            <!-- JUnit 5 版本管理 -->
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
+            <!--            <dependency>-->
+            <!--                <groupId>org.apache.httpcomponents</groupId>-->
+            <!--                <artifactId>httpclient</artifactId>-->
+            <!--                <version>4.5.14</version>-->
+            <!--            </dependency>-->
+            <!--            -->
 
             <!-- 项目内部模块版本管理 -->
             <dependency>

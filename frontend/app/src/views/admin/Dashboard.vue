@@ -138,7 +138,7 @@
 import {onBeforeUnmount, onMounted, ref} from 'vue'
 import * as echarts from 'echarts'
 import {Box, DataAnalysis, Shop, User} from '@element-plus/icons-vue'
-import {useAuthStore} from '../../store/modules/auth'
+import {useAuthStore} from '@/store/index.js'
 
 const authStore = useAuthStore()
 

@@ -1,6 +1,6 @@
 package com.cloud.user.service.impl;
 
-import com.baomidou.mybatisplus.extension.repository.CrudRepository;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * @createDate 2025-08-09 13:41:14
  */
 @Service
-public class UserServiceImpl extends CrudRepository<UserMapper, User>
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
 }

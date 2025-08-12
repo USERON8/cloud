@@ -61,5 +61,12 @@ export const authApi = {
             url: '/api/auth/logout',
             method: 'get'
         })
+    },
+    refreshToken(refreshToken) {
+        return request({
+            url: '/auth/refresh-token',
+            method: 'post',
+        })
+
     }
 }

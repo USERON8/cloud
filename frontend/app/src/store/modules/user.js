@@ -179,6 +179,7 @@ export const useUserStore = defineStore('user', {
          */
         clearUserInfo() {
             this.userInfo = null
+            this.currentUser = null
         }
     }
 })

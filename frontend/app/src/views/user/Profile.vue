@@ -24,7 +24,7 @@
               </el-col>
               <el-col :span="12">
                 <el-form-item label="用户类型" prop="userType">
-                  <el-input v-model="getUserTypeName(profileForm.userType)" disabled/>
+                  <el-input :value="getUserTypeName(profileForm.userType)" disabled/>
                 </el-form-item>
               </el-col>
             </el-row>

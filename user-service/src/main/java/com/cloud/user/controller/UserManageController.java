@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,17 +24,12 @@ import java.util.Objects;
 @Slf4j
 @RestController
 @RequestMapping("/admin/users")
+@RequiredArgsConstructor
 @Tag(name = "用户管理", description = "用户增删改及状态管理")
 public class UserManageController {
     private final UserService userService;
     private final UserConverter userConverter;
 
-
-    public UserManageController(UserService userService, UserConverter userConverter) {
-        this.userService = userService;
-        this.userConverter = userConverter;
-
-    }
 
     /**
      * 创建用户

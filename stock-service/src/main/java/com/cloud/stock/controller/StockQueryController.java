@@ -14,14 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 库存管理控制器
- */
+
 @RestController
-@RequestMapping("/stock")
+@RequestMapping("/stock/query")
 @RequiredArgsConstructor
 @Slf4j
-public class StockController {
+public class StockQueryController {
 
     private final StockService stockService;
 

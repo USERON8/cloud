@@ -7,11 +7,11 @@ import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
+// 创建Pinia实例
+const pinia = createPinia()
 // 创建应用实例
 const app = createApp(App)
 
-// 创建Pinia实例
-const pinia = createPinia()
 
 // 使用插件
 app.use(ElementPlus)

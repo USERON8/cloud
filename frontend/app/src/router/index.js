@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AppLayout from '../components/layout/AppLayout.vue'
 
 // 首页相关
 import HomePage from '../components/HomePage.vue'
@@ -26,18 +25,29 @@ import StockManager from '../components/StockManager.vue'
 // 统计报表
 import Statistics from '../components/Statistics.vue'
 
+// 布局组件
+import AppLayout from '../components/layout/AppLayout.vue'
+
 const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomePage
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login
+  },
+  {
+    path: '/auth/register',
+    name: 'Register',
+    component: Register
+  },
   {
     path: '/',
     component: AppLayout,
     children: [
-      {
-        path: '',
-        name: 'Home',
-        component: HomePage,
-        meta: { requiresAuth: true, role: 'USER' }
-      },
-      // 用户路由
       {
         path: '/user',
         name: 'UserDashboard',
@@ -50,7 +60,6 @@ const routes = [
         component: UserProfile,
         meta: { requiresAuth: true, role: 'USER' }
       },
-      // 商家路由
       {
         path: '/merchant',
         name: 'MerchantDashboard',
@@ -63,7 +72,6 @@ const routes = [
         component: MerchantProducts,
         meta: { requiresAuth: true, role: 'MERCHANT' }
       },
-      // 管理员路由
       {
         path: '/admin',
         name: 'AdminDashboard',
@@ -76,14 +84,12 @@ const routes = [
         component: AdminUsers,
         meta: { requiresAuth: true, role: 'ADMIN' }
       },
-      // 库存管理
       {
         path: '/stock',
         name: 'StockManager',
         component: StockManager,
         meta: { requiresAuth: true }
       },
-      // 统计报表
       {
         path: '/statistics',
         name: 'Statistics',
@@ -91,17 +97,6 @@ const routes = [
         meta: { requiresAuth: true }
       }
     ]
-  },
-  // 认证路由
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
-  {
-    path: '/auth/register',
-    name: 'Register',
-    component: Register
   }
 ]
 

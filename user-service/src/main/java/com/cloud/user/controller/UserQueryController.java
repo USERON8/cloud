@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,16 +28,12 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/users")
+@RequiredArgsConstructor
 @Tag(name = "用户查询", description = "用户查询相关操作接口")
 public class UserQueryController {
     private final UserService userService;
     private final UserConverter userConverter;
 
-
-    public UserQueryController(UserService userService, UserConverter userConverter) {
-        this.userService = userService;
-        this.userConverter = userConverter;
-    }
 
     @PostMapping("/register")
     public Result<String> register(@RequestBody RegisterRequestDTO registerRequestDTO) {

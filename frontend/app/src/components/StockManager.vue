@@ -155,7 +155,7 @@
             <div class="stats-item">
               <div class="stats-icon success">
                 <el-icon size="20">
-                  <Success />
+                  <SuccessFilled />
                 </el-icon>
               </div>
               <div class="stats-info">
@@ -290,7 +290,7 @@ import {
   Goods,
   Warning,
   CircleClose,
-  Success
+  SuccessFilled
 } from '@element-plus/icons-vue'
 import { stockApi } from '../api/stock'
 

@@ -1,6 +1,7 @@
 package com.cloud.stock.converter;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.domain.dto.StockDTO;
 import com.cloud.common.domain.dto.StockPageDTO;
 import com.cloud.common.domain.vo.StockVO;
 import com.cloud.stock.constant.StockConstant;
@@ -29,6 +30,8 @@ public interface StockConverter {
      * 复制StockPageDTO对象
      */
     StockPageDTO copyStockPageDTO(StockPageDTO source);
+
+    Stock toEntity(StockDTO stockDTO);
 
     /**
      * 计算库存状态

@@ -119,7 +119,7 @@
     <!-- 主体内容 -->
     <main class="app-main">
       <div class="container">
-        <router-view />
+        <slot></slot>
       </div>
     </main>
 
@@ -160,9 +160,18 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // 响应式数据
-const isLoggedIn = computed(() => authStore.isAuthenticated)
-const userType = computed(() => authStore.userType)
-const nickname = computed(() => authStore.nickname)
+// 修复登录状态判断逻辑
+const isLoggedIn = computed(() => {
+  // 检查 Pinia 状态
+  if (authStore.isAuthenticated !== undefined) {
+    return authStore.isAuthenticated
+  }
+  // 回退到 localStorage 检查
+  return !!localStorage.getItem('token')
+})
+
+const userType = computed(() => authStore.userType || localStorage.getItem('userType') || '')
+const nickname = computed(() => authStore.nickname || localStorage.getItem('nickname') || '')
 
 // 计算当前激活的菜单项
 const activeMenu = computed(() => {
@@ -291,59 +300,38 @@ const handleLogout = async () => {
 .nav-menu :deep(.el-menu--horizontal > .el-menu-item) {
   height: var(--header-height);
   line-height: var(--header-height);
-  border: none;
-  color: rgba(255, 255, 255, 0.85);
+  border-bottom: none;
 }
 
-.nav-menu :deep(.el-menu--horizontal > .el-menu-item:hover) {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.nav-menu :deep(.el-menu--horizontal > .el-menu-item.is-active) {
-  color: white;
-  border-bottom: 2px solid white;
-}
-
-.nav-menu :deep(.el-sub-menu__title) {
+.nav-menu :deep(.el-menu--horizontal > .el-sub-menu .el-sub-menu__title) {
   height: var(--header-height);
   line-height: var(--header-height);
-  color: rgba(255, 255, 255, 0.85);
-  border: none;
+  border-bottom: none;
 }
 
+.nav-menu :deep(.el-menu-item:hover),
 .nav-menu :deep(.el-sub-menu__title:hover) {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 20px;
-  transition: var(--transition);
-}
-
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .user-name {
-  margin: 0 5px;
-  color: white;
+  margin: 0 8px;
   font-size: 14px;
 }
 
 .arrow-down {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
+  transition: transform 0.3s;
+}
+
+.user-info:hover .arrow-down {
+  transform: rotate(180deg);
 }
 
 .auth-actions {
@@ -353,6 +341,7 @@ const handleLogout = async () => {
 
 .app-main {
   flex: 1;
+  background-color: #f5f5f5;
   padding: 20px 0;
 }
 
@@ -363,8 +352,8 @@ const handleLogout = async () => {
 }
 
 .app-footer {
-  background: #f5f7fa;
-  border-top: 1px solid #ebeef5;
+  background: #333;
+  color: #fff;
   padding: 20px 0;
   margin-top: auto;
 }
@@ -375,52 +364,36 @@ const handleLogout = async () => {
   align-items: center;
 }
 
-.footer-content p {
-  margin: 0;
-  color: var(--text-color-secondary);
-  font-size: 14px;
-}
-
-.footer-links {
-  display: flex;
-  gap: 20px;
-}
-
-.footer-links :deep(.el-link) {
-  color: var(--text-color-secondary);
-}
-
-.footer-links :deep(.el-link:hover) {
-  color: var(--primary-color);
-}
-
-/* 响应式设计 */
-@media (max-width: 992px) {
-  .logo-text h1 {
-    font-size: 18px;
-  }
-  
-  .logo-subtitle {
-    display: none;
-  }
-  
-  .nav-menu {
-    margin: 0 10px;
-  }
+.footer-links .el-link {
+  margin-left: 20px;
 }
 
 @media (max-width: 768px) {
   .header-content {
-    padding: 0 10px;
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+  }
+  
+  .logo {
+    margin-bottom: 10px;
   }
   
   .nav-menu {
-    display: none;
+    margin: 10px 0;
+    width: 100%;
   }
   
   .footer-content {
     flex-direction: column;
-    gap: 10px;
+  }
+  
+  .footer-links {
+    margin-top: 10px;
+  }
+  
+  .footer-links .el-link {
+    margin: 0 10px;
   }
 }
 </style>
