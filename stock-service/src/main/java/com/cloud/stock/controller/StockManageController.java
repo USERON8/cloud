@@ -44,16 +44,14 @@ public class StockManageController {
     }
 
     @DeleteMapping("/reduce/batch")
-    public String reduceStockBatch() {
+    public Result<String> reduceStockBatch() {
         log.info("开始批量扣减库存");
-        return "批量扣减成功";
+        return Result.success("批量扣减成功");
     }
 
     @PostMapping("/update")
-    public String updateStock() {
+    public Result<String> updateStock() {
         log.info("开始更新库存");
-        return "更新成功";
+        return Result.success("更新成功");
     }
-
-
 }

@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,6 +61,9 @@ public class UserManageController {
             userService.save(user);
             log.info("用户创建成功, userId: {}, username: {}", user.getId(), user.getUsername());
             return Result.success("创建成功", userConverter.toDTO(user));
+        } catch (DuplicateKeyException e) {
+            log.error("创建用户失败，数据重复: username: {}", userDTO.getUsername(), e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名或邮箱已存在");
         } catch (Exception e) {
             log.error("创建用户失败, username: {}", userDTO.getUsername(), e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "创建用户失败: " + e.getMessage());
@@ -85,6 +89,7 @@ public class UserManageController {
             log.info("更新用户信息, userId: {}", id);
 
             if (id == null) {
+                log.warn("更新失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -108,6 +113,9 @@ public class UserManageController {
             userService.updateById(updateUser);
             log.info("用户信息更新成功, userId: {}", id);
             return Result.success("更新成功", userConverter.toDTO(updateUser));
+        } catch (DuplicateKeyException e) {
+            log.error("更新用户失败，数据重复: userId: {}", id, e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名或邮箱已存在");
         } catch (Exception e) {
             log.error("更新用户信息失败, userId: {}", id, e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "更新用户信息失败: " + e.getMessage());
@@ -131,6 +139,7 @@ public class UserManageController {
             log.info("删除用户, userId: {}", id);
 
             if (id == null) {
+                log.warn("删除失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -166,6 +175,7 @@ public class UserManageController {
             log.info("禁用用户, userId: {}", id);
 
             if (id == null) {
+                log.warn("禁用失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -201,6 +211,7 @@ public class UserManageController {
             log.info("启用用户, userId: {}", id);
 
             if (id == null) {
+                log.warn("启用失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -216,6 +227,48 @@ public class UserManageController {
         } catch (Exception e) {
             log.error("启用用户失败, userId: {}", id, e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "启用用户失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 审核商家并自动启用用户
+     *
+     * @param id 用户ID
+     * @return 操作结果
+     */
+    @PutMapping("/approve/{id}")
+    @Operation(summary = "审核商家", description = "审核商家并通过后启用用户")
+    @ApiResponse(responseCode = "200", description = "审核成功",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Result.class)))
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public Result<?> approveMerchant(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
+        try {
+            log.info("审核商家, userId: {}", id);
+
+            if (id == null) {
+                log.warn("审核失败：用户ID不能为空");
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
+
+            User user = userService.getById(id);
+            if (user == null) {
+                log.warn("用户不存在, userId: {}", id);
+                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            }
+
+            // 商家审核通过逻辑（例如设置审核状态）
+            // 通过MerchantAuth表来管理商家认证状态，而不是在User表中添加字段
+
+            // 自动启用用户
+            user.setStatus(1); // 启用状态
+
+            userService.updateById(user);
+            log.info("商家审核通过，用户已启用, userId: {}", id);
+            return Result.success("审核通过并启用用户");
+        } catch (Exception e) {
+            log.error("审核商家失败, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "审核商家失败: " + e.getMessage());
         }
     }
 }

@@ -29,7 +29,27 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock>
 
     @Override
     public StockVO getByProductId(Long productId) {
-        return null;
+        log.info("根据商品ID查询库存: {}", productId);
+
+        if (productId == null) {
+            log.warn("商品ID不能为空");
+            return null;
+        }
+
+        // 构建查询条件
+        LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Stock::getProductId, productId);
+
+        // 查询库存信息
+        Stock stock = this.getOne(queryWrapper);
+
+        if (stock == null) {
+            log.warn("未找到商品ID为 {} 的库存信息", productId);
+            return null;
+        }
+
+        // 转换为VO对象
+        return stockConverter.toVO(stock);
     }
 
     @Override
@@ -63,15 +83,4 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock>
         return pageResult;
     }
 
-    private void toStockPageDto(StockPageDTO pageDTO, StockPageDTO stockPageDTO) {
-        stockPageDTO.setProductId(pageDTO.getProductId());
-        stockPageDTO.setProductName(pageDTO.getProductName());
-        stockPageDTO.setStockStatus(pageDTO.getStockStatus());
-        stockPageDTO.setMinAvailableCount(pageDTO.getMinAvailableCount());
-        stockPageDTO.setMaxAvailableCount(pageDTO.getMaxAvailableCount());
-        stockPageDTO.setCurrent(pageDTO.getCurrent());
-        stockPageDTO.setSize(pageDTO.getSize());
-        stockPageDTO.setOrderBy(pageDTO.getOrderBy());
-        stockPageDTO.setOrderType(pageDTO.getOrderType());
-    }
 }

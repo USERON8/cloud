@@ -11,11 +11,12 @@
 
     <modules>
         <module>common-module</module>
+        <module>api-module</module>
         <module>gateway</module>
         <module>stock-service</module>
         <module>auth-service</module>
         <module>user-service</module>
-        <module>api-module</module>
+        <module>product-service</module>
     </modules>
 
     <parent>
@@ -38,12 +39,17 @@
         <mybatisplus.version>3.5.12</mybatisplus.version>
         <mysql.version>9.3.0</mysql.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+
+
         <redis-version>3.5.3</redis-version>
-        <jedis.version>6.0.0</jedis.version>
+
+
         <auth0.version>4.5.0</auth0.version>
         <jjwt.version>0.12.6</jjwt.version>
         <spring-security-oauth2-authorization-server.version>1.5.1</spring-security-oauth2-authorization-server.version>
+
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
+
         <openfeign.version>4.3.0</openfeign.version>
 
         <!-- 测试文档版本 -->
@@ -90,13 +96,6 @@
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.version}</version>
             </dependency>
-            <!--            <dependency>-->
-            <!--                <groupId>org.apache.httpcomponents</groupId>-->
-            <!--                <artifactId>httpclient</artifactId>-->
-            <!--                <version>4.5.14</version>-->
-            <!--            </dependency>-->
-            <!--            -->
-
             <!-- 项目内部模块版本管理 -->
             <dependency>
                 <groupId>com.cloud</groupId>

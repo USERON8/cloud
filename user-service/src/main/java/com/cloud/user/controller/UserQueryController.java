@@ -17,8 +17,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +35,7 @@ import java.util.Map;
 public class UserQueryController {
     private final UserService userService;
     private final UserConverter userConverter;
+    private final PasswordEncoder passwordEncoder;
 
 
     @PostMapping("/register")
@@ -41,7 +44,13 @@ public class UserQueryController {
             log.info("用户注册, username: {}, email: {}", registerRequestDTO.getUsername(), registerRequestDTO.getEmail());
 
             if (registerRequestDTO.getUsername() == null || registerRequestDTO.getUsername().isEmpty()) {
+                log.warn("注册失败：用户名不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户名不能为空");
+            }
+            
+            if (registerRequestDTO.getPassword() == null || registerRequestDTO.getPassword().isEmpty()) {
+                log.warn("注册失败：密码不能为空");
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "密码不能为空");
             }
 
             // 检查用户名是否已存在
@@ -52,11 +61,17 @@ public class UserQueryController {
             }
 
             User user = userConverter.toEntity(registerRequestDTO);
-            user.setPasswordHash(registerRequestDTO.getPassword());
+            // 使用BCrypt加密密码
+            user.setPasswordHash(passwordEncoder.encode(registerRequestDTO.getPassword()));
             user.setUserType("USER");
+            // 注册后默认禁用状态
+            user.setStatus(0);
             userService.save(user);
             log.info("用户注册成功, userId: {}, username: {}", user.getId(), user.getUsername());
             return Result.success("注册成功");
+        } catch (DuplicateKeyException e) {
+            log.error("用户注册失败，数据重复: username: {}", registerRequestDTO.getUsername(), e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名或邮箱已存在");
         } catch (Exception e) {
             log.error("用户注册失败, username: {}", registerRequestDTO.getUsername(), e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册失败: " + e.getMessage());
@@ -86,6 +101,7 @@ public class UserQueryController {
         try {
             log.info("根据用户名查找用户, username: {}", username);
             if (username == null || username.isEmpty()) {
+                log.warn("查询失败：用户名不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户名不能为空");
             }
 
@@ -94,6 +110,7 @@ public class UserQueryController {
             UserDTO userDTO = userConverter.toDTO(user);
             log.info("用户查询结果, username: {}, found: {}", username, userDTO != null);
             if (userDTO == null) {
+                log.warn("用户不存在, username: {}", username);
                 return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
             }
             return Result.success(userDTO);
@@ -112,6 +129,7 @@ public class UserQueryController {
         try {
             log.info("根据ID查找用户, id: {}", id);
             if (id == null) {
+                log.warn("查询失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -119,6 +137,7 @@ public class UserQueryController {
             UserDTO userDTO = userConverter.toDTO(user);
             log.info("用户查询结果, id: {}, found: {}", id, userDTO != null);
             if (userDTO == null) {
+                log.warn("用户不存在, id: {}", id);
                 return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
             }
             return Result.success(userDTO);
@@ -145,6 +164,7 @@ public class UserQueryController {
         try {
             log.info("获取用户详情, userId: {}", id);
             if (id == null) {
+                log.warn("查询失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
@@ -183,9 +203,11 @@ public class UserQueryController {
             log.info("分页查询用户列表, page: {}, size: {}, username: {}", page, size, username);
 
             if (page <= 0) {
+                log.warn("查询失败：页码必须大于0, page: {}", page);
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "页码必须大于0");
             }
             if (size <= 0) {
+                log.warn("查询失败：每页大小必须大于0, size: {}", size);
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "每页大小必须大于0");
             }
 

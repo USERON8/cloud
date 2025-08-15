@@ -82,5 +82,4 @@ public class User extends BaseEntity {
      */
     @TableField(value = "deleted")
     private Integer deleted;
-
 }

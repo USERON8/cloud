@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
@@ -44,13 +45,16 @@ public class UserAvatarController {
             log.info("上传用户头像, file: {}", file.getOriginalFilename());
 
             if (file.isEmpty()) {
-                log.warn("上传的文件为空");
+                log.warn("上传失败：上传的文件为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "文件不能为空");
             }
 
             String fileUrl = userAvatarService.uploadAvatar(file);
             log.info("头像上传成功, url: {}", fileUrl);
             return Result.success("上传成功", Map.of("url", fileUrl));
+        } catch (MaxUploadSizeExceededException e) {
+            log.error("上传用户头像失败：文件大小超出限制", e);
+            return Result.error(ResultCode.PARAM_ERROR.getCode(), "文件大小超出限制");
         } catch (Exception e) {
             log.error("上传用户头像失败, file: {}", file.getOriginalFilename(), e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "上传头像失败: " + e.getMessage());
@@ -74,12 +78,16 @@ public class UserAvatarController {
             log.info("获取用户头像, userId: {}", userId);
 
             if (userId == null) {
+                log.warn("获取失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
             String fileUrl = userAvatarService.getAvatar(userId);
             log.info("获取用户头像成功, userId: {}, url: {}", userId, fileUrl);
             return Result.success(Map.of("url", fileUrl));
+        } catch (IllegalArgumentException e) {
+            log.error("获取用户头像失败，用户不存在, userId: {}", userId, e);
+            return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "获取头像失败: " + e.getMessage());
         } catch (Exception e) {
             log.error("获取用户头像失败, userId: {}", userId, e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取头像失败: " + e.getMessage());
@@ -104,12 +112,16 @@ public class UserAvatarController {
             log.info("删除用户头像, userId: {}", userId);
 
             if (userId == null) {
+                log.warn("删除失败：用户ID不能为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
             }
 
             userAvatarService.deleteAvatar(userId);
             log.info("用户头像删除成功, userId: {}", userId);
             return Result.success("删除成功");
+        } catch (IllegalArgumentException e) {
+            log.error("删除用户头像失败，用户不存在, userId: {}", userId, e);
+            return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "删除头像失败: " + e.getMessage());
         } catch (Exception e) {
             log.error("删除用户头像失败, userId: {}", userId, e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "删除头像失败: " + e.getMessage());

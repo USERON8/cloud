@@ -4,10 +4,7 @@ import com.cloud.api.user.UserFeign;
 import com.cloud.auth.service.AuthService;
 import com.cloud.auth.service.JwtService;
 import com.cloud.common.domain.Result;
-import com.cloud.common.domain.dto.LoginRequestDTO;
-import com.cloud.common.domain.dto.LoginResponseDTO;
-import com.cloud.common.domain.dto.RegisterRequestDTO;
-import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.common.domain.dto.*;
 import com.cloud.common.enums.ResultCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -124,6 +121,56 @@ public class AuthController {
         } catch (Exception e) {
             log.error("刷新令牌失败", e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "刷新令牌失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/register-merchant")
+    @Operation(summary = "商家注册", description = "注册新商家，需要上传营业执照和身份证正反面图片，注册后需要管理员审核")
+    @ApiResponse(responseCode = "200", description = "注册成功")
+    public Result<LoginResponseDTO> registerMerchant(@Parameter(description = "商家注册信息") @Valid @ModelAttribute MerchantRegisterRequestDTO registerRequest) {
+        try {
+            log.info("商家注册, username: {}", registerRequest.getUsername());
+
+            // 先检查用户是否已存在
+            UserDTO existingUser = userFeign.findByUsername(registerRequest.getUsername());
+            if (existingUser != null) {
+                log.warn("用户已存在: {}", registerRequest.getUsername());
+                return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户已存在");
+            }
+            
+            // 注册用户（默认禁用状态）
+            RegisterRequestDTO userRegisterRequest = new RegisterRequestDTO();
+            userRegisterRequest.setUsername(registerRequest.getUsername());
+            userRegisterRequest.setPassword(registerRequest.getPassword());
+            userRegisterRequest.setEmail(registerRequest.getEmail());
+            userRegisterRequest.setPhone(registerRequest.getPhone());
+            userRegisterRequest.setNickname(registerRequest.getNickname());
+            userRegisterRequest.setUserType("MERCHANT");
+
+            // 注册用户（默认为禁用状态，等待审核）
+            userFeign.register(userRegisterRequest);
+
+            // 用户注册成功后自动登录
+            LoginRequestDTO loginRequest = new LoginRequestDTO();
+            loginRequest.setUsername(registerRequest.getUsername());
+            loginRequest.setPassword(registerRequest.getPassword());
+
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            UserDTO userDTO = userFeign.findByUsername(loginRequest.getUsername());
+            String token = jwtService.generateToken(authentication);
+            long expiresIn = jwtService.getExpirationTime();
+            LoginResponseDTO response = new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname());
+
+            return Result.success("注册成功，请上传认证材料等待审核", response);
+        } catch (Exception e) {
+            log.error("商家注册失败, username: {}", registerRequest.getUsername(), e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册失败: " + e.getMessage());
         }
     }
 }

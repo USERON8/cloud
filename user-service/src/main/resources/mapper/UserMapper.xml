@@ -25,10 +25,11 @@
         nickname,avatar_url,avatar_file_name,status,deleted,
         created_at,updated_at
     </sql>
-    <delete id="delByAvatarFileNameAndAvatarUrl">
-        delete
-        from users
-        where avatar_file_name = #{avatarFileName}
-          and avatar_url = #{avatarUrl}
-    </delete>
+    
+    <update id="delByAvatarFileNameAndAvatarUrl">
+        UPDATE users 
+        SET deleted = 1 
+        WHERE avatar_file_name = #{avatarFileName} 
+          AND avatar_url = #{avatarUrl}
+    </update>
 </mapper>

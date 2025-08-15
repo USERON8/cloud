@@ -22,7 +22,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/register-and-login").permitAll()
+                        .requestMatchers("/auth/login", "/auth/register", "/auth/register-and-login", 
+                                       "/oauth2/**", "/login", "/error", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

@@ -67,25 +67,39 @@ public class AuthServerConfig {
     // 2. 客户端注册仓库
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("client-app")
-                .clientSecret("{noop}secret")
+        // Web客户端 - 授权码模式
+        RegisteredClient webClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("web-client")
+                .clientSecret("{noop}web-client-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://localhost:8080/login/oauth2/code/client-app")
+                .redirectUri("http://localhost:8080/login/oauth2/code/web-client")
+                .postLogoutRedirectUri("http://localhost:8080")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .scope("read_profile")
-                .scope("message.read")
-                .scope("message.write")
+                .scope("read")
+                .scope("write")
                 .tokenSettings(TokenSettings.builder()
                         .accessTokenTimeToLive(Duration.ofHours(1))
                         .refreshTokenTimeToLive(Duration.ofDays(30))
                         .build())
                 .build();
 
-        return new InMemoryRegisteredClientRepository(client);
+        // 移动端客户端 - 客户端凭证模式（用于服务间通信）
+        RegisteredClient mobileClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("mobile-client")
+                .clientSecret("{noop}mobile-client-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope("read")
+                .scope("write")
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(2))
+                        .build())
+                .build();
+
+        return new InMemoryRegisteredClientRepository(webClient, mobileClient);
     }
 
     // 3. 授权服务器设置

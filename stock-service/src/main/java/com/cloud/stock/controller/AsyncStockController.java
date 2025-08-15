@@ -5,6 +5,7 @@ import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.StockPageDTO;
 import com.cloud.common.domain.vo.StockStatisticsVO;
 import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.stock.service.AsyncStockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class AsyncStockController {
 
         if (productId == null || productId <= 0) {
             log.warn("商品ID无效: {}", productId);
-            return CompletableFuture.completedFuture(Result.error("商品ID不能为空"));
+            return CompletableFuture.completedFuture(Result.error(ResultCode.PARAM_ERROR.getCode(), "商品ID不能为空"));
         }
 
         return asyncStockService.getByProductIdAsync(productId)
@@ -46,7 +47,7 @@ public class AsyncStockController {
                 })
                 .exceptionally(throwable -> {
                     log.error("异步查询商品库存异常, productId: {}", productId, throwable);
-                    return Result.error("查询失败，请稍后重试");
+                    return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询失败，请稍后重试: " + throwable.getMessage());
                 });
     }
 
@@ -57,11 +58,15 @@ public class AsyncStockController {
     public CompletableFuture<Result<PageResult<StockVO>>> pageQueryAsync(@RequestBody StockPageDTO pageDTO) {
         log.info("异步分页查询库存请求，查询条件: {}", pageDTO);
 
+        if (pageDTO == null) {
+            return CompletableFuture.completedFuture(Result.error(ResultCode.PARAM_ERROR.getCode(), "查询条件不能为空"));
+        }
+
         return asyncStockService.pageQueryAsync(pageDTO)
                 .thenApply(Result::success)
                 .exceptionally(throwable -> {
                     log.error("异步分页查询库存异常", throwable);
-                    return Result.error("查询失败: " + throwable.getMessage());
+                    return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询失败: " + throwable.getMessage());
                 });
     }
 
@@ -70,13 +75,17 @@ public class AsyncStockController {
      */
     @PostMapping("/batch")
     public CompletableFuture<Result<List<StockVO>>> batchQueryAsync(@RequestBody List<Long> productIds) {
-        log.info("异步批量查询库存请求，商品数量: {}", productIds.size());
+        log.info("异步批量查询库存请求，商品数量: {}", productIds != null ? productIds.size() : 0);
+        
+        if (productIds == null || productIds.isEmpty()) {
+            return CompletableFuture.completedFuture(Result.error(ResultCode.PARAM_ERROR.getCode(), "商品ID列表不能为空"));
+        }
 
         return asyncStockService.batchQueryAsync(productIds)
                 .thenApply(Result::success)
                 .exceptionally(throwable -> {
                     log.error("异步批量查询库存异常", throwable);
-                    return Result.error("查询失败: " + throwable.getMessage());
+                    return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询失败: " + throwable.getMessage());
                 });
     }
 
@@ -91,7 +100,7 @@ public class AsyncStockController {
                 .thenApply(Result::success)
                 .exceptionally(throwable -> {
                     log.error("异步查询库存统计异常", throwable);
-                    return Result.error("查询失败: " + throwable.getMessage());
+                    return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询失败: " + throwable.getMessage());
                 });
     }
 
@@ -100,7 +109,11 @@ public class AsyncStockController {
      */
     @PostMapping("/concurrent")
     public CompletableFuture<Result<List<StockVO>>> concurrentQuery(@RequestBody List<Long> productIds) {
-        log.info("并发查询多个商品库存，商品数量: {}", productIds.size());
+        log.info("并发查询多个商品库存，商品数量: {}", productIds != null ? productIds.size() : 0);
+        
+        if (productIds == null || productIds.isEmpty()) {
+            return CompletableFuture.completedFuture(Result.error(ResultCode.PARAM_ERROR.getCode(), "商品ID列表不能为空"));
+        }
 
         // 将商品ID列表拆分为多个异步任务
         List<CompletableFuture<StockVO>> futures = productIds.stream()
@@ -122,7 +135,7 @@ public class AsyncStockController {
             return Result.success(results);
         }).exceptionally(throwable -> {
             log.error("并发查询异常", throwable);
-            return Result.error("查询失败: " + throwable.getMessage());
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询失败: " + throwable.getMessage());
         });
     }
 }

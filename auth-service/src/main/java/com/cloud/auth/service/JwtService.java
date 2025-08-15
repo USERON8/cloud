@@ -14,11 +14,9 @@ import java.time.temporal.ChronoUnit;
 public class JwtService {
 
     private final JwtEncoder jwtEncoder;
-    private final TokenService tokenService;
 
-    public JwtService(JwtEncoder jwtEncoder, TokenService tokenService) {
+    public JwtService(JwtEncoder jwtEncoder) {
         this.jwtEncoder = jwtEncoder;
-        this.tokenService = tokenService;
     }
 
     public String generateToken(Authentication authentication, UserDTO userDTO) {
@@ -27,12 +25,7 @@ public class JwtService {
         // 使用UserDTO中的userType作为角色
         String roles = userDTO.getUserType();
 
-        String token = getStringJWT(authentication, now, roles, userDTO.getId());
-
-        // 将token存储到Redis中
-        tokenService.storeToken(token, userDTO.getId());
-
-        return token;
+        return getStringJWT(authentication, now, roles, userDTO.getId());
     }
 
     public String generateToken(Authentication authentication) {

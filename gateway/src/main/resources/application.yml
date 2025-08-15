@@ -39,6 +39,9 @@ server:
 
 # 简化日志配置，使用logback-spring.xml
 logging:
+  file:
+    path: D:/logs/${spring.application.name}
+    name: ${logging.file.path}/${spring.application.name}.log
   level:
     com.cloud: DEBUG
     com.alibaba.nacos: WARN

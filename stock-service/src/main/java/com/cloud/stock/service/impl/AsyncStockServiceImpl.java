@@ -5,6 +5,7 @@ import com.cloud.common.domain.PageResult;
 import com.cloud.common.domain.dto.StockPageDTO;
 import com.cloud.common.domain.vo.StockStatisticsVO;
 import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.AsyncStockService;
@@ -61,6 +62,7 @@ public class AsyncStockServiceImpl implements AsyncStockService {
             PageResult<StockVO> result = stockService.pageQuery(pageDTO);
             return CompletableFuture.completedFuture(result);
         } catch (Exception e) {
+            log.error("异步分页查询库存失败，pageDTO: {}", pageDTO, e);
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -80,6 +82,7 @@ public class AsyncStockServiceImpl implements AsyncStockService {
 
             return CompletableFuture.completedFuture(stockVOs);
         } catch (Exception e) {
+            log.error("异步批量查询库存失败，productIds数量: {}", productIds != null ? productIds.size() : 0, e);
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -96,6 +99,7 @@ public class AsyncStockServiceImpl implements AsyncStockService {
 
             return CompletableFuture.completedFuture(statistics);
         } catch (Exception e) {
+            log.error("异步查询库存统计信息失败", e);
             return CompletableFuture.failedFuture(e);
         }
     }
