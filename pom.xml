@@ -17,6 +17,9 @@
         <module>auth-service</module>
         <module>user-service</module>
         <module>product-service</module>
+        <module>order-service</module>
+        <module>search-service</module>
+        <module>payment-service</module>
     </modules>
 
     <parent>

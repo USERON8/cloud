@@ -1,8 +1,8 @@
 server:
-  port: 8081
+  port: 8085
 spring:
   application:
-    name: stock-service
+    name: order-service
   cloud:
     nacos:
       discovery:
@@ -22,7 +22,7 @@ spring:
     import: optional:nacos:common
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/product_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: root
   data:
@@ -32,13 +32,13 @@ spring:
       password: root
       database: 0
       timeout: 2000ms
+      username: default
       lettuce:
         pool:
           max-active: 8
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
-
 # MyBatis-Plus配置
 mybatis-plus:
   configuration:
@@ -46,7 +46,10 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
+  level:
+    com.cloud.stock: debug

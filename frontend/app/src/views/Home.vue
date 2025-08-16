@@ -29,7 +29,7 @@
         </el-dropdown>
       </div>
       <div class="nav" v-else>
-        <el-button type="primary" @click="goToLogin" round>用户登录</el-button>
+        <el-button type="primary" @click="goToLogin" round>登录</el-button>
         <el-button type="success" @click="goToRegister" round>用户注册</el-button>
         <el-button type="warning" @click="goToAdminLogin" round>管理员登录</el-button>
       </div>
@@ -44,7 +44,7 @@
           <p v-else class="hero-subtitle">一站式解决方案，助力您的业务发展</p>
           <div class="cta-buttons" v-if="!isAuthenticated && !isAdminAuthenticated">
             <el-button type="primary" size="large" @click="goToRegister" round>立即注册</el-button>
-            <el-button type="default" size="large" @click="goToLogin" round>登录账户</el-button>
+            <el-button type="default" size="large" @click="goToLogin" round>登录</el-button>
           </div>
           <div class="user-actions" v-else>
             <el-button v-if="isAuthenticated" type="primary" size="large" @click="goToDashboard" round>用户中心</el-button>
@@ -147,7 +147,7 @@ const handleUserCommand = (command: string) => {
 
 // 页面跳转函数
 const goToLogin = () => {
-  router.push('/login')
+  router.push('/login')  // 现在指向OAuth2登录页面
 }
 
 const goToRegister = () => {
@@ -159,7 +159,7 @@ const goToAdminLogin = () => {
 }
 
 const goToDashboard = () => {
-  router.push('/dashboard')
+  router.push('/admin/dashboard')
 }
 
 const goToAdminDashboard = () => {

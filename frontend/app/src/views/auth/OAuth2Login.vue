@@ -6,6 +6,16 @@
         <p>使用OAuth2授权码模式登录系统</p>
       </div>
       
+      <el-alert 
+        v-if="authError" 
+        :title="authError" 
+        type="error" 
+        show-icon 
+        closable 
+        @close="authError = ''"
+        style="margin-bottom: 20px;"
+      />
+      
       <el-form 
         ref="oauth2FormRef" 
         :model="oauth2Form" 
@@ -69,9 +79,8 @@
       
       <div class="oauth2-footer">
         <div class="oauth2-links">
-          <el-link type="primary" @click="switchToLogin" :underline="false">返回普通登录</el-link>
-          <el-link type="success" style="margin-left: 10px;" @click="switchToRegister" :underline="false">注册账号</el-link>
-          <el-link type="warning" style="margin-left: 10px;" @click="switchToAdminLogin" :underline="false">管理员登录</el-link>
+          <el-link type="primary" @click="switchToRegister" :underline="false">注册账号</el-link>
+          <el-link type="success" style="margin-left: 10px;" @click="switchToAdminLogin" :underline="false">管理员登录</el-link>
         </div>
       </div>
     </div>
@@ -83,7 +92,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, FormInstance, FormRules } from 'element-plus'
 import { IEpKey, IEpLink, IEpLock } from '@element-plus/icons-vue'
-import { oauth2Login, oauth2Callback } from '@/api/auth'
+import { oauth2Login } from '@/api/oauth2'
 import { useUserStore } from '@/stores/user'
 
 // 定义表单引用
@@ -98,6 +107,9 @@ const userStore = useUserStore()
 
 // 加载状态
 const loading = ref(false)
+
+// 认证错误信息
+const authError = ref('')
 
 // OAuth2表单数据
 const oauth2Form = reactive({
@@ -126,6 +138,7 @@ const handleOAuth2Login = async () => {
   await oauth2FormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
+      authError.value = ''
       try {
         // 发起OAuth2授权请求
         oauth2Login(
@@ -133,7 +146,8 @@ const handleOAuth2Login = async () => {
           oauth2Form.redirectUri,
           oauth2Form.scope
         )
-      } catch (err) {
+      } catch (err: any) {
+        authError.value = err.message || 'OAuth2登录请求失败，请稍后重试'
         ElMessage.error('OAuth2登录请求失败，请稍后重试')
       } finally {
         loading.value = false
@@ -155,25 +169,19 @@ const switchToAdminLogin = () => {
   router.push('/admin/login')
 }
 
-// 处理OAuth2回调
-const handleOAuth2Callback = async () => {
-  const code = route.query.code as string
-  const state = route.query.state as string
+// 处理OAuth2回调错误
+const handleOAuth2CallbackError = () => {
+  const error = route.query.error as string
+  const errorDescription = route.query.error_description as string
   
-  if (code) {
-    try {
-      // 这里应该调用后端API处理OAuth2回调
-      // 由于我们重定向到了授权服务器，这个逻辑可能需要调整
-      ElMessage.info('OAuth2授权成功，正在处理回调...')
-    } catch (err) {
-      ElMessage.error('OAuth2回调处理失败')
-    }
+  if (error) {
+    authError.value = `OAuth2授权错误: ${errorDescription || error}`
   }
 }
 
-// 页面加载时检查是否有OAuth2回调参数
+// 页面加载时检查是否有OAuth2回调错误参数
 onMounted(() => {
-  handleOAuth2Callback()
+  handleOAuth2CallbackError()
 })
 </script>
 

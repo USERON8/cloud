@@ -4,19 +4,6 @@ CREATE DATABASE IF NOT EXISTS `stock_db`
     COLLATE utf8mb4_0900_ai_ci;
 USE `stock_db`;
 
--- 产品表（基础信息）
-CREATE TABLE IF NOT EXISTS `products`
-(
-    `product_id`  BIGINT       NOT NULL AUTO_INCREMENT COMMENT '商品ID（主键）',
-    `name`        VARCHAR(100) NOT NULL COMMENT '商品名称',
-    `description` TEXT COMMENT '商品描述',
-    `category_id` INT      DEFAULT 0 COMMENT '分类ID',
-    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`product_id`),
-    KEY `idx_category` (`category_id`)
-) ENGINE = InnoDB COMMENT ='商品基础信息表';
-
 -- 库存主表（动态计算可用库存）
 CREATE TABLE IF NOT EXISTS `stock`
 (

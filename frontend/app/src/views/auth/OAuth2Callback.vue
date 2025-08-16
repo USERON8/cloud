@@ -51,7 +51,7 @@ const errorMessage = ref('')
 
 // 跳转到首页
 const goToHome = () => {
-  router.push('/dashboard')
+  router.push('/admin/dashboard')
 }
 
 // 重新登录
@@ -63,7 +63,16 @@ const retryLogin = () => {
 const handleOAuth2Callback = async () => {
   try {
     const code = route.query.code as string
-    const state = route.query.state as string
+    const error = route.query.error as string
+    const errorDescription = route.query.error_description as string
+    
+    // 处理OAuth2错误回调
+    if (error) {
+      errorMessage.value = `OAuth2授权错误: ${errorDescription || error}`
+      success.value = false
+      loading.value = false
+      return
+    }
     
     if (!code) {
       errorMessage.value = '缺少授权码参数'

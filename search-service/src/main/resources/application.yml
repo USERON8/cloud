@@ -1,0 +1,40 @@
+server:
+  port: 8087
+spring:
+  elasticsearch:
+    uris: http://es-host:9200 # ES集群地址
+    username: root
+    password: root
+  application:
+    name: search-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
+    stream:
+      rocketmq:
+        binder:
+          name-server: mq-host:9876
+          
+  
+  
+  config:
+    import: optional:nacos:common
+
+logging:
+  file:
+    path: D:/logs/${spring.application.name}
+    name: ${logging.file.path}/${spring.application.name}.log
+  level:
+    com.cloud.stock: debug

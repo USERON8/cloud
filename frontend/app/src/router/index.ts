@@ -1,14 +1,13 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import Login from '@/views/auth/Login.vue';
-import Register from '@/views/auth/Register.vue';
-import MerchantRegister from '@/views/auth/MerchantRegister.vue';
 import OAuth2Login from '@/views/auth/OAuth2Login.vue';
 import OAuth2Callback from '@/views/auth/OAuth2Callback.vue';
+import Register from '@/views/auth/Register.vue';
+import MerchantRegister from '@/views/auth/MerchantRegister.vue';
 import Home from '@/views/Home.vue';
 import AdminLogin from '@/views/admin/Login.vue';
 import AdminDashboard from '@/views/admin/Dashboard.vue';
-import ComponentDemo from '@/views/ComponentDemo.vue';
 import UserManagement from '@/views/admin/UserManagement.vue';
+import { useUserStore } from '@/stores/user';
 
 // 定义路由
 const routes: Array<RouteRecordRaw> = [
@@ -20,7 +19,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: OAuth2Login
   },
   {
     path: '/oauth2/login',
@@ -51,18 +50,13 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/components',
-    name: 'ComponentDemo',
-    component: ComponentDemo
+    meta: { requiresAuth: true, role: 'ADMIN' }
   },
   {
     path: '/admin/users',
     name: 'UserManagement',
     component: UserManagement,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'ADMIN' }
   }
 ];
 
@@ -73,16 +67,43 @@ const router = createRouter({
 });
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 检查是否需要认证
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token');
+    const userStore = useUserStore();
+    const token = userStore.getToken;
+    
     if (token) {
-      // 如果有token，允许访问
-      next();
+      // 验证token是否有效
+      try {
+        // 如果用户信息不存在，尝试从后端获取
+        if (!userStore.getUserInfo && !userStore.getAdminInfo) {
+          // 这里可以调用API获取用户信息
+          // await userStore.fetchUserInfo()
+        }
+        
+        // 检查角色权限
+        if (to.meta.role) {
+          const requiredRole = to.meta.role as string;
+          if (requiredRole === 'ADMIN' && userStore.isUserAdmin) {
+            next();
+          } else if (requiredRole === 'USER' && userStore.isUserAuthenticated) {
+            next();
+          } else {
+            next('/login');
+          }
+        } else {
+          // 仅需要认证，不需要特定角色
+          next();
+        }
+      } catch (error) {
+        // token无效，清除并重定向到登录页
+        userStore.clearUserInfo();
+        next('/login');
+      }
     } else {
-      // 如果没有token，重定向到管理员登录页
-      next('/admin/login');
+      // 如果没有token，重定向到登录页
+      next('/login');
     }
   } else {
     // 不需要认证的页面，直接访问

@@ -25,6 +25,19 @@ spring:
     url: jdbc:mysql://localhost:3306/product_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: root
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
 # MyBatis-Plus配置
 mybatis-plus:

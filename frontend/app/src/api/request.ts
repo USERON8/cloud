@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
+import router from '@/router';
 
 // 创建axios实例
 const apiClient: AxiosInstance = axios.create({
@@ -36,8 +37,10 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // token过期或未授权，清除本地存储并跳转到登录页
       localStorage.removeItem('token');
-      // 如果有路由实例，可以在这里跳转到登录页
-      // router.push('/login');
+      // 如果有路由实例，跳转到登录页
+      if (router) {
+        router.push('/login');
+      }
     }
     return Promise.reject(error);
   }
@@ -72,8 +75,10 @@ oauth2Client.interceptors.response.use(
     if (error.response?.status === 401) {
       // token过期或未授权，清除本地存储并跳转到登录页
       localStorage.removeItem('token');
-      // 如果有路由实例，可以在这里跳转到登录页
-      // router.push('/login');
+      // 如果有路由实例，跳转到登录页
+      if (router) {
+        router.push('/login');
+      }
     }
     return Promise.reject(error);
   }

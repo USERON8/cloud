@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { login as apiLogin } from '@/api/auth'
 
 // 用户信息接口
 export interface UserInfo {
@@ -156,6 +157,24 @@ export const useUserStore = defineStore('user', {
         // 这里可以根据需要从后端获取用户信息
         // 例如：this.fetchUserInfo()
       }
+    },
+
+    // 验证token有效性
+    async validateToken(): Promise<boolean> {
+      // 简化的token验证逻辑
+      return !!this.token
+    },
+
+    // 刷新token
+    async refreshToken(): Promise<string | null> {
+      // 简化的刷新token逻辑
+      return this.token
+    },
+
+    // 登出
+    logout() {
+      this.clearUserInfo()
+      this.clearAdminInfo()
     }
   }
 })
