@@ -1,90 +1,116 @@
 server:
-  port: 8083
+  port: ${server.port}
 spring:
   application:
-    name: user-service
+    name: ${spring.application.name}
+  profiles:
+    active: dev
+    include: oauth2
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.discovery.server-addr}
+        username: ${nacos.discovery.username}
+        password: ${nacos.discovery.password}
+        namespace: ${nacos.discovery.namespace}
+        group: ${nacos.discovery.group}
       config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.config.server-addr}
+        username: ${nacos.config.username}
+        password: ${nacos.config.password}
+        namespace: ${nacos.config.namespace}
+        file-extension: ${nacos.config.file-extension}
+        group: ${nacos.config.group}
+    stream:
+      bindings:
+        userLog-out-0:
+          destination: LOG_USER_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+      rocketmq:
+        binder:
+          name-server: ${rocketmq.name-server}
   config:
     import: optional:nacos:common
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-    username: root
-    password: root
+    driver-class-name: ${spring.datasource.driver-class-name}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: root
-      database: 0
-      timeout: 10000ms
+      host: ${spring.redis.host}
+      port: ${spring.redis.port}
+      password: ${spring.redis.password}
+      database: ${spring.redis.database}
+      timeout: ${spring.redis.timeout}
       lettuce:
         pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
+          max-active: ${spring.redis.lettuce.pool.max-active}
+          max-wait: ${spring.redis.lettuce.pool.max-wait}
+          max-idle: ${spring.redis.lettuce.pool.max-idle}
+          min-idle: ${spring.redis.lettuce.pool.min-idle}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
+  boot:
+    actuator:
+      endpoints:
+        web:
+          exposure:
+            include: "*"
+      endpoint:
+        health:
+          show-details: always
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: ${user.service.file-upload.max-file-size}
+      max-request-size: ${user.service.file-upload.max-request-size}
       enabled: true
+minio:
+  endpoint: ${minio.endpoint}
+  access-key: ${minio.access-key}
+  secret-key: ${minio.secret-key}
+  bucket-name: ${minio.bucket-name}
+  public-endpoint: ${minio.public-endpoint}
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
   level:
     com.cloud.user.mapper: TRACE
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml  # XML 扫描路径
-  type-aliases-package: com.example.module.entity       # 实体类包别名
-  configuration:
-    map-underscore-to-camel-case: true           # 驼峰转换
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # SQL 日志输出
-  global-config:
-    db-config:
-      id-type: assign_id                         # 雪花算法主键
-      logic-delete-field: deleted                # 逻辑删除字段
-      logic-delete-value: 1                      # 删除标记值
-      logic-not-delete-value: 0                  # 未删除标记值
-
-minio:
-  endpoint: http://localhost:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket-name: user-avatars
-  # 外网访问地址，用于生成可访问的URL
-  public-endpoint: http://localhost:9000
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: user
-      paths-to-match: /**
-      packages-to-scan: com.cloud.user.controller
-
 knife4j:
   enable: true
   production: false
   basic:
-    enable: true
-    username: admin
-    password: admin123
+    enable: false
+  setting:
+    language: ZH_CN
+  insight:
+    service-name: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-flat-param-object: true
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.user.module.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+

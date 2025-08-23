@@ -1,52 +1,115 @@
 server:
-  port: 8081
+  port: ${server.port}
 spring:
   application:
-    name: stock-service
+    name: ${spring.application.name}
+  profiles:
+    active: dev
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.discovery.server-addr}
+        username: ${nacos.discovery.username}
+        password: ${nacos.discovery.password}
+        namespace: ${nacos.discovery.namespace}
+        group: ${nacos.discovery.group}
       config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.config.server-addr}
+        username: ${nacos.config.username}
+        password: ${nacos.config.password}
+        namespace: ${nacos.config.namespace}
+        file-extension: ${nacos.config.file-extension}
+        group: ${nacos.config.group}
+    stream:
+      bindings:
+        stockLog-out-0:
+          destination: LOG_STOCK_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+        stockFreeze-out-0:
+          destination: STOCK_FREEZE_TOPIC
+          content-type: application/json
+        # 接收订单服务的创建订单消息（冻结库存）
+        orderCreate-in-0:
+          destination: ORDER_CREATE_TOPIC
+          content-type: application/json
+          consumer:
+            max-attempts: 3
+        # 接收订单服务的完成订单消息（扣减库存）
+        orderComplete-in-0:
+          destination: ORDER_COMPLETE_TOPIC
+          content-type: application/json
+          consumer:
+            max-attempts: 3
+        # 发送库存变更消息给日志服务
+        stockChangeToLog-out-0:
+          destination: LOG_STOCK_TOPIC
+          content-type: application/json
+      rocketmq:
+        binder:
+          name-server: ${rocketmq.name-server}
+  
   config:
     import: optional:nacos:common
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
+    driver-class-name: ${spring.datasource.driver-class-name}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: root
-      database: 0
-      timeout: 2000ms
+      host: ${spring.redis.host}
+      port: ${spring.redis.port}
+      password: ${spring.redis.password}
+      database: ${spring.redis.database}
+      timeout: ${spring.redis.timeout}
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-
-# MyBatis-Plus配置
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      id-type: auto
+          max-active: ${spring.redis.lettuce.pool.max-active}
+          max-wait: ${spring.redis.lettuce.pool.max-wait}
+          max-idle: ${spring.redis.lettuce.pool.max-idle}
+          min-idle: ${spring.redis.lettuce.pool.min-idle}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
+  level:
+    org.springframework.context.support: debug
+    com.cloud.user.mapper: TRACE
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+  insight:
+    service-name: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-flat-param-object: true
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.stock.module.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0

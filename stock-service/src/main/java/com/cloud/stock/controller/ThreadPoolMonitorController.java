@@ -22,25 +22,54 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ThreadPoolMonitorController {
 
     private final ThreadPoolTaskExecutor stockQueryExecutor;
+    private final ThreadPoolTaskExecutor stockOperationExecutor;
+    private final ThreadPoolTaskExecutor stockCommonAsyncExecutor;
+    private final ThreadPoolTaskExecutor stockNewExecutor;
 
     /**
-     * 获取线程池状态
+     * 获取所有线程池状态
      */
     @GetMapping("/thread-pool")
     public Result<Map<String, Object>> getThreadPoolStatus() {
-        ThreadPoolExecutor executor = stockQueryExecutor.getThreadPoolExecutor();
-
         Map<String, Object> status = new HashMap<>();
-        status.put("corePoolSize", executor.getCorePoolSize());
-        status.put("maximumPoolSize", executor.getMaximumPoolSize());
-        status.put("activeCount", executor.getActiveCount());
-        status.put("poolSize", executor.getPoolSize());
-        status.put("queueSize", executor.getQueue().size());
-        status.put("completedTaskCount", executor.getCompletedTaskCount());
-        status.put("taskCount", executor.getTaskCount());
+        
+        // 查询线程池状态
+        status.put("stockQueryExecutor", getThreadPoolInfo(stockQueryExecutor, "stockQueryExecutor"));
+        
+        // 操作线程池状态
+        status.put("stockOperationExecutor", getThreadPoolInfo(stockOperationExecutor, "stockOperationExecutor"));
+        
+        // 通用异步线程池状态
+        status.put("stockCommonAsyncExecutor", getThreadPoolInfo(stockCommonAsyncExecutor, "stockCommonAsyncExecutor"));
+        
+        // 新线程池状态
+        status.put("stockNewExecutor", getThreadPoolInfo(stockNewExecutor, "stockNewExecutor"));
 
         log.info("线程池状态查询: {}", status);
 
         return Result.success(status);
+    }
+    
+    /**
+     * 获取单个线程池信息
+     * 
+     * @param executor 线程池执行器
+     * @param name 线程池名称
+     * @return 线程池信息
+     */
+    private Map<String, Object> getThreadPoolInfo(ThreadPoolTaskExecutor executor, String name) {
+        ThreadPoolExecutor threadPoolExecutor = executor.getThreadPoolExecutor();
+        
+        Map<String, Object> info = new HashMap<>();
+        info.put("name", name);
+        info.put("corePoolSize", threadPoolExecutor.getCorePoolSize());
+        info.put("maximumPoolSize", threadPoolExecutor.getMaximumPoolSize());
+        info.put("activeCount", threadPoolExecutor.getActiveCount());
+        info.put("poolSize", threadPoolExecutor.getPoolSize());
+        info.put("queueSize", threadPoolExecutor.getQueue().size());
+        info.put("completedTaskCount", threadPoolExecutor.getCompletedTaskCount());
+        info.put("taskCount", threadPoolExecutor.getTaskCount());
+        
+        return info;
     }
 }

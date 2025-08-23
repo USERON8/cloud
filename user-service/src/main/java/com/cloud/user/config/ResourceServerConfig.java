@@ -1,6 +1,7 @@
 package com.cloud.user.config;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -17,8 +18,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class ResourceServerConfig {
 
+    private final JwtConfigProperties jwtConfigProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -26,7 +29,7 @@ public class ResourceServerConfig {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName("AuthRole");
+        authoritiesConverter.setAuthoritiesClaimName("roles");
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
 
         http
@@ -48,7 +51,7 @@ public class ResourceServerConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        // 使用auth服务提供的JWK端点来验证JWT
-        return NimbusJwtDecoder.withJwkSetUri("http://localhost:8082/oauth2/jwks").build();
+        // 使用配置文件中的JWK端点来验证JWT
+        return NimbusJwtDecoder.withJwkSetUri(jwtConfigProperties.getJwkSetUri()).build();
     }
 }

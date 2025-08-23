@@ -1,5 +1,6 @@
 package com.cloud.common.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -7,9 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -24,26 +22,10 @@ import java.util.Map;
 public class BaseRedisConfig {
 
     @Bean
-    public LettuceConnectionFactory redisConnectionFactory(RedisProperties redisProperties) {
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setHostName(redisProperties.getHost());
-        configuration.setPort(redisProperties.getPort());
-        configuration.setPassword(redisProperties.getPassword());
-        configuration.setDatabase(redisProperties.getDatabase());
-
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(redisProperties.getTimeout() != null ?
-                        Duration.ofMillis(redisProperties.getTimeout().toMillis()) : Duration.ofMillis(2000))
-                .shutdownTimeout(Duration.ofMillis(100))
-                .build();
-
-        return new LettuceConnectionFactory(configuration, clientConfig);
-    }
-
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+    @ConditionalOnBean(RedisConnectionFactory.class)
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(factory);
+        template.setConnectionFactory(redisConnectionFactory);
 
         // 使用StringRedisSerializer来序列化和反序列化redis的key值
         template.setKeySerializer(new StringRedisSerializer());
@@ -66,7 +48,8 @@ public class BaseRedisConfig {
     }
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory factory) {
+    @ConditionalOnBean(RedisConnectionFactory.class)
+    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         // 默认缓存配置
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30))
@@ -82,8 +65,14 @@ public class BaseRedisConfig {
         cacheConfigurations.put("stock", defaultCacheConfig.entryTtl(Duration.ofMinutes(10)));
         // 用户信息缓存配置，过期时间1小时
         cacheConfigurations.put("user", defaultCacheConfig.entryTtl(Duration.ofHours(1)));
+        // 商家信息缓存配置，过期时间1小时
+        cacheConfigurations.put("merchant", defaultCacheConfig.entryTtl(Duration.ofHours(1)));
+        // 商品信息缓存配置，过期时间30分钟
+        cacheConfigurations.put("product", defaultCacheConfig.entryTtl(Duration.ofMinutes(30)));
+        // 订单信息缓存配置，过期时间15分钟
+        cacheConfigurations.put("order", defaultCacheConfig.entryTtl(Duration.ofMinutes(15)));
 
-        return RedisCacheManager.builder(factory)
+        return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
                 .build();

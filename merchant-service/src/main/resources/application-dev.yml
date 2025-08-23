@@ -1,0 +1,66 @@
+# 开发环境配置文件
+server:
+  port: 8087
+
+# Nacos配置
+nacos:
+  discovery:
+    server-addr: localhost:8848
+    username: nacos
+    password: nacos
+    namespace: public
+    group: DEFAULT_GROUP
+  config:
+    server-addr: localhost:8848
+    username: nacos
+    password: nacos
+    namespace: public
+    file-extension: yaml
+    group: DEFAULT_GROUP
+
+# 数据源配置
+spring:
+  application:
+    name: merchant-service
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:9876
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/merchant_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: root
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8082/oauth2/jwks
+
+# 文件上传配置
+servlet:
+  multipart:
+    max-file-size: 10MB
+    max-request-size: 10MB
+
+# MinIO配置
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: shop-avatars
+  public-endpoint: http://localhost:9000

@@ -1,233 +1,151 @@
 package com.cloud.user.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cloud.common.domain.Result;
-import com.cloud.common.domain.dto.RegisterRequestDTO;
-import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.user.converter.UserConverter;
-import com.cloud.user.module.entity.User;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
-import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/user")
 @RequiredArgsConstructor
-@Tag(name = "用户查询", description = "用户查询相关操作接口")
+@Tag(name = "用户查询", description = "用户信息查询接口")
 public class UserQueryController {
     private final UserService userService;
-    private final UserConverter userConverter;
-    private final PasswordEncoder passwordEncoder;
-
-
-    @PostMapping("/register")
-    public Result<String> register(@RequestBody RegisterRequestDTO registerRequestDTO) {
-        try {
-            log.info("用户注册, username: {}, email: {}", registerRequestDTO.getUsername(), registerRequestDTO.getEmail());
-
-            if (registerRequestDTO.getUsername() == null || registerRequestDTO.getUsername().isEmpty()) {
-                log.warn("注册失败：用户名不能为空");
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户名不能为空");
-            }
-            
-            if (registerRequestDTO.getPassword() == null || registerRequestDTO.getPassword().isEmpty()) {
-                log.warn("注册失败：密码不能为空");
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "密码不能为空");
-            }
-
-            // 检查用户名是否已存在
-            User existingUser = userService.getOne(new QueryWrapper<User>().eq("username", registerRequestDTO.getUsername()));
-            if (existingUser != null) {
-                log.warn("用户名已存在, username: {}", registerRequestDTO.getUsername());
-                return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名已存在");
-            }
-
-            User user = userConverter.toEntity(registerRequestDTO);
-            // 使用BCrypt加密密码
-            user.setPasswordHash(passwordEncoder.encode(registerRequestDTO.getPassword()));
-            user.setUserType("USER");
-            // 注册后默认禁用状态
-            user.setStatus(0);
-            userService.save(user);
-            log.info("用户注册成功, userId: {}, username: {}", user.getId(), user.getUsername());
-            return Result.success("注册成功");
-        } catch (DuplicateKeyException e) {
-            log.error("用户注册失败，数据重复: username: {}", registerRequestDTO.getUsername(), e);
-            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户名或邮箱已存在");
-        } catch (Exception e) {
-            log.error("用户注册失败, username: {}", registerRequestDTO.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册失败: " + e.getMessage());
-        }
-    }
 
 
     @GetMapping("/info")
-    @Operation(summary = "获取当前用户信息", description = "根据JWT获取当前用户信息")
-    public Result<Map<String, Object>> getUserInfo(@Parameter(description = "JWT信息") @AuthenticationPrincipal Jwt jwt) {
+    @Operation(summary = "获取当前用户信息", description = "根据请求头获取当前用户信息")
+    @Parameters({
+            @Parameter(name = "X-User-ID", description = "用户ID", required = true)
+    })
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Result.class)))
+    public Result<UserDTO> getCurrentUserInfo(@RequestHeader("X-User-ID") String userId) {
         try {
-            log.info("获取用户信息, username: {}", jwt.getSubject());
-            return Result.success(Collections.singletonMap("username", jwt.getSubject()));
+            log.info("获取当前用户信息, userId: {}", userId);
+
+            if (userId == null || userId.isEmpty()) {
+                log.warn("获取当前用户信息失败: 用户ID为空");
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
+
+            UserDTO userDTO = userService.getUserById(Long.valueOf(userId));
+            log.info("获取当前用户信息成功, userId: {}", userId);
+            return Result.success(userDTO);
+        } catch (NumberFormatException e) {
+            log.error("获取当前用户信息失败: 用户ID格式错误, userId: {}", userId, e);
+            return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID格式错误");
+        } catch (BusinessException e) {
+            log.error("获取当前用户信息失败: 业务异常, userId: {}", userId, e);
+            return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("获取用户信息失败, username: {}", jwt.getSubject(), e);
+            log.error("获取当前用户信息失败: 系统异常, userId: {}", userId, e);
             return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取用户信息失败: " + e.getMessage());
         }
     }
 
-    // 为auth服务提供根据用户名查询用户的方法
-    @GetMapping("/username/{username}")
-    @Operation(summary = "根据用户名查找用户", description = "根据用户名查找用户信息，供auth服务调用")
+
+    @GetMapping("/info/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "根据ID获取用户信息", description = "管理员根据用户ID获取用户信息")
+    @Parameters({
+            @Parameter(name = "id", description = "用户ID", required = true)
+    })
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = UserDTO.class)))
-    public Result<UserDTO> findByUsername(@Parameter(description = "用户名") @PathVariable("username") String username) {
+                    schema = @Schema(implementation = Result.class)))
+    public Result<UserDTO> getUserInfoById(@PathVariable Long id) {
         try {
-            log.info("根据用户名查找用户, username: {}", username);
+            log.info("管理员获取用户信息, userId: {}", id);
+
+            if (id == null) {
+                log.warn("获取用户信息失败: 用户ID为空");
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
+            }
+
+            UserDTO userDTO = userService.getUserById(id);
+            log.info("管理员获取用户信息成功, userId: {}", id);
+            return Result.success(userDTO);
+        } catch (BusinessException e) {
+            log.error("获取用户信息失败: 业务异常, userId: {}", id, e);
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("获取用户信息失败: 系统异常, userId: {}", id, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取用户信息失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/list")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "分页获取用户列表", description = "管理员分页获取用户列表")
+    @Parameters({
+            @Parameter(name = "page", description = "页码", example = "1"),
+            @Parameter(name = "size", description = "每页大小", example = "10"),
+            @Parameter(name = "username", description = "用户名（模糊查询）")
+    })
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Result.class)))
+    public Result<IPage<UserDTO>> getUserList(@RequestParam(defaultValue = "1") int page,
+                                              @RequestParam(defaultValue = "10") int size,
+                                              @RequestParam(required = false) String username) {
+        try {
+            log.info("管理员分页获取用户列表, page: {}, size: {}, username: {}", page, size, username);
+
+            IPage<UserDTO> userPage = userService.getUsersWithPagination(page, size, username);
+            log.info("管理员分页获取用户列表成功, page: {}, size: {}, total: {}", page, size, userPage.getTotal());
+            return Result.success(userPage);
+        } catch (BusinessException e) {
+            log.error("分页获取用户列表失败: 业务异常, page: {}, size: {}, username: {}", page, size, username, e);
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("分页获取用户列表失败: 系统异常, page: {}, size: {}, username: {}", page, size, username, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取用户列表失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/username/{username}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "根据用户名获取用户信息", description = "管理员根据用户名获取用户信息")
+    @Parameters({
+            @Parameter(name = "username", description = "用户名", required = true)
+    })
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Result.class)))
+    public Result<UserDTO> getUserInfoByUsername(@PathVariable String username) {
+        try {
+            log.info("管理员根据用户名获取用户信息, username: {}", username);
+
             if (username == null || username.isEmpty()) {
-                log.warn("查询失败：用户名不能为空");
+                log.warn("获取用户信息失败: 用户名为空");
                 return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户名不能为空");
             }
 
-            User user = userService.getOne(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                    .eq("username", username));
-            UserDTO userDTO = userConverter.toDTO(user);
-            log.info("用户查询结果, username: {}, found: {}", username, userDTO != null);
-            if (userDTO == null) {
-                log.warn("用户不存在, username: {}", username);
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
-            }
+            UserDTO userDTO = userService.getUserByUsername(username);
+            log.info("管理员根据用户名获取用户信息成功, username: {}", username);
             return Result.success(userDTO);
+        } catch (BusinessException e) {
+            log.error("根据用户名获取用户信息失败: 业务异常, username: {}", username, e);
+            return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("根据用户名查找用户失败, username: {}", username, e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询用户失败: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "根据ID查找用户", description = "根据用户ID查找用户信息")
-    @ApiResponse(responseCode = "200", description = "查询成功",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = UserDTO.class)))
-    public Result<UserDTO> findById(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
-        try {
-            log.info("根据ID查找用户, id: {}", id);
-            if (id == null) {
-                log.warn("查询失败：用户ID不能为空");
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
-            }
-
-            User user = userService.getById(id);
-            UserDTO userDTO = userConverter.toDTO(user);
-            log.info("用户查询结果, id: {}, found: {}", id, userDTO != null);
-            if (userDTO == null) {
-                log.warn("用户不存在, id: {}", id);
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
-            }
-            return Result.success(userDTO);
-        } catch (Exception e) {
-            log.error("根据ID查找用户失败, id: {}", id, e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询用户失败: " + e.getMessage());
-        }
-    }
-
-
-    /**
-     * 根据ID获取用户信息
-     *
-     * @param id 用户ID
-     * @return 用户信息
-     */
-    @GetMapping("/detail/{id}")
-    @Operation(summary = "获取用户详情", description = "根据用户ID获取用户详细信息")
-    @ApiResponse(responseCode = "200", description = "查询成功",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = Result.class)))
-    @PreAuthorize("@permissionService.hasPermission(#id) or hasAuthority('ROLE_ADMIN')")
-    public Result<UserDTO> getUserById(@Parameter(description = "用户ID") @PathVariable("id") Long id) {
-        try {
-            log.info("获取用户详情, userId: {}", id);
-            if (id == null) {
-                log.warn("查询失败：用户ID不能为空");
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "用户ID不能为空");
-            }
-
-            User user = userService.getById(id);
-            if (user == null) {
-                log.warn("用户不存在, userId: {}", id);
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
-            }
-            log.info("用户详情查询成功, userId: {}", id);
-            return Result.success(userConverter.toDTO(user));
-        } catch (Exception e) {
-            log.error("获取用户详情失败, userId: {}", id, e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询用户详情失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 分页查询用户列表
-     *
-     * @param page     页码
-     * @param size     每页大小
-     * @param username 用户名（可选）
-     * @return 用户列表
-     */
-    @GetMapping
-    @Operation(summary = "分页查询用户列表", description = "分页查询用户列表，支持按用户名模糊查询")
-    @ApiResponse(responseCode = "200", description = "查询成功",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = Result.class)))
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public Result<Page<UserDTO>> listUsers(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
-            @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer size,
-            @Parameter(description = "用户名（模糊查询）") @RequestParam(required = false) String username) {
-        try {
-            log.info("分页查询用户列表, page: {}, size: {}, username: {}", page, size, username);
-
-            if (page <= 0) {
-                log.warn("查询失败：页码必须大于0, page: {}", page);
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "页码必须大于0");
-            }
-            if (size <= 0) {
-                log.warn("查询失败：每页大小必须大于0, size: {}", size);
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "每页大小必须大于0");
-            }
-
-            Page<User> userPage = new Page<>(page, size);
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("deleted", 0); // 只查询未删除的用户
-            if (username != null && !username.isEmpty()) {
-                queryWrapper.like("username", username);
-            }
-            queryWrapper.orderByDesc("created_at");
-            Page<User> result = userService.page(userPage, queryWrapper);
-
-            Page<UserDTO> dtoPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-            dtoPage.setRecords(result.getRecords().stream().map(userConverter::toDTO).toList());
-
-            log.info("用户列表查询成功, total: {}", result.getTotal());
-            return Result.success(dtoPage);
-        } catch (Exception e) {
-            log.error("分页查询用户列表失败, page: {}, size: {}, username: {}", page, size, username, e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "查询用户列表失败: " + e.getMessage());
+            log.error("根据用户名获取用户信息失败: 系统异常, username: {}", username, e);
+            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取用户信息失败: " + e.getMessage());
         }
     }
 }

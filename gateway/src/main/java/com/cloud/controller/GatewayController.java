@@ -1,6 +1,10 @@
 package com.cloud.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,18 +32,16 @@ public class GatewayController {
     @GetMapping("/health")
     @Operation(
             summary = "网关健康检查",
-            description = "检查网关服务是否正常运行，返回简单文本状态",
-            tags = {"网关服务"},
-            responses = {
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "200",
-                            description = "网关正常运行",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
-                                    schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string"),
-                                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject("Gateway is running")
-                            )
-                    )
-            }
+            description = "检查网关服务是否正常运行，返回简单文本状态"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "网关正常运行",
+            content = @Content(
+                    mediaType = "text/plain",
+                    schema = @Schema(type = "string"),
+                    examples = @ExampleObject("Gateway is running")
+            )
     )
     public Mono<String> healthCheck() {
         log.info("网关健康检查");

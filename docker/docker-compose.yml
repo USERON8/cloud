@@ -232,6 +232,39 @@ services:
       - type: bind
         source: D:\docker\minio\data
         target: /home/minio/data
+  #  Elasticsearch 服务 (版本 9.1.2)
+  elasticsearch:
+    image: elasticsearch:9.1.2
+    container_name: es_search
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.90  # 分配新 IP
+    environment:
+      # 关键配置
+      - discovery.type=single-node  # 单节点模式
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g  # JVM 堆内存
+      - bootstrap.memory_lock=true  # 禁用交换分区
+      - xpack.security.enabled=false  # 关闭安全认证
+    volumes:
+      - type: bind
+        source: D:\docker\es\data
+        target: /usr/share/elasticsearch/data
+      - type: bind
+        source: D:\docker\es\plugins
+        target: /usr/share/elasticsearch/plugins
+    ports:
+      - "9200:9200"  # HTTP API 端口
+      - "9300:9300"  # 集群通信端口
+    ulimits: # 解除内存限制
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 # 网络配置
 networks:
   service_net:

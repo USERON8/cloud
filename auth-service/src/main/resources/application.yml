@@ -1,64 +1,72 @@
 server:
-  port: 8082
+  port: ${user.service.port}
 spring:
   application:
-    name: auth-service
+    name: ${spring.application.name}
   profiles:
-    include: auth
+    active: dev
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.discovery.server-addr}
+        username: ${nacos.discovery.username}
+        password: ${nacos.discovery.password}
+        namespace: ${nacos.discovery.namespace}
+        group: ${nacos.discovery.group}
       config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.config.server-addr}
+        username: ${nacos.config.username}
+        password: ${nacos.config.password}
+        namespace: ${nacos.config.namespace}
+        file-extension: ${nacos.config.file-extension}
+        group: ${nacos.config.group}
   config:
     import: optional:nacos:common
+  datasource:
+    driver-class-name: ${spring.datasource.driver-class-name}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: root # 若无需密码则删除此行
-      database: 0 # 默认 DB
-      timeout: 2000ms
+      host: ${spring.redis.host}
+      port: ${spring.redis.port}
+      password: ${spring.redis.password}
+      database: ${spring.redis.database}
+      timeout: ${spring.redis.timeout}
       lettuce:
         pool:
-          max-active: 8   # 最大连接数
-          max-idle: 8     # 最大空闲连接数
-          min-idle: 0     # 最小空闲连接数
-          max-wait: -1ms  # 最大等待时间
-      username: root
-
+          max-active: ${spring.redis.lettuce.pool.max-active}
+          max-wait: ${spring.redis.lettuce.pool.max-wait}
+          max-idle: ${spring.redis.lettuce.pool.max-idle}
+          min-idle: ${spring.redis.lettuce.pool.min-idle}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # 使用OAuth2提供的JWK端点进行JWT验证
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
-
-# Knife4j配置
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: auth
-      paths-to-match: /**
-      packages-to-scan: com.cloud.auth.controller
-
+  level:
+    com.cloud.user.mapper: TRACE
 knife4j:
   enable: true
   production: false
   basic:
-    enable: true
-    username: admin
-    password: admin123
+    enable: false
+  setting:
+    language: ZH_CN
+  insight:
+    service-name: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-flat-param-object: true

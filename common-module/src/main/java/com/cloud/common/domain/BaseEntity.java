@@ -1,9 +1,6 @@
 package com.cloud.common.domain;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,12 +12,13 @@ import java.time.LocalDateTime;
  * 基础实体类
  * 包含所有实体的通用字段：主键、创建时间、更新时间、逻辑删除标识
  *
- * @author your-name
+ * @author 代码规范团队
  * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public abstract class BaseEntity implements Serializable {
+
+public abstract class BaseEntity<T extends BaseEntity<T>> implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -42,5 +40,10 @@ public abstract class BaseEntity implements Serializable {
      */
     @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+    /**
+     * 逻辑删除标识 - 逻辑删除时自动填充
+     */
+    @TableLogic
+    private Integer deleted = 0;
 
 }

@@ -1,37 +1,73 @@
 server:
-  port: 8087
+  port: ${server.port}
 spring:
-  elasticsearch:
-    uris: http://es-host:9200 # ES集群地址
-    username: root
-    password: root
   application:
-    name: search-service
+    name: ${spring.application.name}
+  profiles:
+    active: dev
+  elasticsearch:
+    uris: ${elasticsearch.uris}
+    username: ${elasticsearch.username}
+    password: ${elasticsearch.password}
+
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.discovery.server-addr}
+        username: ${nacos.discovery.username}
+        password: ${nacos.discovery.password}
+        namespace: ${nacos.discovery.namespace}
+        group: ${nacos.discovery.group}
       config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        server-addr: ${nacos.config.server-addr}
+        username: ${nacos.config.username}
+        password: ${nacos.config.password}
+        namespace: ${nacos.config.namespace}
+        file-extension: ${nacos.config.file-extension}
+        group: ${nacos.config.group}
     stream:
       rocketmq:
         binder:
-          name-server: mq-host:9876
-          
-  
-  
+          name-server: ${rocketmq.name-server}
+
   config:
     import: optional:nacos:common
+  data:
+    redis:
+      host: ${spring.redis.host}
+      port: ${spring.redis.port}
+      password: ${spring.redis.password}
+      database: ${spring.redis.database}
+      timeout: ${spring.redis.timeout}
+      lettuce:
+        pool:
+          max-active: ${spring.redis.lettuce.pool.max-active}
+          max-wait: ${spring.redis.lettuce.pool.max-wait}
+          max-idle: ${spring.redis.lettuce.pool.max-idle}
+          min-idle: ${spring.redis.lettuce.pool.min-idle}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
 
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+  insight:
+    service-name: ${spring.application.name}
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-flat-param-object: true
 logging:
   file:
     path: D:/logs/${spring.application.name}

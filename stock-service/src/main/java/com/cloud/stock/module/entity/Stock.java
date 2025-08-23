@@ -7,46 +7,48 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 库存实体类
+ * 库存主表（支持高并发）
+ *
+ * @TableName stock
  */
-@Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("tb_stock")
-public class Stock extends BaseEntity {
-
+@TableName(value = "stock")
+@Data
+public class Stock extends BaseEntity<Stock> {
     /**
      * 商品ID
      */
-    @TableField("product_id")
+    @TableField(value = "product_id")
     private Long productId;
 
     /**
      * 商品名称
      */
-    @TableField("product_name")
+    @TableField(value = "product_name")
     private String productName;
 
     /**
-     * 总库存数量
+     * 总库存量
      */
-    @TableField("stock_count")
-    private Integer stockCount;
+    @TableField(value = "stock_quantity")
+    private Integer stockQuantity;
 
     /**
-     * 冻结库存数量
+     * 冻结库存量
      */
-    @TableField("frozen_count")
-    private Integer frozenCount;
+    @TableField(value = "frozen_quantity")
+    private Integer frozenQuantity;
 
     /**
-     * 可用库存数量
+     * 可用库存量（虚拟字段，计算得出）
      */
-    @TableField("available_count")
-    private Integer availableCount;
+    @TableField(exist = false)
+    private Integer availableQuantity;
 
     /**
-     * 版本号（乐观锁）
+     * 版本号（用于乐观锁）
      */
-    @TableField("version")
-    private Integer version;
+    @TableField(value = "version")
+    private Long version;
+
 }

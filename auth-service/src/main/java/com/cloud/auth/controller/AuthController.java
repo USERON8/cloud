@@ -1,11 +1,15 @@
 package com.cloud.auth.controller;
 
-import com.cloud.api.user.UserFeign;
+import com.cloud.api.user.UserFeignClient;
 import com.cloud.auth.service.AuthService;
 import com.cloud.auth.service.JwtService;
 import com.cloud.common.domain.Result;
-import com.cloud.common.domain.dto.*;
+import com.cloud.common.domain.dto.auth.LoginRequestDTO;
+import com.cloud.common.domain.dto.auth.LoginResponseDTO;
+import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
+import com.cloud.common.enums.UserType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,148 +33,104 @@ public class AuthController {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
-    private final UserFeign userFeign;
+    private final UserFeignClient userFeignClient;
 
-    public AuthController(JwtService jwtService, AuthenticationManager authenticationManager, AuthService authService, UserFeign userFeign) {
+    public AuthController(JwtService jwtService, AuthenticationManager authenticationManager, AuthService authService, UserFeignClient userFeignClient) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.authService = authService;
-        this.userFeign = userFeign;
+        this.userFeignClient = userFeignClient;
     }
 
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户")
     @ApiResponse(responseCode = "200", description = "注册成功")
-    public Result<LoginResponseDTO> register(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
+    public Result<Void> register(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
         try {
-            log.info("用户注册, username: {}", registerRequest.getUsername());
-            LoginResponseDTO response = authService.registerAndLogin(registerRequest);
-            return Result.success("注册成功", response);
+            log.info("用户注册请求, username: {}, userType: {}", registerRequest.getUsername(), registerRequest.getUserType());
+
+            // 检查用户类型是否合法（只允许普通用户和商家注册）
+            String userTypeStr = registerRequest.getUserType();
+            UserType userType = UserType.valueOf(userTypeStr);
+            if (userType != UserType.USER && userType != UserType.MERCHANT) {
+                log.warn("不支持的用户类型注册, username: {}, userType: {}", registerRequest.getUsername(), userType);
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "不支持的用户类型，只允许注册普通用户或商家");
+            }
+
+            // 执行注册
+            authService.register(registerRequest);
+            log.info("用户注册成功, username: {}, userType: {}", registerRequest.getUsername(), userType);
+            return Result.success();
         } catch (Exception e) {
-            log.error("用户注册失败, username: {}", registerRequest.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册失败: " + e.getMessage());
+            log.error("注册失败, username: {}", registerRequest.getUsername(), e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "注册失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/register-and-login")
     @Operation(summary = "用户注册并登录", description = "注册新用户并自动登录")
     @ApiResponse(responseCode = "200", description = "注册并登录成功",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponseDTO.class)))
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = LoginResponseDTO.class)))
     public Result<LoginResponseDTO> registerAndLogin(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
         try {
-            log.info("用户注册并登录, username: {}", registerRequest.getUsername());
+            log.info("用户注册并登录请求, username: {}, userType: {}", registerRequest.getUsername(), registerRequest.getUserType());
+
+            // 检查用户类型是否合法（只允许普通用户和商家注册）
+            String userTypeStr = registerRequest.getUserType();
+            UserType userType = UserType.valueOf(userTypeStr);
+            if (userType != UserType.USER && userType != UserType.MERCHANT) {
+                log.warn("不支持的用户类型注册并登录, username: {}, userType: {}", registerRequest.getUsername(), userType);
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "不支持的用户类型，只允许注册普通用户或商家");
+            }
+
+            // 执行注册并登录
             LoginResponseDTO response = authService.registerAndLogin(registerRequest);
-            return Result.success("注册并登录成功", response);
+            log.info("用户注册并登录成功, username: {}, userType: {}", registerRequest.getUsername(), userType);
+            return Result.success(response);
         } catch (Exception e) {
-            log.error("用户注册并登录失败, username: {}", registerRequest.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册并登录失败: " + e.getMessage());
+            log.error("注册并登录失败, username: {}", registerRequest.getUsername(), e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "注册并登录失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "用户登录系统")
+    @Operation(summary = "用户登录", description = "用户登录接口")
     @ApiResponse(responseCode = "200", description = "登录成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = LoginResponseDTO.class)))
-    public Result<LoginResponseDTO> login(@Parameter(description = "登录请求信息") @Valid @RequestBody LoginRequestDTO loginRequest) {
+    public Result<LoginResponseDTO> login(@Parameter(description = "用户登录信息") @Valid @RequestBody LoginRequestDTO loginRequest) {
         try {
-            log.info("用户登录, username: {}", loginRequest.getUsername());
+            log.info("用户登录请求, username: {}", loginRequest.getUsername());
+
+            // 认证用户
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
                             loginRequest.getPassword()
                     )
             );
+
+            // 设置认证信息到安全上下文
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserDTO userDTO = userFeign.findByUsername(loginRequest.getUsername());
+
+            // 生成JWT令牌
             String token = jwtService.generateToken(authentication);
             long expiresIn = jwtService.getExpirationTime();
-            LoginResponseDTO response = new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname());
-            return Result.success("登录成功", response);
-        } catch (Exception e) {
-            log.error("用户登录失败, username: {}", loginRequest.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "登录失败: " + e.getMessage());
-        }
-    }
 
-    @PostMapping("/logout")
-    @Operation(summary = "用户登出", description = "用户登出系统")
-    public Result<Void> logout() {
-        try {
-            log.info("用户登出");
-            SecurityContextHolder.clearContext();
-            return Result.success();
-        } catch (Exception e) {
-            log.error("用户登出失败", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "登出失败: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/refresh")
-    @Operation(summary = "刷新令牌", description = "刷新用户访问令牌")
-    public Result<LoginResponseDTO> refresh() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            log.info("刷新令牌, username: {}", authentication.getName());
-            String token = jwtService.generateToken(authentication);
-            long expiresIn = jwtService.getExpirationTime();
-            UserDTO userDTO = userFeign.findByUsername(authentication.getName());
-            LoginResponseDTO response = new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname());
-            return Result.success("令牌刷新成功", response);
-        } catch (Exception e) {
-            log.error("刷新令牌失败", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "刷新令牌失败: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/register-merchant")
-    @Operation(summary = "商家注册", description = "注册新商家，需要上传营业执照和身份证正反面图片，注册后需要管理员审核")
-    @ApiResponse(responseCode = "200", description = "注册成功")
-    public Result<LoginResponseDTO> registerMerchant(@Parameter(description = "商家注册信息") @Valid @ModelAttribute MerchantRegisterRequestDTO registerRequest) {
-        try {
-            log.info("商家注册, username: {}", registerRequest.getUsername());
-
-            // 先检查用户是否已存在
-            UserDTO existingUser = userFeign.findByUsername(registerRequest.getUsername());
-            if (existingUser != null) {
-                log.warn("用户已存在: {}", registerRequest.getUsername());
-                return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "用户已存在");
+            // 获取用户信息
+            UserDTO userDTO = userFeignClient.findByUsername(loginRequest.getUsername());
+            if (userDTO == null) {
+                log.warn("用户不存在, username: {}", loginRequest.getUsername());
+                return Result.error(ResultCode.USER_NOT_FOUND);
             }
-            
-            // 注册用户（默认禁用状态）
-            RegisterRequestDTO userRegisterRequest = new RegisterRequestDTO();
-            userRegisterRequest.setUsername(registerRequest.getUsername());
-            userRegisterRequest.setPassword(registerRequest.getPassword());
-            userRegisterRequest.setEmail(registerRequest.getEmail());
-            userRegisterRequest.setPhone(registerRequest.getPhone());
-            userRegisterRequest.setNickname(registerRequest.getNickname());
-            userRegisterRequest.setUserType("MERCHANT");
 
-            // 注册用户（默认为禁用状态，等待审核）
-            userFeign.register(userRegisterRequest);
-
-            // 用户注册成功后自动登录
-            LoginRequestDTO loginRequest = new LoginRequestDTO();
-            loginRequest.setUsername(registerRequest.getUsername());
-            loginRequest.setPassword(registerRequest.getPassword());
-
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserDTO userDTO = userFeign.findByUsername(loginRequest.getUsername());
-            String token = jwtService.generateToken(authentication);
-            long expiresIn = jwtService.getExpirationTime();
-            LoginResponseDTO response = new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname());
-
-            return Result.success("注册成功，请上传认证材料等待审核", response);
+            log.info("用户登录成功, username: {}, userType: {}", loginRequest.getUsername(), userDTO.getUserType());
+            return Result.success(new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname()));
         } catch (Exception e) {
-            log.error("商家注册失败, username: {}", registerRequest.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册失败: " + e.getMessage());
+            log.error("登录失败, username: {}", loginRequest.getUsername(), e);
+            return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "登录失败: " + e.getMessage());
         }
     }
 }

@@ -5,19 +5,18 @@
 <mapper namespace="com.cloud.stock.mapper.StockMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.stock.module.entity.Stock">
-        <id property="id" column="id"/>
-        <result property="productId" column="product_id"/>
-        <result property="productName" column="product_name"/>
-        <result property="stockCount" column="stock_count"/>
-        <result property="frozenCount" column="frozen_count"/>
-        <result property="availableCount" column="available_count"/>
-        <result property="version" column="version"/>
-        <result property="createdAt" column="create_time"/>
-        <result property="updatedAt" column="update_time"/>
+            <id property="id" column="id" />
+            <result property="productId" column="product_id" />
+            <result property="stockQuantity" column="stock_quantity" />
+            <result property="frozenQuantity" column="frozen_quantity" />
+            <result property="version" column="version" />
+            <result property="createdAt" column="created_at" />
+            <result property="updatedAt" column="updated_at" />
+            <result property="deleted" column="deleted" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,product_id,product_name,stock_count,frozen_count,available_count,
-        version,create_time,update_time
+        id,product_id,stock_quantity,frozen_quantity,version,created_at,
+        updated_at,deleted
     </sql>
 </mapper>

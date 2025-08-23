@@ -21,8 +21,9 @@ public class Knife4jConfig {
                         .version("1.0")
                         .description("Cloud微服务认证API接口文档")
                         .contact(new Contact()
-                                .name("开发团队")
-                                .email("developer@example.com"))
+                                .name("cloud shop")
+                                .url("https://github.com/USERON8/cloud")
+                                .email("sltt_0212@qq.com"))
                         .license(new License()
                                 .name("Apache License 2.0")
                                 .url("http://www.apache.org/licenses/LICENSE-2.0")));

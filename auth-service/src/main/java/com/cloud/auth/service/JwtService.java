@@ -1,6 +1,7 @@
 package com.cloud.auth.service;
 
-import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.enums.UserType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -23,7 +24,16 @@ public class JwtService {
         Instant now = Instant.now();
 
         // 使用UserDTO中的userType作为角色
-        String roles = userDTO.getUserType();
+        String roles = "USER"; // 默认角色
+        if (userDTO.getUserType() != null) {
+            try {
+                UserType userType = UserType.fromCode(userDTO.getUserType());
+                roles = userType.getRoleName();
+            } catch (Exception e) {
+                // 如果转换失败，使用默认角色
+                roles = "USER";
+            }
+        }
 
         return getStringJWT(authentication, now, roles, userDTO.getId());
     }

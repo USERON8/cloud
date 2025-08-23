@@ -1,10 +1,11 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserFeign;
-import com.cloud.common.domain.dto.LoginRequestDTO;
-import com.cloud.common.domain.dto.LoginResponseDTO;
-import com.cloud.common.domain.dto.RegisterRequestDTO;
-import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.api.user.UserFeignClient;
+import com.cloud.common.domain.Result;
+import com.cloud.common.domain.dto.auth.LoginRequestDTO;
+import com.cloud.common.domain.dto.auth.LoginResponseDTO;
+import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -12,18 +13,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Service
 @Slf4j
+@Service
 public class AuthService {
 
-    private final UserFeign userFeign;
+    private final UserFeignClient userFeignClient;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthService(UserFeign userFeign,
+    public AuthService(UserFeignClient userFeignClient,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager) {
-        this.userFeign = userFeign;
+        this.userFeignClient = userFeignClient;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
 
@@ -31,19 +32,24 @@ public class AuthService {
 
     public void register(RegisterRequestDTO registerRequest) {
         String username = registerRequest.getUsername();
-        log.info("用户注册, username: {}", username);
+        log.info("用户注册, username: {}, userType: {}", username, registerRequest.getUserType());
 
         try {
             // 检查用户是否已存在
-            UserDTO existingUser = userFeign.findByUsername(username);
+            UserDTO existingUser = userFeignClient.findByUsername(username);
             if (existingUser != null) {
                 log.warn("用户已存在: {}", username);
                 throw new RuntimeException("用户已存在");
             }
 
-            // 直接调用user服务的save方法进行注册
-            userFeign.register(registerRequest);
-            log.info("用户注册成功, username: {}", username);
+            // 直接调用user服务的register方法进行注册
+            Result<Boolean> result = userFeignClient.register(registerRequest);
+            if (!result.isSuccess()) {
+                log.error("用户服务注册失败: {}", result.getMessage());
+                throw new RuntimeException("注册失败: " + result.getMessage());
+            }
+
+            log.info("用户注册成功, username: {}, userType: {}", username, registerRequest.getUserType());
         } catch (Exception e) {
             log.error("注册过程中发生错误, username: {}", username, e);
             throw new RuntimeException("注册失败: " + e.getMessage(), e);
@@ -57,7 +63,7 @@ public class AuthService {
      * @return 登录响应信息
      */
     public LoginResponseDTO registerAndLogin(RegisterRequestDTO registerRequest) {
-        log.info("用户注册并登录, username: {}", registerRequest.getUsername());
+        log.info("用户注册并登录, username: {}, userType: {}", registerRequest.getUsername(), registerRequest.getUserType());
 
         try {
             // 执行注册
@@ -84,9 +90,9 @@ public class AuthService {
             long expiresIn = jwtService.getExpirationTime();
 
             // 获取用户信息
-            UserDTO userDTO = userFeign.findByUsername(registerRequest.getUsername());
+            UserDTO userDTO = userFeignClient.findByUsername(registerRequest.getUsername());
 
-            log.info("用户注册并登录成功, username: {}", registerRequest.getUsername());
+            log.info("用户注册并登录成功, username: {}, userType: {}", registerRequest.getUsername(), registerRequest.getUserType());
             return new LoginResponseDTO(token, expiresIn, userDTO.getUserType(), userDTO.getNickname());
         } catch (Exception e) {
             log.error("注册并登录过程中发生错误, username: {}", registerRequest.getUsername(), e);

@@ -9,16 +9,10 @@ import java.time.LocalDateTime;
  */
 @Data
 public class StockVO {
-
     /**
      * 主键ID
      */
     private Long id;
-
-    /**
-     * 商品ID
-     */
-    private Long productId;
 
     /**
      * 商品名称
@@ -26,42 +20,32 @@ public class StockVO {
     private String productName;
 
     /**
-     * 总库存数量
+     * 商品ID
      */
-    private Integer stockCount;
+    private Long productId;
 
     /**
-     * 冻结库存数量
+     * 总库存量
      */
-    private Integer frozenCount;
+    private Integer stockQuantity;
 
     /**
-     * 可用库存数量
+     * 冻结库存量
      */
-    private Integer availableCount;
+    private Integer frozenQuantity;
 
     /**
-     * 库存状态：0-缺货，1-不足，2-充足
+     * 可用库存量
      */
-    private Integer stockStatus;
-
-    /**
-     * 库存状态描述
-     */
-    private String stockStatusDesc;
-
-    /**
-     * 版本号
-     */
-    private Integer version;
+    private Integer availableQuantity;
 
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private LocalDateTime createAT;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    private LocalDateTime updateAT;
 }

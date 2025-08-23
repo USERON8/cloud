@@ -30,6 +30,36 @@ public class GlobalExceptionHandler {
                 .body(Result.error(e.getCode(), e.getMessage()));
     }
 
+    @ExceptionHandler(SystemException.class)
+    public ResponseEntity<Result<String>> handleSystemException(SystemException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Result<String>> handleValidationException(ValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Result<String>> handleResourceNotFoundException(ResourceNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(PermissionException.class)
+    public ResponseEntity<Result<String>> handlePermissionException(PermissionException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(ConcurrencyException.class)
+    public ResponseEntity<Result<String>> handleConcurrencyException(ConcurrencyException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<String>> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

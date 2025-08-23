@@ -1,21 +1,50 @@
 package com.cloud.user.converter;
 
-import com.cloud.common.domain.dto.RegisterRequestDTO;
-import com.cloud.common.domain.dto.UserDTO;
+import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.user.module.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
+/**
+ * 用户转换器
+ */
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略未映射目标属性
         unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
 )
 public interface UserConverter {
+    UserConverter INSTANCE = Mappers.getMapper(UserConverter.class);
 
+    /**
+     * 转换用户实体为DTO
+     *
+     * @param user 用户实体
+     * @return 用户DTO
+     */
     UserDTO toDTO(User user);
 
-    User toEntity(RegisterRequestDTO registerRequestDTO);
-
+    /**
+     * 转换用户DTO为实体
+     *
+     * @param userDTO 用户DTO
+     * @return 用户实体
+     */
     User toEntity(UserDTO userDTO);
+
+    /**
+     * 转换用户实体列表为DTO列表
+     *
+     * @param users 用户实体列表
+     * @return 用户DTO列表
+     */
+    // 密码不传输
+    List<UserDTO> toDTOList(List<User> users);
+
+
+    User toEntity(RegisterRequestDTO registerRequestDTO);
 }

@@ -1,6 +1,7 @@
 package com.cloud.filter;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -75,7 +76,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                     ServerHttpRequest mutatedRequest = request.mutate()
                             .header("Authorization", TOKEN_PREFIX + token)
                             .header("X-User-ID", jwt.getSubject())
-                            .header("X-User-Type", jwt.getClaimAsString("roles"))
+                            .header("X-User-Type", jwt.getClaimAsString("roles")) // 提取角色信息作为用户类型
                             .build();
                     return chain.filter(exchange.mutate().request(mutatedRequest).build());
                 })
@@ -114,18 +115,18 @@ public class JwtAuthenticationFilter implements WebFilter {
      * 验证token是否有效
      *
      * @param token JWT token
-     * @return JWT对象
+     * @return JWT对象，如果无效则返回null
      */
     private Mono<Jwt> validateToken(String token) {
         try {
-            // 使用Spring Security OAuth2的JwtDecoder验证并解析JWT令牌
+            // 验证JWT格式和签名
             Jwt jwt = jwtDecoder.decode(token);
             return Mono.just(jwt);
         } catch (JwtValidationException e) {
-            log.error("JWT验证失败", e);
-            return Mono.error(e);
+            log.warn("JWT验证失败: {}", e.getMessage());
+            return Mono.empty();
         } catch (Exception e) {
-            log.error("解析JWT时发生错误", e);
+            log.error("JWT解析过程中发生错误", e);
             return Mono.error(e);
         }
     }
@@ -133,15 +134,12 @@ public class JwtAuthenticationFilter implements WebFilter {
     /**
      * 处理未授权的请求
      *
-     * @param exchange 服务交换对象
+     * @param exchange ServerWebExchange对象
      * @return Mono<Void>
      */
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
-
-        String responseBody = "{\"code\": 401, \"message\": \"未授权访问\"}";
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(responseBody.getBytes())));
+        return response.setComplete();
     }
 }

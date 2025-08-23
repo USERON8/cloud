@@ -1,46 +1,48 @@
+server:
+  port: ${server.port}
 spring:
+  application:
+    name: ${spring.application.name}
+  profiles:
+    include: route, api
+    active: dev
   main:
     web-application-type: reactive
-  application:
-    name: gateway
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848
-        username: nacos
-        password: nacos
-        namespace: public
+        server-addr: ${nacos.discovery.server-addr}
+        username: ${nacos.discovery.username}
+        password: ${nacos.discovery.password}
+        namespace: ${nacos.discovery.namespace}
+        group: ${nacos.discovery.group}
       config:
-        namespace: public
-        server-addr: 127.0.0.1:8848
-        file-extension: yaml
-        prefix: gateway
-        group: DEFAULT_GROUP
-        username: nacos
-        password: nacos
+        server-addr: ${nacos.config.server-addr}
+        username: ${nacos.config.username}
+        password: ${nacos.config.password}
+        namespace: ${nacos.config.namespace}
+        file-extension: ${nacos.config.file-extension}
+        group: ${nacos.config.group}
   config:
     import: optional:nacos:common
-  profiles:
-    include: auth, route
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: root # 若无需密码则删除此行
-      database: 0 # 默认 DB
-      timeout: 2000ms
-      username: default
+      host: ${spring.redis.host}
+      port: ${spring.redis.port}
+      password: ${spring.redis.password}
+      database: ${spring.redis.database}
+      timeout: ${spring.redis.timeout}
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-
-server:
-  port: 80
-
-# 简化日志配置，使用logback-spring.xml
+          max-active: ${spring.redis.lettuce.pool.max-active}
+          max-wait: ${spring.redis.lettuce.pool.max-wait}
+          max-idle: ${spring.redis.lettuce.pool.max-idle}
+          min-idle: ${spring.redis.lettuce.pool.min-idle}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
 logging:
   file:
     path: D:/logs/${spring.application.name}
