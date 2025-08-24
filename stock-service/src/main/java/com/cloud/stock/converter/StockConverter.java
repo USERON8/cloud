@@ -11,6 +11,10 @@ import java.util.List;
 
 /**
  * 库存实体转换器
+ * 用于Stock实体类与StockDTO、StockVO之间的相互转换
+ * 
+ * @author cloud
+ * @since 1.0.0
  */
 @Mapper(
         componentModel = "spring",

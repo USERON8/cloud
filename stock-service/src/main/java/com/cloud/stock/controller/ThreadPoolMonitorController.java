@@ -14,6 +14,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 线程池监控控制器
+ * 提供线程池状态监控接口
+ * 
+ * @author cloud
+ * @since 1.0.0
  */
 @RestController
 @RequestMapping("/stock/monitor")
@@ -28,6 +32,8 @@ public class ThreadPoolMonitorController {
 
     /**
      * 获取所有线程池状态
+     * 
+     * @return 线程池状态信息
      */
     @GetMapping("/thread-pool")
     public Result<Map<String, Object>> getThreadPoolStatus() {

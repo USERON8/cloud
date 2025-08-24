@@ -27,9 +27,11 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        stockFreeze-out-0:
-          destination: STOCK_FREEZE_TOPIC
+        stockTypeChangeProducer-out-0:
+          destination: STOCK_TYPE_CHANGE_TOPIC
           content-type: application/json
+          producer:
+            partition-count: 4
         # 接收订单服务的创建订单消息（冻结库存）
         orderCreate-in-0:
           destination: ORDER_CREATE_TOPIC

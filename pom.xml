@@ -49,8 +49,6 @@
         <minio.version>8.5.17</minio.version>
         <redis-version>3.5.3</redis-version>
 
-        <rocketmq.version>2.3.4</rocketmq.version>
-
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
 
         <openfeign.version>4.3.0</openfeign.version>
@@ -62,14 +60,7 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.13</logback.version>
         <!-- 指定兼容版本版本 -->
-        <okio-jvm.version>3.6.0</okio-jvm.version>
-        <bcprov-jdk18on.version>1.80</bcprov-jdk18on.version>
-        <error-prone-annotations.version>2.28.0</error-prone-annotations.version>
-        <fastjson2.version>2.0.43</fastjson2.version>
-        <guava.version>33.3.1-jre</guava.version>
-        <okio-jvm.version>3.4.0</okio-jvm.version>
-        <protobuf-java.version>4.29.0</protobuf-java.version>
-        <swagger-annotations-jakarta.version>2.2.34</swagger-annotations-jakarta.version>
+       
     </properties>
 
     <dependencyManagement>

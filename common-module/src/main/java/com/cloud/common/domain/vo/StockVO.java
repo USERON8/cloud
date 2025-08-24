@@ -40,6 +40,11 @@ public class StockVO {
     private Integer availableQuantity;
 
     /**
+     * 库存状态：1-正常，2-缺货，3-下架
+     */
+    private Integer stockStatus;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createAT;

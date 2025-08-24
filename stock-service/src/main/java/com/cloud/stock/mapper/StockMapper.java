@@ -1,22 +1,26 @@
 package com.cloud.stock.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cloud.stock.module.dto.StockPageQueryDTO;
 import com.cloud.stock.module.entity.Stock;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
-/**
- * @author what's up
- * @description 针对表【stock(库存主表（支持高并发）)】的数据库操作Mapper
- * @createDate 2025-08-20 13:09:40
- * @Entity com.cloud.stock.module.entity.Stock
- */
 @Mapper
 public interface StockMapper extends BaseMapper<Stock> {
-    @Select("select * from stock where product_id = #{productId}")
-    Stock getByProductId(Long productId);
+    /**
+     * 根据商品ID获取库存信息
+     * @param productId 商品ID
+     * @return 库存信息
+     */
+    Stock getByProductId(@Param("productId") Long productId);
+    
+    /**
+     * 分页查询库存列表
+     * @param page 分页对象
+     * @param query 查询参数
+     * @return 库存分页结果
+     */
+    Page<Stock> pageQuery(Page<Stock> page, @Param("query") StockPageQueryDTO query);
 }
-
-
-
-

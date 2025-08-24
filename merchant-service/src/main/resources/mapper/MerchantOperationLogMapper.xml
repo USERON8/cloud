@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.merchant.mapper.MerchantOperationLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.merchant.module.entity.MerchantOperationLog">
+            <id property="id" column="id" />
+            <result property="merchantId" column="merchant_id" />
+            <result property="operation" column="operation" />
+            <result property="description" column="description" />
+            <result property="ipAddress" column="ip_address" />
+            <result property="userAgent" column="user_agent" />
+            <result property="createdAt" column="created_at" />
+            <result property="updatedAt" column="updated_at" />
+            <result property="createBy" column="create_by" />
+            <result property="updateBy" column="update_by" />
+            <result property="deleted" column="deleted" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,merchant_id,operation,description,ip_address,user_agent,
+        created_at,updated_at,create_by,update_by,deleted
+    </sql>
+</mapper>

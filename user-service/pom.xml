@@ -38,12 +38,6 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>bcprov-jdk18on</artifactId>
-                    <groupId>org.bouncycastle</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- Spring Cloud Alibaba组件 -->
@@ -60,10 +54,6 @@
             <artifactId>spring-cloud-starter-stream-rocketmq</artifactId>
             <exclusions>
                 <exclusion>
-                    <artifactId>error_prone_annotations</artifactId>
-                    <groupId>com.google.errorprone</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>fastjson2</artifactId>
                     <groupId>com.alibaba.fastjson2</groupId>
                 </exclusion>
@@ -74,6 +64,10 @@
                 <exclusion>
                     <artifactId>protobuf-java</artifactId>
                     <groupId>com.google.protobuf</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>error_prone_annotations</artifactId>
+                    <groupId>com.google.errorprone</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -118,7 +112,7 @@
             <artifactId>api-module</artifactId>
         </dependency>
 
-      
+
         <!-- API文档 -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>

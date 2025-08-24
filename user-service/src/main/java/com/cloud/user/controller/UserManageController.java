@@ -44,8 +44,9 @@ public class UserManageController {
     @ApiResponse(responseCode = "200", description = "创建成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
-    public Result<UserDTO> createUser(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest) {
-        log.info("管理员创建用户, username: {}", registerRequest.getUsername());
+    public Result<UserDTO> createUser(@Parameter(description = "用户注册信息") @Valid @RequestBody RegisterRequestDTO registerRequest,
+                                     @RequestHeader("X-User-ID") String currentUserId) {
+        log.info("管理员创建用户, username: {}，操作人: {}", registerRequest.getUsername(), currentUserId);
         try {
             // 检查用户名是否已存在
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -77,7 +78,7 @@ public class UserManageController {
                         null, 
                         user.getStatus(), 
                         1, // 创建用户
-                        "ADMIN");
+                        currentUserId);
                 
                 return Result.success("创建成功", userDTO);
             } else {

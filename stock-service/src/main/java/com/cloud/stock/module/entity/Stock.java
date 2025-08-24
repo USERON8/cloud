@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
  * 库存主表（支持高并发）
  *
  * @TableName stock
+ * @author cloud
+ * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "stock")
@@ -50,5 +52,11 @@ public class Stock extends BaseEntity<Stock> {
      */
     @TableField(value = "version")
     private Long version;
+    
+    /**
+     * 库存状态：1-正常，2-缺货，3-下架
+     */
+    @TableField(value = "stock_status")
+    private Integer stockStatus;
 
 }

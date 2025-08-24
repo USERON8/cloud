@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `stock`
     product_name      VARCHAR(100) NOT NULL COMMENT '商品名称',
     `stock_quantity`  INT          NOT NULL DEFAULT 0 COMMENT '总库存量',
     `frozen_quantity` INT          NOT NULL DEFAULT 0 COMMENT '冻结库存量',
+    `stock_status`    INT          NOT NULL DEFAULT 1 COMMENT '库存状态：1-正常，2-缺货，3-下架',
     `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     `created_at`      DATETIME              DEFAULT CURRENT_TIMESTAMP,
     `updated_at`      DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

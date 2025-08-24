@@ -1,20 +1,24 @@
-   ### 模块说明### 支付服务接口### 商品服务接口### 搜索服务接口
+### 模块说明### 支付服务接口### 商品服务接口### 搜索服务接口
 
 #### 搜索接口
+
 - `GET /search/product` - 搜索商品
 - `GET /search/order` - 搜索订单
 
 #### 商品查询接口
+
 - `GET /product/query/{id}` - 根据ID获取商品详情
 - `GET /product/query/page` - 分页查询商品
 
 #### 商品管理接口
+
 - `POST /product/manage` - 创建商品
 - `PUT /product/manage/{id}` - 更新商品信息
 - `PUT /product/manage/{id}/status` - 更新商品状态（上架/下架）
 - `DELETE /product/manage/{id}` - 删除商品
 
 #### 支付接口
+
 - `POST /payments` - 创建支付记录
 - `GET /payments/{id}` - 根据ID获取支付详情
 - `GET /payments/page` - 分页查询支付记录
@@ -97,11 +101,6 @@
     - 提供各服务操作日志的收集和查询
     - 使用MyBatis-Plus操作数据库
     - 通过消息队列接收其他服务的操作日志
-
-14. **frontend** - 前端应用
-    - 基于Vue3的单页面应用
-    - 使用Element Plus组件库
-    - 通过Axios调用后端API
 
 ## 核心功能
 
@@ -542,7 +541,6 @@ pnpm dev
 - `operator`: 操作人
 - `operate_time`: 操作时间
 - `create_time`: 创建时间
-
 
 ## 项目特点
 

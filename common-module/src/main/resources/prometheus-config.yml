@@ -1,0 +1,40 @@
+# Prometheus配置文件示例
+global:
+  scrape_interval: 15s # 默认抓取间隔
+  evaluation_interval: 15s # 规则评估间隔
+
+# Alertmanager配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# 规则文件
+rule_files:
+# - "first_rules.yml"
+# - "second_rules.yml"
+
+# 抓取配置
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ 'localhost:9090' ]
+
+  # Spring Boot应用监控
+  - job_name: 'spring-boot-apps'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:80' # 网关服务
+          - 'localhost:8081' # 管理员服务
+          - 'localhost:8082' # 认证服务
+          - 'localhost:8083' # 商家服务
+          - 'localhost:8084' # 订单服务
+          - 'localhost:8085' # 支付服务
+          - 'localhost:8086' # 商品服务
+          - 'localhost:8087' # 搜索服务
+          - 'localhost:8088' # 库存服务
+          - 'localhost:8089' # 用户服务
+    scrape_interval: 10s
