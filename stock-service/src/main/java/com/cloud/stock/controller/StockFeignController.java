@@ -1,1 +1,0 @@
-// 删除整个文件，因为已经有StockFeignClientController实现了Feign接口

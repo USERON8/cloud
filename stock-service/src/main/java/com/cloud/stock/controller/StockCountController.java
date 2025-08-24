@@ -32,6 +32,7 @@ public class StockCountController {
      *
      * @param productId 商品ID
      * @param count     增加数量
+     * @param currentUserId 当前用户ID
      * @return 操作结果
      */
     @PostMapping("/increase/{productId}")
@@ -40,9 +41,10 @@ public class StockCountController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
     public Result<String> increaseStock(@Parameter(description = "商品ID") @PathVariable Long productId,
-                                        @Parameter(description = "增加数量") @RequestParam Integer count) {
-        log.info("开始增加库存，商品ID: {}，增加数量: {}", productId, count);
-        stockService.increaseQuantity(productId, count);
+                                        @Parameter(description = "增加数量") @RequestParam Integer count,
+                                        @RequestHeader("X-User-ID") String currentUserId) {
+        log.info("开始增加库存，商品ID: {}，增加数量: {}，操作人: {}", productId, count, currentUserId);
+        stockService.increaseQuantity(productId, count, currentUserId);
         return Result.success("增加库存成功");
     }
 
@@ -51,6 +53,7 @@ public class StockCountController {
      *
      * @param productId 商品ID
      * @param count     扣减数量
+     * @param currentUserId 当前用户ID
      * @return 操作结果
      */
     @PostMapping("/reduce/{productId}")
@@ -59,9 +62,10 @@ public class StockCountController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
     public Result<String> reduceStock(@Parameter(description = "商品ID") @PathVariable Long productId,
-                                      @Parameter(description = "扣减数量") @RequestParam Integer count) {
-        log.info("开始扣减库存，商品ID: {}，扣减数量: {}", productId, count);
-        stockService.reduceQuantity(productId, count);
+                                      @Parameter(description = "扣减数量") @RequestParam Integer count,
+                                      @RequestHeader("X-User-ID") String currentUserId) {
+        log.info("开始扣减库存，商品ID: {}，扣减数量: {}，操作人: {}", productId, count, currentUserId);
+        stockService.reduceQuantity(productId, count, currentUserId);
         return Result.success("扣减库存成功");
     }
 
@@ -70,6 +74,7 @@ public class StockCountController {
      *
      * @param productId 商品ID
      * @param count     冻结数量
+     * @param currentUserId 当前用户ID
      * @return 操作结果
      */
     @PostMapping("/freeze/{productId}")
@@ -78,9 +83,10 @@ public class StockCountController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
     public Result<String> freezeStock(@Parameter(description = "商品ID") @PathVariable Long productId,
-                                      @Parameter(description = "冻结数量") @RequestParam Integer count) {
-        log.info("开始冻结库存，商品ID: {}，冻结数量: {}", productId, count);
-        stockService.FrozenQuantity(productId, count);
+                                      @Parameter(description = "冻结数量") @RequestParam Integer count,
+                                      @RequestHeader("X-User-ID") String currentUserId) {
+        log.info("开始冻结库存，商品ID: {}，冻结数量: {}，操作人: {}", productId, count, currentUserId);
+        stockService.FrozenQuantity(productId, count, currentUserId);
         return Result.success("冻结库存成功");
     }
 
@@ -89,6 +95,7 @@ public class StockCountController {
      *
      * @param productId 商品ID
      * @param count     解冻数量
+     * @param currentUserId 当前用户ID
      * @return 操作结果
      */
     @PostMapping("/unfreeze/{productId}")
@@ -97,11 +104,10 @@ public class StockCountController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
     public Result<String> unfreezeStock(@Parameter(description = "商品ID") @PathVariable Long productId,
-                                        @Parameter(description = "解冻数量") @RequestParam Integer count) {
-        log.info("开始解冻库存，商品ID: {}，解冻数量: {}", productId, count);
-        stockService.unfreezeQuantity(productId, count);
+                                        @Parameter(description = "解冻数量") @RequestParam Integer count,
+                                        @RequestHeader("X-User-ID") String currentUserId) {
+        log.info("开始解冻库存，商品ID: {}，解冻数量: {}，操作人: {}", productId, count, currentUserId);
+        stockService.unfreezeQuantity(productId, count, currentUserId);
         return Result.success("解冻库存成功");
     }
-
-
 }
