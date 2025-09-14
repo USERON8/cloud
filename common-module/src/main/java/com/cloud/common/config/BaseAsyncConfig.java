@@ -15,9 +15,9 @@ public abstract class BaseAsyncConfig {
     /**
      * 创建基础线程池
      *
-     * @param corePoolSize    核心线程数
-     * @param maxPoolSize     最大线程数
-     * @param queueCapacity   队列容量
+     * @param corePoolSize     核心线程数
+     * @param maxPoolSize      最大线程数
+     * @param queueCapacity    队列容量
      * @param threadNamePrefix 线程名前缀
      * @return 线程池任务执行器
      */
@@ -26,7 +26,7 @@ public abstract class BaseAsyncConfig {
             int maxPoolSize,
             int queueCapacity,
             String threadNamePrefix) {
-        
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
@@ -36,10 +36,10 @@ public abstract class BaseAsyncConfig {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
-        
+
         log.info("线程池配置完成: 核心线程数={}, 最大线程数={}, 队列容量={}, 线程名前缀={}",
                 corePoolSize, maxPoolSize, queueCapacity, threadNamePrefix);
-        
+
         return executor;
     }
 

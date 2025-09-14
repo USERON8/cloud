@@ -33,7 +33,7 @@ public class OrderAsyncConfig extends BaseAsyncConfig {
                 "order-query-"
         );
         executor.initialize();
-        
+
         log.info("订单查询线程池初始化完成");
         return executor;
     }
@@ -51,7 +51,7 @@ public class OrderAsyncConfig extends BaseAsyncConfig {
                 "order-operation-"
         );
         executor.initialize();
-        
+
         log.info("订单操作线程池初始化完成");
         return executor;
     }

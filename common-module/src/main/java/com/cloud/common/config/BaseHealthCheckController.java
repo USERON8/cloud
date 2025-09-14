@@ -1,6 +1,6 @@
 package com.cloud.common.config;
 
-import com.cloud.common.domain.Result;
+import com.cloud.common.result.Result;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

@@ -2,9 +2,9 @@ package com.cloud.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.service.CategoryService;
-import com.cloud.product.mapper.CategoryMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,10 +24,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
-    implements CategoryService{
-    
+        implements CategoryService {
+
     /**
      * 获取分类树结构
+     *
      * @return 分类树列表
      */
     @Cacheable(value = "category", key = "'tree'")
@@ -38,23 +39,23 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         List<Category> allCategories = this.list(new LambdaQueryWrapper<Category>()
                 .eq(Category::getStatus, 1)
                 .orderByAsc(Category::getSortOrder));
-        
+
         if (CollectionUtils.isEmpty(allCategories)) {
             return List.of();
         }
-        
+
         // 构建三级分类树
         // 一级分类
         List<Category> firstLevel = allCategories.stream()
                 .filter(category -> category.getLevel() == 1)
                 .collect(Collectors.toList());
-        
+
         // 为每个一级分类设置二级分类
         firstLevel.forEach(first -> {
             List<Category> secondLevel = allCategories.stream()
                     .filter(category -> category.getParentId().equals(first.getId()))
                     .collect(Collectors.toList());
-            
+
             // 为每个二级分类设置三级分类
             secondLevel.forEach(second -> {
                 List<Category> thirdLevel = allCategories.stream()
@@ -62,15 +63,16 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
                         .collect(Collectors.toList());
                 second.setChildren(thirdLevel);
             });
-            
+
             first.setChildren(secondLevel);
         });
-        
+
         return firstLevel;
     }
-    
+
     /**
      * 根据父ID获取子分类
+     *
      * @param parentId 父分类ID
      * @return 子分类列表
      */
@@ -83,9 +85,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
                 .eq(Category::getStatus, 1)
                 .orderByAsc(Category::getSortOrder));
     }
-    
+
     /**
      * 获取指定层级的分类
+     *
      * @param level 层级 1-一级分类 2-二级分类 3-三级分类
      * @return 分类列表
      */
@@ -98,7 +101,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
                 .eq(Category::getStatus, 1)
                 .orderByAsc(Category::getSortOrder));
     }
-    
+
     /**
      * 清除分类缓存
      */

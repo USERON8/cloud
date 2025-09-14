@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Elasticsearch配置类
+ *
+ * @author what's up
  */
 @Configuration
 public class ElasticsearchConfig {

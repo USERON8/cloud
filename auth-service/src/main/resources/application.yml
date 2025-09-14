@@ -1,57 +1,117 @@
 server:
-  port: ${user.service.port}
+  port: 8082
+
 spring:
   application:
-    name: ${spring.application.name}
-  profiles:
-    active: dev
+    name: auth-service
+  main:
+    allow-circular-references: true
   cloud:
     nacos:
       discovery:
-        server-addr: ${nacos.discovery.server-addr}
-        username: ${nacos.discovery.username}
-        password: ${nacos.discovery.password}
-        namespace: ${nacos.discovery.namespace}
-        group: ${nacos.discovery.group}
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
       config:
-        server-addr: ${nacos.config.server-addr}
-        username: ${nacos.config.username}
-        password: ${nacos.config.password}
-        namespace: ${nacos.config.namespace}
-        file-extension: ${nacos.config.file-extension}
-        group: ${nacos.config.group}
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
   config:
     import: optional:nacos:common
   datasource:
-    driver-class-name: ${spring.datasource.driver-class-name}
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    url: jdbc:mysql://localhost:3306/cloud_auth?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root
+    password: root
   data:
     redis:
-      host: ${spring.redis.host}
-      port: ${spring.redis.port}
-      password: ${spring.redis.password}
-      database: ${spring.redis.database}
-      timeout: ${spring.redis.timeout}
+      host: localhost
+      port: 6379
+      password: root
+      database: 0
+      timeout: 10000ms
       lettuce:
         pool:
-          max-active: ${spring.redis.lettuce.pool.max-active}
-          max-wait: ${spring.redis.lettuce.pool.max-wait}
-          max-idle: ${spring.redis.lettuce.pool.max-idle}
-          min-idle: ${spring.redis.lettuce.pool.min-idle}
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
   security:
     oauth2:
+      client:
+        registration:
+          web-client: # 确保这个名称与Postman中的Client ID一致
+            client-id: web-client
+            client-secret: WebClient@2024#Secure
+            client-authentication-method: basic
+            authorization-grant-type: authorization_code
+            redirect-uri: http://127.0.0.1:80/authorized # 修改为通过网关的重定向URI
+            scope: openid,profile,read,write,user.read,user.write
+            client-name: Web Client
+          github:
+            client-id: Ov23li4lW4aaO4mlFGRf
+            client-secret: 6afee51f8c5b77a7b3a20dc6b8e41d9b4c60e55d
+          client-service: # 客户端服务注册
+            provider: custom-authorization-server # 指向下面定义的提供商配置
+            client-id: client-service # 与AuthServerConfig中一致
+            client-secret: ClientService@2024#Secure # 与AuthServerConfig中一致
+            authorization-grant-type: client_credentials # 使用客户端模式
+            scope: internal_api # 申请的权限范围
+        provider:
+          custom-authorization-server:
+            token-uri: http://127.0.0.1:80/oauth2/token # 修改为通过网关的令牌端点地址
       resourceserver:
         jwt:
-          # 使用OAuth2提供的JWK端点进行JWT验证
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
+          # 作为授权服务器，直接使用本地JWK端点验证自己颁发的token
+          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+  autoconfigure:
+    exclude: org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    shutdown:
+      enabled: false
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  group-configs:
+    - group: 'auth'
+      paths-to-match: '/api/v1/auth/**'
+    - group: 'oauth2'
+      paths-to-match: '/oauth2/**'
+
+# Knife4j 配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
   level:
-    com.cloud.user.mapper: TRACE
+    root: info
+    com.cloud.auth: debug
+    org.springframework.security: debug
+    org.springframework.web: warn
 knife4j:
   enable: true
   production: false

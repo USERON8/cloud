@@ -5,12 +5,12 @@
 <mapper namespace="com.cloud.order.mapper.OrderItemMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.order.module.entity.OrderItem">
-            <id property="id" column="id" />
-            <result property="orderId" column="order_id" />
-            <result property="productId" column="product_id" />
-            <result property="productSnapshot" column="product_snapshot" />
-            <result property="quantity" column="quantity" />
-            <result property="price" column="price" />
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="productSnapshot" column="product_snapshot"/>
+        <result property="quantity" column="quantity"/>
+        <result property="price" column="price"/>
     </resultMap>
 
     <sql id="Base_Column_List">

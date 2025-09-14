@@ -5,12 +5,12 @@
 <mapper namespace="com.cloud.stock.mapper.StockInMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.stock.module.entity.StockIn">
-            <id property="id" column="id" />
-            <result property="productId" column="product_id" />
-            <result property="quantity" column="quantity" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="deleted" column="deleted" />
+        <id property="id" column="id"/>
+        <result property="productId" column="product_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <sql id="Base_Column_List">

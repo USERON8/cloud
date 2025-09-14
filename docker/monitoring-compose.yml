@@ -1,7 +1,7 @@
 services:
   # Elasticsearch
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: elasticsearch:9.1.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -11,13 +11,19 @@ services:
       - "9201:9200"
       - "9301:9300"
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - type: bind
+        source: D:\docker\elasticsearch\data
+        target: /usr/share/elasticsearch/data
+      - type: bind
+        source: D:\docker\elasticsearch\logs
+        target: /usr/share/elasticsearch/logs
     networks:
       - monitoring
 
   # Logstash
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
+    image:
+      logstash:9.1.2
     container_name: logstash
     depends_on:
       - elasticsearch
@@ -25,14 +31,19 @@ services:
       - "5044:5044"
       - "9600:9600"
     volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-      - ../logs:/app/logs
+      - type: bind
+        source: ./logstash/pipeline
+        target: /usr/share/logstash/pipeline
+      - type: bind
+        source: ../logs
+        target: /app/logs
     networks:
       - monitoring
 
   # Kibana
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+    image:
+      kibana:9.1.2
     container_name: kibana
     depends_on:
       - elasticsearch
@@ -45,13 +56,20 @@ services:
 
   # Prometheus
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: bitnami/prometheus:3.5.0-debian-12-r3
     container_name: prometheus
     ports:
-      - "9090:9090"
+      - "9099:9090"
     volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus_data:/prometheus
+      - type: bind
+        source: ./prometheus
+        target: /etc/prometheus
+      - type: bind
+        source: D:\docker\prometheus\data
+        target: /prometheus
+      - type: bind
+        source: D:\docker\prometheus\logs
+        target: /prometheus/logs
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -64,14 +82,20 @@ services:
 
   # Grafana
   grafana:
-    image: grafana/grafana-enterprise:10.2.0
+    image:
+      grafana/grafana:12.2.0-17084981832
     container_name: grafana
     depends_on:
       - prometheus
     ports:
       - "3000:3000"
     volumes:
-      - grafana_data:/var/lib/grafana
+      - type: bind
+        source: D:\docker\grafana\data
+        target: /var/lib/grafana
+      - type: bind
+        source: D:\docker\grafana\logs
+        target: /var/log/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

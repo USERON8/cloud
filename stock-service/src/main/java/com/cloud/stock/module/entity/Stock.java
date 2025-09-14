@@ -2,16 +2,16 @@ package com.cloud.stock.module.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cloud.common.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 库存主表（支持高并发）
+ * 库存表
  *
+ * @author what's up
  * @TableName stock
- * @author cloud
- * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "stock")
@@ -42,21 +42,15 @@ public class Stock extends BaseEntity<Stock> {
     private Integer frozenQuantity;
 
     /**
-     * 可用库存量（虚拟字段，计算得出）
-     */
-    @TableField(exist = false)
-    private Integer availableQuantity;
-
-    /**
-     * 版本号（用于乐观锁）
-     */
-    @TableField(value = "version")
-    private Long version;
-    
-    /**
      * 库存状态：1-正常，2-缺货，3-下架
      */
     @TableField(value = "stock_status")
     private Integer stockStatus;
 
+    /**
+     * 乐观锁版本号
+     */
+    @Version
+    @TableField(value = "version")
+    private Integer version;
 }

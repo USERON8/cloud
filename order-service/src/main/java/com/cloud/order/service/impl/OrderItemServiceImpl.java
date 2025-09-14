@@ -1,22 +1,25 @@
 package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.module.entity.OrderItem;
 import com.cloud.order.service.OrderItemService;
-import com.cloud.order.mapper.OrderItemMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
-* @author what's up
-* @description 针对表【order_item(订单明细表)】的数据库操作Service实现
-* @createDate 2025-08-16 19:50:33
-*/
+ * 订单项服务实现类
+ *
+ * @author cloud
+ * @since 1.0.0
+ */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class OrderItemServiceImpl extends ServiceImpl<OrderItemMapper, OrderItem>
-    implements OrderItemService{
+        implements OrderItemService {
 
 }
-
-
 
 

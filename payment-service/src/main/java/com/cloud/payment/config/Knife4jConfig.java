@@ -1,31 +1,23 @@
 package com.cloud.payment.config;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import org.springframework.context.annotation.Bean;
+import com.cloud.common.config.BaseKnife4jConfig;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Knife4j配置类
+ * 支付服务 Knife4j 配置
+ *
+ * @author what's up
  */
 @Configuration
-public class Knife4jConfig {
+public class Knife4jConfig extends BaseKnife4jConfig {
 
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Cloud支付服务API文档")
-                        .version("1.0")
-                        .description("Cloud微服务支付管理API接口文档")
-                        .contact(new Contact()
-                                .name("cloud shop")
-                                .url("https://github.com/USERON8/cloud")
-                                .email("sltt_0212@qq.com"))
-                        .license(new License()
-                                .name("Apache License 2.0")
-                                .url("http://www.apache.org/licenses/LICENSE-2.0")));
+    @Override
+    protected String getServiceTitle() {
+        return "支付服务 API 文档";
+    }
+
+    @Override
+    protected String getServiceDescription() {
+        return "支付管理、支付查询、支付流水管理相关的 RESTful API 文档";
     }
 }

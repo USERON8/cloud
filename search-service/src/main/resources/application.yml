@@ -26,9 +26,6 @@ spring:
         file-extension: ${nacos.config.file-extension}
         group: ${nacos.config.group}
     stream:
-      rocketmq:
-        binder:
-          name-server: ${rocketmq.name-server}
 
   config:
     import: optional:nacos:common

@@ -1,53 +1,126 @@
 server:
-  port: ${server.port}
+  port: 80
 spring:
   application:
-    name: ${spring.application.name}
+    name: gateway
   profiles:
-    include: route, api
-    active: dev
-  main:
-    web-application-type: reactive
+    include: route,api
   cloud:
+    gateway:
+      # 全局CORS配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      
+      # 默认过滤器 - 应用安全过滤器到所有路由
+      default-filters:
+        - name: Security
+          args:
+            enableIpCheck: true
+            enableRateLimit: true
+            enableTokenCheck: true
+            enablePerformanceMonitoring: true
     nacos:
       discovery:
-        server-addr: ${nacos.discovery.server-addr}
-        username: ${nacos.discovery.username}
-        password: ${nacos.discovery.password}
-        namespace: ${nacos.discovery.namespace}
-        group: ${nacos.discovery.group}
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
       config:
-        server-addr: ${nacos.config.server-addr}
-        username: ${nacos.config.username}
-        password: ${nacos.config.password}
-        namespace: ${nacos.config.namespace}
-        file-extension: ${nacos.config.file-extension}
-        group: ${nacos.config.group}
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
   config:
     import: optional:nacos:common
   data:
     redis:
-      host: ${spring.redis.host}
-      port: ${spring.redis.port}
-      password: ${spring.redis.password}
-      database: ${spring.redis.database}
-      timeout: ${spring.redis.timeout}
+      host: localhost
+      port: 6379
+      password: root
+      database: 0
+      timeout: 10000ms
       lettuce:
         pool:
-          max-active: ${spring.redis.lettuce.pool.max-active}
-          max-wait: ${spring.redis.lettuce.pool.max-wait}
-          max-idle: ${spring.redis.lettuce.pool.max-idle}
-          min-idle: ${spring.redis.lettuce.pool.min-idle}
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+  web:
+    resources:
+      static-locations: classpath:/static/
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
+          # 通过网关访问auth-service的JWK端点，实现OAuth2.1标准架构
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
   level:
-    com.cloud: DEBUG
+    com.cloud: INFO
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
+    org.springframework.security: WARN
+
+# 禁用数据源和性能监控配置，网关不需要数据库连接
+performance:
+  datasource:
+    optimized:
+      enabled: false
+  monitoring:
+    enabled: false
+
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    config-url: /swagger-resources/configuration/ui
+    urls-primary-name: 认证服务
+    urls:
+      - name: 认证服务
+        url: /auth-service/v3/api-docs
+      - name: 用户服务
+        url: /user-service/v3/api-docs
+      - name: 商品服务
+        url: /product-service/v3/api-docs
+      - name: 订单服务
+        url: /order-service/v3/api-docs
+      - name: 支付服务
+        url: /payment-service/v3/api-docs
+      - name: 库存服务
+        url: /stock-service/v3/api-docs
+
+# Knife4j 网关聚合配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+    enable-footer-custom: true
+    footer-custom-content: "Cloud 微服务平台 API 文档"

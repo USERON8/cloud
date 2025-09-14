@@ -5,17 +5,17 @@
 <mapper namespace="com.cloud.product.mapper.CategoryMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.Category">
-            <id property="id" column="id" />
-            <result property="parentId" column="parent_id" />
-            <result property="name" column="name" />
-            <result property="level" column="level" />
-            <result property="sortOrder" column="sort_order" />
-            <result property="status" column="status" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="createBy" column="create_by" />
-            <result property="updateBy" column="update_by" />
-            <result property="deleted" column="deleted" />
+        <id property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="name" column="name"/>
+        <result property="level" column="level"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <sql id="Base_Column_List">

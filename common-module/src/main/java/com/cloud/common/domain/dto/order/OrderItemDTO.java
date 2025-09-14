@@ -1,57 +1,77 @@
 package com.cloud.common.domain.dto.order;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
- * 订单明细DTO
+ * 订单项DTO
+ * 用于服务间调用传输
+ *
+ * @author what's up
+ * @since 1.0.0
  */
 @Data
-public class OrderItemDTO {
+@Schema(description = "订单项DTO")
+public class OrderItemDTO implements Serializable {
+    
+    @Serial
+    private static final long serialVersionUID = 1L;
+    
     /**
-     * 主键ID
+     * 订单项ID
      */
+    @Schema(description = "订单项ID")
     private Long id;
     
     /**
      * 订单ID
      */
-    private String orderId;
-
+    @Schema(description = "订单ID")
+    private Long orderId;
+    
     /**
      * 商品ID
      */
-    private String productId;
-
+    @Schema(description = "商品ID")
+    private Long productId;
+    
     /**
-     * 商品快照（名称/价格/规格）
+     * 商品名称
      */
-    private Object productSnapshot;
-
+    @Schema(description = "商品名称")
+    private String productName;
+    
+    /**
+     * 商品图片
+     */
+    @Schema(description = "商品图片")
+    private String productImage;
+    
+    /**
+     * 商品价格（下单时的价格）
+     */
+    @Schema(description = "商品价格（下单时的价格）")
+    private BigDecimal productPrice;
+    
     /**
      * 购买数量
      */
+    @Schema(description = "购买数量")
     private Integer quantity;
-
-    /**
-     * 购买时单价
-     */
-    private BigDecimal price;
     
     /**
-     * 创建时间
+     * 小计金额
      */
-    private LocalDateTime createdAt;
+    @Schema(description = "小计金额")
+    private BigDecimal subtotal;
     
     /**
-     * 更新时间
+     * 商品规格（JSON字符串）
      */
-    private LocalDateTime updatedAt;
-    
-    /**
-     * 逻辑删除标识
-     */
-    private Integer deleted;
+    @Schema(description = "商品规格（JSON字符串）")
+    private String productSpecs;
 }

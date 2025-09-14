@@ -1,17 +1,17 @@
 package com.cloud.api.user;
 
-import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * 用户服务Feign客户端
+ * 用于服务间调用用户服务的接口
+ *
+ * @author what's up
  */
-@FeignClient(name = "user-service", path = "/user")
+@FeignClient(name = "user-service", path = "/user", contextId = "user-feign-client")
 public interface UserFeignClient {
 
     /**
@@ -20,7 +20,7 @@ public interface UserFeignClient {
      * @param username 用户名
      * @return 用户信息
      */
-    @GetMapping("/username/{username}")
+    @GetMapping("/internal/username/{username}")
     UserDTO findByUsername(@PathVariable("username") String username);
 
     /**
@@ -29,33 +29,33 @@ public interface UserFeignClient {
      * @param id 用户ID
      * @return 用户信息
      */
-    @GetMapping("/users/{id}")
+    @GetMapping("/internal/id/{id}")
     UserDTO findById(@PathVariable("id") Long id);
 
     /**
      * 保存用户信息
      *
      * @param registerRequest 用户注册信息
-     * @return 保存结果
+     * @return 是否保存成功
      */
-    @PostMapping("/users")
-    Result<Boolean> register(@RequestBody RegisterRequestDTO registerRequest);
+    @PostMapping("/internal/register")
+    UserDTO register(@RequestBody RegisterRequestDTO registerRequest);
 
     /**
      * 更新用户信息
      *
-     * @param id      用户ID
      * @param userDTO 用户信息
-     * @return 更新结果
+     * @return 是否更新成功
      */
-    @PutMapping("/users/{id}")
-    Result<Void> update(@PathVariable("id") Long id, @RequestBody UserDTO userDTO);
+    @PutMapping("/internal/update")
+    Boolean update(@RequestBody UserDTO userDTO);
 
     /**
-     * 获取所有用户
+     * 获取用户密码（仅供auth-service使用）
      *
-     * @return 用户列表
+     * @param username 用户名
+     * @return 加密后的密码
      */
-    @GetMapping("/users")
-    Result<List<UserDTO>> getAllUsers();
+    @GetMapping("/internal/password/{username}")
+    String getUserPassword(@PathVariable("username") String username);
 }

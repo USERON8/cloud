@@ -1,33 +1,24 @@
 server:
-  port: 8087
+  port: 8088
+
 spring:
-  elasticsearch:
-    uris: http://es-host:9200 # ES集群地址
-    username: root
-    password: root
-  application:
-    name: search-service
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
+        namespace: search
+        group: CLOUD
       config:
         server-addr: localhost:8848
         username: nacos
         password: nacos
-        namespace: public
+        namespace: search
         file-extension: yaml
-        group: DEFAULT_GROUP
-    stream:
-      rocketmq:
-        binder:
-          name-server: mq-host:9876
-  config:
-    import: optional:nacos:common
+        group: CLOUD
+  elasticsearch:
+    uris: http://localhost:9200
   data:
     redis:
       host: localhost
@@ -38,12 +29,15 @@ spring:
       lettuce:
         pool:
           max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
+          max-wait: 2000ms
+          max-idle: 4
+          min-idle: 1
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: http://localhost:8082/oauth2/jwks
 
+logging:
+  level:
+    com.cloud.search: trace

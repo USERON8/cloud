@@ -20,7 +20,7 @@ public class StockDTO {
      * 商品名称
      */
     private String productName;
-    
+
     /**
      * 总库存量
      */

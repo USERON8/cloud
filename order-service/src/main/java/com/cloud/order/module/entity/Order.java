@@ -10,11 +10,13 @@ import java.math.BigDecimal;
 
 /**
  * 订单主表
+ * 对应数据库表: orders
  *
- * @TableName order
+ * @author 代码规范团队
+ * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "order")
+@TableName(value = "orders")
 @Data
 public class Order extends BaseEntity<Order> {
     /**
@@ -42,8 +44,8 @@ public class Order extends BaseEntity<Order> {
     private Integer status;
 
     /**
-     * 地址快照
+     * 地址ID
      */
     @TableField(value = "address_id")
-    private String address_id;
+    private Long addressId;
 }

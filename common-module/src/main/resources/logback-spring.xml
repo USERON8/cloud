@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- 定义日志文件的存储地址 -->
-    <property name="LOG_HOME" value="logs" />
-    
+    <property name="LOG_HOME" value="logs"/>
+
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -71,9 +71,9 @@
     <springProfile name="dev">
         <logger name="com.cloud" level="DEBUG"/>
         <root level="INFO">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="ASYNC_FILE" />
-            <appender-ref ref="ASYNC_ERROR_FILE" />
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
     </springProfile>
 
@@ -81,8 +81,8 @@
     <springProfile name="prod">
         <logger name="com.cloud" level="INFO"/>
         <root level="INFO">
-            <appender-ref ref="ASYNC_FILE" />
-            <appender-ref ref="ASYNC_ERROR_FILE" />
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
     </springProfile>
 
@@ -90,9 +90,9 @@
     <springProfile name="!dev &amp; !prod">
         <logger name="com.cloud" level="INFO"/>
         <root level="INFO">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="ASYNC_FILE" />
-            <appender-ref ref="ASYNC_ERROR_FILE" />
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
     </springProfile>
 </configuration>

@@ -1,6 +1,7 @@
 package com.cloud.order.converter;
 
 import com.cloud.common.domain.dto.order.OrderDTO;
+import com.cloud.common.domain.vo.OrderVO;
 import com.cloud.order.module.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -42,4 +43,28 @@ public interface OrderConverter {
      * @return 订单DTO列表
      */
     List<OrderDTO> toDTOList(List<Order> orders);
+
+    /**
+     * 转换订单实体为VO
+     *
+     * @param order 订单实体
+     * @return 订单VO
+     */
+    OrderVO toVO(Order order);
+
+    /**
+     * 转换订单VO为实体
+     *
+     * @param orderVO 订单VO
+     * @return 订单实体
+     */
+    Order toEntity(OrderVO orderVO);
+
+    /**
+     * 转换订单实体列表为VO列表
+     *
+     * @param orders 订单实体列表
+     * @return 订单VO列表
+     */
+    List<OrderVO> toVOList(List<Order> orders);
 }

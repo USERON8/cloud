@@ -1,43 +1,56 @@
 package com.cloud.api.auth;
 
-import com.cloud.common.domain.Result;
 import com.cloud.common.domain.dto.auth.LoginRequestDTO;
 import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * 认证服务Feign客户端
+ * 实现OAuth2标准认证流程
+ *
+ * @author what's up
  */
 @FeignClient(name = "auth-service")
 public interface AuthFeignClient {
 
     /**
-     * 用户登录
+     * 用户登录，通过OAuth2密码模式获取访问令牌
      *
      * @param loginRequest 登录请求参数
-     * @return 登录响应信息
+     * @return OAuth2标准登录响应信息
      */
     @PostMapping("/auth/login")
     Result<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest);
 
     /**
-     * 用户注册
+     * 用户注册，注册成功后通过OAuth2密码模式获取访问令牌
      *
      * @param registerRequest 注册请求参数
-     * @return 登录响应信息
+     * @return 注册结果
      */
     @PostMapping("/auth/register")
     Result<LoginResponseDTO> register(@RequestBody RegisterRequestDTO registerRequest);
 
     /**
-     * 用户注册并自动登录
+     * 用户注册并自动登录，通过OAuth2密码模式获取访问令牌
      *
      * @param registerRequest 注册请求参数
-     * @return 登录响应信息
+     * @return OAuth2标准登录响应信息
      */
     @PostMapping("/auth/register-and-login")
     Result<LoginResponseDTO> registerAndLogin(@RequestBody RegisterRequestDTO registerRequest);
+
+    /**
+     * 刷新访问令牌
+     *
+     * @param refreshToken 刷新令牌
+     * @return 新的访问令牌信息
+     */
+    @PostMapping("/auth/refresh-token")
+    Result<LoginResponseDTO> refreshToken(@RequestParam("refresh_token") String refreshToken);
 }

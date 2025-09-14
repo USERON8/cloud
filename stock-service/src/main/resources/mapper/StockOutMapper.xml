@@ -5,17 +5,17 @@
 <mapper namespace="com.cloud.stock.mapper.StockOutMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.stock.module.entity.StockOut">
-            <id property="id" column="id" />
-            <result property="productId" column="product_id" />
-            <result property="quantity" column="quantity" />
-            <result property="orderId" column="order_id" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="deleted" column="deleted" />
+        <id property="id" column="id"/>
+        <result property="productId" column="product_id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,product_id,quantity,order_id,created_at,updated_at,
+        id,product_id,order_id,quantity,created_at,updated_at,
         deleted
     </sql>
 </mapper>

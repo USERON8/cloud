@@ -16,7 +16,7 @@ nacos:
     group: DEFAULT_GROUP
 spring:
   application:
-    name: admin-service
+    name: payment-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
@@ -39,4 +39,5 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8082/oauth2/jwks
+          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json

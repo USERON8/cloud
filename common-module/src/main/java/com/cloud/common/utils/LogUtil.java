@@ -30,10 +30,11 @@ public class LogUtil {
 
     /**
      * 记录业务操作日志
-     * @param operation 操作类型
-     * @param userId 用户ID
+     *
+     * @param operation  操作类型
+     * @param userId     用户ID
      * @param resourceId 资源ID
-     * @param message 日志消息
+     * @param message    日志消息
      */
     public static void logOperation(String operation, String userId, String resourceId, String message) {
         logger.info("Operation: {}, UserId: {}, ResourceId: {}, Message: {}", operation, userId, resourceId, message);
@@ -41,19 +42,21 @@ public class LogUtil {
 
     /**
      * 记录错误日志
-     * @param operation 操作类型
-     * @param userId 用户ID
-     * @param resourceId 资源ID
+     *
+     * @param operation    操作类型
+     * @param userId       用户ID
+     * @param resourceId   资源ID
      * @param errorMessage 错误消息
-     * @param throwable 异常对象
+     * @param throwable    异常对象
      */
     public static void logError(String operation, String userId, String resourceId, String errorMessage, Throwable throwable) {
-        logger.error("Operation: {}, UserId: {}, ResourceId: {}, ErrorMessage: {}", 
-                     operation, userId, resourceId, errorMessage, throwable);
+        logger.error("Operation: {}, UserId: {}, ResourceId: {}, ErrorMessage: {}",
+                operation, userId, resourceId, errorMessage, throwable);
     }
 
     /**
      * 记录调试日志
+     *
      * @param message 调试消息
      */
     public static void logDebug(String message) {
@@ -62,6 +65,7 @@ public class LogUtil {
 
     /**
      * 记录信息日志
+     *
      * @param message 信息消息
      */
     public static void logInfo(String message) {
@@ -70,6 +74,7 @@ public class LogUtil {
 
     /**
      * 记录警告日志
+     *
      * @param message 警告消息
      */
     public static void logWarn(String message) {

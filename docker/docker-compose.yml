@@ -32,9 +32,9 @@ services:
       timeout: 10s
       retries: 10
 
-  # Redis 服务 (版本 8.2-rc1-bookworm)
+  # Redis 服务 (版本 8.2.1-alpine3.22)
   redis:
-    image: redis:8.2-rc1-bookworm
+    image: redis:7.4.5-bookworm
     container_name: redis_cache
     networks:
       service_net:
@@ -124,72 +124,98 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-  # RocketMQ NameServer (版本 5.3.3)
+  # NameServer 服务 (版本 5.3.3)
   namesrv:
-    image: apache/rocketmq:5.3.3
-    container_name: rocketmq_namesrv
+    image: apache/rocketmq:5.3.2
+    container_name: rmqnamesrv
     networks:
       service_net:
         ipv4_address: 172.28.0.40
     ports:
-      - "9876:9876"  # NameServer 端口
+      - "39876:9876"  # NameServer 端口
+      - "38080:8080"  # Proxy端口1
+      - "38081:8081"  # Proxy端口2
     volumes:
       - type: bind
         source: D:\docker\rocketmq\namesrv\logs
-        target: /home/rocketmq/logs
+        target: /home/rocketmq/namesrv/logs
       - type: bind
         source: D:\docker\rocketmq\namesrv\store
-        target: /home/rocketmq/store
+        target: /home/rocketmq/namesrv/store
+      - type: bind
+        source: D:\docker\rocketmq\proxy\logs
+        target: /home/rocketmq/logs
+      - type: bind
+        source: D:\docker\rocketmq\proxy\conf
+        target: /home/rocketmq/proxy/conf
+    environment:
+      - NAMESRV_ADDR=172.28.0.40:9876
     command: sh mqnamesrv
 
-  # RocketMQ Broker (版本 5.3.3)
+  # Broker 服务 (版本 5.3.2)
   broker:
-    image: apache/rocketmq:5.3.3
-    container_name: rocketmq_broker
+    image: apache/rocketmq:5.3.2
+    container_name: rmqbroker
     networks:
       service_net:
         ipv4_address: 172.28.0.50
-    ports:
-      - "10909:10909"  # Broker VIP 端口
-      - "10911:10911"  # Broker 主端口
-      - "10912:10912"  # Broker HA 端口
-    environment:
-      - NAMESRV_ADDR=rocketmq_namesrv:9876
     depends_on:
       - namesrv
+    ports:
+      - "30909:10909"  # Broker VIP 端口
+      - "30911:10911"  # Broker 主端口
+      - "30912:10912"  # Broker HA 端口
     volumes:
       - type: bind
         source: D:\docker\rocketmq\broker\logs
-        target: /home/rocketmq/logs
+        target: /home/rocketmq/broker/logs
       - type: bind
         source: D:\docker\rocketmq\broker\store
-        target: /home/rocketmq/store
+        target: /home/rocketmq/broker/store
       - type: bind
         source: D:\docker\rocketmq\broker\conf
-        target: /home/rocketmq/conf
-    command: sh mqbroker
+        target: /home/rocketmq/broker/conf
+    environment:
+      - NAMESRV_ADDR=172.28.0.40:9876
+    command: sh mqbroker -c /home/rocketmq/broker/conf/broker.conf
 
-  # RocketMQ Proxy (版本 5.3.3)
+  # RocketMQ Proxy 服务 (版本 5.3.2)
   proxy:
-    image: apache/rocketmq:5.3.3
-    container_name: rocketmq_proxy
+    image: apache/rocketmq:5.3.2
+    container_name: rmqproxy
     networks:
       service_net:
         ipv4_address: 172.28.0.60
     depends_on:
       - broker
-      - namesrv
     ports:
-      - "9877:8080"  # 将容器内8080映射到宿主机的9877
-      - "9878:8081"  # 将容器内8081映射到宿主机的9878
+      - "38080:8080"  # Proxy端口1
+      - "38081:8081"  # Proxy端口2
     restart: on-failure
     environment:
-      - NAMESRV_ADDR=rocketmq_namesrv:9876
+      - NAMESRV_ADDR=172.28.0.40:9876
     volumes:
       - type: bind
         source: D:\docker\rocketmq\proxy\logs
         target: /home/rocketmq/logs
+      - type: bind
+        source: D:\docker\rocketmq\proxy\conf
+        target: /home/rocketmq/proxy/conf
     command: sh mqproxy
+
+  # RocketMQ 控制台
+  rmq-console:
+    image: apacherocketmq/rocketmq-dashboard:2.1.0
+    container_name: rmq-console
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.65
+    depends_on:
+      - namesrv
+    ports:
+      - "38082:8082"
+    environment:
+      JAVA_OPTS: -Drocketmq.namesrv.addr=172.28.0.40:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
 
   # Nginx 反向代理 (版本 stable-perl)
   nginx:
@@ -252,6 +278,9 @@ services:
       - type: bind
         source: D:\docker\es\plugins
         target: /usr/share/elasticsearch/plugins
+      - type: bind
+        source: D:\docker\es\config\elasticsearch.yml # 宿主机配置文件路径
+        target: /usr/share/elasticsearch/config/elasticsearch.yml # 容器内配置文件路径
     ports:
       - "9200:9200"  # HTTP API 端口
       - "9300:9300"  # 集群通信端口

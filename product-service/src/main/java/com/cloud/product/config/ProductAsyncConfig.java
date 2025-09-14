@@ -33,7 +33,7 @@ public class ProductAsyncConfig extends BaseAsyncConfig {
                 "product-query-"
         );
         executor.initialize();
-        
+
         log.info("商品查询线程池初始化完成");
         return executor;
     }
@@ -51,7 +51,7 @@ public class ProductAsyncConfig extends BaseAsyncConfig {
                 "product-operation-"
         );
         executor.initialize();
-        
+
         log.info("商品操作线程池初始化完成");
         return executor;
     }

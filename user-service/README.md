@@ -2,7 +2,8 @@
 
 ## 1. 模块概述
 
-用户服务是电商平台系统中的核心服务之一，负责管理用户信息、用户地址、用户头像等与用户相关的功能。该服务基于Spring Boot和Spring Cloud构建，采用微服务架构设计，支持高并发访问和水平扩展。
+用户服务是电商平台系统中的核心服务之一，负责管理用户信息、用户地址、用户头像等与用户相关的功能。该服务基于Spring Boot和Spring
+Cloud构建，采用微服务架构设计，支持高并发访问和水平扩展。
 
 ### 1.1 核心功能
 
@@ -17,7 +18,7 @@
 
 - **核心框架**: Spring Boot 3.5.3, Spring Cloud 2025.0.0
 - **安全框架**: Spring Security, OAuth2 Resource Server
-- **数据库**: MySQL 9.3.0, MyBatis-Plus 3.5.12
+- **数据库**: MySQL 9.3.0, MyBatis-Plus 3.5.13
 - **缓存**: Redis 8.2-rc1
 - **对象存储**: MinIO
 - **API文档**: Swagger/OpenAPI 3.0, Knife4j
@@ -70,13 +71,17 @@ user-service/
 ### 3.1 用户管理
 
 #### 3.1.1 用户注册
+
 用户可以通过提供用户名、密码、手机号等信息进行注册。系统会对用户名进行唯一性校验，并对密码进行BCrypt加密存储。
 
 #### 3.1.2 用户信息管理
+
 支持用户信息的查询、更新操作。用户可以修改昵称、手机号、邮箱等信息。管理员可以对用户进行启用、禁用、删除等操作。
 
 #### 3.1.3 用户权限控制
+
 基于Spring Security和OAuth2实现细粒度的权限控制：
+
 - 普通用户只能操作自己的信息
 - 管理员可以操作所有用户信息
 - 不同角色具有不同的操作权限
@@ -84,17 +89,21 @@ user-service/
 ### 3.2 地址管理
 
 #### 3.2.1 地址添加
+
 用户可以添加多个收货地址，包括收货人姓名、手机号、详细地址等信息。
 
 #### 3.2.2 地址维护
+
 支持地址的查询、更新、删除操作，并提供权限验证，确保用户只能操作自己的地址。
 
 ### 3.3 头像管理
 
 #### 3.3.1 头像上传
+
 支持用户上传头像图片，系统会将图片存储到MinIO对象存储中，并生成访问URL。
 
 #### 3.3.2 头像获取
+
 提供接口根据用户ID获取用户头像，支持本地文件和MinIO存储两种方式。
 
 ## 4. 核心组件说明
@@ -137,43 +146,132 @@ user-service/
 
 ### 5.1 用户表 (users)
 
-| 字段名 | 类型 | 描述 |
-|--------|------|------|
-| id | BIGINT | 主键 |
-| username | VARCHAR(50) | 用户名 |
-| password | VARCHAR(100) | 密码(加密存储) |
-| nickname | VARCHAR(50) | 昵称 |
-| phone | VARCHAR(20) | 手机号 |
-| email | VARCHAR(100) | 邮箱 |
-| avatar_url | VARCHAR(255) | 头像URL |
-| user_type | VARCHAR(20) | 用户类型(ADMIN/USER) |
-| status | TINYINT | 状态(0-禁用,1-启用) |
-| deleted | TINYINT | 逻辑删除标识 |
-| create_time | DATETIME | 创建时间 |
-| update_time | DATETIME | 更新时间 |
+| 字段名         | 类型           | 描述               |
+|-------------|--------------|------------------|
+| id          | BIGINT       | 主键               |
+| username    | VARCHAR(50)  | 用户名              |
+| password    | VARCHAR(100) | 密码(加密存储)         |
+| nickname    | VARCHAR(50)  | 昵称               |
+| phone       | VARCHAR(20)  | 手机号              |
+| email       | VARCHAR(100) | 邮箱               |
+| avatar_url  | VARCHAR(255) | 头像URL            |
+| user_type   | VARCHAR(20)  | 用户类型(ADMIN/USER) |
+| status      | TINYINT      | 状态(0-禁用,1-启用)    |
+| deleted     | TINYINT      | 逻辑删除标识           |
+| create_time | DATETIME     | 创建时间             |
+| update_time | DATETIME     | 更新时间             |
 
 ### 5.2 用户地址表 (user_address)
 
-| 字段名 | 类型 | 描述 |
-|--------|------|------|
-| id | BIGINT | 主键 |
-| user_id | BIGINT | 用户ID |
-| receiver_name | VARCHAR(50) | 收货人姓名 |
-| receiver_phone | VARCHAR(20) | 收货人手机号 |
-| province | VARCHAR(50) | 省 |
-| city | VARCHAR(50) | 市 |
-| district | VARCHAR(50) | 区 |
-| detail_address | VARCHAR(200) | 详细地址 |
-| is_default | TINYINT | 是否默认地址 |
-| deleted | TINYINT | 逻辑删除标识 |
-| create_time | DATETIME | 创建时间 |
-| update_time | DATETIME | 更新时间 |
+| 字段名            | 类型           | 描述     |
+|----------------|--------------|--------|
+| id             | BIGINT       | 主键     |
+| user_id        | BIGINT       | 用户ID   |
+| receiver_name  | VARCHAR(50)  | 收货人姓名  |
+| receiver_phone | VARCHAR(20)  | 收货人手机号 |
+| province       | VARCHAR(50)  | 省      |
+| city           | VARCHAR(50)  | 市      |
+| district       | VARCHAR(50)  | 区      |
+| detail_address | VARCHAR(200) | 详细地址   |
+| is_default     | TINYINT      | 是否默认地址 |
+| deleted        | TINYINT      | 逻辑删除标识 |
+| create_time    | DATETIME     | 创建时间   |
+| update_time    | DATETIME     | 更新时间   |
 
-## 6. API接口文档
+## 6. 分页查询实现
 
-### 6.1 用户管理接口
+### 6.1 MyBatis-Plus分页插件配置
+
+项目使用MyBatis-Plus 3.5.13版本的分页插件，在`common-module`中统一配置：
+
+```java
+@Bean
+public MybatisPlusInterceptor mybatisPlusInterceptor() {
+    MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+    // 分页插件（必须指定数据库类型）
+    interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+    // 乐观锁插件
+    interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+    // 防全表更新插件
+    interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+    return interceptor;
+}
+```
+
+### 6.2 分页查询标准实现
+
+#### 6.2.1 服务层实现
+
+```java
+@Override
+@Transactional(readOnly = true)
+public PageResult<UserVO> pageQuery(UserPageDTO pageDTO) {
+    // 1. 构造分页对象
+    Page<User> page = PageUtils.buildPage(pageDTO);
+    
+    // 2. 构造查询条件
+    LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+    if (StringUtils.isNotBlank(pageDTO.getUsername())) {
+        queryWrapper.like(User::getUsername, pageDTO.getUsername());
+    }
+    queryWrapper.orderByDesc(User::getCreatedAt);
+    
+    // 3. 执行分页查询
+    Page<User> resultPage = this.page(page, queryWrapper);
+    
+    // 4. 转换为VO并封装结果
+    List<UserVO> userVOList = userConverter.toVOList(resultPage.getRecords());
+    return PageResult.of(
+        resultPage.getCurrent(),
+        resultPage.getSize(),
+        resultPage.getTotal(),
+        userVOList
+    );
+}
+```
+
+#### 6.2.2 分页工具类
+
+```java
+public class PageUtils {
+    public static <T> Page<T> buildPage(BasePageDTO pageDTO) {
+        long current = pageDTO.getCurrent() != null ? pageDTO.getCurrent() : 1L;
+        long size = pageDTO.getSize() != null ? pageDTO.getSize() : 10L;
+        return new Page<>(current, size);
+    }
+}
+```
+
+#### 6.2.3 分页结果封装
+
+```java
+public class PageResult<T> {
+    public static <T> PageResult<T> of(long current, long size, long total, List<T> records) {
+        PageResult<T> pageResult = new PageResult<>();
+        pageResult.setCurrent(current);
+        pageResult.setSize(size);
+        pageResult.setTotal(total);
+        pageResult.setRecords(records);
+        pageResult.setPages((total + size - 1) / size);
+        return pageResult;
+    }
+}
+```
+
+### 6.3 分页查询最佳实践
+
+1. **统一使用MyBatis-Plus分页插件**：确保所有分页查询都通过`Page<T>`对象实现
+2. **避免深度分页**：对于大数据量查询，限制最大页码，推荐使用游标分页
+3. **索引优化**：确保分页查询的排序字段有索引支持
+4. **缓存策略**：对热点分页数据进行缓存，提升查询性能
+5. **参数校验**：对分页参数进行合理性校验，防止恶意查询
+
+## 7. API接口文档
+
+### 7.1 用户管理接口
 
 #### 注册用户
+
 ```
 POST /user/create/user
 权限: ADMIN
@@ -187,6 +285,7 @@ POST /user/create/user
 ```
 
 #### 更新用户
+
 ```
 PUT /user/update/{id}
 权限: ADMIN 或 用户本人
@@ -199,18 +298,21 @@ PUT /user/update/{id}
 ```
 
 #### 删除用户
+
 ```
 DELETE /user/delete/{id}
 权限: ADMIN
 ```
 
 #### 禁用用户
+
 ```
 PUT /user/disable/{id}
 权限: ADMIN
 ```
 
 #### 启用用户
+
 ```
 PUT /user/enable/{id}
 权限: ADMIN
@@ -219,18 +321,21 @@ PUT /user/enable/{id}
 ### 6.2 用户查询接口
 
 #### 获取当前用户信息
+
 ```
 GET /user/info
 权限: 所有登录用户
 ```
 
 #### 获取所有用户
+
 ```
 GET /user/admin/users
 权限: ADMIN
 ```
 
 #### 分页获取用户列表
+
 ```
 GET /user/admin/users/page?page=1&size=10&username=关键字
 权限: ADMIN
@@ -239,6 +344,7 @@ GET /user/admin/users/page?page=1&size=10&username=关键字
 ### 6.3 地址管理接口
 
 #### 新增地址
+
 ```
 POST /address/add
 权限: 所有登录用户
@@ -254,6 +360,7 @@ POST /address/add
 ```
 
 #### 更新地址
+
 ```
 POST /address/update
 权限: 地址所属用户
@@ -270,6 +377,7 @@ POST /address/update
 ```
 
 #### 删除地址
+
 ```
 POST /address/delete
 权限: 地址所属用户
@@ -280,6 +388,7 @@ POST /address/delete
 ```
 
 #### 获取地址详情
+
 ```
 POST /address/get
 权限: 地址所属用户
@@ -292,6 +401,7 @@ POST /address/get
 ### 6.4 头像管理接口
 
 #### 上传头像
+
 ```
 POST /user/avatar/upload
 权限: 所有登录用户
@@ -299,6 +409,7 @@ POST /user/avatar/upload
 ```
 
 #### 获取头像
+
 ```
 GET /user/avatar/{userId}
 权限: 所有用户
@@ -307,14 +418,18 @@ GET /user/avatar/{userId}
 ## 7. 安全设计
 
 ### 7.1 认证机制
+
 使用OAuth2 Resource Server进行认证，通过JWT Token验证用户身份。
 
 ### 7.2 权限控制
+
 基于角色的访问控制(RBAC)：
+
 - ROLE_ADMIN: 管理员角色，可以操作所有用户数据
 - ROLE_USER: 普通用户角色，只能操作自己的数据
 
 ### 7.3 数据安全
+
 - 密码使用BCrypt加密存储
 - 敏感操作进行权限验证
 - 防止越权访问
@@ -322,9 +437,11 @@ GET /user/avatar/{userId}
 ## 8. 性能优化
 
 ### 8.1 缓存策略
+
 使用Redis缓存用户信息和地址信息，减少数据库访问压力。
 
 ### 8.2 数据库优化
+
 - 合理设计索引
 - 使用MyBatis-Plus提高开发效率
 - 逻辑删除避免数据丢失
@@ -332,19 +449,23 @@ GET /user/avatar/{userId}
 ## 9. 部署说明
 
 ### 9.1 环境要求
+
 - JDK 17+
 - MySQL 8.0+
 - Redis 6.0+
 - MinIO
 
 ### 9.2 配置文件
+
 主要配置项在`application-dev.yml`中：
+
 - 数据库连接配置
 - Redis连接配置
 - MinIO配置
 - Nacos配置
 
 ### 9.3 启动方式
+
 ```bash
 # 编译打包
 mvn clean package
@@ -356,25 +477,32 @@ java -jar user-service-0.0.1-SNAPSHOT.jar
 ## 10. 监控与运维
 
 ### 10.1 健康检查
+
 通过Actuator提供健康检查端点：
+
 - `/actuator/health`: 健康状态
 - `/actuator/info`: 应用信息
 
 ### 10.2 日志记录
+
 使用Slf4j记录详细的操作日志和错误日志，便于问题排查。
 
 ## 11. 测试策略
 
 ### 11.1 单元测试
+
 包含服务层和控制器层的单元测试，确保核心功能正确性。
 
 ### 11.2 集成测试
+
 使用MockMvc进行接口集成测试，验证API行为。
 
 ## 12. 扩展性设计
 
 ### 12.1 微服务集成
+
 通过Feign客户端与其他服务进行通信。
 
 ### 12.2 可配置性
+
 通过Nacos配置中心实现配置的动态更新。

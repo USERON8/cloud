@@ -16,9 +16,9 @@ import java.util.List;
  * @since 1.0.0
  */
 @Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    unmappedSourcePolicy = ReportingPolicy.IGNORE
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface CategoryConverter {
     CategoryConverter INSTANCE = Mappers.getMapper(CategoryConverter.class);
@@ -29,7 +29,7 @@ public interface CategoryConverter {
      * @param category 分类实体
      * @return 分类DTO
      */
-    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
     CategoryDTO toDTO(Category category);
 
     /**
@@ -42,6 +42,7 @@ public interface CategoryConverter {
     @Mapping(target = "updateBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
     Category toEntity(CategoryDTO categoryDTO);
 
     /**
@@ -50,6 +51,5 @@ public interface CategoryConverter {
      * @param categories 分类实体列表
      * @return 分类DTO列表
      */
-    @Mapping(target = "children", ignore = true)
     List<CategoryDTO> toDTOList(List<Category> categories);
 }

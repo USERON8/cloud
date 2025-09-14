@@ -1,87 +1,126 @@
 server:
-  port: ${server.port}
+  port: 8083
 spring:
   application:
-    name: ${spring.application.name}
-  profiles:
-    active: dev
-    include: oauth2
+    name: user-service
   cloud:
-    nacos:
-      discovery:
-        server-addr: ${nacos.discovery.server-addr}
-        username: ${nacos.discovery.username}
-        password: ${nacos.discovery.password}
-        namespace: ${nacos.discovery.namespace}
-        group: ${nacos.discovery.group}
-      config:
-        server-addr: ${nacos.config.server-addr}
-        username: ${nacos.config.username}
-        password: ${nacos.config.password}
-        namespace: ${nacos.config.namespace}
-        file-extension: ${nacos.config.file-extension}
-        group: ${nacos.config.group}
     stream:
-      bindings:
-        userLog-out-0:
-          destination: LOG_USER_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
       rocketmq:
         binder:
-          name-server: ${rocketmq.name-server}
+          name-server: 127.0.0.1:39876
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 10000
+            loggerLevel: basic
+      compression:
+        request:
+          enabled: true
+        response:
+          enabled: true
   config:
     import: optional:nacos:common
   datasource:
-    driver-class-name: ${spring.datasource.driver-class-name}
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: root
   data:
     redis:
-      host: ${spring.redis.host}
-      port: ${spring.redis.port}
-      password: ${spring.redis.password}
-      database: ${spring.redis.database}
-      timeout: ${spring.redis.timeout}
+      host: localhost
+      port: 6379
+      password: root
+      database: 0
+      timeout: 10000ms
       lettuce:
         pool:
-          max-active: ${spring.redis.lettuce.pool.max-active}
-          max-wait: ${spring.redis.lettuce.pool.max-wait}
-          max-idle: ${spring.redis.lettuce.pool.max-idle}
-          min-idle: ${spring.redis.lettuce.pool.min-idle}
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
-  boot:
-    actuator:
-      endpoints:
-        web:
-          exposure:
-            include: "*"
-      endpoint:
-        health:
-          show-details: always
-  servlet:
-    multipart:
-      max-file-size: ${user.service.file-upload.max-file-size}
-      max-request-size: ${user.service.file-upload.max-request-size}
-      enabled: true
+          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+management:
+  health:
+    elasticsearch:
+      enabled: false
+
+# MinIO配置
 minio:
-  endpoint: ${minio.endpoint}
-  access-key: ${minio.access-key}
-  secret-key: ${minio.secret-key}
-  bucket-name: ${minio.bucket-name}
-  public-endpoint: ${minio.public-endpoint}
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: user-avatars
+  public-endpoint: http://localhost:9000
 logging:
   file:
     path: D:/logs/${spring.application.name}
     name: ${logging.file.path}/${spring.application.name}.log
   level:
-    com.cloud.user.mapper: TRACE
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.user.module.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'user'
+      paths-to-match: '/**'
+      packages-to-scan: com.cloud.user.controller.user
+    - group: 'merchant'
+      paths-to-match: '/**'
+      packages-to-scan: com.cloud.user.controller.merchant
+    - group: 'admin'
+      paths-to-match: '/**'
+      packages-to-scan: com.cloud.user.controller.admin
+
 knife4j:
   enable: true
   production: false
@@ -89,28 +128,3 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-  insight:
-    service-name: ${spring.application.name}
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-  default-flat-param-object: true
-
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.cloud.user.module.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      id-type: assign_id
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-

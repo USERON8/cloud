@@ -47,10 +47,10 @@ public class StockVO {
     /**
      * 创建时间
      */
-    private LocalDateTime createAT;
+    private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateAT;
+    private LocalDateTime updatedAt;
 }

@@ -1,20 +1,25 @@
 package com.cloud.user;
 
 import lombok.extern.slf4j.Slf4j;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * @author what's up
+ */
 @SpringBootApplication
+
 @EnableDiscoveryClient
 @EnableCaching
-@EnableFeignClients(basePackages = "com.cloud.api")
 @Slf4j
-@MapperScan("com.cloud.user.mapper")
-public class UserApplication {
+@EnableFeignClients(basePackages = "com.cloud.api")
+
+public class UserApplication implements WebMvcConfigurer {
     public static void main(String[] args) {
         try {
             // 禁用Nacos的日志配置，避免冲突
@@ -29,5 +34,14 @@ public class UserApplication {
             log.error("用户服务启动失败: {}", e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * 配置Knife4j静态资源访问
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
 }

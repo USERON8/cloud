@@ -51,11 +51,12 @@ public enum ResultCode {
     CONCURRENT_MODIFICATION(5001, "并发修改冲突"),
     OPTIMISTIC_LOCK_ERROR(5002, "乐观锁异常"),
 
-    // 库存相关错误 6xxx
+    // 库存相关错误 6xxx (库存服务专用错误码范围: 6000-6999)
     STOCK_NOT_FOUND(6001, "商品库存不存在"),
     STOCK_INSUFFICIENT(6002, "库存不足"),
     STOCK_DEDUCT_FAILED(6003, "库存扣减失败"),
     STOCK_ADD_FAILED(6004, "库存增加失败"),
+    STOCK_QUERY_FAILED(6005, "库存查询失败"),
 
     // 数据库相关错误 7xxx
     DB_ERROR(7001, "数据库操作失败"),
@@ -64,7 +65,7 @@ public enum ResultCode {
     USER_NOT_FOUND(7004, "用户不存在"),
     USERNAME_OR_PASSWORD_ERROR(7005, "用户名或密码错误"),
 
-    // 用户服务相关错误 8xxx
+    // 用户服务相关错误 8xxx (用户服务专用错误码范围: 8000-8999)
     USER_ALREADY_EXISTS(8001, "用户已存在"),
     USER_CREATE_FAILED(8002, "用户创建失败"),
     USER_UPDATE_FAILED(8003, "用户更新失败"),
@@ -72,11 +73,68 @@ public enum ResultCode {
     USER_QUERY_FAILED(8005, "用户查询失败"),
     USER_NOT_MERCHANT(8006, "用户不是商家类型"),
     PARAM_VALIDATION_FAILED(8007, "用户ID不能为空"),
+    USER_TYPE_MISMATCH(8008, "用户类型不匹配"),
+    PASSWORD_ERROR(8009, "密码错误"),
+    USER_DISABLED(8010, "用户账户已被禁用"),
 
-    // 文件上传相关错误 9xxx
-    FILE_IS_EMPTY(9001, "上传的文件为空"),
-    FILE_SIZE_EXCEEDED(9002, "文件大小超出限制"),
-    UPLOAD_FAILED(9003, "文件上传失败");
+    // 商品服务相关错误 9xxx (商品服务专用错误码范围: 9000-9999)
+    PRODUCT_NOT_FOUND(9001, "商品不存在"),
+    PRODUCT_CREATE_FAILED(9002, "商品创建失败"),
+    PRODUCT_UPDATE_FAILED(9003, "商品更新失败"),
+    PRODUCT_DELETE_FAILED(9004, "商品删除失败"),
+    PRODUCT_CATEGORY_NOT_FOUND(9005, "商品分类不存在"),
+    PRODUCT_STATUS_ERROR(9006, "商品状态异常"),
+    PRODUCT_QUERY_FAILED(9007, "商品查询失败"),
+    PRODUCT_ALREADY_EXISTS(9008, "商品已存在"),
+    CATEGORY_NOT_FOUND(9009, "分类不存在"),
+
+    // 订单服务相关错误 10xxx (订单服务专用错误码范围: 10000-10999)
+    ORDER_NOT_FOUND(10001, "订单不存在"),
+    ORDER_CREATE_FAILED(10002, "订单创建失败"),
+    ORDER_UPDATE_FAILED(10003, "订单更新失败"),
+    ORDER_DELETE_FAILED(10004, "订单删除失败"),
+    ORDER_STATUS_ERROR(10005, "订单状态异常"),
+    ORDER_QUERY_FAILED(10006, "订单查询失败"),
+
+    // 支付服务相关错误 11xxx (支付服务专用错误码范围: 11000-11999)
+    PAYMENT_NOT_FOUND(11001, "支付记录不存在"),
+    PAYMENT_CREATE_FAILED(11002, "支付记录创建失败"),
+    PAYMENT_UPDATE_FAILED(11003, "支付记录更新失败"),
+    PAYMENT_DELETE_FAILED(11004, "支付记录删除失败"),
+    PAYMENT_STATUS_ERROR(11005, "支付状态异常"),
+    PAYMENT_REFUND_FAILED(11006, "退款失败"),
+    PAYMENT_QUERY_FAILED(11007, "支付查询失败"),
+
+    // 商家服务相关错误 12xxx (商家服务专用错误码范围: 12000-12999)
+    MERCHANT_NOT_FOUND(12001, "商家不存在"),
+    MERCHANT_CREATE_FAILED(12002, "商家创建失败"),
+    MERCHANT_UPDATE_FAILED(12003, "商家更新失败"),
+    MERCHANT_DELETE_FAILED(12004, "商家删除失败"),
+    MERCHANT_STATUS_ERROR(12005, "商家状态异常"),
+    MERCHANT_QUERY_FAILED(12006, "商家查询失败"),
+
+    // 管理服务相关错误 13xxx (管理服务专用错误码范围: 13000-13999)
+    ADMIN_NOT_FOUND(13001, "管理员不存在"),
+    ADMIN_CREATE_FAILED(13002, "管理员创建失败"),
+    ADMIN_UPDATE_FAILED(13003, "管理员更新失败"),
+    ADMIN_DELETE_FAILED(13004, "管理员删除失败"),
+    ADMIN_STATUS_ERROR(13005, "管理员状态异常"),
+    ADMIN_QUERY_FAILED(13006, "管理员查询失败"),
+
+    // 搜索服务相关错误 14xxx (搜索服务专用错误码范围: 14000-14999)
+    SEARCH_FAILED(14001, "搜索失败"),
+    SEARCH_INDEX_ERROR(14002, "索引异常"),
+
+    // 文件上传相关错误 15xxx
+    FILE_IS_EMPTY(15001, "上传的文件为空"),
+    FILE_SIZE_EXCEEDED(15002, "文件大小超出限制"),
+    UPLOAD_FAILED(15003, "文件上传失败"),
+
+    // 日志服务相关错误 16xxx (日志服务专用错误码范围: 16000-16999)
+    LOG_CREATE_FAILED(16001, "日志创建失败"),
+    LOG_UPDATE_FAILED(16002, "日志更新失败"),
+    LOG_DELETE_FAILED(16003, "日志删除失败"),
+    LOG_QUERY_FAILED(16004, "日志查询失败");
 
     private final Integer code;
     private final String message;

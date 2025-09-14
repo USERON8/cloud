@@ -7,11 +7,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 入库明细表
+ * 入库记录表
  *
+ * @author what's up
  * @TableName stock_in
- * @author cloud
- * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "stock_in")

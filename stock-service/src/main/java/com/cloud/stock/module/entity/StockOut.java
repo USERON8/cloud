@@ -7,11 +7,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 出库明细表
+ * 出库记录表
  *
+ * @author what's up
  * @TableName stock_out
- * @author cloud
- * @since 1.0.0
  */
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "stock_out")
@@ -24,14 +23,15 @@ public class StockOut extends BaseEntity<StockOut> {
     private Long productId;
 
     /**
+     * 订单ID
+     */
+    @TableField(value = "order_id")
+    private Long orderId;
+
+    /**
      * 出库数量
      */
     @TableField(value = "quantity")
     private Integer quantity;
-
-    /**
-     * 关联订单ID
-     */
-    @TableField(value = "order_id")
-    private Long orderId;
 }
+

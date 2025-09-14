@@ -5,18 +5,18 @@
 <mapper namespace="com.cloud.payment.mapper.PaymentMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.payment.module.entity.Payment">
-            <id property="id" column="id" />
-            <result property="orderId" column="order_id" />
-            <result property="userId" column="user_id" />
-            <result property="amount" column="amount" />
-            <result property="status" column="status" />
-            <result property="channel" column="channel" />
-            <result property="transactionId" column="transaction_id" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="createBy" column="create_by" />
-            <result property="updateBy" column="update_by" />
-            <result property="deleted" column="deleted" />
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="amount" column="amount"/>
+        <result property="status" column="status"/>
+        <result property="channel" column="channel"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <sql id="Base_Column_List">

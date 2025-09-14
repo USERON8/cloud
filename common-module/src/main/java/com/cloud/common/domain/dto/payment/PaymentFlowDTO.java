@@ -14,7 +14,7 @@ public class PaymentFlowDTO {
      * 支付流水ID
      */
     private Long id;
-    
+
     /**
      * 支付ID
      */
@@ -29,22 +29,22 @@ public class PaymentFlowDTO {
      * 变动金额
      */
     private BigDecimal amount;
-    
+
     /**
      * 跟踪ID，用于幂等性处理
      */
     private String traceId;
-    
+
     /**
      * 创建时间
      */
     private LocalDateTime createdAt;
-    
+
     /**
      * 更新时间
      */
     private LocalDateTime updatedAt;
-    
+
     /**
      * 逻辑删除标识
      */

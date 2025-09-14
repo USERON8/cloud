@@ -17,9 +17,3 @@ buildNumber.properties
 .classpath
 .idea
 
-frontend/app/node_modules
-frontend/app/package-lock.json
-frontend/app/pnpm-workspace.yaml
-frontend/app/pnpm-lock.yaml
-
-

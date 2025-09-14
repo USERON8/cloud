@@ -22,32 +22,11 @@ spring:
         group: ${nacos.config.group}
     stream:
       bindings:
-        paymentCreate-out-0:
-          destination: PAYMENT_CREATE_TOPIC
+        paymentLog-out-0:
+          destination: LOG_PAYMENT_TOPIC
           content-type: application/json
           producer:
             partition-count: 4
-        # 支付成功通知订单服务
-        paymentSuccessToOrder-out-0:
-          destination: ORDER_PAYMENT_SUCCESS_TOPIC
-          content-type: application/json
-        # 支付成功通知日志服务
-        paymentSuccessToLog-out-0:
-          destination: LOG_PAYMENT_TOPIC
-          content-type: application/json
-        # 退款成功通知订单服务
-        refundSuccessToOrder-out-0:
-          destination: ORDER_REFUND_SUCCESS_TOPIC
-          content-type: application/json
-        # 接收订单服务的创建订单消息
-        orderCreate-in-0:
-          destination: ORDER_CREATE_TOPIC
-          content-type: application/json
-          consumer:
-            max-attempts: 3
-      rocketmq:
-        binder:
-          name-server: ${rocketmq.name-server}
   config:
     import: optional:nacos:common
   datasource:
@@ -79,6 +58,25 @@ logging:
     name: ${logging.file.path}/${spring.application.name}.log
   level:
     com.cloud.user.mapper: TRACE
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  group-configs:
+    - group: 'payment-manage'
+      paths-to-match: '/api/v1/payment/manage/**'
+    - group: 'payment-query'
+      paths-to-match: '/api/v1/payment/query/**'
+    - group: 'payment-operation'
+      paths-to-match: '/api/v1/payment/operation/**'
+
+# Knife4j 配置
 knife4j:
   enable: true
   production: false

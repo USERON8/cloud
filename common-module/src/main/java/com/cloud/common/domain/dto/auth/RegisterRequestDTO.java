@@ -23,12 +23,11 @@ public class RegisterRequestDTO {
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{8,20}$",
             message = "密码必须包含大小写字母和数字，长度为8-20位")
     private String password;
-    
+
     /**
      * 手机号
      */
     @NotBlank(message = "手机号不能为空")
-    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
 
     /**
@@ -38,7 +37,7 @@ public class RegisterRequestDTO {
     private String nickname;
 
     /**
-     * 用户类型
+     * 用户类型 (USER, ADMIN, MERCHANT)
      */
     private String userType = "USER";
 }

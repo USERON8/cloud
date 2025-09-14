@@ -21,7 +21,7 @@ public class Payment extends BaseEntity<Payment> {
      * 订单ID
      */
     @TableField(value = "order_id")
-    private String orderId;
+    private Long orderId;
 
     /**
      * 用户ID

@@ -90,10 +90,21 @@
 
         <!-- 安全框架 -->
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-authorization-server</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
         <!-- 工具类 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -106,17 +117,6 @@
             <artifactId>swagger-annotations-jakarta</artifactId>
             <version>${swagger.version}</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-            <version>${knife4j.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>swagger-annotations-jakarta</artifactId>
-                    <groupId>io.swagger.core.v3</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
     <build>

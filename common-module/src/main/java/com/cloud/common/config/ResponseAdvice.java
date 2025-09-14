@@ -1,6 +1,6 @@
 package com.cloud.common.config;
 
-import com.cloud.common.domain.Result;
+import com.cloud.common.result.Result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

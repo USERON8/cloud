@@ -10,14 +10,14 @@ import java.util.List;
 
 /**
  * 商品分类表
- * 
+ *
  * @TableName category
  */
 @EqualsAndHashCode(callSuper = true)
 @TableName("category")
 @Data
 public class Category extends BaseEntity<Category> {
-    
+
     /**
      * 父分类ID，0表示根分类
      */

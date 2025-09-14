@@ -1,63 +1,228 @@
 spring:
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: auth-route
-              uri: lb://auth-service
-              predicates:
-                - Path=/auth/**
-              metadata:
-                swagger-info:
-                  title: 认证服务API
-                  description: 处理用户认证相关接口
-            - id: stock-route
-              uri: lb://stock-service
-              predicates:
-                - Path=/stock/**
-              metadata:
-                swagger-info:
-                  title: 库存服务API
-                  description: 处理库存管理相关接口
-            - id: user-route
-              uri: lb://user-service
-              predicates:
-                - Path=/users/**,/admin/**,/avatar/**
-              metadata:
-                swagger-info:
-                  title: 用户服务API
-                  description: 处理用户管理相关接口
-            - id: order-route
-              uri: lb://order-service
-              predicates:
-                - Path=/order/**
-              metadata:
-                swagger-info:
-                  title: 订单服务API
-                  description: 处理订单管理相关接口
-            - id: product-route
-              uri: lb://product-service
-              predicates:
-                - Path=/product/**
-              metadata:
-                swagger-info:
-                  title: 产品服务API
-                  description: 处理产品管理相关接口
-            - id: search-route
-              uri: lb://search-service
-              predicates:
-                - Path=/search/**
-              metadata:
-                swagger-info:
-                  title: 搜索服务API
-                  description: 处理搜索服务相关接口
-            - id: payment-route
-              uri: lb://payment-service
-              predicates:
-                - Path=/payment/**
-              metadata:
-                swagger-info:
-                  title: 支付服务API
-                  description: 处理支付服务相关接口
-          trusted-proxies: "10\\.0\\.0\\..*|192\\.168\\..*|0:0:0:0:0:0:0:1"
+      routes:
+        # API 文档路由
+        - id: gateway-doc-route
+          uri: "no://op"
+          predicates:
+            - Path=/doc.html
+          filters:
+            - RedirectTo=302, /webjars/swagger-ui/index.html
+        - id: gateway-api-docs-route
+          uri: "no://op"
+          predicates:
+            - Path=/v3/api-docs/**
+          filters:
+            - RewritePath=/v3/api-docs/(?<segment>.*), /$\{segment}/v3/api-docs
+        
+        # 认证服务路由
+        - id: auth-service-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth-service/**
+          filters:
+            - RewritePath=/auth-service/(?<segment>.*), /$\{segment}
+        - id: auth-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**,/oauth2/**,/authorized/**
+          metadata:
+            swagger-info:
+              title: 认证服务API
+              description: 处理认证服务相关接口
+              group: auth-service
+              servicePath: /v3/api-docs
+              location: /auth/**
+        # 用户服务路由
+        - id: user-service-route
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+        - id: user-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**,/user/**,/avatar/**
+          metadata:
+            swagger-info:
+              title: 用户服务API
+              description: 处理用户管理相关接口
+              group: user-service
+              servicePath: /v3/api-docs
+              location: /users/**,/avatar/**
+        - id: user-admin-route
+          uri: lb://user-service
+          predicates:
+            - Path=/admin/**
+          metadata:
+            swagger-info:
+              title: 用户管理API
+              description: 用户服务的管理员接口
+              group: user-service
+              servicePath: /v3/api-docs
+              location: /admin/**
+        - id: user-merchant-route
+          uri: lb://user-service
+          predicates:
+            - Path=/merchant/**
+          metadata:
+            swagger-info:
+              title: 用户服务商家API
+              description: 用户服务的商家相关接口
+              group: user-service
+              servicePath: /v3/api-docs
+              location: /merchant/**
+        # 库存服务路由
+        - id: stock-service-route
+          uri: lb://stock-service
+          predicates:
+            - Path=/stock-service/**
+          filters:
+            - RewritePath=/stock-service/(?<segment>.*), /$\{segment}
+        - id: stock-route
+          uri: lb://stock-service
+          predicates:
+            - Path=/stock/**
+          metadata:
+            swagger-info:
+              title: 库存服务API
+              description: 处理库存管理相关接口
+              group: stock-service
+              servicePath: /v3/api-docs
+              location: /stock/**
+        # 订单服务路由
+        - id: order-service-route
+          uri: lb://order-service
+          predicates:
+            - Path=/order-service/**
+          filters:
+            - RewritePath=/order-service/(?<segment>.*), /$\{segment}
+        - id: order-route
+          uri: lb://order-service
+          predicates:
+            - Path=/order/**
+          metadata:
+            swagger-info:
+              title: 订单服务API
+              description: 处理订单管理相关接口
+              group: order-service
+              servicePath: /v3/api-docs
+              location: /order/**
+        # 商品服务路由
+        - id: product-service-route
+          uri: lb://product-service
+          predicates:
+            - Path=/product-service/**
+          filters:
+            - RewritePath=/product-service/(?<segment>.*), /$\{segment}
+        - id: product-route
+          uri: lb://product-service
+          predicates:
+            - Path=/product/**
+          metadata:
+            swagger-info:
+              title: 产品服务API
+              description: 处理产品管理相关接口
+              group: product-service
+              servicePath: /v3/api-docs
+              location: /product/**
+        - id: search-route
+          uri: lb://search-service
+          predicates:
+            - Path=/search/**
+          metadata:
+            swagger-info:
+              title: 搜索服务API
+              description: 处理搜索相关接口
+              group: search-service
+              servicePath: /v3/api-docs
+              location: /search/**
+        - id: merchant-route
+          uri: lb://merchant-service
+          predicates:
+            - Path=/merchant/**
+          metadata:
+            swagger-info:
+              title: 商家服务API
+              description: 处理商家管理相关接口
+              group: merchant-service
+              servicePath: /v3/api-docs
+              location: /merchant/**
+        - id: log-route
+          uri: lb://log-service
+          predicates:
+            - Path=/log/**
+          metadata:
+            swagger-info:
+              title: 日志服务API
+              description: 处理日志相关接口
+              group: log-service
+              servicePath: /v3/api-docs
+              location: /log/**
+        # 支付服务路由
+        - id: payment-service-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/**
+          filters:
+            - RewritePath=/payment-service/(?<segment>.*), /$\{segment}
+        - id: payment-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment/**
+          metadata:
+            swagger-info:
+              title: 支付服务API
+              description: 处理支付相关接口
+              group: payment-service
+              servicePath: /v3/api-docs
+              location: /payment/**
+        # OAuth2.1标准路由配置
+        - id: oauth2-authorize-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/oauth2/authorize
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-token-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/oauth2/token
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-revoke-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/oauth2/revoke
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-introspect-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/oauth2/introspect
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-jwks-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/.well-known/jwks.json
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-openid-config-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/.well-known/openid_configuration
+          filters:
+            - PreserveHostHeader
+        - id: oauth2-userinfo-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/userinfo
+          filters:
+            - PreserveHostHeader
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true

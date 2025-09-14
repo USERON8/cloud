@@ -11,12 +11,12 @@ public enum UserType {
      * 普通用户
      */
     USER("USER", "普通用户", "ROLE_USER"),
-    
+
     /**
      * 商家用户
      */
     MERCHANT("MERCHANT", "商家", "ROLE_MERCHANT"),
-    
+
     /**
      * 管理员用户
      */
@@ -46,7 +46,7 @@ public enum UserType {
         }
         return USER; // 默认为普通用户
     }
-    
+
     /**
      * 根据角色名称获取用户类型
      *

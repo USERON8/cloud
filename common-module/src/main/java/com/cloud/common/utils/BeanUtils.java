@@ -53,10 +53,10 @@ public class BeanUtils {
     /**
      * 复制源对象列表到目标对象列表
      *
-     * @param sourceList 源对象列表
+     * @param sourceList  源对象列表
      * @param targetClass 目标对象类型
-     * @param <T> 源对象类型
-     * @param <R> 目标对象类型
+     * @param <T>         源对象类型
+     * @param <R>         目标对象类型
      * @return 目标对象列表
      */
     public static <T, R> List<R> copyList(List<T> sourceList, Class<R> targetClass) {
@@ -80,10 +80,10 @@ public class BeanUtils {
     /**
      * 将源对象转换为目标对象
      *
-     * @param source 源对象
+     * @param source      源对象
      * @param targetClass 目标对象类型
-     * @param <T> 源对象类型
-     * @param <R> 目标对象类型
+     * @param <T>         源对象类型
+     * @param <R>         目标对象类型
      * @return 目标对象
      */
     public static <T, R> R convert(T source, Class<R> targetClass) {

@@ -1,8 +1,8 @@
 package com.cloud.common.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -17,12 +17,15 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author what's up
+ */
 @Configuration
 @EnableConfigurationProperties(RedisProperties.class)
+@EnableCaching
 public class BaseRedisConfig {
 
     @Bean
-    @ConditionalOnBean(RedisConnectionFactory.class)
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
@@ -48,7 +51,6 @@ public class BaseRedisConfig {
     }
 
     @Bean
-    @ConditionalOnBean(RedisConnectionFactory.class)
     public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         // 默认缓存配置
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
@@ -71,6 +73,8 @@ public class BaseRedisConfig {
         cacheConfigurations.put("product", defaultCacheConfig.entryTtl(Duration.ofMinutes(30)));
         // 订单信息缓存配置，过期时间15分钟
         cacheConfigurations.put("order", defaultCacheConfig.entryTtl(Duration.ofMinutes(15)));
+        // 分类信息缓存配置，过期时间2小时
+        cacheConfigurations.put("category", defaultCacheConfig.entryTtl(Duration.ofHours(2)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfig)

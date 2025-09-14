@@ -5,15 +5,15 @@
 <mapper namespace="com.cloud.payment.mapper.PaymentFlowMapper">
 
     <resultMap id="BaseResultMap" type="com.cloud.payment.module.entity.PaymentFlow">
-            <id property="id" column="id" />
-            <result property="paymentId" column="payment_id" />
-            <result property="flowType" column="flow_type" />
-            <result property="amount" column="amount" />
-            <result property="createdAt" column="created_at" />
-            <result property="updatedAt" column="updated_at" />
-            <result property="createBy" column="create_by" />
-            <result property="updateBy" column="update_by" />
-            <result property="deleted" column="deleted" />
+        <id property="id" column="id"/>
+        <result property="paymentId" column="payment_id"/>
+        <result property="flowType" column="flow_type"/>
+        <result property="amount" column="amount"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <sql id="Base_Column_List">

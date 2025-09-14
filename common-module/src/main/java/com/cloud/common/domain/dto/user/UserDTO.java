@@ -2,15 +2,20 @@ package com.cloud.common.domain.dto.user;
 
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * 用户信息DTO
  */
 @Data
-public class UserDTO {
+public class UserDTO implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
-     * 用户ID
+     * 主键ID
      */
     private Long id;
 
@@ -35,12 +40,17 @@ public class UserDTO {
     private String avatarUrl;
 
     /**
+     * 邮箱地址（用于GitHub登录）
+     */
+    private String email;
+
+    /**
      * 状态：0-禁用，1-启用
      */
     private Integer status;
 
     /**
-     * 用户类型
+     * 用户类型 (USER, ADMIN, MERCHANT)
      */
     private String userType;
 
@@ -53,9 +63,4 @@ public class UserDTO {
      * 更新时间
      */
     private LocalDateTime updatedAt;
-
-    /**
-     * 最后登录时间
-     */
-    private LocalDateTime lastLoginAt;
 }

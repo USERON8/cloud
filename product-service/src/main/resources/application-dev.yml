@@ -1,30 +1,12 @@
 server:
-  port: 8086
-nacos:
-  discovery:
-    server-addr: localhost:8848
-    username: nacos
-    password: nacos
-    namespace: public
-    group: DEFAULT_GROUP
-  config:
-    server-addr: localhost:8848
-    username: nacos
-    password: nacos
-    namespace: public
-    file-extension: yaml
-    group: DEFAULT_GROUP
+  port: 8083
+
 spring:
   application:
     name: product-service
-  cloud:
-    stream:
-      rocketmq:
-        binder:
-          name-server: 127.0.0.1:9876
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/product_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    url: jdbc:mysql://localhost:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: root
   data:
@@ -32,7 +14,7 @@ spring:
       host: localhost
       port: 6379
       password: root
-      database: 0
+      database: 1
       timeout: 10000ms
       lettuce:
         pool:
