@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.product.mapper.ShopMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.Shop">
+        <id property="id" column="id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="shopName" column="shop_name"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="description" column="description"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="address" column="address"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,merchant_id,shop_name,avatar_url,description,contact_phone,
+        address,status,created_at,updated_at,deleted
+    </sql>
+</mapper>

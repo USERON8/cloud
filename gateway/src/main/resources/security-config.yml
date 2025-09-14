@@ -1,0 +1,91 @@
+# 安全访问配置
+security:
+  # IP白名单配置
+  ip-whitelist:
+    enabled: true
+    rules:
+      # 允许本地访问
+      - "127.0.0.1"
+      - "::1"
+      - "localhost"
+      
+      # 允许内网访问
+      - "192.168.0.0/16"
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      
+      # 允许特定IP段
+      - "203.208.60.*"  # 示例：某个特定的IP段
+
+  # IP黑名单配置
+  ip-blacklist:
+    enabled: true
+    rules:
+      # 禁止的IP或IP段
+      - "123.123.123.123"
+      - "192.168.100.0/24"
+
+  # 可疑行为检测
+  suspicious-behavior:
+    enabled: true
+    # 短时间内大量请求检测
+    rapid-requests:
+      threshold: 50         # 阈值：50次请求
+      timeWindowSeconds: 60 # 时间窗口：60秒
+      blockDurationSeconds: 300 # 封禁时长：5分钟
+    
+    # 异常User-Agent检测
+    user-agent-check:
+      enabled: true
+      suspicious-patterns:
+        - ".*bot.*"
+        - ".*spider.*"
+        - ".*crawler.*"
+        - "curl.*"
+        - "wget.*"
+      whitelist-patterns:
+        - ".*Mozilla.*"
+        - ".*Chrome.*"
+        - ".*Safari.*"
+        - ".*Edge.*"
+
+  # Token管理配置
+  token-management:
+    # Token撤销缓存时间（秒）
+    revoked-token-cache-ttl: 86400  # 24小时
+    
+    # 用户Token撤销缓存时间（秒）
+    revoked-user-tokens-cache-ttl: 86400  # 24小时
+    
+    # 批量操作大小限制
+    batch-operation-limit: 100
+
+  # 安全事件记录
+  security-events:
+    enabled: true
+    # 记录保留时间（天）
+    retention-days: 30
+    
+    # 事件类型配置
+    event-types:
+      ip-blocked: true
+      token-revoked: true
+      suspicious-behavior: true
+      rate-limit-exceeded: true
+
+# Redis键配置
+redis-keys:
+  # IP相关
+  ip-whitelist: "security:ip:whitelist"
+  ip-blacklist: "security:ip:blacklist"
+  ip-suspicious: "security:ip:suspicious:"
+  
+  # Token相关
+  revoked-tokens: "security:token:revoked:"
+  revoked-user-tokens: "security:user:tokens:revoked:"
+  
+  # 事件记录
+  security-events: "security:events:"
+  
+  # 统计信息
+  security-stats: "security:stats:"

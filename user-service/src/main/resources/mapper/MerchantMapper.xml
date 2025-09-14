@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.user.mapper.MerchantMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.Merchant">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="merchantName" column="merchant_name"/>
+        <result property="phone" column="phone"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,username,password,merchant_name,phone,status,
+        created_at,updated_at,deleted
+    </sql>
+</mapper>

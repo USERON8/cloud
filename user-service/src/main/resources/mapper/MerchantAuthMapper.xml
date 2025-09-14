@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.user.mapper.MerchantAuthMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.MerchantAuth">
+        <id property="id" column="id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="businessLicenseNumber" column="business_license_number"/>
+        <result property="businessLicenseUrl" column="business_license_url"/>
+        <result property="idCardFrontUrl" column="id_card_front_url"/>
+        <result property="idCardBackUrl" column="id_card_back_url"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="contactAddress" column="contact_address"/>
+        <result property="authStatus" column="auth_status"/>
+        <result property="authRemark" column="auth_remark"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,merchant_id,business_license_number,business_license_url,id_card_front_url,id_card_back_url,
+        contact_phone,contact_address,auth_status,auth_remark,created_at,
+        updated_at,deleted
+    </sql>
+</mapper>

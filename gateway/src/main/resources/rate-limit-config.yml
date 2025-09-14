@@ -1,0 +1,46 @@
+# 限流规则配置
+rate-limit:
+  rules:
+    # 认证服务限流
+    auth:login:
+      algorithm: FIXED_WINDOW
+      capacity: 10
+      refillTokens: 10
+      windowSizeInSeconds: 60
+      description: "登录接口限流 - 每分钟最多10次请求"
+    
+    auth:register:
+      algorithm: FIXED_WINDOW
+      capacity: 5
+      refillTokens: 5
+      windowSizeInSeconds: 300
+      description: "注册接口限流 - 每5分钟最多5次请求"
+    
+    # 文件上传限流
+    file:upload:
+      algorithm: TOKEN_BUCKET
+      capacity: 3
+      refillTokens: 1
+      refillPeriodInSeconds: 60
+      description: "文件上传限流 - 令牌桶算法，容量3，每分钟补充1个令牌"
+    
+    # API访问限流
+    api:access:
+      algorithm: SLIDING_WINDOW
+      capacity: 100
+      refillTokens: 100
+      windowSizeInSeconds: 60
+      description: "API访问限流 - 滑动窗口算法，每分钟100次请求"
+
+  # 全局配置
+  global:
+    enabled: true
+    defaultCapacity: 50
+    defaultRefillTokens: 50
+    defaultWindowSizeInSeconds: 60
+    keyPrefix: "rate_limit:"
+
+  # Redis配置
+  redis:
+    keyExpireSeconds: 3600
+    scriptCacheEnabled: true
