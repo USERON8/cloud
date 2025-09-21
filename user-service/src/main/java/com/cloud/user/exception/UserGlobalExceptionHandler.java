@@ -2,7 +2,6 @@ package com.cloud.user.exception;
 
 import com.cloud.common.exception.GlobalExceptionHandler;
 import com.cloud.common.result.Result;
-import com.cloud.user.utils.ResponseHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,7 +31,7 @@ public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Object> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
         log.warn("权限拒绝 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.forbidden("您没有权限执行此操作");
+        return Result.forbidden("您没有权限执行此操作");
     }
 
     /**
@@ -42,7 +41,7 @@ public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public Result<Object> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
         log.warn("数据重复冲突 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.businessError("数据已存在，请检查重复项");
+        return Result.businessError("数据已存在，请检查重复项");
     }
 
     /**
@@ -55,18 +54,18 @@ public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
 
         // 根据异常类型返回更具体的响应
         if (e instanceof UserServiceException.UserNotFoundException) {
-            return ResponseHelper.UserResponse.userNotFound(e.getMessage().contains("ID") ? null : e.getMessage());
+            return Result.notFound(e.getMessage());
         } else if (e instanceof UserServiceException.UserAlreadyExistsException) {
-            return ResponseHelper.UserResponse.userAlreadyExists(null);
+            return Result.businessError("用户已存在");
         } else if (e instanceof UserServiceException.AddressPermissionException) {
-            return ResponseHelper.forbidden(e.getMessage());
+            return Result.forbidden(e.getMessage());
         } else if (e instanceof UserServiceException.FileUploadException) {
-            return ResponseHelper.FileResponse.uploadFailed(e.getMessage());
+            return Result.businessError("文件上传失败: " + e.getMessage());
         } else if (e instanceof UserServiceException.FileSizeExceededException) {
-            return ResponseHelper.FileResponse.fileSizeExceeded("10MB");
+            return Result.badRequest("文件大小超过10MB限制");
         }
 
-        return ResponseHelper.businessError(e.getMessage());
+        return Result.businessError(e.getMessage());
     }
 
     // 以下异常已由父类 GlobalExceptionHandler 统一处理:
@@ -82,7 +81,7 @@ public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
         log.warn("文件上传大小超限 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.FileResponse.fileSizeExceeded("10MB");
+        return Result.badRequest("文件大小超过10MB限制");
     }
 
     /**
@@ -92,7 +91,7 @@ public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
         log.warn("数据完整性违反 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.businessError("数据操作失败，请检查数据的完整性");
+        return Result.businessError("数据操作失败，请检查数据的完整性");
     }
 
     // RuntimeException 和 Exception 已由父类 GlobalExceptionHandler 处理

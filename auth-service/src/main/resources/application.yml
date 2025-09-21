@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8080
 
 spring:
   application:
@@ -41,42 +41,41 @@ spring:
       host: localhost
       port: 6379
       password: root
-      database: 1
+      database: 5
       timeout: 10000ms
       lettuce:
         pool:
-          max-active: 8
+          max-active: 16
           max-wait: -1ms
           max-idle: 8
-          min-idle: 0
+          min-idle: 2
   security:
     oauth2:
       client:
         registration:
-          web-client: # 确保这个名称与Postman中的Client ID一致
+          web-client:
             client-id: web-client
             client-secret: WebClient@2024#Secure
-            client-authentication-method: basic
+            client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
-            redirect-uri: http://127.0.0.1:80/authorized # 修改为通过网关的重定向URI
-            scope: openid,profile,read,write,user.read,user.write
+            redirect-uri: http://127.0.0.1:80/authorized
+            scope: openid,profile,read,write,user.read,user.write,order.read,order.write
             client-name: Web Client
           github:
             client-id: Ov23li4lW4aaO4mlFGRf
             client-secret: 6afee51f8c5b77a7b3a20dc6b8e41d9b4c60e55d
-          client-service: # 客户端服务注册
-            provider: custom-authorization-server # 指向下面定义的提供商配置
-            client-id: client-service # 与AuthServerConfig中一致
-            client-secret: ClientService@2024#Secure # 与AuthServerConfig中一致
-            authorization-grant-type: client_credentials # 使用客户端模式
-            scope: internal_api # 申请的权限范围
+          client-service:
+            provider: custom-authorization-server
+            client-id: client-service
+            client-secret: ClientService@2024#Secure
+            authorization-grant-type: client_credentials
+            scope: internal_api,service.read,service.write
         provider:
           custom-authorization-server:
-            token-uri: http://127.0.0.1:80/oauth2/token # 修改为通过网关的令牌端点地址
+            token-uri: http://127.0.0.1:80/oauth2/token
       resourceserver:
         jwt:
-          # 作为授权服务器，直接使用本地JWK端点验证自己颁发的token
-          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
   autoconfigure:
     exclude: org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
 management:

@@ -44,12 +44,12 @@ public class ShopRequestDTO {
 
     @Schema(description = "店铺状态：0-关闭，1-营业", allowableValues = {"0", "1"})
     private Integer status;
-    
+
     // 为了兼容性提供getName方法
     public String getName() {
         return this.shopName;
     }
-    
+
     public void setName(String name) {
         this.shopName = name;
     }

@@ -12,11 +12,7 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
-    // 移除原生SQL查询，在Service层使用Lambda表达式实现
-    // 这样可以避免SQL注入风险，并且类型更安全
 
-    // 移除不安全的原生SQL更新，使用MyBatis-Plus的逻辑删除
-    // MyBatis-Plus会自动处理逻辑删除字段
 }
 
 

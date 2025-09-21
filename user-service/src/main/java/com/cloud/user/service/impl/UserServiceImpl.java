@@ -3,23 +3,32 @@ package com.cloud.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.UserVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
 import com.cloud.user.annotation.MultiLevelCacheEvict;
 import com.cloud.user.annotation.MultiLevelCachePut;
 import com.cloud.user.annotation.MultiLevelCacheable;
+import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserConverter;
+import com.cloud.user.event.UserEventStreamPublisher;
+import com.cloud.user.event.UserEventUtils;
 import com.cloud.user.exception.UserServiceException;
 import com.cloud.user.mapper.UserMapper;
-import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.user.module.entity.User;
+import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +46,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
-    private final UserMapper userMapper;
     private final UserConverter userConverter;
     private final PasswordEncoder passwordEncoder;
+    private final MerchantService merchantService;
+    private final MerchantConverter merchantConverter;
+    private final UserEventStreamPublisher userEventStreamPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -135,11 +146,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             User user = getById(id);
             if (user == null) {
                 log.warn("要删除的用户不存在, id: {}", id);
-                throw new UserServiceException.UserNotFoundException(id);
+                throw new EntityNotFoundException("用户", id);
             }
 
             // 使用MyBatis-Plus的逻辑删除
             boolean result = removeById(id);
+
+            // 发布用户删除事件 - 函数式风格（简化版）
+            UserEventUtils.safeExecuteEvent(
+                () -> UserEventUtils.publishDeleteEvent(userEventStreamPublisher, user, true),
+                "用户逻辑删除事件"
+            );
+
             log.info("用户逻辑删除完成, id: {}, result: {}", id, result);
             return result;
         } catch (UserServiceException e) {
@@ -194,7 +212,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             log.info("根据ID查找用户: {}", id);
             User user = getById(id); // 使用MyBatis-Plus方法
             if (user == null) {
-                throw new UserServiceException.UserNotFoundException(id);
+                throw new EntityNotFoundException("用户", id);
             }
             return userConverter.toDTO(user);
         } catch (UserServiceException e) {
@@ -215,8 +233,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             unless = "#result == null"
     )
     public UserDTO getUserByUsername(String username) {
-        // 直接调用findByUsername方法，避免重复实现相同逻辑
-        // 这里保留缓存注解，因为可能有不同的缓存策略
+
         return findByUsername(username);
     }
 
@@ -269,12 +286,453 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     @MultiLevelCacheEvict(cacheName = "userCache", key = "'username:' + #entity.username", condition = "#entity.username != null")
             },
             put = {
-                    @com.cloud.user.annotation.MultiLevelCachePut(cacheName = "userCache", key = "#entity.id", expire = 1800)
+                    @MultiLevelCachePut(cacheName = "userCache", key = "#entity.id", expire = 1800)
             }
     )
     public boolean updateById(User entity) {
         log.info("更新用户信息, userId: {}", entity.getId());
-        return super.updateById(entity);
+
+        // 获取更新前的用户信息用于事件发布
+        User oldUser = null;
+        if (userEventStreamPublisher != null && entity.getId() != null) {
+            oldUser = getById(entity.getId());
+        }
+
+        boolean result = super.updateById(entity);
+
+        // 发布用户更新事件 - 函数式风格（智能检测变更类型）
+        if (result && oldUser != null) {
+            UserEventUtils.smartPublishUpdate(userEventStreamPublisher, oldUser, entity);
+        }
+
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @MultiLevelCacheEvict(
+            cacheName = "userCache",
+            key = "'username:' + #registerRequest.username",
+            beforeInvocation = true
+    )
+    public UserDTO registerUser(RegisterRequestDTO registerRequest) {
+        log.info("🚀 开始用户注册流程, username: {}, userType: {}",
+                registerRequest.getUsername(), registerRequest.getUserType());
+
+        try {
+            // 1. 检查用户是否已存在
+            UserDTO existingUser = findByUsername(registerRequest.getUsername());
+            if (existingUser != null) {
+                log.warn("⚠️ 用户注册失败，用户名已存在: {}", registerRequest.getUsername());
+                throw new BusinessException("用户名已存在: " + registerRequest.getUsername());
+            }
+
+            // 2. 转换并准备用户实体
+            User user = prepareUserEntity(registerRequest);
+            log.debug("✅ 用户实体准备完成: username={}, userType={}",
+                    user.getUsername(), user.getUserType());
+
+            // 3. 保存用户（使用缓存注解的save方法）
+            boolean saved = save(user);
+
+            // 发布用户创建事件 - 函数式风格
+            UserEventUtils.safePublishEvent(
+                userEventStreamPublisher, 
+                user, 
+                UserEventStreamPublisher.EventType.CREATED
+            );
+
+            if (!saved) {
+                log.error("❌ 用户注册失败，数据保存失败: {}", registerRequest.getUsername());
+                throw new BusinessException("用户注册失败");
+            }
+
+            // 4. 重新查询用户以获取完整信息
+            UserDTO userDTO = findByUsername(registerRequest.getUsername());
+            if (userDTO == null) {
+                log.error("❌ 用户注册后查询失败: {}", registerRequest.getUsername());
+                throw new BusinessException("用户注册失败，无法获取用户信息");
+            }
+
+            // 5. 处理商家用户的特殊逻辑
+            if ("MERCHANT".equals(registerRequest.getUserType())) {
+                handleMerchantUserRegistration(userDTO);
+            }
+
+            log.info("🎉 用户注册成功: username={}, userId={}, userType={}",
+                    userDTO.getUsername(), userDTO.getId(), userDTO.getUserType());
+
+            return userDTO;
+
+
+        } catch (BusinessException e) {
+            throw e; // 重新抛出业务异常
+        } catch (Exception e) {
+            log.error("💥 用户注册过程中发生未预期异常, username: {}",
+                    registerRequest.getUsername(), e);
+            throw new BusinessException("用户注册失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @MultiLevelCacheable(
+            cacheName = "userPasswordCache",
+            key = "'password:' + #username",
+            expire = 300, // 5分钟缓存
+            unless = "#result == null"
+    )
+    public String getUserPassword(String username) {
+        log.debug("获取用户密码: {}", username);
+
+        try {
+            User user = getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getUsername, username.trim())
+                    .select(User::getUsername, User::getPassword, User::getStatus)
+            );
+
+            if (user == null) {
+                log.warn("用户不存在: {}", username);
+                return null;
+            }
+
+            if (user.getStatus() == null || user.getStatus() != 1) {
+                log.warn("用户账户已禁用: {}", username);
+                return null;
+            }
+
+            return user.getPassword();
+
+        } catch (Exception e) {
+            log.error("获取用户密码异常: {}", username, e);
+            return null;
+        }
+    }
+
+    /**
+     * 准备用户实体对象
+     */
+    private User prepareUserEntity(RegisterRequestDTO registerRequest) {
+        // 使用converter转换
+        User user = userConverter.toEntity(registerRequest);
+
+        // 设置加密密码
+        String rawPassword = registerRequest.getPassword();
+        if (StringUtils.isNotBlank(rawPassword)) {
+            String encodedPassword = passwordEncoder.encode(rawPassword.trim());
+            user.setPassword(encodedPassword);
+            log.debug("🔐 密码已加密, username: {}", registerRequest.getUsername());
+        } else {
+            // 如果没有提供密码，设置默认密码
+            String encodedPassword = passwordEncoder.encode("123456");
+            user.setPassword(encodedPassword);
+            log.debug("🔐 使用默认密码, username: {}", registerRequest.getUsername());
+        }
+
+        // 设置默认值
+        if (user.getStatus() == null) {
+            user.setStatus(1); // 默认启用
+        }
+        if (StringUtils.isBlank(user.getUserType())) {
+            user.setUserType("USER"); // 默认用户类型
+        }
+
+        return user;
+    }
+
+    /**
+     * 处理商家用户注册的特殊逻辑
+     */
+    private void handleMerchantUserRegistration(UserDTO userDTO) {
+        try {
+            log.info("🏪 开始创建商家记录, username: {}", userDTO.getUsername());
+
+            MerchantDTO merchantDTO = new MerchantDTO();
+            merchantDTO.setId(userDTO.getId()); // 使用用户ID作为商家ID
+            merchantDTO.setUsername(userDTO.getUsername());
+            merchantDTO.setMerchantName(StringUtils.isNotBlank(userDTO.getNickname()) ?
+                    userDTO.getNickname() : userDTO.getUsername());
+            merchantDTO.setEmail(userDTO.getEmail());
+            merchantDTO.setPhone(userDTO.getPhone());
+            merchantDTO.setUserType(userDTO.getUserType());
+            merchantDTO.setStatus(userDTO.getStatus());
+            merchantDTO.setAuthStatus(0); // 默认为待审核状态
+
+            // 调用商家服务创建商家记录
+            boolean merchantSaved = merchantService.save(merchantConverter.toEntity(merchantDTO));
+            if (merchantSaved) {
+                log.info("✅ 成功为用户 {} 创建商家记录", userDTO.getUsername());
+            } else {
+                log.warn("⚠️ 为用户 {} 创建商家记录失败", userDTO.getUsername());
+                // 这里可以考虑回滚整个用户注册事务，或者记录失败日志供后续处理
+                throw new BusinessException("创建商家记录失败");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 为用户 {} 创建商家记录时发生异常", userDTO.getUsername(), e);
+            // 在事务中抛出异常，触发回滚
+            throw new BusinessException("创建商家记录失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @MultiLevelCacheable(
+            cacheName = "userCache",
+            key = "'github_id:' + #githubId",
+            expire = 1800, // 30分钟
+            unless = "#result == null"
+    )
+    public UserDTO findByGitHubId(Long githubId) {
+        if (githubId == null) {
+            log.warn("GitHub用户ID不能为空");
+            return null;
+        }
+
+        log.debug("根据GitHub ID查找用户: {}", githubId);
+        
+        try {
+            User user = getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getGithubId, githubId)
+                    .eq(User::getOauthProvider, "github"));
+            
+            return user != null ? userConverter.toDTO(user) : null;
+        } catch (Exception e) {
+            log.error("根据GitHub ID查找用户时发生异常，GitHub ID: {}", githubId, e);
+            return null;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @MultiLevelCacheable(
+            cacheName = "userCache",
+            key = "'github_username:' + #githubUsername",
+            expire = 1800, // 30分钟
+            unless = "#result == null"
+    )
+    public UserDTO findByGitHubUsername(String githubUsername) {
+        if (StringUtils.isBlank(githubUsername)) {
+            log.warn("GitHub用户名不能为空");
+            return null;
+        }
+
+        log.debug("根据GitHub用户名查找用户: {}", githubUsername);
+        
+        try {
+            User user = getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getGithubUsername, githubUsername)
+                    .eq(User::getOauthProvider, "github"));
+            
+            return user != null ? userConverter.toDTO(user) : null;
+        } catch (Exception e) {
+            log.error("根据GitHub用户名查找用户时发生异常，GitHub用户名: {}", githubUsername, e);
+            return null;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @MultiLevelCacheable(
+            cacheName = "userCache",
+            key = "'oauth:' + #oauthProvider + ':' + #oauthProviderId",
+            expire = 1800, // 30分钟
+            unless = "#result == null"
+    )
+    public UserDTO findByOAuthProvider(String oauthProvider, String oauthProviderId) {
+        if (StringUtils.isBlank(oauthProvider) || StringUtils.isBlank(oauthProviderId)) {
+            log.warn("OAuth提供商和提供商ID不能为空");
+            return null;
+        }
+
+        log.debug("根据OAuth提供商信息查找用户: provider={}, providerId={}", oauthProvider, oauthProviderId);
+        
+        try {
+            User user = getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getOauthProvider, oauthProvider)
+                    .eq(User::getOauthProviderId, oauthProviderId));
+            
+            return user != null ? userConverter.toDTO(user) : null;
+        } catch (Exception e) {
+            log.error("根据OAuth提供商信息查找用户时发生异常，provider: {}, providerId: {}", 
+                    oauthProvider, oauthProviderId, e);
+            return null;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @MultiLevelCacheEvict(
+            cacheName = "userCache",
+            key = "'github_id:' + #githubUserDTO.githubId",
+            beforeInvocation = true
+    )
+    public UserDTO createGitHubUser(com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
+        log.info("🚀 开始创建GitHub OAuth用户, githubId: {}, login: {}", 
+                githubUserDTO.getGithubId(), githubUserDTO.getLogin());
+
+        try {
+            // 1. 检查GitHub用户是否已存在
+            UserDTO existingUser = findByGitHubId(githubUserDTO.getGithubId());
+            if (existingUser != null) {
+                log.warn("⚠️ GitHub用户已存在: githubId={}, 系统用户ID={}", 
+                        githubUserDTO.getGithubId(), existingUser.getId());
+                return existingUser;
+            }
+
+            // 2. 检查系统用户名是否冲突
+            String systemUsername = githubUserDTO.buildSystemUsername();
+            UserDTO userWithSameUsername = findByUsername(systemUsername);
+            if (userWithSameUsername != null) {
+                log.warn("⚠️ 系统用户名已存在，需要生成唯一用户名: {}", systemUsername);
+                systemUsername = generateUniqueUsername(githubUserDTO.getLogin());
+            }
+
+            // 3. 创建用户实体
+            User user = buildGitHubUser(githubUserDTO, systemUsername);
+            
+            // 4. 保存用户
+            boolean saved = save(user);
+            if (!saved) {
+                log.error("❌ GitHub用户创建失败，数据保存失败: githubId={}", githubUserDTO.getGithubId());
+                throw new BusinessException("GitHub用户创建失败");
+            }
+
+            // 5. 发布GitHub用户创建事件 - 函数式风格
+            UserEventUtils.publishLoginEvent(userEventStreamPublisher, user, "github");
+
+            // 6. 查询完整的用户信息
+            UserDTO userDTO = findByUsername(systemUsername);
+            if (userDTO == null) {
+                log.error("❌ GitHub用户创建后查询失败: username={}", systemUsername);
+                throw new BusinessException("GitHub用户创建失败，无法获取用户信息");
+            }
+
+            log.info("🎉 GitHub OAuth用户创建成功: username={}, userId={}, githubId={}",
+                    userDTO.getUsername(), userDTO.getId(), githubUserDTO.getGithubId());
+
+            return userDTO;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("💥 创建GitHub OAuth用户过程中发生未预期异常, githubId: {}",
+                    githubUserDTO.getGithubId(), e);
+            throw new BusinessException("GitHub用户创建失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @com.cloud.user.annotation.MultiLevelCaching(
+            evict = {
+                    @MultiLevelCacheEvict(cacheName = "userCache", key = "#userId"),
+                    @MultiLevelCacheEvict(cacheName = "userCache", key = "'github_id:' + #githubUserDTO.githubId")
+            }
+    )
+    public boolean updateGitHubUserInfo(Long userId, com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
+        log.info("🔄 开始更新GitHub用户信息, userId: {}, githubId: {}", 
+                userId, githubUserDTO.getGithubId());
+
+        try {
+            // 1. 检查用户是否存在
+            User existingUser = getById(userId);
+            if (existingUser == null) {
+                log.warn("⚠️ 要更新的用户不存在: userId={}", userId);
+                throw new EntityNotFoundException("用户", userId);
+            }
+
+            // 2. 更新GitHub相关信息
+            User updatedUser = new User();
+            updatedUser.setId(userId);
+            updatedUser.setNickname(githubUserDTO.getDisplayName());
+            updatedUser.setEmail(githubUserDTO.getEmail());
+            updatedUser.setAvatarUrl(githubUserDTO.getAvatarUrl());
+            updatedUser.setGithubId(githubUserDTO.getGithubId());
+            updatedUser.setGithubUsername(githubUserDTO.getLogin());
+            updatedUser.setOauthProvider("github");
+            updatedUser.setOauthProviderId(githubUserDTO.getGithubId().toString());
+
+            // 3. 执行更新
+            boolean result = updateById(updatedUser);
+
+            if (result) {
+                log.info("✅ GitHub用户信息更新成功: userId={}, githubId={}", 
+                        userId, githubUserDTO.getGithubId());
+            } else {
+                log.error("❌ GitHub用户信息更新失败: userId={}, githubId={}", 
+                        userId, githubUserDTO.getGithubId());
+            }
+
+            return result;
+
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("💥 更新GitHub用户信息时发生未预期异常, userId: {}, githubId: {}",
+                    userId, githubUserDTO.getGithubId(), e);
+            throw new BusinessException("更新GitHub用户信息失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 构建GitHub用户实体
+     */
+    private User buildGitHubUser(com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO, String systemUsername) {
+        User user = new User();
+        user.setUsername(systemUsername);
+        user.setNickname(githubUserDTO.getDisplayName());
+        user.setEmail(githubUserDTO.getEmail());
+        user.setAvatarUrl(githubUserDTO.getAvatarUrl());
+        user.setUserType("USER"); // GitHub用户默认为普通用户
+        user.setStatus(1); // 默认启用
+        user.setPhone("000-0000-0000"); // GitHub用户默认手机号
+        
+        // GitHub OAuth相关信息
+        user.setGithubId(githubUserDTO.getGithubId());
+        user.setGithubUsername(githubUserDTO.getLogin());
+        user.setOauthProvider("github");
+        user.setOauthProviderId(githubUserDTO.getGithubId().toString());
+        
+        // OAuth用户使用特殊密码（不用于登录）
+        String oauthPassword = "github_oauth2_" + githubUserDTO.getGithubId();
+        user.setPassword(passwordEncoder.encode(oauthPassword));
+        
+        return user;
+    }
+
+    /**
+     * 生成唯一的用户名（处理用户名冲突）
+     */
+    private String generateUniqueUsername(String baseUsername) {
+        String prefix = "github_" + baseUsername;
+        int suffix = 1;
+        String candidateUsername = prefix;
+        
+        while (findByUsername(candidateUsername) != null) {
+            candidateUsername = prefix + "_" + suffix;
+            suffix++;
+            if (suffix > 1000) { // 防止无限循环
+                candidateUsername = prefix + "_" + System.currentTimeMillis();
+                break;
+            }
+        }
+        
+        log.info("生成唯一用户名: {} -> {}", prefix, candidateUsername);
+        return candidateUsername;
+    }
+
+    /**
+     * 获取当前操作者
+     */
+    private String getCurrentOperator() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
+        return "SYSTEM";
     }
 
 }

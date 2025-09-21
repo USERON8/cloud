@@ -134,7 +134,52 @@ public enum ResultCode {
     LOG_CREATE_FAILED(16001, "日志创建失败"),
     LOG_UPDATE_FAILED(16002, "日志更新失败"),
     LOG_DELETE_FAILED(16003, "日志删除失败"),
-    LOG_QUERY_FAILED(16004, "日志查询失败");
+    LOG_QUERY_FAILED(16004, "日志查询失败"),
+
+    // 认证服务相关错误 17xxx (认证服务专用错误码范围: 17000-17999)
+    // OAuth2.1标准相关错误
+    OAUTH2_INVALID_REQUEST(17001, "OAuth2请求参数无效"),
+    OAUTH2_INVALID_CLIENT(17002, "OAuth2客户端无效"),
+    OAUTH2_INVALID_GRANT(17003, "OAuth2授权无效"),
+    OAUTH2_UNAUTHORIZED_CLIENT(17004, "OAuth2客户端未授权"),
+    OAUTH2_UNSUPPORTED_GRANT_TYPE(17005, "OAuth2不支持的授权类型"),
+    OAUTH2_INVALID_SCOPE(17006, "OAuth2权限范围无效"),
+    OAUTH2_ACCESS_DENIED(17007, "OAuth2访问被拒绝"),
+    OAUTH2_SERVER_ERROR(17008, "OAuth2服务器内部错误"),
+
+    // JWT令牌相关错误
+    JWT_TOKEN_INVALID(17011, "JWT令牌无效"),
+    JWT_TOKEN_EXPIRED(17012, "JWT令牌已过期"),
+    JWT_TOKEN_MALFORMED(17013, "JWT令牌格式错误"),
+    JWT_SIGNATURE_INVALID(17014, "JWT令牌签名验证失败"),
+    JWT_TOKEN_NOT_FOUND(17015, "未找到JWT令牌"),
+    JWT_GENERATION_FAILED(17016, "JWT令牌生成失败"),
+
+    // 认证相关错误
+    AUTHENTICATION_FAILED(17021, "身份认证失败"),
+    BAD_CREDENTIALS(17022, "用户名或密码错误"),
+    ACCOUNT_LOCKED(17023, "账户已被锁定"),
+    ACCOUNT_EXPIRED(17024, "账户已过期"),
+    CREDENTIALS_EXPIRED(17025, "凭证已过期"),
+    TOKEN_GENERATION_FAILED(17026, "令牌生成失败"),
+    TOKEN_REVOCATION_FAILED(17027, "令牌撤销失败"),
+
+    // PKCE相关错误 (OAuth2.1标准)
+    PKCE_CHALLENGE_MISSING(17031, "PKCE质问参数缺失"),
+    PKCE_VERIFIER_INVALID(17032, "PKCE验证器无效"),
+    PKCE_METHOD_UNSUPPORTED(17033, "PKCE方法不支持"),
+
+    // 客户端相关错误
+    CLIENT_REGISTRATION_FAILED(17041, "客户端注册失败"),
+    CLIENT_NOT_FOUND(17042, "客户端不存在"),
+    CLIENT_AUTHENTICATION_FAILED(17043, "客户端认证失败"),
+
+    // 授权相关错误
+    AUTHORIZATION_CODE_INVALID(17051, "授权码无效"),
+    AUTHORIZATION_CODE_EXPIRED(17052, "授权码已过期"),
+    AUTHORIZATION_CODE_USED(17053, "授权码已使用"),
+    REFRESH_TOKEN_INVALID(17054, "刷新令牌无效"),
+    REFRESH_TOKEN_EXPIRED(17055, "刷新令牌已过期");
 
     private final Integer code;
     private final String message;

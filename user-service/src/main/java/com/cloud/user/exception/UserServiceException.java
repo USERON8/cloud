@@ -38,15 +38,18 @@ public class UserServiceException extends BusinessException {
     }
 
     // 用户相关特定异常
-    // 推荐使用通用异常类: EntityNotFoundException.user(userId)
-    @Deprecated
+
     public static class UserNotFoundException extends UserServiceException {
         public UserNotFoundException(String message) {
             super(ResultCode.USER_NOT_FOUND, message);
         }
 
         public UserNotFoundException(Long userId) {
-            super(ResultCode.USER_NOT_FOUND, "用户不存在，用户ID: " + userId);
+            super(ResultCode.USER_NOT_FOUND, String.format("用户不存在，用户ID: %d", userId));
+        }
+
+        public UserNotFoundException(String username, boolean isEmail) {
+            super(ResultCode.USER_NOT_FOUND, String.format("用户不存在，%s: %s", isEmail ? "邮箱" : "用户名", username));
         }
     }
 

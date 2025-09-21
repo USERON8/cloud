@@ -1,6 +1,5 @@
 package com.cloud.payment.controller;
 
-import com.cloud.common.annotation.RequiresPermission;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
 import com.cloud.common.result.Result;
 import com.cloud.payment.converter.PaymentConverter;
@@ -17,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -40,9 +40,9 @@ public class PaymentManageController {
      * @param currentUserId 当前用户ID
      * @return 创建结果
      */
-    @PostMapping("/add")
-    @RequiresPermission("PAYMENT_CREATE")
-    @Operation(summary = "创建支付记录", description = "管理员创建新的支付记录")
+    @PostMapping
+    @Operation(summary = "创建支付记录", description = "创建新的支付记录")
+    @CacheEvict(value = {"payment-page"}, allEntries = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "支付信息", required = true)
     @ApiResponse(responseCode = "200", description = "创建成功",
             content = @Content(mediaType = "application/json",
@@ -77,9 +77,9 @@ public class PaymentManageController {
      * @param currentUserId 当前用户ID
      * @return 更新结果
      */
-    @PutMapping("/update/{id}")
-    @RequiresPermission("PAYMENT_UPDATE")
-    @Operation(summary = "更新支付记录", description = "管理员更新支付记录信息")
+    @PutMapping("/{id}")
+    @Operation(summary = "更新支付记录", description = "更新支付记录信息")
+    @CacheEvict(value = {"payment", "payment-page"}, allEntries = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "支付信息", required = true)
     @ApiResponse(responseCode = "200", description = "更新成功",
             content = @Content(mediaType = "application/json",
@@ -122,9 +122,9 @@ public class PaymentManageController {
      * @param currentUserId 当前用户ID
      * @return 删除结果
      */
-    @DeleteMapping("/delete/{id}")
-    @RequiresPermission("PAYMENT_DELETE")
-    @Operation(summary = "删除支付记录", description = "管理员删除支付记录")
+    @DeleteMapping("/{id}")
+    @Operation(summary = "删除支付记录", description = "删除支付记录")
+    @CacheEvict(value = {"payment", "payment-page"}, allEntries = true)
     @Parameters({
             @Parameter(name = "id", description = "支付ID", required = true)
     })

@@ -1,0 +1,44 @@
+# 用户事件消费配置
+spring:
+  cloud:
+    stream:
+      # 函数定义
+      function:
+        definition: orderConsumer,paymentConsumer,userConsumer
+
+      # RocketMQ绑定配置
+      bindings:
+        # 用户事件消费者绑定
+        userConsumer-in-0:
+          destination: user-events
+          content-type: application/json
+          group: log-service-user-group
+          consumer:
+            maxAttempts: 3
+            backOffInitialInterval: 1000
+            backOffMaxInterval: 10000
+            backOffMultiplier: 2.0
+
+      # RocketMQ消费者配置
+      rocketmq:
+        bindings:
+          userConsumer-in-0:
+            consumer:
+              # 订阅所有用户事件标签
+              subscription: 'user-registered||user-login||user-logout||user-updated||password-changed||user-status-changed||user-verification||avatar-updated||phone-bind||email-bind||user-deleted'
+              # 消息消费模式：集群消费
+              messageModel: CLUSTERING
+              # 消费者线程数
+              consumeThreadMin: 5
+              consumeThreadMax: 20
+              # 消息拉取数量
+              pullBatchSize: 16
+              # 消费超时时间
+              consumeTimeout: 10000
+
+# 日志配置
+logging:
+  level:
+    com.cloud.log.messaging: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    com.alibaba.cloud.stream.binder.rocketmq: DEBUG

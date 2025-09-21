@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -13,11 +14,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @author what's up
  */
 @SpringBootApplication
-
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
 @EnableFeignClients(basePackages = "com.cloud.api")
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 
 public class UserApplication implements WebMvcConfigurer {
     public static void main(String[] args) {
@@ -26,6 +27,7 @@ public class UserApplication implements WebMvcConfigurer {
             System.setProperty("nacos.logging.default.config.enabled", "false");
             System.setProperty("nacos.logging.config", "");
             System.setProperty("nacos.logging.path", "");
+
 
             log.info("正在启动用户服务...");
             SpringApplication.run(UserApplication.class, args);

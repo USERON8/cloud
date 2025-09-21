@@ -1,13 +1,28 @@
 server:
-  port: 8083
+  port: 8081
 spring:
   application:
     name: user-service
+  main:
+    allow-bean-definition-overriding: true
   cloud:
     stream:
       rocketmq:
         binder:
-          name-server: 127.0.0.1:39876
+          name-server: 127.0.0.1:9876
+      bindings:
+        # 用户事件生产者绑定
+        user-producer-out-0:
+          destination: user-events
+          content-type: application/json
+          group: user-producer-group
+
+        userLog-out-0:
+          destination: LOG_USER_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+
     nacos:
       discovery:
         server-addr: localhost:8848
@@ -46,7 +61,7 @@ spring:
       host: localhost
       port: 6379
       password: root
-      database: 0
+      database: 2
       timeout: 10000ms
       lettuce:
         pool:

@@ -86,7 +86,7 @@ public class StockQueryController {
             @Parameter(description = "商品ID", required = true)
             @NotNull(message = "商品ID不能为空")
             @Positive(message = "商品ID必须为正整数") Long productId,
-            
+
             @PathVariable
             @Parameter(description = "所需数量", required = true)
             @NotNull(message = "所需数量不能为空")

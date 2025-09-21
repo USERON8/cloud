@@ -164,7 +164,6 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
 
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     @RedisCacheEvict(

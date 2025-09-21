@@ -3,22 +3,37 @@ server:
 spring:
   application:
     name: gateway
+  main:
+    allow-bean-definition-overriding: true
   profiles:
     include: route,api
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      csrf:
+        enabled: true
       # 全局CORS配置
-      globalcors:
+      globals:
         cors-configurations:
           '[/**]':
-            allowedOriginPatterns: "*"
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "https://*.yourdomain.com"
             allowedMethods:
               - GET
               - POST
               - PUT
               - DELETE
               - OPTIONS
-            allowedHeaders: "*"
+            allowedHeaders:
+              - "Authorization"
+              - "Content-Type"
+              - "Accept"
+              - "X-Requested-With"
             allowCredentials: true
             maxAge: 3600
       
@@ -51,14 +66,14 @@ spring:
       host: localhost
       port: 6379
       password: root
-      database: 0
-      timeout: 10000ms
+      database: 6
+      timeout: 5000ms
       lettuce:
         pool:
-          max-active: 8
+          max-active: 16
           max-wait: -1ms
           max-idle: 8
-          min-idle: 0
+          min-idle: 2
   web:
     resources:
       static-locations: classpath:/static/
@@ -68,50 +83,23 @@ spring:
         jwt:
           # 通过网关访问auth-service的JWK端点，实现OAuth2.1标准架构
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
-
-logging:
-  file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
+          issuer-uri: http://127.0.0.1:80
+    headers:
+      content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      xss-protection-enabled: true
+      x-frame-options:
+        mode: DENY
+      cache-control: true
+      content-type-options: true
+      referrer-policy: "no-referrer-when-downgrade"
   level:
     com.cloud: INFO
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
+# SpringDoc 配置已移除，使用 Knife4j 进行文档聚合
 
-# 禁用数据源和性能监控配置，网关不需要数据库连接
-performance:
-  datasource:
-    optimized:
-      enabled: false
-  monitoring:
-    enabled: false
-
-# SpringDoc OpenAPI 配置
-springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    config-url: /swagger-resources/configuration/ui
-    urls-primary-name: 认证服务
-    urls:
-      - name: 认证服务
-        url: /auth-service/v3/api-docs
-      - name: 用户服务
-        url: /user-service/v3/api-docs
-      - name: 商品服务
-        url: /product-service/v3/api-docs
-      - name: 订单服务
-        url: /order-service/v3/api-docs
-      - name: 支付服务
-        url: /payment-service/v3/api-docs
-      - name: 库存服务
-        url: /stock-service/v3/api-docs
-
-# Knife4j 网关聚合配置
+# Knife4j 网关服务发现聚合配置
 knife4j:
   enable: true
   production: false
@@ -124,3 +112,22 @@ knife4j:
     swagger-model-name: 实体类列表
     enable-footer-custom: true
     footer-custom-content: "Cloud 微服务平台 API 文档"
+  gateway:
+    # 启用网关聚合功能
+    enabled: true
+    # 使用服务发现策略
+    strategy: discover
+    discover:
+      enabled: true
+      version: openapi3
+      # 排除gateway服务本身
+      excluded-services: 
+        - gateway
+      # 服务发现配置
+      service-config:
+        auth-service:
+          group-name: 认证服务
+          api-docs-path: /v3/api-docs
+        user-service:
+          group-name: 用户服务  
+          api-docs-path: /v3/api-docs

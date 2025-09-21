@@ -64,4 +64,28 @@ public class User extends BaseEntity<User> {
      */
     @TableField(value = "user_type", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
     private String userType;
+
+    /**
+     * GitHub用户ID（OAuth登录专用）
+     */
+    @TableField(value = "github_id", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
+    private Long githubId;
+
+    /**
+     * GitHub用户名（OAuth登录专用）
+     */
+    @TableField(value = "github_username", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
+    private String githubUsername;
+
+    /**
+     * OAuth提供商（github, wechat等）
+     */
+    @TableField(value = "oauth_provider", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
+    private String oauthProvider;
+
+    /**
+     * OAuth提供商用户ID
+     */
+    @TableField(value = "oauth_provider_id", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
+    private String oauthProviderId;
 }

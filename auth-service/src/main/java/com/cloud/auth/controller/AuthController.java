@@ -3,11 +3,18 @@ package com.cloud.auth.controller;
 import com.cloud.api.user.UserFeignClient;
 import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.util.OAuth2ResponseUtil;
+import com.cloud.common.annotation.RequireAuthentication;
+import com.cloud.common.annotation.RequireScope;
+import com.cloud.common.annotation.RequireUserType;
+import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.auth.LoginRequestDTO;
 import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.ResourceNotFoundException;
+import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,10 +33,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 认证控制器
- * 提供简化的用户认证相关操作，包括注册、登录、登出等
+ * OAuth2.1认证控制器
+ * 提供简化的用户认证相关操作，严格遵循OAuth2.1标准
  * <p>
- * 注意：这些接口为简化登录流程，生产环境建议使用标准OAuth2流程：
+ * 特点：
+ * - 不在控制器层捕获异常，由底层业务方法抛出
+ * - 异常由全局异常处理器统一处理
+ * - 支持OAuth2.1标准的PKCE、令牌轮转等特性
+ * <p>
+ * 推荐使用标准OAuth2.1流程：
  * - 授权码模式：/oauth2/authorize -> /oauth2/token
  * - 客户端凭证模式：/oauth2/token 传递 grant_type=client_credentials
  *
@@ -47,33 +59,35 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * 用户注册接口（简化版）
-     * 检查用户是否存在，如果不存在则注册新用户并返回OAuth2令牌
+     * 用户注册接口（OAuth2.1标准版）
+     * 检查用户是否存在，如果不存在则注册新用户并返回OAuth2.1标准令牌
      * <p>
-     * 注意：这是一个简化接口，内部使用授权码模式生成令牌
-     * 生产环境建议使用标准OAuth2授权码流程
+     * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
+     * 生产环境推荐使用标准OAuth2.1授权码流程（PKCE支持）
      *
      * @param registerRequestDTO 用户注册请求参数
-     * @return 注册结果包含OAuth2令牌
+     * @return 注册结果包含OAuth2.1标准令牌
+     * @throws UserAlreadyExistsException 用户已存在时抛出
+     * @throws ValidationException        请求参数验证失败时抛出
      */
     @PostMapping("/register")
     @Operation(
-            summary = "用户注册", 
+            summary = "用户注册",
             description = "注册新用户并返回 OAuth2 令牌"
     )
     @ApiResponse(
-            responseCode = "200", 
+            responseCode = "200",
             description = "注册成功",
-            content = @Content(mediaType = "application/json", 
+            content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class))
     )
     public Result<LoginResponseDTO> register(
             @RequestBody
             @Parameter(description = "用户注册信息", required = true)
-            @Valid 
+            @Valid
             @NotNull(message = "注册信息不能为空") RegisterRequestDTO registerRequestDTO) {
-        
-        log.info("用户注册开始, username: {}, userType: {}", 
+
+        log.info("用户注册开始, username: {}, userType: {}",
                 registerRequestDTO.getUsername(), registerRequestDTO.getUserType());
 
         // 尝试注册用户，由底层服务保证原子性操作
@@ -88,167 +102,161 @@ public class AuthController {
             return Result.success(response);
         } else {
             log.warn("用户注册失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
-            return Result.error(ResultCode.USER_ALREADY_EXISTS.getCode(), "用户名已存在或服务不可用");
+            throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
         }
     }
 
     /**
      * 用户登录接口（带密码验证）
-     * 验证用户名和密码后返回OAuth2令牌
+     * 验证用户名和密码后返回OAuth2.1标准令牌
      * <p>
-     * 注意：这是一个简化接口，内部使用授权码模式生成令牌
-     * 生产环境建议使用标准OAuth2授权码流程
+     * 遵循OAuth2.1标准，支持PKCE、令牌轮转等安全特性
+     * 不捕获异常，由全局异常处理器统一处理所有业务异常
      *
      * @param loginRequestDTO 用户登录请求参数
-     * @return 登录结果包含OAuth2令牌
+     * @return 登录结果包含OAuth2.1标准令牌
+     * @throws AuthenticationException 认证失败时抛出
+     * @throws ValidationException     请求参数验证失败时抛出
      */
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "验证用户名密码后返回OAuth2.1标准令牌")
     public Result<LoginResponseDTO> login(
-            @RequestBody 
+            @RequestBody
             @Parameter(description = "用户登录信息", required = true)
             @Valid @NotNull(message = "登录信息不能为空") LoginRequestDTO loginRequestDTO) {
-        
+
         String username = loginRequestDTO.getUsername();
         log.info("🔐 用户登录请求开始, username: {}, userType: {}", username, loginRequestDTO.getUserType());
 
-        try {
-            // 1. 参数验证
-            validateLoginRequest(loginRequestDTO);
-            
-            // 2. 检查用户是否存在
-            UserDTO user = userFeignClient.findByUsername(username);
-            if (user == null) {
-                log.warn("❌ 用户登录失败，用户不存在, username: {}", username);
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户名或密码错误");
-            }
+        // 1. 参数验证（抛出IllegalArgumentException）
+        validateLoginRequest(loginRequestDTO);
 
-            // 3. 验证用户状态（先验证状态，再验证密码）
-            if (user.getStatus() == null || user.getStatus() != 1) {
-                log.warn("❌ 用户登录失败，账户已被禁用, username: {}, status: {}", username, user.getStatus());
-                return Result.error(ResultCode.USER_DISABLED.getCode(), "账户已被禁用");
-            }
-            
-            // 4. 验证用户类型（如果请求中指定了用户类型）
-            if (loginRequestDTO.getUserType() != null && 
+        // 2. 检查用户是否存在（抛出ResourceNotFoundException）
+        UserDTO user = userFeignClient.findByUsername(username);
+        if (user == null) {
+            log.warn("❌ 用户登录失败，用户不存在, username: {}", username);
+            throw new ResourceNotFoundException("User", username);
+        }
+
+        // 3. 验证用户状态（抛出BusinessException）
+        if (user.getStatus() == null || user.getStatus() != 1) {
+            log.warn("❌ 用户登录失败，账户已被禁用, username: {}, status: {}", username, user.getStatus());
+            throw new BusinessException(ResultCode.USER_DISABLED);
+        }
+
+        // 4. 验证用户类型（抛出BusinessException）
+        if (loginRequestDTO.getUserType() != null &&
                 !loginRequestDTO.getUserType().trim().isEmpty() &&
                 !loginRequestDTO.getUserType().equals(user.getUserType())) {
-                log.warn("❌ 用户登录失败，用户类型不匹配, username: {}, requestedType: {}, actualType: {}",
-                        username, loginRequestDTO.getUserType(), user.getUserType());
-                return Result.error(ResultCode.USER_TYPE_MISMATCH.getCode(), "用户类型不匹配");
-            }
-
-            // 5. 验证密码（放在最后验证，避免无效请求的性能影响）
-            String storedPassword = userFeignClient.getUserPassword(username);
-            if (storedPassword == null) {
-                log.warn("❌ 用户登录失败，无法获取用户密码, username: {}", username);
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户名或密码错误");
-            }
-
-            // 使用PasswordEncoder验证密码
-            if (!passwordEncoder.matches(loginRequestDTO.getPassword(), storedPassword)) {
-                log.warn("❌ 用户登录失败，密码错误, username: {}", username);
-                // 密码错误可以考虑加入登录尝试限制逻辑
-                return Result.error(ResultCode.PASSWORD_ERROR.getCode(), "用户名或密码错误");
-            }
-
-            // 6. 生成OAuth2.1符合的令牌（含 PKCE 支持）
-            OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(user, null);
-            log.info("✅ 用户登录成功, username: {}, scopes: {}, tokenId: {}", 
-                    username, authorization.getAuthorizedScopes(), 
-                    authorization.getId().substring(0, 8) + "...");
-
-            // 7. 返回标准OAuth2.1响应
-            LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, user);
-            return Result.success(response);
-            
-        } catch (Exception e) {
-            log.error("💥 用户登录过程中发生异常, username: {}", username, e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "登录失败，系统异常");
+            log.warn("❌ 用户登录失败，用户类型不匹配, username: {}, requestedType: {}, actualType: {}",
+                    username, loginRequestDTO.getUserType(), user.getUserType());
+            throw new BusinessException(ResultCode.USER_TYPE_MISMATCH);
         }
+
+        // 5. 验证密码（抛出BusinessException）
+        String storedPassword = userFeignClient.getUserPassword(username);
+        if (storedPassword == null) {
+            log.warn("❌ 用户登录失败，无法获取用户密码, username: {}", username);
+            throw new ResourceNotFoundException("User password", username);
+        }
+
+        // 使用PasswordEncoder验证密码
+        if (!passwordEncoder.matches(loginRequestDTO.getPassword(), storedPassword)) {
+            log.warn("❌ 用户登录失败，密码错误, username: {}", username);
+            // 密码错误可以考虑加入登录尝试限制逻辑
+            throw new BusinessException(ResultCode.PASSWORD_ERROR);
+        }
+
+        // 6. 生成OAuth2.1标准令牌（抛出OAuth2Exception）
+        OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(user, null);
+        log.info("✅ 用户登录成功, username: {}, scopes: {}, tokenId: {}",
+                username, authorization.getAuthorizedScopes(),
+                authorization.getId().substring(0, 8) + "...");
+
+        // 7. 返回标准OAuth2.1响应
+        LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, user);
+        return Result.success(response);
     }
-    
+
     /**
      * 验证登录请求参数
-     * 
+     *
      * @param loginRequestDTO 登录请求
      */
     private void validateLoginRequest(LoginRequestDTO loginRequestDTO) {
         if (loginRequestDTO.getUsername() == null || loginRequestDTO.getUsername().trim().isEmpty()) {
-            throw new IllegalArgumentException("用户名不能为空");
+            throw new ValidationException("username", loginRequestDTO.getUsername(), "用户名不能为空");
         }
         if (loginRequestDTO.getPassword() == null || loginRequestDTO.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("密码不能为空");
+            throw new ValidationException("password", loginRequestDTO.getPassword(), "密码不能为空");
         }
     }
 
     /**
      * 用户注册并自动登录接口
-     * 注册新用户并返回OAuth2.0标准的访问令牌信息
+     * 注册新用户并返回OAuth2.1标准的访问令牌信息
+     * <p>
+     * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
      *
      * @param registerRequestDTO 用户注册请求参数
      * @return 登录响应信息（包含访问令牌等）
+     * @throws UserAlreadyExistsException 用户已存在时抛出
+     * @throws ValidationException        请求参数验证失败时抛出
      */
     @RequestMapping("/register-and-login")
     public Result<LoginResponseDTO> registerAndLogin(@RequestBody @NotNull RegisterRequestDTO registerRequestDTO) {
         log.info("用户注册并登录开始, username: {}, userType: {}", registerRequestDTO.getUsername(), registerRequestDTO.getUserType());
 
-        try {
-            // 尝试注册用户
-            UserDTO registeredUser = userFeignClient.register(registerRequestDTO);
+        // 直接尝试注册用户，不捕获异常
+        UserDTO registeredUser = userFeignClient.register(registerRequestDTO);
 
-            if (registeredUser != null) {
-                log.info("用户注册并登录成功, username: {}, userId: {}, userType: {}",
-                        registerRequestDTO.getUsername(), registeredUser.getId(), registeredUser.getUserType());
-                // 通过Authorization Server生成并入库令牌
-                OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(registeredUser, null);
-                LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
-                return Result.success(response);
-            } else {
-                log.warn("用户注册并登录失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
-                return Result.error(ResultCode.USER_ALREADY_EXISTS.getCode(), "用户名已存在或服务不可用");
-            }
-        } catch (Exception e) {
-            log.error("用户注册并登录异常, username: {}", registerRequestDTO.getUsername(), e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "注册并登录失败，请稍后重试");
+        if (registeredUser != null) {
+            log.info("用户注册并登录成功, username: {}, userId: {}, userType: {}",
+                    registerRequestDTO.getUsername(), registeredUser.getId(), registeredUser.getUserType());
+
+            // 通过OAuth2.1 Authorization Server生成并存储令牌
+            OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(registeredUser, null);
+            LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
+            return Result.success(response);
+        } else {
+            log.warn("用户注册并登录失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
+            return Result.error(ResultCode.USER_ALREADY_EXISTS.getCode(), "用户名已存在或服务不可用");
         }
     }
 
     /**
      * 用户登出接口
      * 撤销指定的访问令牌，使其立即失效
+     * <p>
+     * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
      *
      * @param request HTTP请求（从中提取Authorization头）
      * @return 登出结果
+     * @throws InvalidTokenException 令牌无效时抛出
+     * @throws MissingTokenException 缺少令牌时抛出
      */
     @RequestMapping("/logout")
     public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
-        try {
-            // 从请求头中提取令牌
-            String authorizationHeader = request.getHeader("Authorization");
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                log.warn("登出请求缺少有效的Authorization头");
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
-            }
+        // 从请求头中提取令牌（抛出MissingTokenException）
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            log.warn("登出请求缺少有效的Authorization头");
+            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
+        }
 
-            String accessToken = authorizationHeader.substring(7); // 移除"Bearer "前缀
+        String accessToken = authorizationHeader.substring(7); // 移除"Bearer "前缀
 
-            // 调用令牌管理服务撤销令牌
-            boolean logoutSuccess = tokenManagementService.logout(accessToken, null);
+        // 调用令牌管理服务撤销令牌（抛出InvalidTokenException）
+        boolean logoutSuccess = tokenManagementService.logout(accessToken, null);
 
-            if (logoutSuccess) {
-                log.info("用户登出成功, tokenPrefix: {}",
-                        accessToken.substring(0, Math.min(accessToken.length(), 10)) + "...");
-                return Result.success("登出成功", null);
-            } else {
-                log.warn("用户登出失败, tokenPrefix: {}",
-                        accessToken.substring(0, Math.min(accessToken.length(), 10)) + "...");
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
-            }
-
-        } catch (Exception e) {
-            log.error("用户登出异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "登出失败，系统异常");
+        if (logoutSuccess) {
+            log.info("用户登出成功, tokenPrefix: {}",
+                    accessToken.substring(0, Math.min(accessToken.length(), 10)) + "...");
+            return Result.success("登出成功", null);
+        } else {
+            log.warn("用户登出失败, tokenPrefix: {}",
+                    accessToken.substring(0, Math.min(accessToken.length(), 10)) + "...");
+            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
         }
     }
 
@@ -260,108 +268,111 @@ public class AuthController {
      * @return 登出结果
      */
     @PostMapping("/logout-all")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(
-            summary = "批量登出", 
+            summary = "批量登出",
             description = "撤销用户的所有活跃会话"
     )
     public Result<String> logoutAllSessions(
             @RequestParam("username")
             @Parameter(description = "用户名", required = true)
             @NotBlank(message = "用户名不能为空") String username) {
-        
+
         log.info("开始批量登出用户的所有会话, username: {}", username);
-        
+
         int revokedCount = tokenManagementService.logoutAllSessions(username);
-        
+
         String message = String.format("成功撤销用户 %s 的 %d 个活跃会话", username, revokedCount);
         log.info(message);
-        
+
         return Result.success(message);
     }
 
     /**
      * 验证令牌有效性接口
-     * 用于其他服务验证令牌是否有效
+     * 用于其他服务验证OAuth2.1令牌是否有效
+     * <p>
+     * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
      *
      * @param request HTTP请求（从中提取Authorization头）
      * @return 验证结果
+     * @throws InvalidTokenException 令牌无效时抛出
+     * @throws MissingTokenException 缺少令牌时抛出
      */
     @RequestMapping("/validate-token")
+    @RequireAuthentication
     public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
-        try {
-            // 从请求头中提取令牌
-            String authorizationHeader = request.getHeader("Authorization");
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
-            }
-
-            String accessToken = authorizationHeader.substring(7);
-
-            // 验证令牌有效性
-            boolean isValid = tokenManagementService.isTokenValid(accessToken);
-
-            if (isValid) {
-                // 获取令牌详细信息
-                OAuth2Authorization authorization = tokenManagementService.findByToken(accessToken);
-                if (authorization != null) {
-                    String message = String.format("令牌有效, 用户: %s, 权限: %s",
-                            authorization.getPrincipalName(),
-                            String.join(", ", authorization.getAuthorizedScopes()));
-                    return Result.success(message);
-                }
-            }
-
-            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
-
-        } catch (Exception e) {
-            log.error("令牌验证异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "令牌验证失败，系统异常");
+        // 从请求头中提取令牌（抛出MissingTokenException）
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
         }
+
+        String accessToken = authorizationHeader.substring(7);
+
+        // 验证令牌有效性（抛出InvalidTokenException）
+        boolean isValid = tokenManagementService.isTokenValid(accessToken);
+
+        if (isValid) {
+            // 获取令牌详细信息
+            OAuth2Authorization authorization = tokenManagementService.findByToken(accessToken);
+            if (authorization != null) {
+                String message = String.format("令牌有效, 用户: %s, 权限: %s",
+                        authorization.getPrincipalName(),
+                        String.join(", ", authorization.getAuthorizedScopes()));
+                return Result.success(message);
+            }
+        }
+
+        return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
     }
 
     /**
      * 令牌刷新接口
-     * 使用刷新令牌获取新的访问令牌
+     * 使用刷新令牌获取新的访问令牌，遵循OAuth2.1标准
+     * <p>
+     * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
+     * 支持令牌轮转（Token Rotation）特性，提高安全性
      *
      * @param refreshToken 刷新令牌
      * @return 新的访问令牌信息
+     * @throws InvalidTokenException 刷新令牌无效时抛出
+     * @throws ValidationException   参数验证失败时抛出
+     * @throws UserNotFoundException 用户不存在时抛出
      */
     @RequestMapping("/refresh-token")
     public Result<LoginResponseDTO> refreshToken(@RequestParam("refresh_token") String refreshToken) {
-        try {
-            if (refreshToken == null || refreshToken.trim().isEmpty()) {
-                return Result.error(ResultCode.PARAM_ERROR.getCode(), "刷新令牌不能为空");
-            }
-
-            log.info("开始刷新令牌, refreshTokenPrefix: {}",
-                    refreshToken.substring(0, Math.min(refreshToken.length(), 10)) + "...");
-
-            // 获取现有授权信息
-            OAuth2Authorization existingAuth = tokenManagementService.findByToken(refreshToken);
-            if (existingAuth == null) {
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "刷新令牌无效");
-            }
-
-            // 获取用户信息重新生成令牌
-            String username = existingAuth.getPrincipalName();
-            UserDTO user = userFeignClient.findByUsername(username);
-            if (user == null) {
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
-            }
-
-            // 撤销旧的授权并生成新的
-            tokenManagementService.revokeToken(refreshToken);
-            OAuth2Authorization newAuth = tokenManagementService.generateTokensForUser(user, existingAuth.getAuthorizedScopes());
-
-            log.info("令牌刷新成功, username: {}", username);
-
-            LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(newAuth, user);
-            return Result.success(response);
-
-        } catch (Exception e) {
-            log.error("令牌刷新异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "令牌刷新失败，系统异常");
+        // 参数验证（抛出ValidationException）
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            return Result.error(ResultCode.PARAM_ERROR.getCode(), "刷新令牌不能为空");
         }
+
+        log.info("开始刷新令牌, refreshTokenPrefix: {}",
+                refreshToken.substring(0, Math.min(refreshToken.length(), 10)) + "...");
+
+        // 获取现有授权信息（抛出InvalidTokenException）
+        OAuth2Authorization existingAuth = tokenManagementService.findByToken(refreshToken);
+        if (existingAuth == null) {
+            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "刷新令牌无效");
+        }
+
+        // 获取用户信息重新生成令牌（抛出UserNotFoundException）
+        String username = existingAuth.getPrincipalName();
+        UserDTO user = userFeignClient.findByUsername(username);
+        if (user == null) {
+            return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+        }
+
+        // 撤销旧的授权并生成新的（OAuth2.1令牌轮转特性）
+        tokenManagementService.revokeToken(refreshToken);
+        OAuth2Authorization newAuth = tokenManagementService.generateTokensForUser(user, existingAuth.getAuthorizedScopes());
+
+        log.info("令牌刷新成功, username: {}", username);
+
+        LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(newAuth, user);
+        return Result.success(response);
     }
+
 
 }

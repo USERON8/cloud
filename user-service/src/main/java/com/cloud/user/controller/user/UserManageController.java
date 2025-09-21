@@ -4,9 +4,8 @@ package com.cloud.user.controller.user;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.result.Result;
 import com.cloud.user.converter.UserConverter;
-import com.cloud.user.security.UserPermissionHelper;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.UserService;
-import com.cloud.user.utils.ResponseHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +29,6 @@ import java.util.List;
 @Tag(name = "用户管理", description = "用户信息更新、删除等相关操作")
 public class UserManageController {
     private final UserService userService;
-    private final UserPermissionHelper permissionHelper;
     private final UserConverter userConverter = UserConverter.INSTANCE;
 
     @PostMapping("/update")
@@ -41,16 +39,16 @@ public class UserManageController {
                                   Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, userDTO.getId()) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userDTO.getId())) {
+            return Result.forbidden("无权限更新此用户信息");
         }
 
         try {
             boolean result = userService.updateById(userConverter.toEntity(userDTO));
-            return ResponseHelper.UserResponse.operationSuccess("更新", result);
+            return Result.success("用户更新成功", result);
         } catch (Exception e) {
             log.error("更新用户信息失败，用户ID: {}", userDTO.getId(), e);
-            return ResponseHelper.systemError("更新用户信息失败");
+            return Result.systemError("更新用户信息失败");
         }
     }
 
@@ -62,16 +60,16 @@ public class UserManageController {
                                   Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, id) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
+            return Result.forbidden("无权限删除此用户");
         }
 
         try {
             boolean result = userService.deleteUserById(id);
-            return ResponseHelper.UserResponse.operationSuccess("删除", result);
+            return Result.success("用户删除成功", result);
         } catch (Exception e) {
             log.error("删除用户失败, 用户ID: {}", id, e);
-            return ResponseHelper.systemError("删除用户失败");
+            return Result.systemError("删除用户失败");
         }
     }
 
@@ -83,22 +81,22 @@ public class UserManageController {
                                        Authentication authentication) {
 
         // 权限检查：只有管理员可以批量删除用户
-        if (!permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden("只有管理员可以批量删除用户");
+        if (!SecurityPermissionUtils.isAdmin(authentication)) {
+            return Result.forbidden("只有管理员可以批量删除用户");
         }
 
         if (ids == null || ids.length == 0) {
-            return ResponseHelper.badRequest("请选择要删除的用户");
+            return Result.badRequest("请选择要删除的用户");
         }
 
         try {
             List<Long> userIds = Arrays.asList(ids);
             boolean result = userService.deleteUsersByIds(userIds);
 
-            return ResponseHelper.UserResponse.batchOperationSuccess("删除", userIds.size(), result);
+            return Result.success(String.format("批量删除%d个用户成功", userIds.size()), result);
         } catch (Exception e) {
             log.error("批量删除用户失败, 用户IDs: {}", Arrays.toString(ids), e);
-            return ResponseHelper.systemError("批量删除用户失败");
+            return Result.systemError("批量删除用户失败");
         }
     }
 }

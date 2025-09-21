@@ -5,7 +5,6 @@ import com.cloud.common.domain.vo.AdminVO;
 import com.cloud.user.module.entity.Admin;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -20,7 +19,6 @@ import java.util.List;
         unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
 )
 public interface AdminConverter {
-    AdminConverter INSTANCE = Mappers.getMapper(AdminConverter.class);
 
     /**
      * 转换管理员实体为DTO

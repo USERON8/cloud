@@ -63,4 +63,24 @@ public class UserDTO implements Serializable {
      * 更新时间
      */
     private LocalDateTime updatedAt;
+
+    /**
+     * GitHub用户ID（OAuth登录专用）
+     */
+    private Long githubId;
+
+    /**
+     * GitHub用户名（OAuth登录专用）
+     */
+    private String githubUsername;
+
+    /**
+     * OAuth提供商（github, wechat等）
+     */
+    private String oauthProvider;
+
+    /**
+     * OAuth提供商用户ID
+     */
+    private String oauthProviderId;
 }

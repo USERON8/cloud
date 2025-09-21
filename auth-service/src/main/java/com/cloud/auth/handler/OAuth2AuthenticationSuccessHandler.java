@@ -5,6 +5,7 @@ import com.cloud.auth.util.OAuth2ResponseUtil;
 import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import java.nio.charset.StandardCharsets;
  *
  * @author what's up
  */
+@Hidden
 @Slf4j
 @Component
 @RequiredArgsConstructor

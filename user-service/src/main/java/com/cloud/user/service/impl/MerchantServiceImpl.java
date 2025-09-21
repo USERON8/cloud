@@ -31,7 +31,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     // 商家缓存名称
     private static final String MERCHANT_CACHE_NAME = "merchantCache";
     private final MerchantMapper merchantMapper;
-    private final MerchantConverter merchantConverter = MerchantConverter.INSTANCE;
+    private final MerchantConverter merchantConverter;
 
     public MerchantDTO getMerchantById(Long id) {
         return getMerchantByIdWithCache(id);

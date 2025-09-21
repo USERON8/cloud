@@ -6,33 +6,39 @@
 
 ## 项目概述
 
-Cloud微服务平台是一个基于Spring Boot 3.x + Spring Cloud 2025 + Spring Cloud Alibaba的现代化企业级微服务架构项目。项目采用最新的技术栈，实现了完整的OAuth2.1标准认证授权、多级缓存架构、响应式编程模型等先进特性，为企业数字化转型提供强有力的技术支撑。
+Cloud微服务平台是一个基于Spring Boot 3.x + Spring Cloud 2025 + Spring Cloud
+Alibaba的现代化企业级微服务架构项目。项目采用最新的技术栈，实现了完整的OAuth2.1标准认证授权、多级缓存架构、响应式编程模型等先进特性，为企业数字化转型提供强有力的技术支撑。
 
 ### 核心特性
 
 #### 🏗️ 现代化架构
+
 - **Spring Boot 3.5.3**: 最新稳定版本，Java 17原生支持
 - **Spring Cloud 2025.0.0**: 下一代云原生架构
 - **OAuth2.1标准**: 完整实现授权服务器和资源服务器
 - **响应式网关**: WebFlux响应式编程，高并发处理
 
 #### ⚡ 性能优化
+
 - **多级缓存**: L1(Caffeine本地) + L2(Redis分布式)
 - **缓存策略分离**: 多级缓存 vs Redis纯缓存按业务选择
 - **连接池优化**: HikariCP数据库连接池调优
 - **异步处理**: CompletableFuture异步任务执行
 
 #### 🔐 安全保障
+
 - **OAuth2.1 + PKCE**: 移动端安全增强
 - **JWT Token管理**: 生成、刷新、撤销完整生命周期
 - **网关统一鉴权**: 所有API请求统一安全验证
 - **细粒度权限**: 方法级权限控制
 
 #### 🚀 开发效率
+
 - **Common Module重构**: 统一基础配置和异常处理
 - **Code Generation**: MapStruct自动对象映射
 - **API文档自动化**: Knife4j + SpringDoc集成
 - **统一响应格式**: Result<T>和PageResult<T>标准化
+
 ## 🏗️ 系统架构图
 
 ### OAuth2.1标准架构
@@ -67,6 +73,7 @@ graph TB
     class User,Product,Stock,Order,Payment business
     class Search,Log,Common support
 ```
+
 ```
 
 ## 🔌 服务端口分配
@@ -89,13 +96,13 @@ graph TB
 
 | 服务名称            | 数据库名称            | 说明     |
 |-----------------|------------------|--------|
-| User Service    | cloud_user_db    | 用户相关数据 |
-| Product Service | cloud_product_db | 商品相关数据 |
-| Stock Service   | cloud_stock_db   | 库存相关数据 |
-| Order Service   | cloud_order_db   | 订单相关数据 |
-| Payment Service | cloud_payment_db | 支付相关数据 |
-| Auth Service    | cloud_auth_db    | 认证授权数据 |
-| Log Service     | cloud_log_db     | 日志数据   |
+| User Service    | user_db    | 用户相关数据 |
+| Product Service | product_db | 商品相关数据 |
+| Stock Service   | stock_db   | 库存相关数据 |
+| Order Service   | order_db   | 订单相关数据 |
+| Payment Service | payment_db | 支付相关数据 |
+| Auth Service    |        | 认证授权数据 |
+| Log Service     | log_db     | 日志数据   |
 
 ### Redis Database分配
 
@@ -287,22 +294,25 @@ graph TB
 本项目完整实现了OAuth2.1标准架构，包含授权服务器和资源服务器两个核心组件：
 
 ```
+
        用户/客户端
            │
     ┗━ 1. 认证请求
            │
-   ┌─────┴─────┐
-   │     Gateway     │  <-- OAuth2.1 资源服务器
-   │  统一鉴权入口  │  <-- JWT Token 验证
-   └─────┬─────┘
-           │
-    ┗━ 2. token验证 & 路由转发
-           │
-   ┌─────┴─────┐
-   │  Auth Service   │  <-- OAuth2.1 授权服务器
-   │   JWT Token     │  <-- Token 生成/刷新/撤销
-   │     管理       │  <-- 用户认证
-   └───────────┘
+
+┌─────┴─────┐
+│ Gateway │  <-- OAuth2.1 资源服务器
+│ 统一鉴权入口 │  <-- JWT Token 验证
+└─────┬─────┘
+│
+┗━ 2. token验证 & 路由转发
+│
+┌─────┴─────┐
+│ Auth Service │  <-- OAuth2.1 授权服务器
+│ JWT Token │  <-- Token 生成/刷新/撤销
+│ 管理 │  <-- 用户认证
+└───────────┘
+
 ```
 
 ### OAuth2.1 流程
@@ -310,25 +320,31 @@ graph TB
 #### 1. 授权码模式 (PKCE)
 
 ```
+
 1. 客户端 -> Gateway -> Auth Service: /oauth2/authorize
 2. 用户认证后返回授权码
 3. 客户端 -> Gateway -> Auth Service: /oauth2/token + 授权码
 4. 返回 JWT Access Token + Refresh Token
+
 ```
 
 #### 2. 客户端凭证模式
 
 ```
+
 1. 服务 -> Gateway -> Auth Service: /oauth2/token + client_credentials
 2. 返回 JWT Access Token
+
 ```
 
 #### 3. 资源访问
 
 ```
+
 1. 客户端 -> Gateway: API请求 + Bearer Token
 2. Gateway: JWT验证 + 权限检查
 3. Gateway -> 业务服务: 转发请求
+
 ```
 
 ### 技术特性

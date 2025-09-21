@@ -28,6 +28,7 @@ public class RegisterRequestDTO {
      * 手机号
      */
     @NotBlank(message = "手机号不能为空")
+    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
 
     /**
@@ -39,5 +40,6 @@ public class RegisterRequestDTO {
     /**
      * 用户类型 (USER, ADMIN, MERCHANT)
      */
+    @Pattern(regexp = "^(USER|ADMIN|MERCHANT)$", message = "用户类型只能为USER、ADMIN或MERCHANT")
     private String userType = "USER";
 }

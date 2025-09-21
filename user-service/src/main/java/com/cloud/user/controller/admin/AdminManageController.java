@@ -1,8 +1,10 @@
 package com.cloud.user.controller.admin;
 
+import com.cloud.common.annotation.RequireScope;
+import com.cloud.common.annotation.RequireUserType;
+import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.result.Result;
-import com.cloud.user.constants.OAuth2Permissions;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
@@ -13,7 +15,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,11 +26,12 @@ import org.springframework.web.bind.annotation.*;
 public class AdminManageController {
     private final AdminService adminService;
     private final PasswordEncoder passwordEncoder;
-    private final AdminConverter adminConverter = AdminConverter.INSTANCE;
+    private final AdminConverter adminConverter;
 
     @PostMapping("/create")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "创建管理员", description = "创建一个新的管理员账户")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<AdminDTO> create(@RequestBody
                                    @Parameter(description = "管理员信息")
                                    @Valid @NotNull(message = "管理员信息不能为空") AdminDTO adminDTO) {
@@ -46,8 +48,9 @@ public class AdminManageController {
     }
 
     @PutMapping("/update/{id}")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "更新管理员", description = "根据ID更新管理员信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<AdminDTO> update(@PathVariable("id")
                                    @Parameter(description = "管理员ID")
                                    @NotNull(message = "管理员ID不能为空") Long id,
@@ -67,8 +70,9 @@ public class AdminManageController {
     }
 
     @DeleteMapping("/delete/{id}")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "删除管理员", description = "根据ID删除管理员")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<Boolean> delete(@PathVariable("id")
                                   @Parameter(description = "管理员ID")
                                   @NotNull(message = "管理员ID不能为空") Long id) {
@@ -77,8 +81,9 @@ public class AdminManageController {
     }
 
     @PutMapping("/changeStatus/{id}")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "更改管理员状态", description = "根据ID更改管理员状态")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<Boolean> changeStatus(@PathVariable("id")
                                         @Parameter(description = "管理员ID")
                                         @NotNull(message = "管理员ID不能为空") Long id,

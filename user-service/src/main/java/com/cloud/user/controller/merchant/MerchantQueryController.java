@@ -15,18 +15,20 @@ import com.cloud.common.utils.PageUtils;
 import com.cloud.user.constants.OAuth2Permissions;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.converter.MerchantConverter;
-import com.cloud.user.converter.UserAddressConverter;
-import com.cloud.common.domain.dto.user.MerchantAuthPageDTO;
-import com.cloud.common.domain.dto.user.MerchantPageDTO;
-import com.cloud.common.domain.dto.user.UserAddressPageDTO;
+import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
+import com.cloud.user.module.entity.User;
 import com.cloud.user.module.entity.UserAddress;
-import com.cloud.user.security.UserPermissionHelper;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.UserService;
 import com.cloud.user.service.UserAddressService;
-import com.cloud.user.utils.ResponseHelper;
+import com.cloud.user.converter.UserAddressConverter;
+import com.cloud.user.module.dto.MerchantPageDTO;
+import com.cloud.user.module.dto.MerchantAuthPageDTO;
+import com.cloud.user.module.dto.UserAddressPageDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,7 +51,6 @@ public class MerchantQueryController {
     private final MerchantService merchantService;
     private final MerchantAuthService merchantAuthService;
     private final UserAddressService userAddressService;
-    private final UserPermissionHelper permissionHelper;
 
     private final MerchantConverter merchantConverter = MerchantConverter.INSTANCE;
     private final MerchantAuthConverter merchantAuthConverter = MerchantAuthConverter.INSTANCE;
@@ -63,20 +64,20 @@ public class MerchantQueryController {
                                                Authentication authentication) {
 
         // 使用统一的权限检查工具（商家权限检查）
-        if (!(permissionHelper.isMerchantOwner(authentication, id) || permissionHelper.isAdmin(authentication))) {
-            return ResponseHelper.forbidden("只有商家自己或管理员可以查看商家信息");
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(authentication, id)) {
+            return Result.forbidden("只有商家自己或管理员可以查看商家信息");
         }
 
         try {
             Merchant merchant = merchantService.getById(id);
             if (merchant == null) {
-                return ResponseHelper.notFound("商家不存在");
+                return Result.notFound("商家不存在");
             }
             MerchantDTO merchantDTO = merchantConverter.toDTO(merchant);
-            return ResponseHelper.success("查询成功", merchantDTO);
+            return Result.success("查询成功", merchantDTO);
         } catch (Exception e) {
             log.error("获取商家信息失败，商家ID: {}", id, e);
-            return ResponseHelper.systemError("查询失败");
+            return Result.systemError("查询失败");
         }
     }
 
@@ -89,10 +90,10 @@ public class MerchantQueryController {
         try {
             List<Merchant> merchants = merchantService.list();
             List<MerchantDTO> merchantDTOs = merchantConverter.toDTOList(merchants);
-            return ResponseHelper.success("查询成功", merchantDTOs);
+            return Result.success("查询成功", merchantDTOs);
         } catch (Exception e) {
             log.error("获取所有商家信息失败", e);
-            return ResponseHelper.systemError("查询失败");
+            return Result.systemError("查询失败");
         }
     }
 
@@ -104,7 +105,7 @@ public class MerchantQueryController {
                                                               Authentication authentication) {
 
         // 权限检查：只有管理员或商家自己可以查看店铺列表
-        if (!(permissionHelper.isMerchantOwner(authentication, merchantId) || permissionHelper.isAdmin(authentication))) {
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(authentication, merchantId)) {
             return Result.error("无权执行此操作");
         }
 
@@ -122,8 +123,8 @@ public class MerchantQueryController {
                                                Authentication authentication) {
 
         // 权限检查：这里简化处理，只有管理员可以查看任意店铺信息
-        if (!permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden("只有管理员可以查看店铺信息");
+        if (!SecurityPermissionUtils.isAdmin(authentication)) {
+            return Result.forbidden("只有管理员可以查看店铺信息");
         }
 
         log.info("店铺查询功能尚未实现，店铺 ID: {}", id);
@@ -300,8 +301,8 @@ public class MerchantQueryController {
                                                              Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!(permissionHelper.isOwner(authentication, pageDTO.getUserId()) || permissionHelper.isAdmin(authentication))) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
+            return Result.forbidden("无权限查询此用户地址信息");
         }
 
         try {

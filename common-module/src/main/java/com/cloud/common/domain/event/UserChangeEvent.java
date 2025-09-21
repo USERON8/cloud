@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * 用户变更事件对象
- * 用于在服务间传递用户变更信息
+ * 精简版本，只包含核心信息，避免敏感数据传递
  */
 @Data
 @Builder
@@ -22,57 +22,34 @@ public class UserChangeEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 用户ID
+     * 用户ID - 核心标识
      */
     private Long userId;
 
     /**
-     * 用户名
+     * 事件类型
+     * CREATED, UPDATED, DELETED, STATUS_CHANGED, LOGIN, LOGOUT
      */
-    private String username;
+    private String eventType;
 
     /**
-     * 用户手机号
+     * 用户状态（当前状态）
      */
-    private String phone;
-
-    /**
-     * 用户昵称
-     */
-    private String nickname;
-
-    /**
-     * 用户类型
-     */
-    private String userType;
-
-    /**
-     * 变更前状态
-     */
-    private Integer beforeStatus;
-
-    /**
-     * 变更后状态
-     */
-    private Integer afterStatus;
-
-    /**
-     * 变更类型：1-创建用户，2-更新用户，3-删除用户，4-状态变更
-     */
-    private Integer changeType;
-
-    /**
-     * 操作人
-     */
-    private String operator;
+    private Integer status;
 
     /**
      * 操作时间
      */
-    private LocalDateTime operateTime;
+    private LocalDateTime timestamp;
 
     /**
-     * 跟踪ID，用于幂等性处理
+     * 事件追踪ID
      */
     private String traceId;
+
+    /**
+     * 可选的扩展数据（JSON格式）
+     * 用于特定事件需要传递额外信息时使用
+     */
+    private String metadata;
 }

@@ -56,12 +56,12 @@ public class Shop extends BaseEntity<Shop> {
      */
     @TableField(value = "status")
     private Integer status;
-    
+
     // 为了兼容性提供getName方法
     public String getName() {
         return this.shopName;
     }
-    
+
     public void setName(String name) {
         this.shopName = name;
     }

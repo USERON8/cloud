@@ -2,14 +2,18 @@ package com.cloud.user.controller.merchant;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.cloud.common.annotation.RequireAuthentication;
+import com.cloud.common.annotation.RequireScope;
+import com.cloud.common.annotation.RequireUserType;
+import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.result.Result;
-import com.cloud.user.constants.OAuth2Permissions;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.module.entity.MerchantAuth;
-import com.cloud.user.security.UserPermissionHelper;
 import com.cloud.user.service.MerchantAuthService;
+import com.cloud.common.security.SecurityPermissionUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,8 +21,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,8 +32,7 @@ import java.time.LocalDateTime;
 @Tag(name = "商家认证管理", description = "商家认证申请、查询、撤销等相关操作")
 public class MerchantAuthController {
     private final MerchantAuthService merchantAuthService;
-    private final UserPermissionHelper permissionHelper;
-    private final MerchantAuthConverter merchantAuthConverter = MerchantAuthConverter.INSTANCE;
+    private final MerchantAuthConverter merchantAuthConverter;
 
     /**
      * 商家申请认证
@@ -41,6 +42,7 @@ public class MerchantAuthController {
      * @return 认证信息
      */
     @PostMapping("/apply/{merchantId}")
+    @RequireAuthentication
     @Operation(summary = "商家申请认证", description = "商家提交认证申请")
     public Result<MerchantAuthDTO> applyForAuth(
             @PathVariable("merchantId")
@@ -48,12 +50,11 @@ public class MerchantAuthController {
             @NotNull(message = "商家ID不能为空") Long merchantId,
             @RequestBody
             @Parameter(description = "认证申请信息")
-            @Valid @NotNull(message = "认证申请信息不能为空") MerchantAuthRequestDTO merchantAuthRequestDTO,
-            Authentication authentication) {
+            @Valid @NotNull(message = "认证申请信息不能为空") MerchantAuthRequestDTO merchantAuthRequestDTO) {
 
         // 权限检查：只有商家自己或管理员可以申请认证
-        if (!(permissionHelper.isMerchantOwner(authentication, merchantId) || permissionHelper.isAdmin(authentication))) {
-            return Result.error("无权执行此操作");
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
+            return Result.forbidden("无权限申请认证");
         }
 
         log.info("商家申请认证, merchantId: {}", merchantId);
@@ -93,15 +94,15 @@ public class MerchantAuthController {
      * @return 认证信息
      */
     @GetMapping("/get/{merchantId}")
+    @RequireAuthentication
     @Operation(summary = "获取商家认证信息", description = "根据商家ID获取认证信息")
     public Result<MerchantAuthDTO> getAuthInfo(@PathVariable("merchantId")
                                                @Parameter(description = "商家ID")
-                                               @NotNull(message = "商家ID不能为空") Long merchantId,
-                                               Authentication authentication) {
+                                               @NotNull(message = "商家ID不能为空") Long merchantId) {
 
         // 权限检查：只有商家自己或管理员可以查看认证信息
-        if (!(permissionHelper.isMerchantOwner(authentication, merchantId) || permissionHelper.isAdmin(authentication))) {
-            return Result.error("无权执行此操作");
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
+            return Result.forbidden("无权限查看认证信息");
         }
 
         log.info("获取商家认证信息, merchantId: {}", merchantId);
@@ -125,15 +126,15 @@ public class MerchantAuthController {
      * @return 操作结果
      */
     @DeleteMapping("/revoke/{merchantId}")
+    @RequireAuthentication
     @Operation(summary = "撤销认证申请", description = "撤销商家的认证申请")
     public Result<Boolean> revokeAuth(@PathVariable("merchantId")
                                       @Parameter(description = "商家ID")
-                                      @NotNull(message = "商家ID不能为空") Long merchantId,
-                                      Authentication authentication) {
+                                      @NotNull(message = "商家ID不能为空") Long merchantId) {
 
         // 权限检查：只有商家自己或管理员可以撤销认证申请
-        if (!(permissionHelper.isMerchantOwner(authentication, merchantId) || permissionHelper.isAdmin(authentication))) {
-            return Result.error("无权执行此操作");
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
+            return Result.forbidden("无权限撤销认证申请");
         }
 
         log.info("撤销认证申请, merchantId: {}", merchantId);
@@ -157,16 +158,16 @@ public class MerchantAuthController {
      * @return 操作结果
      */
     @PostMapping("/review/{merchantId}")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "管理员审核商家认证", description = "管理员审核商家认证申请")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<Boolean> reviewAuth(
             @PathVariable("merchantId")
             @Parameter(description = "商家ID")
             @NotNull(message = "商家ID不能为空") Long merchantId,
             @RequestParam("authStatus")
             @Parameter(description = "审核状态")
-            @NotNull(message = "审核状态不能为空") Integer authStatus,
-            Authentication authentication) {
+            @NotNull(message = "审核状态不能为空") Integer authStatus) {
 
 
         log.info("管理员审核商家认证, merchantId: {}, authStatus: {}", merchantId, authStatus);
@@ -198,13 +199,13 @@ public class MerchantAuthController {
      * @return 商家认证信息列表
      */
     @GetMapping("/list")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:read")
     @Operation(summary = "根据状态查询商家认证", description = "根据认证状态查询所有商家认证信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
     public Result<java.util.List<MerchantAuthDTO>> listAuthByStatus(
             @RequestParam("authStatus")
             @Parameter(description = "认证状态")
-            @NotNull(message = "认证状态不能为空") Integer authStatus,
-            Authentication authentication) {
+            @NotNull(message = "认证状态不能为空") Integer authStatus) {
 
 
         log.info("根据认证状态查询商家信息, authStatus: {}", authStatus);

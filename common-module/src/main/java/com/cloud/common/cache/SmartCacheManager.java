@@ -3,6 +3,7 @@ package com.cloud.common.cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.ReturnType;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 智能缓存管理器
@@ -207,7 +209,7 @@ public class SmartCacheManager {
             } catch (Exception e) {
                 log.error("缓存预热失败: key={}", cacheKey, e);
             }
-        }, 0, interval.toMinutes(), TimeUnit.MINUTES);
+        }, 0, interval.getSeconds(), TimeUnit.SECONDS);
 
         log.info("注册缓存预热任务: key={}, interval={}", cacheKey, interval);
     }
@@ -236,13 +238,13 @@ public class SmartCacheManager {
 
     /**
      * 智能删除缓存
-     * 支持模式匹配删除
+     * 支持模式匹配删除 - 使用SCAN命令避免阻塞
      *
      * @param pattern 缓存键模式
      */
     public void smartEvict(String pattern) {
         try {
-            Set<String> keys = redisTemplate.keys(pattern);
+            Set<String> keys = scanKeys(pattern);
             if (keys != null && !keys.isEmpty()) {
                 redisTemplate.delete(keys);
 
@@ -255,6 +257,31 @@ public class SmartCacheManager {
         } catch (Exception e) {
             log.error("智能删除缓存失败，模式: {}", pattern, e);
         }
+    }
+
+    /**
+     * 使用SCAN命令获取匹配的key，避免阻塞Redis
+     *
+     * @param pattern 匹配模式
+     * @return 匹配的key集合
+     */
+    private Set<String> scanKeys(String pattern) {
+        return redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            Set<String> keySet = new HashSet<>();
+            try (Cursor<byte[]> cursor = connection.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern)
+                            .count(1000)
+                            .build())) {
+
+                while (cursor.hasNext()) {
+                    keySet.add(new String(cursor.next()));
+                }
+            } catch (Exception e) {
+                log.error("SCAN操作失败", e);
+            }
+            return keySet;
+        });
     }
 
     /**
@@ -276,7 +303,7 @@ public class SmartCacheManager {
         return accessStats.entrySet().stream()
                 .sorted((e1, e2) -> Long.compare(e2.getValue().getAccessCount(), e1.getValue().getAccessCount()))
                 .limit(topN)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     /**

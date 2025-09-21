@@ -1,0 +1,55 @@
+autoDetectedPackages:
+- com.cloud.api.auth
+- com.cloud.api.order
+- com.cloud.api.payment
+- com.cloud.api.product
+- com.cloud.api.stock
+- com.cloud.api.user
+- com.cloud.auth
+- com.cloud.common.annotation
+- com.cloud.common.aspect
+- com.cloud.common.cache
+- com.cloud.common.config
+- com.cloud.common.domain
+- com.cloud.common.enums
+- com.cloud.common.exception
+- com.cloud.common.monitoring
+- com.cloud.common.security
+- com.cloud.common.utils
+- com.cloud.gateway
+- com.cloud.log
+- com.cloud.order
+- com.cloud.payment
+- com.cloud.product
+- com.cloud.search
+- com.cloud.stock
+- com.cloud.user
+enableAutoDetect: true
+entryDisplayConfig:
+  excludedPathPatterns: []
+  skipJsCss: true
+funcDisplayConfig:
+  skipConstructors: false
+  skipFieldAccess: true
+  skipFieldChange: true
+  skipGetters: false
+  skipNonProjectPackages: false
+  skipPrivateMethods: false
+  skipSetters: false
+ignoreSameClassCall: null
+ignoreSamePackageCall: null
+includedPackagePrefixes: null
+includedParentClasses: null
+maxColSize: 32
+maxNumFirst: 12
+maxNumFirstImportant: 1024
+maxNumHash: 3
+maxNumHashImportant: 256
+maxObjectDepth: 4
+maxStrSize: 4096
+name: xcodemap-filter
+openMainWindow: true
+recordMode: manual
+sourceDisplayConfig:
+  color: blue
+startOnDebug: true

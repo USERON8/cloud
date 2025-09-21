@@ -12,9 +12,8 @@ import com.cloud.common.utils.PageUtils;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.common.domain.dto.user.UserAddressPageDTO;
 import com.cloud.user.module.entity.UserAddress;
-import com.cloud.user.security.UserPermissionHelper;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.UserAddressService;
-import com.cloud.user.utils.ResponseHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,7 +34,6 @@ import java.util.List;
 @Tag(name = "用户地址管理", description = "用户地址添加、更新、删除、查询等相关操作")
 public class UserAddressController {
     private final UserAddressService userAddressService;
-    private final UserPermissionHelper permissionHelper;
     private final UserAddressConverter userAddressConverter = UserAddressConverter.INSTANCE;
 
     /**
@@ -57,8 +55,8 @@ public class UserAddressController {
             Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, userId) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
+            return Result.forbidden("无权限操作此用户地址");
         }
 
         log.info("添加用户地址, userId: {}", userId);
@@ -76,7 +74,7 @@ public class UserAddressController {
         userAddressService.save(userAddress);
 
         UserAddressDTO result = userAddressConverter.toDTO(userAddress);
-        return ResponseHelper.AddressResponse.operationSuccess("添加", result);
+        return Result.success("地址添加成功", result);
     }
 
     /**
@@ -104,8 +102,8 @@ public class UserAddressController {
         }
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, existingAddress.getUserId()) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+            return Result.forbidden("无权限更新此地址");
         }
 
         log.info("更新用户地址, addressId: {}", addressId);
@@ -145,8 +143,8 @@ public class UserAddressController {
         }
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, existingAddress.getUserId()) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+            return Result.forbidden("无权限删除此地址");
         }
 
         log.info("删除用户地址, addressId: {}", addressId);
@@ -168,8 +166,8 @@ public class UserAddressController {
                                                       Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, userId) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
+            return Result.forbidden("无权限查看此用户地址列表");
         }
 
         log.info("获取用户地址列表, userId: {}", userId);
@@ -198,8 +196,8 @@ public class UserAddressController {
                                                    Authentication authentication) {
 
         // 使用统一的权限检查工具
-        if (!permissionHelper.isOwner(authentication, userId) && !permissionHelper.isAdmin(authentication)) {
-            return ResponseHelper.forbidden();
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
+            return Result.forbidden("无权限获取此用户默认地址");
         }
 
         log.info("获取用户默认地址, userId: {}", userId);
@@ -226,8 +224,8 @@ public class UserAddressController {
                                                              Authentication authentication) {
         try {
             // 使用统一的权限检查工具
-            if (!permissionHelper.isOwner(authentication, pageDTO.getUserId()) && !permissionHelper.isAdmin(authentication)) {
-                return ResponseHelper.forbidden();
+            if (!SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
+                return Result.forbidden("无权限查询此用户地址信息");
             }
 
             log.info("分页查询用户地址信息, page: {}, size: {}, userId: {}, consignee: {}",

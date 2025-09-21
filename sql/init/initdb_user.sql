@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS users
     nickname   VARCHAR(50)                        NOT NULL COMMENT '昵称',
     avatar_url VARCHAR(255) COMMENT '头像URL',
     email      VARCHAR(100) UNIQUE COMMENT '邮箱地址（用于GitHub登录）',
+    github_id BIGINT UNSIGNED NULL COMMENT 'GitHub用户ID（OAuth登录专用）',
+    github_username VARCHAR(100) NULL COMMENT 'GitHub用户名（OAuth登录专用）',
+    oauth_provider VARCHAR(20) NULL COMMENT 'OAuth提供商（github, wechat等）',
+    oauth_provider_id VARCHAR(100) NULL COMMENT 'OAuth提供商用户ID',
     status     TINYINT                            NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
     user_type  ENUM ('USER', 'MERCHANT', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '用户类型',
     created_at DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -25,7 +29,14 @@ CREATE TABLE IF NOT EXISTS users
     INDEX idx_phone (phone),
     INDEX idx_email (email),
     INDEX idx_status (status),
-    INDEX idx_user_type (user_type)
+    INDEX idx_user_type (user_type),
+    INDEX idx_github_id (github_id),
+    INDEX idx_github_username (github_username),
+    INDEX idx_oauth_provider (oauth_provider),
+    INDEX idx_oauth_provider_combined (oauth_provider, oauth_provider_id),
+    UNIQUE INDEX uk_github_id (github_id),
+    UNIQUE INDEX uk_github_username (github_username),
+    UNIQUE INDEX uk_oauth_provider_id (oauth_provider, oauth_provider_id)
 ) COMMENT ='用户表';
 
 -- 用户地址表

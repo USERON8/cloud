@@ -9,16 +9,15 @@ import com.cloud.common.cache.annotation.MultiLevelCachePut;
 import com.cloud.common.cache.annotation.MultiLevelCacheable;
 import com.cloud.common.cache.annotation.MultiLevelCaching;
 import com.cloud.common.domain.dto.product.ProductDTO;
-import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
+import com.cloud.common.domain.vo.ProductVO;
 import com.cloud.common.result.PageResult;
-import com.cloud.common.utils.BeanCopyUtils;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
+import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Product;
 import com.cloud.product.service.ProductService;
-import com.cloud.common.domain.vo.ProductVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 商品服务实现�?
+ * 商品服务实现
  * 实现商品相关的业务操作，使用多级缓存提升性能
  * 遵循用户服务标准，包含事务管理和缓存管理
  *
@@ -52,11 +51,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCachePut(value = "productCache", key = "#result",
             condition = "#result != null",
-            expire = 60, timeUnit = TimeUnit.MINUTES)
+            timeUnit = TimeUnit.MINUTES)
     public Long createProduct(ProductRequestDTO requestDTO) throws ProductServiceException {
         log.info("创建商品: {}", requestDTO.getName());
 
-        // 转换为实�?
+        // 转换为实体
         Product product = productConverter.requestDTOToEntity(requestDTO);
 
         // 保存商品
@@ -74,7 +73,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @MultiLevelCaching(
             put = @MultiLevelCachePut(value = "productCache", key = "#id",
                     condition = "#result == true",
-                    expire = 60, timeUnit = TimeUnit.MINUTES),
+                    timeUnit = TimeUnit.MINUTES),
             evict = {
                     @MultiLevelCacheEvict(value = "productListCache", allEntries = true),
                     @MultiLevelCacheEvict(value = "productStatsCache", allEntries = true)
@@ -157,7 +156,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Transactional(readOnly = true)
     @MultiLevelCacheable(value = "productCache", key = "#id",
             condition = "#id != null",
-            expire = 60, timeUnit = TimeUnit.MINUTES)
+            timeUnit = TimeUnit.MINUTES)
     public ProductVO getProductById(Long id) throws ProductServiceException.ProductNotFoundException {
         log.debug("获取商品详情: {}", id);
 
@@ -661,12 +660,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         // 检查商品是否存�?
         Product product = getById(id);
         if (product == null) {
-            throw new RuntimeException("商品不存�? " + id);
+            throw new RuntimeException("商品不存在 " + id);
         }
 
         // 检查状态是否已经是目标状�?
         if (product.getStatus().equals(status)) {
-            log.warn("商品已经是{}状�? {}", operation, id);
+            log.warn("商品已经是{}状态 {}", operation, id);
             return true;
         }
 

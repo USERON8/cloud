@@ -6,7 +6,6 @@ import com.cloud.common.domain.vo.MerchantAuthVO;
 import com.cloud.user.module.entity.MerchantAuth;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -14,12 +13,13 @@ import java.util.List;
  * 商家认证转换器
  */
 @Mapper(
-        componentModel = "spring",
+    componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略未映射目标属性
         unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
 )
 public interface MerchantAuthConverter {
-    MerchantAuthConverter INSTANCE = Mappers.getMapper(MerchantAuthConverter.class);
+
+    MerchantAuthConverter INSTANCE = org.mapstruct.factory.Mappers.getMapper(MerchantAuthConverter.class);
 
     /**
      * 转换商家认证实体为DTO

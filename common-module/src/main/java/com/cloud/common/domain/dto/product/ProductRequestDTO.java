@@ -1,10 +1,10 @@
 package com.cloud.common.domain.dto.product;
 
-import lombok.Data;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;

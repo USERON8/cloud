@@ -46,7 +46,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
+          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M
 
 knife4j:
   enable: true

@@ -1,0 +1,47 @@
+# 库存服务RocketMQ配置
+spring:
+  cloud:
+    stream:
+      # 函数定义
+      function:
+        definition: stockProducer
+
+      # RocketMQ绑定配置
+      bindings:
+        # 库存事件生产者绑定
+        stockProducer-out-0:
+          destination: stock-events
+          content-type: application/json
+          producer:
+            # 分区数量
+            partitionCount: 3
+            # 是否使用原生编码
+            useNativeEncoding: false
+
+      # RocketMQ生产者配置
+      rocketmq:
+        binder:
+          # NameServer地址
+          name-server: localhost:9876
+
+        bindings:
+          stockProducer-out-0:
+            producer:
+              # 是否同步发送
+              sync: true
+              # 发送超时时间(毫秒)
+              sendMessageTimeout: 3000
+              # 消息最大大小(4MB)
+              maxMessageSize: 4194304
+              # 消息压缩阈值(4KB)
+              compressMessageBodyThreshold: 4096
+              # 重试次数
+              retryTimesWhenSendFailed: 2
+              retryTimesWhenSendAsyncFailed: 2
+
+# 日志配置
+logging:
+  level:
+    com.cloud.stock.messaging: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    com.alibaba.cloud.stream.binder.rocketmq: DEBUG

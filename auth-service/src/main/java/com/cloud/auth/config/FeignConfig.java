@@ -21,7 +21,6 @@ public class FeignConfig {
 
     /**
      * Feign请求拦截器，用于在Feign调用时添加认证头
-     * <p>
      * 暂时简化，直接传递JWT token，避免循环依赖
      *
      * @return RequestInterceptor 请求拦截器

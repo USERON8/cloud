@@ -31,7 +31,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     // 商家认证缓存名称
     private static final String MERCHANT_AUTH_CACHE_NAME = "merchantAuthCache";
     private final MerchantAuthMapper merchantAuthMapper;
-    private final MerchantAuthConverter merchantAuthConverter = MerchantAuthConverter.INSTANCE;
+    private final MerchantAuthConverter merchantAuthConverter;
 
     public MerchantAuthDTO getMerchantAuthById(Long id) {
         return getMerchantAuthByIdWithCache(id);

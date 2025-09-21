@@ -2,6 +2,7 @@ package com.cloud.user.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cloud.user.module.entity.Merchant;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * @author what's up
@@ -9,6 +10,7 @@ import com.cloud.user.module.entity.Merchant;
  * @createDate 2025-09-06 19:31:12
  * @Entity com.cloud.user.module.entity.Merchant
  */
+@Mapper
 public interface MerchantMapper extends BaseMapper<Merchant> {
 
 }

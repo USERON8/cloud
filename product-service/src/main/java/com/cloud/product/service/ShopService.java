@@ -1,9 +1,9 @@
 package com.cloud.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cloud.common.result.PageResult;
 import com.cloud.product.module.dto.ShopPageDTO;
 import com.cloud.product.module.dto.ShopRequestDTO;
-import com.cloud.common.result.PageResult;
 import com.cloud.product.module.entity.Shop;
 import com.cloud.product.module.vo.ShopVO;
 

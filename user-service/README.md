@@ -8,11 +8,13 @@ Cloud构建，采用微服务架构设计，支持高并发访问和水平扩展
 ### 1.1 核心功能
 
 - 用户注册与登录
+- **GitHub OAuth2.1 登录支持** ✨
 - 用户信息管理
 - 用户地址管理
 - 用户头像上传与管理
 - 用户权限控制
 - 用户数据缓存优化
+- 用户变更事件发布(基于RocketMQ)
 
 ### 1.2 技术栈
 
@@ -24,6 +26,7 @@ Cloud构建，采用微服务架构设计，支持高并发访问和水平扩展
 - **API文档**: Swagger/OpenAPI 3.0, Knife4j
 - **服务治理**: Nacos 3.0.2
 - **对象映射**: MapStruct 1.6.3
+- **消息队列**: RocketMQ 5.3.2, Spring Cloud Stream
 - **其他**: Lombok
 
 ## 2. 服务架构
@@ -126,40 +129,110 @@ user-service/
 - `UserQueryController`: 用户查询接口
 - `AddressController`: 地址管理接口
 - `UserAvatarController`: 用户头像管理接口
-- `UserFeignController`: Feign客户端接口
+- `UserFeignController`: Feign客户端接口（已优化，仅负责参数校验和委托）
+
+#### 4.2.1 UserFeignController 优化说明
+
+✅ **优化完成** (日期: 2025-09-18)
+
+- **业务逻辑分离**: 将原本在Controller中的复杂业务逻辑分离到UserService中
+- **参数校验增强**: 使用Bean Validation注解进行参数校验，支持用户名、手机号、用户类型等的格式校验
+- **异常处理优化**: 简化异常处理，委托给Service层统一处理
+- **日志记录优化**: 简化日志，只记录关键操作信息
+- **代码可维护性**: 控制器代码量由原来的200+行减少到93行
 
 ### 4.3 服务层
 
 - `UserService`: 用户服务接口
-- `UserServiceImpl`: 用户服务实现
+- `UserServiceImpl`: 用户服务实现（已优化，支持多级缓存和事务管理）
 - `UserAddressService`: 用户地址服务接口
 - `UserAddressServiceImpl`: 用户地址服务实现
 - `UserAvatarService`: 用户头像服务接口
 - `UserAvatarServiceImpl`: 用户头像服务实现
+
+#### 4.3.1 UserServiceImpl 优化说明
+
+✅ **优化完成** (日期: 2025-09-18)
+
+**新增的方法：**
+
+- `registerUser()`: 用户注册方法，支持普通用户和商家用户注册
+- `getUserPassword()`: 获取用户密码方法（仅供认证服务使用）
+
+**多级缓存策略：**
+
+- `@MultiLevelCacheable`: 查询方法使用L1(Caffeine)+L2(Redis)的两级缓存
+- `@MultiLevelCacheEvict`: 删除/更新方法同时清除L1和L2缓存
+- `@MultiLevelCachePut`: 保存方法同时更新L1和L2缓存
+- `userCache`: 用户信息缓存，过期时间30分钟
+- `userPasswordCache`: 用户密码缓存，过期时间5分钟
+
+**事务管理：**
+
+- `@Transactional(readOnly = true)`: 只读事务用于查询方法
+- `@Transactional(rollbackFor = Exception.class)`: 写事务用于增删改方法
+- 用户注册支持完整事务，包括商家记录创建失败时的回滚
 
 ### 4.4 异常处理
 
 - `GlobalExceptionHandler`: 全局异常处理器
 - `UserServiceException`: 用户服务自定义异常
 
+### 4.5 消息组件 (RocketMQ集成)
+
+✅ **用户事件系统重构完成** (日期: 2025-09-19)
+
+- `UserEventProducer`: 用户事件生产者（已优化，简化事件发送逻辑）
+- `UserEventPublisher`: 用户事件发布器（已重构，支持精简事件结构）
+- `UserMessageConfig`: 用户消息配置类
+
+#### 4.5.1 重构详情
+
+**UserChangeEvent 精简化：**
+- 移除敏感字段：username, phone, nickname, oldStatus, operatorId等
+- 保留核心字段：userId, eventType, status, timestamp, traceId, metadata
+- 支持6种事件类型：CREATED, UPDATED, DELETED, STATUS_CHANGED, LOGIN, LOGOUT
+- 使用metadata字段传递可选的扩展信息（JSON格式）
+
+**UserEventPublisher 重构：**
+- 简化方法参数，移除operator参数
+- 自动生成traceId和timestamp
+- 支持状态变更事件的旧状态信息传递（通过metadata）
+- 增强日志记录，便于事件追踪
+
+**UserEventProducer 优化：**
+- 移除冗余的事件类型参数
+- 统一使用事件对象中的eventType
+- 简化消息头构建逻辑
+- 优化错误处理和日志记录
+
+**安全性提升：**
+- 避免敏感数据（如手机号、用户名）通过消息队列传输
+- 仅传递核心用户ID，其他服务需要详细信息时通过Feign调用获取
+- 符合数据安全最佳实践
+
 ## 5. 数据库设计
 
 ### 5.1 用户表 (users)
 
-| 字段名         | 类型           | 描述               |
-|-------------|--------------|------------------|
-| id          | BIGINT       | 主键               |
-| username    | VARCHAR(50)  | 用户名              |
-| password    | VARCHAR(100) | 密码(加密存储)         |
-| nickname    | VARCHAR(50)  | 昵称               |
-| phone       | VARCHAR(20)  | 手机号              |
-| email       | VARCHAR(100) | 邮箱               |
-| avatar_url  | VARCHAR(255) | 头像URL            |
-| user_type   | VARCHAR(20)  | 用户类型(ADMIN/USER) |
-| status      | TINYINT      | 状态(0-禁用,1-启用)    |
-| deleted     | TINYINT      | 逻辑删除标识           |
-| create_time | DATETIME     | 创建时间             |
-| update_time | DATETIME     | 更新时间             |
+| 字段名 | 类型 | 描述 | OAuth支持 |
+|-------------|--------------|------------------|----------|
+| id          | BIGINT       | 主键               | - |
+| username    | VARCHAR(50)  | 用户名              | - |
+| password    | VARCHAR(100) | 密码(加密存储)         | - |
+| nickname    | VARCHAR(50)  | 昵称               | - |
+| phone       | VARCHAR(20)  | 手机号              | - |
+| email       | VARCHAR(100) | 邮箱               | - |
+| avatar_url  | VARCHAR(255) | 头像URL            | - |
+| user_type   | VARCHAR(20)  | 用户类型(ADMIN/USER) | - |
+| status      | TINYINT      | 状态(0-禁用,1-启用)    | - |
+| **github_id** | **BIGINT** | **GitHub用户ID** | **✨ OAuth** |
+| **github_username** | **VARCHAR(100)** | **GitHub用户名** | **✨ OAuth** |
+| **oauth_provider** | **VARCHAR(20)** | **OAuth提供商** | **✨ OAuth** |
+| **oauth_provider_id** | **VARCHAR(100)** | **OAuth提供商用户ID** | **✨ OAuth** |
+| deleted     | TINYINT      | 逻辑删除标识           | - |
+| create_time | DATETIME     | 创建时间             | - |
+| update_time | DATETIME     | 更新时间             | - |
 
 ### 5.2 用户地址表 (user_address)
 
@@ -341,7 +414,188 @@ GET /user/admin/users/page?page=1&size=10&username=关键字
 权限: ADMIN
 ```
 
-### 6.3 地址管理接口
+### 6.3 GitHub OAuth2.1 登录功能 ✨
+
+#### 6.3.1 功能概述
+
+用户服务与 auth-service 协同实现了完整的 GitHub OAuth2.1 登录功能，遵循 OAuth2.1 标准和最佳实践。
+
+**架构设计：**
+- auth-service: 处理 GitHub OAuth2.1 授权流程和 JWT Token 生成
+- user-service: 处理 GitHub 用户信息存储和业务逻辑
+
+**支持特性：**
+- ✅ OAuth2.1 标准兼容
+- ✅ GitHub API v3 集成
+- ✅ 用户信息自动同步
+- ✅ 多级缓存优化
+- ✅ 完整的事务支持
+
+#### 6.3.2 数据库设计
+
+GitHub OAuth 相关字段：
+
+| 字段名 | 类型 | 描述 | 索引 |
+|-------------|------|------|------|
+| github_id | BIGINT | GitHub用户ID | 唯一索引 |
+| github_username | VARCHAR(100) | GitHub用户名 | 唯一索引 |
+| oauth_provider | VARCHAR(20) | OAuth提供商 | 索引 |
+| oauth_provider_id | VARCHAR(100) | OAuth提供商用户ID | 复合唯一索引 |
+
+#### 6.3.3 GitHub OAuth 登录流程
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant F as 前端
+    participant G as Gateway
+    participant A as Auth Service
+    participant US as User Service
+    participant GH as GitHub
+
+    U->>F: 点击 GitHub 登录
+    F->>G: GET /oauth2/authorization/github
+    G->>A: 转发请求
+    A->>GH: 重定向到 GitHub 授权页
+    U->>GH: 输入 GitHub 凭据
+    GH->>A: 回调带授权码
+    A->>GH: 交换 Access Token
+    A->>GH: 获取用户信息
+    A->>US: 查找/创建用户
+    US-->>A: 返回用户信息
+    A->>A: 生成 JWT Token
+    A->>F: 返回登录结果
+```
+
+#### 6.3.4 GitHub OAuth 内部接口
+
+**为 auth-service 提供的内部接口：**
+
+```
+# 根据 GitHub ID 查找用户
+GET /user/internal/github-id/{githubId}
+用途: 检查 GitHub 用户是否已存在
+
+# 创建 GitHub 用户
+POST /user/internal/github/create
+用途: 初次 GitHub 登录时创建用户
+请求体: GitHubUserDTO
+
+# 更新 GitHub 用户信息
+PUT /user/internal/github/update/{userId}
+用途: 同步 GitHub 用户信息变更
+请求体: GitHubUserDTO
+```
+
+#### 6.3.5 GitHub OAuth 管理接口
+
+**为管理员提供的查询接口：**
+
+```
+# 根据 GitHub ID 查询用户
+GET /user/query/findByGitHubId?githubId={githubId}
+权限: ADMIN + admin:read
+
+# 根据 GitHub 用户名查询用户
+GET /user/query/findByGitHubUsername?githubUsername={githubUsername}
+权限: ADMIN + admin:read
+
+# 根据 OAuth 提供商查询用户
+GET /user/query/findByOAuthProvider?oauthProvider={provider}&oauthProviderId={providerId}
+权限: ADMIN + admin:read
+```
+
+#### 6.3.6 GitHub OAuth 缓存策略
+
+| 缓存类型 | 缓存名称 | 缓存Key | 过期时间 | 说明 |
+|---------|--------|---------|----------|------|
+| 多级缓存 | userCache | github_id:{githubId} | 30分钟 | GitHub ID 查询 |
+| 多级缓存 | userCache | github_username:{username} | 30分钟 | GitHub 用户名查询 |
+| 多级缓存 | userCache | oauth:{provider}:{providerId} | 30分钟 | OAuth 提供商查询 |
+
+#### 6.3.7 GitHub OAuth 事务管理
+
+- **创建用户**: `@Transactional(rollbackFor = Exception.class)`
+- **更新用户**: `@Transactional(rollbackFor = Exception.class)`
+- **查询用户**: `@Transactional(readOnly = true)`
+
+#### 6.3.8 GitHub OAuth 配置说明
+
+**auth-service 配置示例：**
+
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:your-github-client-id}
+            client-secret: ${GITHUB_CLIENT_SECRET:your-github-client-secret}
+            scope:
+              - user:email
+              - read:user
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: login
+```
+
+#### 6.3.9 使用示例
+
+**1. 获取 GitHub OAuth 登录链接：**
+
+```bash
+curl -X GET "http://localhost:80/oauth2/github/login-url" \
+     -H "Content-Type: application/json"
+
+# 返回
+{
+  "code": 200,
+  "message": "成功",
+  "data": "/oauth2/authorization/github"
+}
+```
+
+**2. GitHub OAuth 登录回调后获取用户信息：**
+
+```bash
+curl -X GET "http://localhost:80/oauth2/github/user-info" \
+     -H "Authorization: Bearer {github-session-token}"
+
+# 返回
+{
+  "code": 200,
+  "message": "成功",
+  "data": {
+    "accessToken": "eyJ...",
+    "refreshToken": "refresh...",
+    "tokenType": "Bearer",
+    "expiresIn": 7200,
+    "user": {
+      "id": 123,
+      "username": "github_octocat",
+      "nickname": "The Octocat",
+      "email": "octocat@github.com",
+      "avatarUrl": "https://github.com/images/error/octocat_happy.gif",
+      "githubId": 583231,
+      "githubUsername": "octocat",
+      "oauthProvider": "github"
+    }
+  }
+}
+```
+
+**3. 管理员查询 GitHub 用户：**
+
+```bash
+curl -X GET "http://localhost:80/user/query/findByGitHubId?githubId=583231" \
+     -H "Authorization: Bearer {admin-token}"
+```
+
+### 6.4 地址管理接口
 
 #### 新增地址
 
@@ -457,12 +711,13 @@ GET /user/avatar/{userId}
 
 ### 9.2 配置文件
 
-主要配置项在`application-dev.yml`中：
+主要配置项在`application.yml`中：
 
 - 数据库连接配置
 - Redis连接配置
 - MinIO配置
 - Nacos配置
+- RocketMQ配置(用户事件生产者)
 
 ### 9.3 启动方式
 

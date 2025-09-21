@@ -1,0 +1,532 @@
+2025-09-16 15:10:31.935 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-16 15:10:32.214 [main] INFO  [] com.cloud.auth.AuthApplication - Starting AuthApplication using Java 17.0.14 with PID 14472 (D:\Download\Code\sofware\cloud\auth-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-16 15:10:32.214 [main] DEBUG [] com.cloud.auth.AuthApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-09-16 15:10:32.215 [main] INFO  [] com.cloud.auth.AuthApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-16 15:10:32.260 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-16 15:10:33.426 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-16 15:10:33.428 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-16 15:10:33.531 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 89 ms. Found 0 Redis repository interfaces.
+2025-09-16 15:10:33.688 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-16 15:10:33.694 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-16 15:10:33.832 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=ddcc3c68-455e-33cf-a190-a053d78b531c
+2025-09-16 15:10:34.233 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8082 (http)
+2025-09-16 15:10:34.245 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2025-09-16 15:10:34.247 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-16 15:10:34.247 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-16 15:10:34.312 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-16 15:10:34.312 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2049 ms
+2025-09-16 15:10:35.243 [main] INFO  [] o.s.cloud.openfeign.FeignClientFactoryBean - For 'user-service' URL not provided. Will try picking an instance via load-balancing.
+2025-09-16 15:10:36.598 [main] INFO  [] o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name daoAuthenticationProvider
+2025-09-16 15:10:36.598 [main] WARN  [] o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2025-09-16 15:10:37.167 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 22 endpoints beneath base path '/actuator'
+2025-09-16 15:10:37.564 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/oauth2/**'], Mvc [pattern='/.well-known/**']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, AuthorizationServerContextFilter, HeaderWriterFilter, CsrfFilter, OidcLogoutEndpointFilter, LogoutFilter, OAuth2AuthorizationServerMetadataEndpointFilter, OAuth2AuthorizationEndpointFilter, OAuth2DeviceVerificationEndpointFilter, OidcProviderConfigurationEndpointFilter, NimbusJwkSetEndpointFilter, OAuth2ClientAuthenticationFilter, BearerTokenAuthenticationFilter, BasicAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter, OAuth2TokenEndpointFilter, OAuth2TokenIntrospectionEndpointFilter, OAuth2TokenRevocationEndpointFilter, OAuth2DeviceAuthorizationEndpointFilter, OidcUserInfoEndpointFilter
+2025-09-16 15:10:37.572 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, LogoutFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-16 15:10:37.596 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/api/**']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CsrfFilter, LogoutFilter, BearerTokenAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-16 15:10:38.371 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel errorChannel
+2025-09-16 15:10:38.375 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel nullChannel
+2025-09-16 15:10:38.378 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageHandler _org.springframework.integration.errorLogger
+2025-09-16 15:10:38.389 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-16 15:10:38.390 [main] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 1 subscriber(s).
+2025-09-16 15:10:38.390 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - started bean '_org.springframework.integration.errorLogger'
+2025-09-16 15:10:38.390 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2025-09-16 15:10:38.400 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8082 (http) with context path '/'
+2025-09-16 15:10:38.408 [main] INFO  [] com.alibaba.nacos.client.naming - Nacos client key init properties: 
+	serverAddr=127.0.0.1:8848
+	namespace=public
+	username=nacos
+	password=n***s
+
+2025-09-16 15:10:38.408 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ans.namespace attribute : null
+2025-09-16 15:10:38.409 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+2025-09-16 15:10:38.409 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from namespace attribute :null
+2025-09-16 15:10:38.416 [main] INFO  [] com.alibaba.nacos.client.naming - FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+2025-09-16 15:10:38.422 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.EndpointServerListProvider, match result: false
+2025-09-16 15:10:38.423 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.PropertiesListProvider, match result: true
+2025-09-16 15:10:38.423 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Will use com.alibaba.nacos.client.address.PropertiesListProvider as ServerListProvider
+2025-09-16 15:10:38.424 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-09-16 15:10:38.424 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-09-16 15:10:38.504 [main] INFO  [] com.alibaba.nacos.common.remote.client - [RpcClientFactory] create a new rpc client of bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:38.506 [main] INFO  [] com.alibaba.nacos.client.naming - Create naming rpc client for uuid->bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:38.506 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.NamingServerListManager
+2025-09-16 15:10:38.506 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+2025-09-16 15:10:38.506 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+2025-09-16 15:10:38.507 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingFuzzyWatchNotifyRequestHandler
+2025-09-16 15:10:38.508 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Try to connect to server on start up, server: {serverIp = '127.0.0.1', server main port = 8848}
+2025-09-16 15:10:38.508 [main] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - grpc client connection server: 127.0.0.1 ip, serverPort: 9848, grpcTslConfig: {"enableTls":false,"mutualAuthEnable":false,"trustAll":true}
+2025-09-16 15:10:38.525 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Success to connect to server [127.0.0.1:8848] on start up, connectionId = 1758006638512_172.28.0.1_50780
+2025-09-16 15:10:38.526 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+2025-09-16 15:10:38.526 [main] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$387/0x000000002b4acf38
+2025-09-16 15:10:38.526 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.common.remote.client - [bfd45017-73ff-49e2-af31-4f6eb3973dd9] Notify connected event to listeners.
+2025-09-16 15:10:38.526 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.client.naming - Grpc connection connect
+2025-09-16 15:10:38.527 [main] INFO  [] com.alibaba.nacos.client.naming - [REGISTER-SERVICE] public registering service auth-service with instance Instance{instanceId='null', ip='172.20.10.2', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={IPv6=[2409:895a:ad5a:4564:34ca:2612:9490:f518], preserved.register.source=SPRING_CLOUD}}
+2025-09-16 15:10:38.574 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP auth-service 172.20.10.2:8082 register finished
+2025-09-16 15:10:41.279 [main] INFO  [] com.cloud.auth.AuthApplication - Started AuthApplication in 11.771 seconds (process running for 13.132)
+2025-09-16 15:10:41.286 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - config listener notify warn timeout millis use default 60000 millis 
+2025-09-16 15:10:41.287 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - nacos.cache.data.init.snapshot = true 
+2025-09-16 15:10:41.288 [main] INFO  [] com.alibaba.nacos.client.config.impl.ClientWorker - [Config-fixed-public-localhost_8848] [subscribe] common+DEFAULT_GROUP+public
+2025-09-16 15:10:41.298 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - [Config-fixed-public-localhost_8848] [add-listener] ok, tenant=public, dataId=common, group=DEFAULT_GROUP, cnt=1
+2025-09-16 15:10:41.298 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-16 15:10:41.299 [main] INFO  [] com.cloud.auth.AuthApplication - 认证服务启动完成！
+2025-09-16 15:10:41.756 [RMI TCP Connection(4)-192.168.56.1] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-16 15:10:48.162 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-16 15:10:48.162 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-16 15:10:48.162 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-16 15:10:48.162 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-16 15:10:48.163 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-16 15:10:48.163 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-16 15:10:48.164 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-16 15:10:48.163 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.163 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.162 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.162 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.165 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [DEREGISTER-SERVICE] public deregistering service auth-service with instance: Instance{instanceId='null', ip='172.20.10.2', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={}}
+2025-09-16 15:10:48.162 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.162 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:10:48.179 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@620fc2be[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 3]
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown rpc client, set status to shutdown
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@3830f294[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+2025-09-16 15:10:48.180 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Close current connection 1758006638512_172.28.0.1_50780
+2025-09-16 15:10:48.186 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@45d33001[Running, pool size = 16, active threads = 0, queued tasks = 0, completed tasks = 16]
+2025-09-16 15:10:48.186 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:48.186 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.doClose(ServletWebServerApplicationContext.java:179)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-16 15:10:48.191 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-16 15:10:48.244 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-09-16 15:10:48.261 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-16 15:10:48.262 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 0 subscriber(s).
+2025-09-16 15:10:48.262 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
+2025-09-16 15:10:48.266 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-16 15:10:48.266 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@620fc2be[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 3]
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->bfd45017-73ff-49e2-af31-4f6eb3973dd9
+2025-09-16 15:10:48.267 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+2025-09-16 15:24:44.716 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-16 15:24:44.893 [main] INFO  [] com.cloud.gateway.GatewayApplication - Starting GatewayApplication using Java 17.0.14 with PID 15320 (D:\Download\Code\sofware\cloud\gateway\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-16 15:24:44.894 [main] INFO  [] com.cloud.gateway.GatewayApplication - The following 2 profiles are active: "route", "api"
+2025-09-16 15:24:44.926 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-16 15:24:45.550 [main] WARN  [] o.s.b.w.r.c.AnnotationConfigReactiveWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'defaultCodecCustomizer' defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]: Cannot register bean definition [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]] for bean 'defaultCodecCustomizer' since there is already [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]] bound.
+2025-09-16 15:24:45.560 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-09-16 15:24:45.575 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+The bean 'defaultCodecCustomizer', defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class], could not be registered. A bean with that name has already been defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$DefaultCodecsConfiguration.class] and overriding is disabled.
+
+Action:
+
+Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
+
+2025-09-16 15:31:45.596 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-16 15:31:45.741 [main] INFO  [] com.cloud.gateway.GatewayApplication - Starting GatewayApplication using Java 17.0.14 with PID 14952 (D:\Download\Code\sofware\cloud\gateway\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-16 15:31:45.742 [main] INFO  [] com.cloud.gateway.GatewayApplication - The following 2 profiles are active: "route", "api"
+2025-09-16 15:31:45.774 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-16 15:31:46.645 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'defaultCodecCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]]
+2025-09-16 15:31:46.648 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'jacksonCodecCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration$JacksonCodecConfiguration; factoryMethodName=jacksonCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$JacksonCodecConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration$JacksonCodecConfiguration; factoryMethodName=jacksonCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$JacksonCodecConfiguration.class]]
+2025-09-16 15:31:46.651 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'defaultPartHttpMessageReaderCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.web.reactive.ReactiveMultipartAutoConfiguration; factoryMethodName=defaultPartHttpMessageReaderCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/web/reactive/ReactiveMultipartAutoConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.webflux.autoconfigure.ReactiveMultipartAutoConfiguration; factoryMethodName=defaultPartHttpMessageReaderCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/webflux/autoconfigure/ReactiveMultipartAutoConfiguration.class]]
+2025-09-16 15:31:46.658 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'errorAttributes' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration; factoryMethodName=errorAttributes; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/web/reactive/error/ErrorWebFluxAutoConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.webflux.autoconfigure.error.ErrorWebFluxAutoConfiguration; factoryMethodName=errorAttributes; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/webflux/autoconfigure/error/ErrorWebFluxAutoConfiguration.class]]
+2025-09-16 15:31:46.860 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-16 15:31:46.862 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-16 15:31:46.966 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 88 ms. Found 0 Redis repository interfaces.
+2025-09-16 15:31:46.974 [main] WARN  [] o.s.b.w.r.c.AnnotationConfigReactiveWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: java.lang.IllegalArgumentException: Could not find class [org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties]
+2025-09-16 15:31:46.989 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-09-16 15:31:47.007 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
+java.lang.IllegalArgumentException: Could not find class [org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties]
+	at org.springframework.util.ClassUtils.resolveClassName(ClassUtils.java:372)
+	at org.springframework.core.annotation.TypeMappedAnnotation.adapt(TypeMappedAnnotation.java:466)
+	at org.springframework.core.annotation.TypeMappedAnnotation.getValue(TypeMappedAnnotation.java:391)
+	at org.springframework.core.annotation.TypeMappedAnnotation.asMap(TypeMappedAnnotation.java:278)
+	at org.springframework.core.annotation.AbstractMergedAnnotation.asAnnotationAttributes(AbstractMergedAnnotation.java:191)
+	at org.springframework.context.annotation.AnnotationBeanNameGenerator.determineBeanNameFromAnnotation(AnnotationBeanNameGenerator.java:147)
+	at org.springframework.context.annotation.AnnotationBeanNameGenerator.generateBeanName(AnnotationBeanNameGenerator.java:113)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.registerBeanDefinitionForImportedConfigurationClass(ConfigurationClassBeanDefinitionReader.java:163)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForConfigurationClass(ConfigurationClassBeanDefinitionReader.java:144)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitions(ConfigurationClassBeanDefinitionReader.java:123)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:430)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:290)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:349)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:118)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:791)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:609)
+	at org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext.refresh(ReactiveWebServerApplicationContext.java:66)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+	at com.cloud.gateway.GatewayApplication.main(GatewayApplication.java:31)
+Caused by: java.lang.ClassNotFoundException: org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:467)
+	at org.springframework.util.ClassUtils.forName(ClassUtils.java:321)
+	at org.springframework.util.ClassUtils.resolveClassName(ClassUtils.java:362)
+	... 22 common frames omitted
+2025-09-16 15:31:47.009 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:31:47.010 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:31:47.009 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:36:51.241 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-16 15:36:51.409 [main] INFO  [] com.cloud.gateway.GatewayApplication - Starting GatewayApplication using Java 17.0.14 with PID 17000 (D:\Download\Code\sofware\cloud\gateway\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-16 15:36:51.410 [main] INFO  [] com.cloud.gateway.GatewayApplication - The following 2 profiles are active: "route", "api"
+2025-09-16 15:36:51.451 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-16 15:36:52.135 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'defaultCodecCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration$DefaultCodecsConfiguration; factoryMethodName=defaultCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class]]
+2025-09-16 15:36:52.139 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'jacksonCodecCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration$JacksonCodecConfiguration; factoryMethodName=jacksonCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/http/codec/CodecsAutoConfiguration$JacksonCodecConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration$JacksonCodecConfiguration; factoryMethodName=jacksonCodecCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$JacksonCodecConfiguration.class]]
+2025-09-16 15:36:52.143 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'defaultPartHttpMessageReaderCustomizer' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.web.reactive.ReactiveMultipartAutoConfiguration; factoryMethodName=defaultPartHttpMessageReaderCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/web/reactive/ReactiveMultipartAutoConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.webflux.autoconfigure.ReactiveMultipartAutoConfiguration; factoryMethodName=defaultPartHttpMessageReaderCustomizer; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/webflux/autoconfigure/ReactiveMultipartAutoConfiguration.class]]
+2025-09-16 15:36:52.152 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'errorAttributes' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration; factoryMethodName=errorAttributes; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/autoconfigure/web/reactive/error/ErrorWebFluxAutoConfiguration.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.boot.webflux.autoconfigure.error.ErrorWebFluxAutoConfiguration; factoryMethodName=errorAttributes; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/boot/webflux/autoconfigure/error/ErrorWebFluxAutoConfiguration.class]]
+2025-09-16 15:36:52.426 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-16 15:36:52.428 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-16 15:36:52.520 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 79 ms. Found 0 Redis repository interfaces.
+2025-09-16 15:36:52.532 [main] WARN  [] o.s.b.w.r.c.AnnotationConfigReactiveWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: java.lang.IllegalArgumentException: Could not find class [org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties]
+2025-09-16 15:36:52.548 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-09-16 15:36:52.563 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
+java.lang.IllegalArgumentException: Could not find class [org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties]
+	at org.springframework.util.ClassUtils.resolveClassName(ClassUtils.java:372)
+	at org.springframework.core.annotation.TypeMappedAnnotation.adapt(TypeMappedAnnotation.java:466)
+	at org.springframework.core.annotation.TypeMappedAnnotation.getValue(TypeMappedAnnotation.java:391)
+	at org.springframework.core.annotation.TypeMappedAnnotation.asMap(TypeMappedAnnotation.java:278)
+	at org.springframework.core.annotation.AbstractMergedAnnotation.asAnnotationAttributes(AbstractMergedAnnotation.java:191)
+	at org.springframework.context.annotation.AnnotationBeanNameGenerator.determineBeanNameFromAnnotation(AnnotationBeanNameGenerator.java:147)
+	at org.springframework.context.annotation.AnnotationBeanNameGenerator.generateBeanName(AnnotationBeanNameGenerator.java:113)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.registerBeanDefinitionForImportedConfigurationClass(ConfigurationClassBeanDefinitionReader.java:163)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForConfigurationClass(ConfigurationClassBeanDefinitionReader.java:144)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitions(ConfigurationClassBeanDefinitionReader.java:123)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:430)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:290)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:349)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:118)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:791)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:609)
+	at org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext.refresh(ReactiveWebServerApplicationContext.java:66)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+	at com.cloud.gateway.GatewayApplication.main(GatewayApplication.java:37)
+Caused by: java.lang.ClassNotFoundException: org.springframework.boot.micrometer.metrics.autoconfigure.MetricsProperties
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:467)
+	at org.springframework.util.ClassUtils.forName(ClassUtils.java:321)
+	at org.springframework.util.ClassUtils.resolveClassName(ClassUtils.java:362)
+	... 22 common frames omitted
+2025-09-16 15:36:52.567 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:36:52.567 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:36:52.567 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:03.471 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-16 15:37:03.670 [main] INFO  [] com.cloud.user.UserApplication - Starting UserApplication using Java 17.0.14 with PID 6672 (D:\Download\Code\sofware\cloud\user-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-16 15:37:03.671 [main] INFO  [] com.cloud.user.UserApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-16 15:37:03.736 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-16 15:37:05.407 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-16 15:37:05.410 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-16 15:37:05.490 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 67 ms. Found 0 Redis repository interfaces.
+2025-09-16 15:37:05.665 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-16 15:37:05.673 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-16 15:37:05.822 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=9a2c9692-b3f0-3977-8455-07c8f8522aa5
+2025-09-16 15:37:06.626 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8083 (http)
+2025-09-16 15:37:06.636 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8083"]
+2025-09-16 15:37:06.637 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-16 15:37:06.637 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-16 15:37:06.694 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-16 15:37:06.694 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2955 ms
+2025-09-16 15:37:07.314 [main] INFO  [] com.cloud.user.config.UserMessageConfig - ✅ 用户消息配置已加载 - RocketMQ集成启用
+2025-09-16 15:37:09.713 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2025-09-16 15:37:10.034 [main] INFO  [] com.cloud.user.config.UserAsyncConfig - 用户查询线程池初始化完成
+2025-09-16 15:37:10.047 [main] INFO  [] com.cloud.user.config.UserAsyncConfig - 用户操作线程池初始化完成
+2025-09-16 15:37:10.060 [main] INFO  [] com.cloud.user.config.UserAsyncConfig - 用户服务通用异步线程池初始化完成
+2025-09-16 15:37:10.345 [main] INFO  [] c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@39c85c1a
+2025-09-16 15:37:11.633 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel errorChannel
+2025-09-16 15:37:11.638 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel nullChannel
+2025-09-16 15:37:11.656 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageHandler _org.springframework.integration.errorLogger
+2025-09-16 15:37:11.674 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-16 15:37:11.674 [main] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'user-service.errorChannel' has 1 subscriber(s).
+2025-09-16 15:37:11.675 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - started bean '_org.springframework.integration.errorLogger'
+2025-09-16 15:37:11.675 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8083"]
+2025-09-16 15:37:11.686 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8083 (http) with context path '/'
+2025-09-16 15:37:11.695 [main] INFO  [] com.alibaba.nacos.client.naming - Nacos client key init properties: 
+	serverAddr=127.0.0.1:8848
+	namespace=public
+	username=nacos
+	password=n***s
+
+2025-09-16 15:37:11.696 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ans.namespace attribute : null
+2025-09-16 15:37:11.696 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+2025-09-16 15:37:11.696 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from namespace attribute :null
+2025-09-16 15:37:11.702 [main] INFO  [] com.alibaba.nacos.client.naming - FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+2025-09-16 15:37:11.707 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.EndpointServerListProvider, match result: false
+2025-09-16 15:37:11.707 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.PropertiesListProvider, match result: true
+2025-09-16 15:37:11.707 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Will use com.alibaba.nacos.client.address.PropertiesListProvider as ServerListProvider
+2025-09-16 15:37:11.708 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-09-16 15:37:11.708 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-09-16 15:37:11.789 [main] INFO  [] com.alibaba.nacos.common.remote.client - [RpcClientFactory] create a new rpc client of 3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:11.791 [main] INFO  [] com.alibaba.nacos.client.naming - Create naming rpc client for uuid->3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:11.791 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.NamingServerListManager
+2025-09-16 15:37:11.791 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+2025-09-16 15:37:11.792 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+2025-09-16 15:37:11.794 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingFuzzyWatchNotifyRequestHandler
+2025-09-16 15:37:11.794 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Try to connect to server on start up, server: {serverIp = '127.0.0.1', server main port = 8848}
+2025-09-16 15:37:11.794 [main] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - grpc client connection server: 127.0.0.1 ip, serverPort: 9848, grpcTslConfig: {"enableTls":false,"mutualAuthEnable":false,"trustAll":true}
+2025-09-16 15:37:11.813 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Success to connect to server [127.0.0.1:8848] on start up, connectionId = 1758008231827_172.28.0.1_46428
+2025-09-16 15:37:11.813 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+2025-09-16 15:37:11.813 [main] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$388/0x000000002b4acbe8
+2025-09-16 15:37:11.813 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.common.remote.client - [3b5043be-ebaf-4596-b337-77aca1a28080] Notify connected event to listeners.
+2025-09-16 15:37:11.813 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.client.naming - Grpc connection connect
+2025-09-16 15:37:11.815 [main] INFO  [] com.alibaba.nacos.client.naming - [REGISTER-SERVICE] public registering service user-service with instance Instance{instanceId='null', ip='172.20.10.2', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={IPv6=[2409:895a:ad5a:4564:34ca:2612:9490:f518], preserved.register.source=SPRING_CLOUD}}
+2025-09-16 15:37:11.827 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP user-service 172.20.10.2:8083 register finished
+2025-09-16 15:37:14.909 [main] INFO  [] com.cloud.user.UserApplication - Started UserApplication in 13.758 seconds (process running for 15.538)
+2025-09-16 15:37:14.922 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - config listener notify warn timeout millis use default 60000 millis 
+2025-09-16 15:37:14.923 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - nacos.cache.data.init.snapshot = true 
+2025-09-16 15:37:14.923 [main] INFO  [] com.alibaba.nacos.client.config.impl.ClientWorker - [Config-fixed-public-localhost_8848] [subscribe] common+DEFAULT_GROUP+public
+2025-09-16 15:37:14.936 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - [Config-fixed-public-localhost_8848] [add-listener] ok, tenant=public, dataId=common, group=DEFAULT_GROUP, cnt=1
+2025-09-16 15:37:14.936 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-16 15:37:14.937 [main] INFO  [] com.cloud.user.UserApplication - 用户服务启动完成！
+2025-09-16 15:37:15.487 [RMI TCP Connection(3)-192.168.56.1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-16 15:37:15.513 [RMI TCP Connection(4)-192.168.56.1] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-16 15:37:15.884 [RMI TCP Connection(3)-192.168.56.1] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@25a6674
+2025-09-16 15:37:15.895 [RMI TCP Connection(3)-192.168.56.1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-16 15:37:17.552 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-16 15:37:17.552 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-16 15:37:17.552 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-16 15:37:17.552 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-16 15:37:17.553 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-16 15:37:17.553 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-16 15:37:17.554 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.552 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-16 15:37:17.554 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [DEREGISTER-SERVICE] public deregistering service user-service with instance: Instance{instanceId='null', ip='172.20.10.2', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={}}
+2025-09-16 15:37:17.566 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-16 15:37:17.567 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-16 15:37:17.567 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-16 15:37:17.567 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-16 15:37:17.567 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@79029d74[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 1]
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown rpc client, set status to shutdown
+2025-09-16 15:37:17.568 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@2771edca[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+2025-09-16 15:37:17.569 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Close current connection 1758008231827_172.28.0.1_46428
+2025-09-16 15:37:17.573 [nacos-grpc-client-executor-127.0.0.1-17] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - [1758008231827_172.28.0.1_46428]Ignore complete event,isRunning:false,isAbandon=false
+2025-09-16 15:37:17.575 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@1791c98e[Running, pool size = 18, active threads = 0, queued tasks = 0, completed tasks = 18]
+2025-09-16 15:37:17.576 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:17.576 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.doClose(ServletWebServerApplicationContext.java:179)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-16 15:37:17.579 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-16 15:37:17.626 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-09-16 15:37:17.652 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-16 15:37:17.652 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'user-service.errorChannel' has 0 subscriber(s).
+2025-09-16 15:37:17.652 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@79029d74[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 1]
+2025-09-16 15:37:17.662 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->3b5043be-ebaf-4596-b337-77aca1a28080
+2025-09-16 15:37:17.663 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+2025-09-16 15:37:17.668 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-16 15:37:17.679 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

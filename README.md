@@ -18,24 +18,29 @@
 ## 🚀 项目特色
 
 ### 🏗️ 现代化架构
+
 - ✨ **Spring Boot 3.5.3** - 最新稳定版，原生Java 17支持
 - 🌍 **Spring Cloud 2025.0.0** - 下一代云原生架构
 - 🔐 **OAuth2.1标准** - 完整实现授权服务器和资源服务器
 - ⚡ **WebFlux响应式** - 高并发响应式网关
 
 ### 📊 性能优化
+
 - 💾 **多级缓存** - L1(Caffeine) + L2(Redis)双层缓存
 - 🚀 **缓存策略** - 按业务选择多级或Redis统一缓存
 - 🔗 **连接池调优** - HikariCP高性能数据库连接
 - 🏃 **异步处理** - CompletableFuture异步编程
 
-### 🔒 安全保障
+## 🔒 安全保障
+
 - 📱 **PKCE增强** - 移动端安全增强
 - 🎩 **JWT全生命周期** - 生成、刷新、撤销管理
 - 🚪 **网关统一鉴权** - 所有API请求统一安全验证
 - 📝 **细粒度权限** - 方法级@PreAuthorize权限控制
+- 🔐 **统一RSA公钥** - 所有服务使用auth认证服务的RSA公钥验证JWT
 
 ### ⚙️ 开发效率
+
 - 🛠️ **Common Module v2.0** - 统一基础配置、异常处理
 - 🔄 **代码生成** - MapStruct自动对象映射
 - 📚 **文档自动化** - Knife4j + SpringDoc API文档
@@ -45,76 +50,76 @@
 
 ### 🔥 核心框架
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 主框架，最新稳定版 |
-| Spring Cloud | 2025.0.0 | 云原生微服务架构 |
-| Spring Cloud Alibaba | 2025.0.0.0-preview | 阿里云微服务组件 |
-| Java | 17 | LTS长期支持版本 |
+| 组件                   | 版本                 | 说明        |
+|----------------------|--------------------|-----------|
+| Spring Boot          | 3.5.3              | 主框架，最新稳定版 |
+| Spring Cloud         | 2025.0.0           | 云原生微服务架构  |
+| Spring Cloud Alibaba | 2025.0.0.0-preview | 阿里云微服务组件  |
+| Java                 | 17                 | LTS长期支持版本 |
 
 ### 🗾️ 数据存储
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| MySQL | 8.0+ | 主数据库，支持JSON和GIS |
-| Redis | 7.0+ | 缓存与消息队列 |
-| MyBatis Plus | 3.5.13 | ORM框架，代码生成 |
-| HikariCP | 5.1.0 | 高性能数据库连接池 |
-| Caffeine | 3.2.2 | 本地缓存L1层 |
+| 组件           | 版本     | 说明              |
+|--------------|--------|-----------------|
+| MySQL        | 8.0+   | 主数据库，支持JSON和GIS |
+| Redis        | 7.0+   | 缓存与消息队列         |
+| MyBatis Plus | 3.5.13 | ORM框架，代码生成      |
+| HikariCP     | 5.1.0  | 高性能数据库连接池       |
+| Caffeine     | 3.2.2  | 本地缓存L1层         |
 
 ### 🛠️ 工具类库
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| MapStruct | 1.6.3 | 自动对象映射，高性能 |
-| Lombok | Boot管理 | 代码生成工具 |
-| Jackson | Boot管理 | JSON序列化框架 |
-| Jakarta Validation | Boot管理 | Bean校验框架 |
-| FastJSON2 | 2.0.58 | 阿里高性能JSON |
+| 组件                 | 版本     | 说明         |
+|--------------------|--------|------------|
+| MapStruct          | 1.6.3  | 自动对象映射，高性能 |
+| Lombok             | Boot管理 | 代码生成工具     |
+| Jackson            | Boot管理 | JSON序列化框架  |
+| Jakarta Validation | Boot管理 | Bean校验框架   |
+| FastJSON2          | 2.0.58 | 阿里高性能JSON  |
 
 ### 📨 消息队列
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| RocketMQ | 5.3.2 | 阿里云原生消息中间件 |
-| Spring Cloud Stream | Alibaba管理 | 消息驱动微服务框架 |
+| 组件                  | 版本        | 说明         |
+|---------------------|-----------|------------|
+| RocketMQ            | 5.3.2     | 阿里云原生消息中间件 |
+| Spring Cloud Stream | Alibaba管理 | 消息驱动微服务框架  |
 
 ### 📚 API文档
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| Knife4j | 4.5.0 | 增强Swagger UI界面 |
+| 组件        | 版本     | 说明              |
+|-----------|--------|-----------------|
+| Knife4j   | 4.5.0  | 增强Swagger UI界面  |
 | SpringDoc | 2.2.34 | OpenAPI 3.0文档生成 |
 
 ### 🔍 服务发现与配置
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| Nacos | Alibaba管理 | 服务发现和配置中心 |
-| OpenFeign | 4.3.0 | 声明式REST客户端 |
-| Spring Cloud LoadBalancer | Cloud管理 | 客户端负载均衡 |
+| 组件                        | 版本        | 说明         |
+|---------------------------|-----------|------------|
+| Nacos                     | Alibaba管理 | 服务发现和配置中心  |
+| OpenFeign                 | 4.3.0     | 声明式REST客户端 |
+| Spring Cloud LoadBalancer | Cloud管理   | 客户端负载均衡    |
 
 ### 🔐 安全框架
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| Spring Security | Boot管理 | 安全认证授权框架 |
-| OAuth2 Resource Server | Boot管理 | OAuth2.1资源服务器 |
-| JWT | Boot管理 | JSON Web Token支持 |
+| 组件                     | 版本     | 说明               |
+|------------------------|--------|------------------|
+| Spring Security        | Boot管理 | 安全认证授权框架         |
+| OAuth2 Resource Server | Boot管理 | OAuth2.1资源服务器    |
+| JWT                    | Boot管理 | JSON Web Token支持 |
 
 ### 📄 日志框架
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| SLF4J | 2.0.16 | 日志门面抽象层 |
-| Logback | 1.5.13 | 高性能日志实现 |
-| Micrometer | Boot管理 | 应用监控指标 |
+| 组件         | 版本     | 说明      |
+|------------|--------|---------|
+| SLF4J      | 2.0.16 | 日志门面抽象层 |
+| Logback    | 1.5.13 | 高性能日志实现 |
+| Micrometer | Boot管理 | 应用监控指标  |
 
 ### 📎 其他工具
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| MinIO | 8.5.17 | 对象存储服务 |
+| 组件             | 版本     | 说明         |
+|----------------|--------|------------|
+| MinIO          | 8.5.17 | 对象存储服务     |
 | Kotlin Reflect | 1.9.24 | Kotlin反射支持 |
 
 ## 📊 服务架构图
@@ -191,19 +196,59 @@ graph TB
     LogService --> Nacos
 ```
 
+## 🌐 API路径规范
+
+### 📍 统一路径规范
+
+本项目采用标准化的API路径规范，确保所有服务API的一致性：
+
+#### 外部API访问（通过网关）
+
+```
+/api/{service_name}/**
+```
+
+**示例：**
+
+- 用户登录：`POST /api/auth/login`
+- 获取用户信息：`GET /api/user/profile`
+- 创建订单：`POST /api/order/create`
+- 商品查询：`GET /api/product/list`
+
+#### 服务内部路径
+
+```
+/{service_name}[/{module}]/**
+```
+
+#### 内部服务调用
+
+```
+/{service_name}/internal/**
+```
+
+**优势：**
+
+- 🎯 **统一性** - 所有服务遵循相同规范
+- 🔄 **灵活性** - 网关层路径重写，服务内部逻辑不受影响
+- 📚 **易维护** - 标准化路径便于开发和维护
+- 🔒 **安全性** - 明确区分外部API和内部调用
+
+> 📖 详细规范请查看：[API路径规范化文档.md](./API路径规范化文档.md)
+
 ## 📋 服务状态概览
 
-| 服务名称 | 状态 | 端口 | 主要功能 | 技术特性 |
-|----------|------|------|----------|----------|
-| Gateway | ✅ 完成 | 80 | 响应式网关、统一鉴权 | WebFlux + OAuth2.1 |
-| Auth Service | ✅ 完成 | 8080 | OAuth2.1授权服务器 | PKCE + JWT全生命周期 |
-| User Service | ✅ 完成 | 8081 | 用户管理、权限控制 | 多级缓存(L1+L2) |
-| Product Service | ✅ 完成 | 8082 | 商品管理、分类管理 | 多级缓存(L1+L2) |
-| Stock Service | ✅ 完成 | 8083 | 库存管理、库存扣减 | Redis统一缓存 |
-| Order Service | ✅ 完成 | 8084 | 订单管理、分布式事务 | Seata + RocketMQ |
-| Payment Service | 🟡 开发中 | 8085 | 支付管理、支付回调 | 第三方支付集成 |
-| Search Service | 🟡 开发中 | 8086 | 搜索服务、索引管理 | Elasticsearch |
-| Log Service | 🟡 开发中 | 8087 | 日志收集、分析统计 | 异步日志处理 |
+| 服务名称            | 状态     | 端口   | 主要功能          | 技术特性               | 安全配置状态 |
+|-----------------|--------|------|---------------|--------------------|-----------|
+| Gateway         | ✅ 完成   | 80   | 响应式网关、统一鉴权    | WebFlux + OAuth2.1 | ✅ 独立配置 |
+| Auth Service    | ✅ 完成   | 8080 | OAuth2.1授权服务器 | PKCE + JWT全生命周期    | ✅ RSA提供方 |
+| User Service    | ✅ 完成   | 8081 | 用户管理、权限控制     | 多级缓存(L1+L2)        | ✅ 独立配置 |
+| Product Service | ✅ 完成   | 8082 | 商品管理、分类管理     | 多级缓存(L1+L2)        | ✅ 独立配置 |
+| Stock Service   | ✅ 完成   | 8083 | 库存管理、库存扣减     | Redis统一缓存          | ✅ 独立配置 |
+| Order Service   | ✅ 完成   | 8084 | 订单管理、分布式事务    | Seata + RocketMQ   | ✅ 独立配置 |
+| Payment Service | 🟡 开发中 | 8085 | 支付管理、支付回调     | 第三方支付集成            | ✅ 独立配置 |
+| Search Service  | 🟡 开发中 | 8086 | 搜索服务、索引管理     | Elasticsearch      | ✅ 独立配置 |
+| Log Service     | 🟡 开发中 | 8087 | 日志收集、分析统计     | 异步日志处理             | ✅ 独立配置 |
 
 ## 📁 项目结构规范
 
@@ -233,11 +278,61 @@ cloud/
 
 ### 🚀 Common Module v2.0 重构亮点
 
-✨ **统一基础配置** - 所有服务共享数据库、缓存、安全配置  
-🎩 **全局异常处理** - 统一异常捕获、响应格式化  
-📜 **响应标准化** - Result<T>和PageResult<T>统一响应格式  
-🛠️ **工具类集** - 日期、字符串、加密等通用工具  
-📚 **使用指南** - 详细的v2.0重构使用文档
+✨ **最小化配置** - 遵循服务自治原则，只提供最基础的公共配置  
+🎩 **配置继承** - 提供配置基类，各服务按需继承和定制  
+🔄 **灵活配置** - Redis、MyBatis Plus、多级缓存等由各服务自主管理  
+📚 **迁移指南** - 向下兼容，支持渐进式迁移  
+🔒 **服务自治** - 每个服务只加载所需的功能，提高性能
+
+> 📟 **配置重构详情**：[配置重构指南.md](./common-module/配置重构指南.md)
+
+### 🔐 JWT 鉴权统一配置
+
+本项目实现了完全的 OAuth2.1 + JWT 认证体系，**所有业务服务都使用 auth-service 提供的 RSA 公钥验证 JWT 令牌**。
+
+#### 鉴权架构流程
+
+```mermaid
+sequenceDiagram
+    participant Client as 📱 客户端
+    participant Gateway as 🚪 Gateway
+    participant Auth as 🔐 Auth Service
+    participant Service as 🎯 Business Service
+    
+    Client->>Gateway: 1. 请求业务API + JWT Token
+    Gateway->>Auth: 2. 获取 JWK 公钥 (/.well-known/jwks.json)
+    Auth-->>Gateway: 3. 返回 RSA 公钥
+    Gateway->>Gateway: 4. 验证 JWT 签名
+    Gateway->>Service: 5. 转发请求 + 验证通过的 JWT
+    Service->>Auth: 6. 获取 JWK 公钥 (缓存或实时)
+    Auth-->>Service: 7. 返回 RSA 公钥
+    Service->>Service: 8. 验证 JWT + 提取权限
+    Service-->>Gateway: 9. 业务处理结果
+    Gateway-->>Client: 10. 返回响应
+```
+
+#### 服务JWT配置统一标准
+
+所有业务服务的 `application.yml` 均配置为：
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # 通过网关访问 auth-service 的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M  # 缓存30分钟
+```
+
+#### 配置优势
+
+✅ **统一管理** - 所有服务使用同一 RSA 密钥对
+✅ **高可用** - 通过网关访问，自动负载均衡
+✅ **安全性** - JWT 在网关层就已验证，不合法请求无法到达业务服务
+✅ **性能优化** - JWK 公钥缓存 30 分钟，减少网络调用
+✅ **标准化** - 完全遵循 OAuth2.1 和 JWT 标准
 
 ### 2. 💼 单个服务目录结构
 
@@ -389,14 +484,16 @@ public class UserServiceImpl implements IUserService {
     }
 }
 ```
-    
+
     @GetMapping("/{id}")
     @Operation(summary = "获取用户详情", description = "根据用户ID获取用户详细信息")
     @PreAuthorize("hasAuthority('USER_VIEW')")
     public Result<UserVO> getUserById(@PathVariable @Valid @Positive Long id) {
         // 方法实现
     }
+
 }
+
 ```
 
 #### Service层注解
@@ -441,6 +538,7 @@ public class UserServiceImpl implements UserService {
 ### 🎩 统一响应格式 (Common Module v2.0)
 
 #### 成功响应示例
+
 ```json
 {
   "success": true,
@@ -456,6 +554,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 #### 分页响应示例 (PageResult<T>)
+
 ```json
 {
   "success": true,
@@ -477,6 +576,7 @@ public class UserServiceImpl implements UserService {
 ### ⚠️ 统一异常处理规范
 
 #### 异常响应示例
+
 ```json
 {
   "success": false,
@@ -505,12 +605,12 @@ graph LR
 
 ### 🏆 服务缓存策略选择
 
-| 服务 | 缓存策略 | 理由 | TTL设置 |
-|------|----------|------|--------|
-| User Service | L1+L2多级 | 高频访问，稳定数据 | 30min/2h |
+| 服务              | 缓存策略    | 理由        | TTL设置    |
+|-----------------|---------|-----------|----------|
+| User Service    | L1+L2多级 | 高频访问，稳定数据 | 30min/2h |
 | Product Service | L1+L2多级 | 热点商品，可能更新 | 15min/1h |
-| Stock Service | Redis统一 | 需实时一致性 | 5min |
-| Order Service | 不使用缓存 | 实时事务数据 | - |
+| Stock Service   | Redis统一 | 需实时一致性    | 5min     |
+| Order Service   | 不使用缓存   | 实时事务数据    | -        |
 
 ## 🚀 快速开始
 

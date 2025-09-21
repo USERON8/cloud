@@ -1,6 +1,5 @@
 package com.cloud.order.controller;
 
-import com.cloud.common.annotation.RequiresPermission;
 import com.cloud.common.domain.dto.order.OrderDTO;
 import com.cloud.common.result.Result;
 import com.cloud.order.service.OrderService;
@@ -11,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/order/manage")
 @RequiredArgsConstructor
 @Tag(name = "订单管理接口", description = "负责订单的修改操作，包括更新、支付、发货、完成、取消等")
 public class OrderManageController {
@@ -39,10 +39,11 @@ public class OrderManageController {
      */
     @PutMapping
     @Operation(summary = "更新订单", description = "更新订单信息")
-    @RequiresPermission("ORDER_UPDATE")
+    @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> updateOrder(
             @Parameter(description = "订单信息", required = true)
             @Valid @RequestBody OrderDTO orderDTO) {
+        log.info("更新订单，ID: {}", orderDTO.getId());
         Boolean result = orderService.updateOrder(orderDTO);
         return result ? Result.success(true) : Result.error("订单更新失败");
     }
@@ -56,7 +57,7 @@ public class OrderManageController {
      */
     @PostMapping("/{orderId}/pay")
     @Operation(summary = "支付订单", description = "将订单状态更新为已支付")
-    @RequiresPermission("ORDER_PAY")
+    @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> payOrder(
             @Parameter(description = "订单ID", required = true)
             @NotNull(message = "订单ID不能为空")
@@ -76,7 +77,6 @@ public class OrderManageController {
      */
     @PostMapping("/{orderId}/ship")
     @Operation(summary = "发货订单", description = "将订单状态更新为已发货")
-    @RequiresPermission("ORDER_SHIP")
     public Result<Boolean> shipOrder(
             @Parameter(description = "订单ID", required = true)
             @NotNull(message = "订单ID不能为空")
@@ -96,7 +96,6 @@ public class OrderManageController {
      */
     @PostMapping("/{orderId}/complete")
     @Operation(summary = "完成订单", description = "将订单状态更新为已完成")
-    @RequiresPermission("ORDER_COMPLETE")
     public Result<Boolean> completeOrder(
             @Parameter(description = "订单ID", required = true)
             @NotNull(message = "订单ID不能为空")
@@ -113,12 +112,30 @@ public class OrderManageController {
      * @param id 订单ID
      * @return 删除结果
      */
-    @DeleteMapping("/delete/{id}")
-    @RequiresPermission("ORDER_DELETE")
+    @DeleteMapping("/{id}")
     @Operation(summary = "删除订单", description = "管理员删除订单")
+    @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> deleteOrder(
             @Parameter(description = "订单ID") @NotNull @PathVariable Long id) {
+        log.info("删除订单，ID: {}", id);
         Boolean result = orderService.deleteOrder(id);
         return result ? Result.success(true) : Result.error("删除订单失败");
+    }
+
+    /**
+     * 创建订单
+     *
+     * @param orderDTO 订单信息
+     * @return 创建结果
+     */
+    @PostMapping
+    @Operation(summary = "创建订单", description = "创建新订单")
+    @CacheEvict(value = {"order-list", "order-page"}, allEntries = true)
+    public Result<OrderDTO> createOrder(
+            @Parameter(description = "订单信息", required = true)
+            @Valid @RequestBody OrderDTO orderDTO) {
+        log.info("创建订单，用户ID: {}", orderDTO.getUserId());
+        OrderDTO result = orderService.createOrder(orderDTO);
+        return result != null ? Result.success(result) : Result.error("创建订单失败");
     }
 }

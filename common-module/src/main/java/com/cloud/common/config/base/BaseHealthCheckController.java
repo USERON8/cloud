@@ -1,4 +1,4 @@
-package com.cloud.common.config;
+package com.cloud.common.config.base;
 
 import com.cloud.common.result.Result;
 import io.micrometer.core.instrument.MeterRegistry;

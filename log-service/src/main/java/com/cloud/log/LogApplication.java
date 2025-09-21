@@ -3,6 +3,7 @@ package com.cloud.log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @Slf4j
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 public class LogApplication {
 
     public static void main(String[] args) {

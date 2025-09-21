@@ -1,5 +1,5 @@
 server:
-  port: 8090
+  port: 8087
 spring:
   application:
     name: log-service
@@ -7,7 +7,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8082/oauth2/jwks
+          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M
   cloud:
     nacos:
       discovery:
@@ -24,7 +26,23 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
     stream:
+      function:
+        definition: userEventConsumer
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:9876
+        bindings:
+          userEventConsumer-in-0:
+            consumer:
+              # 指定订阅的Tag，多个Tag用||分隔
+              subscription: 'user-created||user-updated||user-deleted||user-status-changed'
+              push:
+                orderly: false
       bindings:
+        userEventConsumer-in-0:
+          destination: user-events
+          content-type: application/json
+          group: log-service-group
         userLog-in-0:
           destination: LOG_USER_TOPIC
           content-type: application/json
@@ -51,6 +69,15 @@ spring:
           group: log-group
         stockLog-in-0:
           destination: LOG_STOCK_TOPIC
+          content-type: application/json
+          group: log-group
+        // 添加其他服务日志topic
+        authLog-in-0:
+          destination: LOG_AUTH_TOPIC
+          content-type: application/json
+          group: log-group
+        gatewayLog-in-0:
+          destination: LOG_GATEWAY_TOPIC
           content-type: application/json
           group: log-group
   config:

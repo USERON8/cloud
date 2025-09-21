@@ -4,55 +4,84 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import org.springframework.beans.factory.annotation.Value;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 /**
- * Knife4j 统一配置类
- * 各服务继承此类并配置相应的服务信息
+ * Knife4j基础配置类
  *
- * @author what's up
+ * @author cloud
+ * @date 2024-01-20
  */
 @Configuration
-public class BaseKnife4jConfig {
-
-    @Value("${spring.application.name:cloud-service}")
-    private String serviceName;
-
-    @Value("${server.port:8080}")
-    private String serverPort;
+@ConditionalOnClass(OpenAPI.class)
+public abstract class BaseKnife4jConfig {
 
     /**
-     * 创建 OpenAPI 实例
-     * 各服务可以重写此方法自定义API信息
+     * 创建基础OpenAPI配置
+     *
+     * @param title       API标题
+     * @param description API描述
+     * @param version     API版本
+     * @return OpenAPI配置
      */
-    @Bean
-    public OpenAPI customOpenAPI() {
+    protected OpenAPI createOpenAPI(String title, String description, String version) {
         return new OpenAPI()
                 .info(new Info()
-                        .title(getServiceTitle())
-                        .version("1.0.0")
-                        .description(getServiceDescription())
+                        .title(title)
+                        .description(description)
+                        .version(version)
                         .contact(new Contact()
-                                .name("what's up")
-                                .email("developer@example.com"))
+                                .name("Cloud Team")
+                                .email("cloud@example.com")
+                                .url("https://example.com"))
                         .license(new License()
-                                .name("Apache 2.0")
-                                .url("https://www.apache.org/licenses/LICENSE-2.0.html")));
+                                .name("MIT License")
+                                .url("https://opensource.org/licenses/MIT")))
+                .servers(List.of(
+                        new Server().url("http://localhost:8080").description("开发环境"),
+                        new Server().url("https://api.example.com").description("生产环境")
+                ));
     }
 
     /**
-     * 获取服务标题，子类可重写
+     * 获取服务标题
+     *
+     * @return 服务标题
      */
-    protected String getServiceTitle() {
-        return serviceName.toUpperCase() + " API 文档";
+    protected abstract String getServiceTitle();
+
+    /**
+     * 获取服务描述
+     *
+     * @return 服务描述
+     */
+    protected abstract String getServiceDescription();
+
+    /**
+     * 获取服务版本
+     *
+     * @return 服务版本
+     */
+    protected String getServiceVersion() {
+        return "1.0.0";
     }
 
     /**
-     * 获取服务描述，子类可重写
+     * 默认OpenAPI配置
+     *
+     * @return OpenAPI配置
      */
-    protected String getServiceDescription() {
-        return serviceName + " 服务 RESTful API 文档";
+    @Bean
+    public OpenAPI defaultOpenAPI() {
+        return createOpenAPI(
+                getServiceTitle(),
+                getServiceDescription(),
+                getServiceVersion()
+        );
     }
 }

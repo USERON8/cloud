@@ -7,7 +7,6 @@ import com.cloud.user.module.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -17,12 +16,13 @@ import java.util.List;
  * @author what's up
  */
 @Mapper(
-        componentModel = "spring",
+    componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略未映射目标属性
         unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
 )
 public interface UserConverter {
-    UserConverter INSTANCE = Mappers.getMapper(UserConverter.class);
+
+    UserConverter INSTANCE = org.mapstruct.factory.Mappers.getMapper(UserConverter.class);
 
     /**
      * 转换用户实体为DTO
@@ -72,4 +72,27 @@ public interface UserConverter {
      * @return 用户VO列表
      */
     List<UserVO> toVOList(List<User> users);
+
+    /**
+     * 转换GitHub用户DTO为用户实体（OAuth登录专用）
+     * 注意：这个方法只做基础映射，业务逻辑在Service层处理
+     *
+     * @param githubUserDTO GitHub用户信息
+     * @return 用户实体
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "username", ignore = true) // 由Service层设置
+    @Mapping(target = "password", ignore = true) // 由Service层设置
+    @Mapping(target = "phone", ignore = true) // 由Service层设置
+    @Mapping(target = "userType", ignore = true) // 由Service层设置
+    @Mapping(target = "status", ignore = true) // 由Service层设置
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "nickname", source = "name")
+    @Mapping(target = "githubId", source = "githubId")
+    @Mapping(target = "githubUsername", source = "login")
+    @Mapping(target = "oauthProvider", constant = "github")
+    @Mapping(target = "oauthProviderId", expression = "java(githubUserDTO.getGithubId().toString())")
+    User fromGitHubUserDTO(com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO);
 }

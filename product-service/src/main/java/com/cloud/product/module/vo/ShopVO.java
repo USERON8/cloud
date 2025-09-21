@@ -63,12 +63,12 @@ public class ShopVO {
 
     @Schema(description = "是否为当前用户的店铺")
     private Boolean isOwner;
-    
+
     // 为了兼容性提供getName方法
     public String getName() {
         return this.shopName;
     }
-    
+
     public void setName(String name) {
         this.shopName = name;
     }

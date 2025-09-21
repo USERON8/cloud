@@ -88,7 +88,7 @@ public class ProductPageDTO extends PageQuery {
      * 创建时间排序：ASC-升序，DESC-降序
      */
     private String createTimeSort;
-    
+
     /**
      * 更新时间排序：ASC-升序，DESC-降序
      */

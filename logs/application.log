@@ -1,82 +1,51 @@
-2025-09-14 00:10:55.741 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-14 00:10:56.083 [main] INFO  [] com.cloud.auth.AuthApplication - Starting AuthApplication using Java 17.0.14 with PID 20840 (D:\Download\Code\sofware\cloud\auth-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
-2025-09-14 00:10:56.084 [main] INFO  [] com.cloud.auth.AuthApplication - No active profile set, falling back to 1 default profile: "default"
-2025-09-14 00:10:56.132 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-14 00:10:57.698 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-14 00:10:57.701 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-14 00:10:57.971 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 244 ms. Found 0 Redis repository interfaces.
-2025-09-14 00:10:58.322 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=d318fd92-3d6a-3d29-80d0-1b3b6ee4d9b6
-2025-09-14 00:10:58.802 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8082 (http)
-2025-09-14 00:10:58.818 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
-2025-09-14 00:10:58.829 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-14 00:10:58.830 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-14 00:10:58.910 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-14 00:10:58.910 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2776 ms
-2025-09-14 00:11:00.275 [main] INFO  [] o.s.cloud.openfeign.FeignClientFactoryBean - For 'user-service' URL not provided. Will try picking an instance via load-balancing.
-2025-09-14 00:11:01.644 [main] WARN  [] o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
-2025-09-14 00:11:02.685 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 18 endpoints beneath base path '/actuator'
-2025-09-14 00:11:04.859 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-14 00:11:05.150 [main] INFO  [] com.cloud.user.UserApplication - Starting UserApplication using Java 17.0.14 with PID 14584 (D:\Download\Code\sofware\cloud\user-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
-2025-09-14 00:11:05.151 [main] INFO  [] com.cloud.user.UserApplication - No active profile set, falling back to 1 default profile: "default"
-2025-09-14 00:11:05.207 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-14 00:11:05.636 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
-2025-09-14 00:11:05.653 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8082 (http) with context path '/'
-2025-09-14 00:11:05.665 [main] INFO  [] com.alibaba.nacos.client.naming - Nacos client key init properties: 
-	serverAddr=127.0.0.1:8848
-	namespace=public
-	username=nacos
-	password=n***s
-
-2025-09-14 00:11:05.666 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ans.namespace attribute : null
-2025-09-14 00:11:05.667 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
-2025-09-14 00:11:05.668 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from namespace attribute :null
-2025-09-14 00:11:05.678 [main] INFO  [] com.alibaba.nacos.client.naming - FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
-2025-09-14 00:11:05.685 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
-2025-09-14 00:11:05.686 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
-2025-09-14 00:11:05.804 [main] INFO  [] com.alibaba.nacos.common.remote.client - [RpcClientFactory] create a new rpc client of 7740f724-1766-4351-b06c-39dd1dc4541c
-2025-09-14 00:11:05.806 [main] INFO  [] com.alibaba.nacos.client.naming - Create naming rpc client for uuid->7740f724-1766-4351-b06c-39dd1dc4541c
-2025-09-14 00:11:05.806 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
-2025-09-14 00:11:05.806 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
-2025-09-14 00:11:05.807 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
-2025-09-14 00:11:05.807 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Try to connect to server on start up, server: {serverIp = '127.0.0.1', server main port = 8848}
-2025-09-14 00:11:05.808 [main] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - grpc client connection server:127.0.0.1 ip,serverPort:9848,grpcTslConfig:{"enableTls":false,"mutualAuthEnable":false,"trustAll":true}
-2025-09-14 00:11:05.834 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Success to connect to server [127.0.0.1:8848] on start up, connectionId = 1757779865926_172.28.0.1_34294
-2025-09-14 00:11:05.834 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
-2025-09-14 00:11:05.834 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$383/0x000000002b4a1878
-2025-09-14 00:11:05.834 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.common.remote.client - [7740f724-1766-4351-b06c-39dd1dc4541c] Notify connected event to listeners.
-2025-09-14 00:11:05.835 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.client.naming - Grpc connection connect
-2025-09-14 00:11:05.837 [main] INFO  [] com.alibaba.nacos.client.naming - [REGISTER-SERVICE] public registering service auth-service with instance Instance{instanceId='null', ip='192.168.43.87', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={IPv6=[2409:895a:ad3d:47f:de4c:17c3:8f86:3fd0], preserved.register.source=SPRING_CLOUD}}
-2025-09-14 00:11:05.899 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP auth-service 192.168.43.87:8082 register finished
-2025-09-14 00:11:09.049 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-14 00:11:09.054 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-14 00:11:09.237 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 157 ms. Found 0 Redis repository interfaces.
-2025-09-14 00:11:09.538 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-14 00:11:09.549 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-14 00:11:09.733 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=998b5355-eb77-3457-ab10-b74d1b54a477
-2025-09-14 00:11:10.895 [main] INFO  [] com.cloud.auth.AuthApplication - Started AuthApplication in 19.684 seconds (process running for 21.0)
-2025-09-14 00:11:10.904 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - config listener notify warn timeout millis use default 60000 millis 
-2025-09-14 00:11:10.905 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - nacos.cache.data.init.snapshot = true 
-2025-09-14 00:11:10.906 [main] INFO  [] com.alibaba.nacos.client.config.impl.ClientWorker - [fixed-localhost_8848] [subscribe] common+DEFAULT_GROUP
-2025-09-14 00:11:10.922 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - [fixed-localhost_8848] [add-listener] ok, tenant=, dataId=common, group=DEFAULT_GROUP, cnt=1
-2025-09-14 00:11:10.922 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
-2025-09-14 00:11:10.923 [main] INFO  [] com.cloud.auth.AuthApplication - 认证服务启动完成！
-2025-09-14 00:11:10.960 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8083 (http)
-2025-09-14 00:11:10.981 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8083"]
-2025-09-14 00:11:10.983 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-14 00:11:10.983 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-14 00:11:11.089 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-14 00:11:11.089 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5880 ms
-2025-09-14 00:11:11.173 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-14 00:11:11.233 [RMI TCP Connection(5)-192.168.56.1] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2025-09-14 00:11:11.442 [main] INFO  [] com.cloud.gateway.GatewayApplication - Starting GatewayApplication using Java 17.0.14 with PID 22124 (D:\Download\Code\sofware\cloud\gateway\target\classes started by what's up in D:\Download\Code\sofware\cloud)
-2025-09-14 00:11:11.443 [main] INFO  [] com.cloud.gateway.GatewayApplication - The following 2 profiles are active: "route", "api"
-2025-09-14 00:11:11.499 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-14 00:11:12.257 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'adminManageController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\admin\AdminManageController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'adminServiceImpl' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\service\impl\AdminServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.user.mapper.AdminMapper' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-2025-09-14 00:11:12.274 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-14 00:11:12.311 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+2025-09-21 20:41:38.041 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-21 20:41:38.890 [main] INFO  [] com.cloud.user.UserApplication - Starting UserApplication using Java 17.0.14 with PID 16492 (D:\Download\Code\sofware\cloud\user-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-21 20:41:38.892 [main] INFO  [] com.cloud.user.UserApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-21 20:41:38.985 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-21 20:41:43.222 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-21 20:41:43.553 [main] INFO  [] com.cloud.gateway.GatewayApplication - Starting GatewayApplication using Java 17.0.14 with PID 18672 (D:\Download\Code\sofware\cloud\gateway\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-21 20:41:43.554 [main] INFO  [] com.cloud.gateway.GatewayApplication - The following 2 profiles are active: "route", "api"
+2025-09-21 20:41:43.611 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-21 20:41:43.650 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-21 20:41:43.656 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-21 20:41:43.951 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 257 ms. Found 0 Redis repository interfaces.
+2025-09-21 20:41:44.405 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-21 20:41:44.421 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-21 20:41:44.477 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'discoveryLocatorProperties' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=gatewayDiscoveryConfig; factoryMethodName=discoveryLocatorProperties; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/gateway/config/GatewayDiscoveryConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=org.springframework.cloud.gateway.discovery.GatewayDiscoveryClientAutoConfiguration; factoryMethodName=discoveryLocatorProperties; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [org/springframework/cloud/gateway/discovery/GatewayDiscoveryClientAutoConfiguration.class]]
+2025-09-21 20:41:44.710 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=b02c375c-b582-3746-9dd5-06d54883b353
+2025-09-21 20:41:44.834 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-21 20:41:44.841 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-21 20:41:45.152 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 270 ms. Found 0 Redis repository interfaces.
+2025-09-21 20:41:45.620 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=9a084a27-fa0f-3801-860c-83f21b1175b5
+2025-09-21 20:41:46.648 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-21 20:41:46.689 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+2025-09-21 20:41:46.692 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-21 20:41:46.692 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-21 20:41:46.830 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-21 20:41:46.830 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 7842 ms
+2025-09-21 20:41:47.515 [main] INFO  [] c.cloud.gateway.config.OAuth2ResourceServerConfig - 配置JWT解码器，JWK端点: http://127.0.0.1:80/.well-known/jwks.json
+2025-09-21 20:41:48.113 [main] INFO  [] com.cloud.user.config.UserMessageConfiguration - ✅ 函数式用户消息配置已加载 - RocketMQ集成启用，支持日志服务
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [After]
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Before]
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Between]
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Cookie]
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Header]
+2025-09-21 20:41:48.777 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Host]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Method]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Path]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Query]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [ReadBody]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [RemoteAddr]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [XForwardedRemoteAddr]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Weight]
+2025-09-21 20:41:48.778 [main] INFO  [] o.s.c.gateway.route.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [CloudFoundryRouteService]
+2025-09-21 20:41:49.234 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2025-09-21 20:41:49.247 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-09-21 20:41:49.265 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
+2025-09-21 20:41:49.323 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
 
 Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-14 00:11:12.343 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
+2025-09-21 20:41:49.364 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
 
 ***************************
 APPLICATION FAILED TO START
@@ -84,15 +53,15 @@ APPLICATION FAILED TO START
 
 Description:
 
-Parameter 0 of constructor in com.cloud.user.service.impl.AdminServiceImpl required a bean of type 'com.cloud.user.mapper.AdminMapper' that could not be found.
+Parameter 1 of constructor in com.cloud.user.controller.merchant.MerchantAuthController required a bean of type 'com.cloud.common.security.PermissionManager' that could not be found.
 
 
 Action:
 
-Consider defining a bean of type 'com.cloud.user.mapper.AdminMapper' in your configuration.
+Consider defining a bean of type 'com.cloud.common.security.PermissionManager' in your configuration.
 
-2025-09-14 00:11:12.344 [main] ERROR [] com.cloud.user.UserApplication - 用户服务启动失败: Error creating bean with name 'adminManageController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\admin\AdminManageController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'adminServiceImpl' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\service\impl\AdminServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.user.mapper.AdminMapper' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'adminManageController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\admin\AdminManageController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'adminServiceImpl' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\service\impl\AdminServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.user.mapper.AdminMapper' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2025-09-21 20:41:49.366 [main] ERROR [] com.cloud.user.UserApplication - 用户服务启动失败: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
 	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
 	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
@@ -114,8 +83,255 @@ org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.user.UserApplication.main(UserApplication.java:31)
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'adminServiceImpl' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\service\impl\AdminServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.user.mapper.AdminMapper' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+	at com.cloud.user.UserApplication.main(UserApplication.java:33)
+Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:2284)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1708)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	... 21 common frames omitted
+2025-09-21 20:41:49.485 [main] INFO  [] o.s.boot.web.embedded.netty.NettyWebServer - Netty started on port 80 (http)
+2025-09-21 20:41:50.127 [main] INFO  [] com.alibaba.nacos.client.naming - Nacos client key init properties: 
+	serverAddr=127.0.0.1:8848
+	namespace=public
+	username=nacos
+	password=n***s
+
+2025-09-21 20:41:50.128 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ans.namespace attribute : null
+2025-09-21 20:41:50.129 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+2025-09-21 20:41:50.129 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from namespace attribute :null
+2025-09-21 20:41:50.140 [main] INFO  [] com.alibaba.nacos.client.naming - FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+2025-09-21 20:41:50.146 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.EndpointServerListProvider, match result: false
+2025-09-21 20:41:50.146 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.PropertiesListProvider, match result: true
+2025-09-21 20:41:50.146 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Will use com.alibaba.nacos.client.address.PropertiesListProvider as ServerListProvider
+2025-09-21 20:41:50.148 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-09-21 20:41:50.148 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-09-21 20:41:50.237 [main] INFO  [] com.alibaba.nacos.common.remote.client - [RpcClientFactory] create a new rpc client of 7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 20:41:50.239 [main] INFO  [] com.alibaba.nacos.client.naming - Create naming rpc client for uuid->7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 20:41:50.240 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.NamingServerListManager
+2025-09-21 20:41:50.240 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+2025-09-21 20:41:50.240 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+2025-09-21 20:41:50.240 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingFuzzyWatchNotifyRequestHandler
+2025-09-21 20:41:50.241 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Try to connect to server on start up, server: {serverIp = '127.0.0.1', server main port = 8848}
+2025-09-21 20:41:50.241 [main] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - grpc client connection server: 127.0.0.1 ip, serverPort: 9848, grpcTslConfig: {"enableTls":false,"mutualAuthEnable":false,"trustAll":true}
+2025-09-21 20:41:50.269 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-21 20:41:50.269 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-21 20:41:50.269 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-21 20:41:50.269 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-21 20:41:50.269 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-21 20:41:50.269 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-21 20:41:50.269 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:41:50.269 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:41:50.269 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:41:50.278 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Success to connect to server [127.0.0.1:8848] on start up, connectionId = 1758458509690_172.28.0.1_56860
+2025-09-21 20:41:50.279 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+2025-09-21 20:41:50.279 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Notify connected event to listeners.
+2025-09-21 20:41:50.279 [main] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$384/0x000000002b4a7898
+2025-09-21 20:41:50.279 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.client.naming - Grpc connection connect
+2025-09-21 20:41:50.281 [main] INFO  [] com.alibaba.nacos.client.naming - [REGISTER-SERVICE] public registering service gateway with instance Instance{instanceId='null', ip='192.168.43.186', port=80, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={IPv6=[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5], preserved.register.source=SPRING_CLOUD}}
+2025-09-21 20:41:50.332 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP gateway 192.168.43.186:80 register finished
+2025-09-21 20:41:50.402 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-21 20:41:50.420 [boundedElastic-3] INFO  [] com.alibaba.nacos.client.naming - [SUBSCRIBE-SERVICE] service:gateway, group:DEFAULT_GROUP, clusters: 
+2025-09-21 20:41:50.420 [boundedElastic-4] INFO  [] com.alibaba.nacos.client.naming - [SUBSCRIBE-SERVICE] service:gateway, group:DEFAULT_GROUP, clusters: 
+2025-09-21 20:41:50.421 [boundedElastic-4] INFO  [] com.alibaba.nacos.client.naming - [GRPC-SUBSCRIBE] service:gateway, group:DEFAULT_GROUP, cluster: 
+2025-09-21 20:41:50.421 [boundedElastic-3] INFO  [] com.alibaba.nacos.client.naming - [GRPC-SUBSCRIBE] service:gateway, group:DEFAULT_GROUP, cluster: 
+2025-09-21 20:41:50.461 [boundedElastic-4] INFO  [] com.alibaba.nacos.client.naming - init new ips(1) service: DEFAULT_GROUP@@gateway -> [{"instanceId":"192.168.43.186#80##DEFAULT_GROUP@@gateway","ip":"192.168.43.186","port":80,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@gateway","metadata":{"preserved.register.source":"SPRING_CLOUD","IPv6":"[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5]"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+2025-09-21 20:41:50.461 [boundedElastic-3] INFO  [] com.alibaba.nacos.client.naming - init new ips(1) service: DEFAULT_GROUP@@gateway -> [{"instanceId":"192.168.43.186#80##DEFAULT_GROUP@@gateway","ip":"192.168.43.186","port":80,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@gateway","metadata":{"preserved.register.source":"SPRING_CLOUD","IPv6":"[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5]"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+2025-09-21 20:41:50.479 [boundedElastic-3] INFO  [] com.alibaba.nacos.client.naming - current ips:(1) service: DEFAULT_GROUP@@gateway -> [{"instanceId":"192.168.43.186#80##DEFAULT_GROUP@@gateway","ip":"192.168.43.186","port":80,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@gateway","metadata":{"preserved.register.source":"SPRING_CLOUD","IPv6":"[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5]"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+2025-09-21 20:41:50.479 [boundedElastic-4] INFO  [] com.alibaba.nacos.client.naming - current ips:(1) service: DEFAULT_GROUP@@gateway -> [{"instanceId":"192.168.43.186#80##DEFAULT_GROUP@@gateway","ip":"192.168.43.186","port":80,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@gateway","metadata":{"preserved.register.source":"SPRING_CLOUD","IPv6":"[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5]"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+2025-09-21 20:41:50.500 [boundedElastic-4] WARN  [] com.alibaba.nacos.client.utils.ConcurrentDiskUtil - lock DEFAULT_GROUP%40%40gateway conflict;retry time: 1
+2025-09-21 20:41:50.776 [main] INFO  [] com.cloud.auth.AuthApplication - Starting AuthApplication using Java 17.0.14 with PID 18980 (D:\Download\Code\sofware\cloud\auth-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-21 20:41:50.777 [main] DEBUG [] com.cloud.auth.AuthApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-09-21 20:41:50.778 [main] INFO  [] com.cloud.auth.AuthApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-21 20:41:50.843 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-21 20:41:50.889 [nacos-grpc-client-executor-127.0.0.1-23] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Receive server push request, request = NotifySubscriberRequest, requestId = 1
+2025-09-21 20:41:50.890 [nacos-grpc-client-executor-127.0.0.1-23] INFO  [] com.alibaba.nacos.common.remote.client - [7f9aef9d-ccac-4560-8119-130c0bec1498] Ack server push request, request = NotifySubscriberRequest, requestId = 1
+2025-09-21 20:41:52.507 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-21 20:41:52.510 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-21 20:41:52.630 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 100 ms. Found 0 Redis repository interfaces.
+2025-09-21 20:41:52.869 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-21 20:41:52.879 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-21 20:41:53.040 [main] INFO  [] com.cloud.gateway.GatewayApplication - Started GatewayApplication in 14.459 seconds (process running for 16.537)
+2025-09-21 20:41:53.056 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - config listener notify warn timeout millis use default 60000 millis 
+2025-09-21 20:41:53.057 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - nacos.cache.data.init.snapshot = true 
+2025-09-21 20:41:53.058 [main] INFO  [] com.alibaba.nacos.client.config.impl.ClientWorker - [Config-fixed-public-localhost_8848] [subscribe] common+DEFAULT_GROUP+public
+2025-09-21 20:41:53.062 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - [Config-fixed-public-localhost_8848] [add-listener] ok, tenant=public, dataId=common, group=DEFAULT_GROUP, cnt=1
+2025-09-21 20:41:53.062 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-21 20:41:53.077 [main] INFO  [] com.cloud.gateway.GatewayApplication - 网关服务启动完成！
+2025-09-21 20:41:53.078 [main] INFO  [] com.cloud.gateway.GatewayApplication - 
+ -------------------------------------------------
+     Application is running! Access URLs:
+     Local:    http://localhost
+ -------------------------------------------------
+
+
+2025-09-21 20:41:53.147 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=93c7cd1e-ea1e-3041-9f69-d2127e3cabf5
+2025-09-21 20:41:53.699 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-09-21 20:41:53.719 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-09-21 20:41:53.721 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-21 20:41:53.721 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-21 20:41:53.781 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-21 20:41:53.782 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2936 ms
+2025-09-21 20:41:54.887 [main] INFO  [] o.s.cloud.openfeign.FeignClientFactoryBean - For 'user-service' URL not provided. Will try picking an instance via load-balancing.
+2025-09-21 20:41:54.979 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置密码编码器
+2025-09-21 20:41:55.003 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ 密码编码器配置完成，默认算法: bcrypt，支持算法: [argon2, noop, pbkdf2, scrypt, bcrypt]
+2025-09-21 20:41:55.477 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - 🔧 配置OAuth2.1注册客户端仓库
+2025-09-21 20:41:55.487 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - ✅ OAuth2.1注册客户端仓库配置完成，注册客户端数量: 3
+2025-09-21 20:41:55.487 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - Web应用客户端: webapp-client (支持授权码+PKCE)
+2025-09-21 20:41:55.487 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - 移动应用客户端: mobile-client (公共客户端+PKCE)
+2025-09-21 20:41:55.488 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - 服务客户端: service-client (客户端凭证)
+2025-09-21 20:41:55.488 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - 🔧 配置OAuth2.1授权服务器设置
+2025-09-21 20:41:55.490 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - ✅ OAuth2.1授权服务器设置配置完成
+2025-09-21 20:41:55.491 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 生成OAuth2.1 RSA密钥对
+2025-09-21 20:41:56.247 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ RSA密钥对生成完成
+2025-09-21 20:41:56.248 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWK源
+2025-09-21 20:41:56.260 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWK源配置完成，密钥ID: 6d36db76-9346-4240-92e5-37bb7eeb87bb
+2025-09-21 20:41:56.263 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT解码器
+2025-09-21 20:41:56.298 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT解码器配置完成（远程JWK URI）: http://localhost:8080/.well-known/jwks.json
+2025-09-21 20:41:56.300 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置增强版JWT权限转换器
+2025-09-21 20:41:56.303 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ 增强版JWT权限转换器配置完成
+2025-09-21 20:41:56.309 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2授权服务（Redis存储）
+2025-09-21 20:41:56.310 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置Redis模板
+2025-09-21 20:41:56.381 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ Redis模板配置完成
+2025-09-21 20:41:56.389 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2授权服务配置完成
+2025-09-21 20:41:56.390 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT编码器
+2025-09-21 20:41:56.396 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT编码器配置完成
+2025-09-21 20:41:56.398 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置OAuth2.1令牌生成器
+2025-09-21 20:41:56.402 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ OAuth2.1令牌生成器配置完成
+2025-09-21 20:41:56.430 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置DAO认证提供者
+2025-09-21 20:41:56.437 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ DAO认证提供者配置完成
+2025-09-21 20:41:56.444 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置认证管理器
+2025-09-21 20:41:56.462 [main] INFO  [] o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name daoAuthenticationProvider
+2025-09-21 20:41:56.462 [main] WARN  [] o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2025-09-21 20:41:56.463 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ 认证管理器配置完成
+2025-09-21 20:41:56.464 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置用户详情服务验证器
+2025-09-21 20:41:56.464 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔍 验证用户详情服务配置
+2025-09-21 20:41:56.464 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ 用户详情服务配置验证通过
+2025-09-21 20:41:56.464 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置认证事件监听器
+2025-09-21 20:41:56.467 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT权限转换器
+2025-09-21 20:41:56.467 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT权限转换器配置完成
+2025-09-21 20:41:56.468 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2同意服务（Redis存储）
+2025-09-21 20:41:56.469 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2同意服务配置完成
+2025-09-21 20:41:56.470 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2专用Redis模板
+2025-09-21 20:41:56.471 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2专用Redis模板配置完成
+2025-09-21 20:41:56.472 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置Redis连接验证器
+2025-09-21 20:41:56.472 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔍 验证Redis连接
+2025-09-21 20:41:56.955 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ Redis连接验证成功
+2025-09-21 20:41:56.955 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置Redis健康检查器
+2025-09-21 20:41:57.051 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置OAuth2.1授权服务器安全过滤器链
+2025-09-21 20:41:57.561 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 22 endpoints beneath base path '/actuator'
+2025-09-21 20:41:57.625 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ OAuth2.1授权服务器安全过滤器链配置完成
+2025-09-21 20:41:57.776 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/oauth2/**'], Mvc [pattern='/.well-known/**'], Mvc [pattern='/connect/**'], Mvc [pattern='/userinfo']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, AuthorizationServerContextFilter, HeaderWriterFilter, CorsFilter, CsrfFilter, OidcLogoutEndpointFilter, LogoutFilter, OAuth2AuthorizationServerMetadataEndpointFilter, OAuth2AuthorizationEndpointFilter, OAuth2DeviceVerificationEndpointFilter, OidcProviderConfigurationEndpointFilter, NimbusJwkSetEndpointFilter, OAuth2ClientAuthenticationFilter, UsernamePasswordAuthenticationFilter, DefaultResourcesFilter, DefaultLoginPageGeneratingFilter, DefaultLogoutPageGeneratingFilter, ConcurrentSessionFilter, BearerTokenAuthenticationFilter, BasicAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter, OAuth2TokenEndpointFilter, OAuth2TokenIntrospectionEndpointFilter, OAuth2TokenRevocationEndpointFilter, OAuth2DeviceAuthorizationEndpointFilter, OidcUserInfoEndpointFilter
+2025-09-21 20:41:57.778 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置OAuth2.1资源服务器安全过滤器链
+2025-09-21 20:41:57.792 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ OAuth2.1资源服务器安全过滤器链配置完成
+2025-09-21 20:41:57.796 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置CORS跨域设置
+2025-09-21 20:41:57.797 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ CORS跨域设置配置完成
+2025-09-21 20:41:57.798 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/auth/validate-token'], Mvc [pattern='/auth/refresh-token'], Mvc [pattern='/admin/**'], Mvc [pattern='/management/**']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, BearerTokenAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-21 20:41:57.798 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置默认安全过滤器链
+2025-09-21 20:41:57.823 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ 默认安全过滤器链配置完成
+2025-09-21 20:41:57.826 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-21 20:41:58.592 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-09-21 20:41:58.709 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel errorChannel
+2025-09-21 20:41:58.713 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageChannel nullChannel
+2025-09-21 20:41:58.717 [main] INFO  [] o.s.b.a.i.IntegrationAutoConfiguration$IntegrationJmxConfiguration$1 - Registering MessageHandler _org.springframework.integration.errorLogger
+2025-09-21 20:41:58.727 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-21 20:41:58.727 [main] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 1 subscriber(s).
+2025-09-21 20:41:58.728 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - started bean '_org.springframework.integration.errorLogger'
+2025-09-21 20:41:58.728 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-09-21 20:41:58.737 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-09-21 20:41:58.746 [main] INFO  [] com.alibaba.nacos.client.naming - Nacos client key init properties: 
+	serverAddr=127.0.0.1:8848
+	namespace=public
+	username=nacos
+	password=n***s
+
+2025-09-21 20:41:58.746 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ans.namespace attribute : null
+2025-09-21 20:41:58.746 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+2025-09-21 20:41:58.746 [main] INFO  [] com.alibaba.nacos.client.naming - initializer namespace from namespace attribute :null
+2025-09-21 20:41:58.753 [main] INFO  [] com.alibaba.nacos.client.naming - FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+2025-09-21 20:41:58.757 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.EndpointServerListProvider, match result: false
+2025-09-21 20:41:58.757 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Load and match ServerListProvider com.alibaba.nacos.client.address.PropertiesListProvider, match result: true
+2025-09-21 20:41:58.757 [main] INFO  [] c.a.nacos.client.address.AbstractServerListManager - Will use com.alibaba.nacos.client.address.PropertiesListProvider as ServerListProvider
+2025-09-21 20:41:58.758 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-09-21 20:41:58.758 [main] INFO  [] c.a.n.p.auth.spi.client.ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-09-21 20:41:58.830 [main] INFO  [] com.alibaba.nacos.common.remote.client - [RpcClientFactory] create a new rpc client of b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 20:41:58.832 [main] INFO  [] com.alibaba.nacos.client.naming - Create naming rpc client for uuid->b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 20:41:58.832 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.NamingServerListManager
+2025-09-21 20:41:58.832 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+2025-09-21 20:41:58.833 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+2025-09-21 20:41:58.833 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingFuzzyWatchNotifyRequestHandler
+2025-09-21 20:41:58.834 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Try to connect to server on start up, server: {serverIp = '127.0.0.1', server main port = 8848}
+2025-09-21 20:41:58.834 [main] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - grpc client connection server: 127.0.0.1 ip, serverPort: 9848, grpcTslConfig: {"enableTls":false,"mutualAuthEnable":false,"trustAll":true}
+2025-09-21 20:41:58.852 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Success to connect to server [127.0.0.1:8848] on start up, connectionId = 1758458518857_172.28.0.1_34192
+2025-09-21 20:41:58.852 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+2025-09-21 20:41:58.852 [main] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$387/0x000000002b4ad068
+2025-09-21 20:41:58.852 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.common.remote.client - [b42ed27a-c819-4871-acef-17c0b09c7760] Notify connected event to listeners.
+2025-09-21 20:41:58.852 [com.alibaba.nacos.client.remote.worker.0] INFO  [] com.alibaba.nacos.client.naming - Grpc connection connect
+2025-09-21 20:41:58.854 [main] INFO  [] com.alibaba.nacos.client.naming - [REGISTER-SERVICE] public registering service auth-service with instance Instance{instanceId='null', ip='192.168.43.186', port=8080, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={IPv6=[2409:895a:ad5c:d2bb:dd66:91ab:7cfb:def5], preserved.register.source=SPRING_CLOUD}}
+2025-09-21 20:41:58.866 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP auth-service 192.168.43.186:8080 register finished
+2025-09-21 20:42:01.788 [main] INFO  [] com.cloud.auth.AuthApplication - Started AuthApplication in 15.436 seconds (process running for 17.195)
+2025-09-21 20:42:01.795 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - config listener notify warn timeout millis use default 60000 millis 
+2025-09-21 20:42:01.795 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - nacos.cache.data.init.snapshot = true 
+2025-09-21 20:42:01.796 [main] INFO  [] com.alibaba.nacos.client.config.impl.ClientWorker - [Config-fixed-public-localhost_8848] [subscribe] common+DEFAULT_GROUP+public
+2025-09-21 20:42:01.806 [main] INFO  [] com.alibaba.nacos.client.config.impl.CacheData - [Config-fixed-public-localhost_8848] [add-listener] ok, tenant=public, dataId=common, group=DEFAULT_GROUP, cnt=1
+2025-09-21 20:42:01.806 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-21 20:42:01.807 [main] INFO  [] com.cloud.auth.AuthApplication - 认证服务启动完成！
+2025-09-21 20:42:02.020 [RMI TCP Connection(4)-192.168.56.1] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-21 20:42:20.021 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-21 20:42:20.221 [main] INFO  [] com.cloud.user.UserApplication - Starting UserApplication using Java 17.0.14 with PID 704 (D:\Download\Code\sofware\cloud\user-service\target\classes started by what's up in D:\Download\Code\sofware\cloud)
+2025-09-21 20:42:20.223 [main] INFO  [] com.cloud.user.UserApplication - No active profile set, falling back to 1 default profile: "default"
+2025-09-21 20:42:20.285 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-21 20:42:22.070 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-21 20:42:22.072 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-21 20:42:22.229 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 140 ms. Found 0 Redis repository interfaces.
+2025-09-21 20:42:22.454 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-21 20:42:22.461 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-21 20:42:22.614 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=b02c375c-b582-3746-9dd5-06d54883b353
+2025-09-21 20:42:23.491 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-21 20:42:23.506 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+2025-09-21 20:42:23.507 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-21 20:42:23.507 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-21 20:42:23.571 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-21 20:42:23.571 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3283 ms
+2025-09-21 20:42:24.418 [main] INFO  [] com.cloud.user.config.UserMessageConfiguration - ✅ 函数式用户消息配置已加载 - RocketMQ集成启用，支持日志服务
+2025-09-21 20:42:25.737 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2025-09-21 20:42:25.755 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
+2025-09-21 20:42:25.788 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-09-21 20:42:25.812 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 1 of constructor in com.cloud.user.controller.merchant.MerchantAuthController required a bean of type 'com.cloud.common.security.PermissionManager' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.cloud.common.security.PermissionManager' in your configuration.
+
+2025-09-21 20:42:25.813 [main] ERROR [] com.cloud.user.UserApplication - 用户服务启动失败: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'merchantAuthController' defined in file [D:\Download\Code\sofware\cloud\user-service\target\classes\com\cloud\user\controller\merchant\MerchantAuthController.class]: Unsatisfied dependency expressed through constructor parameter 1: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
 	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
 	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
@@ -126,461 +342,289 @@ Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Err
 	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
 	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
 	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1745)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 21 common frames omitted
-Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.cloud.user.mapper.AdminMapper' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:2284)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1708)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 35 common frames omitted
-2025-09-14 00:11:12.880 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
-2025-09-14 00:11:12.880 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
-2025-09-14 00:11:12.881 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Destruction of the end
-2025-09-14 00:11:12.880 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
-2025-09-14 00:11:12.881 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Destruction of the end
-2025-09-14 00:11:12.881 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Destruction of the end
-2025-09-14 00:11:13.104 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-14 00:11:13.107 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-14 00:11:13.220 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 97 ms. Found 0 Redis repository interfaces.
-2025-09-14 00:11:13.351 [main] WARN  [] o.s.b.w.r.c.AnnotationConfigReactiveWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'mapperScannerConfigurer' defined in class path resource [com/cloud/common/config/BaseDataSourceConfig.class]: Failed to instantiate [org.mybatis.spring.mapper.MapperScannerConfigurer]: Factory method 'mapperScannerConfigurer' threw exception with message: Cannot invoke "String.endsWith(String)" because "this.applicationName" is null
-2025-09-14 00:11:13.358 [main] WARN  [] o.s.c.g.c.GatewayServerWebfluxPropertiesMigrationListener - 
-The use of configuration keys that have been renamed was found in the environment:
-
-Property source 'Config resource 'class path resource [application-route.yml]' via location 'optional:classpath:/'':
-	Key: spring.cloud.gateway.routes[0].id
-		Line: 5
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].id
-	Key: spring.cloud.gateway.routes[0].uri
-		Line: 6
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].uri
-	Key: spring.cloud.gateway.routes[0].predicates[0]
-		Line: 8
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].predicates[0]
-	Key: spring.cloud.gateway.routes[0].metadata.swagger-info.title
-		Line: 11
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[0].metadata.swagger-info.description
-		Line: 12
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[0].metadata.swagger-info.group
-		Line: 13
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[0].metadata.swagger-info.servicepath
-		Line: 14
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[0].metadata.swagger-info.location
-		Line: 15
-		Replacement: spring.cloud.gateway.server.webflux.routes[0].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[1].id
-		Line: 16
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].id
-	Key: spring.cloud.gateway.routes[1].uri
-		Line: 17
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].uri
-	Key: spring.cloud.gateway.routes[1].predicates[0]
-		Line: 19
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].predicates[0]
-	Key: spring.cloud.gateway.routes[1].metadata.swagger-info.title
-		Line: 22
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[1].metadata.swagger-info.description
-		Line: 23
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[1].metadata.swagger-info.group
-		Line: 24
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[1].metadata.swagger-info.servicepath
-		Line: 25
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[1].metadata.swagger-info.location
-		Line: 26
-		Replacement: spring.cloud.gateway.server.webflux.routes[1].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[2].id
-		Line: 27
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].id
-	Key: spring.cloud.gateway.routes[2].uri
-		Line: 28
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].uri
-	Key: spring.cloud.gateway.routes[2].predicates[0]
-		Line: 30
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].predicates[0]
-	Key: spring.cloud.gateway.routes[2].metadata.swagger-info.title
-		Line: 33
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[2].metadata.swagger-info.description
-		Line: 34
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[2].metadata.swagger-info.group
-		Line: 35
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[2].metadata.swagger-info.servicepath
-		Line: 36
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[2].metadata.swagger-info.location
-		Line: 37
-		Replacement: spring.cloud.gateway.server.webflux.routes[2].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[3].id
-		Line: 38
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].id
-	Key: spring.cloud.gateway.routes[3].uri
-		Line: 39
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].uri
-	Key: spring.cloud.gateway.routes[3].predicates[0]
-		Line: 41
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].predicates[0]
-	Key: spring.cloud.gateway.routes[3].metadata.swagger-info.title
-		Line: 44
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[3].metadata.swagger-info.description
-		Line: 45
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[3].metadata.swagger-info.group
-		Line: 46
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[3].metadata.swagger-info.servicepath
-		Line: 47
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[3].metadata.swagger-info.location
-		Line: 48
-		Replacement: spring.cloud.gateway.server.webflux.routes[3].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[4].id
-		Line: 49
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].id
-	Key: spring.cloud.gateway.routes[4].uri
-		Line: 50
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].uri
-	Key: spring.cloud.gateway.routes[4].predicates[0]
-		Line: 52
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].predicates[0]
-	Key: spring.cloud.gateway.routes[4].metadata.swagger-info.title
-		Line: 55
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[4].metadata.swagger-info.description
-		Line: 56
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[4].metadata.swagger-info.group
-		Line: 57
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[4].metadata.swagger-info.servicepath
-		Line: 58
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[4].metadata.swagger-info.location
-		Line: 59
-		Replacement: spring.cloud.gateway.server.webflux.routes[4].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[5].id
-		Line: 60
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].id
-	Key: spring.cloud.gateway.routes[5].uri
-		Line: 61
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].uri
-	Key: spring.cloud.gateway.routes[5].predicates[0]
-		Line: 63
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].predicates[0]
-	Key: spring.cloud.gateway.routes[5].metadata.swagger-info.title
-		Line: 66
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[5].metadata.swagger-info.description
-		Line: 67
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[5].metadata.swagger-info.group
-		Line: 68
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[5].metadata.swagger-info.servicepath
-		Line: 69
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[5].metadata.swagger-info.location
-		Line: 70
-		Replacement: spring.cloud.gateway.server.webflux.routes[5].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[6].id
-		Line: 71
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].id
-	Key: spring.cloud.gateway.routes[6].uri
-		Line: 72
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].uri
-	Key: spring.cloud.gateway.routes[6].predicates[0]
-		Line: 74
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].predicates[0]
-	Key: spring.cloud.gateway.routes[6].metadata.swagger-info.title
-		Line: 77
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[6].metadata.swagger-info.description
-		Line: 78
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[6].metadata.swagger-info.group
-		Line: 79
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[6].metadata.swagger-info.servicepath
-		Line: 80
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[6].metadata.swagger-info.location
-		Line: 81
-		Replacement: spring.cloud.gateway.server.webflux.routes[6].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[7].id
-		Line: 82
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].id
-	Key: spring.cloud.gateway.routes[7].uri
-		Line: 83
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].uri
-	Key: spring.cloud.gateway.routes[7].predicates[0]
-		Line: 85
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].predicates[0]
-	Key: spring.cloud.gateway.routes[7].metadata.swagger-info.title
-		Line: 88
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[7].metadata.swagger-info.description
-		Line: 89
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[7].metadata.swagger-info.group
-		Line: 90
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[7].metadata.swagger-info.servicepath
-		Line: 91
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[7].metadata.swagger-info.location
-		Line: 92
-		Replacement: spring.cloud.gateway.server.webflux.routes[7].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[8].id
-		Line: 93
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].id
-	Key: spring.cloud.gateway.routes[8].uri
-		Line: 94
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].uri
-	Key: spring.cloud.gateway.routes[8].predicates[0]
-		Line: 96
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].predicates[0]
-	Key: spring.cloud.gateway.routes[8].metadata.swagger-info.title
-		Line: 99
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[8].metadata.swagger-info.description
-		Line: 100
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[8].metadata.swagger-info.group
-		Line: 101
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[8].metadata.swagger-info.servicepath
-		Line: 102
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[8].metadata.swagger-info.location
-		Line: 103
-		Replacement: spring.cloud.gateway.server.webflux.routes[8].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[9].id
-		Line: 104
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].id
-	Key: spring.cloud.gateway.routes[9].uri
-		Line: 105
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].uri
-	Key: spring.cloud.gateway.routes[9].predicates[0]
-		Line: 107
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].predicates[0]
-	Key: spring.cloud.gateway.routes[9].metadata.swagger-info.title
-		Line: 110
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[9].metadata.swagger-info.description
-		Line: 111
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[9].metadata.swagger-info.group
-		Line: 112
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[9].metadata.swagger-info.servicepath
-		Line: 113
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[9].metadata.swagger-info.location
-		Line: 114
-		Replacement: spring.cloud.gateway.server.webflux.routes[9].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[10].id
-		Line: 115
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].id
-	Key: spring.cloud.gateway.routes[10].uri
-		Line: 116
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].uri
-	Key: spring.cloud.gateway.routes[10].predicates[0]
-		Line: 118
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].predicates[0]
-	Key: spring.cloud.gateway.routes[10].metadata.swagger-info.title
-		Line: 121
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].metadata.swagger-info.title
-	Key: spring.cloud.gateway.routes[10].metadata.swagger-info.description
-		Line: 122
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].metadata.swagger-info.description
-	Key: spring.cloud.gateway.routes[10].metadata.swagger-info.group
-		Line: 123
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].metadata.swagger-info.group
-	Key: spring.cloud.gateway.routes[10].metadata.swagger-info.servicepath
-		Line: 124
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].metadata.swagger-info.servicepath
-	Key: spring.cloud.gateway.routes[10].metadata.swagger-info.location
-		Line: 125
-		Replacement: spring.cloud.gateway.server.webflux.routes[10].metadata.swagger-info.location
-	Key: spring.cloud.gateway.routes[11].id
-		Line: 127
-		Replacement: spring.cloud.gateway.server.webflux.routes[11].id
-	Key: spring.cloud.gateway.routes[11].uri
-		Line: 128
-		Replacement: spring.cloud.gateway.server.webflux.routes[11].uri
-	Key: spring.cloud.gateway.routes[11].predicates[0]
-		Line: 130
-		Replacement: spring.cloud.gateway.server.webflux.routes[11].predicates[0]
-	Key: spring.cloud.gateway.routes[11].filters[0]
-		Line: 132
-		Replacement: spring.cloud.gateway.server.webflux.routes[11].filters[0]
-	Key: spring.cloud.gateway.routes[12].id
-		Line: 133
-		Replacement: spring.cloud.gateway.server.webflux.routes[12].id
-	Key: spring.cloud.gateway.routes[12].uri
-		Line: 134
-		Replacement: spring.cloud.gateway.server.webflux.routes[12].uri
-	Key: spring.cloud.gateway.routes[12].predicates[0]
-		Line: 136
-		Replacement: spring.cloud.gateway.server.webflux.routes[12].predicates[0]
-	Key: spring.cloud.gateway.routes[12].filters[0]
-		Line: 138
-		Replacement: spring.cloud.gateway.server.webflux.routes[12].filters[0]
-	Key: spring.cloud.gateway.routes[13].id
-		Line: 139
-		Replacement: spring.cloud.gateway.server.webflux.routes[13].id
-	Key: spring.cloud.gateway.routes[13].uri
-		Line: 140
-		Replacement: spring.cloud.gateway.server.webflux.routes[13].uri
-	Key: spring.cloud.gateway.routes[13].predicates[0]
-		Line: 142
-		Replacement: spring.cloud.gateway.server.webflux.routes[13].predicates[0]
-	Key: spring.cloud.gateway.routes[13].filters[0]
-		Line: 144
-		Replacement: spring.cloud.gateway.server.webflux.routes[13].filters[0]
-
-
-Each configuration key has been temporarily mapped to its replacement for your convenience. To silence this warning, please update your configuration to use the new keys.
-
-2025-09-14 00:11:13.361 [main] WARN  [] o.s.b.c.p.migrator.PropertiesMigrationListener - 
-The use of configuration keys that have been renamed was found in the environment:
-
-Property source 'Config resource 'class path resource [application-route.yml]' via location 'optional:classpath:/'':
-	Key: spring.cloud.gateway.discovery.locator.enabled
-		Line: 147
-		Replacement: spring.cloud.gateway.server.webflux.discovery.locator.enabled
-	Key: spring.cloud.gateway.discovery.locator.lower-case-service-id
-		Line: 148
-		Replacement: spring.cloud.gateway.server.webflux.discovery.locator.lower-case-service-id
-
-Property source 'Config resource 'class path resource [application.yml]' via location 'optional:classpath:/'':
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedoriginpatterns
-		Line: 14
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedoriginpatterns
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedmethods[0]
-		Line: 16
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[0]
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedmethods[1]
-		Line: 17
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[1]
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedmethods[2]
-		Line: 18
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[2]
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedmethods[3]
-		Line: 19
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[3]
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedmethods[4]
-		Line: 20
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[4]
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowedheaders
-		Line: 21
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedheaders
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].allowcredentials
-		Line: 22
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowcredentials
-	Key: spring.cloud.gateway.globalcors.cors-configurations[/**].maxage
-		Line: 23
-		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].maxage
-
-
-Each configuration key has been temporarily mapped to its replacement for your convenience. To silence this warning, please update your configuration to use the new keys.
-
-2025-09-14 00:11:13.376 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-14 00:11:13.402 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'mapperScannerConfigurer' defined in class path resource [com/cloud/common/config/BaseDataSourceConfig.class]: Failed to instantiate [org.mybatis.spring.mapper.MapperScannerConfigurer]: Factory method 'mapperScannerConfigurer' threw exception with message: Cannot invoke "String.endsWith(String)" because "this.applicationName" is null
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:657)
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:489)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1375)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1205)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
-	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:141)
-	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:791)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:609)
-	at org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext.refresh(ReactiveWebServerApplicationContext.java:66)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1222)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1188)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
 	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
 	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.gateway.GatewayApplication.main(GatewayApplication.java:40)
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.mybatis.spring.mapper.MapperScannerConfigurer]: Factory method 'mapperScannerConfigurer' threw exception with message: Cannot invoke "String.endsWith(String)" because "this.applicationName" is null
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:199)
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiateWithFactoryMethod(SimpleInstantiationStrategy.java:88)
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:168)
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:653)
-	... 19 common frames omitted
-Caused by: java.lang.NullPointerException: Cannot invoke "String.endsWith(String)" because "this.applicationName" is null
-	at com.cloud.common.config.BaseDataSourceConfig.getMapperScanPackage(BaseDataSourceConfig.java:79)
-	at com.cloud.common.config.BaseDataSourceConfig.mapperScannerConfigurer(BaseDataSourceConfig.java:67)
+	at com.cloud.user.UserApplication.main(UserApplication.java:33)
+Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.cloud.common.security.PermissionManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:2284)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1708)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	... 21 common frames omitted
+2025-09-21 20:42:26.753 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-21 20:42:26.753 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-21 20:42:26.753 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-21 20:42:26.753 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-21 20:42:26.753 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:42:26.753 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:42:26.753 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 20:42:26.753 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-21 20:42:26.753 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-21 21:50:15.843 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-21 21:50:15.843 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-21 21:50:15.843 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-21 21:50:15.843 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-21 21:50:15.844 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-21 21:50:15.844 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-21 21:50:15.845 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-21 21:50:15.845 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [DEREGISTER-SERVICE] public deregistering service gateway with instance: Instance{instanceId='null', ip='192.168.43.186', port=80, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={}}
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.common.ability.AbstractAbilityControlManager$AbilityUpdateEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.844 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:15.854 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-21 21:50:15.855 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-21 21:50:15.856 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 21:50:15.856 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@258b64a2[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 1365]
+2025-09-21 21:50:15.856 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown rpc client, set status to shutdown
+2025-09-21 21:50:15.856 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@1d16eb3[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+2025-09-21 21:50:15.856 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Close current connection 1758458509690_172.28.0.1_56860
+2025-09-21 21:50:15.859 [nacos-grpc-client-executor-127.0.0.1-1592] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - [1758458509690_172.28.0.1_56860]Ignore complete event,isRunning:false,isAbandon=false
+2025-09-21 21:50:15.860 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@200f5704[Running, pool size = 7, active threads = 0, queued tasks = 0, completed tasks = 1593]
+2025-09-21 21:50:15.860 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 21:50:15.860 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.r.c.AnnotationConfigReactiveWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:171)
-	... 22 common frames omitted
-2025-09-14 00:11:13.406 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
-2025-09-14 00:11:13.406 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
-2025-09-14 00:11:13.406 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
-2025-09-14 00:11:13.406 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Destruction of the end
-2025-09-14 00:11:13.406 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Destruction of the end
-2025-09-14 00:11:13.406 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Destruction of the end
-2025-09-14 00:12:06.429 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
-2025-09-14 00:12:06.430 [Thread-1] WARN  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Destruction of the end
-2025-09-14 00:12:06.431 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
-2025-09-14 00:12:06.433 [Thread-3] WARN  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Destruction of the end
-2025-09-14 00:12:06.429 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
-2025-09-14 00:12:06.435 [Thread-5] WARN  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Destruction of the end
-2025-09-14 00:12:06.435 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
-2025-09-14 00:12:06.437 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [DEREGISTER-SERVICE] public deregistering service auth-service with instance: Instance{instanceId='null', ip='192.168.43.87', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={}}
-2025-09-14 00:12:06.455 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
-2025-09-14 00:12:06.455 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
-2025-09-14 00:12:06.456 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] WARN  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] WARN  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Destruction of the end
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] WARN  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] WARN  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Destruction of the end
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->7740f724-1766-4351-b06c-39dd1dc4541c
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@2e6989a6[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 20]
-2025-09-14 00:12:06.457 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown rpc client, set status to shutdown
-2025-09-14 00:12:06.458 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@164ca98b[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
-2025-09-14 00:12:06.458 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Close current connection 1757779865926_172.28.0.1_34294
-2025-09-14 00:12:06.467 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@7c1f3bef[Running, pool size = 7, active threads = 1, queued tasks = 0, completed tasks = 33]
-2025-09-14 00:12:06.468 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->7740f724-1766-4351-b06c-39dd1dc4541c
-2025-09-14 00:12:06.468 [SpringApplicationShutdownHook] INFO  [] c.a.n.client.auth.ram.identify.CredentialWatcher - [null] CredentialWatcher is stopped
-2025-09-14 00:12:06.468 [SpringApplicationShutdownHook] INFO  [] c.a.n.client.auth.ram.identify.CredentialService - [null] CredentialService is freed
-2025-09-14 00:12:06.470 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
-2025-09-14 00:12:06.468 [nacos-grpc-client-executor-127.0.0.1-33] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - [1757779865926_172.28.0.1_34294]Ignore complete event,isRunning:false,isAbandon=false
-2025-09-14 00:12:08.365 [com.alibaba.nacos.client.Worker.3] INFO  [] c.a.n.client.auth.ram.identify.CredentialWatcher - null No credential found
-2025-09-14 00:12:16.483 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
-2025-09-14 00:12:16.521 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext.doClose(ReactiveWebServerApplicationContext.java:155)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-21 21:50:15.864 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-21 21:50:15.869 [netty-shutdown] INFO  [] o.s.boot.web.embedded.netty.GracefulShutdown - Graceful shutdown complete
+2025-09-21 21:50:17.122 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Start destroying ThreadPool
+2025-09-21 21:50:17.122 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Start destroying Publisher
+2025-09-21 21:50:17.122 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Start destroying common HttpClient
+2025-09-21 21:50:17.122 [Thread-5] INFO  [] com.alibaba.nacos.common.notify.NotifyCenter - [NotifyCenter] Completed destruction of Publisher
+2025-09-21 21:50:17.124 [Thread-1] INFO  [] c.alibaba.nacos.common.executor.ThreadPoolManager - [ThreadPoolManager] Completed destruction of ThreadPool
+2025-09-21 21:50:17.124 [Thread-3] INFO  [] c.alibaba.nacos.common.http.HttpClientBeanHolder - [HttpClientBeanHolder] Completed destruction of HttpClient
+2025-09-21 21:50:17.122 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.124 [nacos.publisher-com.alibaba.nacos.common.ability.AbstractAbilityControlManager$AbilityUpdateEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.122 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.124 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.122 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.124 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.124 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-21 21:50:17.126 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-21 21:50:17.126 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [DEREGISTER-SERVICE] public deregistering service auth-service with instance: Instance{instanceId='null', ip='192.168.43.186', port=8080, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='', serviceName='null', metadata={}}
+2025-09-21 21:50:17.136 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-21 21:50:17.136 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-21 21:50:17.137 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@5d9f1701[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 1362]
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown rpc client, set status to shutdown
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@52316080[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+2025-09-21 21:50:17.138 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.common.remote.client - Close current connection 1758458518857_172.28.0.1_34192
+2025-09-21 21:50:17.140 [nacos-grpc-client-executor-127.0.0.1-1573] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - [1758458518857_172.28.0.1_34192]Ignore complete event,isRunning:false,isAbandon=false
+2025-09-21 21:50:17.143 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.common.remote.client.grpc.GrpcClient - Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@26f9b197[Running, pool size = 7, active threads = 0, queued tasks = 0, completed tasks = 1574]
+2025-09-21 21:50:17.144 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 21:50:17.144 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.doClose(ServletWebServerApplicationContext.java:179)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-21 21:50:17.148 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-21 21:50:17.193 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-09-21 21:50:17.207 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-21 21:50:17.208 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 0 subscriber(s).
+2025-09-21 21:50:17.208 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
+2025-09-21 21:50:17.211 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-21 21:50:17.211 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-21 21:50:17.211 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-21 21:50:17.211 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-21 21:50:17.211 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@5d9f1701[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 1362]
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->b42ed27a-c819-4871-acef-17c0b09c7760
+2025-09-21 21:50:17.212 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] c.a.nacos.client.address.AbstractServerListManager - com.alibaba.nacos.client.naming.core.NamingServerListManager do shutdown stop
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Start destroying NacosRestTemplate
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - [NamingHttpClientManager] Completed destruction of NacosRestTemplate
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown naming grpc client proxy for  uuid->7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@258b64a2[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 1365]
+2025-09-21 21:50:17.942 [SpringApplicationShutdownHook] INFO  [] com.alibaba.nacos.client.naming - shutdown and remove naming rpc client  for uuid ->7f9aef9d-ccac-4560-8119-130c0bec1498
+2025-09-21 21:50:17.943 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null

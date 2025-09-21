@@ -46,4 +46,11 @@ public abstract class BaseEntity<T extends BaseEntity<T>> implements Serializabl
     @TableLogic
     private Integer deleted = 0;
 
+    /**
+     * 版本号 - 乐观锁字段（可选，子类可以重写是否启用）
+     */
+    @com.baomidou.mybatisplus.annotation.Version
+    @TableField(value = "version", fill = FieldFill.INSERT)
+    private Integer version;
+
 }

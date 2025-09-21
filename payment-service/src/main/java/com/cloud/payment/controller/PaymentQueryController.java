@@ -14,13 +14,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/payment/query")
+@RequestMapping("/payment/query")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "支付查询接口", description = "支付查询相关的 RESTful API 接口")
@@ -50,6 +50,7 @@ public class PaymentQueryController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取支付详情", description = "根据ID获取支付详细信息")
+    @Cacheable(value = "payment", key = "#id")
     @Parameters({
             @Parameter(name = "id", description = "支付ID", required = true)
     })
@@ -63,10 +64,10 @@ public class PaymentQueryController {
             @Positive(message = "支付ID必须为正整数") Long id,
             @RequestHeader("X-User-ID") String currentUserId,
             @RequestHeader("X-User-Roles") String currentUserRoles) {
-        
+
         log.info("获取支付详情，支付ID: {}，操作人: {}", id, currentUserId);
         Payment payment = paymentService.getById(id);
-        
+
         if (payment == null) {
             log.warn("支付记录不存在，支付ID: {}，操作人: {}", id, currentUserId);
             return Result.error("支付记录不存在");
@@ -90,6 +91,7 @@ public class PaymentQueryController {
      */
     @PostMapping("/page")
     @Operation(summary = "分页查询支付记录", description = "分页查询支付记录列表")
+    @Cacheable(value = "payment-page", key = "'page:' + #page + ':' + #size + ':' + #userId + ':' + #status + ':' + #channel")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
@@ -97,29 +99,29 @@ public class PaymentQueryController {
             @Parameter(description = "页码")
             @RequestParam(defaultValue = "1")
             @Min(value = 1, message = "页码必须大于0") Integer page,
-            
+
             @Parameter(description = "每页数量")
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "每页数量必须大于0")
             @Max(value = 100, message = "每页数量不能超过100") Integer size,
-            
+
             @Parameter(description = "用户ID")
             @RequestParam(required = false)
             @Positive(message = "用户ID必须为正整数") Long userId,
-            
+
             @Parameter(description = "支付状态")
             @RequestParam(required = false)
             @Min(value = 0, message = "支付状态值错误")
             @Max(value = 9, message = "支付状态值错误") Integer status,
-            
+
             @Parameter(description = "支付渠道")
             @RequestParam(required = false)
             @Min(value = 0, message = "支付渠道值错误")
             @Max(value = 9, message = "支付渠道值错误") Integer channel,
-            
+
             @RequestHeader("X-User-ID") String currentUserId,
             @RequestHeader("X-User-Roles") String currentUserRoles) {
-        
+
         log.info("分页查询支付记录，页码: {}，每页数量: {}，用户ID: {}，状态: {}，渠道: {}，操作人: {}",
                 page, size, userId, status, channel, currentUserId);
 

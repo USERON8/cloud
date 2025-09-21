@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.module.entity.Order;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 
 /**
  * 订单服务接口
@@ -105,4 +107,28 @@ public interface OrderService extends IService<Order> {
     Boolean cancelOrder(Long orderId, String currentUserId);
 
     Boolean deleteOrder(@NotNull Long id);
+
+    /**
+     * 创建订单（简化版本）
+     *
+     * @param orderDTO 订单信息
+     * @return 创建的订单信息
+     */
+    OrderDTO createOrder(OrderDTO orderDTO);
+
+    /**
+     * 根据用户ID查询订单列表
+     *
+     * @param userId 用户ID
+     * @return 订单列表
+     */
+    List<OrderDTO> getOrdersByUserId(Long userId);
+
+    /**
+     * 根据订单号查询订单
+     *
+     * @param orderNo 订单号
+     * @return 订单信息
+     */
+    OrderDTO getOrderByOrderNo(String orderNo);
 }

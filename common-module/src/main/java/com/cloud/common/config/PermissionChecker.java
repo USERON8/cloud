@@ -1,118 +1,122 @@
 package com.cloud.common.config;
 
+import com.cloud.common.enums.UserType;
 import com.cloud.common.exception.PermissionException;
-import com.cloud.common.utils.SecurityContextUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 /**
  * 权限检查器
- * 提供统一的权限验证逻辑，避免在每个控制器方法中重复编写权限验证代码
  *
- * @author what's up
+ * @author cloud
+ * @date 2024-01-20
  */
-@Component("permissionChecker")
+@Component
 public class PermissionChecker {
 
     /**
-     * 检查当前用户是否具有指定权限
+     * 检查用户类型权限
      *
-     * @param permission 权限标识
-     * @return 是否具有权限
+     * @param requiredType 要求的用户类型
+     * @param currentType  当前用户类型
+     * @return 是否有权限
      */
-    public boolean hasPermission(String permission) {
-        return SecurityContextUtils.hasPermission(permission);
+    public boolean checkUserType(UserType requiredType, UserType currentType) {
+        if (requiredType == null || currentType == null) {
+            return false;
+        }
+
+        return requiredType.equals(currentType);
     }
 
     /**
-     * 断言当前用户具有指定权限
+     * 检查管理员权限
      *
-     * @param permission 权限标识
+     * @param currentType 当前用户类型
+     * @return 是否是管理员
+     */
+    public boolean checkAdminPermission(UserType currentType) {
+        return UserType.ADMIN.equals(currentType);
+    }
+
+    /**
+     * 检查商家权限
+     *
+     * @param currentType 当前用户类型
+     * @return 是否是商家
+     */
+    public boolean checkMerchantPermission(UserType currentType) {
+        return UserType.MERCHANT.equals(currentType);
+    }
+
+    /**
+     * 检查用户权限
+     *
+     * @param currentType 当前用户类型
+     * @return 是否是普通用户
+     */
+    public boolean checkUserPermission(UserType currentType) {
+        return UserType.USER.equals(currentType);
+    }
+
+    /**
+     * 断言用户类型，如果不符合则抛出异常
+     *
+     * @param requiredType 要求的用户类型字符串
      * @throws PermissionException 权限不足异常
      */
-    public void assertPermission(String permission) throws PermissionException {
-        if (!hasPermission(permission)) {
-            throw new PermissionException("权限不足，需要权限: " + permission);
+    public void assertUserType(String requiredType) {
+        UserType currentType = getCurrentUserType();
+        UserType required;
+
+        try {
+            required = UserType.valueOf(requiredType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new PermissionException("INVALID_USER_TYPE", "无效的用户类型: " + requiredType);
+        }
+
+        if (!checkUserType(required, currentType)) {
+            throw new PermissionException("ACCESS_DENIED",
+                    "当前用户类型[" + (currentType != null ? currentType.name() : "未知") + "]无权限访问，需要用户类型: " + requiredType);
         }
     }
 
     /**
-     * 检查当前用户是否具有指定角色
+     * 获取当前用户类型
      *
-     * @param role 角色标识
-     * @return 是否具有角色
+     * @return 当前用户类型
      */
-    public boolean hasRole(String role) {
-        return SecurityContextUtils.hasRole(role);
-    }
-
-    /**
-     * 断言当前用户具有指定角色
-     *
-     * @param role 角色标识
-     * @throws PermissionException 权限不足异常
-     */
-    public void assertRole(String role) throws PermissionException {
-        if (!hasRole(role)) {
-            throw new PermissionException("权限不足，需要角色: " + role);
+    private UserType getCurrentUserType() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
-    }
 
-    /**
-     * 检查当前用户是否为指定用户类型
-     *
-     * @param userType 用户类型 (USER, MERCHANT, ADMIN)
-     * @return 是否为指定用户类型
-     */
-    public boolean hasUserType(String userType) {
-        return SecurityContextUtils.hasUserType(userType);
-    }
-
-    /**
-     * 断言当前用户为指定用户类型
-     *
-     * @param userType 用户类型 (USER, MERCHANT, ADMIN)
-     * @throws PermissionException 权限不足异常
-     */
-    public void assertUserType(String userType) throws PermissionException {
-        if (!hasUserType(userType)) {
-            throw new PermissionException("权限不足，需要用户类型: " + userType);
+        if (authentication instanceof JwtAuthenticationToken jwtToken) {
+            String userType = jwtToken.getToken().getClaimAsString("user_type");
+            if (userType != null) {
+                try {
+                    return UserType.valueOf(userType.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+            }
         }
-    }
 
-    /**
-     * 获取当前用户的类型
-     *
-     * @return 用户类型
-     */
-    public String getCurrentUserType() {
-        return SecurityContextUtils.getCurrentUserType();
-    }
-
-    /**
-     * 获取当前用户ID
-     *
-     * @return 用户ID
-     */
-    public String getCurrentUserId() {
-        return SecurityContextUtils.getCurrentUserId();
-    }
-
-    /**
-     * 获取当前用户名
-     *
-     * @return 用户名
-     */
-    public String getCurrentUsername() {
-        return SecurityContextUtils.getCurrentUsername();
-    }
-
-    /**
-     * 检查是否为相同用户
-     *
-     * @param userId 用户ID
-     * @return 是否为相同用户
-     */
-    public boolean isSameUser(String userId) {
-        return SecurityContextUtils.isSameUser(userId);
+        // 从authorities中获取用户类型
+        return authentication.getAuthorities().stream()
+                .filter(auth -> auth.getAuthority().startsWith("USER_TYPE_"))
+                .findFirst()
+                .map(auth -> {
+                    String type = auth.getAuthority().substring("USER_TYPE_".length());
+                    try {
+                        return UserType.valueOf(type);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
     }
 }

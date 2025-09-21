@@ -28,7 +28,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
     // 管理员缓存名称
     private static final String ADMIN_CACHE_NAME = "adminCache";
     private final AdminMapper adminMapper;
-    private final AdminConverter adminConverter = AdminConverter.INSTANCE;
+    private final AdminConverter adminConverter;
 
     /**
      * 根据ID获取管理员信息(带缓存)

@@ -21,6 +21,9 @@ spring:
         file-extension: ${nacos.config.file-extension}
         group: ${nacos.config.group}
     stream:
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:39876
       bindings:
         orderLog-out-0:
           destination: LOG_ORDER_TOPIC
@@ -39,6 +42,24 @@ spring:
           destination: ORDER_PAY_TOPIC
           content-type: application/json
           group: order-pay-group
+        stockUpdate-in-0:
+          destination: STOCK_UPDATE_TOPIC
+          content-type: application/json
+          group: order-stock-update-group
+        orderToPayment-out-0:
+          destination: ORDER_TO_PAYMENT_TOPIC
+          content-type: application/json
+        orderToStock-out-0:
+          destination: ORDER_TO_STOCK_TOPIC
+          content-type: application/json
+        # 订单事件生产者绑定（新增）
+        order-producer-out-0:
+          destination: order-events
+          content-type: application/json
+          group: order-producer-group
+          producer:
+            maxRequestSize: 4194304
+            sync: true
   config:
     import: optional:nacos:common
   datasource:
@@ -52,7 +73,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}
+          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M
 logging:
   file:
     path: D:/logs/${spring.application.name}

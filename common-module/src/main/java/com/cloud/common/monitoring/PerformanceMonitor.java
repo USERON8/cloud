@@ -58,6 +58,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
     private Gauge activeConnectionsGauge;
     private Gauge memoryUsageGauge;
     private Gauge redisConnectionsGauge;
+
     public PerformanceMonitor(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }

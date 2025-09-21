@@ -1,5 +1,8 @@
 package com.cloud.product.controller.product;
 
+import com.cloud.common.annotation.RequireScope;
+import com.cloud.common.annotation.RequireUserType;
+import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.result.Result;
 import com.cloud.product.service.ProductService;
@@ -15,7 +18,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products/manage")
+@RequestMapping("/product/manage")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "商品管理接口", description = "提供商品管理相关功能，需要管理员权限")
@@ -41,11 +43,12 @@ public class ProductManageController {
     // ================= 基础CRUD操作 =================
 
     @PostMapping
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:create")
     @Operation(summary = "创建商品", description = "创建新的商品信息")
     @ApiResponse(responseCode = "200", description = "创建成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Long.class)))
-    @PreAuthorize("hasAuthority('PRODUCT_CREATE')")
     public Result<Long> createProduct(
             @Parameter(description = "商品信息", required = true)
             @RequestBody @Valid ProductRequestDTO requestDTO) {
@@ -56,9 +59,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/{id}")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "更新商品", description = "更新商品信息")
     @ApiResponse(responseCode = "200", description = "更新成功")
-    @PreAuthorize("hasAuthority('PRODUCT_UPDATE')")
     public Result<Boolean> updateProduct(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -74,9 +78,10 @@ public class ProductManageController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "删除商品", description = "根据ID删除商品")
     @ApiResponse(responseCode = "200", description = "删除成功")
-    @PreAuthorize("hasAuthority('PRODUCT_DELETE')")
     public Result<Boolean> deleteProduct(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -89,9 +94,10 @@ public class ProductManageController {
     }
 
     @DeleteMapping("/batch")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "批量删除商品", description = "根据ID列表批量删除商品")
     @ApiResponse(responseCode = "200", description = "删除成功")
-    @PreAuthorize("hasAuthority('PRODUCT_DELETE')")
     public Result<Boolean> batchDeleteProducts(
             @Parameter(description = "商品ID列表", required = true)
             @RequestBody @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
@@ -109,9 +115,10 @@ public class ProductManageController {
     // ================= 状态管理 =================
 
     @PutMapping("/{id}/enable")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "上架商品", description = "将商品设为上架状态")
     @ApiResponse(responseCode = "200", description = "上架成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STATUS')")
     public Result<Boolean> enableProduct(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -124,9 +131,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/{id}/disable")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "下架商品", description = "将商品设为下架状态")
     @ApiResponse(responseCode = "200", description = "下架成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STATUS')")
     public Result<Boolean> disableProduct(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -139,9 +147,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/batch/enable")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "批量上架商品", description = "批量将商品设为上架状态")
     @ApiResponse(responseCode = "200", description = "批量上架成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STATUS')")
     public Result<Boolean> batchEnableProducts(
             @Parameter(description = "商品ID列表", required = true)
             @RequestBody @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
@@ -157,9 +166,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/batch/disable")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("product:write")
     @Operation(summary = "批量下架商品", description = "批量将商品设为下架状态")
     @ApiResponse(responseCode = "200", description = "批量下架成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STATUS')")
     public Result<Boolean> batchDisableProducts(
             @Parameter(description = "商品ID列表", required = true)
             @RequestBody @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
@@ -177,9 +187,10 @@ public class ProductManageController {
     // ================= 库存管理 =================
 
     @PutMapping("/{id}/stock")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("stock:manage")
     @Operation(summary = "更新商品库存", description = "设置商品库存数量")
     @ApiResponse(responseCode = "200", description = "更新成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STOCK')")
     public Result<Boolean> updateStock(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -196,9 +207,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/{id}/stock/increase")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("stock:manage")
     @Operation(summary = "增加商品库存", description = "增加指定数量的库存")
     @ApiResponse(responseCode = "200", description = "增加成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STOCK')")
     public Result<Boolean> increaseStock(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -216,9 +228,10 @@ public class ProductManageController {
     }
 
     @PutMapping("/{id}/stock/decrease")
+    @RequireUserType({UserType.MERCHANT, UserType.ADMIN})
+    @RequireScope("stock:manage")
     @Operation(summary = "减少商品库存", description = "减少指定数量的库存")
     @ApiResponse(responseCode = "200", description = "减少成功")
-    @PreAuthorize("hasAuthority('PRODUCT_STOCK')")
     public Result<Boolean> decreaseStock(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -236,9 +249,9 @@ public class ProductManageController {
     }
 
     @GetMapping("/{id}/stock/check")
+    @RequireScope("product:read")
     @Operation(summary = "检查商品库存", description = "检查商品库存是否充足")
     @ApiResponse(responseCode = "200", description = "检查成功")
-    @PreAuthorize("hasAuthority('PRODUCT_VIEW')")
     public Result<Boolean> checkStock(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -258,9 +271,10 @@ public class ProductManageController {
     // ================= 缓存管理 =================
 
     @DeleteMapping("/cache/{id}")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "清除商品缓存", description = "清除指定商品的缓存")
     @ApiResponse(responseCode = "200", description = "清除成功")
-    @PreAuthorize("hasAuthority('PRODUCT_CACHE')")
     public Result<String> evictProductCache(
             @Parameter(description = "商品ID", required = true)
             @PathVariable
@@ -273,9 +287,10 @@ public class ProductManageController {
     }
 
     @DeleteMapping("/cache/all")
+    @RequireUserType(UserType.ADMIN)
+    @RequireScope("admin:write")
     @Operation(summary = "清除所有商品缓存", description = "清除所有商品相关缓存")
     @ApiResponse(responseCode = "200", description = "清除成功")
-    @PreAuthorize("hasAuthority('PRODUCT_CACHE')")
     public Result<String> evictAllProductCache() {
         log.info("清除所有商品缓存");
         productService.evictAllProductCache();

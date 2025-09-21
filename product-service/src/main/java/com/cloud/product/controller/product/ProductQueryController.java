@@ -1,10 +1,10 @@
 package com.cloud.product.controller.product;
 
-import com.cloud.product.module.dto.ProductPageDTO;
+import com.cloud.common.domain.vo.ProductVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.service.ProductService;
-import com.cloud.common.domain.vo.ProductVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

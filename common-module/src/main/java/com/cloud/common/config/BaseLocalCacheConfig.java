@@ -1,49 +1,109 @@
 package com.cloud.common.config;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
- * 本地缓存配置基类
- * 提供基于Caffeine的本地缓存配置模板
- * 用于实现多级缓存中的L1缓存层
- * 各服务可继承此类并根据需要重写缓存配置
+ * 本地缓存基础配置类
+ *
+ * @author cloud
+ * @date 2024-01-20
  */
 @Configuration
-public abstract class BaseLocalCacheConfig {
+@EnableCaching
+@ConditionalOnClass(Caffeine.class)
+public class BaseLocalCacheConfig {
 
     /**
-     * 创建默认的Caffeine缓存管理器
-     * 子类必须实现此方法来提供服务特定的缓存配置
+     * 缓存管理器
      *
-     * @return CacheManager 缓存管理器
+     * @return CacheManager
      */
     @Bean
-    public abstract CacheManager localCacheManager();
+    public CacheManager cacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        cacheManager.setCaffeine(caffeineCacheBuilder());
+        return cacheManager;
+    }
 
     /**
-     * 为子类提供的工具方法：创建默认的Caffeine配置
+     * 配置缓存构建器
      *
-     * @param initialCapacity   初始容量
-     * @param maximumSize       最大容量
-     * @param expireAfterWrite  写入后过期时间
-     * @param expireAfterAccess 访问后过期时间
-     * @param timeUnit          时间单位
-     * @return Caffeine 配置对象
+     * @return Caffeine构建器
      */
-    protected Caffeine<Object, Object> buildCaffeineSpec(
-            int initialCapacity, long maximumSize,
-            long expireAfterWrite, long expireAfterAccess,
-            TimeUnit timeUnit) {
+    protected Caffeine<Object, Object> caffeineCacheBuilder() {
+        return Caffeine.newBuilder()
+                // 设置最后一次写入或访问后经过固定时间过期
+                .expireAfterWrite(Duration.ofMinutes(30))
+                // 初始的缓存空间大小
+                .initialCapacity(100)
+                // 缓存的最大条数
+                .maximumSize(1000)
+                // 开启缓存统计
+                .recordStats();
+    }
+
+    /**
+     * 用户信息缓存
+     *
+     * @return Cache
+     */
+    @Bean
+    public Cache<String, Object> userInfoCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(15))
+                .maximumSize(500)
+                .recordStats()
+                .build();
+    }
+
+    /**
+     * 权限信息缓存
+     *
+     * @return Cache
+     */
+    @Bean
+    public Cache<String, Object> permissionCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(60))
+                .maximumSize(200)
+                .recordStats()
+                .build();
+    }
+
+    /**
+     * 本地缓存管理器（可被子类重写）
+     *
+     * @return CacheManager
+     */
+    public CacheManager localCacheManager() {
+        return cacheManager();
+    }
+
+    /**
+     * 构建 Caffeine 缓存配置
+     *
+     * @param initialCapacity          初始容量
+     * @param maximumSize              最大缓存数
+     * @param expireAfterWriteMinutes  写入后过期时间（分钟）
+     * @param expireAfterAccessMinutes 访问后过期时间（分钟）
+     * @return Caffeine 构建器
+     */
+    protected Caffeine<Object, Object> buildCaffeineSpec(int initialCapacity, long maximumSize,
+                                                         long expireAfterWriteMinutes, long expireAfterAccessMinutes) {
         return Caffeine.newBuilder()
                 .initialCapacity(initialCapacity)
                 .maximumSize(maximumSize)
-                .expireAfterWrite(expireAfterWrite, timeUnit)
-                .expireAfterAccess(expireAfterAccess, timeUnit)
+                .expireAfterWrite(Duration.ofMinutes(expireAfterWriteMinutes))
+                .expireAfterAccess(Duration.ofMinutes(expireAfterAccessMinutes))
                 .recordStats();
     }
 }

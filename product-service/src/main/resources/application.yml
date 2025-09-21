@@ -3,7 +3,7 @@
 # 遵循用户服务标准
 
 server:
-  port: ${server.port:8083}
+  port: ${server.port:8082}
   servlet:
     context-path: /product-service
     encoding:
@@ -36,6 +36,16 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
+    stream:
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:39876
+      bindings:
+        productLog-out-0:
+          destination: LOG_PRODUCT_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
   config:
     import: optional:nacos:common
   datasource:

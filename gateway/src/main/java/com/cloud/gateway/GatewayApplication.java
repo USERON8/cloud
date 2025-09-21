@@ -4,25 +4,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 
 /**
  * @author what's up
  */
 @Slf4j
-@SpringBootApplication(exclude = {
-        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
-        org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration.class
-})
+@SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {
-        "com.cloud.gateway"
-})
 public class GatewayApplication {
 
     public static void main(String[] args) {
+        // Nacos日志配置优化
         System.setProperty("nacos.logging.default.config.enabled", "false");
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");

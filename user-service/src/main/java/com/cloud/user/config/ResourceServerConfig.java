@@ -1,41 +1,38 @@
 package com.cloud.user.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.time.Duration;
-
 /**
  * User Service OAuth2资源服务器配置
  * 与OAuth2.1框架集成，支持JWT Token验证和权限控制
- * 
+ *
  * @author what's up
  */
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@Order(101)
 public class ResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
-
-    @Value("${spring.security.oauth2.resourceserver.jwt.cache-duration:PT30M}")
-    private String jwtCacheDuration;
 
     /**
      * 配置安全过滤器链
@@ -84,7 +81,9 @@ public class ResourceServerConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
@@ -95,30 +94,32 @@ public class ResourceServerConfig {
 
     /**
      * JWT解码器
-     * 使用OAuth2提供的JWK端点进行JWT验证，配置缓存和验证器
+     * 使用OAuth2提供的JWK端点进行JWT验证
      *
      * @return NimbusJwtDecoder JWT解码器实例
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        // 使用配置文件中的JWK Set URI构建解码器
-        Duration cacheDuration = Duration.parse(jwtCacheDuration);
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                .jwsAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-                .build();
+        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+    }
 
-        // 注意：这里先移除cache调用，因为可能的API变化问题
-        // 如果需要，可以通过其他方式配置缓存
+    /**
+     * JWT认证转换器
+     * 配置如何从JWT中提取权限信息
+     *
+     * @return JwtAuthenticationConverter JWT认证转换器
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
-        // 配置JWT验证器
-        OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
-        OAuth2TokenValidator<Jwt> combinedValidator = new DelegatingOAuth2TokenValidator<>(
-                timestampValidator
-                // 可以在这里添加更多的验证器，例如自定义的权限验证器
-        );
+        // OAuth2.1标准：从 scope 声明中提取权限
+        authoritiesConverter.setAuthorityPrefix("SCOPE_");
+        authoritiesConverter.setAuthoritiesClaimName("scope");
 
-        jwtDecoder.setJwtValidator(combinedValidator);
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
 
-        return jwtDecoder;
+        return converter;
     }
 }

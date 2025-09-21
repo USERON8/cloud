@@ -1,6 +1,5 @@
 package com.cloud.stock.controller;
 
-import com.cloud.common.domain.dto.stock.StockDTO;
 import com.cloud.common.result.Result;
 import com.cloud.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +28,6 @@ import java.util.Collection;
 public class StockManageController {
 
     private final StockService stockService;
-
 
 
     @DeleteMapping("/delete/{id}")

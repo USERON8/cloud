@@ -11,6 +11,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,7 +22,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Set;
@@ -331,13 +331,13 @@ public class MultiLevelCacheAspect {
 
     private void evictCacheByEvict(ProceedingJoinPoint joinPoint, MultiLevelCacheEvict annotation) {
         String[] cacheNames = annotation.value();
-        
+
         // 处理每个缓存名称
         for (String cacheName : cacheNames) {
             evictSingleCache(joinPoint, annotation, cacheName);
         }
     }
-    
+
     private void evictSingleCache(ProceedingJoinPoint joinPoint, MultiLevelCacheEvict annotation, String cacheName) {
         if (annotation.allEntries()) {
             // 清空所有缓存

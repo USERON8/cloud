@@ -2,8 +2,8 @@ package com.cloud.product.converter;
 
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
-import com.cloud.product.module.entity.Product;
 import com.cloud.common.domain.vo.ProductVO;
+import com.cloud.product.module.entity.Product;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;

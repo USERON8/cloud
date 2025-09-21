@@ -33,12 +33,12 @@ public class ShopPageDTO extends PageQuery {
 
     @Schema(description = "更新时间排序：ASC-升序，DESC-降序")
     private String updateTimeSort;
-    
+
     // 为了兼容性提供getName方法（返回shopNameKeyword）
     public String getName() {
         return this.shopNameKeyword;
     }
-    
+
     public void setName(String name) {
         this.shopNameKeyword = name;
     }
