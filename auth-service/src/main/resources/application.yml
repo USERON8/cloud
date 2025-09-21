@@ -21,6 +21,15 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
+    stream:
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:39876
+      bindings:
+        log-in-0:
+          destination: LOG_AUTH_TOPIC
+          content-type: application/json
+          group: auth-log-group
   config:
     import: optional:nacos:common
   datasource:
@@ -32,7 +41,7 @@ spring:
       host: localhost
       port: 6379
       password: root
-      database: 0
+      database: 1
       timeout: 10000ms
       lettuce:
         pool:
@@ -93,25 +102,9 @@ springdoc:
       paths-to-match: '/api/v1/auth/**'
     - group: 'oauth2'
       paths-to-match: '/oauth2/**'
+  default-flat-param-object: true
 
 # Knife4j 配置
-knife4j:
-  enable: true
-  production: false
-  basic:
-    enable: false
-  setting:
-    language: ZH_CN
-
-logging:
-  file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
-  level:
-    root: info
-    com.cloud.auth: debug
-    org.springframework.security: debug
-    org.springframework.web: warn
 knife4j:
   enable: true
   production: false
@@ -122,11 +115,12 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-  default-flat-param-object: true
+logging:
+  file:
+    path: D:/logs/${spring.application.name}
+    name: ${logging.file.path}/${spring.application.name}.log
+  level:
+    root: info
+    com.cloud.auth: debug
+    org.springframework.security: debug
+    org.springframework.web: warn

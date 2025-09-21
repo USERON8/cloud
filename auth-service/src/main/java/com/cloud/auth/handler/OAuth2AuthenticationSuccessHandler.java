@@ -48,8 +48,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         log.info("OAuth2认证成功，开始处理用户信息");
 
         try {
-            if (authentication instanceof OAuth2AuthenticationToken) {
-                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
                 String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
                 log.info("OAuth2登录提供者: {}", registrationId);
@@ -67,15 +66,13 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 UserDTO userDTO = null;
 
                 // 根据不同的OAuth2提供者处理用户信息
-                switch (registrationId) {
-                    case "github":
-                        GitHubUserInfoService gitHubUserInfoService = applicationContext.getBean(GitHubUserInfoService.class);
-                        userDTO = gitHubUserInfoService.getOrCreateUser(authorizedClient);
-                        break;
-                    default:
-                        log.error("不支持的OAuth2提供者: {}", registrationId);
-                        handleError(response, "不支持的登录提供者");
-                        return;
+                if (registrationId.equals("github")) {
+                    GitHubUserInfoService gitHubUserInfoService = applicationContext.getBean(GitHubUserInfoService.class);
+                    userDTO = gitHubUserInfoService.getOrCreateUser(authorizedClient);
+                } else {
+                    log.error("不支持的OAuth2提供者: {}", registrationId);
+                    handleError(response, "不支持的登录提供者");
+                    return;
                 }
 
                 if (userDTO != null) {

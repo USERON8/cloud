@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @Validated
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 @Tag(name = "认证服务接口", description = "用户认证、登录注册、令牌管理相关的 RESTful API 接口")
 public class AuthController {
     private final UserFeignClient userFeignClient;

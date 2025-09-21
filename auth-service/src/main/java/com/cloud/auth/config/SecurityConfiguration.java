@@ -1,30 +1,49 @@
 package com.cloud.auth.config;
 
+import com.cloud.auth.service.CustomUserDetailsServiceImpl;
+import com.cloud.auth.service.RedisOAuth2AuthorizationService;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -32,6 +51,9 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.*;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.security.KeyPair;
@@ -39,17 +61,28 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
- * OAuth2授权服务器配置
- * 实现授权码模式和客户端凭证模式
+ * 统一安全配置类
+ * 整合了认证、授权、资源服务器、OAuth2等所有安全相关配置
  *
- * @author what's up
+ * @author cloud
  */
+@Slf4j
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-public class AuthServerConfig {
+public class SecurityConfiguration {
+
+    private final CustomUserDetailsServiceImpl customUserDetailsService;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwkSetUri;
 
     /**
      * OAuth2授权服务器安全配置 - 纯API模式
@@ -92,13 +125,30 @@ public class AuthServerConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/actuator/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/favicon.ico",
+                                "/error",
+                                // OAuth2相关端点
+                                "/oauth2/**",
+                                "/.well-known/**"
+                        ).permitAll()
                         .anyRequest().permitAll() // 允许所有请求，鉴权由网关处理
                 )
                 .httpBasic(AbstractHttpConfigurer::disable) // 禁用HTTP Basic认证
                 .formLogin(AbstractHttpConfigurer::disable) // 禁用表单登录
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                ); // 无状态模式
+                ) // 无状态模式
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                );
 
         return http.build();
     }
@@ -182,13 +232,44 @@ public class AuthServerConfig {
     }
 
     /**
+     * 配置OAuth2授权服务
+     * 使用Redis存储授权信息
+     */
+    @Bean
+    public OAuth2AuthorizationService authorizationService(
+            RegisteredClientRepository registeredClientRepository,
+            RedisConnectionFactory redisConnectionFactory,
+            AuthorizationServerSettings authorizationServerSettings) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        
+        // 配置Key序列化器
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+
+        // 配置Value序列化器
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+        
+        redisTemplate.afterPropertiesSet();
+        return new RedisOAuth2AuthorizationService(redisTemplate, registeredClientRepository, authorizationServerSettings);
+    }
+
+    /**
      * 配置JWT解码器
      * 用于验证JWT Token
      */
     @Bean
     public JwtDecoder jwtDecoder() {
         try {
-            return NimbusJwtDecoder.withPublicKey(this.generateRsaKey().toRSAPublicKey()).build();
+            // 如果是授权服务器，则使用本地公钥
+            if (jwkSetUri.contains("localhost:8082")) {
+                return NimbusJwtDecoder.withPublicKey(this.generateRsaKey().toRSAPublicKey()).build();
+            } else {
+                // 否则使用远程JWK端点
+                log.info("配置JWT解码器，JWK端点: {}", jwkSetUri);
+                return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+            }
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to create JWT decoder", ex);
         }
@@ -241,7 +322,6 @@ public class AuthServerConfig {
         }
     }
 
-
     /**
      * 配置OAuth2.1授权服务器设置
      * 所有端点都通过网关统一访问
@@ -261,33 +341,29 @@ public class AuthServerConfig {
 
     /**
      * 配置OAuth2授权同意服务
-     * 用于存储用户的授权同意信息
+     * 使用Redis存储用户的授权同意信息
      */
     @Bean
-    public OAuth2AuthorizationConsentService authorizationConsentService() {
-        return new InMemoryOAuth2AuthorizationConsentService();
+    public OAuth2AuthorizationConsentService authorizationConsentService(
+            RegisteredClientRepository registeredClientRepository,
+            RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        redisTemplate.afterPropertiesSet();
+        return new RedisOAuth2AuthorizationConsentService(redisTemplate, registeredClientRepository);
     }
 
     /**
-     * 配置GitHub OAuth2客户端注册
+     * 自定义JWT生成内容
      */
-    private ClientRegistration githubClientRegistration() {
-        return ClientRegistration.withRegistrationId("github")
-                .clientId("Ov23li4lW4aaO4mlFGRf")  // 从application.yml中的配置
-                .clientSecret("6afee51f8c5b77a7b3a20dc6b8e41d9b4c60e55d")  // 从application.yml中的配置
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-                .authorizationUri("https://github.com/login/oauth/authorize")
-                .tokenUri("https://github.com/login/oauth/access_token")
-                .userInfoUri("https://api.github.com/user")
-                .userNameAttributeName("id")
-                .clientName("GitHub")
-                .scope("read:user", "user:email")
-                .build();
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer() {
+        return context -> {
+            if (context.getTokenType().getValue().equals("access_token")) {
+                context.getClaims().claim("custom_claim", "custom_value");
+            }
+        };
     }
-
-    // ClientRegistrationRepository已在OAuth2ClientConfig中定义，避免重复
 
     /**
      * 配置OAuth2授权客户端仓库
@@ -298,5 +374,103 @@ public class AuthServerConfig {
         return new HttpSessionOAuth2AuthorizedClientRepository();
     }
 
-    // OAuth2AuthorizedClientService已在OAuth2ClientConfig中定义，避免重复
+    /**
+     * 密码编码器 - 支持多种编码格式包括{noop}用于OAuth2客户端
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        // 创建密码编码器映射
+        Map<String, PasswordEncoder> encoders = new HashMap<>();
+        encoders.put("bcrypt", new BCryptPasswordEncoder());
+        encoders.put("noop", new PasswordEncoder() {
+            @Override
+            public String encode(CharSequence rawPassword) {
+                return rawPassword.toString();
+            }
+
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return rawPassword.toString().equals(encodedPassword);
+            }
+        });
+        encoders.put("pbkdf2", new Pbkdf2PasswordEncoder("", 10000, 256, Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256));
+        encoders.put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
+        encoders.put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+
+        // 创建委托密码编码器，默认使用 bcrypt
+        return new DelegatingPasswordEncoder("bcrypt", encoders);
+    }
+
+    /**
+     * 创建DAO认证提供者
+     * 避免循环依赖问题
+     */
+    @Bean
+    public AuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    /**
+     * 配置OAuth2令牌生成器
+     *
+     * @param jwtEncoder JWT编码器
+     * @return OAuth2TokenGenerator OAuth2令牌生成器
+     */
+    @Bean
+    public OAuth2TokenGenerator<? extends OAuth2Token> oAuth2TokenGenerator(JwtEncoder jwtEncoder) {
+        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
+        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
+        OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
+        return new DelegatingOAuth2TokenGenerator(
+                jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+    }
+
+    /**
+     * JWT认证转换器
+     * 配置如何从JWT中提取权限信息
+     *
+     * @return JwtAuthenticationConverter JWT认证转换器
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+
+        // OAuth2.1标准：从 scope 声明中提取权限
+        authoritiesConverter.setAuthorityPrefix("SCOPE_");
+        authoritiesConverter.setAuthoritiesClaimName("scope");
+
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+
+        return converter;
+    }
+
+    /**
+     * 配置Redis模板
+     *
+     * @param connectionFactory Redis连接工厂
+     * @return RedisTemplate
+     */
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.afterPropertiesSet();
+
+        return template;
+    }
+
+    /**
+     * OAuth2Authorization混入类
+     * 用于解决Redis序列化和反序列化问题
+     */
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
+    static class OAuth2AuthorizationMixin {
+    }
 }
