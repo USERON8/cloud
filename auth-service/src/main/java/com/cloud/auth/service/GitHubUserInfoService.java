@@ -34,6 +34,9 @@ public class GitHubUserInfoService implements ApplicationContextAware {
     // 通过ApplicationContext动态获取UserFeignClient，解决循环依赖问题
     private ApplicationContext applicationContext;
 
+    // 安全随机数生成器，用于生成安全密码
+    private static final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
+
     /**
      * 从GitHub OAuth2授权客户端获取用户信息并同步到系统
      *
@@ -64,7 +67,7 @@ public class GitHubUserInfoService implements ApplicationContextAware {
             registerRequest.setNickname(githubUserInfo.getName() != null ?
                     githubUserInfo.getName() : githubUserInfo.getLogin());
             registerRequest.setUserType(UserType.USER.getCode());
-            registerRequest.setPassword("github_oauth2_" + githubUserInfo.getId()); // OAuth2用户不使用密码登录
+            registerRequest.setPassword(generateSecurePassword()); // 生成安全随机密码
             registerRequest.setPhone("000-0000-0000"); // GitHub用户默认手机号
 
             UserDTO newUser = userFeignClient.register(registerRequest);
@@ -173,6 +176,25 @@ public class GitHubUserInfoService implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
+    }
+
+    /**
+     * 生成安全的随机密码
+     * 用于GitHub OAuth2用户，这些用户不会使用密码登录，但需要符合安全要求
+     *
+     * @return 安全的随机密码
+     */
+    private String generateSecurePassword() {
+        // 生成32字节的随机数据
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+
+        // 使用Base64编码，并添加前缀标识这是OAuth2用户
+        String randomPassword = java.util.Base64.getEncoder().encodeToString(randomBytes);
+        String securePassword = "oauth2_github_" + randomPassword;
+
+        log.debug("为GitHub OAuth2用户生成安全随机密码，长度: {}", securePassword.length());
+        return securePassword;
     }
 
     /**

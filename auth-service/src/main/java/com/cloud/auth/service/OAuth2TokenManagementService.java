@@ -41,6 +41,7 @@ public class OAuth2TokenManagementService {
     private final OAuth2AuthorizationService authorizationService;
     private final RegisteredClientRepository registeredClientRepository;
     private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * 为用户登录生成OAuth2令牌（使用授权码模式的内部实现）
@@ -227,15 +228,52 @@ public class OAuth2TokenManagementService {
     }
 
     /**
-     * 撤销授权令牌
+     * 撤销授权令牌（增强版，支持黑名单）
      *
      * @param tokenValue 令牌值
      */
     public void revokeToken(String tokenValue) {
         OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
         if (authorization != null) {
+            // 将访问令牌加入黑名单
+            if (authorization.getAccessToken() != null) {
+                try {
+                    String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
+                    // 如果是JWT令牌，解析后加入黑名单
+                    if (accessTokenValue.contains(".")) {
+                        // 计算令牌剩余有效期
+                        long ttlSeconds = authorization.getAccessToken().getToken().getExpiresAt() != null ?
+                            java.time.Duration.between(java.time.Instant.now(),
+                                authorization.getAccessToken().getToken().getExpiresAt()).getSeconds() : 3600;
+
+                        tokenBlacklistService.addToBlacklist(accessTokenValue,
+                            authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
+                    }
+                } catch (Exception e) {
+                    log.warn("将访问令牌加入黑名单失败: {}", e.getMessage());
+                }
+            }
+
+            // 将刷新令牌加入黑名单
+            if (authorization.getRefreshToken() != null) {
+                try {
+                    String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
+                    long ttlSeconds = authorization.getRefreshToken().getToken().getExpiresAt() != null ?
+                        java.time.Duration.between(java.time.Instant.now(),
+                            authorization.getRefreshToken().getToken().getExpiresAt()).getSeconds() : 2592000; // 30天
+
+                    tokenBlacklistService.addToBlacklist(refreshTokenValue,
+                        authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
+                } catch (Exception e) {
+                    log.warn("将刷新令牌加入黑名单失败: {}", e.getMessage());
+                }
+            }
+
+            // 从授权存储中移除
             authorizationService.remove(authorization);
-            log.info("撤销令牌成功，授权ID: {}", authorization.getId());
+            log.info("撤销令牌成功，授权ID: {}，已加入黑名单", authorization.getId());
+        } else {
+            log.warn("未找到要撤销的令牌: {}", tokenValue.substring(0, Math.min(tokenValue.length(), 10)) + "...");
         }
     }
 

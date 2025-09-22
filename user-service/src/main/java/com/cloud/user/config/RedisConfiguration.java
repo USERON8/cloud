@@ -1,15 +1,8 @@
 package com.cloud.user.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cloud.common.config.base.EnhancedRedisConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * 用户服务Redis配置
@@ -20,50 +13,29 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  */
 @Slf4j
 @Configuration
-public class RedisConfiguration {
+public class RedisConfiguration extends EnhancedRedisConfig {
 
-    /**
-     * 用户服务Redis模板配置
-     */
-    @Bean
-    public RedisTemplate<String, Object> userRedisTemplate(RedisConnectionFactory redisConnectionFactory,
-                                                           ObjectMapper objectMapper) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
-
-        // 使用Jackson2JsonRedisSerializer来序列化和反序列化redis的value值
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer =
-                new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
-
-        // 使用StringRedisSerializer来序列化和反序列化redis的key值
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-
-        // 设置key和value的序列化规则
-        template.setKeySerializer(stringRedisSerializer);
-        template.setValueSerializer(jackson2JsonRedisSerializer);
-        template.setHashKeySerializer(stringRedisSerializer);
-        template.setHashValueSerializer(jackson2JsonRedisSerializer);
-
-        template.afterPropertiesSet();
-        return template;
+    @Override
+    protected String getCacheKeyPrefix() {
+        return "user";
     }
 
     /**
-     * 字符串Redis模板，用于简单缓存操作
+     * 用户服务缓存过期时间配置
      */
-    @Bean
-    public StringRedisTemplate userStringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        StringRedisTemplate template = new StringRedisTemplate();
-        template.setConnectionFactory(redisConnectionFactory);
-        return template;
-    }
-
-    /**
-     * Hash操作接口，用于存储用户详细信息
-     */
-    @Bean
-    public HashOperations<String, String, Object> userHashOperations(
-            RedisTemplate<String, Object> userRedisTemplate) {
-        return userRedisTemplate.opsForHash();
+    @Override
+    protected long getCacheExpireTime(String type) {
+        switch (type) {
+            case "userInfo":
+                return 3600L; // 1小时
+            case "userProfile":
+                return 1800L; // 30分钟
+            case "userAddress":
+                return 2700L; // 45分钟
+            case "userStats":
+                return 900L;  // 15分钟
+            default:
+                return 1800L; // 默认30分钟
+        }
     }
 }

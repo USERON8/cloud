@@ -705,19 +705,21 @@ GET /user/avatar/{userId}
 ### 9.1 环境要求
 
 - JDK 17+
-- MySQL 8.0+
-- Redis 6.0+
+- MySQL 8.0+ (数据库: user_db)
+- Redis 6.0+ (database: 2)
 - MinIO
+- Nacos 3.0.2
 
 ### 9.2 配置文件
 
 主要配置项在`application.yml`中：
 
 - 数据库连接配置
-- Redis连接配置
+- Redis连接配置 (database: 2)
 - MinIO配置
 - Nacos配置
 - RocketMQ配置(用户事件生产者)
+- OAuth2资源服务器配置
 
 ### 9.3 启动方式
 
@@ -728,6 +730,64 @@ mvn clean package
 # 运行服务
 java -jar user-service-0.0.1-SNAPSHOT.jar
 ```
+
+## 🔍 安全审计报告 (2025-09-22)
+
+### OAuth2资源服务器配置
+
+#### ✅ 正确配置
+
+- JWT验证端点：`http://127.0.0.1:80/.well-known/jwks.json`
+- JWT缓存时间：30分钟
+- 权限提取：基于scope声明 (`SCOPE_` 前缀)
+- 会话管理：无状态 (STATELESS)
+
+#### ✅ 已修复的问题
+
+1. **权限配置不一致** ✅ 已修复
+   - 修复：统一要求所有内部接口使用`SCOPE_internal_api`权限
+   - 位置：`ResourceServerConfig.securityFilterChain()`
+   - 修复后配置：
+     - `/user/internal/**` - 统一要求`SCOPE_internal_api`权限
+
+2. **令牌黑名单检查** ✅ 已增强
+   - 新增：`TokenBlacklistChecker` 组件
+   - 功能：检查JWT令牌是否在auth-service维护的黑名单中
+   - 集成：已集成到JWT解码器验证流程中
+   - 建议：统一使用 `SCOPE_internal_api` 验证
+
+2. **用户注册登录接口冗余**
+   - 问题：用户服务仍保留注册登录接口
+   - 位置：`/user/register`, `/user/login`
+   - 建议：这些接口应该通过auth-service处理
+
+#### 📋 技术栈版本
+
+- **Spring Boot**: 3.5.3
+- **Spring Cloud**: 2025.0.0
+- **Spring Security**: OAuth2 Resource Server
+- **MyBatis-Plus**: 3.5.13
+- **Redis**: 8.2-rc1 (database: 2)
+- **MySQL**: 9.3.0 (user_db)
+- **MinIO**: 对象存储
+- **MapStruct**: 1.6.3
+- **RocketMQ**: 5.3.2
+
+### GitHub OAuth2.1集成状态
+
+#### ✅ 已实现功能
+
+- GitHub用户信息存储 (github_id, github_username等字段)
+- 内部API支持GitHub用户查询
+- 用户信息同步机制
+
+#### 📊 数据库表结构
+
+GitHub OAuth相关字段已添加到users表：
+- `github_id` - GitHub用户ID (唯一索引)
+- `github_username` - GitHub用户名 (唯一索引)
+- `oauth_provider` - OAuth提供商标识
+- `oauth_provider_id` - OAuth提供商用户ID
 
 ## 10. 监控与运维
 

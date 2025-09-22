@@ -23,11 +23,15 @@ import java.util.stream.Collectors;
 
 /**
  * 商品服务全局异常处理器
- * 处理商品服务特有的异常，遵循user服务标准
+ * 继承公共异常处理器，只处理商品服务特有的异常
+ * 其他常见异常由父类 GlobalExceptionHandler 统一处理
+ *
+ * @author what's up
+ * @date 2025-01-15
  */
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     /**
      * 处理业务异常

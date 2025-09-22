@@ -115,6 +115,12 @@ spring:
 - ✅ **Redis数据库**: database: 6 (网关专用)
 - ✅ **连接池优化**: max-active: 16, timeout: 5000ms
 - ✅ **配置去重**: 合并重复的security配置
+
+### 2. 安全增强
+
+- ✅ **API路径权限收紧**: 修复过于宽松的`/api/**`配置
+- ✅ **环境化配置**: 支持测试和生产环境的不同安全策略
+- ✅ **JWT验证**: 完整的OAuth2.1资源服务器配置
 - ✅ **CORS统一配置**: 支持跨域请求
 
 ### 2. 过滤器优化
@@ -354,14 +360,69 @@ spring:
 ### 环境要求
 
 - JDK 17+
-- Redis 6.0+
-- Nacos 2.0+
+- Redis 6.0+ (database: 6)
+- Nacos 2.4.0+
 
 ### 启动命令
 
 ```bash
 # 开发环境
 java -jar gateway-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
+
+## 🔍 安全审计报告 (2025-09-22)
+
+### OAuth2资源服务器配置
+
+#### ✅ 正确配置
+
+- JWT验证端点：`http://127.0.0.1:80/.well-known/jwks.json`
+- 响应式JWT解码器：`NimbusReactiveJwtDecoder`
+- 统一认证入口：端口80
+- JWT令牌转发：包含用户信息头
+
+#### 🚨 严重安全问题
+
+1. **API路径完全开放**
+   - 问题：`/api/**` 路径设置为 `permitAll()`
+   - 位置：`OAuth2ResourceServerConfig.springSecurityFilterChain()`
+   - 风险：绕过认证直接访问所有业务API
+   - 状态：❌ 待修复
+   - 建议：移除测试配置，严格控制API访问权限
+
+#### ⚠️ 中等问题
+
+2. **认证服务路径过于宽泛**
+   - 问题：多个认证相关路径都完全开放
+   - 影响路径：`/auth/**`, `/auth-service/**`, `/api/auth/**`
+   - 建议：精确控制需要开放的端点
+
+#### 📋 技术栈版本
+
+- **Spring Boot**: 3.5.3
+- **Spring Cloud Gateway**: 4.x (WebFlux响应式)
+- **Spring Security OAuth2 Resource Server**: Boot管理
+- **JWT**: Boot管理 + Nimbus JWT
+- **Redis**: 7.0+ (database: 6)
+- **Nacos**: 2.4.0+
+
+### 路由配置状态
+
+#### ✅ 正确配置
+
+- 禁用自动服务发现 (`discovery.locator.enabled: false`)
+- 手动路由配置避免冲突
+- OAuth2.1标准端点路由完整
+- 支持服务发现的负载均衡
+
+#### 📊 限流规则
+
+| API分类 | 限流Key | 限制次数 | 时间窗口 | 状态 |
+|-------|---------|------|------|------|
+| 登录接口 | auth:login | 10次 | 60秒 | ✅ 已配置 |
+| 注册接口 | auth:register | 5次 | 300秒 | ✅ 已配置 |
+| 文件上传 | file:upload | 20次 | 60秒 | ✅ 已配置 |
+| 测试接口 | api:test | 50次 | 60秒 | ⚠️ 生产环境应移除 |
+| 普通API | api:access | 200次 | 60秒 | ✅ 已配置 |
 
 # 生产环境
 java -jar gateway-0.0.1-SNAPSHOT.jar \

@@ -1,6 +1,8 @@
 package com.cloud.payment.messaging.producer;
 
+import com.cloud.common.constant.MessageTopicConstants;
 import com.cloud.common.domain.event.PaymentChangeEvent;
+import com.cloud.common.domain.event.PaymentSuccessEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +104,49 @@ public class PaymentEventProducer {
         sendPaymentEvent(event, "PAYMENT_CALLBACK", "payment-callback");
     }
 
+    // ================================ 新增专用事件方法 ================================
+
+    /**
+     * 发送支付成功事件（新版本）
+     * 通知订单服务更新订单状态
+     *
+     * @param event 支付成功事件
+     */
+    public void sendPaymentSuccessEvent(PaymentSuccessEvent event) {
+        try {
+            // 构建消息头
+            Map<String, Object> headers = createMessageHeaders(
+                    MessageTopicConstants.PaymentTags.PAYMENT_SUCCESS,
+                    "PAYMENT_SUCCESS_" + event.getPaymentId(),
+                    "PAYMENT_SUCCESS"
+            );
+
+            // 使用GenericMessage构建消息
+            Message<PaymentSuccessEvent> message = new GenericMessage<>(event, headers);
+            String traceId = event.getTraceId();
+
+            log.info("📨 准备发送支付成功事件 - 支付ID: {}, 订单ID: {}, 追踪ID: {}",
+                    event.getPaymentId(), event.getOrderId(), traceId);
+
+            // 发送消息
+            boolean sent = streamBridge.send(MessageTopicConstants.ProducerBindings.PAYMENT_SUCCESS_PRODUCER, message);
+
+            if (sent) {
+                log.info("✅ 支付成功事件发送成功 - 支付ID: {}, 订单ID: {}, 金额: {}, 追踪ID: {}",
+                        event.getPaymentId(), event.getOrderId(), event.getPaymentAmount(), traceId);
+            } else {
+                log.error("❌ 支付成功事件发送失败 - 支付ID: {}, 订单ID: {}, 追踪ID: {}",
+                        event.getPaymentId(), event.getOrderId(), traceId);
+                throw new MessageSendException("支付成功事件发送失败");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 发送支付成功事件时发生异常 - 支付ID: {}, 错误: {}",
+                    event.getPaymentId(), e.getMessage(), e);
+            throw new MessageSendException("发送支付成功事件异常", e);
+        }
+    }
+
     /**
      * 统一发送支付事件的内部方法
      * 按照官方示例标准实现，使用GenericMessage和MessageConst
@@ -140,6 +185,20 @@ public class PaymentEventProducer {
                     changeType, event.getPaymentId(), e.getMessage(), e);
             throw new MessageSendException("发送支付事件异常", e);
         }
+    }
+
+    /**
+     * 创建通用消息头
+     */
+    private Map<String, Object> createMessageHeaders(String tag, String key, String eventType) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(MessageConst.PROPERTY_TAGS, tag);
+        headers.put(MessageConst.PROPERTY_KEYS, key);
+        headers.put("eventType", eventType);
+        headers.put("traceId", generateTraceId());
+        headers.put("timestamp", System.currentTimeMillis());
+        headers.put("serviceName", "payment-service");
+        return headers;
     }
 
     /**

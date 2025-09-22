@@ -97,6 +97,12 @@ spring:
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
+
+# 应用安全配置
+app:
+  security:
+    # 是否启用测试API（生产环境应设为false）
+    enable-test-api: true
 # SpringDoc 配置已移除，使用 Knife4j 进行文档聚合
 
 # Knife4j 网关服务发现聚合配置

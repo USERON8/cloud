@@ -2,12 +2,7 @@ package com.cloud.product.config;
 
 import com.cloud.common.config.base.EnhancedRedisConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * 商品服务Redis配置
@@ -26,31 +21,6 @@ public class RedisConfig extends EnhancedRedisConfig {
     }
 
     /**
-     * 商品服务Redis模板配置
-     */
-    @Bean
-    public RedisTemplate<String, Object> productRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        return createRedisTemplate(redisConnectionFactory);
-    }
-
-    /**
-     * 字符串Redis模板，用于简单缓存操作
-     */
-    @Bean
-    public StringRedisTemplate productStringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        return createStringRedisTemplate(redisConnectionFactory);
-    }
-
-    /**
-     * Hash操作接口，用于存储商品详细信息
-     */
-    @Bean
-    public HashOperations<String, String, Object> productHashOperations(
-            RedisTemplate<String, Object> productRedisTemplate) {
-        return getHashOperations(productRedisTemplate);
-    }
-
-    /**
      * 商品服务缓存过期时间配置
      */
     @Override
@@ -59,7 +29,7 @@ public class RedisConfig extends EnhancedRedisConfig {
             case "productInfo":
                 return 2700L; // 45分钟
             case "productList":
-                return 1800L; // 30分钟  
+                return 1800L; // 30分钟
             case "shopInfo":
                 return 3600L; // 1小时
             case "categoryInfo":

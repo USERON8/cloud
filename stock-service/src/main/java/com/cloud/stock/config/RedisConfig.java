@@ -2,12 +2,7 @@ package com.cloud.stock.config;
 
 import com.cloud.common.config.base.EnhancedRedisConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * 库存服务Redis配置
@@ -24,31 +19,6 @@ public class RedisConfig extends EnhancedRedisConfig {
     @Override
     protected String getCacheKeyPrefix() {
         return "stock";
-    }
-
-    /**
-     * 库存服务Redis模板配置
-     */
-    @Bean
-    public RedisTemplate<String, Object> stockRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        return createRedisTemplate(redisConnectionFactory);
-    }
-
-    /**
-     * 字符串Redis模板，用于库存数量等数值操作
-     */
-    @Bean
-    public StringRedisTemplate stockStringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        return createStringRedisTemplate(redisConnectionFactory);
-    }
-
-    /**
-     * Hash操作接口，用于存储库存详情（总量、冻结量、可用量等）
-     */
-    @Bean
-    public HashOperations<String, String, Object> stockHashOperations(
-            RedisTemplate<String, Object> stockRedisTemplate) {
-        return getHashOperations(stockRedisTemplate);
     }
 
     /**

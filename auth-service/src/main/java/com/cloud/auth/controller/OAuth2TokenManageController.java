@@ -1,6 +1,7 @@
 package com.cloud.auth.controller;
 
 import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
+import com.cloud.auth.service.TokenBlacklistService;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +33,7 @@ public class OAuth2TokenManageController {
 
     private final OAuth2AuthorizationService authorizationService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * 查看token存储统计信息
@@ -205,5 +207,93 @@ public class OAuth2TokenManageController {
         ));
 
         return Result.success(structure);
+    }
+
+    /**
+     * 获取令牌黑名单统计信息
+     */
+    @Operation(summary = "黑名单统计", description = "查看令牌黑名单的统计信息")
+    @GetMapping("/blacklist/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<TokenBlacklistService.BlacklistStats> getBlacklistStats() {
+        try {
+            TokenBlacklistService.BlacklistStats stats = tokenBlacklistService.getBlacklistStats();
+            return Result.success(stats);
+        } catch (Exception e) {
+            log.error("获取黑名单统计信息失败", e);
+            return Result.error("获取黑名单统计信息失败");
+        }
+    }
+
+    /**
+     * 手动将令牌加入黑名单
+     */
+    @Operation(summary = "加入黑名单", description = "手动将指定令牌加入黑名单")
+    @PostMapping("/blacklist/add")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> addToBlacklist(
+            @Parameter(description = "令牌值") @RequestParam String tokenValue,
+            @Parameter(description = "撤销原因") @RequestParam(defaultValue = "admin_manual") String reason) {
+        try {
+            // 尝试从授权存储中查找令牌信息
+            OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
+            String subject = authorization != null ? authorization.getPrincipalName() : "unknown";
+
+            // 默认TTL为1小时
+            long ttlSeconds = 3600;
+
+            tokenBlacklistService.addToBlacklist(tokenValue, subject, ttlSeconds, reason);
+            log.info("管理员手动将令牌加入黑名单: subject={}, reason={}", subject, reason);
+
+            return Result.success();
+        } catch (Exception e) {
+            log.error("将令牌加入黑名单失败", e);
+            return Result.error("将令牌加入黑名单失败");
+        }
+    }
+
+    /**
+     * 检查令牌是否在黑名单中
+     */
+    @Operation(summary = "检查黑名单", description = "检查指定令牌是否在黑名单中")
+    @GetMapping("/blacklist/check")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Map<String, Object>> checkBlacklist(
+            @Parameter(description = "令牌值") @RequestParam String tokenValue) {
+        try {
+            boolean isBlacklisted = tokenBlacklistService.isBlacklisted(tokenValue);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("tokenValue", tokenValue.substring(0, Math.min(tokenValue.length(), 20)) + "...");
+            result.put("isBlacklisted", isBlacklisted);
+            result.put("checkTime", java.time.Instant.now());
+
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("检查令牌黑名单状态失败", e);
+            return Result.error("检查令牌黑名单状态失败");
+        }
+    }
+
+    /**
+     * 清理过期的黑名单条目
+     */
+    @Operation(summary = "清理黑名单", description = "清理过期的黑名单条目")
+    @PostMapping("/blacklist/cleanup")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Map<String, Object>> cleanupBlacklist() {
+        try {
+            int cleanedCount = tokenBlacklistService.cleanupExpiredEntries();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("cleanedCount", cleanedCount);
+            result.put("message", "黑名单清理完成");
+            result.put("cleanupTime", java.time.Instant.now());
+
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("清理黑名单失败", e);
+            return Result.error("清理黑名单失败");
+        }
     }
 }

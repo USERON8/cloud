@@ -8,7 +8,11 @@ import java.util.UUID;
 
 /**
  * 统一日志工具类
- * 提供结构化的日志记录方法
+ * 提供结构化的日志记录方法，支持MDC跟踪ID和业务操作日志
+ *
+ * @author what's up
+ * @date 2025-01-15
+ * @since 1.0.0
  */
 public class LogUtil {
 
@@ -16,6 +20,10 @@ public class LogUtil {
 
     /**
      * 添加跟踪ID到MDC
+     * 生成一个新的UUID作为跟踪ID并添加到MDC中
+     *
+     * @author what's up
+     * @date 2025-01-15
      */
     public static void addTraceId() {
         MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
@@ -23,6 +31,10 @@ public class LogUtil {
 
     /**
      * 从MDC中移除跟踪ID
+     * 清理当前线程的跟踪ID信息
+     *
+     * @author what's up
+     * @date 2025-01-15
      */
     public static void removeTraceId() {
         MDC.remove("traceId");

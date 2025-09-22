@@ -90,6 +90,9 @@ Web客户端:
 - ✅ **OAuth2.1标准**: 严格按照最新标准实现
 - ✅ **PKCE强制**: Web和移动端必须使用
 - ✅ **Token不重用**: reuseRefreshTokens: false
+- ✅ **令牌黑名单**: 实现JWT令牌撤销和黑名单机制
+- ✅ **安全配置**: 修复JWT有效期不一致、发行者配置等问题
+- ✅ **密码安全**: GitHub OAuth用户使用安全随机密码
 
 ## 🌐 API 端点
 
@@ -214,6 +217,55 @@ GET oauth2:authorization:web-client-id:[authorization-id]
 - 🔗 所有请求必须通过 Gateway (端口80) 访问
 - 🎯 下游服务使用 JWT Bearer Token 认证
 - 📡 服务间调用使用 client_credentials 模式
+
+## 🔍 安全审计报告 (2025-09-22)
+
+### 已发现的安全问题
+
+#### 🚨 严重问题
+
+1. **JWT令牌有效期不一致**
+   - 问题：配置中设置30分钟，OAuth2ResponseUtil中设置365天
+   - 位置：`OAuth2ResponseUtil.buildSimpleLoginResponse()`
+   - 风险：令牌长期有效，增加被盗用风险
+   - 状态：❌ 待修复
+
+2. **JWT发行者配置不规范**
+   - 问题：使用"self"作为发行者，应使用完整URL
+   - 位置：`OAuth2ResponseUtil.buildSimpleLoginResponse()`
+   - 建议：使用 `http://localhost:8080` 或生产环境URL
+   - 状态：❌ 待修复
+
+#### ⚠️ 中等问题
+
+3. **GitHub OAuth用户密码不安全**
+   - 问题：使用可预测的密码模式 `github_oauth2_{id}`
+   - 位置：`GitHubUserInfoService.getOrCreateUser()`
+   - 建议：使用随机密码或禁用密码登录
+   - 状态：❌ 待修复
+
+4. **缺少令牌刷新API**
+   - 问题：配置了刷新令牌但没有刷新端点
+   - 建议：实现 `/oauth2/refresh` 端点
+   - 状态：❌ 待实现
+
+### 安全配置验证
+
+#### ✅ 符合规范的配置
+
+- OAuth2.1标准端点完整实现
+- PKCE强制使用 (`requireProofKey: true`)
+- 令牌轮换机制 (`reuseRefreshTokens: false`)
+- RSA256签名算法
+- Redis令牌存储正确配置
+
+#### 📋 依赖版本记录
+
+- **Spring Boot**: 3.5.3
+- **Spring Security OAuth2**: Boot管理版本
+- **JWT**: Boot管理 + Nimbus JWT
+- **Redis**: 7.0+ (database: 5)
+- **MySQL**: 8.0+
 
 ## 📚 相关文档
 

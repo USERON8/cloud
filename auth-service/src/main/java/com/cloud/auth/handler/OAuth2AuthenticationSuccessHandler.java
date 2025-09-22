@@ -38,6 +38,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final JwtEncoder jwtEncoder;
+    private final OAuth2ResponseUtil oauth2ResponseUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
     // 通过ApplicationContext动态获取GitHubUserInfoService，解决循环依赖问题
     private ApplicationContext applicationContext;
@@ -79,7 +80,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
                 if (userDTO != null) {
                     // 生成JWT响应
-                    LoginResponseDTO loginResponse = OAuth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
+                    LoginResponseDTO loginResponse = oauth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
 
                     log.info("OAuth2登录成功，用户: {}, 生成JWT令牌", userDTO.getUsername());
 

@@ -1,0 +1,41 @@
+# RocketMQ配置文件 - 日志服务
+spring:
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+          group: log-service-group
+        bindings:
+          # 日志收集消费者
+          logConsumer-in-0:
+            consumer:
+              group: log-collection-consumer-group
+              consume-thread-min: 10
+              consume-thread-max: 30
+              pull-batch-size: 32
+              consume-timeout: 15000
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-max-interval: 10000
+              back-off-multiplier: 2.0
+      bindings:
+        # 日志收集消费者绑定
+        logConsumer-in-0:
+          destination: log-collection-topic
+          content-type: application/json
+          group: log-collection-consumer-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-max-interval: 10000
+            back-off-multiplier: 2.0
+      function:
+        definition: "logConsumer"
+
+# 日志配置
+logging:
+  level:
+    com.cloud.log.messaging: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    org.apache.rocketmq: INFO

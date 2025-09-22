@@ -1,6 +1,9 @@
 package com.cloud.order.messaging.producer;
 
+import com.cloud.common.constant.MessageTopicConstants;
 import com.cloud.common.domain.event.OrderChangeEvent;
+import com.cloud.common.domain.event.OrderCreatedEvent;
+import com.cloud.common.domain.event.OrderCompletedEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +91,90 @@ public class OrderEventProducer {
         sendOrderEvent(event, "ORDER_TIMEOUT", "order-timeout");
     }
 
+    // ================================ 新增专用事件方法 ================================
+
+    /**
+     * 发送订单创建事件（新版本）
+     * 通知支付服务创建支付记录，通知库存服务冻结库存
+     *
+     * @param event 订单创建事件
+     */
+    public void sendOrderCreatedEvent(OrderCreatedEvent event) {
+        try {
+            // 构建消息头
+            Map<String, Object> headers = createMessageHeaders(
+                    MessageTopicConstants.OrderTags.ORDER_CREATED,
+                    "ORDER_CREATED_" + event.getOrderId(),
+                    "ORDER_CREATED"
+            );
+
+            // 使用GenericMessage构建消息
+            Message<OrderCreatedEvent> message = new GenericMessage<>(event, headers);
+            String traceId = event.getTraceId();
+
+            log.info("📨 准备发送订单创建事件 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                    event.getOrderId(), event.getOrderNo(), traceId);
+
+            // 发送消息
+            boolean sent = streamBridge.send(MessageTopicConstants.ProducerBindings.ORDER_CREATED_PRODUCER, message);
+
+            if (sent) {
+                log.info("✅ 订单创建事件发送成功 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                        event.getOrderId(), event.getOrderNo(), traceId);
+            } else {
+                log.error("❌ 订单创建事件发送失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                        event.getOrderId(), event.getOrderNo(), traceId);
+                throw new MessageSendException("订单创建事件发送失败");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 发送订单创建事件时发生异常 - 订单ID: {}, 错误: {}",
+                    event.getOrderId(), e.getMessage(), e);
+            throw new MessageSendException("发送订单创建事件异常", e);
+        }
+    }
+
+    /**
+     * 发送订单完成事件（新版本）
+     * 通知库存服务解冻并扣减库存
+     *
+     * @param event 订单完成事件
+     */
+    public void sendOrderCompletedEvent(OrderCompletedEvent event) {
+        try {
+            // 构建消息头
+            Map<String, Object> headers = createMessageHeaders(
+                    MessageTopicConstants.OrderTags.ORDER_COMPLETED,
+                    "ORDER_COMPLETED_" + event.getOrderId(),
+                    "ORDER_COMPLETED"
+            );
+
+            // 使用GenericMessage构建消息
+            Message<OrderCompletedEvent> message = new GenericMessage<>(event, headers);
+            String traceId = event.getTraceId();
+
+            log.info("📨 准备发送订单完成事件 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                    event.getOrderId(), event.getOrderNo(), traceId);
+
+            // 发送消息
+            boolean sent = streamBridge.send(MessageTopicConstants.ProducerBindings.ORDER_COMPLETED_PRODUCER, message);
+
+            if (sent) {
+                log.info("✅ 订单完成事件发送成功 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                        event.getOrderId(), event.getOrderNo(), traceId);
+            } else {
+                log.error("❌ 订单完成事件发送失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
+                        event.getOrderId(), event.getOrderNo(), traceId);
+                throw new MessageSendException("订单完成事件发送失败");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 发送订单完成事件时发生异常 - 订单ID: {}, 错误: {}",
+                    event.getOrderId(), e.getMessage(), e);
+            throw new MessageSendException("发送订单完成事件异常", e);
+        }
+    }
+
     /**
      * 统一发送订单事件的内部方法
      * 按照官方示例标准实现，使用GenericMessage和MessageConst
@@ -126,6 +213,20 @@ public class OrderEventProducer {
                     changeType, event.getOrderId(), e.getMessage(), e);
             throw new MessageSendException("发送订单事件异常", e);
         }
+    }
+
+    /**
+     * 创建通用消息头
+     */
+    private Map<String, Object> createMessageHeaders(String tag, String key, String eventType) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(MessageConst.PROPERTY_TAGS, tag);
+        headers.put(MessageConst.PROPERTY_KEYS, key);
+        headers.put("eventType", eventType);
+        headers.put("traceId", generateTraceId());
+        headers.put("timestamp", System.currentTimeMillis());
+        headers.put("serviceName", "order-service");
+        return headers;
     }
 
     /**

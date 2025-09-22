@@ -57,6 +57,7 @@ public class AuthController {
     private final UserFeignClient userFeignClient;
     private final OAuth2TokenManagementService tokenManagementService;
     private final PasswordEncoder passwordEncoder;
+    private final OAuth2ResponseUtil oauth2ResponseUtil;
 
     /**
      * 用户注册接口（OAuth2.1标准版）
@@ -98,7 +99,7 @@ public class AuthController {
                     registerRequestDTO.getUsername(), registeredUser.getId(), registeredUser.getUserType());
             // 通过Authorization Server生成并入库令牌
             OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(registeredUser, null);
-            LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
+            LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
             return Result.success(response);
         } else {
             log.warn("用户注册失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
@@ -174,7 +175,7 @@ public class AuthController {
                 authorization.getId().substring(0, 8) + "...");
 
         // 7. 返回标准OAuth2.1响应
-        LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, user);
+        LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, user);
         return Result.success(response);
     }
 
@@ -216,7 +217,7 @@ public class AuthController {
 
             // 通过OAuth2.1 Authorization Server生成并存储令牌
             OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(registeredUser, null);
-            LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
+            LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
             return Result.success(response);
         } else {
             log.warn("用户注册并登录失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
@@ -334,6 +335,12 @@ public class AuthController {
      * <p>
      * 遵循OAuth2.1标准，不捕获异常，由全局异常处理器统一处理
      * 支持令牌轮转（Token Rotation）特性，提高安全性
+     * <p>
+     * 注意：推荐使用标准OAuth2.1端点 POST /oauth2/token 进行令牌刷新：
+     * - grant_type=refresh_token
+     * - refresh_token={your_refresh_token}
+     * - client_id={your_client_id}
+     * - client_secret={your_client_secret}
      *
      * @param refreshToken 刷新令牌
      * @return 新的访问令牌信息
@@ -341,6 +348,8 @@ public class AuthController {
      * @throws ValidationException   参数验证失败时抛出
      * @throws UserNotFoundException 用户不存在时抛出
      */
+    @Operation(summary = "令牌刷新（简化版）",
+               description = "使用刷新令牌获取新的访问令牌。推荐使用标准OAuth2.1端点 POST /oauth2/token")
     @RequestMapping("/refresh-token")
     public Result<LoginResponseDTO> refreshToken(@RequestParam("refresh_token") String refreshToken) {
         // 参数验证（抛出ValidationException）
@@ -370,7 +379,7 @@ public class AuthController {
 
         log.info("令牌刷新成功, username: {}", username);
 
-        LoginResponseDTO response = OAuth2ResponseUtil.buildLoginResponse(newAuth, user);
+        LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(newAuth, user);
         return Result.success(response);
     }
 

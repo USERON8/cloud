@@ -1,47 +1,94 @@
-# 库存服务RocketMQ配置
+# RocketMQ配置文件 - 库存服务
 spring:
   cloud:
     stream:
-      # 函数定义
-      function:
-        definition: stockProducer
-
-      # RocketMQ绑定配置
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+          group: stock-service-group
+        bindings:
+          # 日志收集生产者
+          logProducer-out-0:
+            producer:
+              group: stock-log-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+          # 库存变更生产者
+          stockProducer-out-0:
+            producer:
+              group: stock-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+              retry-times-when-send-async-failed: 2
+          # 订单创建消费者
+          orderCreatedConsumer-in-0:
+            consumer:
+              group: stock-order-created-group
+              consume-thread-min: 5
+              consume-thread-max: 20
+              pull-batch-size: 16
+              consume-timeout: 10000
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-max-interval: 10000
+              back-off-multiplier: 2.0
+          # 订单完成消费者
+          orderCompletedConsumer-in-0:
+            consumer:
+              group: stock-order-completed-group
+              consume-thread-min: 5
+              consume-thread-max: 20
+              pull-batch-size: 16
+              consume-timeout: 10000
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-max-interval: 10000
+              back-off-multiplier: 2.0
       bindings:
-        # 库存事件生产者绑定
+        # 日志收集生产者绑定
+        logProducer-out-0:
+          destination: log-collection-topic
+          content-type: application/json
+          producer:
+            partition-count: 4
+            use-native-encoding: true
+        # 库存变更生产者绑定
         stockProducer-out-0:
           destination: stock-events
           content-type: application/json
           producer:
-            # 分区数量
-            partitionCount: 3
-            # 是否使用原生编码
-            useNativeEncoding: false
-
-      # RocketMQ生产者配置
-      rocketmq:
-        binder:
-          # NameServer地址
-          name-server: localhost:9876
-
-        bindings:
-          stockProducer-out-0:
-            producer:
-              # 是否同步发送
-              sync: true
-              # 发送超时时间(毫秒)
-              sendMessageTimeout: 3000
-              # 消息最大大小(4MB)
-              maxMessageSize: 4194304
-              # 消息压缩阈值(4KB)
-              compressMessageBodyThreshold: 4096
-              # 重试次数
-              retryTimesWhenSendFailed: 2
-              retryTimesWhenSendAsyncFailed: 2
+            partition-count: 4
+            use-native-encoding: true
+        # 订单创建消费者绑定
+        orderCreatedConsumer-in-0:
+          destination: order-created-topic
+          content-type: application/json
+          group: stock-order-created-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-max-interval: 10000
+            back-off-multiplier: 2.0
+        # 订单完成消费者绑定
+        orderCompletedConsumer-in-0:
+          destination: order-completed-topic
+          content-type: application/json
+          group: stock-order-completed-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-max-interval: 10000
+            back-off-multiplier: 2.0
+      function:
+        definition: "stockProducer;orderCreatedConsumer;orderCompletedConsumer"
 
 # 日志配置
 logging:
   level:
     com.cloud.stock.messaging: DEBUG
     org.springframework.cloud.stream: DEBUG
-    com.alibaba.cloud.stream.binder.rocketmq: DEBUG
+    org.apache.rocketmq: INFO

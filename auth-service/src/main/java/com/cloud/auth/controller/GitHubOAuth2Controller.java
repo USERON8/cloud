@@ -33,6 +33,7 @@ public class GitHubOAuth2Controller {
     private final GitHubUserInfoService gitHubUserInfoService;
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final JwtEncoder jwtEncoder;
+    private final OAuth2ResponseUtil oauth2ResponseUtil;
 
     /**
      * 获取GitHub OAuth2登录用户信息
@@ -65,7 +66,7 @@ public class GitHubOAuth2Controller {
 
             if (userDTO != null) {
                 // 生成JWT响应
-                LoginResponseDTO loginResponse = OAuth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
+                LoginResponseDTO loginResponse = oauth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
                 log.info("成功获取GitHub用户信息: {}", userDTO.getUsername());
                 return Result.success(loginResponse);
             } else {

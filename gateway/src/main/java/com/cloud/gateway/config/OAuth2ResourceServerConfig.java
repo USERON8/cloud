@@ -25,6 +25,9 @@ public class OAuth2ResourceServerConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    @Value("${app.security.enable-test-api:false}")
+    private boolean enableTestApi;
+
     /**
      * 配置安全过滤器链
      *
@@ -33,20 +36,23 @@ public class OAuth2ResourceServerConfig {
      */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+        log.info("🔧 配置网关安全过滤器链，测试API开放状态: {}", enableTestApi);
+
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(exchanges -> exchanges
+                .authorizeExchange(exchanges -> {
+                    var authExchanges = exchanges
                         // OAuth2.1标准端点 - 完全开放
                         .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
-                        
+
                         // 认证服务所有端点 - 完全开放，无需token验证
                         .pathMatchers("/auth/**", "/auth-service/**").permitAll()
                         .pathMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
                         .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
-                        
+
                         // 健康检查和监控端点
                         .pathMatchers("/actuator/**").permitAll()
-                        
+
                         // Knife4j和API文档相关路径 - 完整覆盖
                         .pathMatchers(
                             "/doc.html", "/swagger-ui.html", "/swagger-ui/**",
@@ -60,14 +66,19 @@ public class OAuth2ResourceServerConfig {
                             "/user-service/doc.html", "/user-service/v3/api-docs/**",
                             "/auth-service/swagger-ui/**", "/user-service/swagger-ui/**",
                             "/auth-service/webjars/**", "/user-service/webjars/**"
-                        ).permitAll()
-                        
-                        // 测试API路径
-                        .pathMatchers("/api/**").permitAll()
-                        
+                        ).permitAll();
+
+                    // 根据配置决定是否开放测试API
+                    if (enableTestApi) {
+                        log.warn("⚠️ 测试API已开放，生产环境请关闭此配置");
+                        authExchanges = authExchanges.pathMatchers("/api/test/**").permitAll();
+                    }
+
+                    // 业务API需要认证 - 收紧安全配置
+                    authExchanges.pathMatchers("/api/**").authenticated()
                         // 其他所有请求都需要认证
-                        .anyExchange().authenticated()
-                )
+                        .anyExchange().authenticated();
+                })
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtDecoder(jwtDecoder())

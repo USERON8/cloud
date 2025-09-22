@@ -1,0 +1,86 @@
+# RocketMQ配置文件 - 订单服务
+spring:
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+          group: order-service-group
+        bindings:
+          # 日志收集生产者
+          logProducer-out-0:
+            producer:
+              group: order-log-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+          # 订单创建生产者
+          orderCreatedProducer-out-0:
+            producer:
+              group: order-created-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+          # 订单完成生产者
+          orderCompletedProducer-out-0:
+            producer:
+              group: order-completed-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+          # 支付成功消费者
+          paymentSuccessConsumer-in-0:
+            consumer:
+              group: order-payment-success-group
+              consume-thread-min: 5
+              consume-thread-max: 20
+              pull-batch-size: 16
+              consume-timeout: 10000
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-max-interval: 10000
+              back-off-multiplier: 2.0
+      bindings:
+        # 日志收集生产者绑定
+        logProducer-out-0:
+          destination: log-collection-topic
+          content-type: application/json
+          producer:
+            partition-count: 4
+            use-native-encoding: true
+        # 订单创建生产者绑定
+        orderCreatedProducer-out-0:
+          destination: order-created-topic
+          content-type: application/json
+          producer:
+            partition-count: 4
+            use-native-encoding: true
+        # 订单完成生产者绑定
+        orderCompletedProducer-out-0:
+          destination: order-completed-topic
+          content-type: application/json
+          producer:
+            partition-count: 4
+            use-native-encoding: true
+        # 支付成功消费者绑定
+        paymentSuccessConsumer-in-0:
+          destination: payment-success-topic
+          content-type: application/json
+          group: order-payment-success-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-max-interval: 10000
+            back-off-multiplier: 2.0
+      function:
+        definition: "paymentSuccessConsumer"
+
+# 日志配置
+logging:
+  level:
+    com.cloud.order.messaging: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    org.apache.rocketmq: INFO

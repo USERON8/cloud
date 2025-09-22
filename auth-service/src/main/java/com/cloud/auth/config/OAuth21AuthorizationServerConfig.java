@@ -191,14 +191,42 @@ public class OAuth21AuthorizationServerConfig {
 
                 .build();
 
+        // 创建内部服务调用客户端（用于auth-service调用user-service）
+        RegisteredClient internalServiceClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("client-service")
+                .clientSecret("{bcrypt}$2a$12$MwWVVHU9XUgKnUC8XKDI3OQPv0WA8Glt1Y6.1X1lVZp7ywdMqF.2S")  // ClientService@2024#Secure
+
+                .clientAuthenticationMethods(methods -> {
+                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
+                })
+
+                .authorizationGrantTypes(grantTypes -> {
+                    grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS);  // 仅客户端凭证流程
+                })
+
+                .scopes(scopes -> {
+                    scopes.add("internal_api");  // 内部API访问权限
+                })
+
+                .clientSettings(ClientSettings.builder()
+                        .requireAuthorizationConsent(false)
+                        .requireProofKey(false)              // 服务端通信不需要PKCE
+                        .build())
+
+                .tokenSettings(createServiceTokenSettings())
+
+                .build();
+
         RegisteredClientRepository repository = new InMemoryRegisteredClientRepository(
-                webAppClient, mobileAppClient, serviceClient
+                webAppClient, mobileAppClient, serviceClient, internalServiceClient
         );
 
-        log.info("✅ OAuth2.1注册客户端仓库配置完成，注册客户端数量: 3");
+        log.info("✅ OAuth2.1注册客户端仓库配置完成，注册客户端数量: 4");
         log.info("   - Web应用客户端: {} (支持授权码+PKCE)", webAppClient.getClientId());
         log.info("   - 移动应用客户端: {} (公共客户端+PKCE)", mobileAppClient.getClientId());
         log.info("   - 服务客户端: {} (客户端凭证)", serviceClient.getClientId());
+        log.info("   - 内部服务调用客户端: {} (内部API访问)", internalServiceClient.getClientId());
 
         return repository;
     }
