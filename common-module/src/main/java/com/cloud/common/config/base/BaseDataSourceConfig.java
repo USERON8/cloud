@@ -130,4 +130,26 @@ public abstract class BaseDataSourceConfig implements MetaObjectHandler {
     protected void doUpdateFill(MetaObject metaObject) {
         // 默认空实现，子类可以重写
     }
+
+    /**
+     * 获取当前用户ID
+     * 子类可以重写此方法来获取当前登录用户ID
+     *
+     * @return 当前用户ID
+     */
+    protected Long getCurrentUserId() {
+        // 默认返回系统用户ID，子类可以重写获取真实用户ID
+        return 0L;
+    }
+
+    /**
+     * 获取当前操作人信息
+     * 子类可以重写此方法来获取当前操作人信息
+     *
+     * @return 操作人信息
+     */
+    protected String getCurrentOperator() {
+        // 默认返回系统，子类可以重写获取真实操作人
+        return "SYSTEM";
+    }
 }

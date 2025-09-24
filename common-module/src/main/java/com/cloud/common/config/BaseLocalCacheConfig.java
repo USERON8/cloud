@@ -1,45 +1,44 @@
 package com.cloud.common.config;
 
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
 /**
  * 本地缓存基础配置类
+ * 仅提供工具方法，不再自动创建Bean
+ * 各服务根据需要选择是否启用本地缓存
  *
  * @author cloud
  * @date 2024-01-20
  */
-@Configuration
-@EnableCaching
+@Slf4j
 @ConditionalOnClass(Caffeine.class)
-public class BaseLocalCacheConfig {
+public abstract class BaseLocalCacheConfig {
 
     /**
-     * 缓存管理器
+     * 创建基础的CacheManager
+     * 子类可以调用此方法创建CacheManager
      *
      * @return CacheManager
      */
-    @Bean
-    public CacheManager cacheManager() {
+    protected CacheManager createCacheManager() {
+        log.info("创建基础CacheManager");
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-        cacheManager.setCaffeine(caffeineCacheBuilder());
+        cacheManager.setCaffeine(createDefaultCaffeineBuilder());
         return cacheManager;
     }
 
     /**
-     * 配置缓存构建器
+     * 创建默认的Caffeine构建器
      *
      * @return Caffeine构建器
      */
-    protected Caffeine<Object, Object> caffeineCacheBuilder() {
+    protected Caffeine<Object, Object> createDefaultCaffeineBuilder() {
         return Caffeine.newBuilder()
                 // 设置最后一次写入或访问后经过固定时间过期
                 .expireAfterWrite(Duration.ofMinutes(30))
@@ -49,43 +48,6 @@ public class BaseLocalCacheConfig {
                 .maximumSize(1000)
                 // 开启缓存统计
                 .recordStats();
-    }
-
-    /**
-     * 用户信息缓存
-     *
-     * @return Cache
-     */
-    @Bean
-    public Cache<String, Object> userInfoCache() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(15))
-                .maximumSize(500)
-                .recordStats()
-                .build();
-    }
-
-    /**
-     * 权限信息缓存
-     *
-     * @return Cache
-     */
-    @Bean
-    public Cache<String, Object> permissionCache() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(60))
-                .maximumSize(200)
-                .recordStats()
-                .build();
-    }
-
-    /**
-     * 本地缓存管理器（可被子类重写）
-     *
-     * @return CacheManager
-     */
-    public CacheManager localCacheManager() {
-        return cacheManager();
     }
 
     /**
@@ -105,5 +67,37 @@ public class BaseLocalCacheConfig {
                 .expireAfterWrite(Duration.ofMinutes(expireAfterWriteMinutes))
                 .expireAfterAccess(Duration.ofMinutes(expireAfterAccessMinutes))
                 .recordStats();
+    }
+
+    /**
+     * 构建简化的 Caffeine 缓存配置
+     *
+     * @param maximumSize             最大缓存数
+     * @param expireAfterWriteMinutes 写入后过期时间（分钟）
+     * @return Caffeine 构建器
+     */
+    protected Caffeine<Object, Object> buildSimpleCaffeineSpec(long maximumSize, long expireAfterWriteMinutes) {
+        return Caffeine.newBuilder()
+                .maximumSize(maximumSize)
+                .expireAfterWrite(Duration.ofMinutes(expireAfterWriteMinutes))
+                .recordStats();
+    }
+
+    /**
+     * 获取服务名称
+     * 子类应该重写此方法返回具体的服务名称
+     *
+     * @return 服务名称
+     */
+    protected abstract String getServiceName();
+
+    /**
+     * 获取缓存名称列表
+     * 子类可以重写此方法返回预定义的缓存名称
+     *
+     * @return 缓存名称数组
+     */
+    protected String[] getCacheNames() {
+        return new String[0];
     }
 }

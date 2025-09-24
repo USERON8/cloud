@@ -54,4 +54,74 @@
           AND frozen_quantity >= #{quantity}
           AND deleted = 0
     </update>
+
+    <!-- ==================== 条件更新SQL（并发安全） ==================== -->
+
+    <!-- 条件出库 - 扣减可用库存 -->
+    <update id="stockOutWithCondition">
+        UPDATE stock
+        SET stock_quantity = stock_quantity - #{quantity},
+            updated_at     = NOW(),
+            version        = version + 1
+        WHERE product_id = #{productId}
+          AND deleted = 0
+          AND stock_status = 1
+          AND (stock_quantity - frozen_quantity) >= #{quantity}
+    </update>
+
+    <!-- 条件预留库存 - 冻结可用库存 -->
+    <update id="reserveStockWithCondition">
+        UPDATE stock
+        SET frozen_quantity = frozen_quantity + #{quantity},
+            updated_at      = NOW(),
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND deleted = 0
+          AND stock_status = 1
+          AND (stock_quantity - frozen_quantity) >= #{quantity}
+    </update>
+
+    <!-- 条件释放预留库存 - 解冻库存 -->
+    <update id="releaseReservedStockWithCondition">
+        UPDATE stock
+        SET frozen_quantity = frozen_quantity - #{quantity},
+            updated_at      = NOW(),
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND deleted = 0
+          AND frozen_quantity >= #{quantity}
+    </update>
+
+    <!-- 条件确认出库 - 从冻结库存中扣减 -->
+    <update id="confirmStockOutWithCondition">
+        UPDATE stock
+        SET stock_quantity  = stock_quantity - #{quantity},
+            frozen_quantity = frozen_quantity - #{quantity},
+            updated_at      = NOW(),
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND deleted = 0
+          AND frozen_quantity >= #{quantity}
+    </update>
+
+    <!-- 条件入库 - 增加总库存 -->
+    <update id="stockInWithCondition">
+        UPDATE stock
+        SET stock_quantity = stock_quantity + #{quantity},
+            updated_at     = NOW(),
+            version        = version + 1
+        WHERE product_id = #{productId}
+          AND deleted = 0
+    </update>
+
+    <!-- 根据商品ID查询库存（加行锁） -->
+    <select id="selectByProductIdForUpdate" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM stock
+        WHERE product_id = #{productId}
+        AND deleted = 0
+        FOR UPDATE
+    </select>
+
 </mapper>

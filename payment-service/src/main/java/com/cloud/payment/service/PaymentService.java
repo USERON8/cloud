@@ -15,4 +15,20 @@ public interface PaymentService extends IService<Payment> {
     boolean createPaymentForOrder(OrderCreateEvent event);
 
     boolean completePaymentForOrder(OrderCompleteEvent event);
+
+    /**
+     * 检查支付记录是否存在
+     *
+     * @param orderId 订单ID
+     * @return 是否存在
+     */
+    boolean isPaymentRecordExists(Long orderId);
+
+    /**
+     * 创建支付记录
+     *
+     * @param event 订单创建事件
+     * @return 是否成功
+     */
+    boolean createPaymentRecord(com.cloud.common.domain.event.OrderCreatedEvent event);
 }

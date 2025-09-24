@@ -41,8 +41,8 @@ public class UserEventConsumer {
                 String eventType = (String) message.getHeaders().get("eventType");
                 String tag = (String) message.getHeaders().get("rocketmq_TAGS");
 
-                log.info("🔔 接收到用户事件 - 事件类型: {}, 用户ID: {}, 用户名: {}, Tag: {}, TraceId: {}",
-                        eventType, event.getUserId(), event.getUsername(), tag, traceId);
+                log.info("🔔 接收到用户事件 - 事件类型: {}, 用户ID: {}, Tag: {}, TraceId: {}",
+                        eventType, event.getUserId(), tag, traceId);
 
                 // 处理用户事件
                 userEventProcessor.processUserEvent(event, message.getHeaders());

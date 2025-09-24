@@ -3,6 +3,7 @@ package com.cloud.payment.controller;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
 import com.cloud.common.result.Result;
 import com.cloud.payment.converter.PaymentConverter;
+import com.cloud.payment.messaging.producer.LogCollectionProducer;
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentManageController {
 
     private final PaymentService paymentService;
+    private final LogCollectionProducer logCollectionProducer;
     private final PaymentConverter paymentConverter = PaymentConverter.INSTANCE;
 
     /**
@@ -57,6 +59,20 @@ public class PaymentManageController {
             boolean saved = paymentService.save(payment);
 
             if (saved) {
+                // 发送支付创建日志
+                try {
+                    logCollectionProducer.sendPaymentOperationLog(
+                            payment.getId(),
+                            paymentDTO.getOrderId(),
+                            "CREATE",
+                            paymentDTO.getAmount(),
+                            "管理员创建",
+                            currentUserId
+                    );
+                } catch (Exception e) {
+                    log.warn("发送管理员支付创建日志失败，支付ID：{}", payment.getId(), e);
+                }
+
                 log.info("创建支付记录成功，订单ID: {}，操作人: {}", paymentDTO.getOrderId(), currentUserId);
                 return Result.success("创建成功");
             } else {
@@ -103,6 +119,20 @@ public class PaymentManageController {
             boolean updated = paymentService.updateById(payment);
 
             if (updated) {
+                // 发送支付更新日志
+                try {
+                    logCollectionProducer.sendPaymentOperationLog(
+                            id,
+                            paymentDTO.getOrderId(),
+                            "UPDATE",
+                            paymentDTO.getAmount(),
+                            "管理员更新",
+                            currentUserId
+                    );
+                } catch (Exception e) {
+                    log.warn("发送管理员支付更新日志失败，支付ID：{}", id, e);
+                }
+
                 log.info("更新支付记录成功，支付ID: {}，操作人: {}", id, currentUserId);
                 return Result.success("更新成功");
             } else {

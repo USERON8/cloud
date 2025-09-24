@@ -40,7 +40,7 @@ public class LogCollectionConsumer {
                 String serviceName = event.getServiceName();
                 String operation = event.getOperation();
 
-                log.info("📥 接收到日志收集消息 - 服务: {}, 操作: {}, 追踪ID: {}", 
+                log.info("📥 接收到日志收集消息 - 服务: {}, 操作: {}, 追踪ID: {}",
                         serviceName, operation, traceId);
 
                 // 1. 幂等性检查
@@ -56,13 +56,13 @@ public class LogCollectionConsumer {
                 boolean saved = logCollectionService.saveLogEvent(sanitizedEvent);
 
                 if (saved) {
-                    log.info("✅ 日志保存成功 - 服务: {}, 操作: {}, 追踪ID: {}", 
+                    log.info("✅ 日志保存成功 - 服务: {}, 操作: {}, 追踪ID: {}",
                             serviceName, operation, traceId);
-                    
+
                     // 4. 标记已处理
                     logCollectionService.markLogProcessed(traceId);
                 } else {
-                    log.error("❌ 日志保存失败 - 服务: {}, 操作: {}, 追踪ID: {}", 
+                    log.error("❌ 日志保存失败 - 服务: {}, 操作: {}, 追踪ID: {}",
                             serviceName, operation, traceId);
                     throw new MessageConsumeException("日志保存失败", null);
                 }
@@ -151,32 +151,22 @@ public class LogCollectionConsumer {
         }
         // 简单的脱敏处理，实际项目中可以更复杂
         return params.replaceAll("(password|pwd|token|secret)=[^&]*", "$1=***")
-                    .replaceAll("(phone|mobile)=\\d{11}", "$1=***")
-                    .replaceAll("(email)=[^&]*@[^&]*", "$1=***@***");
+                .replaceAll("(phone|mobile)=\\d{11}", "$1=***")
+                .replaceAll("(email)=[^&]*@[^&]*", "$1=***@***");
     }
 
     /**
      * 脱敏异常堆栈
      */
     private String sanitizeStackTrace(String stackTrace) {
-        if (stackTrace == null) {
-            return null;
-        }
-        // 保留前500个字符，避免日志过长
-        return stackTrace.length() > 500 ? stackTrace.substring(0, 500) + "..." : stackTrace;
+        return com.cloud.common.utils.StringUtils.truncate(stackTrace, 500);
     }
 
     /**
      * 脱敏日志内容
      */
     private String sanitizeContent(String content) {
-        if (content == null) {
-            return null;
-        }
-        // 脱敏敏感信息
-        return content.replaceAll("\\d{11}", "***")  // 手机号
-                     .replaceAll("\\d{15,19}", "***")  // 银行卡号
-                     .replaceAll("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "***@***.com");  // 邮箱
+        return com.cloud.common.utils.StringUtils.sanitizeContent(content);
     }
 
     /**
@@ -188,7 +178,7 @@ public class LogCollectionConsumer {
         }
         // 对JSON数据进行脱敏
         return data.replaceAll("\"(password|pwd|token|secret)\"\\s*:\\s*\"[^\"]*\"", "\"$1\":\"***\"")
-                  .replaceAll("\"(phone|mobile)\"\\s*:\\s*\"\\d{11}\"", "\"$1\":\"***\"")
-                  .replaceAll("\"(email)\"\\s*:\\s*\"[^\"]*@[^\"]*\"", "\"$1\":\"***@***.com\"");
+                .replaceAll("\"(phone|mobile)\"\\s*:\\s*\"\\d{11}\"", "\"$1\":\"***\"")
+                .replaceAll("\"(email)\"\\s*:\\s*\"[^\"]*@[^\"]*\"", "\"$1\":\"***@***.com\"");
     }
 }

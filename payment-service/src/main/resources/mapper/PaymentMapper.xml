@@ -21,7 +21,92 @@
 
     <sql id="Base_Column_List">
         id,order_id,user_id,amount,status,channel,
-        transaction_id,created_at,updated_at,create_by,update_by,
+        transaction_id,encrypted_transaction_id,trace_id,created_at,updated_at,create_by,update_by,
         deleted
     </sql>
+
+    <!-- ==================== 支付幂等处理条件更新SQL（并发安全） ==================== -->
+
+    <!-- 条件更新支付状态 - 从待支付到成功 -->
+    <update id="updateStatusToSuccess">
+        UPDATE payment
+        SET status         = 1,
+            transaction_id = #{transactionId},
+            updated_at     = NOW()
+        WHERE id = #{paymentId}
+          AND status = 0
+          AND deleted = 0
+    </update>
+
+    <!-- 条件更新支付状态 - 从待支付到失败 -->
+    <update id="updateStatusToFailed">
+        UPDATE payment
+        SET status         = 2,
+            transaction_id = #{failureReason},
+            updated_at     = NOW()
+        WHERE id = #{paymentId}
+          AND status = 0
+          AND deleted = 0
+    </update>
+
+    <!-- 条件更新支付状态 - 从成功到已退款 -->
+    <update id="updateStatusToRefunded">
+        UPDATE payment
+        SET status         = 3,
+            transaction_id = #{refundTransactionId},
+            updated_at     = NOW()
+        WHERE id = #{paymentId}
+          AND status = 1
+          AND deleted = 0
+    </update>
+
+    <!-- 根据跟踪ID查询支付记录（幂等性检查） -->
+    <select id="selectByTraceId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment
+        WHERE trace_id = #{traceId}
+        AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 根据订单ID和用户ID查询支付记录 -->
+    <select id="selectByOrderIdAndUserId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment
+        WHERE order_id = #{orderId}
+        AND user_id = #{userId}
+        AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 根据支付ID查询支付记录（加行锁） -->
+    <select id="selectByIdForUpdate" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment
+        WHERE id = #{paymentId}
+        AND deleted = 0
+        FOR UPDATE
+    </select>
+
+    <!-- 幂等创建支付记录 -->
+    <insert id="insertPaymentIdempotent" useGeneratedKeys="true" keyProperty="id">
+        INSERT IGNORE INTO payment (order_id, user_id, amount, channel, trace_id, status, created_at, updated_at)
+        VALUES (#{orderId}, #{userId}, #{amount}, #{channel}, #{traceId}, 0, NOW(), NOW())
+    </insert>
+
+    <!-- 批量查询支付记录状态 -->
+    <select id="selectBatchByIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment
+        WHERE id IN
+        <foreach collection="paymentIds" item="paymentId" open="(" separator="," close=")">
+            #{paymentId}
+        </foreach>
+        AND deleted = 0
+    </select>
+
 </mapper>

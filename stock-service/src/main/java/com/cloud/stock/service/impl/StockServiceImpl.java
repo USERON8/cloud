@@ -18,6 +18,7 @@ import com.cloud.stock.exception.StockOperationException;
 import com.cloud.stock.mapper.StockInMapper;
 import com.cloud.stock.mapper.StockMapper;
 import com.cloud.stock.mapper.StockOutMapper;
+import com.cloud.stock.messaging.producer.StockLogProducer;
 import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.module.entity.StockIn;
@@ -46,6 +47,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     private final StockInMapper stockInMapper;
     private final StockOutMapper stockOutMapper;
     private final StockConverter stockConverter;
+    private final StockLogProducer stockLogProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -238,6 +240,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 创建入库记录
             createStockInRecord(stock, quantity, remark);
 
+            // 发送库存变更日志
+            try {
+                Integer originalStock = stock.getStockQuantity() - quantity; // 计算原始库存
+                String beforeData = String.format("{\"stock\":%d}", originalStock);
+                String afterData = String.format("{\"stock\":%d}", stock.getStockQuantity());
+                stockLogProducer.sendStockChangeLog(productId, "STOCK_IN", beforeData, afterData, "SYSTEM");
+            } catch (Exception e) {
+                log.warn("发送库存入库日志失败，商品ID：{}", productId, e);
+            }
+
             log.info("库存入库成功，商品ID：{}，数量：{}", productId, quantity);
             return true;
         } catch (Exception e) {
@@ -278,6 +290,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 创建出库记录
             createStockOutRecord(stock, quantity, orderId, orderNo, remark);
 
+            // 发送库存扣减日志
+            try {
+                stockLogProducer.sendStockDeductLog(productId, quantity, orderNo != null ? orderNo : String.valueOf(orderId), "SYSTEM");
+            } catch (Exception e) {
+                log.warn("发送库存出库日志失败，商品ID：{}", productId, e);
+            }
+
             log.info("库存出库成功，商品ID：{}，数量：{}", productId, quantity);
             return true;
         } catch (Exception e) {
@@ -307,6 +326,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                 throw new StockFrozenException("预留", productId, quantity);
             }
 
+            // 发送库存冻结日志
+            try {
+                stockLogProducer.sendStockFreezeLog(productId, quantity, "RESERVE_" + System.currentTimeMillis(), "SYSTEM");
+            } catch (Exception e) {
+                log.warn("发送库存冻结日志失败，商品ID：{}", productId, e);
+            }
+
             log.info("预留库存成功，商品ID：{}，数量：{}", productId, quantity);
             return true;
         } catch (Exception e) {
@@ -334,6 +360,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             int affected = stockMapper.unfreezeStock(stock.getId(), quantity);
             if (affected == 0) {
                 throw new StockFrozenException("释放", productId, quantity);
+            }
+
+            // 发送库存解冻日志
+            try {
+                stockLogProducer.sendStockUnfreezeLog(productId, quantity, "RELEASE_" + System.currentTimeMillis(), "SYSTEM");
+            } catch (Exception e) {
+                log.warn("发送库存解冻日志失败，商品ID：{}", productId, e);
             }
 
             log.info("释放预留库存成功，商品ID：{}，数量：{}", productId, quantity);
@@ -385,23 +418,85 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         stockOutMapper.insert(stockOut);
     }
 
-    /**
-     * 计算库存状态
-     */
-    private Integer calculateStockStatus(Stock stock) {
-        // 计算可用库存
-        int availableQuantity = stock.getStockQuantity() - (stock.getFrozenQuantity() != null ? stock.getFrozenQuantity() : 0);
+    @Override
+    public boolean isStockDeducted(Long orderId) {
+        log.info("检查库存是否已扣减，订单ID：{}", orderId);
+        try {
+            // 查询出库记录表，检查是否已有该订单的出库记录
+            long count = stockOutMapper.selectCount(new LambdaQueryWrapper<StockOut>()
+                    .eq(StockOut::getOrderId, orderId));
+            boolean deducted = count > 0;
+            log.info("库存扣减检查结果，订单ID：{}，是否已扣减：{}", orderId, deducted);
+            return deducted;
+        } catch (Exception e) {
+            log.error("检查库存是否已扣减失败，订单ID：{}", orderId, e);
+            return false;
+        }
+    }
 
-        if (availableQuantity <= 0) {
-            return 2; // 缺货
-        } else {
-            return 1; // 正常
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean unfreezeAndDeductStock(com.cloud.common.domain.event.OrderCompletedEvent event) {
+        log.info("解冻并扣减库存，订单ID：{}，商品数量：{}", event.getOrderId(),
+                event.getStockDeductions() != null ? event.getStockDeductions().size() : 0);
+        try {
+            // 遍历库存扣减信息，解冻并扣减库存
+            if (event.getStockDeductions() != null) {
+                for (com.cloud.common.domain.event.OrderCompletedEvent.StockDeductionInfo item : event.getStockDeductions()) {
+                    Long productId = item.getProductId();
+                    Integer quantity = item.getQuantity();
+
+                    // 解冻库存
+                    releaseReservedStock(productId, quantity);
+
+                    // 扣减库存
+                    stockOut(productId, quantity, event.getOrderId(), event.getOrderNo(), "订单完成扣减");
+                }
+            }
+            log.info("解冻并扣减库存成功，订单ID：{}", event.getOrderId());
+            return true;
+        } catch (Exception e) {
+            log.error("解冻并扣减库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isStockFrozen(Long orderId) {
+        log.info("检查库存是否已冻结，订单ID：{}", orderId);
+        try {
+            // 这里可以通过查询冻结记录表或者其他方式来判断
+            // 简化实现：假设如果没有出库记录，则认为库存已冻结
+            return !isStockDeducted(orderId);
+        } catch (Exception e) {
+            log.error("检查库存是否已冻结失败，订单ID：{}", orderId, e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean freezeStock(com.cloud.common.domain.event.OrderCreatedEvent event) {
+        log.info("冻结库存，订单ID：{}，商品数量：{}", event.getOrderId(),
+                event.getOrderItems() != null ? event.getOrderItems().size() : 0);
+        try {
+            // 遍历订单项，冻结库存
+            if (event.getOrderItems() != null) {
+                for (com.cloud.common.domain.event.OrderCreatedEvent.OrderItemInfo item : event.getOrderItems()) {
+                    Long productId = item.getProductId();
+                    Integer quantity = item.getQuantity();
+
+                    // 预留库存（冻结）
+                    reserveStock(productId, quantity);
+                }
+            }
+            log.info("冻结库存成功，订单ID：{}", event.getOrderId());
+            return true;
+        } catch (Exception e) {
+            log.error("冻结库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
         }
     }
 
 }
-
-
-
-
 

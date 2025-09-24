@@ -3,6 +3,7 @@ package com.cloud.auth.exception;
 import com.cloud.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,20 +26,20 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
      * 处理用户名不存在异常
      */
     @ExceptionHandler(UsernameNotFoundException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Result<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+    public ResponseEntity<Result<String>> handleUsernameNotFoundException(UsernameNotFoundException ex) {
         log.warn("用户名不存在异常: {}", ex.getMessage());
-        return Result.error(401, "用户名或密码错误");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Result.error(401, "用户名或密码错误"));
     }
 
     /**
      * 处理认证失败异常
      */
     @ExceptionHandler(BadCredentialsException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Result<String> handleBadCredentialsException(BadCredentialsException ex) {
+    public ResponseEntity<Result<String>> handleBadCredentialsException(BadCredentialsException ex) {
         log.warn("认证失败异常: {}", ex.getMessage());
-        return Result.error(401, "用户名或密码错误");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Result.error(401, "用户名或密码错误"));
     }
 
     /**

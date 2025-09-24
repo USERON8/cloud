@@ -118,6 +118,15 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
+# 用户服务专用配置
+user:
+  async:
+    enabled: true
+  notification:
+    enabled: true
+  statistics:
+    enabled: true
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

@@ -1,0 +1,122 @@
+{
+  "properties": {
+    "productId": {
+      "type": "long"
+    },
+    "shopId": {
+      "type": "long"
+    },
+    "shopName": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "pinyin": {
+          "type": "text",
+          "analyzer": "pinyin_analyzer"
+        }
+      }
+    },
+    "productName": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "pinyin": {
+          "type": "text",
+          "analyzer": "pinyin_analyzer"
+        }
+      }
+    },
+    "price": {
+      "type": "double"
+    },
+    "stockQuantity": {
+      "type": "integer"
+    },
+    "categoryId": {
+      "type": "long"
+    },
+    "categoryName": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "brandId": {
+      "type": "long"
+    },
+    "brandName": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "status": {
+      "type": "integer"
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart"
+    },
+    "imageUrl": {
+      "type": "keyword"
+    },
+    "tags": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart"
+    },
+    "salesCount": {
+      "type": "integer"
+    },
+    "rating": {
+      "type": "double"
+    },
+    "reviewCount": {
+      "type": "integer"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "updatedAt": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "searchWeight": {
+      "type": "double"
+    },
+    "hotScore": {
+      "type": "double"
+    },
+    "recommended": {
+      "type": "boolean"
+    },
+    "isNew": {
+      "type": "boolean"
+    },
+    "isHot": {
+      "type": "boolean"
+    }
+  }
+}

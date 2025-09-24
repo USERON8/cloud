@@ -4,17 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.cache.annotation.MultiLevelCacheEvict;
 import com.cloud.common.cache.annotation.MultiLevelCachePut;
 import com.cloud.common.cache.annotation.MultiLevelCacheable;
 import com.cloud.common.cache.annotation.MultiLevelCaching;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
+import com.cloud.common.domain.event.ProductSearchEvent;
 import com.cloud.common.domain.vo.ProductVO;
+import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
+import com.cloud.product.messaging.producer.ProductLogProducer;
+import com.cloud.product.messaging.producer.ProductSearchEventProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Product;
 import com.cloud.product.service.ProductService;
@@ -44,6 +49,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
 
     private final ProductConverter productConverter;
+    private final ProductLogProducer productLogProducer;
+    private final ProductSearchEventProducer productSearchEventProducer;
+    private final AsyncLogProducer asyncLogProducer;
 
     // ================= 基础CRUD操作 =================
 
@@ -62,6 +70,28 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         boolean saved = save(product);
         if (!saved) {
             throw new ProductServiceException("创建商品失败");
+        }
+
+        // 异步发送商品创建日志 - 不阻塞主业务流程
+        asyncLogProducer.sendBusinessLogAsync(
+                "product-service",
+                "PRODUCT_MANAGEMENT",
+                "CREATE",
+                "商品创建操作",
+                product.getId().toString(),
+                "PRODUCT",
+                null,
+                String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                        product.getName(), product.getPrice(), product.getStatus()),
+                "SYSTEM",
+                "商品: " + product.getName()
+        );
+
+        // 发送商品搜索事件
+        try {
+            sendProductSearchEvent(product, "PRODUCT_CREATED");
+        } catch (Exception e) {
+            log.warn("发送商品搜索事件失败，商品ID：{}", product.getId(), e);
         }
 
         log.info("商品创建成功, ID: {}", product.getId());
@@ -99,6 +129,32 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             throw new RuntimeException("更新商品失败");
         }
 
+        // 异步发送商品更新日志 - 不阻塞主业务流程
+        String beforeData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                existingProduct.getName(), existingProduct.getPrice(), existingProduct.getStatus());
+        String afterData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                updatedProduct.getName(), updatedProduct.getPrice(), updatedProduct.getStatus());
+
+        asyncLogProducer.sendBusinessLogAsync(
+                "product-service",
+                "PRODUCT_MANAGEMENT",
+                "UPDATE",
+                "商品更新操作",
+                id.toString(),
+                "PRODUCT",
+                beforeData,
+                afterData,
+                "SYSTEM",
+                "商品: " + updatedProduct.getName()
+        );
+
+        // 发送商品搜索事件
+        try {
+            sendProductSearchEvent(updatedProduct, "PRODUCT_UPDATED");
+        } catch (Exception e) {
+            log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
+        }
+
         log.info("商品更新成功: {}", id);
         return true;
     }
@@ -126,11 +182,24 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             throw new RuntimeException("删除商品失败");
         }
 
+        // 发送商品搜索事件
+        try {
+            sendProductSearchEvent(product, "PRODUCT_DELETED");
+        } catch (Exception e) {
+            log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
+        }
+
         log.info("商品删除成功: {}", id);
         return true;
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:batch:delete:' + T(String).join(',', #ids)",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "批量删除商品操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
@@ -141,9 +210,21 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             return true;
         }
 
+        // 先获取要删除的商品信息
+        List<Product> productsToDelete = listByIds(ids);
+
         boolean deleted = removeBatchByIds(ids);
         if (!deleted) {
             throw new RuntimeException("批量删除商品失败");
+        }
+
+        // 发送批量商品搜索事件
+        try {
+            for (Product product : productsToDelete) {
+                sendProductSearchEvent(product, "PRODUCT_DELETED");
+            }
+        } catch (Exception e) {
+            log.warn("发送批量商品搜索事件失败，商品数量：{}", ids.size(), e);
         }
 
         log.info("批量删除商品成功, 数量: {}", ids.size());
@@ -288,6 +369,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:batch:enable:' + T(String).join(',', #ids)",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "批量上架商品操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
@@ -296,6 +383,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:batch:disable:' + T(String).join(',', #ids)",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "批量下架商品操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
@@ -663,7 +756,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             throw new RuntimeException("商品不存在 " + id);
         }
 
-        // 检查状态是否已经是目标状�?
+        // 检查状态是否已经是目标状态
+        Integer beforeStatus = product.getStatus();
         if (product.getStatus().equals(status)) {
             log.warn("商品已经是{}状态 {}", operation, id);
             return true;
@@ -675,6 +769,19 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         boolean updated = update(updateWrapper);
         if (!updated) {
             throw new RuntimeException(operation + "商品失败");
+        }
+
+        // 发送商品状态变更日志
+        try {
+            productLogProducer.sendProductStatusLog(
+                    product.getId(),
+                    product.getName(),
+                    beforeStatus,
+                    status,
+                    "SYSTEM"
+            );
+        } catch (Exception e) {
+            log.warn("发送商品状态变更日志失败，商品ID：{}", id, e);
         }
 
         log.info("{}商品成功: {}", operation, id);
@@ -701,5 +808,84 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
         log.info("{}成功, 数量: {}", operation, ids.size());
         return true;
+    }
+
+    // ================= 搜索事件发送辅助方法 =================
+
+    /**
+     * 发送商品搜索事件
+     */
+    private void sendProductSearchEvent(Product product, String eventType) {
+        try {
+            ProductSearchEvent event = ProductSearchEvent.builder()
+                    .eventType(eventType)
+                    .productId(product.getId())
+                    .shopId(product.getShopId())
+                    .shopName(getShopName(product.getShopId()))
+                    .productName(product.getName())
+                    .price(product.getPrice())
+                    .stockQuantity(getStockQuantity(product.getId()))
+                    .categoryId(product.getCategoryId())
+                    .categoryName(getCategoryName(product.getCategoryId()))
+                    .brandId(product.getBrandId())
+                    .brandName(getBrandName(product.getBrandId()))
+                    .status(product.getStatus())
+                    .description(product.getDescription())
+                    .imageUrl(product.getImageUrl())
+                    .tags(product.getTags())
+                    .salesCount(0) // 默认销量为0，实际应该从订单服务获取
+                    .rating(java.math.BigDecimal.ZERO) // 默认评分为0，实际应该从评价服务获取
+                    .reviewCount(0) // 默认评价数为0，实际应该从评价服务获取
+                    .createdAt(product.getCreatedAt())
+                    .updatedAt(product.getUpdatedAt())
+                    .operator("SYSTEM")
+                    .operateTime(java.time.LocalDateTime.now())
+                    .traceId(com.cloud.common.utils.StringUtils.generateTraceId())
+                    .remark("商品数据变更同步到搜索服务")
+                    .build();
+
+            productSearchEventProducer.sendProductSearchEvent(event, eventType);
+            log.debug("商品搜索事件发送成功 - 商品ID: {}, 事件类型: {}", product.getId(), eventType);
+
+        } catch (Exception e) {
+            log.error("发送商品搜索事件失败 - 商品ID: {}, 事件类型: {}, 错误: {}",
+                    product.getId(), eventType, e.getMessage(), e);
+            // 不抛出异常，避免影响主业务流程
+        }
+    }
+
+    /**
+     * 获取店铺名称（模拟方法，实际应该调用店铺服务）
+     */
+    private String getShopName(Long shopId) {
+        // TODO: 实际应该调用店铺服务获取店铺名称
+        return "店铺" + shopId;
+    }
+
+    /**
+     * 获取库存数量（模拟方法，实际应该调用库存服务）
+     */
+    private Integer getStockQuantity(Long productId) {
+        // TODO: 实际应该调用库存服务获取库存数量
+        return 100;
+    }
+
+    /**
+     * 获取分类名称（模拟方法，实际应该调用分类服务）
+     */
+    private String getCategoryName(Long categoryId) {
+        // TODO: 实际应该调用分类服务获取分类名称
+        return "分类" + categoryId;
+    }
+
+    /**
+     * 获取品牌名称（模拟方法，实际应该调用品牌服务）
+     */
+    private String getBrandName(Long brandId) {
+        if (brandId == null) {
+            return null;
+        }
+        // TODO: 实际应该调用品牌服务获取品牌名称
+        return "品牌" + brandId;
     }
 }

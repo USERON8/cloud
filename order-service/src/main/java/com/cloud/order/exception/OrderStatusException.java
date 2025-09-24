@@ -1,24 +1,27 @@
 package com.cloud.order.exception;
 
-import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BusinessException;
 
 /**
  * 订单状态异常
+ * 当订单状态不满足操作条件时抛出此异常
  *
  * @author cloud
- * @since 1.0.0
- * @deprecated 推荐使用通用异常类 InvalidStatusException.order(currentStatus, operation)
  */
-@Deprecated
-public class OrderStatusException extends OrderServiceException {
+public class OrderStatusException extends BusinessException {
 
-    public OrderStatusException(Long orderId, Integer currentStatus, String operation) {
-        super(ResultCode.ORDER_STATUS_ERROR,
-                String.format("订单状态不正确，订单ID: %d，当前状态: %d，无法执行%s操作",
-                        orderId, currentStatus, operation));
-    }
+    private static final int ORDER_STATUS_ERROR_CODE = 40001;
 
     public OrderStatusException(String message) {
-        super(ResultCode.ORDER_STATUS_ERROR, message);
+        super(ORDER_STATUS_ERROR_CODE, message);
+    }
+
+    public OrderStatusException(Long orderId, String currentStatus, String operation) {
+        super(ORDER_STATUS_ERROR_CODE,
+                String.format("订单[ID:%d]当前状态为[%s]，无法执行[%s]操作", orderId, currentStatus, operation));
+    }
+
+    public OrderStatusException(String message, Throwable cause) {
+        super(ORDER_STATUS_ERROR_CODE, message, cause);
     }
 }

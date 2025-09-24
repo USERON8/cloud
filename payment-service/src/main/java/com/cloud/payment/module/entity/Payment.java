@@ -54,9 +54,10 @@ public class Payment extends BaseEntity<Payment> {
     private String transactionId;
 
     /**
-     * 加密后的第三方流水号
+     * 加密后的第三方流水号（数据库扩展字段）
+     * 注意：数据库表中暂无此字段，标记为不存在
      */
-    @TableField(value = "encrypted_transaction_id")
+    @TableField(value = "encrypted_transaction_id", exist = false)
     private String encryptedTransactionId;
 
     /**

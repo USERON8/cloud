@@ -32,13 +32,13 @@ public abstract class BaseEntity<T extends BaseEntity<T>> implements Serializabl
     /**
      * 创建时间 - 插入时自动填充
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT, insertStrategy = FieldStrategy.NOT_NULL)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
     /**
      * 更新时间 - 插入和更新时自动填充
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE, updateStrategy = FieldStrategy.NOT_NULL)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
     /**
      * 逻辑删除标识 - 逻辑删除时自动填充

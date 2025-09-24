@@ -1,17 +1,16 @@
 package com.cloud.common.config.base;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.common.message.MessageConst;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
-import org.apache.rocketmq.common.message.MessageConst;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 消息配置基类
@@ -97,9 +96,11 @@ public abstract class BaseMessageConfig {
      * 生成追踪ID
      *
      * @return 追踪ID
+     * @deprecated 使用 {@link com.cloud.common.utils.StringUtils#generateTraceId()} 替代
      */
+    @Deprecated
     protected String generateTraceId() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return com.cloud.common.utils.StringUtils.generateTraceId();
     }
 
     /**

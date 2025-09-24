@@ -50,4 +50,14 @@ public class OrderServiceException extends BusinessException {
         super(resultCode, message);
     }
 
+    /**
+     * 使用消息和异常原因创建异常
+     *
+     * @param message 错误消息
+     * @param cause   异常原因
+     */
+    public OrderServiceException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }

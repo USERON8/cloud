@@ -78,14 +78,14 @@ public class UserEventProcessor {
         return UserEventDocument.builder()
                 .id(generateDocumentId(event.getUserId(), eventType, traceId))
                 .userId(event.getUserId())
-                .username(event.getUsername())
-                .nickname(event.getNickname())
+                .username("user_" + event.getUserId()) // 从metadata中提取或使用默认值
+                .nickname(null) // UserChangeEvent中没有此字段
                 .eventType(eventType)
                 .tag(tag)
                 .traceId(traceId)
-                .phone(event.getPhone())
-                .operatorName(event.getOperator())
-                .eventTime(event.getOperateTime() != null ? event.getOperateTime() : LocalDateTime.now())
+                .phone(null) // UserChangeEvent中没有此字段
+                .operatorName("system") // 默认操作人
+                .eventTime(event.getTimestamp() != null ? event.getTimestamp() : LocalDateTime.now())
                 .messageTimestamp(timestamp != null ? timestamp : System.currentTimeMillis())
                 .processTime(LocalDateTime.now())
                 .build();
@@ -95,19 +95,16 @@ public class UserEventProcessor {
      * 敏感信息脱敏
      */
     private void sanitizeSensitiveData(UserEventDocument document) {
-        // 手机号脱敏：保留前3位和后4位
-        if (StringUtils.hasText(document.getPhone()) && document.getPhone().length() >= 7) {
-            String phone = document.getPhone();
-            String masked = phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
-            document.setPhone(masked);
+        // 手机号脱敏
+        if (StringUtils.hasText(document.getPhone())) {
+            document.setPhone(com.cloud.common.utils.StringUtils.maskPhone(document.getPhone()));
         }
     }
-
 
     /**
      * 生成文档ID
      */
     private String generateDocumentId(Long userId, String eventType, String traceId) {
-        return String.format("user_%d_%s_%s_%d", userId, eventType, traceId, System.currentTimeMillis());
+        return com.cloud.common.utils.StringUtils.generateLogId("user_" + userId + "_" + eventType + "_" + traceId);
     }
 }

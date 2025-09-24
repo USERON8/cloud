@@ -1,0 +1,160 @@
+# 通用配置模板
+# 所有微服务都可以继承的基础配置
+
+spring:
+  # 通用Spring配置
+  main:
+    allow-bean-definition-overriding: true
+  
+  # Nacos配置 - 所有服务统一
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:public}
+        file-extension: yaml
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    
+    # OpenFeign通用配置
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: ${FEIGN_CONNECT_TIMEOUT:5000}
+            readTimeout: ${FEIGN_READ_TIMEOUT:10000}
+            loggerLevel: ${FEIGN_LOG_LEVEL:basic}
+      compression:
+        request:
+          enabled: true
+        response:
+          enabled: true
+    
+    # RocketMQ通用配置
+    stream:
+      rocketmq:
+        binder:
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+
+  # 配置导入
+  config:
+    import: optional:nacos:common
+
+  # 数据库通用配置
+  datasource:
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+
+  # Redis通用配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      timeout: ${REDIS_TIMEOUT:10000ms}
+      lettuce:
+        pool:
+          max-active: ${REDIS_MAX_ACTIVE:16}
+          max-wait: ${REDIS_MAX_WAIT:-1ms}
+          max-idle: ${REDIS_MAX_IDLE:8}
+          min-idle: ${REDIS_MIN_IDLE:2}
+
+# 日志通用配置
+logging:
+  file:
+    path: ${LOG_PATH:D:/logs}/${spring.application.name}
+    name: ${logging.file.path}/${spring.application.name}.log
+  level:
+    com.cloud: ${LOG_LEVEL_CLOUD:info}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:warn}
+    org.springframework.web: ${LOG_LEVEL_WEB:warn}
+    org.springframework.cloud: ${LOG_LEVEL_CLOUD_FRAMEWORK:warn}
+
+# MyBatis-Plus基础配置（各服务可以覆盖）
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    auto-mapping-behavior: full
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nop.NopImpl}
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+      # 字段策略配置
+      insert-strategy: not_null
+      update-strategy: not_null
+      select-strategy: not_empty
+
+# SpringDoc OpenAPI通用配置
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_UI_ENABLED:true}
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  default-flat-param-object: true
+
+# Knife4j通用配置
+knife4j:
+  enable: ${KNIFE4J_ENABLED:true}
+  production: ${KNIFE4J_PRODUCTION:false}
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表
+    enable-footer-custom: true
+    footer-custom-content: "Cloud 微服务平台 API 文档"
+
+# 分布式锁通用配置
+cloud:
+  distributed-lock:
+    enabled: ${DISTRIBUTED_LOCK_ENABLED:true}
+    default-wait-time: ${DISTRIBUTED_LOCK_WAIT_TIME:3}
+    default-lease-time: ${DISTRIBUTED_LOCK_LEASE_TIME:10}
+    key-prefix: ${DISTRIBUTED_LOCK_PREFIX:distributed-lock}
+    monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
+    log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
+
+# 权限配置
+app:
+  permission:
+    enabled: ${PERMISSION_ENABLED:true}
+    strict-mode: ${PERMISSION_STRICT_MODE:false}
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${ACTUATOR_ENDPOINTS:health,info,metrics,prometheus}
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:when_authorized}
+  metrics:
+    export:
+      prometheus:
+        enabled: ${PROMETHEUS_ENABLED:true}

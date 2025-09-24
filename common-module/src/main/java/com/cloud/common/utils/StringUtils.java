@@ -152,4 +152,130 @@ public class StringUtils {
         }
         return str.toLowerCase().contains(search.toLowerCase());
     }
+
+    // ==================== 统一的ID生成方法 ====================
+
+    /**
+     * 生成追踪ID
+     * 统一的追踪ID生成方法，用于分布式链路追踪
+     *
+     * @return 追踪ID
+     */
+    public static String generateTraceId() {
+        return uuid();
+    }
+
+    /**
+     * 生成日志ID
+     * 统一的日志ID生成方法
+     *
+     * @param prefix 前缀
+     * @return 日志ID
+     */
+    public static String generateLogId(String prefix) {
+        return prefix + "_" + System.currentTimeMillis() + "_" + uuid().substring(0, 8);
+    }
+
+    // ==================== 统一的脱敏方法 ====================
+
+    /**
+     * 手机号脱敏处理
+     * 保留前3位和后4位，中间用*代替
+     *
+     * @param phone 手机号
+     * @return 脱敏后的手机号
+     */
+    public static String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) {
+            return phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
+
+    /**
+     * 邮箱脱敏处理
+     * 保留@前的第一个字符和@后的域名，中间用*代替
+     *
+     * @param email 邮箱
+     * @return 脱敏后的邮箱
+     */
+    public static String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return email;
+        }
+        String[] parts = email.split("@");
+        if (parts[0].length() <= 1) {
+            return email;
+        }
+        return parts[0].charAt(0) + "***@" + parts[1];
+    }
+
+    /**
+     * 银行卡号脱敏处理
+     * 保留前4位和后4位，中间用*代替
+     *
+     * @param cardNumber 银行卡号
+     * @return 脱敏后的银行卡号
+     */
+    public static String maskCardNumber(String cardNumber) {
+        if (cardNumber == null || cardNumber.length() < 8) {
+            return cardNumber;
+        }
+        return cardNumber.substring(0, 4) + "****" + cardNumber.substring(cardNumber.length() - 4);
+    }
+
+    /**
+     * 通用敏感信息脱敏
+     * 对文本中的手机号、邮箱、银行卡号进行脱敏
+     *
+     * @param content 原始内容
+     * @return 脱敏后的内容
+     */
+    public static String sanitizeContent(String content) {
+        if (content == null) {
+            return null;
+        }
+        return content.replaceAll("\\d{11}", "***")  // 手机号
+                .replaceAll("\\d{15,19}", "***")  // 银行卡号
+                .replaceAll("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "***@***.com");  // 邮箱
+    }
+
+    /**
+     * 截断过长的文本
+     *
+     * @param text      原始文本
+     * @param maxLength 最大长度
+     * @return 截断后的文本
+     */
+    public static String truncate(String text, int maxLength) {
+        if (text == null) {
+            return null;
+        }
+        return text.length() > maxLength ? text.substring(0, maxLength) + "..." : text;
+    }
+
+    /**
+     * 生成唯一用户名（处理用户名冲突）
+     *
+     * @param baseUsername  基础用户名
+     * @param prefix        前缀
+     * @param checkFunction 检查用户名是否存在的函数
+     * @return 唯一的用户名
+     */
+    public static String generateUniqueUsername(String baseUsername, String prefix,
+                                                java.util.function.Function<String, Boolean> checkFunction) {
+        String candidateUsername = prefix + baseUsername;
+        int suffix = 1;
+
+        while (checkFunction.apply(candidateUsername)) {
+            candidateUsername = prefix + baseUsername + "_" + suffix;
+            suffix++;
+            if (suffix > 1000) { // 防止无限循环
+                candidateUsername = prefix + baseUsername + "_" + System.currentTimeMillis();
+                break;
+            }
+        }
+
+        return candidateUsername;
+    }
 }

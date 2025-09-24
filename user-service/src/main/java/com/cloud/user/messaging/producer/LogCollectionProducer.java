@@ -44,15 +44,15 @@ public class LogCollectionProducer {
     /**
      * 发送用户登录日志
      *
-     * @param userId     用户ID
-     * @param userName   用户名
-     * @param operation  操作类型
-     * @param clientIp   客户端IP
-     * @param userAgent  用户代理
-     * @param result     操作结果
+     * @param userId    用户ID
+     * @param userName  用户名
+     * @param operation 操作类型
+     * @param clientIp  客户端IP
+     * @param userAgent 用户代理
+     * @param result    操作结果
      */
-    public void sendUserLoginLog(Long userId, String userName, String operation, 
-                                String clientIp, String userAgent, String result) {
+    public void sendUserLoginLog(Long userId, String userName, String operation,
+                                 String clientIp, String userAgent, String result) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("user-service")
@@ -77,15 +77,15 @@ public class LogCollectionProducer {
     /**
      * 发送用户信息变更日志
      *
-     * @param userId      用户ID
-     * @param userName    用户名
-     * @param operation   操作类型
-     * @param beforeData  变更前数据
-     * @param afterData   变更后数据
-     * @param operator    操作人
+     * @param userId     用户ID
+     * @param userName   用户名
+     * @param operation  操作类型
+     * @param beforeData 变更前数据
+     * @param afterData  变更后数据
+     * @param operator   操作人
      */
     public void sendUserChangeLog(Long userId, String userName, String operation,
-                                 String beforeData, String afterData, String operator) {
+                                  String beforeData, String afterData, String operator) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("user-service")
@@ -113,13 +113,13 @@ public class LogCollectionProducer {
     /**
      * 发送用户异常日志
      *
-     * @param userId          用户ID
-     * @param operation       操作类型
+     * @param userId           用户ID
+     * @param operation        操作类型
      * @param exceptionMessage 异常信息
-     * @param exceptionStack  异常堆栈
+     * @param exceptionStack   异常堆栈
      */
-    public void sendUserErrorLog(Long userId, String operation, 
-                                String exceptionMessage, String exceptionStack) {
+    public void sendUserErrorLog(Long userId, String operation,
+                                 String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("user-service")
@@ -183,8 +183,126 @@ public class LogCollectionProducer {
      * 生成日志ID
      */
     private String generateLogId() {
-        return "USER_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return "USER_" + System.currentTimeMillis() + "_" +
+                UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    /**
+     * 发送用户状态变更日志
+     *
+     * @param userId       用户ID
+     * @param userName     用户名
+     * @param beforeStatus 变更前状态
+     * @param afterStatus  变更后状态
+     * @param operator     操作人
+     */
+    public void sendUserStatusChangeLog(Long userId, String userName, Integer beforeStatus,
+                                        Integer afterStatus, String operator) {
+        String statusDesc = getUserStatusDescription(beforeStatus) + " → " + getUserStatusDescription(afterStatus);
+
+        LogCollectionEvent event = LogCollectionEvent.builder()
+                .logId(generateLogId())
+                .serviceName("user-service")
+                .logLevel("INFO")
+                .logType("BUSINESS")
+                .module("USER_STATUS")
+                .operation("STATUS_CHANGE")
+                .description("用户状态变更")
+                .userId(userId)
+                .userName(userName)
+                .userType("CUSTOMER")
+                .businessId(userId.toString())
+                .businessType("USER")
+                .content(String.format("用户状态变更: %s(%s)", userName, statusDesc))
+                .beforeData(String.format("{\"status\":%d}", beforeStatus))
+                .afterData(String.format("{\"status\":%d}", afterStatus))
+                .result("SUCCESS")
+                .createTime(LocalDateTime.now())
+                .traceId(generateTraceId())
+                .remark("操作人: " + operator)
+                .build();
+
+        sendUserLog(event);
+    }
+
+    /**
+     * 发送用户创建日志
+     *
+     * @param userId   用户ID
+     * @param userName 用户名
+     * @param userType 用户类型
+     * @param operator 操作人
+     */
+    public void sendUserCreateLog(Long userId, String userName, String userType, String operator) {
+        LogCollectionEvent event = LogCollectionEvent.builder()
+                .logId(generateLogId())
+                .serviceName("user-service")
+                .logLevel("INFO")
+                .logType("BUSINESS")
+                .module("USER_CREATE")
+                .operation("CREATE")
+                .description("用户创建")
+                .userId(userId)
+                .userName(userName)
+                .userType(userType != null ? userType : "CUSTOMER")
+                .businessId(userId.toString())
+                .businessType("USER")
+                .content(String.format("创建用户: ID=%d, 名称=%s, 类型=%s", userId, userName, userType))
+                .result("SUCCESS")
+                .createTime(LocalDateTime.now())
+                .traceId(generateTraceId())
+                .remark("操作人: " + operator)
+                .build();
+
+        sendUserLog(event);
+    }
+
+    /**
+     * 发送用户更新日志
+     *
+     * @param userId     用户ID
+     * @param userName   用户名
+     * @param beforeData 变更前数据
+     * @param afterData  变更后数据
+     * @param operator   操作人
+     */
+    public void sendUserUpdateLog(Long userId, String userName, String beforeData, String afterData, String operator) {
+        LogCollectionEvent event = LogCollectionEvent.builder()
+                .logId(generateLogId())
+                .serviceName("user-service")
+                .logLevel("INFO")
+                .logType("BUSINESS")
+                .module("USER_UPDATE")
+                .operation("UPDATE")
+                .description("用户更新")
+                .userId(userId)
+                .userName(userName)
+                .userType("CUSTOMER")
+                .businessId(userId.toString())
+                .businessType("USER")
+                .beforeData(beforeData)
+                .afterData(afterData)
+                .result("SUCCESS")
+                .createTime(LocalDateTime.now())
+                .traceId(generateTraceId())
+                .remark("操作人: " + operator)
+                .build();
+
+        sendUserLog(event);
+    }
+
+    /**
+     * 获取用户状态描述
+     */
+    private String getUserStatusDescription(Integer status) {
+        if (status == null) return "未知";
+        return switch (status) {
+            case 0 -> "禁用";
+            case 1 -> "正常";
+            case 2 -> "待激活";
+            case 3 -> "锁定";
+            default -> "未知(" + status + ")";
+        };
     }
 
     /**

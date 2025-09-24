@@ -1,5 +1,6 @@
 package com.cloud.common.security;
 
+import com.cloud.common.lock.RedissonLockManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -12,7 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 基于Redis的分布式限流管理器
@@ -25,13 +25,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class RateLimitManager {
 
+    // Redis键前缀
+    private static final String RULE_PREFIX = "rate_limit:rules:";
+    private static final String STATS_PREFIX = "rate_limit:stats:";
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedissonLockManager redissonLockManager;
+    // 限流规则存储
+    private final Map<String, RateLimitRule> rateLimitRules = new HashMap<>();
 
-    // 限流规则缓存
-    private final Map<String, RateLimitRule> rateLimitRules = new ConcurrentHashMap<>();
-
-    // 限流统计
-    private final Map<String, RateLimitStats> limitStats = new ConcurrentHashMap<>();
+    // 限流统计存储
+    private final Map<String, RateLimitStats> limitStats = new HashMap<>();
 
     /**
      * 检查限流 - 主入口

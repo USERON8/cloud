@@ -57,6 +57,60 @@ public class UserAsyncConfig extends BaseAsyncConfig {
     }
 
     /**
+     * 用户日志异步线程池
+     * 专门用于用户日志处理
+     */
+    @Bean("userLogExecutor")
+    public Executor userLogExecutor() {
+        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+                1,
+                2,
+                800,
+                "user-log-"
+        );
+        executor.initialize();
+
+        log.info("用户日志线程池初始化完成");
+        return executor;
+    }
+
+    /**
+     * 用户通知异步线程池
+     * 专门用于用户通知发送
+     */
+    @Bean("userNotificationExecutor")
+    public Executor userNotificationExecutor() {
+        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+                2,
+                4,
+                200,
+                "user-notification-"
+        );
+        executor.initialize();
+
+        log.info("用户通知线程池初始化完成");
+        return executor;
+    }
+
+    /**
+     * 用户统计异步线程池
+     * 专门用于用户行为统计
+     */
+    @Bean("userStatisticsExecutor")
+    public Executor userStatisticsExecutor() {
+        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+                1,
+                2,
+                1500,
+                "user-statistics-"
+        );
+        executor.initialize();
+
+        log.info("用户统计线程池初始化完成");
+        return executor;
+    }
+
+    /**
      * 通用异步线程池
      * 用于处理其他异步任务，如发送邮件、日志记录等
      */

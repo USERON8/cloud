@@ -10,7 +10,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -80,9 +79,12 @@ public class MessageUtils {
 
     /**
      * 生成追踪ID
+     *
+     * @deprecated 使用 {@link StringUtils#generateTraceId()} 替代
      */
+    @Deprecated
     public static String generateTraceId() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return StringUtils.generateTraceId();
     }
 
     /**

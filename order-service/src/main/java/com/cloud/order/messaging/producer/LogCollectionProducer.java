@@ -44,7 +44,7 @@ public class LogCollectionProducer {
      * 发送订单操作日志
      */
     public void sendOrderOperationLog(Long orderId, String orderNo, Long userId, String operation,
-                                     BigDecimal amount, String operator) {
+                                      BigDecimal amount, String operator) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("order-service")
@@ -59,8 +59,8 @@ public class LogCollectionProducer {
                 .result("SUCCESS")
                 .createTime(LocalDateTime.now())
                 .traceId(generateTraceId())
-                .remark("操作人: " + operator + ", 订单号: " + orderNo + 
-                       ", 金额: " + amount)
+                .remark("操作人: " + operator + ", 订单号: " + orderNo +
+                        ", 金额: " + amount)
                 .build();
 
         sendOrderLog(event);
@@ -69,8 +69,8 @@ public class LogCollectionProducer {
     /**
      * 发送订单异常日志
      */
-    public void sendOrderErrorLog(Long orderId, String operation, 
-                                 String exceptionMessage, String exceptionStack) {
+    public void sendOrderErrorLog(Long orderId, String operation,
+                                  String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("order-service")
@@ -125,8 +125,8 @@ public class LogCollectionProducer {
     }
 
     private String generateLogId() {
-        return "ORDER_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return "ORDER_" + System.currentTimeMillis() + "_" +
+                UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     private String generateTraceId() {

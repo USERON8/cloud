@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 搜索服务日志收集生产者
@@ -43,7 +42,7 @@ public class LogCollectionProducer {
      * 发送搜索操作日志
      */
     public void sendSearchOperationLog(String keyword, Long userId, String operation,
-                                      Integer resultCount, Long responseTime) {
+                                       Integer resultCount, Long responseTime) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("search-service")
@@ -67,8 +66,8 @@ public class LogCollectionProducer {
     /**
      * 发送搜索异常日志
      */
-    public void sendSearchErrorLog(String keyword, String operation, 
-                                  String exceptionMessage, String exceptionStack) {
+    public void sendSearchErrorLog(String keyword, String operation,
+                                   String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("search-service")
@@ -123,11 +122,10 @@ public class LogCollectionProducer {
     }
 
     private String generateLogId() {
-        return "SEARCH_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return com.cloud.common.utils.StringUtils.generateLogId("SEARCH");
     }
 
     private String generateTraceId() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return com.cloud.common.utils.StringUtils.generateTraceId();
     }
 }

@@ -2,8 +2,8 @@ package com.cloud.order.messaging.producer;
 
 import com.cloud.common.constant.MessageTopicConstants;
 import com.cloud.common.domain.event.OrderChangeEvent;
-import com.cloud.common.domain.event.OrderCreatedEvent;
 import com.cloud.common.domain.event.OrderCompletedEvent;
+import com.cloud.common.domain.event.OrderCreatedEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -233,6 +233,6 @@ public class OrderEventProducer {
      * 生成追踪ID
      */
     private String generateTraceId() {
-        return java.util.UUID.randomUUID().toString().replace("-", "");
+        return com.cloud.common.utils.StringUtils.generateTraceId();
     }
 }

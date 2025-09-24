@@ -46,6 +46,14 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
+
+        # 搜索事件生产者绑定
+        search-producer-out-0:
+          destination: SEARCH_EVENTS_TOPIC
+          content-type: application/json
+          group: product-search-producer-group
+          producer:
+            partition-count: 4
   config:
     import: optional:nacos:common
   datasource:
@@ -216,3 +224,12 @@ product:
       warmup:
         enabled: true
         max-size: 500
+
+# 商品服务专用配置
+product:
+  async:
+    enabled: true
+  statistics:
+    enabled: true
+  search:
+    enabled: true

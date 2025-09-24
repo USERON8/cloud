@@ -205,6 +205,6 @@ public class PaymentEventProducer {
      * 生成追踪ID
      */
     private String generateTraceId() {
-        return java.util.UUID.randomUUID().toString().replace("-", "");
+        return com.cloud.common.utils.StringUtils.generateTraceId();
     }
 }

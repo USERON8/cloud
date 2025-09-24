@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 商品服务日志收集生产者
@@ -43,7 +42,7 @@ public class LogCollectionProducer {
      * 发送商品操作日志
      */
     public void sendProductOperationLog(Long productId, String productName, String operation,
-                                       String beforeData, String afterData, String operator) {
+                                        String beforeData, String afterData, String operator) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("product-service")
@@ -68,8 +67,8 @@ public class LogCollectionProducer {
     /**
      * 发送商品异常日志
      */
-    public void sendProductErrorLog(Long productId, String operation, 
-                                   String exceptionMessage, String exceptionStack) {
+    public void sendProductErrorLog(Long productId, String operation,
+                                    String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("product-service")
@@ -124,11 +123,10 @@ public class LogCollectionProducer {
     }
 
     private String generateLogId() {
-        return "PRODUCT_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return com.cloud.common.utils.StringUtils.generateLogId("PRODUCT");
     }
 
     private String generateTraceId() {
-        return UUID.randomUUID().toString().replace("-", "");
+        return com.cloud.common.utils.StringUtils.generateTraceId();
     }
 }

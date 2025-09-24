@@ -42,4 +42,80 @@
         </where>
         ORDER BY created_at DESC
     </select>
+
+    <!-- ==================== 订单状态机条件更新SQL（并发安全） ==================== -->
+
+    <!-- 条件更新订单状态 - 从待支付到已支付 -->
+    <update id="updateStatusToPaid">
+        UPDATE orders
+        SET status     = 1,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+          AND status = 0
+          AND deleted = 0
+    </update>
+
+    <!-- 条件更新订单状态 - 从已支付到已发货 -->
+    <update id="updateStatusToShipped">
+        UPDATE orders
+        SET status     = 2,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+          AND status = 1
+          AND deleted = 0
+    </update>
+
+    <!-- 条件更新订单状态 - 从已发货到已完成 -->
+    <update id="updateStatusToCompleted">
+        UPDATE orders
+        SET status     = 3,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+          AND status = 2
+          AND deleted = 0
+    </update>
+
+    <!-- 条件取消订单 - 从待支付到已取消 -->
+    <update id="cancelOrderFromPending">
+        UPDATE orders
+        SET status     = 4,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+          AND status = 0
+          AND deleted = 0
+    </update>
+
+    <!-- 条件取消订单 - 从已支付到已取消（退款场景） -->
+    <update id="cancelOrderFromPaid">
+        UPDATE orders
+        SET status     = 4,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+          AND status = 1
+          AND deleted = 0
+    </update>
+
+    <!-- 根据订单ID查询订单（加行锁） -->
+    <select id="selectByIdForUpdate" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM orders
+        WHERE id = #{orderId}
+        AND deleted = 0
+        FOR UPDATE
+    </select>
+
+    <!-- 批量条件更新订单状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE orders
+        SET status = #{toStatus},
+        updated_at = NOW()
+        WHERE id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        AND status = #{fromStatus}
+        AND deleted = 0
+    </update>
+
 </mapper>

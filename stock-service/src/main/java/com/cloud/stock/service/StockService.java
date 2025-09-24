@@ -115,5 +115,37 @@ public interface StockService extends IService<Stock> {
      * @return 是否充足
      */
     boolean checkStockSufficient(Long productId, Integer quantity);
+
+    /**
+     * 检查库存是否已扣减
+     *
+     * @param orderId 订单ID
+     * @return 是否已扣减
+     */
+    boolean isStockDeducted(Long orderId);
+
+    /**
+     * 解冻并扣减库存
+     *
+     * @param event 订单完成事件
+     * @return 是否成功
+     */
+    boolean unfreezeAndDeductStock(com.cloud.common.domain.event.OrderCompletedEvent event);
+
+    /**
+     * 检查库存是否已冻结
+     *
+     * @param orderId 订单ID
+     * @return 是否已冻结
+     */
+    boolean isStockFrozen(Long orderId);
+
+    /**
+     * 冻结库存
+     *
+     * @param event 订单创建事件
+     * @return 是否成功
+     */
+    boolean freezeStock(com.cloud.common.domain.event.OrderCreatedEvent event);
 }
 

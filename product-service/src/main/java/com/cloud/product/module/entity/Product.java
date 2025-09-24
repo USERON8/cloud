@@ -49,9 +49,10 @@ public class Product extends BaseEntity<Product> {
     private String categoryName;
 
     /**
-     * 商品品牌ID
+     * 商品品牌ID（数据库扩展字段）
+     * 注意：数据库表中暂无此字段，标记为不存在
      */
-    @TableField(value = "brand_id")
+    @TableField(value = "brand_id", exist = false)
     private Long brandId;
 
     /**

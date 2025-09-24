@@ -2,8 +2,10 @@ package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
+import com.cloud.common.domain.event.OrderCompletedEvent;
 import com.cloud.common.domain.vo.OrderVO;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.order.converter.OrderConverter;
@@ -11,6 +13,8 @@ import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
 import com.cloud.order.exception.OrderStatusException;
 import com.cloud.order.mapper.OrderMapper;
+import com.cloud.order.messaging.producer.LogCollectionProducer;
+import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
 import com.cloud.order.service.OrderItemService;
@@ -20,8 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +45,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
     private final OrderConverter orderConverter;
     private final OrderItemService orderItemService;
+    private final OrderEventProducer orderEventProducer;
+    private final LogCollectionProducer logCollectionProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -129,6 +137,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:pay:' + #orderId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "订单支付操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean payOrder(Long orderId) {
         try {
@@ -139,12 +153,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是待支付状态）
             if (order.getStatus() != 0) {
-                throw new OrderStatusException(orderId, order.getStatus(), "支付");
+                throw new OrderStatusException(orderId, order.getStatus().toString(), "支付");
             }
             order.setStatus(1); // 设置为已支付状态
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
+                // 发送订单支付日志
+                try {
+                    logCollectionProducer.sendOrderOperationLog(
+                            orderId,
+                            "ORDER_" + orderId,
+                            order.getUserId(),
+                            "PAY",
+                            order.getPayAmount(),
+                            "SYSTEM"
+                    );
+                } catch (Exception e) {
+                    log.warn("发送订单支付日志失败，订单ID：{}", orderId, e);
+                }
+
                 log.info("订单支付成功，订单ID: {}", orderId);
             }
             return result;
@@ -157,6 +185,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:ship:' + #orderId",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "订单发货操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean shipOrder(Long orderId) {
         try {
@@ -167,12 +201,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是已支付状态）
             if (order.getStatus() != 1) {
-                throw new OrderStatusException(orderId, order.getStatus(), "发货");
+                throw new OrderStatusException(orderId, order.getStatus().toString(), "发货");
             }
             order.setStatus(2); // 设置为已发货状态
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
+                // 发送订单发货日志
+                try {
+                    logCollectionProducer.sendOrderOperationLog(
+                            orderId,
+                            "ORDER_" + orderId,
+                            order.getUserId(),
+                            "SHIP",
+                            order.getTotalAmount(),
+                            "SYSTEM"
+                    );
+                } catch (Exception e) {
+                    log.warn("发送订单发货日志失败，订单ID：{}", orderId, e);
+                }
+
                 log.info("订单发货成功，订单ID: {}", orderId);
             }
             return result;
@@ -185,6 +233,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:complete:' + #orderId",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "订单完成操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean completeOrder(Long orderId) {
         try {
@@ -195,13 +249,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是已发货状态）
             if (order.getStatus() != 2) {
-                throw new OrderStatusException(orderId, order.getStatus(), "完成");
+                throw new OrderStatusException(orderId, order.getStatus().toString(), "完成");
             }
             order.setStatus(3); // 设置为已完成状态
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
+                // 发送订单完成日志
+                try {
+                    logCollectionProducer.sendOrderOperationLog(
+                            orderId,
+                            "ORDER_" + orderId,
+                            order.getUserId(),
+                            "COMPLETE",
+                            order.getTotalAmount(),
+                            "SYSTEM"
+                    );
+                } catch (Exception e) {
+                    log.warn("发送订单完成日志失败，订单ID：{}", orderId, e);
+                }
+
                 log.info("订单完成成功，订单ID: {}", orderId);
+
+                // 发布订单完成事件
+                publishOrderCompletedEvent(order);
             }
 
             return result;
@@ -214,6 +285,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:cancel:' + #orderId",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "订单取消操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean cancelOrder(Long orderId) {
         try {
@@ -224,12 +301,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是待支付或已支付状态）
             if (order.getStatus() != 0 && order.getStatus() != 1) {
-                throw new OrderStatusException(orderId, order.getStatus(), "取消");
+                throw new OrderStatusException(orderId, order.getStatus().toString(), "取消");
             }
             order.setStatus(-1); // 设置为已取消状态
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
+                // 发送订单取消日志
+                try {
+                    logCollectionProducer.sendOrderOperationLog(
+                            orderId,
+                            "ORDER_" + orderId,
+                            order.getUserId(),
+                            "CANCEL",
+                            order.getTotalAmount(),
+                            "SYSTEM"
+                    );
+                } catch (Exception e) {
+                    log.warn("发送订单取消日志失败，订单ID：{}", orderId, e);
+                }
+
                 log.info("订单取消成功，订单ID: {}", orderId);
             }
             return result;
@@ -280,6 +371,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 log.error("创建订单明细失败，订单ID: {}，操作人: {}", order.getId(), currentUserId);
                 throw new RuntimeException("创建订单明细失败");
             }
+
+            // 发送订单创建日志
+            try {
+                logCollectionProducer.sendOrderOperationLog(
+                        order.getId(),
+                        "ORDER_" + order.getId(),
+                        order.getUserId(),
+                        "CREATE",
+                        order.getTotalAmount(),
+                        currentUserId
+                );
+            } catch (Exception e) {
+                log.warn("发送订单创建日志失败，订单ID：{}", order.getId(), e);
+            }
+
             log.info("创建订单成功，订单ID: {}，操作人: {}", order.getId(), currentUserId);
             return true;
         } catch (OrderServiceException e) {
@@ -305,6 +411,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderDTO createOrder(OrderCreateDTO orderCreateDTO) {
+        try {
+            // 创建订单实体
+            Order order = new Order();
+            order.setUserId(orderCreateDTO.getUserId());
+            order.setTotalAmount(orderCreateDTO.getTotalAmount());
+            order.setPayAmount(orderCreateDTO.getPayAmount() != null ?
+                    orderCreateDTO.getPayAmount() : orderCreateDTO.getTotalAmount());
+            order.setStatus(0); // 待支付状态
+            order.setAddressId(orderCreateDTO.getAddressId());
+
+            // 保存订单
+            this.save(order);
+
+            // 转换为DTO返回
+            return orderConverter.toDTO(order);
+        } catch (Exception e) {
+            log.error("创建订单失败: ", e);
+            throw new OrderServiceException("创建订单失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public Boolean payOrder(Long orderId, String currentUserId) {
         return payOrder(orderId);
     }
@@ -322,6 +452,51 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     @Override
     public Boolean cancelOrder(Long orderId, String currentUserId) {
         return cancelOrder(orderId);
+    }
+
+    @Override
+    public Boolean isOrderPaid(Long orderId) {
+        Order order = this.baseMapper.selectById(orderId);
+        if (order == null) {
+            return false;
+        }
+        // 状态1表示已支付
+        return order.getStatus() == 1;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateOrderToPaid(com.cloud.common.domain.event.PaymentSuccessEvent event) {
+        try {
+            Order order = this.baseMapper.selectById(event.getOrderId());
+            if (order == null) {
+                log.warn("订单不存在，无法更新支付状态，订单ID: {}", event.getOrderId());
+                return false;
+            }
+
+            // 检查订单状态，只有待支付状态才能更新为已支付
+            if (order.getStatus() != 0) {
+                log.warn("订单状态不是待支付，无法更新支付状态，订单ID: {}, 当前状态: {}",
+                        event.getOrderId(), order.getStatus());
+                return false;
+            }
+
+            // 更新订单状态为已支付
+            order.setStatus(1);
+            order.setPayAmount(event.getPaymentAmount());
+
+            boolean result = this.baseMapper.updateById(order) > 0;
+
+            if (result) {
+                log.info("订单支付状态更新成功，订单ID: {}, 支付金额: {}",
+                        event.getOrderId(), event.getPaymentAmount());
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("更新订单支付状态失败，订单ID: {}", event.getOrderId(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -368,6 +543,41 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         } catch (Exception e) {
             log.error("根据订单号查询订单失败，订单号: {}", orderNo, e);
             throw new OrderServiceException("根据订单号查询订单失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发布订单完成事件
+     * 通知库存服务进行库存扣减
+     */
+    private void publishOrderCompletedEvent(Order order) {
+        try {
+            String traceId = UUID.randomUUID().toString().replace("-", "");
+
+            // 构建订单完成事件
+            OrderCompletedEvent event = OrderCompletedEvent.builder()
+                    .orderId(order.getId())
+                    .orderNo("ORDER_" + order.getId()) // 简化订单号生成
+                    .userId(order.getUserId())
+                    .userName("User_" + order.getUserId()) // 简化用户名
+                    .totalAmount(order.getTotalAmount())
+                    .payAmount(order.getPayAmount())
+                    .orderStatus(3) // 已完成状态
+                    .beforeStatus(2) // 之前是已发货状态
+                    .afterStatus(3)  // 现在是已完成状态
+                    .completedTime(LocalDateTime.now())
+                    .operator("SYSTEM")
+                    .traceId(traceId)
+                    .build();
+
+            // 发布事件
+            orderEventProducer.sendOrderCompletedEvent(event);
+
+            log.info("📨 订单完成事件发布成功 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId);
+
+        } catch (Exception e) {
+            log.error("❌ 发布订单完成事件失败 - 订单ID: {}, 错误: {}", order.getId(), e.getMessage(), e);
+            // 事件发布失败不应该影响订单状态更新的主流程
         }
     }
 }

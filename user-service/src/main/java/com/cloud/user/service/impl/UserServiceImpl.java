@@ -3,6 +3,7 @@ package com.cloud.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
@@ -10,6 +11,7 @@ import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.UserVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
 import com.cloud.user.annotation.MultiLevelCacheEvict;
@@ -21,6 +23,7 @@ import com.cloud.user.event.UserEventStreamPublisher;
 import com.cloud.user.event.UserEventUtils;
 import com.cloud.user.exception.UserServiceException;
 import com.cloud.user.mapper.UserMapper;
+import com.cloud.user.messaging.producer.LogCollectionProducer;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
@@ -51,6 +54,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private final MerchantService merchantService;
     private final MerchantConverter merchantConverter;
     private final UserEventStreamPublisher userEventStreamPublisher;
+    private final LogCollectionProducer logCollectionProducer;
+    private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -154,8 +159,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 发布用户删除事件 - 函数式风格（简化版）
             UserEventUtils.safeExecuteEvent(
-                () -> UserEventUtils.publishDeleteEvent(userEventStreamPublisher, user, true),
-                "用户逻辑删除事件"
+                    () -> UserEventUtils.publishDeleteEvent(userEventStreamPublisher, user, true),
+                    "用户逻辑删除事件"
             );
 
             log.info("用户逻辑删除完成, id: {}, result: {}", id, result);
@@ -169,6 +174,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:batch:delete:' + T(String).join(',', #userIds)",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "批量删除用户操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(
             cacheName = "userCache",
@@ -303,12 +314,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 发布用户更新事件 - 函数式风格（智能检测变更类型）
         if (result && oldUser != null) {
             UserEventUtils.smartPublishUpdate(userEventStreamPublisher, oldUser, entity);
+
+            // 发送用户变更日志到日志服务
+            try {
+                String beforeData = String.format("{\"username\":\"%s\",\"status\":%d}",
+                        oldUser.getUsername(), oldUser.getStatus());
+                String afterData = String.format("{\"username\":\"%s\",\"status\":%d}",
+                        entity.getUsername(), entity.getStatus());
+
+                // 异步发送用户更新日志 - 不阻塞主业务流程
+                asyncLogProducer.sendUserOperationLogAsync(
+                        "user-service",
+                        "UPDATE",
+                        entity.getId(),
+                        entity.getUsername(),
+                        entity.getUserType(),
+                        beforeData,
+                        afterData,
+                        getCurrentOperator()
+                );
+            } catch (Exception e) {
+                log.warn("发送用户更新日志失败，用户ID：{}", entity.getId(), e);
+            }
         }
 
         return result;
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:register:' + #registerRequest.username",
+            waitTime = 3,
+            leaseTime = 15,
+            failMessage = "用户注册操作获取锁失败，请稍后重试"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(
             cacheName = "userCache",
@@ -337,9 +376,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 发布用户创建事件 - 函数式风格
             UserEventUtils.safePublishEvent(
-                userEventStreamPublisher, 
-                user, 
-                UserEventStreamPublisher.EventType.CREATED
+                    userEventStreamPublisher,
+                    user,
+                    UserEventStreamPublisher.EventType.CREATED
+            );
+
+            // 异步发送用户创建日志 - 不阻塞主业务流程
+            asyncLogProducer.sendUserOperationLogAsync(
+                    "user-service",
+                    "REGISTER",
+                    user.getId(),
+                    user.getUsername(),
+                    user.getUserType(),
+                    null,
+                    String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"status\":%d}",
+                            user.getUsername(), user.getUserType(), user.getStatus()),
+                    getCurrentOperator()
             );
 
             if (!saved) {
@@ -490,12 +542,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         log.debug("根据GitHub ID查找用户: {}", githubId);
-        
+
         try {
             User user = getOne(new LambdaQueryWrapper<User>()
                     .eq(User::getGithubId, githubId)
                     .eq(User::getOauthProvider, "github"));
-            
+
             return user != null ? userConverter.toDTO(user) : null;
         } catch (Exception e) {
             log.error("根据GitHub ID查找用户时发生异常，GitHub ID: {}", githubId, e);
@@ -518,12 +570,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         log.debug("根据GitHub用户名查找用户: {}", githubUsername);
-        
+
         try {
             User user = getOne(new LambdaQueryWrapper<User>()
                     .eq(User::getGithubUsername, githubUsername)
                     .eq(User::getOauthProvider, "github"));
-            
+
             return user != null ? userConverter.toDTO(user) : null;
         } catch (Exception e) {
             log.error("根据GitHub用户名查找用户时发生异常，GitHub用户名: {}", githubUsername, e);
@@ -546,21 +598,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         log.debug("根据OAuth提供商信息查找用户: provider={}, providerId={}", oauthProvider, oauthProviderId);
-        
+
         try {
             User user = getOne(new LambdaQueryWrapper<User>()
                     .eq(User::getOauthProvider, oauthProvider)
                     .eq(User::getOauthProviderId, oauthProviderId));
-            
+
             return user != null ? userConverter.toDTO(user) : null;
         } catch (Exception e) {
-            log.error("根据OAuth提供商信息查找用户时发生异常，provider: {}, providerId: {}", 
+            log.error("根据OAuth提供商信息查找用户时发生异常，provider: {}, providerId: {}",
                     oauthProvider, oauthProviderId, e);
             return null;
         }
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:github:create:' + #githubUserDTO.githubId",
+            waitTime = 3,
+            leaseTime = 15,
+            failMessage = "GitHub用户创建操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @MultiLevelCacheEvict(
             cacheName = "userCache",
@@ -568,14 +626,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             beforeInvocation = true
     )
     public UserDTO createGitHubUser(com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
-        log.info("🚀 开始创建GitHub OAuth用户, githubId: {}, login: {}", 
+        log.info("🚀 开始创建GitHub OAuth用户, githubId: {}, login: {}",
                 githubUserDTO.getGithubId(), githubUserDTO.getLogin());
 
         try {
             // 1. 检查GitHub用户是否已存在
             UserDTO existingUser = findByGitHubId(githubUserDTO.getGithubId());
             if (existingUser != null) {
-                log.warn("⚠️ GitHub用户已存在: githubId={}, 系统用户ID={}", 
+                log.warn("⚠️ GitHub用户已存在: githubId={}, 系统用户ID={}",
                         githubUserDTO.getGithubId(), existingUser.getId());
                 return existingUser;
             }
@@ -590,7 +648,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 3. 创建用户实体
             User user = buildGitHubUser(githubUserDTO, systemUsername);
-            
+
             // 4. 保存用户
             boolean saved = save(user);
             if (!saved) {
@@ -600,6 +658,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 5. 发布GitHub用户创建事件 - 函数式风格
             UserEventUtils.publishLoginEvent(userEventStreamPublisher, user, "github");
+
+            // 异步发送GitHub用户创建日志 - 不阻塞主业务流程
+            asyncLogProducer.sendUserOperationLogAsync(
+                    "user-service",
+                    "GITHUB_LOGIN",
+                    user.getId(),
+                    user.getUsername(),
+                    user.getUserType(),
+                    null,
+                    String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"loginType\":\"GITHUB\"}",
+                            user.getUsername(), user.getUserType()),
+                    getCurrentOperator()
+            );
 
             // 6. 查询完整的用户信息
             UserDTO userDTO = findByUsername(systemUsername);
@@ -623,6 +694,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:github:update:' + #userId",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "GitHub用户信息更新操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
     @com.cloud.user.annotation.MultiLevelCaching(
             evict = {
@@ -631,7 +708,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             }
     )
     public boolean updateGitHubUserInfo(Long userId, com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
-        log.info("🔄 开始更新GitHub用户信息, userId: {}, githubId: {}", 
+        log.info("🔄 开始更新GitHub用户信息, userId: {}, githubId: {}",
                 userId, githubUserDTO.getGithubId());
 
         try {
@@ -657,10 +734,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             boolean result = updateById(updatedUser);
 
             if (result) {
-                log.info("✅ GitHub用户信息更新成功: userId={}, githubId={}", 
+                log.info("✅ GitHub用户信息更新成功: userId={}, githubId={}",
                         userId, githubUserDTO.getGithubId());
             } else {
-                log.error("❌ GitHub用户信息更新失败: userId={}, githubId={}", 
+                log.error("❌ GitHub用户信息更新失败: userId={}, githubId={}",
                         userId, githubUserDTO.getGithubId());
             }
 
@@ -689,17 +766,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserType("USER"); // GitHub用户默认为普通用户
         user.setStatus(1); // 默认启用
         user.setPhone("000-0000-0000"); // GitHub用户默认手机号
-        
+
         // GitHub OAuth相关信息
         user.setGithubId(githubUserDTO.getGithubId());
         user.setGithubUsername(githubUserDTO.getLogin());
         user.setOauthProvider("github");
         user.setOauthProviderId(githubUserDTO.getGithubId().toString());
-        
+
         // OAuth用户使用特殊密码（不用于登录）
         String oauthPassword = "github_oauth2_" + githubUserDTO.getGithubId();
         user.setPassword(passwordEncoder.encode(oauthPassword));
-        
+
         return user;
     }
 
@@ -707,21 +784,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * 生成唯一的用户名（处理用户名冲突）
      */
     private String generateUniqueUsername(String baseUsername) {
-        String prefix = "github_" + baseUsername;
-        int suffix = 1;
-        String candidateUsername = prefix;
-        
-        while (findByUsername(candidateUsername) != null) {
-            candidateUsername = prefix + "_" + suffix;
-            suffix++;
-            if (suffix > 1000) { // 防止无限循环
-                candidateUsername = prefix + "_" + System.currentTimeMillis();
-                break;
-            }
-        }
-        
-        log.info("生成唯一用户名: {} -> {}", prefix, candidateUsername);
-        return candidateUsername;
+        String result = com.cloud.common.utils.StringUtils.generateUniqueUsername(
+                baseUsername,
+                "github_",
+                username -> findByUsername(username) != null
+        );
+
+        log.info("生成唯一用户名: github_{} -> {}", baseUsername, result);
+        return result;
     }
 
     /**

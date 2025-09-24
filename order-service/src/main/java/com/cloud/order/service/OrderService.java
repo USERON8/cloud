@@ -117,6 +117,14 @@ public interface OrderService extends IService<Order> {
     OrderDTO createOrder(OrderDTO orderDTO);
 
     /**
+     * 创建订单（从OrderCreateDTO）
+     *
+     * @param orderCreateDTO 订单创建信息
+     * @return 创建的订单信息
+     */
+    OrderDTO createOrder(OrderCreateDTO orderCreateDTO);
+
+    /**
      * 根据用户ID查询订单列表
      *
      * @param userId 用户ID
@@ -131,4 +139,20 @@ public interface OrderService extends IService<Order> {
      * @return 订单信息
      */
     OrderDTO getOrderByOrderNo(String orderNo);
+
+    /**
+     * 检查订单是否已支付
+     *
+     * @param orderId 订单ID
+     * @return 是否已支付
+     */
+    Boolean isOrderPaid(Long orderId);
+
+    /**
+     * 更新订单为已支付状态
+     *
+     * @param event 支付成功事件
+     * @return 是否更新成功
+     */
+    Boolean updateOrderToPaid(com.cloud.common.domain.event.PaymentSuccessEvent event);
 }
