@@ -29,13 +29,12 @@ public class GitHubUserInfoService implements ApplicationContextAware {
 
     private static final String GITHUB_USER_API = "https://api.github.com/user";
     private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
+    // 安全随机数生成器，用于生成安全密码
+    private static final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     // 通过ApplicationContext动态获取UserFeignClient，解决循环依赖问题
     private ApplicationContext applicationContext;
-
-    // 安全随机数生成器，用于生成安全密码
-    private static final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
 
     /**
      * 从GitHub OAuth2授权客户端获取用户信息并同步到系统

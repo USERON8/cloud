@@ -44,7 +44,7 @@ public class LogCollectionProducer {
      * 发送支付操作日志
      */
     public void sendPaymentOperationLog(Long paymentId, Long orderId, String operation,
-                                       BigDecimal amount, String paymentMethod, String operator) {
+                                        BigDecimal amount, String paymentMethod, String operator) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("payment-service")
@@ -58,8 +58,8 @@ public class LogCollectionProducer {
                 .result("SUCCESS")
                 .createTime(LocalDateTime.now())
                 .traceId(generateTraceId())
-                .remark("操作人: " + operator + ", 订单ID: " + orderId + 
-                       ", 金额: " + amount + ", 支付方式: " + paymentMethod)
+                .remark("操作人: " + operator + ", 订单ID: " + orderId +
+                        ", 金额: " + amount + ", 支付方式: " + paymentMethod)
                 .build();
 
         sendPaymentLog(event);
@@ -68,8 +68,8 @@ public class LogCollectionProducer {
     /**
      * 发送支付异常日志
      */
-    public void sendPaymentErrorLog(Long paymentId, String operation, 
-                                   String exceptionMessage, String exceptionStack) {
+    public void sendPaymentErrorLog(Long paymentId, String operation,
+                                    String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("payment-service")
@@ -124,8 +124,8 @@ public class LogCollectionProducer {
     }
 
     private String generateLogId() {
-        return "PAYMENT_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return "PAYMENT_" + System.currentTimeMillis() + "_" +
+                UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     private String generateTraceId() {

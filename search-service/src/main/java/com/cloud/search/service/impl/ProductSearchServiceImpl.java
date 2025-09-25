@@ -1,14 +1,19 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.ProductSearchEvent;
+import com.cloud.search.annotation.MultiLevelCacheEvict;
+import com.cloud.search.annotation.MultiLevelCacheable;
+import com.cloud.search.annotation.MultiLevelCaching;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
+import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,18 +37,38 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     private static final long PROCESSED_EVENT_TTL = 24 * 60 * 60; // 24小时
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOperations elasticsearchOperations;
+    private final ElasticsearchOptimizedService elasticsearchOptimizedService;
     private final StringRedisTemplate redisTemplate;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    @MultiLevelCaching(
+            evict = {
+                    @MultiLevelCacheEvict(cacheName = "productSearchCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "searchSuggestionCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "hotSearchCache", allEntries = true)
+            }
+    )
     public void saveOrUpdateProduct(ProductSearchEvent event) {
         try {
             log.info("保存或更新商品到ES - 商品ID: {}, 商品名称: {}",
                     event.getProductId(), event.getProductName());
 
             ProductDocument document = convertToDocument(event);
-            productDocumentRepository.save(document);
 
-            log.info("✅ 商品保存到ES成功 - 商品ID: {}", event.getProductId());
+            // 使用优化的ES服务进行高性能写入
+            boolean success = elasticsearchOptimizedService.indexDocument(
+                    "product_index",
+                    String.valueOf(event.getProductId()),
+                    document
+            );
+
+            if (success) {
+                log.info("✅ 商品保存到ES成功 - 商品ID: {}", event.getProductId());
+            } else {
+                log.error("❌ 商品保存到ES失败 - 商品ID: {}", event.getProductId());
+                throw new RuntimeException("商品保存到ES失败");
+            }
 
         } catch (Exception e) {
             log.error("❌ 保存商品到ES失败 - 商品ID: {}, 错误: {}",
@@ -53,6 +78,15 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    @MultiLevelCaching(
+            evict = {
+                    @MultiLevelCacheEvict(cacheName = "productSearchCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "searchSuggestionCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "hotSearchCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "filterCache", allEntries = true)
+            }
+    )
     public void deleteProduct(Long productId) {
         try {
             log.info("从ES删除商品 - 商品ID: {}", productId);
@@ -93,11 +127,26 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @MultiLevelCacheable(cacheName = "productSearchCache",
+                        key = "'product:' + #productId",
+                        condition = "#productId != null",
+                        expire = 30, timeUnit = TimeUnit.MINUTES)
     public ProductDocument findByProductId(Long productId) {
         return productDocumentRepository.findById(String.valueOf(productId)).orElse(null);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    @MultiLevelCaching(
+            evict = {
+                    @MultiLevelCacheEvict(cacheName = "productSearchCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "searchSuggestionCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "hotSearchCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "filterCache", allEntries = true),
+                    @MultiLevelCacheEvict(cacheName = "aggregationCache", allEntries = true)
+            }
+    )
     public void batchSaveProducts(List<ProductSearchEvent> events) {
         try {
             log.info("批量保存商品到ES - 数量: {}", events.size());
@@ -106,9 +155,10 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                     .map(this::convertToDocument)
                     .toList();
 
-            productDocumentRepository.saveAll(documents);
+            // 使用优化的ES服务进行批量写入
+            int successCount = elasticsearchOptimizedService.bulkIndex("product_index", documents);
 
-            log.info("✅ 批量保存商品到ES成功 - 数量: {}", events.size());
+            log.info("✅ 批量保存商品到ES完成 - 总数: {}, 成功: {}", events.size(), successCount);
 
         } catch (Exception e) {
             log.error("❌ 批量保存商品到ES失败 - 错误: {}", e.getMessage(), e);

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/payment/manage")
+@RequestMapping("/payments")
 @RequiredArgsConstructor
 @Tag(name = "支付类型管理", description = "支付类型管理接口")
 public class PaymentManageController {

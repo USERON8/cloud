@@ -110,6 +110,27 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
+            <exclusions>
+                <!-- 排除Elasticsearch相关依赖 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>co.elastic.clients</groupId>
+                    <artifactId>elasticsearch-java</artifactId>
+                </exclusion>
+                <!-- 排除Minio相关依赖 -->
+                <exclusion>
+                    <groupId>io.minio</groupId>
+                    <artifactId>minio</artifactId>
+                </exclusion>
+                <!-- 排除错误处理注解 -->
+                <exclusion>
+                    <artifactId>error_prone_annotations</artifactId>
+                    <groupId>com.google.errorprone</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>

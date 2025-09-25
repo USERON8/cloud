@@ -21,7 +21,7 @@ public class BusinessException extends RuntimeException {
     /**
      * 使用指定的错误码和消息创建业务异常
      *
-     * @param code 错误码
+     * @param code    错误码
      * @param message 错误消息
      */
     public BusinessException(int code, String message) {
@@ -56,7 +56,7 @@ public class BusinessException extends RuntimeException {
      * 使用结果码和自定义消息创建业务异常
      *
      * @param resultCode 结果码枚举
-     * @param message 自定义错误消息
+     * @param message    自定义错误消息
      */
     public BusinessException(ResultCode resultCode, String message) {
         super(message);

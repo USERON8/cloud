@@ -16,7 +16,7 @@ import java.util.List;
  * @author what's up
  */
 @Mapper(
-    componentModel = "spring",
+        componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略未映射目标属性
         unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
 )

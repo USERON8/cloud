@@ -35,7 +35,7 @@ public class SearchLocalCacheConfig extends BaseLocalCacheConfig {
     @Bean
     @Primary
     public CacheManager localCacheManager() {
-        log.info("初始化搜索服务本地缓存管理器");
+        System.out.println("初始化搜索服务本地缓存管理器");
         return MultiLevelCacheConfigFactory.createSearchServiceCacheManager();
     }
 

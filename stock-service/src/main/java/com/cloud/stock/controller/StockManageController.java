@@ -22,7 +22,7 @@ import java.util.Collection;
  */
 @Slf4j
 @RestController
-@RequestMapping("/stock/manage")
+@RequestMapping("/stocks")
 @RequiredArgsConstructor
 @Tag(name = "库存管理", description = "库存信息管理相关操作")
 public class StockManageController {
@@ -30,10 +30,10 @@ public class StockManageController {
     private final StockService stockService;
 
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     @Operation(summary = "删除库存信息", description = "根据ID删除库存信息")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> delete(@PathVariable("id")
+    public Result<Boolean> delete(@PathVariable
                                   @Parameter(description = "库存ID")
                                   @NotNull(message = "库存ID不能为空") Long id) {
         log.info("删除库存信息, ID: {}", id);
@@ -41,10 +41,10 @@ public class StockManageController {
         return Result.success("删除成功", result);
     }
 
-    @DeleteMapping("/deleteBatch")
+    @DeleteMapping
     @Operation(summary = "批量删除库存信息", description = "根据ID列表批量删除库存信息")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> deleteBatch(@RequestBody
+    public Result<Boolean> deleteBatch(@RequestParam("ids")
                                        @Parameter(description = "库存ID列表")
                                        @Valid @NotNull(message = "库存ID列表不能为空") Collection<Long> ids) {
         log.info("批量删除库存信息, 数量: {}", ids.size());

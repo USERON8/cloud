@@ -40,7 +40,7 @@ public class OrderCreatedConsumer {
                 Long orderId = event.getOrderId();
                 String orderNo = event.getOrderNo();
 
-                log.info("📥 接收到订单创建消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                log.info("📥 接收到订单创建消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                         orderId, orderNo, traceId);
 
                 // 1. 幂等性检查
@@ -53,10 +53,10 @@ public class OrderCreatedConsumer {
                 boolean frozen = stockService.freezeStock(event);
 
                 if (frozen) {
-                    log.info("✅ 库存冻结成功 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}", 
+                    log.info("✅ 库存冻结成功 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}",
                             orderId, orderNo, event.getOrderItems().size(), traceId);
                 } else {
-                    log.error("❌ 库存冻结失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                    log.error("❌ 库存冻结失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                             orderId, orderNo, traceId);
                     throw new MessageConsumeException("库存冻结失败", null);
                 }

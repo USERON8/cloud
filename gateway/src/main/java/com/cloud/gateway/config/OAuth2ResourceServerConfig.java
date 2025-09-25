@@ -42,31 +42,31 @@ public class OAuth2ResourceServerConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> {
                     var authExchanges = exchanges
-                        // OAuth2.1标准端点 - 完全开放
-                        .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
+                            // OAuth2.1标准端点 - 完全开放
+                            .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
 
-                        // 认证服务所有端点 - 完全开放，无需token验证
-                        .pathMatchers("/auth/**", "/auth-service/**").permitAll()
-                        .pathMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
-                        .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
+                            // 认证服务所有端点 - 完全开放，无需token验证
+                            .pathMatchers("/auth/**", "/auth-service/**").permitAll()
+                            .pathMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
+                            .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
 
-                        // 健康检查和监控端点
-                        .pathMatchers("/actuator/**").permitAll()
+                            // 健康检查和监控端点
+                            .pathMatchers("/actuator/**").permitAll()
 
-                        // Knife4j和API文档相关路径 - 完整覆盖
-                        .pathMatchers(
-                            "/doc.html", "/swagger-ui.html", "/swagger-ui/**",
-                            "/webjars/**", "/v3/api-docs/**", "/swagger-resources/**",
-                            "/favicon.ico", "/csrf",
-                            // Knife4j 聚合相关路径
-                            "/swagger-resources", "/swagger-resources/configuration/ui",
-                            "/swagger-resources/configuration/security",
-                            // 通过网关访问各服务的文档
-                            "/auth-service/doc.html", "/auth-service/v3/api-docs/**",
-                            "/user-service/doc.html", "/user-service/v3/api-docs/**",
-                            "/auth-service/swagger-ui/**", "/user-service/swagger-ui/**",
-                            "/auth-service/webjars/**", "/user-service/webjars/**"
-                        ).permitAll();
+                            // Knife4j和API文档相关路径 - 完整覆盖
+                            .pathMatchers(
+                                    "/doc.html", "/swagger-ui.html", "/swagger-ui/**",
+                                    "/webjars/**", "/v3/api-docs/**", "/swagger-resources/**",
+                                    "/favicon.ico", "/csrf",
+                                    // Knife4j 聚合相关路径
+                                    "/swagger-resources", "/swagger-resources/configuration/ui",
+                                    "/swagger-resources/configuration/security",
+                                    // 通过网关访问各服务的文档
+                                    "/auth-service/doc.html", "/auth-service/v3/api-docs/**",
+                                    "/user-service/doc.html", "/user-service/v3/api-docs/**",
+                                    "/auth-service/swagger-ui/**", "/user-service/swagger-ui/**",
+                                    "/auth-service/webjars/**", "/user-service/webjars/**"
+                            ).permitAll();
 
                     // 根据配置决定是否开放测试API
                     if (enableTestApi) {
@@ -76,8 +76,8 @@ public class OAuth2ResourceServerConfig {
 
                     // 业务API需要认证 - 收紧安全配置
                     authExchanges.pathMatchers("/api/**").authenticated()
-                        // 其他所有请求都需要认证
-                        .anyExchange().authenticated();
+                            // 其他所有请求都需要认证
+                            .anyExchange().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt

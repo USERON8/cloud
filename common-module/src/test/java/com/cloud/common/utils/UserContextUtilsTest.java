@@ -33,56 +33,56 @@ class UserContextUtilsTest {
         claims.put("username", "testuser");
         claims.put("user_type", "USER");
         claims.put("scope", "read write user.read");
-        
+
         Jwt jwt = createMockJwt(claims);
         JwtAuthenticationToken authToken = new JwtAuthenticationToken(jwt);
-        
+
         // Mock SecurityContext
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authToken);
-        
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = 
-             mockStatic(SecurityContextHolder.class)) {
+
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder =
+                     mockStatic(SecurityContextHolder.class)) {
             mockedSecurityContextHolder.when(SecurityContextHolder::getContext)
-                .thenReturn(securityContext);
-            
+                    .thenReturn(securityContext);
+
             // 测试获取用户ID
             String userId = UserContextUtils.getCurrentUserId();
             assertEquals("123456", userId);
-            
+
             // 测试获取用户名
             String username = UserContextUtils.getCurrentUsername();
             assertEquals("testuser", username);
-            
+
             // 测试获取用户类型
             String userType = UserContextUtils.getCurrentUserType();
             assertEquals("USER", userType);
-            
+
             // 测试用户类型判断
             assertTrue(UserContextUtils.isRegularUser());
             assertFalse(UserContextUtils.isAdmin());
-            
+
             // 测试权限检查
             assertTrue(UserContextUtils.hasScope("read"));
             assertTrue(UserContextUtils.hasScope("write"));
             assertFalse(UserContextUtils.hasScope("delete"));
-            
+
             // 注意：测试环境下认证状态可能不准确，跳过此检查
             // assertTrue(UserContextUtils.isAuthenticated());
         }
     }
-    
+
     @Test
     @DisplayName("测试未认证状态")
     void testUnauthenticated() {
         SecurityContext emptySecurityContext = mock(SecurityContext.class);
         when(emptySecurityContext.getAuthentication()).thenReturn(null);
-        
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = 
-             mockStatic(SecurityContextHolder.class)) {
+
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder =
+                     mockStatic(SecurityContextHolder.class)) {
             mockedSecurityContextHolder.when(SecurityContextHolder::getContext)
-                .thenReturn(emptySecurityContext);
-            
+                    .thenReturn(emptySecurityContext);
+
             // 测试未认证状态
             assertFalse(UserContextUtils.isAuthenticated());
             assertNull(UserContextUtils.getCurrentUserId());

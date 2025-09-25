@@ -22,8 +22,8 @@ import java.util.function.Supplier;
  * 基于Stream和异步处理，提供高性能的事件流处理能力
  *
  * @author what's up
- * @since 2025-09-20
  * @version 2.0 - 重构为统一命名规范
+ * @since 2025-09-20
  */
 @Slf4j
 @Component
@@ -34,7 +34,7 @@ public class UserEventStreamProducer {
     // 日志服务绑定名称
     private static final String LOG_SERVICE_BINDING = "log-producer-out-0";
     private static final String USER_LOG_TOPIC = "user-logs";
-    
+
     private final StreamBridge streamBridge;
 
     /**
@@ -44,15 +44,15 @@ public class UserEventStreamProducer {
         sendEventWithRetry(event, tag, LOG_SERVICE_BINDING)
                 .thenAccept(success -> {
                     if (success) {
-                        log.info("✅ 日志服务消息发送成功 - 事件: {}, 用户ID: {}, Tag: {}", 
+                        log.info("✅ 日志服务消息发送成功 - 事件: {}, 用户ID: {}, Tag: {}",
                                 event.getEventType(), event.getUserId(), tag);
                     } else {
-                        log.error("❌ 日志服务消息发送失败 - 事件: {}, 用户ID: {}", 
+                        log.error("❌ 日志服务消息发送失败 - 事件: {}, 用户ID: {}",
                                 event.getEventType(), event.getUserId());
                     }
                 })
                 .exceptionally(throwable -> {
-                    log.error("💥 日志服务消息发送异常 - 事件: {}, 用户ID: {}, 错误: {}", 
+                    log.error("💥 日志服务消息发送异常 - 事件: {}, 用户ID: {}, 错误: {}",
                             event.getEventType(), event.getUserId(), throwable.getMessage(), throwable);
                     return null;
                 });
@@ -66,7 +66,7 @@ public class UserEventStreamProducer {
                 .thenCompose(this::sendMessage)
                 .handle((success, throwable) -> {
                     if (throwable != null) {
-                        log.warn("🔄 消息发送失败，准备重试 - 事件: {}, 错误: {}", 
+                        log.warn("🔄 消息发送失败，准备重试 - 事件: {}, 错误: {}",
                                 event.getEventType(), throwable.getMessage());
                         // 简单重试一次
                         return retryMessage(event, tag, binding);

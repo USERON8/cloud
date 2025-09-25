@@ -3,6 +3,7 @@ package com.cloud.search.controller;
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
+import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,6 +32,7 @@ public class ProductSearchController {
 
     private final ProductSearchService productSearchService;
     private final ProductDocumentRepository productDocumentRepository;
+    private final ElasticsearchOptimizedService elasticsearchOptimizedService;
 
     @Operation(summary = "关键词搜索商品", description = "根据关键词搜索商品，支持中文分词和拼音搜索")
     @GetMapping("/search")
@@ -142,25 +144,67 @@ public class ProductSearchController {
         }
     }
 
+    @Operation(summary = "智能搜索", description = "使用优化的ES引擎进行智能搜索")
+    @GetMapping("/smart-search")
+    public Result<ElasticsearchOptimizedService.SearchResult> smartSearch(
+            @Parameter(description = "搜索关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "最低价格") @RequestParam(required = false) Double minPrice,
+            @Parameter(description = "最高价格") @RequestParam(required = false) Double maxPrice,
+            @Parameter(description = "排序字段") @RequestParam(defaultValue = "score") String sortField,
+            @Parameter(description = "排序方向") @RequestParam(defaultValue = "desc") String sortOrder,
+            @Parameter(description = "页码，从1开始") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") int size) {
+
+        try {
+            log.info("智能搜索请求 - 关键词: {}, 分类: {}, 价格区间: [{}, {}], 页码: {}",
+                    keyword, categoryId, minPrice, maxPrice, page);
+
+            int from = (page - 1) * size;
+            ElasticsearchOptimizedService.SearchResult result = elasticsearchOptimizedService
+                    .smartProductSearch(keyword, categoryId, minPrice, maxPrice,
+                                      sortField, sortOrder, from, size);
+
+            return Result.success("搜索成功", result);
+
+        } catch (Exception e) {
+            log.error("智能搜索失败 - 关键词: {}, 错误: {}", keyword, e.getMessage(), e);
+            return Result.error("搜索失败: " + e.getMessage());
+        }
+    }
+
     @Operation(summary = "搜索建议", description = "获取搜索关键词建议")
     @GetMapping("/suggestions")
     public Result<List<String>> getSearchSuggestions(
-            @Parameter(description = "输入前缀") @RequestParam String prefix) {
+            @Parameter(description = "输入关键词") @RequestParam String keyword,
+            @Parameter(description = "建议数量") @RequestParam(defaultValue = "10") int limit) {
 
         try {
-            List<ProductDocument> suggestions = productDocumentRepository.findSuggestions(prefix);
-            List<String> result = suggestions.stream()
-                    .map(ProductDocument::getProductName)
-                    .distinct()
-                    .limit(10)
-                    .toList();
+            List<String> suggestions = elasticsearchOptimizedService.getSearchSuggestions(keyword, limit);
 
-            log.info("搜索建议完成 - 前缀: {}, 建议数量: {}", prefix, result.size());
-            return Result.success("获取建议成功", result);
+            log.info("搜索建议完成 - 关键词: {}, 建议数量: {}", keyword, suggestions.size());
+            return Result.success("获取建议成功", suggestions);
 
         } catch (Exception e) {
-            log.error("获取搜索建议失败 - 前缀: {}, 错误: {}", prefix, e.getMessage(), e);
+            log.error("获取搜索建议失败 - 关键词: {}, 错误: {}", keyword, e.getMessage(), e);
             return Result.error("获取建议失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "热门搜索词", description = "获取热门搜索关键词")
+    @GetMapping("/hot-keywords")
+    public Result<List<String>> getHotSearchKeywords(
+            @Parameter(description = "数量限制") @RequestParam(defaultValue = "10") int limit) {
+
+        try {
+            List<String> hotKeywords = elasticsearchOptimizedService.getHotSearchKeywords(limit);
+
+            log.info("热门搜索词获取完成 - 数量: {}", hotKeywords.size());
+            return Result.success("获取热门搜索词成功", hotKeywords);
+
+        } catch (Exception e) {
+            log.error("获取热门搜索词失败 - 错误: {}", e.getMessage(), e);
+            return Result.error("获取热门搜索词失败: " + e.getMessage());
         }
     }
 

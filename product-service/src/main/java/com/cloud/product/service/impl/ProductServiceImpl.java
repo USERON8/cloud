@@ -251,6 +251,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
+    @MultiLevelCacheable(value = "productCache",
+            key = "'batch:' + T(String).join(',', #ids)",
+            condition = "!T(org.springframework.util.CollectionUtils).isEmpty(#ids)",
+            expire = 45, timeUnit = TimeUnit.MINUTES)
     public List<ProductVO> getProductsByIds(List<Long> ids) {
         log.debug("批量获取商品: {}", ids);
 
@@ -475,6 +479,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
+    @MultiLevelCacheable(value = "productCache", key = "'stock:' + #id + ':' + #quantity",
+            expire = 5, timeUnit = TimeUnit.MINUTES)
     public Boolean checkStock(Long id, Integer quantity) {
         log.debug("检查商品库存: ID={}, Quantity={}", id, quantity);
 
@@ -587,6 +593,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
+    @MultiLevelCacheable(value = "productCache", key = "'feign:' + #id",
+            condition = "#id != null",
+            expire = 45, timeUnit = TimeUnit.MINUTES)
     public ProductDTO getProductByIdForFeign(Long id) {
         log.debug("获取商品详情（Feign): {}", id);
 
@@ -617,6 +626,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
+    @MultiLevelCacheable(value = "productListCache", key = "'all'",
+            expire = 30, timeUnit = TimeUnit.MINUTES)
     public List<ProductDTO> getAllProducts() {
         log.debug("获取所有商品（Feign)");
 

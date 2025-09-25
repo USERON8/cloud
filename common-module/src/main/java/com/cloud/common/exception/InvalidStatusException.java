@@ -20,9 +20,9 @@ public class InvalidStatusException extends BusinessException {
     /**
      * 通过实体名称、当前状态和操作构造异常
      *
-     * @param entityName 实体名称（如：订单、支付、用户）
+     * @param entityName    实体名称（如：订单、支付、用户）
      * @param currentStatus 当前状态
-     * @param operation 尝试执行的操作
+     * @param operation     尝试执行的操作
      */
     public InvalidStatusException(String entityName, String currentStatus, String operation) {
         super(String.format("%s当前状态为[%s]，无法执行[%s]操作", entityName, currentStatus, operation));
@@ -40,7 +40,7 @@ public class InvalidStatusException extends BusinessException {
     /**
      * 带错误码和消息创建异常
      *
-     * @param code 错误码
+     * @param code    错误码
      * @param message 异常消息
      */
     public InvalidStatusException(int code, String message) {
@@ -51,7 +51,7 @@ public class InvalidStatusException extends BusinessException {
      * 带异常原因创建异常
      *
      * @param message 异常消息
-     * @param cause 异常原因
+     * @param cause   异常原因
      */
     public InvalidStatusException(String message, Throwable cause) {
         super(message, cause);

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Gateway服务发现配置
- * 
+ *
  * @author Cloud
  */
 @Configuration
@@ -20,11 +20,11 @@ public class GatewayDiscoveryConfig {
      */
     @Bean
     public DiscoveryClientRouteDefinitionLocator discoveryClientRouteDefinitionLocator(
-            ReactiveDiscoveryClient reactiveDiscoveryClient, 
+            ReactiveDiscoveryClient reactiveDiscoveryClient,
             DiscoveryLocatorProperties properties) {
         return new DiscoveryClientRouteDefinitionLocator(reactiveDiscoveryClient, properties);
     }
-    
+
     /**
      * 服务发现定位器属性
      */

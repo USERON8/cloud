@@ -41,7 +41,7 @@ public class PaymentSuccessConsumer {
                 String orderNo = event.getOrderNo();
                 Long paymentId = event.getPaymentId();
 
-                log.info("📥 接收到支付成功消息 - 订单ID: {}, 订单号: {}, 支付ID: {}, 追踪ID: {}", 
+                log.info("📥 接收到支付成功消息 - 订单ID: {}, 订单号: {}, 支付ID: {}, 追踪ID: {}",
                         orderId, orderNo, paymentId, traceId);
 
                 // 1. 幂等性检查
@@ -54,10 +54,10 @@ public class PaymentSuccessConsumer {
                 boolean updated = orderService.updateOrderToPaid(event);
 
                 if (updated) {
-                    log.info("✅ 订单状态更新成功 - 订单ID: {}, 订单号: {}, 支付金额: {}, 追踪ID: {}", 
+                    log.info("✅ 订单状态更新成功 - 订单ID: {}, 订单号: {}, 支付金额: {}, 追踪ID: {}",
                             orderId, orderNo, event.getPaymentAmount(), traceId);
                 } else {
-                    log.error("❌ 订单状态更新失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                    log.error("❌ 订单状态更新失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                             orderId, orderNo, traceId);
                     throw new MessageConsumeException("订单状态更新失败", null);
                 }

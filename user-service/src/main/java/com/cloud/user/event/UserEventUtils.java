@@ -30,27 +30,27 @@ public class UserEventUtils {
     public static final Predicate<User> IS_GITHUB_USER = user -> "github".equals(user.getOauthProvider());
 
     // 用户变更检测谓词
-    public static final BiPredicate<User, User> STATUS_CHANGED = 
+    public static final BiPredicate<User, User> STATUS_CHANGED =
             (oldUser, newUser) -> !oldUser.getStatus().equals(newUser.getStatus());
-    
-    public static final BiPredicate<User, User> USERNAME_CHANGED = 
+
+    public static final BiPredicate<User, User> USERNAME_CHANGED =
             (oldUser, newUser) -> !oldUser.getUsername().equals(newUser.getUsername());
-    
-    public static final BiPredicate<User, User> EMAIL_CHANGED = 
+
+    public static final BiPredicate<User, User> EMAIL_CHANGED =
             (oldUser, newUser) -> !Optional.ofNullable(oldUser.getEmail())
                     .equals(Optional.ofNullable(newUser.getEmail()));
 
     /**
      * 安全的用户事件发布 - 自动处理空值
      */
-    public static void safePublishEvent(UserEventStreamPublisher publisher, User user, 
-                                      UserEventStreamPublisher.EventType eventType) {
+    public static void safePublishEvent(UserEventStreamPublisher publisher, User user,
+                                        UserEventStreamPublisher.EventType eventType) {
         Optional.ofNullable(publisher)
                 .filter(p -> user != null)
                 .ifPresentOrElse(
-                    p -> p.publishEvent(user, eventType),
-                    () -> log.warn("🚫 跳过事件发布 - 发布器或用户为空, 事件: {}", 
-                            eventType != null ? eventType.getDescription() : "unknown")
+                        p -> p.publishEvent(user, eventType),
+                        () -> log.warn("🚫 跳过事件发布 - 发布器或用户为空, 事件: {}",
+                                eventType != null ? eventType.getDescription() : "unknown")
                 );
     }
 
@@ -58,15 +58,15 @@ public class UserEventUtils {
      * 条件事件发布 - 仅在满足条件时发布
      */
     public static void conditionalPublish(UserEventStreamPublisher publisher, User user,
-                                        UserEventStreamPublisher.EventType eventType,
-                                        Predicate<User> condition) {
+                                          UserEventStreamPublisher.EventType eventType,
+                                          Predicate<User> condition) {
         Optional.ofNullable(user)
                 .filter(condition)
                 .ifPresentOrElse(
-                    u -> safePublishEvent(publisher, u, eventType),
-                    () -> log.debug("🔍 条件不满足，跳过事件发布 - 用户ID: {}, 事件: {}", 
-                            user != null ? user.getId() : "null", 
-                            eventType != null ? eventType.getDescription() : "unknown")
+                        u -> safePublishEvent(publisher, u, eventType),
+                        () -> log.debug("🔍 条件不满足，跳过事件发布 - 用户ID: {}, 事件: {}",
+                                user != null ? user.getId() : "null",
+                                eventType != null ? eventType.getDescription() : "unknown")
                 );
     }
 
@@ -74,8 +74,8 @@ public class UserEventUtils {
      * 批量用户事件发布 - 带过滤条件
      */
     public static void batchPublishWithFilter(UserEventStreamPublisher publisher, List<User> users,
-                                            UserEventStreamPublisher.EventType eventType,
-                                            Predicate<User> filter) {
+                                              UserEventStreamPublisher.EventType eventType,
+                                              Predicate<User> filter) {
         Optional.ofNullable(users)
                 .map(List::stream)
                 .orElse(Stream.empty())
@@ -87,8 +87,8 @@ public class UserEventUtils {
     /**
      * 智能用户更新事件发布 - 自动检测变更类型
      */
-    public static void smartPublishUpdate(UserEventStreamPublisher publisher, 
-                                        User oldUser, User newUser) {
+    public static void smartPublishUpdate(UserEventStreamPublisher publisher,
+                                          User oldUser, User newUser) {
         if (publisher == null || oldUser == null || newUser == null) {
             log.warn("🚫 跳过智能更新事件发布 - 参数不完整");
             return;
@@ -114,32 +114,30 @@ public class UserEventUtils {
     /**
      * 用户登录事件发布 - 区分OAuth和常规登录
      */
-    public static void publishLoginEvent(UserEventStreamPublisher publisher, User user, 
-                                       String loginType) {
+    public static void publishLoginEvent(UserEventStreamPublisher publisher, User user,
+                                         String loginType) {
         if (publisher == null || user == null) {
             log.warn("🚫 跳过登录事件发布 - 参数不完整");
             return;
         }
 
         switch (Optional.ofNullable(loginType).orElse("normal").toLowerCase()) {
-            case "oauth", "github", "wechat", "qq" -> 
-                publisher.publishOAuthLogin(user, loginType);
-            default -> 
-                publisher.publishLogin(user);
+            case "oauth", "github", "wechat", "qq" -> publisher.publishOAuthLogin(user, loginType);
+            default -> publisher.publishLogin(user);
         }
     }
 
     /**
      * 用户删除事件发布 - 区分软删除和硬删除
      */
-    public static void publishDeleteEvent(UserEventStreamPublisher publisher, User user, 
-                                        boolean isSoftDelete) {
+    public static void publishDeleteEvent(UserEventStreamPublisher publisher, User user,
+                                          boolean isSoftDelete) {
         if (publisher == null || user == null) {
             log.warn("🚫 跳过删除事件发布 - 参数不完整");
             return;
         }
 
-        String metadata = String.format("{\"删除类型\":\"%s\"}", 
+        String metadata = String.format("{\"删除类型\":\"%s\"}",
                 isSoftDelete ? "soft" : "hard");
         publisher.publishEvent(user, UserEventStreamPublisher.EventType.DELETED, metadata);
     }
@@ -157,12 +155,12 @@ public class UserEventUtils {
      * 发布高优先级用户事件
      */
     public static void publishHighPriorityEvent(UserEventStreamPublisher publisher, User user,
-                                              UserEventStreamPublisher.EventType eventType) {
+                                                UserEventStreamPublisher.EventType eventType) {
         if (isHighPriorityUser(user)) {
-            String metadata = String.format("{\"priority\":\"high\",\"userType\":\"%s\"}", 
+            String metadata = String.format("{\"priority\":\"high\",\"userType\":\"%s\"}",
                     user.getUserType());
             publisher.publishEvent(user, eventType, metadata);
-            log.info("⚡ 发布高优先级用户事件 - 用户ID: {}, 类型: {}, 事件: {}", 
+            log.info("⚡ 发布高优先级用户事件 - 用户ID: {}, 类型: {}, 事件: {}",
                     user.getId(), user.getUserType(), eventType.getDescription());
         } else {
             safePublishEvent(publisher, user, eventType);

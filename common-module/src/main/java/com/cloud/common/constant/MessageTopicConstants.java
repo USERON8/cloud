@@ -9,12 +9,6 @@ package com.cloud.common.constant;
  */
 public final class MessageTopicConstants {
 
-    private MessageTopicConstants() {
-        // 工具类，禁止实例化
-    }
-
-    // ================================ 日志收集Topic ================================
-
     /**
      * 日志收集主题
      * 用途: 除auth-service和gateway-service外的所有微服务发送日志到log-service
@@ -23,8 +17,7 @@ public final class MessageTopicConstants {
      */
     public static final String LOG_COLLECTION_TOPIC = "log-collection-topic";
 
-    // ================================ 订单业务流程Topic ================================
-
+    // ================================ 日志收集Topic ================================
     /**
      * 订单创建主题
      * 用途: 订单创建时通知支付服务创建支付记录，通知库存服务冻结库存
@@ -33,6 +26,7 @@ public final class MessageTopicConstants {
      */
     public static final String ORDER_CREATED_TOPIC = "order-created-topic";
 
+    // ================================ 订单业务流程Topic ================================
     /**
      * 支付成功主题
      * 用途: 支付成功后通知订单服务更新订单状态
@@ -40,7 +34,6 @@ public final class MessageTopicConstants {
      * 消费者: order-service
      */
     public static final String PAYMENT_SUCCESS_TOPIC = "payment-success-topic";
-
     /**
      * 订单完成主题
      * 用途: 订单完成后通知库存服务解冻并扣减库存
@@ -48,6 +41,10 @@ public final class MessageTopicConstants {
      * 消费者: stock-service
      */
     public static final String ORDER_COMPLETED_TOPIC = "order-completed-topic";
+
+    private MessageTopicConstants() {
+        // 工具类，禁止实例化
+    }
 
     // ================================ 消息标签常量 ================================
 
@@ -140,11 +137,11 @@ public final class MessageTopicConstants {
     public static final class ProducerBindings {
         // 日志收集生产者
         public static final String LOG_PRODUCER = "logProducer-out-0";
-        
+
         // 订单业务生产者
         public static final String ORDER_CREATED_PRODUCER = "orderCreatedProducer-out-0";
         public static final String ORDER_COMPLETED_PRODUCER = "orderCompletedProducer-out-0";
-        
+
         // 支付业务生产者
         public static final String PAYMENT_SUCCESS_PRODUCER = "paymentSuccessProducer-out-0";
     }
@@ -155,7 +152,7 @@ public final class MessageTopicConstants {
     public static final class ConsumerBindings {
         // 日志收集消费者
         public static final String LOG_CONSUMER = "logConsumer-in-0";
-        
+
         // 订单业务消费者
         public static final String ORDER_CREATED_CONSUMER = "orderCreatedConsumer-in-0";
         public static final String ORDER_COMPLETED_CONSUMER = "orderCompletedConsumer-in-0";

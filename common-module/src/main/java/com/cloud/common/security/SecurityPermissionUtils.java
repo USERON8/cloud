@@ -123,9 +123,9 @@ public final class SecurityPermissionUtils {
      * 检查指定认证对象是否已认证
      */
     public static boolean isAuthenticated(Authentication authentication) {
-        return authentication != null 
-               && authentication.isAuthenticated()
-               && !"anonymousUser".equals(authentication.getName());
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getName());
     }
 
     // ================================ 权限检查 ================================
@@ -163,7 +163,7 @@ public final class SecurityPermissionUtils {
         if (authentication == null || authorities == null) {
             return false;
         }
-        
+
         for (String authority : authorities) {
             if (hasAuthority(authentication, authority)) {
                 return true;
@@ -238,9 +238,9 @@ public final class SecurityPermissionUtils {
         }
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equals("ROLE_ADMIN") 
-                          || authority.contains("admin") 
-                          || hasRole(authentication, "ADMIN"));
+                .anyMatch(authority -> authority.equals("ROLE_ADMIN")
+                        || authority.contains("admin")
+                        || hasRole(authentication, "ADMIN"));
     }
 
     /**
@@ -259,9 +259,9 @@ public final class SecurityPermissionUtils {
         }
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equals("ROLE_MERCHANT") 
-                          || authority.contains("merchant") 
-                          || hasRole(authentication, "MERCHANT"));
+                .anyMatch(authority -> authority.equals("ROLE_MERCHANT")
+                        || authority.contains("merchant")
+                        || hasRole(authentication, "MERCHANT"));
     }
 
     /**
@@ -309,7 +309,7 @@ public final class SecurityPermissionUtils {
         if (authentication == null || resourceUserId == null) {
             return false;
         }
-        
+
         String currentUserId = getCurrentUserId(authentication);
         return Objects.equals(currentUserId, resourceUserId.toString());
     }
@@ -328,12 +328,12 @@ public final class SecurityPermissionUtils {
         if (authentication == null || merchantId == null) {
             return false;
         }
-        
+
         // 检查是否为商户
         if (!isMerchant(authentication)) {
             return false;
         }
-        
+
         // 获取当前用户ID，检查是否与商户ID一致
         String currentUserId = getCurrentUserId(authentication);
         return Objects.equals(currentUserId, merchantId.toString());
@@ -435,7 +435,7 @@ public final class SecurityPermissionUtils {
         if (isAdmin(authentication)) {
             return true;
         }
-        
+
         // 检查是否为资源所有者
         String currentUserId = getCurrentUserId(authentication);
         return currentUserId != null && currentUserId.equals(resourceUserId.toString());
@@ -455,11 +455,11 @@ public final class SecurityPermissionUtils {
         if (!isAuthenticated(authentication)) {
             return "Anonymous";
         }
-        
+
         String userId = getCurrentUserId(authentication);
         String userType = getCurrentUserType(authentication);
-        return String.format("User[id=%s, type=%s]", 
-            userId != null ? userId : "unknown", 
-            userType != null ? userType : "unknown");
+        return String.format("User[id=%s, type=%s]",
+                userId != null ? userId : "unknown",
+                userType != null ? userType : "unknown");
     }
 }

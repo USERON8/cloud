@@ -10,7 +10,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 /**
  * Validator配置类
  * 解决多个Validator Bean冲突问题
- * 
+ *
  * @author Cloud
  */
 @Configuration

@@ -243,11 +243,11 @@ public class OAuth2TokenManagementService {
                     if (accessTokenValue.contains(".")) {
                         // 计算令牌剩余有效期
                         long ttlSeconds = authorization.getAccessToken().getToken().getExpiresAt() != null ?
-                            java.time.Duration.between(java.time.Instant.now(),
-                                authorization.getAccessToken().getToken().getExpiresAt()).getSeconds() : 3600;
+                                java.time.Duration.between(java.time.Instant.now(),
+                                        authorization.getAccessToken().getToken().getExpiresAt()).getSeconds() : 3600;
 
                         tokenBlacklistService.addToBlacklist(accessTokenValue,
-                            authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
+                                authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
                     }
                 } catch (Exception e) {
                     log.warn("将访问令牌加入黑名单失败: {}", e.getMessage());
@@ -259,11 +259,11 @@ public class OAuth2TokenManagementService {
                 try {
                     String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
                     long ttlSeconds = authorization.getRefreshToken().getToken().getExpiresAt() != null ?
-                        java.time.Duration.between(java.time.Instant.now(),
-                            authorization.getRefreshToken().getToken().getExpiresAt()).getSeconds() : 2592000; // 30天
+                            java.time.Duration.between(java.time.Instant.now(),
+                                    authorization.getRefreshToken().getToken().getExpiresAt()).getSeconds() : 2592000; // 30天
 
                     tokenBlacklistService.addToBlacklist(refreshTokenValue,
-                        authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
+                            authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
                 } catch (Exception e) {
                     log.warn("将刷新令牌加入黑名单失败: {}", e.getMessage());
                 }

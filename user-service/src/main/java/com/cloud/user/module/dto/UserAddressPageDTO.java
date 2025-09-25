@@ -13,27 +13,27 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class UserAddressPageDTO extends PageQuery {
-    
+
     /**
      * 用户ID
      */
     private Long userId;
-    
+
     /**
      * 收货人姓名
      */
     private String consignee;
-    
+
     /**
      * 省份
      */
     private String province;
-    
+
     /**
      * 城市
      */
     private String city;
-    
+
     /**
      * 是否默认地址
      */

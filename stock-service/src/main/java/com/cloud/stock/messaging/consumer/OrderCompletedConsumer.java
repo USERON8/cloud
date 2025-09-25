@@ -40,7 +40,7 @@ public class OrderCompletedConsumer {
                 Long orderId = event.getOrderId();
                 String orderNo = event.getOrderNo();
 
-                log.info("📥 接收到订单完成消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                log.info("📥 接收到订单完成消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                         orderId, orderNo, traceId);
 
                 // 1. 幂等性检查
@@ -53,10 +53,10 @@ public class OrderCompletedConsumer {
                 boolean processed = stockService.unfreezeAndDeductStock(event);
 
                 if (processed) {
-                    log.info("✅ 库存解冻扣减成功 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}", 
+                    log.info("✅ 库存解冻扣减成功 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}",
                             orderId, orderNo, event.getStockDeductions().size(), traceId);
                 } else {
-                    log.error("❌ 库存解冻扣减失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                    log.error("❌ 库存解冻扣减失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                             orderId, orderNo, traceId);
                     throw new MessageConsumeException("库存解冻扣减失败", null);
                 }

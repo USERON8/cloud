@@ -40,7 +40,7 @@ public class OrderCreatedConsumer {
                 Long orderId = event.getOrderId();
                 String orderNo = event.getOrderNo();
 
-                log.info("📥 接收到订单创建消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                log.info("📥 接收到订单创建消息 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                         orderId, orderNo, traceId);
 
                 // 1. 幂等性检查
@@ -53,10 +53,10 @@ public class OrderCreatedConsumer {
                 boolean created = paymentService.createPaymentRecord(event);
 
                 if (created) {
-                    log.info("✅ 支付记录创建成功 - 订单ID: {}, 订单号: {}, 金额: {}, 追踪ID: {}", 
+                    log.info("✅ 支付记录创建成功 - 订单ID: {}, 订单号: {}, 金额: {}, 追踪ID: {}",
                             orderId, orderNo, event.getPayAmount(), traceId);
                 } else {
-                    log.error("❌ 支付记录创建失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}", 
+                    log.error("❌ 支付记录创建失败 - 订单ID: {}, 订单号: {}, 追踪ID: {}",
                             orderId, orderNo, traceId);
                     throw new MessageConsumeException("支付记录创建失败", null);
                 }

@@ -3,8 +3,8 @@ package com.cloud.user.controller.user;
 
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.result.Result;
-import com.cloud.user.converter.UserConverter;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.user.converter.UserConverter;
 import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,9 +14,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
@@ -24,22 +23,27 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/user/manage")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 @Tag(name = "用户管理", description = "用户信息更新、删除等相关操作")
 public class UserManageController {
     private final UserService userService;
     private final UserConverter userConverter = UserConverter.INSTANCE;
 
-    @PostMapping("/update")
+    @PutMapping("/{id}")
     @Operation(summary = "更新用户信息", description = "更新用户信息")
-    public Result<Boolean> update(@RequestBody
+    public Result<Boolean> update(@PathVariable
+                                  @Parameter(description = "用户ID") Long id,
+                                  @RequestBody
                                   @Parameter(description = "用户信息")
                                   @Valid @NotNull(message = "用户信息不能为空") UserDTO userDTO,
                                   Authentication authentication) {
 
+        // 确保路径参数与请求体中的ID一致
+        userDTO.setId(id);
+
         // 使用统一的权限检查工具
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userDTO.getId())) {
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限更新此用户信息");
         }
 

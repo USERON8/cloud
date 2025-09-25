@@ -127,7 +127,7 @@ knife4j:
       enabled: true
       version: openapi3
       # 排除gateway服务本身
-      excluded-services: 
+      excluded-services:
         - gateway
       # 服务发现配置
       service-config:
@@ -135,5 +135,5 @@ knife4j:
           group-name: 认证服务
           api-docs-path: /v3/api-docs
         user-service:
-          group-name: 用户服务  
+          group-name: 用户服务
           api-docs-path: /v3/api-docs

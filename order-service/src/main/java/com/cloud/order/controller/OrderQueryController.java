@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/order/query")
+@RequestMapping("/orders")
 @RequiredArgsConstructor
 @Tag(name = "订单查询接口", description = "负责订单的查询操作，包括分页查询、根据ID查询等")
 public class OrderQueryController {
@@ -40,12 +40,22 @@ public class OrderQueryController {
      * @param queryDTO 查询条件
      * @return 订单分页结果
      */
-    @PostMapping("/page")
+    @GetMapping
     @Operation(summary = "分页查询订单", description = "根据条件分页查询订单列表")
-    @Cacheable(value = "order-page", key = "'page:' + #queryDTO.page + ':' + #queryDTO.size + ':' + #queryDTO.status")
+    @Cacheable(value = "order-page", key = "'page:' + #page + ':' + #size + ':' + #status")
     public Result<Page<OrderVO>> queryOrdersByPage(
-            @Parameter(description = "查询条件", required = true)
-            @Valid @RequestBody OrderPageQueryDTO queryDTO) {
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "订单状态") @RequestParam(required = false) Integer status,
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
+            @Parameter(description = "订单号") @RequestParam(required = false) String orderNo) {
+        OrderPageQueryDTO queryDTO = new OrderPageQueryDTO();
+        queryDTO.setCurrent(page.longValue());
+        queryDTO.setSize(size.longValue());
+        queryDTO.setStatus(status);
+        queryDTO.setUserId(userId);
+        // OrderPageQueryDTO没有orderNo字段，跳过设置
+
         log.debug("分页查询订单，条件: {}", queryDTO);
         Page<OrderVO> pageResult = orderService.pageQuery(queryDTO);
         return Result.success(pageResult);

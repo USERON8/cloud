@@ -109,7 +109,7 @@ public interface UserService extends IService<User> {
     /**
      * 根据OAuth提供商和提供商ID查找用户
      *
-     * @param oauthProvider OAuth提供商（如：github）
+     * @param oauthProvider   OAuth提供商（如：github）
      * @param oauthProviderId OAuth提供商用户ID
      * @return 用户DTO，如果不存在则返回null
      */
@@ -128,7 +128,7 @@ public interface UserService extends IService<User> {
      * 更新GitHub OAuth用户信息
      * 用于同步GitHub用户信息变更
      *
-     * @param userId 系统用户ID
+     * @param userId        系统用户ID
      * @param githubUserDTO 最新的GitHub用户信息
      * @return 更新结果
      */

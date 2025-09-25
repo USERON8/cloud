@@ -13,22 +13,22 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MerchantPageDTO extends PageQuery {
-    
+
     /**
      * 商户名称
      */
     private String merchantName;
-    
+
     /**
      * 商户状态
      */
     private Integer status;
-    
+
     /**
      * 认证状态
      */
     private Integer authStatus;
-    
+
     /**
      * 商户类型
      */

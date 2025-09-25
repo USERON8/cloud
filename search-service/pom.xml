@@ -56,6 +56,18 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
+            <exclusions>
+                <!-- 排除Minio相关依赖（search-service不需要文件存储） -->
+                <exclusion>
+                    <groupId>io.minio</groupId>
+                    <artifactId>minio</artifactId>
+                </exclusion>
+                <!-- 排除错误处理注解 -->
+                <exclusion>
+                    <artifactId>error_prone_annotations</artifactId>
+                    <groupId>com.google.errorprone</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

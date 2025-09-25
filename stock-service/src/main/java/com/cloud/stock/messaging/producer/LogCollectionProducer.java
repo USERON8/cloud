@@ -43,7 +43,7 @@ public class LogCollectionProducer {
      * 发送库存操作日志
      */
     public void sendStockOperationLog(Long productId, String productName, String operation,
-                                     Integer beforeQuantity, Integer afterQuantity, String operator) {
+                                      Integer beforeQuantity, Integer afterQuantity, String operator) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("stock-service")
@@ -68,8 +68,8 @@ public class LogCollectionProducer {
     /**
      * 发送库存异常日志
      */
-    public void sendStockErrorLog(Long productId, String operation, 
-                                 String exceptionMessage, String exceptionStack) {
+    public void sendStockErrorLog(Long productId, String operation,
+                                  String exceptionMessage, String exceptionStack) {
         LogCollectionEvent event = LogCollectionEvent.builder()
                 .logId(generateLogId())
                 .serviceName("stock-service")
@@ -124,8 +124,8 @@ public class LogCollectionProducer {
     }
 
     private String generateLogId() {
-        return "STOCK_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return "STOCK_" + System.currentTimeMillis() + "_" +
+                UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     private String generateTraceId() {

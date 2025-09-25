@@ -8,7 +8,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
@@ -105,10 +108,10 @@ public abstract class BaseOAuth2ResourceServerConfig {
 
         // 创建验证器列表
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
-        
+
         // 添加默认验证器
         validators.add(JwtValidators.createDefaultWithIssuer(jwtIssuer));
-        
+
         // 添加自定义验证器
         addCustomValidators(validators);
 
@@ -138,14 +141,14 @@ public abstract class BaseOAuth2ResourceServerConfig {
      */
     protected JwtAuthenticationConverter createJwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        
+
         // OAuth2.1标准：从 scope 声明中提取权限
         authoritiesConverter.setAuthorityPrefix("SCOPE_");
         authoritiesConverter.setAuthoritiesClaimName("scope");
 
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        
+
         return converter;
     }
 

@@ -194,13 +194,13 @@ public class OAuth2ComplianceChecker {
      * OAuth2.1兼容性检查结果
      */
     public static class OAuth2ComplianceResult {
+        private final List<String> errors = new java.util.ArrayList<>();
+        private final List<String> warnings = new java.util.ArrayList<>();
+        private final List<String> infos = new java.util.ArrayList<>();
         private String username;
         private String userType;
         private Set<String> authorities;
         private int scopeCount;
-        private final List<String> errors = new java.util.ArrayList<>();
-        private final List<String> warnings = new java.util.ArrayList<>();
-        private final List<String> infos = new java.util.ArrayList<>();
 
         public boolean isCompliant() {
             return errors.isEmpty();

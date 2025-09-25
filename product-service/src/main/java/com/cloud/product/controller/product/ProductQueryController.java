@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/products")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "商品查询接口", description = "提供商品查询相关功能")

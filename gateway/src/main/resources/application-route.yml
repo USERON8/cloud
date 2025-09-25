@@ -2,300 +2,358 @@ spring:
   cloud:
     gateway:
       routes:
-        # ===== 认证服务路由 (按优先级排序) =====
-        
-        # 1. OAuth2.1 标准端点路由 - 最高优先级
+        # ===== OAuth2.1 标准端点路由 (最高优先级) =====
+
         - id: oauth2-authorize-route
           uri: lb://auth-service
           predicates:
             - Path=/oauth2/authorize
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-token-route
           uri: lb://auth-service
           predicates:
             - Path=/oauth2/token
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-revoke-route
           uri: lb://auth-service
           predicates:
             - Path=/oauth2/revoke
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-introspect-route
           uri: lb://auth-service
           predicates:
             - Path=/oauth2/introspect
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-jwks-route
           uri: lb://auth-service
           predicates:
             - Path=/.well-known/jwks.json
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-openid-config-route
           uri: lb://auth-service
           predicates:
             - Path=/.well-known/openid_configuration
           filters:
             - PreserveHostHeader
-            
+
         - id: oauth2-userinfo-route
           uri: lb://auth-service
           predicates:
             - Path=/userinfo
           filters:
             - PreserveHostHeader
-        
-        # 2. 认证服务API路由 - 高优先级
-        - id: auth-api-route
+
+        # ===== RESTful API 路由 (统一 /api/v1 前缀) =====
+
+        # 认证服务 API
+        - id: auth-api-v1-route
           uri: lb://auth-service
           predicates:
-            - Path=/api/auth/**
+            - Path=/api/v1/auth/**
           filters:
-            - RewritePath=/api/auth/(?<segment>.*), /auth/api/$\{segment}
-        
-        # 3. 认证页面路由
-        - id: auth-login-page-route
-          uri: lb://auth-service
-          predicates:
-            - Path=/login,/login/**,/register/**,/logout/**
-          filters:
-            - PreserveHostHeader
-        
-        # 4. 认证服务直接路径
-        - id: auth-service-route
-          uri: lb://auth-service
-          predicates:
-            - Path=/auth-service/**
-          filters:
-            - RewritePath=/auth-service/(?<segment>.*), /$\{segment}
-        
-        # 5. 认证服务通用路由 - 较低优先级
-        - id: auth-route
-          uri: lb://auth-service
-          predicates:
-            - Path=/auth/**,/authorized/**
+            - RewritePath=/api/v1/auth/(?<segment>.*), /auth/$\{segment}
           metadata:
             swagger-info:
               title: 认证服务API
-              description: OAuth2.1认证授权服务
+              description: 用户认证、登录注册、令牌管理
               group: auth-service
-              servicePath: /v3/api-docs
-              location: /auth/**
-        
-        # ===== 用户服务路由 (按优先级排序) =====
-        
-        # 1. 用户服务API路由 - 高优先级
-        - id: user-api-route
+              version: v1
+
+        # 用户服务 API
+        - id: user-api-v1-route
           uri: lb://user-service
           predicates:
-            - Path=/api/user/**
+            - Path=/api/v1/users/**
           filters:
-            - RewritePath=/api/user/(?<segment>.*), /user/api/$\{segment}
-        
-        # 2. 用户服务直接路径
-        - id: user-service-route
-          uri: lb://user-service
-          predicates:
-            - Path=/user-service/**
-          filters:
-            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
-        
-        # 3. 管理员和商家特定路由 - 中优先级
-        - id: user-admin-route
-          uri: lb://user-service
-          predicates:
-            - Path=/admin/**
-          metadata:
-            swagger-info:
-              title: 管理员API
-              description: 管理员相关接口
-              group: user-service
-              servicePath: /v3/api-docs
-              location: /admin/**
-              
-        - id: user-merchant-route
-          uri: lb://user-service
-          predicates:
-            - Path=/merchant/**
-          metadata:
-            swagger-info:
-              title: 商家API
-              description: 商家相关接口
-              group: user-service
-              servicePath: /v3/api-docs
-              location: /merchant/**
-        
-        # 4. 用户服务通用路由 - 较低优先级
-        - id: user-route
-          uri: lb://user-service
-          predicates:
-            - Path=/user/**,/avatar/**
+            - RewritePath=/api/v1/users/(?<segment>.*), /users/$\{segment}
           metadata:
             swagger-info:
               title: 用户服务API
-              description: 用户管理与头像服务
+              description: 用户管理、档案、地址等
               group: user-service
-              servicePath: /v3/api-docs
-              location: /user/**,/avatar/**
-        
-        # ===== 其他服务路由 (统一模式) =====
-        
-        # 库存服务路由
-        - id: stock-api-route
-          uri: lb://stock-service
+              version: v1
+
+        # 商家服务 API
+        - id: merchant-api-v1-route
+          uri: lb://user-service
           predicates:
-            - Path=/api/stock/**
+            - Path=/api/v1/merchants/**
           filters:
-            - RewritePath=/api/stock/(?<segment>.*), /stock/api/$\{segment}
-            
-        - id: stock-service-route
-          uri: lb://stock-service
+            - RewritePath=/api/v1/merchants/(?<segment>.*), /merchants/$\{segment}
+          metadata:
+            swagger-info:
+              title: 商家服务API
+              description: 商家管理、店铺等
+              group: user-service
+              version: v1
+
+        # 商品服务 API
+        - id: product-api-v1-route
+          uri: lb://product-service
           predicates:
-            - Path=/stock-service/**
+            - Path=/api/v1/products/**
           filters:
-            - RewritePath=/stock-service/(?<segment>.*), /$\{segment}
-            
-        - id: stock-route
+            - RewritePath=/api/v1/products/(?<segment>.*), /products/$\{segment}
+          metadata:
+            swagger-info:
+              title: 商品服务API
+              description: 商品管理、规格、评价等
+              group: product-service
+              version: v1
+
+        # 分类服务 API
+        - id: category-api-v1-route
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/categories/**
+          filters:
+            - RewritePath=/api/v1/categories/(?<segment>.*), /categories/$\{segment}
+          metadata:
+            swagger-info:
+              title: 分类服务API
+              description: 商品分类管理
+              group: product-service
+              version: v1
+
+        # 品牌服务 API
+        - id: brand-api-v1-route
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/brands/**
+          filters:
+            - RewritePath=/api/v1/brands/(?<segment>.*), /brands/$\{segment}
+          metadata:
+            swagger-info:
+              title: 品牌服务API
+              description: 品牌管理
+              group: product-service
+              version: v1
+
+        # 订单服务 API
+        - id: order-api-v1-route
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+          filters:
+            - RewritePath=/api/v1/orders/(?<segment>.*), /orders/$\{segment}
+          metadata:
+            swagger-info:
+              title: 订单服务API
+              description: 订单管理、订单项、发货等
+              group: order-service
+              version: v1
+
+        # 购物车服务 API
+        - id: cart-api-v1-route
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/carts/**
+          filters:
+            - RewritePath=/api/v1/carts/(?<segment>.*), /carts/$\{segment}
+          metadata:
+            swagger-info:
+              title: 购物车服务API
+              description: 购物车管理
+              group: order-service
+              version: v1
+
+        # 支付服务 API
+        - id: payment-api-v1-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - RewritePath=/api/v1/payments/(?<segment>.*), /payments/$\{segment}
+          metadata:
+            swagger-info:
+              title: 支付服务API
+              description: 支付记录、退款、交易等
+              group: payment-service
+              version: v1
+
+        # 支付方式服务 API
+        - id: payment-method-api-v1-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payment-methods/**
+          filters:
+            - RewritePath=/api/v1/payment-methods/(?<segment>.*), /payment-methods/$\{segment}
+          metadata:
+            swagger-info:
+              title: 支付方式API
+              description: 支付方式管理
+              group: payment-service
+              version: v1
+
+        # 交易服务 API
+        - id: transaction-api-v1-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/transactions/**
+          filters:
+            - RewritePath=/api/v1/transactions/(?<segment>.*), /transactions/$\{segment}
+          metadata:
+            swagger-info:
+              title: 交易服务API
+              description: 交易记录管理
+              group: payment-service
+              version: v1
+
+        # 库存服务 API
+        - id: stock-api-v1-route
           uri: lb://stock-service
           predicates:
-            - Path=/stock/**
+            - Path=/api/v1/stocks/**
+          filters:
+            - RewritePath=/api/v1/stocks/(?<segment>.*), /stocks/$\{segment}
           metadata:
             swagger-info:
               title: 库存服务API
-              description: 库存管理服务
+              description: 库存管理、预留、调整等
               group: stock-service
-              servicePath: /v3/api-docs
-              location: /stock/**
-        
-        # 订单服务路由
-        - id: order-api-route
-          uri: lb://order-service
+              version: v1
+
+        # 仓库服务 API
+        - id: warehouse-api-v1-route
+          uri: lb://stock-service
           predicates:
-            - Path=/api/order/**
+            - Path=/api/v1/warehouses/**
           filters:
-            - RewritePath=/api/order/(?<segment>.*), /order/api/$\{segment}
-            
-        - id: order-service-route
-          uri: lb://order-service
+            - RewritePath=/api/v1/warehouses/(?<segment>.*), /warehouses/$\{segment}
+          metadata:
+            swagger-info:
+              title: 仓库服务API
+              description: 仓库管理
+              group: stock-service
+              version: v1
+
+        # 搜索服务 API
+        - id: search-api-v1-route
+          uri: lb://search-service
           predicates:
-            - Path=/order-service/**
+            - Path=/api/v1/search/**
           filters:
-            - RewritePath=/order-service/(?<segment>.*), /$\{segment}
-            
-        - id: order-route
+            - RewritePath=/api/v1/search/(?<segment>.*), /search/$\{segment}
+          metadata:
+            swagger-info:
+              title: 搜索服务API
+              description: 商品搜索、建议、分析等
+              group: search-service
+              version: v1
+
+        # 日志服务 API
+        - id: log-api-v1-route
+          uri: lb://log-service
+          predicates:
+            - Path=/api/v1/logs/**
+          filters:
+            - RewritePath=/api/v1/logs/(?<segment>.*), /logs/$\{segment}
+          metadata:
+            swagger-info:
+              title: 日志服务API
+              description: 系统日志、操作日志、审计日志等
+              group: log-service
+              version: v1
+
+        # ===== 兼容性路由 (向后兼容旧版API) =====
+
+        # 认证服务兼容路由
+        - id: auth-legacy-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**,/oauth2/**
+          metadata:
+            swagger-info:
+              title: 认证服务(兼容)
+              description: OAuth2.1认证授权服务
+              group: auth-service
+
+        # 用户服务兼容路由
+        - id: user-legacy-route
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**,/admin/**,/merchant/**
+          metadata:
+            swagger-info:
+              title: 用户服务(兼容)
+              description: 用户管理服务
+              group: user-service
+
+        # 商品服务兼容路由
+        - id: product-legacy-route
+          uri: lb://product-service
+          predicates:
+            - Path=/product/**,/category/**
+          metadata:
+            swagger-info:
+              title: 商品服务(兼容)
+              description: 商品管理服务
+              group: product-service
+
+        # 订单服务兼容路由
+        - id: order-legacy-route
           uri: lb://order-service
           predicates:
             - Path=/order/**
           metadata:
             swagger-info:
-              title: 订单服务API
+              title: 订单服务(兼容)
               description: 订单管理服务
               group: order-service
-              servicePath: /v3/api-docs
-              location: /order/**
-        
-        # 商品服务路由
-        - id: product-api-route
-          uri: lb://product-service
-          predicates:
-            - Path=/api/product/**
-          filters:
-            - RewritePath=/api/product/(?<segment>.*), /product/api/$\{segment}
-            
-        - id: product-service-route
-          uri: lb://product-service
-          predicates:
-            - Path=/product-service/**
-          filters:
-            - RewritePath=/product-service/(?<segment>.*), /$\{segment}
-            
-        - id: product-route
-          uri: lb://product-service
-          predicates:
-            - Path=/product/**
-          metadata:
-            swagger-info:
-              title: 商品服务API
-              description: 商品管理服务
-              group: product-service
-              servicePath: /v3/api-docs
-              location: /product/**
-        
-        # 支付服务路由
-        - id: payment-api-route
-          uri: lb://payment-service
-          predicates:
-            - Path=/api/payment/**
-          filters:
-            - RewritePath=/api/payment/(?<segment>.*), /payment/api/$\{segment}
-            
-        - id: payment-service-route
-          uri: lb://payment-service
-          predicates:
-            - Path=/payment-service/**
-          filters:
-            - RewritePath=/payment-service/(?<segment>.*), /$\{segment}
-            
-        - id: payment-route
+
+        # 支付服务兼容路由
+        - id: payment-legacy-route
           uri: lb://payment-service
           predicates:
             - Path=/payment/**
           metadata:
             swagger-info:
-              title: 支付服务API
+              title: 支付服务(兼容)
               description: 支付管理服务
               group: payment-service
-              servicePath: /v3/api-docs
-              location: /payment/**
-        
-        # 搜索服务路由
-        - id: search-api-route
-          uri: lb://search-service
+
+        # 库存服务兼容路由
+        - id: stock-legacy-route
+          uri: lb://stock-service
           predicates:
-            - Path=/api/search/**
-          filters:
-            - RewritePath=/api/search/(?<segment>.*), /search/api/$\{segment}
-            
-        - id: search-route
+            - Path=/stock/**
+          metadata:
+            swagger-info:
+              title: 库存服务(兼容)
+              description: 库存管理服务
+              group: stock-service
+
+        # 搜索服务兼容路由
+        - id: search-legacy-route
           uri: lb://search-service
           predicates:
             - Path=/search/**
           metadata:
             swagger-info:
-              title: 搜索服务API
+              title: 搜索服务(兼容)
               description: 商品搜索服务
               group: search-service
-              servicePath: /v3/api-docs
-              location: /search/**
-        
-        # 日志服务路由
-        - id: log-api-route
-          uri: lb://log-service
-          predicates:
-            - Path=/api/log/**
-          filters:
-            - RewritePath=/api/log/(?<segment>.*), /log/api/$\{segment}
-            
-        - id: log-route
+
+        # 日志服务兼容路由
+        - id: log-legacy-route
           uri: lb://log-service
           predicates:
             - Path=/log/**
           metadata:
             swagger-info:
-              title: 日志服务API
+              title: 日志服务(兼容)
               description: 系统日志服务
               group: log-service
-              servicePath: /v3/api-docs
-              location: /log/**
       # ===== 服务发现配置 =====
       discovery:
         locator:

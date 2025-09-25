@@ -1,13 +1,13 @@
 package com.cloud.common.domain.dto.oauth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * @since 2025-09-20
  */
 @Data
-@NoArgsConstructor 
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Schema(description = "GitHub OAuth用户信息DTO")
@@ -76,6 +76,7 @@ public class GitHubUserDTO implements Serializable {
 
     /**
      * 构建系统用户名
+     *
      * @return github_login格式的用户名
      */
     public String buildSystemUsername() {
@@ -84,6 +85,7 @@ public class GitHubUserDTO implements Serializable {
 
     /**
      * 获取显示名称，优先使用name，其次使用login
+     *
      * @return 显示名称
      */
     public String getDisplayName() {

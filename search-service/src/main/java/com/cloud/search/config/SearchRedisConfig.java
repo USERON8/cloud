@@ -27,7 +27,7 @@ public class SearchRedisConfig extends BaseRedisConfig {
     @Bean
     @Primary
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        log.info("初始化搜索服务Redis配置");
+        System.out.println("初始化搜索服务Redis配置");
         return RedisConfigFactory.createCacheRedisTemplate(redisConnectionFactory);
     }
 

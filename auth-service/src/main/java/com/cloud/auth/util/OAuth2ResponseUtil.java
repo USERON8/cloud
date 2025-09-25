@@ -39,6 +39,30 @@ public class OAuth2ResponseUtil {
     private String testTokenValidity;
 
     /**
+     * 构建简化版的登录响应DTO（用于注册等场景）
+     *
+     * @param userDTO 用户信息
+     * @return LoginResponseDTO 登录响应DTO
+     */
+    public static LoginResponseDTO buildSimpleLoginResponse(UserDTO userDTO) {
+        LoginResponseDTO response = new LoginResponseDTO();
+
+        // 设置基本用户信息
+        if (userDTO != null) {
+            response.setUser(userDTO);
+            response.setUserType(userDTO.getUserType());
+            response.setNickname(userDTO.getNickname());
+        }
+
+        // 设置默认令牌信息
+        response.setToken_type("Bearer");
+        response.setExpires_in(31536000L); // 365天，方便测试
+        response.setScope("read write user.read user.write internal_api"); // 扩大默认权限范围
+
+        return response;
+    }
+
+    /**
      * 构建登录响应DTO
      *
      * @param authorization OAuth2授权信息
@@ -88,7 +112,7 @@ public class OAuth2ResponseUtil {
      * 构建简化版的登录响应DTO（用于注册等场景）
      * 支持测试模式和生产模式的不同令牌有效期
      *
-     * @param userDTO 用户信息
+     * @param userDTO    用户信息
      * @param jwtEncoder JWT编码器
      * @return LoginResponseDTO 登录响应DTO
      */
@@ -148,30 +172,6 @@ public class OAuth2ResponseUtil {
             response.setUserType(userDTO.getUserType());
             response.setNickname(userDTO.getNickname());
         }
-
-        return response;
-    }
-
-    /**
-     * 构建简化版的登录响应DTO（用于注册等场景）
-     *
-     * @param userDTO 用户信息
-     * @return LoginResponseDTO 登录响应DTO
-     */
-    public static LoginResponseDTO buildSimpleLoginResponse(UserDTO userDTO) {
-        LoginResponseDTO response = new LoginResponseDTO();
-
-        // 设置基本用户信息
-        if (userDTO != null) {
-            response.setUser(userDTO);
-            response.setUserType(userDTO.getUserType());
-            response.setNickname(userDTO.getNickname());
-        }
-
-        // 设置默认令牌信息
-        response.setToken_type("Bearer");
-        response.setExpires_in(31536000L); // 365天，方便测试
-        response.setScope("read write user.read user.write internal_api"); // 扩大默认权限范围
 
         return response;
     }

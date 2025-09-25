@@ -12,25 +12,24 @@ import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/user/query")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 @Tag(name = "用户查询", description = "用户信息查询相关操作")
 public class UserQueryController {
     private final UserService userService;
 
-    @RequestMapping("/findByUsername")
+    @GetMapping
     @RequireUserType(UserType.ADMIN)
     @RequireScope("admin:read")
     @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户信息")
@@ -40,13 +39,21 @@ public class UserQueryController {
         return Result.success("查询成功", userService.findByUsername(username));
     }
 
-    @RequestMapping("/page")
+    @GetMapping("/search")
     @RequireUserType(UserType.ADMIN)
     @RequireScope("admin:read")
     @Operation(summary = "分页查询用户", description = "分页查询用户信息")
-    public Result<PageResult<UserVO>> page(@RequestBody
-                                           @Parameter(description = "分页查询条件")
-                                           @Valid @NotNull(message = "分页查询条件不能为空") UserPageDTO userPageDTO) {
+    public Result<PageResult<UserVO>> search(@RequestParam(defaultValue = "1") Integer page,
+                                             @RequestParam(defaultValue = "20") Integer size,
+                                             @RequestParam(required = false) String username,
+                                             @RequestParam(required = false) String email,
+                                             @RequestParam(required = false) String userType) {
+        UserPageDTO userPageDTO = new UserPageDTO();
+        userPageDTO.setCurrent(page.longValue());
+        userPageDTO.setSize(size.longValue());
+        userPageDTO.setUsername(username);
+        userPageDTO.setPhone(email); // UserPageDTO没有email字段，使用phone字段
+        userPageDTO.setUserType(userType);
         return Result.success(userService.pageQuery(userPageDTO));
     }
 
@@ -108,7 +115,7 @@ public class UserQueryController {
                 return Result.error(404, "未找到对应的OAuth用户");
             }
         } catch (Exception e) {
-            log.error("根据OAuth提供商查询用户失败, provider: {}, providerId: {}", 
+            log.error("根据OAuth提供商查询用户失败, provider: {}, providerId: {}",
                     oauthProvider, oauthProviderId, e);
             return Result.error(500, "查询失败: " + e.getMessage());
         }

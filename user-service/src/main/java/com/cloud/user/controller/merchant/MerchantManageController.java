@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @RestController
-@RequestMapping("/merchant/manage")
+@RequestMapping("/merchants")
 @RequiredArgsConstructor
 @Tag(name = "商家管理", description = "商家审核、店铺管理等相关操作")
 public class MerchantManageController {
@@ -37,11 +37,11 @@ public class MerchantManageController {
     private final MerchantConverter merchantConverter;
     private final MerchantAuthConverter merchantAuthConverter;
 
-    @PutMapping("/approveMerchant/{id}")
+    @PatchMapping("/{id}/approve")
     @RequireUserType(UserType.ADMIN)
     @RequireScope("admin:write")
     @Operation(summary = "审核通过商家", description = "审核通过商家的申请")
-    public Result<MerchantDTO> approveMerchant(@PathVariable("id")
+    public Result<MerchantDTO> approveMerchant(@PathVariable
                                                @Parameter(description = "商家ID")
                                                @NotNull(message = "商家ID不能为空") Long id) {
 
@@ -98,7 +98,7 @@ public class MerchantManageController {
         // 权限检查：商户只能更新自己的信息，管理员可以更新任何商家信息
         String currentUserId = UserContextUtils.getCurrentUserId();
         String currentUserType = UserContextUtils.getCurrentUserType();
-        
+
         // 检查是否为管理员或商户本人
         if (!"ADMIN".equals(currentUserType)) {
             // 如果不是管理员，检查是否为商户本人

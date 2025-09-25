@@ -13,8 +13,8 @@ import java.util.function.Supplier;
  * 采用函数式编程风格配置消息队列，支持发送到日志服务
  *
  * @author what's up
- * @since 2025-09-20
  * @version 2.0 - 重构为统一命名规范
+ * @since 2025-09-20
  */
 @Slf4j
 @Configuration

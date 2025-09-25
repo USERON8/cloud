@@ -109,7 +109,7 @@ public class UserFeignController {
             @Parameter(description = "GitHub用户信息")
             @Valid @NotNull(message = "GitHub用户信息不能为空") com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
 
-        log.info("🚀 创建GitHub OAuth用户, githubId: {}, login: {}", 
+        log.info("🚀 创建GitHub OAuth用户, githubId: {}, login: {}",
                 githubUserDTO.getGithubId(), githubUserDTO.getLogin());
 
         // 直接委托给Service层处理，享受完整的事务管理和缓存策略

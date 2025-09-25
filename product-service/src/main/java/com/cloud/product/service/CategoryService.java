@@ -6,11 +6,16 @@ import com.cloud.product.module.entity.Category;
 import java.util.List;
 
 /**
+ * 商品分类服务接口
+ * 提供分类相关的业务操作，包括CRUD、树形结构查询、缓存管理等
+ * 使用多级缓存提升性能，遵循事务管理规范
+ *
  * @author what's up
- * @description 针对表【category(商品分类表)】的数据库操作Service
- * @createDate 2025-08-17 20:52:34
+ * @since 1.0.0
  */
 public interface CategoryService extends IService<Category> {
+
+    // ================= 查询操作 =================
 
     /**
      * 获取分类树结构
@@ -34,4 +39,18 @@ public interface CategoryService extends IService<Category> {
      * @return 分类列表
      */
     List<Category> getCategoriesByLevel(Integer level);
+
+    // ================= 缓存管理 =================
+
+    /**
+     * 清除所有分类缓存
+     */
+    void clearCategoryCache();
+
+    /**
+     * 清除指定分类的缓存
+     *
+     * @param categoryId 分类ID
+     */
+    void evictCategoryCache(Long categoryId);
 }

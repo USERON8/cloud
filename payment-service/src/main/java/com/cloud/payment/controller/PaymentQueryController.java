@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/payment/query")
+@RequestMapping("/payments")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "支付查询接口", description = "支付查询相关的 RESTful API 接口")

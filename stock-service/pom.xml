@@ -93,6 +93,26 @@
             <artifactId>common-module</artifactId>
             <version>0.0.1-SNAPSHOT</version>
             <exclusions>
+                <!-- 排除Elasticsearch相关依赖 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>co.elastic.clients</groupId>
+                    <artifactId>elasticsearch-java</artifactId>
+                </exclusion>
+                <!-- 排除Minio相关依赖 -->
+                <exclusion>
+                    <groupId>io.minio</groupId>
+                    <artifactId>minio</artifactId>
+                </exclusion>
+                <!-- 排除Caffeine本地缓存（stock-service只使用Redis） -->
+                <exclusion>
+                    <groupId>com.github.ben-manes.caffeine</groupId>
+                    <artifactId>caffeine</artifactId>
+                </exclusion>
+                <!-- 排除错误处理注解 -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>

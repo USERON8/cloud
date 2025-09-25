@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/product/manage")
+@RequestMapping("/products")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "商品管理接口", description = "提供商品管理相关功能，需要管理员权限")

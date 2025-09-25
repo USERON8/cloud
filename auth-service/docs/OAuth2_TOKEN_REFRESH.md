@@ -7,6 +7,7 @@
 ## 标准OAuth2.1令牌刷新端点
 
 ### 端点信息
+
 - **URL**: `POST /oauth2/token`
 - **Content-Type**: `application/x-www-form-urlencoded`
 - **认证**: 客户端认证（Basic Auth或POST参数）
@@ -35,6 +36,7 @@ grant_type=refresh_token&refresh_token={your_refresh_token}&client_id={client_id
 ### 响应格式
 
 成功响应：
+
 ```json
 {
   "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -46,6 +48,7 @@ grant_type=refresh_token&refresh_token={your_refresh_token}&client_id={client_id
 ```
 
 错误响应：
+
 ```json
 {
   "error": "invalid_grant",
@@ -66,6 +69,7 @@ grant_type=refresh_token&refresh_token={your_refresh_token}&client_id={client_id
 除了标准OAuth2.1端点外，系统还提供了简化版的刷新接口：
 
 ### 端点信息
+
 - **URL**: `GET/POST /auth/refresh-token`
 - **参数**: `refresh_token={your_refresh_token}`
 
@@ -98,22 +102,26 @@ refresh_token={your_refresh_token}
 ## 客户端配置
 
 ### Web应用客户端
+
 - **client_id**: `web-client`
 - **client_secret**: `WebClient@2024#Secure`
 - **支持的授权类型**: `authorization_code`, `refresh_token`
 
 ### 移动应用客户端
+
 - **client_id**: `mobile-client`
 - **client_secret**: 无（公共客户端）
 - **支持的授权类型**: `authorization_code`, `refresh_token`
 - **必须使用PKCE**: 是
 
 ### 服务间通信客户端
+
 - **client_id**: `service-client`
 - **client_secret**: `ServiceClient@2024#Secure`
 - **支持的授权类型**: `client_credentials`
 
 ### 内部服务调用客户端
+
 - **client_id**: `client-service`
 - **client_secret**: `ClientService@2024#Secure`
 - **支持的授权类型**: `client_credentials`
@@ -123,15 +131,16 @@ refresh_token={your_refresh_token}
 
 1. **刷新令牌保护**: 刷新令牌应安全存储，避免泄露
 2. **HTTPS使用**: 生产环境必须使用HTTPS传输
-3. **令牌有效期**: 
-   - 测试模式：访问令牌365天，刷新令牌30天
-   - 生产模式：访问令牌2小时，刷新令牌30天
+3. **令牌有效期**:
+    - 测试模式：访问令牌365天，刷新令牌30天
+    - 生产模式：访问令牌2小时，刷新令牌30天
 4. **客户端认证**: 机密客户端必须进行客户端认证
 5. **作用域验证**: 新令牌的作用域不会超过原始授权的作用域
 
 ## 错误处理
 
 常见错误码：
+
 - `invalid_request`: 请求格式错误
 - `invalid_client`: 客户端认证失败
 - `invalid_grant`: 刷新令牌无效或过期

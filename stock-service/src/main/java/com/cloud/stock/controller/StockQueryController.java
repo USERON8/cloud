@@ -28,7 +28,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/stock/query")
+@RequestMapping("/stocks")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "库存查询接口", description = "库存信息查询相关的 RESTful API 接口")

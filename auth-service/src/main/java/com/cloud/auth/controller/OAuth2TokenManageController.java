@@ -26,7 +26,7 @@ import java.util.Set;
  */
 @Slf4j
 @RestController
-@RequestMapping("/oauth2/manage")
+@RequestMapping("/auth/tokens")
 @RequiredArgsConstructor
 @Tag(name = "🔑 OAuth2 Token管理", description = "OAuth2 Token管理和监控接口")
 public class OAuth2TokenManageController {

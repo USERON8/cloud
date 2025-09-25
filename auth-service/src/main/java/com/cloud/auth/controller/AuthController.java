@@ -71,13 +71,13 @@ public class AuthController {
      * @throws UserAlreadyExistsException 用户已存在时抛出
      * @throws ValidationException        请求参数验证失败时抛出
      */
-    @PostMapping("/register")
+    @PostMapping("/users/register")
     @Operation(
             summary = "用户注册",
             description = "注册新用户并返回 OAuth2 令牌"
     )
     @ApiResponse(
-            responseCode = "200",
+            responseCode = "201",
             description = "注册成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class))
@@ -119,7 +119,7 @@ public class AuthController {
      * @throws AuthenticationException 认证失败时抛出
      * @throws ValidationException     请求参数验证失败时抛出
      */
-    @PostMapping("/login")
+    @PostMapping("/sessions")
     @Operation(summary = "用户登录", description = "验证用户名密码后返回OAuth2.1标准令牌")
     public Result<LoginResponseDTO> login(
             @RequestBody
@@ -204,7 +204,7 @@ public class AuthController {
      * @throws UserAlreadyExistsException 用户已存在时抛出
      * @throws ValidationException        请求参数验证失败时抛出
      */
-    @RequestMapping("/register-and-login")
+    @PostMapping("/users/register-and-login")
     public Result<LoginResponseDTO> registerAndLogin(@RequestBody @NotNull RegisterRequestDTO registerRequestDTO) {
         log.info("用户注册并登录开始, username: {}, userType: {}", registerRequestDTO.getUsername(), registerRequestDTO.getUserType());
 
@@ -236,7 +236,7 @@ public class AuthController {
      * @throws InvalidTokenException 令牌无效时抛出
      * @throws MissingTokenException 缺少令牌时抛出
      */
-    @RequestMapping("/logout")
+    @DeleteMapping("/sessions")
     public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
         // 从请求头中提取令牌（抛出MissingTokenException）
         String authorizationHeader = request.getHeader("Authorization");
@@ -268,7 +268,7 @@ public class AuthController {
      * @param username 要登出的用户名
      * @return 登出结果
      */
-    @PostMapping("/logout-all")
+    @DeleteMapping("/users/{username}/sessions")
     @RequireUserType(UserType.ADMIN)
     @RequireScope("admin:write")
     @Operation(
@@ -276,7 +276,7 @@ public class AuthController {
             description = "撤销用户的所有活跃会话"
     )
     public Result<String> logoutAllSessions(
-            @RequestParam("username")
+            @PathVariable
             @Parameter(description = "用户名", required = true)
             @NotBlank(message = "用户名不能为空") String username) {
 
@@ -301,7 +301,7 @@ public class AuthController {
      * @throws InvalidTokenException 令牌无效时抛出
      * @throws MissingTokenException 缺少令牌时抛出
      */
-    @RequestMapping("/validate-token")
+    @GetMapping("/tokens/validate")
     @RequireAuthentication
     public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
         // 从请求头中提取令牌（抛出MissingTokenException）
@@ -349,8 +349,8 @@ public class AuthController {
      * @throws UserNotFoundException 用户不存在时抛出
      */
     @Operation(summary = "令牌刷新（简化版）",
-               description = "使用刷新令牌获取新的访问令牌。推荐使用标准OAuth2.1端点 POST /oauth2/token")
-    @RequestMapping("/refresh-token")
+            description = "使用刷新令牌获取新的访问令牌。推荐使用标准OAuth2.1端点 POST /oauth2/token")
+    @PostMapping("/tokens/refresh")
     public Result<LoginResponseDTO> refreshToken(@RequestParam("refresh_token") String refreshToken) {
         // 参数验证（抛出ValidationException）
         if (refreshToken == null || refreshToken.trim().isEmpty()) {

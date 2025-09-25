@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/order/manage")
+@RequestMapping("/orders")
 @RequiredArgsConstructor
 @Tag(name = "订单管理接口", description = "负责订单的修改操作，包括更新、支付、发货、完成、取消等")
 public class OrderManageController {
@@ -37,13 +37,15 @@ public class OrderManageController {
      * @param orderDTO 订单信息
      * @return 是否更新成功
      */
-    @PutMapping
+    @PutMapping("/{id}")
     @Operation(summary = "更新订单", description = "更新订单信息")
     @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> updateOrder(
+            @Parameter(description = "订单ID") @PathVariable Long id,
             @Parameter(description = "订单信息", required = true)
             @Valid @RequestBody OrderDTO orderDTO) {
-        log.info("更新订单，ID: {}", orderDTO.getId());
+        orderDTO.setId(id);
+        log.info("更新订单，ID: {}", id);
         Boolean result = orderService.updateOrder(orderDTO);
         return result ? Result.success(true) : Result.error("订单更新失败");
     }

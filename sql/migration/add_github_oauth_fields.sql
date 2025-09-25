@@ -7,10 +7,10 @@ USE `user_db`;
 
 -- 添加GitHub OAuth相关字段
 ALTER TABLE `users`
-    ADD COLUMN `github_id` BIGINT UNSIGNED NULL COMMENT 'GitHub用户ID（OAuth登录专用）' AFTER `email`,
-    ADD COLUMN `github_username` VARCHAR(100) NULL COMMENT 'GitHub用户名（OAuth登录专用）' AFTER `github_id`,
-    ADD COLUMN `oauth_provider` VARCHAR(20) NULL COMMENT 'OAuth提供商（github, wechat等）' AFTER `github_username`,
-    ADD COLUMN `oauth_provider_id` VARCHAR(100) NULL COMMENT 'OAuth提供商用户ID' AFTER `oauth_provider`;
+    ADD COLUMN `github_id`         BIGINT UNSIGNED NULL COMMENT 'GitHub用户ID（OAuth登录专用）' AFTER `email`,
+    ADD COLUMN `github_username`   VARCHAR(100)    NULL COMMENT 'GitHub用户名（OAuth登录专用）' AFTER `github_id`,
+    ADD COLUMN `oauth_provider`    VARCHAR(20)     NULL COMMENT 'OAuth提供商（github, wechat等）' AFTER `github_username`,
+    ADD COLUMN `oauth_provider_id` VARCHAR(100)    NULL COMMENT 'OAuth提供商用户ID' AFTER `oauth_provider`;
 
 -- 添加索引以提高查询性能
 ALTER TABLE `users`
@@ -29,28 +29,26 @@ ALTER TABLE `users`
     ADD UNIQUE INDEX `uk_oauth_provider_id` (`oauth_provider`, `oauth_provider_id`);
 
 -- 验证字段添加成功
-SELECT 
-    COLUMN_NAME,
-    DATA_TYPE,
-    IS_NULLABLE,
-    COLUMN_DEFAULT,
-    COLUMN_COMMENT
-FROM INFORMATION_SCHEMA.COLUMNS 
-WHERE TABLE_SCHEMA = 'user_db' 
+SELECT COLUMN_NAME,
+       DATA_TYPE,
+       IS_NULLABLE,
+       COLUMN_DEFAULT,
+       COLUMN_COMMENT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'user_db'
   AND TABLE_NAME = 'users'
   AND COLUMN_NAME IN ('github_id', 'github_username', 'oauth_provider', 'oauth_provider_id')
 ORDER BY ORDINAL_POSITION;
 
 -- 验证索引创建成功
-SELECT 
-    INDEX_NAME,
-    COLUMN_NAME,
-    NON_UNIQUE,
-    INDEX_TYPE
-FROM INFORMATION_SCHEMA.STATISTICS 
-WHERE TABLE_SCHEMA = 'user_db' 
+SELECT INDEX_NAME,
+       COLUMN_NAME,
+       NON_UNIQUE,
+       INDEX_TYPE
+FROM INFORMATION_SCHEMA.STATISTICS
+WHERE TABLE_SCHEMA = 'user_db'
   AND TABLE_NAME = 'users'
-  AND INDEX_NAME IN ('idx_github_id', 'idx_github_username', 'idx_oauth_provider', 
+  AND INDEX_NAME IN ('idx_github_id', 'idx_github_username', 'idx_oauth_provider',
                      'idx_oauth_provider_combined', 'uk_github_id', 'uk_github_username', 'uk_oauth_provider_id')
 ORDER BY INDEX_NAME, SEQ_IN_INDEX;
 

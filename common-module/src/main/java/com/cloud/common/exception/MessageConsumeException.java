@@ -23,7 +23,7 @@ public class MessageConsumeException extends BusinessException {
      * 使用指定消息和原因创建消息消费异常
      *
      * @param message 异常消息
-     * @param cause 异常原因
+     * @param cause   异常原因
      */
     public MessageConsumeException(String message, Throwable cause) {
         super(message, cause);
@@ -32,9 +32,9 @@ public class MessageConsumeException extends BusinessException {
     /**
      * 使用Topic、跟踪ID和原因创建消息消费异常
      *
-     * @param topic 消息主题
+     * @param topic   消息主题
      * @param traceId 跟踪ID
-     * @param cause 异常原因
+     * @param cause   异常原因
      */
     public MessageConsumeException(String topic, String traceId, Throwable cause) {
         super(String.format("消息消费失败 - Topic: %s, TraceId: %s", topic, traceId), cause);

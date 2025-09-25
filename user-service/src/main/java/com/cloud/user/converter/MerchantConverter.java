@@ -15,7 +15,7 @@ import java.util.List;
  * 商家相关实体与DTO转换器
  */
 @Mapper(
-    componentModel = "spring",
+        componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         unmappedSourcePolicy = ReportingPolicy.IGNORE
 )

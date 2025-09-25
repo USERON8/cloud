@@ -26,7 +26,7 @@ import java.security.Principal;
  */
 @Slf4j
 @RestController
-@RequestMapping("/oauth2/github")
+@RequestMapping("/auth/oauth2/github")
 @RequiredArgsConstructor
 public class GitHubOAuth2Controller {
 
