@@ -12,7 +12,9 @@ import com.cloud.common.cache.annotation.MultiLevelCaching;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.event.ProductSearchEvent;
+import com.cloud.api.stock.StockFeignClient;
 import com.cloud.common.domain.vo.ProductVO;
+import com.cloud.common.domain.vo.StockVO;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
@@ -21,8 +23,12 @@ import com.cloud.product.mapper.ProductMapper;
 import com.cloud.product.messaging.producer.ProductLogProducer;
 import com.cloud.product.messaging.producer.ProductSearchEventProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
+import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Product;
+import com.cloud.product.module.entity.Shop;
+import com.cloud.product.service.CategoryService;
 import com.cloud.product.service.ProductService;
+import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,6 +58,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     private final ProductLogProducer productLogProducer;
     private final ProductSearchEventProducer productSearchEventProducer;
     private final AsyncLogProducer asyncLogProducer;
+    private final ShopService shopService;
+    private final CategoryService categoryService;
+    private final StockFeignClient stockFeignClient;
 
     // ================= 基础CRUD操作 =================
 
@@ -866,37 +875,99 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 获取店铺名称（模拟方法，实际应该调用店铺服务）
+     * 获取店铺名称
      */
     private String getShopName(Long shopId) {
-        // TODO: 实际应该调用店铺服务获取店铺名称
-        return "店铺" + shopId;
+        if (shopId == null) {
+            return null;
+        }
+
+        try {
+            Shop shop = shopService.getById(shopId);
+            return shop != null ? shop.getShopName() : "店铺" + shopId;
+        } catch (Exception e) {
+            log.warn("获取店铺名称失败，店铺ID：{}，使用默认名称", shopId, e);
+            return "店铺" + shopId;
+        }
     }
 
     /**
-     * 获取库存数量（模拟方法，实际应该调用库存服务）
+     * 获取库存数量
      */
     private Integer getStockQuantity(Long productId) {
-        // TODO: 实际应该调用库存服务获取库存数量
-        return 100;
+        if (productId == null) {
+            return 0;
+        }
+
+        try {
+            // 首先尝试从库存服务获取
+            StockVO stockVO = stockFeignClient.getStockByProductId(productId);
+            if (stockVO != null && stockVO.getStockQuantity() != null) {
+                return stockVO.getStockQuantity();
+            }
+
+            // 如果库存服务没有数据，从商品表获取
+            Product product = getById(productId);
+            return product != null ? product.getStock() : 0;
+
+        } catch (Exception e) {
+            log.warn("获取库存数量失败，商品ID：{}，尝试从商品表获取", productId, e);
+            try {
+                Product product = getById(productId);
+                return product != null ? product.getStock() : 0;
+            } catch (Exception ex) {
+                log.error("从商品表获取库存也失败，商品ID：{}", productId, ex);
+                return 0;
+            }
+        }
     }
 
     /**
-     * 获取分类名称（模拟方法，实际应该调用分类服务）
+     * 获取分类名称
      */
     private String getCategoryName(Long categoryId) {
-        // TODO: 实际应该调用分类服务获取分类名称
-        return "分类" + categoryId;
+        if (categoryId == null) {
+            return null;
+        }
+
+        try {
+            Category category = categoryService.getById(categoryId);
+            return category != null ? category.getName() : "分类" + categoryId;
+        } catch (Exception e) {
+            log.warn("获取分类名称失败，分类ID：{}，使用默认名称", categoryId, e);
+            return "分类" + categoryId;
+        }
     }
 
     /**
-     * 获取品牌名称（模拟方法，实际应该调用品牌服务）
+     * 获取品牌名称
+     * 注意：由于当前系统没有独立的品牌服务，这里通过查询商品表中的品牌信息来获取
+     * 如果将来有独立的品牌服务，可以替换为 Feign 调用
      */
     private String getBrandName(Long brandId) {
         if (brandId == null) {
             return null;
         }
-        // TODO: 实际应该调用品牌服务获取品牌名称
-        return "品牌" + brandId;
+
+        try {
+            // 查询该品牌ID下的任意一个商品，获取品牌名称
+            LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Product::getBrandId, brandId)
+                    .isNotNull(Product::getBrandName)
+                    .ne(Product::getBrandName, "")
+                    .last("LIMIT 1");
+
+            Product product = getOne(queryWrapper);
+            if (product != null && StringUtils.hasText(product.getBrandName())) {
+                return product.getBrandName();
+            }
+
+            // 如果没有找到品牌名称，返回默认值
+            return "品牌" + brandId;
+
+        } catch (Exception e) {
+            log.warn("获取品牌名称失败，品牌ID：{}，使用默认名称", brandId, e);
+            return "品牌" + brandId;
+        }
     }
 }

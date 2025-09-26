@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -47,7 +48,7 @@ public class RedisOAuth2Config {
 
         OAuth2AuthorizationService authorizationService =
                 new SimpleRedisHashOAuth2AuthorizationService(
-                        redisTemplate(),
+                        oauth2MainRedisTemplate(),
                         registeredClientRepository,
                         authorizationServerSettings
                 );
@@ -66,7 +67,7 @@ public class RedisOAuth2Config {
 
         OAuth2AuthorizationConsentService consentService =
                 new RedisOAuth2AuthorizationConsentService(
-                        redisTemplate()
+                        oauth2MainRedisTemplate()
                 );
 
         log.info("✅ OAuth2同意服务配置完成");
@@ -77,8 +78,8 @@ public class RedisOAuth2Config {
      * Redis模板配置
      * 专门用于OAuth2数据存储，支持JSON序列化
      */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
+    @Bean("oauth2MainRedisTemplate")
+    public RedisTemplate<String, Object> oauth2MainRedisTemplate() {
         log.info("🔧 配置Redis模板");
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -145,9 +146,9 @@ public class RedisOAuth2Config {
      * 验证Redis连接是否正常
      */
     @Bean
+    @ConditionalOnProperty(name = "auth.redis.validation.enabled", havingValue = "true")
     public RedisConnectionValidator redisConnectionValidator() {
-        log.info("🔧 配置Redis连接验证器");
-
+        log.info("🔧 配置Redis连接验证器 (启用)");
         return new RedisConnectionValidator(redisConnectionFactory);
     }
 
@@ -159,7 +160,7 @@ public class RedisOAuth2Config {
     public RedisHealthChecker redisHealthChecker() {
         log.info("🔧 配置Redis健康检查器");
 
-        return new RedisHealthChecker(redisTemplate());
+        return new RedisHealthChecker(oauth2MainRedisTemplate());
     }
 
     /**

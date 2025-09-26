@@ -91,6 +91,11 @@ public class ShopSearchEvent implements Serializable {
     private Integer followCount;
 
     /**
+     * 是否推荐店铺
+     */
+    private Boolean recommended;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createdAt;

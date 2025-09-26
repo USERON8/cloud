@@ -1,29 +1,47 @@
 server:
-  port: ${server.port}
+  port: 8086
+
 spring:
   application:
-    name: ${spring.application.name}
+    name: payment-service
   profiles:
     active: dev
+
+  # Nacos 配置
   cloud:
     nacos:
       discovery:
-        server-addr: ${nacos.discovery.server-addr}
-        username: ${nacos.discovery.username}
-        password: ${nacos.discovery.password}
-        namespace: ${nacos.discovery.namespace}
-        group: ${nacos.discovery.group}
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
       config:
-        server-addr: ${nacos.config.server-addr}
-        username: ${nacos.config.username}
-        password: ${nacos.config.password}
-        namespace: ${nacos.config.namespace}
-        file-extension: ${nacos.config.file-extension}
-        group: ${nacos.config.group}
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
+    # OpenFeign 配置
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 10000
+            loggerLevel: basic
+      compression:
+        request:
+          enabled: true
+        response:
+          enabled: true
+
+    # RocketMQ Stream 配置
     stream:
       rocketmq:
         binder:
-          name-server: 127.0.0.1:39876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
       bindings:
         paymentLog-out-0:
           destination: LOG_PAYMENT_TOPIC
@@ -40,7 +58,6 @@ spring:
           destination: ORDER_TO_PAYMENT_TOPIC
           content-type: application/json
           group: payment-order-group
-        # 支付事件生产者绑定（新增）
         payment-producer-out-0:
           destination: payment-events
           content-type: application/json
@@ -48,49 +65,103 @@ spring:
           producer:
             maxRequestSize: 4194304
             sync: true
+
+  # Config 配置
   config:
     import: optional:nacos:common
-  datasource:
-    driver-class-name: ${spring.datasource.driver-class-name}
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
-  data:
-    redis:
-      host: ${spring.redis.host}
-      port: ${spring.redis.port}
-      password: ${spring.redis.password}
-      database: ${spring.redis.database}
-      timeout: ${spring.redis.timeout}
-      lettuce:
-        pool:
-          max-active: ${spring.redis.lettuce.pool.max-active}
-          max-wait: ${spring.redis.lettuce.pool.max-wait}
-          max-idle: ${spring.redis.lettuce.pool.max-idle}
-          min-idle: ${spring.redis.lettuce.pool.min-idle}
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
           cache-duration: PT30M
+# 日志配置
 logging:
   file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
+    path: ./payment-service/logs
+    name: ${logging.file.path}/payment-service.log
   level:
-    com.cloud.user.mapper: TRACE
-# SpringDoc OpenAPI 配置
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.payment.module.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+# 支付服务专用配置
+payment:
+  async:
+    enabled: true
+  notification:
+    enabled: true
+  statistics:
+    enabled: true
+
+# Redis 配置
+redis:
+  host: ${REDIS_HOST:127.0.0.1}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:root}
+  database: ${REDIS_DATABASE:1}
+  timeout: 10000
+  lettuce:
+    pool:
+      max-active: 20
+      max-wait: -1ms
+      max-idle: 10
+      min-idle: 2
+
+# Redisson 配置
+redisson:
+  address: redis://${redis.host}:${redis.port}
+  password: ${redis.password}
+  database: ${redis.database}
+  timeout: 10000
+  connection-pool-size: 32
+  connection-minimum-idle-size: 8
+  idle-connection-timeout: 10000
+  connect-timeout: 10000
+  retry-attempts: 3
+  retry-interval: 1000
+  subscriptions-per-connection: 5
+  client-name: payment-service
+
+# 支付宝配置
+alipay:
+  app-id: ${ALIPAY_APP_ID:2021000122671234}  # 支付宝应用ID，生产环境使用环境变量
+  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # 应用私钥
+  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # 支付宝公钥
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # 沙箱环境网关
+  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # 异步通知地址
+  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # 同步跳转地址
+  sign-type: RSA2
+  charset: UTF-8
+  format: json
+  timeout: 30m  # 支付超时时间
+
+# SpringDoc 配置
 springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
   swagger-ui:
-    enabled: true
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
   group-configs:
     - group: 'payment-manage'
       paths-to-match: '/api/v1/payment/manage/**'
@@ -107,27 +178,3 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-  insight:
-    service-name: ${spring.application.name}
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-  default-flat-param-object: true
-
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.cloud.payment.module.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      id-type: assign_id
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0

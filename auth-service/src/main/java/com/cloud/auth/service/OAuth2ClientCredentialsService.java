@@ -2,8 +2,8 @@ package com.cloud.auth.service;
 
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.lock.RedissonLockManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
@@ -21,16 +21,21 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class OAuth2ClientCredentialsService {
 
     private final AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager;
-    private final RedissonLockManager redissonLockManager;
+
+    @Autowired(required = false)
+    private RedissonLockManager redissonLockManager;
 
     // 用于防止循环调用的标记
     private final ThreadLocal<Boolean> gettingToken = new ThreadLocal<>();
     @Value("${spring.security.oauth2.client.registration.client-service.client-id:client-service}")
     private String clientId;
+
+    public OAuth2ClientCredentialsService(AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager) {
+        this.authorizedClientServiceManager = authorizedClientServiceManager;
+    }
 
     /**
      * 获取内部API访问令牌
@@ -92,6 +97,12 @@ public class OAuth2ClientCredentialsService {
             return null;
         }
 
+        // 如果没有RedissonLockManager，使用同步方法
+        if (redissonLockManager == null) {
+            log.warn("⚠️ RedissonLockManager未配置，使用同步方法获取令牌");
+            return getTokenWithoutLock();
+        }
+
         String lockKey = "oauth2:token:programmatic:" + clientId;
 
         return redissonLockManager.executeWithLock(lockKey, 2, 8, TimeUnit.SECONDS, () -> {
@@ -120,5 +131,40 @@ public class OAuth2ClientCredentialsService {
                 gettingToken.remove();
             }
         });
+    }
+
+    /**
+     * 不使用分布式锁的令牌获取方法
+     * 当RedissonLockManager不可用时的备用方案
+     *
+     * @return JWT访问令牌
+     */
+    private synchronized String getTokenWithoutLock() {
+        try {
+            gettingToken.set(true);
+
+            OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
+                    .withClientRegistrationId("client-service")
+                    .principal("client-service")
+                    .build();
+
+            var authorizedClient = authorizedClientServiceManager.authorize(authorizeRequest);
+
+            if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
+                String token = authorizedClient.getAccessToken().getTokenValue();
+                log.debug("✅ 成功获取内部API令牌（同步方式）: {}...",
+                    token.length() > 20 ? token.substring(0, 20) : token);
+                return token;
+            } else {
+                log.error("❌ 无法获取内部API令牌（同步方式）");
+                return null;
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 获取内部API令牌异常（同步方式）", e);
+            return null;
+        } finally {
+            gettingToken.remove();
+        }
     }
 }

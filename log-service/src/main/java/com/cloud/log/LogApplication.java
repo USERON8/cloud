@@ -12,7 +12,13 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * @author what's up
  */
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(
+    scanBasePackages = {"com.cloud.log", "com.cloud.common"},
+    exclude = {
+        com.cloud.common.config.RedissonConfig.class,
+        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class
+    }
+)
 @EnableDiscoveryClient
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class LogApplication {

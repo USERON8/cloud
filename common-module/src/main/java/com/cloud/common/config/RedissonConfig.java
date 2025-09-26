@@ -37,7 +37,7 @@ public class RedissonConfig {
     private int database;
 
     @Value("${spring.data.redis.timeout:3000}")
-    private int timeout;
+    private String timeoutStr;
 
     @Value("${spring.data.redis.lettuce.pool.max-active:8}")
     private int maxActive;
@@ -49,7 +49,37 @@ public class RedissonConfig {
     private int minIdle;
 
     @Value("${spring.data.redis.lettuce.pool.max-wait:-1}")
-    private long maxWait;
+    private String maxWaitStr;
+    
+    private int getTimeout() {
+        return parseIntValue(timeoutStr, 3000);
+    }
+    
+    private long getMaxWait() {
+        return parseLongValue(maxWaitStr, -1L);
+    }
+    
+    private int parseIntValue(String value, int defaultValue) {
+        if (value == null || value.trim().isEmpty()) return defaultValue;
+        String cleanValue = value.replaceAll("ms$", "").replaceAll("s$", "");
+        try {
+            return Integer.parseInt(cleanValue);
+        } catch (NumberFormatException e) {
+            log.warn("解析整数配置失败，使用默认值: {} -> {}", value, defaultValue);
+            return defaultValue;
+        }
+    }
+    
+    private long parseLongValue(String value, long defaultValue) {
+        if (value == null || value.trim().isEmpty()) return defaultValue;
+        String cleanValue = value.replaceAll("ms$", "").replaceAll("s$", "");
+        try {
+            return Long.parseLong(cleanValue);
+        } catch (NumberFormatException e) {
+            log.warn("解析长整数配置失败，使用默认值: {} -> {}", value, defaultValue);
+            return defaultValue;
+        }
+    }
 
     /**
      * 创建Redisson客户端
@@ -66,11 +96,11 @@ public class RedissonConfig {
         config.useSingleServer()
                 .setAddress(redisUrl)
                 .setDatabase(database)
-                .setTimeout(timeout)
+                .setTimeout(getTimeout())
                 .setConnectionMinimumIdleSize(minIdle)
                 .setConnectionPoolSize(maxActive)
                 .setIdleConnectionTimeout(10000)
-                .setConnectTimeout(timeout)
+                .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
                 .setRetryInterval(1500);
 
@@ -120,13 +150,13 @@ public class RedissonConfig {
         // 集群模式配置
         config.useClusterServers()
                 .addNodeAddress(addresses)
-                .setTimeout(timeout)
+                .setTimeout(getTimeout())
                 .setMasterConnectionMinimumIdleSize(minIdle)
                 .setMasterConnectionPoolSize(maxActive)
                 .setSlaveConnectionMinimumIdleSize(minIdle)
                 .setSlaveConnectionPoolSize(maxActive)
                 .setIdleConnectionTimeout(10000)
-                .setConnectTimeout(timeout)
+                .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
                 .setRetryInterval(1500);
 
@@ -177,13 +207,13 @@ public class RedissonConfig {
                 .setMasterName(masterName)
                 .addSentinelAddress(addresses)
                 .setDatabase(database)
-                .setTimeout(timeout)
+                .setTimeout(getTimeout())
                 .setMasterConnectionMinimumIdleSize(minIdle)
                 .setMasterConnectionPoolSize(maxActive)
                 .setSlaveConnectionMinimumIdleSize(minIdle)
                 .setSlaveConnectionPoolSize(maxActive)
                 .setIdleConnectionTimeout(10000)
-                .setConnectTimeout(timeout)
+                .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
                 .setRetryInterval(1500);
 

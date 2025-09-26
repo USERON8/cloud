@@ -23,7 +23,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/manage/users")
 @RequiredArgsConstructor
 @Tag(name = "用户管理", description = "用户信息更新、删除等相关操作")
 public class UserManageController {

@@ -1,33 +1,26 @@
-server:
-  port: 8085
-nacos:
-  discovery:
-    server-addr: localhost:8848
-    username: nacos
-    password: nacos
-    namespace: public
-    group: DEFAULT_GROUP
-  config:
-    server-addr: localhost:8848
-    username: nacos
-    password: nacos
-    namespace: public
-    file-extension: yaml
-    group: DEFAULT_GROUP
+# 支付服务 - 开发环境配置
+
 spring:
-  application:
-    name: payment-service
+  # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
     username: root
     password: root
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # Redis 配置
   data:
     redis:
       host: localhost
       port: 6379
       password: root
-      database: 0
+      database: 4
       timeout: 10000ms
       lettuce:
         pool:
@@ -35,9 +28,24 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 0
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
-          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.payment: debug
+    org.springframework.security: debug
+    org.springframework.web: debug
+    org.springframework.cloud.openfeign: debug
+    com.alibaba.nacos: warn
+
+# MyBatis Plus 开发配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Knife4j 开发配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false

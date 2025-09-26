@@ -194,7 +194,7 @@ public class OAuth21AuthorizationServerConfig {
         // 创建内部服务调用客户端（用于auth-service调用user-service）
         RegisteredClient internalServiceClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("client-service")
-                .clientSecret("{bcrypt}$2a$12$MwWVVHU9XUgKnUC8XKDI3OQPv0WA8Glt1Y6.1X1lVZp7ywdMqF.2S")  // ClientService@2024#Secure
+                .clientSecret("{bcrypt}$2a$12$B2QJK4UtQVQ5vXuCw.I2Nu1.X2QzJzj8.YFJ4m3Q5r8wXzZ2B.P6G")  // InternalClient@2024#Secure
 
                 .clientAuthenticationMethods(methods -> {
                     methods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);

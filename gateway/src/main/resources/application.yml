@@ -1,13 +1,33 @@
 server:
   port: 80
+
 spring:
   application:
     name: gateway
+  profiles:
+    active: dev
+    include: route,api
   main:
     allow-bean-definition-overriding: true
-  profiles:
-    include: route,api
+
+  # Nacos 配置
   cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
+
+    # Gateway 配置
     gateway:
       discovery:
         locator:
@@ -36,8 +56,8 @@ spring:
               - "X-Requested-With"
             allowCredentials: true
             maxAge: 3600
-      
-      # 默认过滤器 - 应用安全过滤器到所有路由
+
+      # 默认过滤器
       default-filters:
         - name: Security
           args:
@@ -45,43 +65,21 @@ spring:
             enableRateLimit: true
             enableTokenCheck: true
             enablePerformanceMonitoring: true
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
-      config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+
+  # Config 配置
   config:
     import: optional:nacos:common
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: root
-      database: 6
-      timeout: 5000ms
-      lettuce:
-        pool:
-          max-active: 16
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 2
+
+  # 静态资源配置
   web:
     resources:
       static-locations: classpath:/static/
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问auth-service的JWK端点，实现OAuth2.1标准架构
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
           issuer-uri: http://127.0.0.1:80
     headers:
@@ -92,6 +90,12 @@ spring:
       cache-control: true
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
+
+# 日志配置
+logging:
+  file:
+    path: ./gateway/logs
+    name: ${logging.file.path}/gateway.log
   level:
     com.cloud: INFO
     com.alibaba.nacos: WARN
@@ -101,11 +105,9 @@ spring:
 # 应用安全配置
 app:
   security:
-    # 是否启用测试API（生产环境应设为false）
     enable-test-api: true
-# SpringDoc 配置已移除，使用 Knife4j 进行文档聚合
 
-# Knife4j 网关服务发现聚合配置
+# Knife4j 网关聚合配置
 knife4j:
   enable: true
   production: false
@@ -119,21 +121,35 @@ knife4j:
     enable-footer-custom: true
     footer-custom-content: "Cloud 微服务平台 API 文档"
   gateway:
-    # 启用网关聚合功能
     enabled: true
-    # 使用服务发现策略
     strategy: discover
     discover:
       enabled: true
       version: openapi3
-      # 排除gateway服务本身
       excluded-services:
         - gateway
-      # 服务发现配置
       service-config:
         auth-service:
           group-name: 认证服务
           api-docs-path: /v3/api-docs
         user-service:
           group-name: 用户服务
+          api-docs-path: /v3/api-docs
+        product-service:
+          group-name: 商品服务
+          api-docs-path: /v3/api-docs
+        order-service:
+          group-name: 订单服务
+          api-docs-path: /v3/api-docs
+        payment-service:
+          group-name: 支付服务
+          api-docs-path: /v3/api-docs
+        stock-service:
+          group-name: 库存服务
+          api-docs-path: /v3/api-docs
+        search-service:
+          group-name: 搜索服务
+          api-docs-path: /v3/api-docs
+        log-service:
+          group-name: 日志服务
           api-docs-path: /v3/api-docs

@@ -1,42 +1,32 @@
 server:
-  port: 8081
+  port: 8082
+
 spring:
   application:
     name: user-service
+  profiles:
+    active: dev
   main:
     allow-bean-definition-overriding: true
+
+  # Nacos 配置
   cloud:
-    stream:
-      rocketmq:
-        binder:
-          name-server: 127.0.0.1:9876
-      bindings:
-        # 用户事件生产者绑定
-        user-producer-out-0:
-          destination: user-events
-          content-type: application/json
-          group: user-producer-group
-
-        userLog-out-0:
-          destination: LOG_USER_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
-
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
       config:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
+
+    # OpenFeign 配置
     openfeign:
       client:
         config:
@@ -49,67 +39,75 @@ spring:
           enabled: true
         response:
           enabled: true
+
+    # RocketMQ Stream 配置
+    stream:
+      rocketmq:
+        binder:
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+      bindings:
+        # 用户事件生产者绑定
+        user-producer-out-0:
+          destination: user-events
+          content-type: application/json
+          group: user-producer-group
+        userLog-out-0:
+          destination: LOG_USER_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+        # 日志生产者绑定
+        logProducer-out-0:
+          destination: LOG_COLLECTION_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+
+  # Config 配置
   config:
     import: optional:nacos:common
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-    username: root
-    password: root
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: root
-      database: 2
-      timeout: 10000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
+
+  # 文件上传配置
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
           cache-duration: PT30M
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
-management:
-  health:
-    elasticsearch:
-      enabled: false
 
-# MinIO配置
-minio:
-  endpoint: http://localhost:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket-name: user-avatars
-  public-endpoint: http://localhost:9000
+  # 自动配置排除
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+
+# 日志配置
 logging:
   file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
+    path: ./user-service/logs
+    name: ${logging.file.path}/user-service.log
   level:
     com.cloud: info
     org.springframework.security: warn
     org.springframework.web: warn
+
+# MyBatis Plus 配置
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.user.module.entity
   configuration:
     map-underscore-to-camel-case: true
     auto-mapping-behavior: full
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     enable-sql-runner: true
     db-config:
@@ -127,6 +125,7 @@ user:
   statistics:
     enabled: true
 
+# SpringDoc 配置
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -145,6 +144,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller.admin
 
+# Knife4j 配置
 knife4j:
   enable: true
   production: false
@@ -152,3 +152,9 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
+
+# 健康检查配置
+management:
+  health:
+    elasticsearch:
+      enabled: false

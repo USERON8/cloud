@@ -1,16 +1,38 @@
 package com.cloud.auth;
 
+import com.cloud.common.config.MybatisPlusConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.FilterType;
 
 /**
  * @author what's up
  */
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(
+    exclude = {
+        org.redisson.spring.starter.RedissonAutoConfigurationV2.class,
+        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+    }
+)
+@ComponentScan(
+    basePackages = {"com.cloud.auth", "com.cloud.common"},
+    excludeFilters = {
+        @ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = {
+                MybatisPlusConfig.class, 
+                com.cloud.common.config.RedissonConfig.class,
+                com.cloud.common.config.base.BaseHealthCheckController.class
+            }
+        )
+    }
+)
 @EnableFeignClients(basePackages = "com.cloud.api")
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class AuthApplication {

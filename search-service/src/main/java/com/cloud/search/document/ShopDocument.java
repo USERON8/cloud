@@ -33,49 +33,55 @@ public class ShopDocument {
     private String id;
 
     /**
-     * 店铺ID
+     * 店铺ID（与数据库merchant_shop.id对应）
      */
     @Field(type = FieldType.Long)
     private Long shopId;
 
     /**
-     * 商家ID
+     * 商家ID（与数据库merchant_shop.merchant_id对应）
      */
     @Field(type = FieldType.Long)
     private Long merchantId;
 
     /**
-     * 店铺名称
+     * 店铺名称（与数据库merchant_shop.shop_name对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String shopName;
 
     /**
-     * 店铺头像URL
+     * 店铺名称（用于精确匹配）
+     */
+    @Field(type = FieldType.Keyword)
+    private String shopNameKeyword;
+
+    /**
+     * 店铺头像URL（与数据库merchant_shop.avatar_url对应）
      */
     @Field(type = FieldType.Keyword)
     private String avatarUrl;
 
     /**
-     * 店铺描述
+     * 店铺描述（与数据库merchant_shop.description对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String description;
 
     /**
-     * 客服电话
+     * 客服电话（与数据库merchant_shop.contact_phone对应）
      */
     @Field(type = FieldType.Keyword)
     private String contactPhone;
 
     /**
-     * 详细地址
+     * 详细地址（与数据库merchant_shop.address对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String address;
 
     /**
-     * 状态：0-关闭，1-营业
+     * 状态：0-关闭，1-营业（与数据库merchant_shop.status对应）
      */
     @Field(type = FieldType.Integer)
     private Integer status;
@@ -105,13 +111,13 @@ public class ShopDocument {
     private Integer followCount;
 
     /**
-     * 创建时间
+     * 创建时间（与数据库merchant_shop.created_at对应）
      */
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime createdAt;
 
     /**
-     * 更新时间
+     * 更新时间（与数据库merchant_shop.updated_at对应）
      */
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime updatedAt;

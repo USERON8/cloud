@@ -34,7 +34,7 @@ public class OrderCompleteConsumer {
      */
     @Bean
     @Transactional(rollbackFor = Exception.class)
-    public Consumer<OrderCompleteEvent> orderCompleteConsumer() {
+    public Consumer<OrderCompleteEvent> orderCompleteMessageConsumer() {
         return event -> {
             try {
                 log.info("接收到订单完成消息，订单ID: {}, 操作人: {}", event.getOrderId(), event.getOperator());

@@ -2,6 +2,8 @@ package com.cloud.search.service;
 
 import com.cloud.common.domain.event.ShopSearchEvent;
 import com.cloud.search.document.ShopDocument;
+import com.cloud.search.dto.SearchResult;
+import com.cloud.search.dto.ShopSearchRequest;
 
 import java.util.List;
 
@@ -94,4 +96,37 @@ public interface ShopSearchService {
      * 删除店铺索引
      */
     void deleteShopIndex();
+
+    /**
+     * 复杂店铺搜索
+     *
+     * @param request 搜索请求参数
+     * @return 搜索结果
+     */
+    SearchResult<ShopDocument> searchShops(ShopSearchRequest request);
+
+    /**
+     * 获取搜索建议
+     *
+     * @param keyword 关键字
+     * @param size    建议数量
+     * @return 建议列表
+     */
+    List<String> getSearchSuggestions(String keyword, Integer size);
+
+    /**
+     * 获取热门店铺
+     *
+     * @param size 数量
+     * @return 热门店铺列表
+     */
+    List<ShopDocument> getHotShops(Integer size);
+
+    /**
+     * 获取店铺筛选聚合信息
+     *
+     * @param request 搜索请求参数
+     * @return 聚合信息
+     */
+    SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request);
 }

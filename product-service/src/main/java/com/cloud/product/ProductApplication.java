@@ -7,14 +7,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.mybatis.spring.annotation.MapperScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
-@EnableFeignClients
+@EnableFeignClients(basePackages = "com.cloud.api")
 @EnableAspectJAutoProxy(proxyTargetClass = true)
+@ComponentScan(basePackages = {"com.cloud.product", "com.cloud.common"})
+@MapperScan("com.cloud.product.mapper")
 public class ProductApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");

@@ -1,0 +1,41 @@
+# 网关服务 - 生产环境配置
+
+spring:
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: 6
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-wait: -1ms
+          max-idle: 16
+          min-idle: 4
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.gateway: info
+    org.springframework.cloud.gateway: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+    com.alibaba.nacos: warn
+    root: warn
+
+# 应用安全配置
+app:
+  security:
+    enable-test-api: false
+
+# Knife4j 生产配置
+knife4j:
+  enable: false
+  production: true
+  basic:
+    enable: true
+    username: ${API_DOC_USERNAME:admin}
+    password: ${API_DOC_PASSWORD:admin123}

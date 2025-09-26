@@ -1,22 +1,29 @@
 server:
-  port: 8083
+  port: 8085
 
 spring:
   application:
     name: stock-service
   profiles:
     active: dev
+
+  # Nacos 配置
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
         namespace: public
         group: DEFAULT_GROUP
       config:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
         namespace: public
+        file-extension: yaml
         group: DEFAULT_GROUP
-        file-extension: yml
+    # OpenFeign 配置
     openfeign:
       client:
         config:
@@ -29,11 +36,18 @@ spring:
           enabled: true
         response:
           enabled: true
+
+    # RocketMQ Stream 配置
     stream:
       rocketmq:
         binder:
-          name-server: 127.0.0.1:39876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
       bindings:
+        stockLog-out-0:
+          destination: LOG_STOCK_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
         stockUpdate-out-0:
           destination: STOCK_UPDATE_TOPIC
           content-type: application/json
@@ -48,72 +62,58 @@ spring:
           destination: PAYMENT_TO_STOCK_TOPIC
           content-type: application/json
           group: stock-payment-group
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
-    hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
-      idle-timeout: 300000
-      connection-timeout: 30000
-      max-lifetime: 1800000
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 2
-      password:
-      timeout: 5000ms
-      lettuce:
-        pool:
-          max-active: 20
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
+        stock-producer-out-0:
+          destination: stock-events
+          content-type: application/json
+          group: stock-producer-group
+
+  # Config 配置
+  config:
+    import: optional:nacos:common
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
           cache-duration: PT30M
+# 日志配置
+logging:
+  file:
+    path: ./stock-service/logs
+    name: ${logging.file.path}/stock-service.log
+  level:
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+
+# MyBatis Plus 配置
 mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.stock.module.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
+    enable-sql-runner: true
     db-config:
       id-type: assign_id
       logic-delete-field: deleted
-      logic-delete-value: 1
       logic-not-delete-value: 0
-  mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.cloud.stock.module.entity
+      logic-delete-value: 1
 
-logging:
-  level:
-    com.cloud.stock: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.data.redis: DEBUG
-  pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-  file:
-    name: logs/stock-service.log
-    max-size: 100MB
-    max-history: 30
+# 库存服务专用配置
+stock:
+  async:
+    enabled: true
+  notification:
+    enabled: true
+  statistics:
+    enabled: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
-
+# SpringDoc 配置
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -121,24 +121,6 @@ springdoc:
     operations-sorter: alpha
   api-docs:
     path: /v3/api-docs
-  group-configs:
-    - group: 'stock-manage'
-      paths-to-match: '/stock/manage/**'
-      packages-to-scan: com.cloud.stock.controller
-    - group: 'stock-query'
-      paths-to-match: '/stock/query/**'
-      packages-to-scan: com.cloud.stock.controller
-
-# SpringDoc OpenAPI 配置
-springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
   group-configs:
     - group: 'stock-manage'
       paths-to-match: '/api/v1/stock/manage/**'

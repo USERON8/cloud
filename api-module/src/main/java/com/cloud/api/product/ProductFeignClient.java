@@ -63,7 +63,9 @@ public interface ProductFeignClient {
     @GetMapping("/products/shop/{shopId}")
     List<ProductDTO> getProductsByShopId(@PathVariable("shopId") Long shopId);
 
-    Boolean putOnShelf(Long id);
+    @PutMapping("/products/{id}/shelf-on")
+    Boolean putOnShelf(@PathVariable("id") Long id);
 
-    Boolean putOffShelf(Long id);
+    @PutMapping("/products/{id}/shelf-off")
+    Boolean putOffShelf(@PathVariable("id") Long id);
 }

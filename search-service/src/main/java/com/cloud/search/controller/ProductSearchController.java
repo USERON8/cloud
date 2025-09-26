@@ -2,6 +2,8 @@ package com.cloud.search.controller;
 
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ProductDocument;
+import com.cloud.search.dto.ProductSearchRequest;
+import com.cloud.search.dto.SearchResult;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
@@ -14,8 +16,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -28,11 +32,85 @@ import java.util.List;
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
 @Tag(name = "商品搜索", description = "商品搜索相关接口")
+@Validated
 public class ProductSearchController {
 
     private final ProductSearchService productSearchService;
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
+
+    @Operation(summary = "复杂商品搜索", description = "支持多条件组合的复杂商品搜索，包含聚合、高亮、排序等功能")
+    @PostMapping("/complex-search")
+    public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
+        try {
+            log.info("复杂商品搜索请求 - 关键字: {}, 分类: {}, 品牌: {}, 价格范围: {}-{}",
+                    request.getKeyword(), request.getCategoryName(), request.getBrandName(),
+                    request.getMinPrice(), request.getMaxPrice());
+
+            SearchResult<ProductDocument> result = productSearchService.searchProducts(request);
+
+            log.info("✅ 复杂商品搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+            return Result.success("搜索成功", result);
+
+        } catch (Exception e) {
+            log.error("❌ 复杂商品搜索失败 - 错误: {}", e.getMessage(), e);
+            return Result.error("搜索失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取商品筛选聚合信息", description = "获取商品搜索的筛选聚合信息，用于构建筛选条件")
+    @PostMapping("/filters")
+    public Result<SearchResult<ProductDocument>> getProductFilters(@Valid @RequestBody ProductSearchRequest request) {
+        try {
+            log.info("获取商品筛选聚合信息请求");
+
+            SearchResult<ProductDocument> result = productSearchService.getProductFilters(request);
+
+            log.info("✅ 获取商品筛选聚合信息完成");
+            return Result.success("获取筛选信息成功", result);
+
+        } catch (Exception e) {
+            log.error("❌ 获取商品筛选聚合信息失败 - 错误: {}", e.getMessage(), e);
+            return Result.error("获取筛选信息失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取搜索建议", description = "根据输入关键字获取搜索建议")
+    @GetMapping("/suggestions")
+    public Result<List<String>> getSearchSuggestions(
+            @Parameter(description = "搜索关键字") @RequestParam String keyword,
+            @Parameter(description = "建议数量") @RequestParam(defaultValue = "10") Integer size) {
+        try {
+            log.info("获取搜索建议请求 - 关键字: {}, 数量: {}", keyword, size);
+
+            List<String> suggestions = productSearchService.getSearchSuggestions(keyword, size);
+
+            log.info("✅ 获取搜索建议完成 - 数量: {}", suggestions.size());
+            return Result.success("获取建议成功", suggestions);
+
+        } catch (Exception e) {
+            log.error("❌ 获取搜索建议失败 - 错误: {}", e.getMessage(), e);
+            return Result.error("获取建议失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取热门搜索关键字", description = "获取当前热门的搜索关键字")
+    @GetMapping("/hot-keywords")
+    public Result<List<String>> getHotSearchKeywords(
+            @Parameter(description = "关键字数量") @RequestParam(defaultValue = "10") Integer size) {
+        try {
+            log.info("获取热门搜索关键字请求 - 数量: {}", size);
+
+            List<String> hotKeywords = productSearchService.getHotSearchKeywords(size);
+
+            log.info("✅ 获取热门搜索关键字完成 - 数量: {}", hotKeywords.size());
+            return Result.success("获取热门关键字成功", hotKeywords);
+
+        } catch (Exception e) {
+            log.error("❌ 获取热门搜索关键字失败 - 错误: {}", e.getMessage(), e);
+            return Result.error("获取热门关键字失败: " + e.getMessage());
+        }
+    }
 
     @Operation(summary = "关键词搜索商品", description = "根据关键词搜索商品，支持中文分词和拼音搜索")
     @GetMapping("/search")
@@ -173,40 +251,7 @@ public class ProductSearchController {
         }
     }
 
-    @Operation(summary = "搜索建议", description = "获取搜索关键词建议")
-    @GetMapping("/suggestions")
-    public Result<List<String>> getSearchSuggestions(
-            @Parameter(description = "输入关键词") @RequestParam String keyword,
-            @Parameter(description = "建议数量") @RequestParam(defaultValue = "10") int limit) {
 
-        try {
-            List<String> suggestions = elasticsearchOptimizedService.getSearchSuggestions(keyword, limit);
-
-            log.info("搜索建议完成 - 关键词: {}, 建议数量: {}", keyword, suggestions.size());
-            return Result.success("获取建议成功", suggestions);
-
-        } catch (Exception e) {
-            log.error("获取搜索建议失败 - 关键词: {}, 错误: {}", keyword, e.getMessage(), e);
-            return Result.error("获取建议失败: " + e.getMessage());
-        }
-    }
-
-    @Operation(summary = "热门搜索词", description = "获取热门搜索关键词")
-    @GetMapping("/hot-keywords")
-    public Result<List<String>> getHotSearchKeywords(
-            @Parameter(description = "数量限制") @RequestParam(defaultValue = "10") int limit) {
-
-        try {
-            List<String> hotKeywords = elasticsearchOptimizedService.getHotSearchKeywords(limit);
-
-            log.info("热门搜索词获取完成 - 数量: {}", hotKeywords.size());
-            return Result.success("获取热门搜索词成功", hotKeywords);
-
-        } catch (Exception e) {
-            log.error("获取热门搜索词失败 - 错误: {}", e.getMessage(), e);
-            return Result.error("获取热门搜索词失败: " + e.getMessage());
-        }
-    }
 
     @Operation(summary = "推荐商品", description = "获取推荐商品列表")
     @GetMapping("/recommended")

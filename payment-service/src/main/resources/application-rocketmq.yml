@@ -4,7 +4,7 @@ spring:
     stream:
       rocketmq:
         binder:
-          name-server: localhost:9876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
           group: payment-service-group
         bindings:
           # 日志收集生产者
@@ -24,7 +24,7 @@ spring:
               max-message-size: 4194304
               retry-times-when-send-failed: 2
           # 订单创建消费者
-          orderCreatedConsumer-in-0:
+          orderCreatedMessageConsumer-in-0:
             consumer:
               group: payment-order-created-group
               consume-thread-min: 5
@@ -51,7 +51,7 @@ spring:
             partition-count: 4
             use-native-encoding: true
         # 订单创建消费者绑定
-        orderCreatedConsumer-in-0:
+        orderCreatedMessageConsumer-in-0:
           destination: order-created-topic
           content-type: application/json
           group: payment-order-created-group
@@ -61,7 +61,7 @@ spring:
             back-off-max-interval: 10000
             back-off-multiplier: 2.0
       function:
-        definition: "orderCreatedConsumer"
+        definition: "orderCreatedMessageConsumer"
 
 # 日志配置
 logging:

@@ -1,0 +1,38 @@
+# 网关服务 - 开发环境配置
+
+spring:
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: root
+      database: 6
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 2
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.gateway: debug
+    org.springframework.cloud.gateway: debug
+    org.springframework.security: debug
+    org.springframework.web: debug
+    com.alibaba.nacos: warn
+
+# 应用安全配置
+app:
+  security:
+    enable-test-api: true
+
+# Knife4j 开发配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false

@@ -1,25 +1,23 @@
 server:
-  port: 8087
+  port: 8088
+
 spring:
   application:
     name: log-service
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
-          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
-          cache-duration: PT30M
+  profiles:
+    active: dev
+
+  # Nacos 配置
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
       config:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -30,7 +28,7 @@ spring:
         definition: userEventConsumer
       rocketmq:
         binder:
-          name-server: 127.0.0.1:9876
+          name-server: 127.0.0.1:39876
         bindings:
           userEventConsumer-in-0:
             consumer:
@@ -80,27 +78,61 @@ spring:
           destination: LOG_GATEWAY_TOPIC
           content-type: application/json
           group: log-group
+  # Config 配置
   config:
     import: optional:nacos:common
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: root
-      database: 0
-      timeout: 10000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
-    elasticsearch:
-      repositories:
-        enabled: true
-elasticsearch:
-  url: http://localhost:9201
+  
+  # 自动配置排除
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+  # OAuth2 资源服务器配置
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          cache-duration: PT30M
+
+# 日志配置
 logging:
   file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
+    path: ./log-service/logs
+    name: ${logging.file.path}/log-service.log
+  level:
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+
+# 日志服务专用配置
+log:
+  async:
+    enabled: true
+  notification:
+    enabled: true
+  statistics:
+    enabled: true
+
+# SpringDoc 配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+# Knife4j 配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN

@@ -1,55 +1,40 @@
-server:
-  port: 8088
+# 搜索服务 - 开发环境配置
 
 spring:
-  cloud:
-    nacos:
-      discovery:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: search
-        group: CLOUD
-      config:
-        server-addr: localhost:8848
-        username: nacos
-        password: nacos
-        namespace: search
-        file-extension: yaml
-        group: CLOUD
-    stream:
-      rocketmq:
-        binder:
-          name-server: 127.0.0.1:39876
-      bindings:
-        # 搜索事件消费者绑定
-        searchConsumer-in-0:
-          destination: SEARCH_EVENTS_TOPIC
-          content-type: application/json
-          group: search-consumer-group
-          consumer:
-            max-attempts: 3
+  # Elasticsearch 配置
   elasticsearch:
     uris: http://localhost:9200
+    username:
+    password:
+
+  # Redis 配置
   data:
     redis:
       host: localhost
       port: 6379
       password: root
-      database: 0
-      timeout: 10000ms
+      database: 6
+      timeout: 6000ms
       lettuce:
         pool:
-          max-active: 8
-          max-wait: 2000ms
-          max-idle: 4
-          min-idle: 1
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8082/oauth2/jwks
+          max-active: 20
+          max-wait: 6000ms
+          max-idle: 10
+          min-idle: 5
 
+# 日志级别配置
 logging:
   level:
-    com.cloud.search: trace
+    com.cloud.search: debug
+    org.springframework.security: debug
+    org.springframework.web: debug
+    org.springframework.cloud.openfeign: debug
+    org.elasticsearch: debug
+    com.alibaba.nacos: warn
+
+# Knife4j 开发配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false

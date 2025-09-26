@@ -76,6 +76,25 @@ public class BaseAsyncConfig implements AsyncConfigurer {
     }
 
     /**
+     * 批处理异步任务执行器
+     * 专门用于批量消息处理相关的异步任务
+     *
+     * @return Executor
+     */
+    @Bean("batchProcessExecutor")
+    public Executor batchProcessExecutor() {
+        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+                2,
+                6,
+                200,
+                "batch-process-"
+        );
+        executor.initialize();
+        log.info("✅ 批处理异步线程池初始化完成 - 核心线程数: 2, 最大线程数: 6, 队列容量: 200");
+        return executor;
+    }
+
+    /**
      * 创建线程池任务执行器的工厂方法
      * 提供统一的线程池配置模板
      *

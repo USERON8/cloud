@@ -1,55 +1,103 @@
 server:
-  port: ${server.port}
+  port: 8087
+
 spring:
   application:
-    name: ${spring.application.name}
+    name: search-service
   profiles:
     active: dev
-  elasticsearch:
-    uris: ${elasticsearch.uris}
-    username: ${elasticsearch.username}
-    password: ${elasticsearch.password}
 
+  # Nacos 配置
   cloud:
     nacos:
       discovery:
-        server-addr: ${nacos.discovery.server-addr}
-        username: ${nacos.discovery.username}
-        password: ${nacos.discovery.password}
-        namespace: ${nacos.discovery.namespace}
-        group: ${nacos.discovery.group}
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        group: DEFAULT_GROUP
       config:
-        server-addr: ${nacos.config.server-addr}
-        username: ${nacos.config.username}
-        password: ${nacos.config.password}
-        namespace: ${nacos.config.namespace}
-        file-extension: ${nacos.config.file-extension}
-        group: ${nacos.config.group}
-    stream:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        username: nacos
+        password: nacos
+        namespace: public
+        file-extension: yaml
+        group: DEFAULT_GROUP
 
+    # OpenFeign 配置
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 10000
+            loggerLevel: basic
+      compression:
+        request:
+          enabled: true
+        response:
+          enabled: true
+
+    # RocketMQ Stream 配置
+    stream:
+      rocketmq:
+        binder:
+          name-server: 127.0.0.1:39876
+      bindings:
+        searchLog-out-0:
+          destination: LOG_SEARCH_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
+        search-consumer-in-0:
+          destination: SEARCH_EVENTS_TOPIC
+          content-type: application/json
+          group: search-consumer-group
+          consumer:
+            maxRedeliveryTimes: 3
+            delayLevelWhenNextConsume: 1
+
+  # Config 配置
   config:
     import: optional:nacos:common
-  data:
-    redis:
-      host: ${spring.redis.host}
-      port: ${spring.redis.port}
-      password: ${spring.redis.password}
-      database: ${spring.redis.database}
-      timeout: ${spring.redis.timeout}
-      lettuce:
-        pool:
-          max-active: ${spring.redis.lettuce.pool.max-active}
-          max-wait: ${spring.redis.lettuce.pool.max-wait}
-          max-idle: ${spring.redis.lettuce.pool.max-idle}
-          min-idle: ${spring.redis.lettuce.pool.min-idle}
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
           cache-duration: PT30M
 
+# 日志配置
+logging:
+  file:
+    path: ./search-service/logs
+    name: ${logging.file.path}/search-service.log
+  level:
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+
+# 搜索服务专用配置
+search:
+  async:
+    enabled: true
+  notification:
+    enabled: true
+  statistics:
+    enabled: true
+
+# SpringDoc 配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+# Knife4j 配置
 knife4j:
   enable: true
   production: false
@@ -57,19 +105,3 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-  insight:
-    service-name: ${spring.application.name}
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-  default-flat-param-object: true
-logging:
-  file:
-    path: D:/logs/${spring.application.name}
-    name: ${logging.file.path}/${spring.application.name}.log
-  level:
-    com.cloud.stock: debug

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.messaging.Message;
 
 import java.util.function.Consumer;
@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * @date 2025/1/15
  */
 @Slf4j
-@Configuration
+@Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "spring.cloud.stream.rocketmq.binder.name-server")
 public class OrderCreatedConsumer {
@@ -29,10 +29,10 @@ public class OrderCreatedConsumer {
 
     /**
      * 订单创建消费者函数
-     * 对应绑定名称: orderCreatedConsumer-in-0
+     * 对应绑定名称: orderCreatedMessageConsumer-in-0
      */
     @Bean
-    public Consumer<Message<OrderCreatedEvent>> orderCreatedConsumer() {
+    public Consumer<Message<OrderCreatedEvent>> orderCreatedMessageConsumer() {
         return message -> {
             try {
                 OrderCreatedEvent event = message.getPayload();

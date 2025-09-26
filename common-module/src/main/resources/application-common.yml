@@ -41,7 +41,7 @@ spring:
     stream:
       rocketmq:
         binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
 
   # 配置导入
   config:

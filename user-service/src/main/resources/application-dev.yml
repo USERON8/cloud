@@ -1,0 +1,59 @@
+# 用户服务 - 开发环境配置
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: root
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: root
+      database: 2
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+# MinIO 配置
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: user-avatars
+  public-endpoint: http://localhost:9000
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.user: debug
+    org.springframework.security: debug
+    org.springframework.web: debug
+    org.springframework.cloud.openfeign: debug
+    com.alibaba.nacos: warn
+
+# MyBatis Plus 开发配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Knife4j 开发配置
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false

@@ -1,4 +1,4 @@
-# 🌐 Cloud 微服务平台
+# 🌐 Cloud 微服务电商平台
 
 <div align="center">
 
@@ -9,225 +9,479 @@
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 
-**现代化企业级微服务架构平台**
+**🚀 下一代云原生电商微服务平台**
 
-基于 Spring Boot 3.x + Spring Cloud 2025 + OAuth2.1 构建的高性能、高可用、可扩展的企业级微服务解决方案
+基于 Spring Boot 3.5.3 + Spring Cloud 2025 + OAuth2.1 构建的高性能分布式电商解决方案
+
+[快速开始](#-快速开始) • [架构设计](#-系统架构) • [技术栈](#-技术栈) • [开发指南](#-开发指南) • [部署文档](#-部署指南)
 
 </div>
 
-## 🚀 项目特色
+## ✨ 项目亮点
 
-### 🏗️ 现代化架构
+### 🎆 核心特性
 
-- ✨ **Spring Boot 3.5.3** - 最新稳定版，原生Java 17支持
-- 🌍 **Spring Cloud 2025.0.0** - 下一代云原生架构
+#### 💼 业务功能
+- 🛒 **完整电商流程** - 商品管理、订单处理、库存管控、支付集成
+- 👥 **多级用户体系** - 普通用户、商家用户、管理员权限分离
+- 🔍 **智能搜索引擎** - 基于Elasticsearch的全文搜索
+- 📊 **实时数据分析** - 订单统计、销售报表、用户行为分析
+
+#### 🏗️ 架构优势
+- ⚡ **高性能网关** - WebFlux响应式编程，支持万级QPS
+- 🔄 **多级缓存策略** - Caffeine本地缓存 + Redis分布式缓存
+- 🔒 **分布式锁机制** - Redisson实现高并发场景下的数据一致性
+- 📡 **异步消息驱动** - RocketMQ实现解耦和削峰填谷
+
+#### 🔐 安全保障
 - 🔐 **OAuth2.1标准** - 完整实现授权服务器和资源服务器
-- ⚡ **WebFlux响应式** - 高并发响应式网关
+- 📱 **PKCE增强** - 移动端和SPA应用安全增强
+- 🎩 **JWT令牌管理** - 令牌生成、刷新、撤销全生命周期管理
+- 🔒 **细粒度权限** - 方法级别的权限控制
 
-### 📊 性能优化
-
-- 💾 **多级缓存** - L1(Caffeine) + L2(Redis)双层缓存
-- 🚀 **缓存策略** - 按业务选择多级或Redis统一缓存
-- 🔗 **连接池调优** - HikariCP高性能数据库连接
-- 🏃 **异步处理** - CompletableFuture异步编程
-
-### 🔒 安全保障
-
-- 📱 **PKCE增强** - 移动端安全增强
-- 🎩 **JWT全生命周期** - 生成、刷新、撤销管理
-- 🚪 **网关统一鉴权** - 所有API请求统一安全验证
-- 📝 **细粒度权限** - 方法级@PreAuthorize权限控制
-
-### ⚙️ 开发效率
-
-- 🛠️ **配置分离架构** - 服务自治，模板化配置
-- 🔄 **自动字段填充** - 创建时间、更新时间、操作人自动填充
-- 📚 **文档自动化** - Knife4j + SpringDoc API文档
-- 🎁 **响应标准化** - Result<T>和PageResult<T>统一格式
+#### 🛠️ 开发效率
+- 🔧 **配置分离** - 服务自治，模板化配置管理
+- 🤖 **自动化处理** - 字段自动填充、分页自动处理
+- 📚 **API文档** - Knife4j自动生成接口文档
+- 📊 **监控告警** - Actuator + Prometheus完善的监控体系
 
 ## 📊 技术栈
 
 ### 🔥 核心框架
 
-| 组件                   | 版本                 | 说明        |
-|----------------------|--------------------|-----------|
-| Spring Boot          | 3.5.3              | 主框架，最新稳定版 |
-| Spring Cloud         | 2025.0.0           | 云原生微服务架构  |
-| Spring Cloud Alibaba | 2025.0.0.0-preview | 阿里云微服务组件  |
-| Java                 | 17                 | LTS长期支持版本 |
+| 组件                   | 版本                 | 说明                    |
+|----------------------|--------------------|------------------------|
+| Spring Boot          | 3.5.3              | 最新稳定版，原生GraalVM支持 |
+| Spring Cloud         | 2025.0.0           | 下一代云原生微服务框架      |
+| Spring Cloud Alibaba | 2025.0.0.0-preview | 阿里云微服务套件           |
+| Java                 | 17                 | LTS长期支持版本           |
 
-### 🗄️ 数据存储
+### 🗌️ 数据存储
 
-| 组件           | 版本     | 说明         |
-|--------------|--------|------------|
-| MySQL        | 8.0+   | 主数据库       |
-| Redis        | 7.0+   | 缓存与分布式锁    |
-| MyBatis Plus | 3.5.13 | ORM框架，代码生成 |
-| HikariCP     | 5.1.0  | 高性能数据库连接池  |
-| Caffeine     | 3.2.2  | 本地缓存L1层    |
+| 组件           | 版本     | 说明                |
+|--------------|--------|--------------------|  
+| MySQL        | 8.0+   | 主数据库，支持事务       |
+| Redis        | 7.0+   | 缓存、分布式锁、会话存储 |
+| Elasticsearch| 8.x    | 全文搜索、日志存储      |
+| MinIO        | 最新版  | 对象存储，图片文件管理   |
+| MyBatis Plus | 3.5.13 | ORM增强，代码生成      |
 
-### 📨 消息队列
+### 📡 中间件
 
-| 组件                  | 版本        | 说明         |
-|---------------------|-----------|------------|
-| RocketMQ            | 5.3.2     | 阿里云原生消息中间件 |
-| Spring Cloud Stream | Alibaba管理 | 消息驱动微服务框架  |
+| 组件                  | 版本        | 说明                  |
+|---------------------|-----------|----------------------|
+| RocketMQ            | 5.3.2     | 消息队列，事件驱动        |
+| Nacos               | 2.4.0     | 服务注册与配置中心      |
+| Sentinel            | 1.8.8     | 流量控制、熔断降级        |
+| Redisson            | 3.39.0    | 分布式锁、限流器          |
 
 ## 🏗️ 项目结构
 
 ```
-cloud/
-├── api-module/              # API接口定义模块
-├── auth-service/            # 认证授权服务
-├── common-module/           # 公共组件模块
-├── gateway/                 # API网关
-├── log-service/             # 日志服务
-├── order-service/           # 订单服务
-├── payment-service/         # 支付服务
-├── product-service/         # 商品服务
-├── search-service/          # 搜索服务
-├── stock-service/           # 库存服务
-├── user-service/            # 用户服务
-├── sql/                     # 数据库脚本
-├── docs/                    # 项目文档
-├── pom.xml                  # 根POM文件
-├── README.md                # 项目说明
-└── RULE.md                  # 开发规范
+cloud/                         # 根目录
+├── gateway/                  # 🚪 API网关 [响应式编程、统一鉴权]
+├── auth-service/             # 🔐 认证授权服务 [OAuth2.1、JWT管理]
+├── user-service/             # 👥 用户服务 [用户管理、多级缓存]
+├── product-service/          # 📦 商品服务 [商品管理、分类管理]
+├── order-service/            # 📝 订单服务 [订单流程、状态机]
+├── stock-service/            # 📋 库存服务 [库存管理、分布式锁]
+├── payment-service/          # 💳 支付服务 [支付宝集成、支付流程]
+├── search-service/           # 🔍 搜索服务 [ES集成、智能搜索]
+├── log-service/              # 📊 日志服务 [日志收集、存储分析]
+├── common-module/            # 🔧 公共模块 [工具类、配置模板]
+├── api-module/               # 📌 API定义 [Feign接口、DTO定义]
+├── sql/                      # 🗍️ 数据库脚本
+├── docs/                     # 📚 项目文档
+├── pom.xml                   # Maven父POM
+├── README.md                 # 项目说明
+└── RULE.md                   # 开发规范
 ```
 
-## 🌐 服务架构
+## 🌐 系统架构
 
-| 服务              | 端口   | 描述         | 缓存策略             | 事务支持 |
-|-----------------|------|------------|------------------|------|
-| gateway         | 8080 | API网关，统一入口 | -                | -    |
-| auth-service    | 8081 | 认证授权，JWT管理 | Redis            | ✅    |
-| user-service    | 8082 | 用户管理，个人信息  | Redis + Caffeine | ✅    |
-| product-service | 8083 | 商品管理，分类管理  | Redis + Caffeine | ❌    |
-| order-service   | 8084 | 订单管理，订单流程  | Redis            | ✅    |
-| stock-service   | 8085 | 库存管理，库存扣减  | Redis            | ✅    |
-| payment-service | 8086 | 支付管理，支付流程  | Redis            | ✅    |
-| search-service  | 8087 | 搜索服务，商品搜索  | Redis + Caffeine | ❌    |
-| log-service     | 8088 | 日志服务，操作记录  | Redis            | ❌    |
+| 服务              | 端口 | 描述               | 缓存策略              | 事务支持 |
+|------------------|-----|--------------------|---------------------|--------|
+| gateway          | 80  | API网关，统一入口      | -                   | -      |
+| auth-service     | 8081| 认证授权，JWT管理      | Redis               | ✅      |
+| user-service     | 8082| 用户管理，个人信息      | Redis + Caffeine    | ✅      |
+| product-service  | 8083| 商品管理，分类管理      | Redis + Caffeine    | ✅/局部 |
+| order-service    | 8084| 订单管理，状态机        | Redis               | ✅      |
+| stock-service    | 8085| 库存管理，并发控制      | Redis + Redisson    | ✅      |
+| payment-service  | 8086| 支付管理，支付流程      | Redis               | ✅      |
+| search-service   | 8087| 搜索服务，商品搜索      | Redis + Caffeine    | 读为主  |
+| log-service      | 8088| 日志服务，操作记录      | Elasticsearch       | 异步    |
 
-## 🔧 核心特性
+## 🧬 核心特性
 
-### 🚀 配置分离架构
+### 🚀 微服务架构
+- **服务自治**: 每个服务独立部署、独立扩容
+- **API网关**: WebFlux响应式编程，统一入口管理
+- **服务注册**: Nacos动态服务发现与配置管理
+- **负载均衡**: Spring Cloud LoadBalancer智能路由
 
-- **服务自治**: 每个服务独立配置Redis和缓存策略
-- **模板化设计**: 提供多种预定义配置模板
-- **按需启用**: 仅在需要的服务中启用多级缓存
+### 🔄 高性能缓存
+- **多级缓存**: L1(Caffeine) + L2(Redis) 双层缓存架构
+- **缓存预热**: 启动时自动加载热点数据
+- **缓存更新**: 基于消息队列的缓存同步机制
+- **缓存穿透防护**: 布隆过滤器 + 空值缓存
 
-### 🔄 多级缓存策略
+### 🔒 分布式并发控制
+- **Redisson分布式锁**: 可重入锁、公平锁、读写锁
+- **库存锁**: 悲观锁 + 乐观锁结合
+- **幂等设计**: 基于唯一键和状态机的幂等保证
+- **限流降级**: Sentinel流量控制与熔断
 
-- **L1缓存**: Caffeine本地缓存 (user、product、search服务)
-- **L2缓存**: Redis分布式缓存 (所有服务)
-- **智能过期**: 根据业务特点设置不同过期时间
-
-### 🔒 分布式锁机制
-
-- **Redisson集成**: 支持可重入锁、读写锁、信号量
-- **自动续期**: 看门狗机制防止锁过期
-- **高性能**: 基于Redis Lua脚本实现
-
-### 📊 自动字段填充
-
-- **时间字段**: 自动填充创建时间、更新时间
-- **操作人字段**: 自动填充创建人、更新人
-- **业务字段**: 根据服务特点自动填充默认值
+### 📡 事件驱动架构
+- **消息队列**: RocketMQ实现异步解耦
+- **事件源**: 用户、订单、库存变更事件
+- **日志收集**: 基于Stream的异步日志收集
+- **最终一致性**: Saga模式实现分布式事务
 
 ## 🚀 快速开始
 
-### 环境要求
+### 💻 环境要求
 
-- JDK 17+
-- Maven 3.8+
-- MySQL 8.0+
-- Redis 7.0+
-- RocketMQ 5.0+
-- Nacos 2.4.0+
+| 组件         | 版本要求 | 说明                     |
+|------------|---------|-------------------------|
+| JDK        | 17+     | 推荐使用OpenJDK或Oracle JDK |
+| Maven      | 3.8+    | 项目构建工具               |
+| MySQL      | 8.0+    | 主数据库                  |
+| Redis      | 7.0+    | 缓存和分布式锁             |
+| Nacos      | 2.4.0+  | 服务注册与配置中心        |
+| RocketMQ   | 5.3.2+  | 消息队列                  |
+| MinIO      | 最新版   | 对象存储（可选）            |
+| ES         | 8.x     | 搜索引擎（search-service需要）|
 
-### 启动步骤
+### 🎯 快速启动
 
-1. **启动基础设施**
-   ```bash
-   # 启动MySQL、Redis、RocketMQ、Nacos
-   ```
+#### 1️⃣ 启动基础设施
 
-2. **编译项目**
-   ```bash
-   mvn clean compile
-   ```
+```bash
+# Docker Compose 一键启动（推荐）
+docker-compose -f docker/docker-compose.yml up -d
 
-3. **启动服务**
-   ```bash
-   # 按顺序启动
-   # 1. gateway (API网关)
-   # 2. auth-service (认证服务)
-   # 3. 其他业务服务
-   ```
+# 或者单独启动各组件
+# MySQL
+docker run -d -p 3306:3306 --name mysql \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -e MYSQL_DATABASE=cloud_platform \
+  mysql:8.0
+
+# Redis
+docker run -d -p 6379:6379 --name redis \
+  redis:7-alpine redis-server --requirepass redis123
+
+# Nacos
+docker run -d -p 8848:8848 -p 9848:9848 --name nacos \
+  -e MODE=standalone \
+  nacos/nacos-server:v2.4.0
+```
+
+#### 2️⃣ 初始化数据库
+
+```bash
+# 执行数据库脚本
+mysql -h127.0.0.1 -uroot -proot123 < sql/init.sql
+mysql -h127.0.0.1 -uroot -proot123 < sql/cloud_user.sql
+mysql -h127.0.0.1 -uroot -proot123 < sql/cloud_product.sql
+mysql -h127.0.0.1 -uroot -proot123 < sql/cloud_order.sql
+mysql -h127.0.0.1 -uroot -proot123 < sql/cloud_stock.sql
+mysql -h127.0.0.1 -uroot -proot123 < sql/cloud_payment.sql
+```
+
+#### 3️⃣ 编译项目
+
+```bash
+# 在项目根目录执行
+mvn clean install -DskipTests
+
+# 或者单独编译某个服务
+cd gateway && mvn clean package
+```
+
+#### 4️⃣ 启动服务
+
+```bash
+# 按顺序启动（重要！）
+
+# 1. 启动网关
+cd gateway
+java -jar target/gateway-0.0.1-SNAPSHOT.jar
+
+# 2. 启动认证服务
+cd ../auth-service
+java -jar target/auth-service-0.0.1-SNAPSHOT.jar
+
+# 3. 启动核心业务服务
+cd ../user-service
+java -jar target/user-service-0.0.1-SNAPSHOT.jar
+
+cd ../product-service
+java -jar target/product-service-0.0.1-SNAPSHOT.jar
+
+cd ../order-service
+java -jar target/order-service-0.0.1-SNAPSHOT.jar
+
+cd ../stock-service
+java -jar target/stock-service-0.0.1-SNAPSHOT.jar
+
+cd ../payment-service
+java -jar target/payment-service-0.0.1-SNAPSHOT.jar
+
+# 4. 启动辅助服务（可选）
+cd ../search-service
+java -jar target/search-service-0.0.1-SNAPSHOT.jar
+
+cd ../log-service
+java -jar target/log-service-0.0.1-SNAPSHOT.jar
+```
+
+### ✅ 验证服务
+
+```bash
+# 检查服务注册状态
+curl http://localhost:8848/nacos
+
+# 访问API文档
+http://localhost/doc.html
+
+# 健康检查
+curl http://localhost/actuator/health
+```
 
 ## 📚 开发指南
 
-### 配置管理
+### 🔧 开发规范
 
-项目采用分层配置管理：
+#### 代码风格
+- **Java**: 遵循Alibaba Java编码规范
+- **命名**: 驼峰命名法，类名首字母大写
+- **注释**: 所有公共方法必须有JavaDoc注释
+- **分层**: Controller -> Service -> Repository
 
-1. **公共配置** (`common-module`)
-    - 基础配置模板和工厂类
-    - 工具类和通用组件
-    - 不包含具体Bean实例
+#### 分支管理
+```bash
+main              # 主分支，生产代码
+develop           # 开发分支
+feature/xxx       # 功能分支
+hotfix/xxx        # 紧急修复
+release/x.x.x     # 发布分支
+```
 
-2. **服务配置** (各服务模块)
-    - 继承公共配置模板
-    - 个性化定制配置
-    - 使用@Primary覆盖默认配置
+### 🔌 API设计
 
-### 缓存配置模板
+#### RESTful规范
+```
+GET    /api/v1/users          # 查询用户列表
+GET    /api/v1/users/{id}     # 查询单个用户
+POST   /api/v1/users          # 创建用户
+PUT    /api/v1/users/{id}     # 更新用户
+DELETE /api/v1/users/{id}     # 删除用户
+```
 
-| 配置模板       | 特点        | 适用场景 | 使用服务                     |
-|------------|-----------|------|--------------------------|
-| **基础配置**   | 一般缓存，无事务  | 统计查询 | log-service              |
-| **高性能配置**  | 高并发，支持事务  | 业务核心 | user、order、stock、payment |
-| **缓存专用配置** | 纯缓存，无事务   | 查询优化 | product、search           |
-| **会话专用配置** | 会话存储，支持事务 | 认证授权 | auth-service             |
+#### 统一响应格式
+```java
+{
+  "code": 200,           // 状态码
+  "message": "success",  // 描述信息
+  "data": {},           // 数据
+  "timestamp": 1234567890 // 时间戳
+}
+```
 
-### API文档
+### 🛡️ 安全开发
 
-- **Knife4j**: http://localhost:8080/doc.html
-- **Postman**: 导入API集合进行测试
+#### 认证授权
+- 所有API必须经过网关认证
+- 使用JWT令牌传递用户信息
+- 敏感操作需要二次验证
+
+#### 数据安全
+- 密码使用BCrypt加密
+- 敏感数据脱敏处理
+- SQL参数化查询，防止SQL注入
+
+### 📊 性能优化
+
+#### 缓存策略
+| 缓存级别 | 实现方式    | TTL    | 适用场景     |
+|---------|-----------|--------|------------|
+| L1缓存  | Caffeine  | 5分钟  | 热点数据     |
+| L2缓存  | Redis     | 30分钟 | 共享数据     |
+| 持久化   | MySQL     | -      | 全量数据     |
+
+#### 数据库优化
+- 合理创建索引
+- 大表分页查询
+- 读写分离（可选）
+- 分库分表（可选）
+
+## 🚀 部署指南
+
+### 🐳 Docker部署
+
+#### 构建Docker镜像
+```bash
+# 构建所有服务镜像
+./build-docker.sh
+
+# 或单独构建
+docker build -t cloud/gateway:latest ./gateway
+docker build -t cloud/auth-service:latest ./auth-service
+```
+
+#### Docker Compose部署
+```yaml
+version: '3.8'
+services:
+  gateway:
+    image: cloud/gateway:latest
+    ports:
+      - "80:80"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+    depends_on:
+      - nacos
+      - redis
+```
+
+### ☁️ Kubernetes部署
+
+#### Helm Chart安装
+```bash
+# 添加Helm仓库
+helm repo add cloud-platform https://charts.example.com
+
+# 安装
+helm install cloud cloud-platform/cloud \
+  --set gateway.replicas=3 \
+  --set mysql.enabled=true
+```
+
+#### kubectl部署
+```bash
+# 应用配置
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+```
+
+### 📊 监控告警
+
+#### Prometheus监控
+- 服务健康状态
+- QPS、响应时间
+- JVM内存、GC情况
+- 业务指标监控
+
+#### Grafana大盘
+- 系统总览图
+- 服务调用链路
+- 错误率统计
+- 性能趋势图
 
 ## 📖 文档目录
 
-- [开发规范](RULE.md)
+### 核心文档
+- [📘 开发规范](RULE.md) - 编码规范、架构原则
+- [🏗️ 系统架构](docs/architecture.md) - 架构设计、技术选型
+- [🔐 安全指南](docs/security.md) - OAuth2.1、JWT、权限控制
+
+### 服务文档
+- [🚪 网关服务](gateway/README.md)
+- [🔐 认证服务](auth-service/README.md)
+- [👥 用户服务](user-service/README.md)
+- [📦 商品服务](product-service/README.md)
+- [📝 订单服务](order-service/README.md)
+- [📋 库存服务](stock-service/README.md)
+- [💳 支付服务](payment-service/README.md)
+- [🔍 搜索服务](search-service/README.md)
+- [📊 日志服务](log-service/README.md)
+
+### 技术文档
 - [MyBatis Plus配置指南](docs/mybatis-plus-config-guide.md)
 - [Redis缓存配置指南](docs/redis-cache-config-guide.md)
+- [Elasticsearch优化指南](docs/elasticsearch-optimization-guide.md)
+- [线程池优化指南](docs/thread-pool-optimization-guide.md)
+- [依赖优化指南](docs/dependency-optimization-guide.md)
 
-## 📝 版本历史
+## 📦 版本发布
 
-### v0.0.1-SNAPSHOT (当前版本)
+### v0.0.1-SNAPSHOT (当前版本) - 2025.01
 
-- ✅ 基础微服务架构搭建
-- ✅ 统一认证授权
-- ✅ Redis配置分离重构
-- ✅ MyBatis Plus配置分离
-- ✅ 多级缓存实现 (user、product、search)
-- ✅ 分布式锁集成
-- ✅ 自动字段填充
-- ✅ API网关配置
+#### ✅ 完成功能
+- 🏗️ **微服务架构**: 完整的微服务基础设施
+- 🔐 **OAuth2.1实现**: 授权服务器 + 资源服务器
+- 🔄 **多级缓存**: Caffeine + Redis双层缓存
+- 🔒 **分布式锁**: Redisson实现并发控制
+- 📡 **消息队列**: RocketMQ事件驱动
+- 📋 **库存管理**: 并发控制、分布式事务
+- 💳 **支付集成**: 支付宝支付接入
+- 🔍 **智能搜索**: Elasticsearch全文搜索
+
+#### 🔄 进行中
+- [ ] 微信支付集成
+- [ ] 分布式事务完善
+- [ ] 链路追踪集成
+- [ ] 性能监控完善
+
+### 📌 路线图
+
+- **v0.1.0** - 完善监控体系、链路追踪
+- **v0.2.0** - 支持容器化部署、K8s集成
+- **v0.3.0** - 完善分布式事务、消息可靠性
+- **v1.0.0** - 生产就绪版本
 
 ## 🤝 贡献指南
 
-1. Fork 项目
-2. 创建特性分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
+我们欢迎并感谢任何形式的贡献！
+
+### 如何贡献
+
+1. **Fork** 本仓库
+2. **创建** 特性分支 (`git checkout -b feature/AmazingFeature`)
+3. **提交** 你的更改 (`git commit -m 'Add: AmazingFeature'`)
+4. **推送** 到分支 (`git push origin feature/AmazingFeature`)
+5. **提交** Pull Request
+
+### 贡献者
+
+<a href="https://github.com/your-username/cloud/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=your-username/cloud" />
+</a>
+
+## 💙 致谢
+
+感谢所有为此项目做出贡献的开发者！
+
+特别感谢以下开源项目：
+- Spring Boot / Spring Cloud
+- Apache RocketMQ
+- Alibaba Nacos
+- Redisson
+- MyBatis Plus
 
 ## 📄 许可证
 
-本项目采用 Apache 2.0 许可证。
+本项目采用 [Apache License 2.0](LICENSE) 许可证。
 
-## 📧 联系方式
+## 📧 联系我们
 
-- 项目维护者: what's up
-- 文档更新: 2025-01-15
+- 👨‍💻 **项目维护者**: what's up
+- 📦 **邮箱**: project@example.com
+- 💬 **讨论群**: QQ群 123456789
+- 🐦 **Twitter**: @cloudplatform
+- 📝 **博客**: https://blog.example.com
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对您有帮助，请给一个 Star！⭐**
+
+[返回顶部](#-cloud-微服务电商平台)
+
+</div>

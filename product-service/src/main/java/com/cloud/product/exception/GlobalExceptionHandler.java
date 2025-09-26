@@ -3,6 +3,7 @@ package com.cloud.product.exception;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.Result;
 import com.cloud.product.utils.ResponseHelper;
+import com.cloud.product.exception.ProductServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,18 +32,10 @@ import java.util.stream.Collectors;
  * @date 2025-01-15
  */
 @Slf4j
+@Component("productGlobalExceptionHandler")
 @RestControllerAdvice
 public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
-    /**
-     * 处理业务异常
-     */
-    @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        log.warn("业务异常 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.businessError(e.getMessage());
-    }
 
     /**
      * 处理权限拒绝异常
@@ -89,21 +83,6 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
         return ResponseHelper.businessError(e.getMessage());
     }
 
-    /**
-     * 处理参数验证异常
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException e, HttpServletRequest request) {
-        log.warn("参数校验失败 [{}]: {}", request.getRequestURI(), e.getMessage());
-
-        // 收集所有字段错误信息
-        String errors = e.getBindingResult().getFieldErrors().stream()
-                .map(fieldError -> String.format("%s: %s", fieldError.getField(), fieldError.getDefaultMessage()))
-                .collect(Collectors.joining("; "));
-
-        return ResponseHelper.validationError("参数校验失败: " + errors);
-    }
 
     /**
      * 处理绑定异常
@@ -120,20 +99,6 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
         return ResponseHelper.badRequest(message);
     }
 
-    /**
-     * 处理约束违反异常
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleConstraintViolationException(ConstraintViolationException e, HttpServletRequest request) {
-        log.warn("约束违反 [{}]: {}", request.getRequestURI(), e.getMessage());
-
-        String errors = e.getConstraintViolations().stream()
-                .map(violation -> String.format("%s: %s", violation.getPropertyPath(), violation.getMessage()))
-                .collect(Collectors.joining("; "));
-
-        return ResponseHelper.validationError("数据验证失败: " + errors);
-    }
 
     /**
      * 处理参数类型不匹配异常
@@ -186,13 +151,4 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
         return ResponseHelper.systemError("系统内部错误，请稍后重试");
     }
 
-    /**
-     * 处理所有其他未知异常
-     */
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<Object> handleException(Exception e, HttpServletRequest request) {
-        log.error("未知异常 [{}]: {}", request.getRequestURI(), e.getMessage(), e);
-        return ResponseHelper.systemError("系统错误，请联系管理员");
-    }
 }

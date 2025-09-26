@@ -1,0 +1,56 @@
+# 认证服务 - 生产环境配置
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/cloud_auth?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: 5
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 32
+          max-wait: -1ms
+          max-idle: 16
+          min-idle: 4
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.auth: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.springframework.security.oauth2: warn
+    com.alibaba.nacos: warn
+    root: warn
+
+# JWT 配置
+app:
+  jwt:
+    test-mode: false
+    issuer: ${JWT_ISSUER:http://prod-auth:8080}
+
+# Knife4j 生产配置
+knife4j:
+  enable: false
+  production: true
+  basic:
+    enable: true
+    username: ${API_DOC_USERNAME:admin}
+    password: ${API_DOC_PASSWORD:admin123}

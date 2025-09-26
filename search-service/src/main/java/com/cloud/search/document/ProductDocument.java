@@ -34,115 +34,157 @@ public class ProductDocument {
     private String id;
 
     /**
-     * 商品ID
+     * 商品ID（与数据库product.id对应）
      */
     @Field(type = FieldType.Long)
     private Long productId;
 
     /**
-     * 店铺ID
+     * 店铺ID（与数据库product.shop_id对应）
      */
     @Field(type = FieldType.Long)
     private Long shopId;
 
     /**
-     * 店铺名称
+     * 店铺名称（与数据库merchant_shop.shop_name对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String shopName;
 
     /**
-     * 商品名称（支持中文分词）
+     * 商品名称（与数据库product.product_name对应，支持中文分词）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String productName;
 
     /**
-     * 商品价格
+     * 商品名称（用于精确匹配和排序）
+     */
+    @Field(type = FieldType.Keyword)
+    private String productNameKeyword;
+
+    /**
+     * 商品价格（与数据库product.price对应）
      */
     @Field(type = FieldType.Double)
     private BigDecimal price;
 
     /**
-     * 库存数量
+     * 库存数量（与数据库product.stock_quantity对应）
      */
     @Field(type = FieldType.Integer)
     private Integer stockQuantity;
 
     /**
-     * 分类ID
+     * 分类ID（与数据库product.category_id对应）
      */
     @Field(type = FieldType.Long)
     private Long categoryId;
 
     /**
-     * 分类名称
+     * 分类名称（与数据库category.name对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String categoryName;
 
     /**
-     * 品牌ID
+     * 分类名称（用于精确匹配）
+     */
+    @Field(type = FieldType.Keyword)
+    private String categoryNameKeyword;
+
+    /**
+     * 品牌ID（与数据库product.brand_id对应）
      */
     @Field(type = FieldType.Long)
     private Long brandId;
 
     /**
-     * 品牌名称
+     * 品牌名称（与数据库product.brand_name对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String brandName;
 
     /**
-     * 商品状态：0-下架，1-上架
+     * 品牌名称（用于精确匹配）
+     */
+    @Field(type = FieldType.Keyword)
+    private String brandNameKeyword;
+
+    /**
+     * 商品状态：0-下架，1-上架（与数据库product.status对应）
      */
     @Field(type = FieldType.Integer)
     private Integer status;
 
     /**
-     * 商品描述
+     * 商品描述（与数据库product.description对应）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String description;
 
     /**
-     * 商品图片URL
+     * 商品图片URL（与数据库product.image_url对应）
      */
     @Field(type = FieldType.Keyword)
     private String imageUrl;
 
     /**
-     * 商品标签（用于搜索）
+     * 商品详情图片URLs（与数据库product.detail_images对应）
+     */
+    @Field(type = FieldType.Keyword)
+    private String detailImages;
+
+    /**
+     * 商品标签（与数据库product.tags对应，用于搜索）
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String tags;
 
     /**
-     * 销量
+     * 商品重量（与数据库product.weight对应）
+     */
+    @Field(type = FieldType.Double)
+    private BigDecimal weight;
+
+    /**
+     * SKU（与数据库product.sku对应）
+     */
+    @Field(type = FieldType.Keyword)
+    private String sku;
+
+    /**
+     * 销量（与数据库product.sales_count对应）
      */
     @Field(type = FieldType.Integer)
     private Integer salesCount;
 
     /**
-     * 评分
+     * 排序权重（与数据库product.sort_order对应）
+     */
+    @Field(type = FieldType.Integer)
+    private Integer sortOrder;
+
+    /**
+     * 评分（计算得出）
      */
     @Field(type = FieldType.Double)
     private BigDecimal rating;
 
     /**
-     * 评价数量
+     * 评价数量（计算得出）
      */
     @Field(type = FieldType.Integer)
     private Integer reviewCount;
 
     /**
-     * 创建时间
+     * 创建时间（与数据库product.created_at对应）
      */
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime createdAt;
 
     /**
-     * 更新时间
+     * 更新时间（与数据库product.updated_at对应）
      */
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime updatedAt;
@@ -160,20 +202,38 @@ public class ProductDocument {
     private Double hotScore;
 
     /**
-     * 是否推荐
+     * 是否推荐（与数据库product.is_recommended对应）
      */
     @Field(type = FieldType.Boolean)
     private Boolean recommended;
 
     /**
-     * 是否新品
+     * 是否新品（与数据库product.is_new对应）
      */
     @Field(type = FieldType.Boolean)
     private Boolean isNew;
 
     /**
-     * 是否热销
+     * 是否热销（与数据库product.is_hot对应）
      */
     @Field(type = FieldType.Boolean)
     private Boolean isHot;
+
+    /**
+     * 商家ID（与数据库product.merchant_id对应）
+     */
+    @Field(type = FieldType.Long)
+    private Long merchantId;
+
+    /**
+     * 商家名称（与数据库product.merchant_name对应）
+     */
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    private String merchantName;
+
+    /**
+     * 备注（与数据库product.remark对应）
+     */
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    private String remark;
 }

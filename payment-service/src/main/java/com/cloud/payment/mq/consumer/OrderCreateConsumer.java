@@ -34,7 +34,7 @@ public class OrderCreateConsumer {
      */
     @Bean
     @Transactional(rollbackFor = Exception.class)
-    public Consumer<OrderCreateEvent> orderCreateConsumer() {
+    public Consumer<OrderCreateEvent> orderCreateMessageConsumer() {
         return event -> {
             try {
                 log.info("接收到订单创建消息，订单ID: {}, 操作人: {}", event.getOrderId(), event.getOperator());

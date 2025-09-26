@@ -1,0 +1,63 @@
+# 用户服务 - 生产环境配置
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://prod-mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: 2
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 2
+
+# MinIO 配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://prod-minio:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: user-avatars
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://prod-minio:9000}
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.user: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.springframework.cloud.openfeign: warn
+    com.alibaba.nacos: warn
+    root: warn
+
+# MyBatis Plus 生产配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# Knife4j 生产配置
+knife4j:
+  enable: false
+  production: true
+  basic:
+    enable: true
+    username: ${API_DOC_USERNAME:admin}
+    password: ${API_DOC_PASSWORD:admin123}

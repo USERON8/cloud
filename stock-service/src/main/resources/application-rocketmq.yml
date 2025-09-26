@@ -4,7 +4,7 @@ spring:
     stream:
       rocketmq:
         binder:
-          name-server: localhost:9876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
           group: stock-service-group
         bindings:
           # 日志收集生产者

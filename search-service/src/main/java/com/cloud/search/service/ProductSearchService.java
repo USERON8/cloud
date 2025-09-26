@@ -2,6 +2,8 @@ package com.cloud.search.service;
 
 import com.cloud.common.domain.event.ProductSearchEvent;
 import com.cloud.search.document.ProductDocument;
+import com.cloud.search.dto.ProductSearchRequest;
+import com.cloud.search.dto.SearchResult;
 
 import java.util.List;
 
@@ -94,4 +96,37 @@ public interface ProductSearchService {
      * 删除商品索引
      */
     void deleteProductIndex();
+
+    /**
+     * 复杂商品搜索
+     *
+     * @param request 搜索请求参数
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> searchProducts(ProductSearchRequest request);
+
+    /**
+     * 获取搜索建议
+     *
+     * @param keyword 关键字
+     * @param size    建议数量
+     * @return 建议列表
+     */
+    List<String> getSearchSuggestions(String keyword, Integer size);
+
+    /**
+     * 获取热门搜索关键字
+     *
+     * @param size 数量
+     * @return 热门关键字列表
+     */
+    List<String> getHotSearchKeywords(Integer size);
+
+    /**
+     * 获取商品筛选聚合信息
+     *
+     * @param request 搜索请求参数
+     * @return 聚合信息
+     */
+    SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request);
 }

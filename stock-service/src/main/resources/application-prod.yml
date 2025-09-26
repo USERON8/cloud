@@ -1,0 +1,55 @@
+# 库存服务 - 生产环境配置
+
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 40
+      idle-timeout: 300000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      database: 2
+      password: ${REDIS_PASSWORD:root}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 40
+          max-wait: -1ms
+          max-idle: 16
+          min-idle: 4
+
+# 日志级别配置
+logging:
+  level:
+    com.cloud.stock: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.springframework.cloud.openfeign: warn
+    com.alibaba.nacos: warn
+    root: warn
+
+# MyBatis Plus 生产配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# Knife4j 生产配置
+knife4j:
+  enable: false
+  production: true
+  basic:
+    enable: true
+    username: ${API_DOC_USERNAME:admin}
+    password: ${API_DOC_PASSWORD:admin123}

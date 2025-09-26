@@ -1,5 +1,6 @@
 package com.cloud.user.aspect;
 
+import com.cloud.common.cache.HybridCacheManager;
 import com.cloud.user.annotation.MultiLevelCacheEvict;
 import com.cloud.user.annotation.MultiLevelCachePut;
 import com.cloud.user.annotation.MultiLevelCacheable;
@@ -36,6 +37,7 @@ public class MultiLevelCacheAspect {
 
     private final CacheManager localCacheManager;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final HybridCacheManager hybridCacheManager;
     private final ExpressionParser expressionParser = new SpelExpressionParser();
     private final DefaultParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
@@ -64,7 +66,7 @@ public class MultiLevelCacheAspect {
         }
 
         // 2. 从L2缓存获取
-        result = getFromRedisCache(cacheName, cacheKey);
+        result = getFromRedisCache(cacheName, cacheKey, method.getReturnType());
         if (result != null) {
             log.debug("从L2缓存获取数据, cacheName={}, key={}", cacheName, cacheKey);
             // 回种到L1缓存
@@ -178,7 +180,7 @@ public class MultiLevelCacheAspect {
                     }
                 }
 
-                result = getFromRedisCache(cacheName, cacheKey);
+                result = getFromRedisCache(cacheName, cacheKey, method.getReturnType());
                 if (result != null) {
                     log.debug("从L2缓存获取数据, cacheName={}, key={}", cacheName, cacheKey);
                     if (cacheable.enableLocalCache()) {
@@ -254,9 +256,14 @@ public class MultiLevelCacheAspect {
     /**
      * 从Redis缓存获取数据
      */
-    private Object getFromRedisCache(String cacheName, String key) {
+    private Object getFromRedisCache(String cacheName, String key, Class<?> returnType) {
         String redisKey = buildRedisKey(cacheName, key);
-        return redisTemplate.opsForValue().get(redisKey);
+        try {
+            return hybridCacheManager.smartGet(redisKey, (Class) returnType);
+        } catch (Exception e) {
+            // 兼容回退
+            return redisTemplate.opsForValue().get(redisKey);
+        }
     }
 
     /**
@@ -264,7 +271,12 @@ public class MultiLevelCacheAspect {
      */
     private void putToRedisCache(String cacheName, String key, Object value, long expire, TimeUnit timeUnit) {
         String redisKey = buildRedisKey(cacheName, key);
-        redisTemplate.opsForValue().set(redisKey, value, expire, timeUnit);
+        try {
+            hybridCacheManager.smartSet(redisKey, value, expire, timeUnit);
+        } catch (Exception e) {
+            // 兼容回退
+            redisTemplate.opsForValue().set(redisKey, value, expire, timeUnit);
+        }
     }
 
     /**

@@ -1,91 +1,58 @@
-# 商品服务配置文件
-# 包含数据库、Redis、多级缓存等完整配置
-# 遵循用户服务标准
-
 server:
-  port: ${server.port:8082}
-  servlet:
-    context-path: /product-service
-    encoding:
-      charset: UTF-8
-      force: true
-  tomcat:
-    uri-encoding: UTF-8
-    max-threads: 200
-    max-connections: 8192
-    accept-count: 100
-    connection-timeout: 30000
+  port: 8083
 
 spring:
   application:
-    name: ${spring.application.name:product-service}
+    name: product-service
   profiles:
     active: dev
+
+  # Nacos 配置
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
       config:
-        server-addr: localhost:8848
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
         password: nacos
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
+
+    # RocketMQ Stream 配置
     stream:
       rocketmq:
         binder:
-          name-server: 127.0.0.1:39876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
       bindings:
         productLog-out-0:
           destination: LOG_PRODUCT_TOPIC
           content-type: application/json
           producer:
             partition-count: 4
-
-        # 搜索事件生产者绑定
+        # 日志生产者绑定
+        logProducer-out-0:
+          destination: LOG_COLLECTION_TOPIC
+          content-type: application/json
+          producer:
+            partition-count: 4
         search-producer-out-0:
           destination: SEARCH_EVENTS_TOPIC
           content-type: application/json
           group: product-search-producer-group
           producer:
             partition-count: 4
+
+  # Config 配置
   config:
     import: optional:nacos:common
-  datasource:
-    driver-class-name: ${spring.datasource.driver-class-name:com.mysql.cj.jdbc.Driver}
-    url: ${spring.datasource.url:jdbc:mysql://localhost:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
-    username: ${spring.datasource.username:root}
-    password: ${spring.datasource.password:123456}
-    type: com.zaxxer.hikari.HikariDataSource
-    hikari:
-      pool-name: ProductHikariCP
-      minimum-idle: 5
-      maximum-pool-size: 20
-      auto-commit: true
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      connection-timeout: 30000
-      connection-test-query: SELECT 1
-      leak-detection-threshold: 60000
-  data:
-    redis:
-      host: ${spring.redis.host:localhost}
-      port: ${spring.redis.port:6379}
-      password: ${spring.redis.password:}
-      database: ${spring.redis.database:1}
-      timeout: ${spring.redis.timeout:6000ms}
-      lettuce:
-        pool:
-          max-active: ${spring.redis.lettuce.pool.max-active:20}
-          max-wait: ${spring.redis.lettuce.pool.max-wait:6000ms}
-          max-idle: ${spring.redis.lettuce.pool.max-idle:10}
-          min-idle: ${spring.redis.lettuce.pool.min-idle:5}
-  # 多级缓存配置  
+
+  # 多级缓存配置
   cache:
     type: caffeine
     caffeine:
@@ -96,14 +63,27 @@ spring:
       - categoryCache
       - brandCache
       - productStatsCache
+
+  # OAuth2 资源服务器配置
   security:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
           jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
 
-# MyBatis Plus配置
+# 日志配置
+logging:
+  file:
+    path: ./product-service/logs
+    name: ${logging.file.path}/product-service.log
+  level:
+    root: INFO
+    com.cloud.product: DEBUG
+    com.baomidou.mybatisplus: DEBUG
+    org.springframework.cache: DEBUG
+    org.springframework.data.redis: DEBUG
+
+# MyBatis Plus 配置
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -123,27 +103,9 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cloud.product.module.entity
 
-# 日志配置
-logging:
-  level:
-    root: INFO
-    com.cloud.product: DEBUG
-    com.baomidou.mybatisplus: DEBUG
-    org.springframework.cache: DEBUG
-    org.springframework.data.redis: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-  file:
-    path: D:/logs/${spring.application.name:product-service}
-    name: ${logging.file.path}/${spring.application.name:product-service}.log
-    max-size: 100MB
-    max-history: 30
-
 # 多级缓存自定义配置
 cache:
   multi-level:
-    # 本地缓存配置
     local:
       enabled: true
       initial-capacity: 150
@@ -151,7 +113,6 @@ cache:
       expire-after-write: 45m
       expire-after-access: 20m
       record-stats: true
-    # Redis缓存配置  
     redis:
       enabled: true
       default-expire: 60m
@@ -159,7 +120,7 @@ cache:
       enable-key-prefix: true
       use-key-prefix: true
 
-# Swagger文档配置
+# SpringDoc 配置
 springdoc:
   api-docs:
     enabled: true
@@ -180,6 +141,7 @@ springdoc:
       name: MIT License
       url: https://opensource.org/licenses/MIT
 
+# Knife4j 配置
 knife4j:
   enable: true
   production: false
@@ -188,9 +150,28 @@ knife4j:
   setting:
     language: ZH_CN
   insight:
-    service-name: ${spring.application.name:product-service}
+    service-name: ${spring.application.name}
 
-# Spring Boot Actuator监控配置
+# 商品服务专用配置
+product:
+  async:
+    enabled: true
+  statistics:
+    enabled: true
+  search:
+    enabled: true
+  config:
+    page:
+      default-size: 10
+      max-size: 100
+    batch:
+      max-size: 100
+    cache:
+      warmup:
+        enabled: true
+        max-size: 500
+
+# 健康检查配置
 management:
   endpoints:
     web:
@@ -207,29 +188,4 @@ management:
       enabled: true
   metrics:
     tags:
-      application: ${spring.application.name:product-service}
-
-# 自定义业务配置
-product:
-  config:
-    # 分页配置
-    page:
-      default-size: 10
-      max-size: 100
-    # 批量操作限制
-    batch:
-      max-size: 100
-    # 缓存预热配置
-    cache:
-      warmup:
-        enabled: true
-        max-size: 500
-
-# 商品服务专用配置
-product:
-  async:
-    enabled: true
-  statistics:
-    enabled: true
-  search:
-    enabled: true
+      application: ${spring.application.name}
