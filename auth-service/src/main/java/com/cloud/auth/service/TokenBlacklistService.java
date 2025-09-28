@@ -2,6 +2,7 @@ package com.cloud.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -19,12 +20,15 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TokenBlacklistService {
 
     private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
     private static final String BLACKLIST_STATS_KEY = "oauth2:blacklist:stats";
     private final RedisTemplate<String, Object> redisTemplate;
+    
+    public TokenBlacklistService(@Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * 将JWT令牌加入黑名单

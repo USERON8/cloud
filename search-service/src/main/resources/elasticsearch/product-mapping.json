@@ -8,31 +8,21 @@
     },
     "shopName": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart",
+      "analyzer": "standard",
       "fields": {
         "keyword": {
           "type": "keyword",
           "ignore_above": 256
-        },
-        "pinyin": {
-          "type": "text",
-          "analyzer": "pinyin_analyzer"
         }
       }
     },
     "productName": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart",
+      "analyzer": "standard",
       "fields": {
         "keyword": {
           "type": "keyword",
           "ignore_above": 256
-        },
-        "pinyin": {
-          "type": "text",
-          "analyzer": "pinyin_analyzer"
         }
       }
     },
@@ -47,8 +37,7 @@
     },
     "categoryName": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart",
+      "analyzer": "standard",
       "fields": {
         "keyword": {
           "type": "keyword",
@@ -61,8 +50,7 @@
     },
     "brandName": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart",
+      "analyzer": "standard",
       "fields": {
         "keyword": {
           "type": "keyword",
@@ -75,16 +63,14 @@
     },
     "description": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart"
+      "analyzer": "standard"
     },
     "imageUrl": {
       "type": "keyword"
     },
     "tags": {
       "type": "text",
-      "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart"
+      "analyzer": "standard"
     },
     "salesCount": {
       "type": "integer"

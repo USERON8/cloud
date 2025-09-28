@@ -1,6 +1,5 @@
 package com.cloud.common.security;
 
-import com.cloud.common.lock.RedissonLockManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -29,7 +28,6 @@ public class RateLimitManager {
     private static final String RULE_PREFIX = "rate_limit:rules:";
     private static final String STATS_PREFIX = "rate_limit:stats:";
     private final RedisTemplate<String, Object> redisTemplate;
-    private final RedissonLockManager redissonLockManager;
     // 限流规则存储
     private final Map<String, RateLimitRule> rateLimitRules = new HashMap<>();
 

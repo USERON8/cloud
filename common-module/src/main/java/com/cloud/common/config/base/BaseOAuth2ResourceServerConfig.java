@@ -1,7 +1,11 @@
 package com.cloud.common.config.base;
 
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,6 +44,7 @@ import java.util.List;
 @Slf4j
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+
 public abstract class BaseOAuth2ResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
@@ -50,6 +55,10 @@ public abstract class BaseOAuth2ResourceServerConfig {
 
     @Value("${app.jwt.issuer:http://localhost:8080}")
     protected String jwtIssuer;
+
+    /**
+     * 统一权限配置（可选）
+     * 如果项目中启用了
 
     /**
      * 配置安全过滤器链
@@ -165,5 +174,32 @@ public abstract class BaseOAuth2ResourceServerConfig {
         log.info("   - JWT验证端点: {}", jwkSetUri);
         log.info("   - JWT缓存时间: {}", jwtCacheDuration);
         log.info("   - JWT发行者: {}", jwtIssuer);
+        
+        if (isUnifiedSecurityEnabled()) {
+            log.info("   - 统一权限管理: 已启用");
+            log.info("   - 支持权限检查方法: hasUserPermission, hasRole, hasAdminAccess, hasManagerAccess 等");
+            log.info("   - 支持SpEL表达式: @permissionChecker.checkPermission(authentication, 'permission')");
+        } else {
+            log.info("   - 统一权限管理: 未启用（仅使用标准OAuth2权限）");
+        }
+    }
+    
+    /**
+     * 检查统一权限配置是否可用
+     * 
+     * @return 是否启用了统一权限管理
+     */
+    protected boolean isUnifiedSecurityEnabled() {
+        return false; // 暂时禁用统一安全配置
+    }
+    
+    /**
+     * 获取权限检查表达式前缀
+     * 可在@PreAuthorize等注解中使用
+     * 
+     * @return 权限检查表达式前缀
+     */
+    protected String getPermissionExpressionPrefix() {
+        return "@unifiedPermissionChecker."; // 默认权限表达式前缀
     }
 }

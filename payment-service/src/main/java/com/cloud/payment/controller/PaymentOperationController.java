@@ -1,6 +1,8 @@
 package com.cloud.payment.controller;
 
 import com.cloud.common.result.Result;
+import com.cloud.common.utils.UserContextUtils;
+import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,18 +43,36 @@ public class PaymentOperationController {
     @ApiResponse(responseCode = "200", description = "操作成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
-    public Result<String> paymentSuccess(
-            @PathVariable Long paymentId,
-            @RequestHeader("X-User-ID") String currentUserId,
-            @RequestHeader("X-User-Roles") String currentUserRoles) {
+    public Result<String> paymentSuccess(@PathVariable Long paymentId) {
         try {
-            log.info("处理支付成功，支付ID: {}，操作人: {}", paymentId, currentUserId);
+            String currentUserId = UserContextUtils.getCurrentUserId();
+            String currentUsername = UserContextUtils.getCurrentUsername();
+            
+            log.info("处理支付成功，支付ID: {}，操作人: {} (ID: {})", paymentId, currentUsername, currentUserId);
 
-            // TODO: 实现支付成功处理逻辑
             // 1. 验证支付是否存在
+            Payment payment = paymentService.getById(paymentId);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+            
             // 2. 验证支付状态是否为待支付
+            if (!payment.getStatus().equals(0)) {
+                return Result.error("支付状态不是待支付，无法执行成功操作");
+            }
+            
             // 3. 更新支付状态为成功
-            // 4. 发送支付成功事件
+            boolean updated = paymentService.lambdaUpdate()
+                    .eq(Payment::getId, paymentId)
+                    .set(Payment::getStatus, 1) // 1-成功
+                    .update();
+                    
+            if (!updated) {
+                return Result.error("支付状态更新失败");
+            }
+            
+            // 4. 发送支付成功事件(后续扩展)
+            // TODO: 发送支付成功事件给订单服务
 
             log.info("支付成功处理完成，支付ID: {}，操作人: {}", paymentId, currentUserId);
             return Result.success("支付成功处理完成");
@@ -77,20 +97,37 @@ public class PaymentOperationController {
     @ApiResponse(responseCode = "200", description = "操作成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
-    public Result<String> paymentFail(
-            @PathVariable Long paymentId,
-            @RequestHeader("X-User-ID") String currentUserId,
-            @RequestHeader("X-User-Roles") String currentUserRoles) {
+    public Result<String> paymentFail(@PathVariable Long paymentId) {
         try {
-            log.info("处理支付失败，支付ID: {}，操作人: {}", paymentId, currentUserId);
+            String currentUserId = UserContextUtils.getCurrentUserId();
+            String currentUsername = UserContextUtils.getCurrentUsername();
+            log.info("处理支付失败，支付ID: {}，操作人: {} (ID: {})", paymentId, currentUsername, currentUserId);
 
-            // TODO: 实现支付失败处理逻辑
             // 1. 验证支付是否存在
-            // 2. 验证支付状态是否为待支付
-            // 3. 更新支付状态为失败
-            // 4. 发送支付失败事件
+            Payment payment = paymentService.getById(paymentId);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
 
-            log.info("支付失败处理完成，支付ID: {}，操作人: {}", paymentId, currentUserId);
+            // 2. 验证支付状态是否为待支付
+            if (!payment.getStatus().equals(0)) {
+                return Result.error("支付状态不是待支付，无法执行失败操作");
+            }
+
+            // 3. 更新支付状态为失败
+            boolean updated = paymentService.lambdaUpdate()
+                    .eq(Payment::getId, paymentId)
+                    .set(Payment::getStatus, 2) // 2-失败
+                    .update();
+
+            if (!updated) {
+                return Result.error("支付状态更新失败");
+            }
+
+            // 4. 发送支付失败事件(后续扩展)
+            // TODO: 发送支付失败事件给订单服务
+
+            log.info("支付失败处理完成，支付ID: {}，操作人: {} (ID: {})", paymentId, currentUsername, currentUserId);
             return Result.success("支付失败处理完成");
         } catch (Exception e) {
             log.error("支付失败处理异常，支付ID: {}，操作人: {}", paymentId, currentUserId, e);
@@ -113,20 +150,37 @@ public class PaymentOperationController {
     @ApiResponse(responseCode = "200", description = "操作成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = Result.class)))
-    public Result<String> paymentRefund(
-            @PathVariable Long paymentId,
-            @RequestHeader("X-User-ID") String currentUserId,
-            @RequestHeader("X-User-Roles") String currentUserRoles) {
+    public Result<String> paymentRefund(@PathVariable Long paymentId) {
         try {
-            log.info("处理支付退款，支付ID: {}，操作人: {}", paymentId, currentUserId);
+            String currentUserId = UserContextUtils.getCurrentUserId();
+            String currentUsername = UserContextUtils.getCurrentUsername();
+            log.info("处理支付退款，支付ID: {}，操作人: {} (ID: {})", paymentId, currentUsername, currentUserId);
 
-            // TODO: 实现支付退款处理逻辑
             // 1. 验证支付是否存在
-            // 2. 验证支付状态是否为成功
-            // 3. 更新支付状态为已退款
-            // 4. 发送支付退款事件
+            Payment payment = paymentService.getById(paymentId);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
 
-            log.info("支付退款处理完成，支付ID: {}，操作人: {}", paymentId, currentUserId);
+            // 2. 验证支付状态是否为成功
+            if (!payment.getStatus().equals(1)) {
+                return Result.error("支付状态不是成功，无法执行退款操作");
+            }
+
+            // 3. 更新支付状态为已退款
+            boolean updated = paymentService.lambdaUpdate()
+                    .eq(Payment::getId, paymentId)
+                    .set(Payment::getStatus, 3) // 3-已退款
+                    .update();
+
+            if (!updated) {
+                return Result.error("支付状态更新失败");
+            }
+
+            // 4. 发送支付退款事件(后续扩展)
+            // TODO: 发送支付退款事件给订单服务
+
+            log.info("支付退款处理完成，支付ID: {}，操作人: {} (ID: {})", paymentId, currentUsername, currentUserId);
             return Result.success("支付退款处理完成");
         } catch (Exception e) {
             log.error("支付退款处理异常，支付ID: {}，操作人: {}", paymentId, currentUserId, e);

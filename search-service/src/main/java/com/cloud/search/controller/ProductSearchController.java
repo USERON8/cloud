@@ -16,8 +16,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.annotation.RequireScope;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -38,9 +42,11 @@ public class ProductSearchController {
     private final ProductSearchService productSearchService;
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
+    private final AsyncLogProducer asyncLogProducer;
 
     @Operation(summary = "复杂商品搜索", description = "支持多条件组合的复杂商品搜索，包含聚合、高亮、排序等功能")
     @PostMapping("/complex-search")
+    @RequireScope("search:read")
     public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
         try {
             log.info("复杂商品搜索请求 - 关键字: {}, 分类: {}, 品牌: {}, 价格范围: {}-{}",
@@ -48,6 +54,9 @@ public class ProductSearchController {
                     request.getMinPrice(), request.getMaxPrice());
 
             SearchResult<ProductDocument> result = productSearchService.searchProducts(request);
+            
+            // 记录搜索日志
+            recordSearchLog("COMPLEX_SEARCH", request.getKeyword(), result.getTotal());
 
             log.info("✅ 复杂商品搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
             return Result.success("搜索成功", result);
@@ -312,6 +321,7 @@ public class ProductSearchController {
 
     @Operation(summary = "重建商品索引", description = "重建商品搜索索引")
     @PostMapping("/rebuild-index")
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     public Result<String> rebuildIndex() {
         try {
             productSearchService.rebuildProductIndex();
@@ -323,4 +333,28 @@ public class ProductSearchController {
             return Result.error("重建索引失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 记录搜索日志
+     */
+    private void recordSearchLog(String searchType, String keyword, long resultCount) {
+        try {
+            asyncLogProducer.sendBusinessLogAsync(
+                    "search-service",
+                    "SEARCH_OPERATION",
+                    searchType,
+                    "商品搜索操作",
+                    keyword != null ? keyword : "null",
+                    "SEARCH",
+                    null,
+                    String.format("{\"keyword\":\"%s\",\"resultCount\":%d}",
+                            keyword != null ? keyword : "", resultCount),
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "ANONYMOUS",
+                    "搜索关键词: " + (keyword != null ? keyword : "空") + ", 结果数: " + resultCount
+            );
+        } catch (Exception e) {
+            log.warn("记录搜索日志失败", e);
+        }
+    }
+    
 }

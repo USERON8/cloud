@@ -90,6 +90,23 @@ spring:
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
 
+# JWT 发行者配置
+app:
+  jwt:
+    issuer: http://localhost:8080
+
+# 统一权限管理配置
+unified:
+  security:
+    enabled: true
+    permission:
+      # 动态权限更新间隔(秒)
+      refresh-interval: 300
+      # 权限缓存过期时间(秒)
+      cache-ttl: 1800
+      # 启用权限调试模式
+      debug: false
+
 # 日志配置
 logging:
   file:

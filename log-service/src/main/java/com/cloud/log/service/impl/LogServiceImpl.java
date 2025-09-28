@@ -8,6 +8,7 @@ import com.cloud.log.service.PaymentEventService;
 import com.cloud.log.service.StockEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -220,6 +221,7 @@ public class LogServiceImpl implements LogService {
     }
 
     @Override
+    @Cacheable(value = "logStats", key = "#dimension + ':' + #startTime + ':' + #endTime", unless = "#result == null || #result.empty")
     public Map<String, Object> getLogStatistics(String dimension, String startTime, String endTime) {
         try {
             log.debug("获取日志统计 - 维度: {}", dimension);

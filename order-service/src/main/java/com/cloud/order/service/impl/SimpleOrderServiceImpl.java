@@ -6,7 +6,7 @@ import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.order.dto.SimpleOrderCreateDTO;
 import com.cloud.order.exception.OrderServiceException;
 import com.cloud.order.exception.OrderStatusException;
-import com.cloud.order.messaging.producer.LogCollectionProducer;
+import com.cloud.common.messaging.UnifiedBusinessLogProducer;
 import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
@@ -38,7 +38,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
     private final OrderService orderService;
     private final OrderItemService orderItemService;
     private final OrderEventProducer orderEventProducer;
-    private final LogCollectionProducer logCollectionProducer;
+    private final UnifiedBusinessLogProducer businessLogProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -87,19 +87,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
             // 3. 发布订单创建事件
             publishOrderCreatedEvent(order, orderItem, currentUserId);
 
-            // 4. 发送订单创建日志
-            try {
-                logCollectionProducer.sendOrderOperationLog(
-                        order.getId(),
-                        "ORDER_" + order.getId(),
-                        order.getUserId(),
-                        "CREATE",
-                        order.getTotalAmount(),
-                        currentUserId
-                );
-            } catch (Exception e) {
-                log.warn("发送简单订单创建日志失败，订单ID：{}", order.getId(), e);
-            }
+            // 4. 简单订单创建不记录到日志系统（按统一日志策略精简）
 
             log.info("✅ 单商品订单创建成功 - 订单ID: {}, 用户: {}, 商品: {}",
                     order.getId(), currentUserId, orderCreateDTO.getProductId());
@@ -182,19 +170,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
                 throw new OrderServiceException("更新订单支付状态失败");
             }
 
-            // 2. 发送订单支付日志
-            try {
-                logCollectionProducer.sendOrderOperationLog(
-                        orderId,
-                        "ORDER_" + orderId,
-                        order.getUserId(),
-                        "PAY",
-                        paymentAmount,
-                        "SYSTEM"
-                );
-            } catch (Exception e) {
-                log.warn("发送简单订单支付日志失败，订单ID：{}", orderId, e);
-            }
+            // 2. 简单订单支付不记录到日志系统（按统一日志策略精简）
 
             // 3. 发布订单完成事件（简化流程，支付成功即完成）
             publishOrderCompletedEvent(order, String.valueOf(paymentId));
@@ -219,12 +195,11 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
             String traceId = UUID.randomUUID().toString().replace("-", "");
 
             // 构建订单项信息
-            OrderCreatedEvent.OrderItemInfo eventOrderItem = OrderCreatedEvent.OrderItemInfo.builder()
+            OrderCreatedEvent.OrderItem eventOrderItem = OrderCreatedEvent.OrderItem.builder()
                     .productId(orderItem.getProductId())
                     .productName("商品_" + orderItem.getProductId()) // 简化商品名称
-                    .unitPrice(orderItem.getPrice())
+                    .price(orderItem.getPrice())
                     .quantity(orderItem.getQuantity())
-                    .subtotal(orderItem.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())))
                     .build();
 
             // 构建订单创建事件
@@ -235,15 +210,9 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
                     .userName("User_" + order.getUserId()) // 简化用户名
                     .totalAmount(order.getTotalAmount())
                     .payAmount(order.getPayAmount())
-                    .discountAmount(BigDecimal.ZERO) // 无优惠
-                    .shippingFee(BigDecimal.ZERO) // 免运费
-                    .paymentMethod(1) // 默认支付宝
                     .addressId(order.getAddressId())
-                    .receiverName("收货人_" + order.getUserId()) // 简化收货人信息
-                    .receiverPhone("138****8888")
-                    .receiverAddress("默认收货地址")
                     .orderItems(Collections.singletonList(eventOrderItem))
-                    .createTime(LocalDateTime.now())
+                    .createdTime(LocalDateTime.now())
                     .operator(operator)
                     .traceId(traceId)
                     .build();

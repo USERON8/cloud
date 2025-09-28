@@ -12,8 +12,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @Slf4j
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.stock", "com.cloud.common"},
-    exclude = {com.cloud.common.config.RedissonConfig.class}
+    scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient

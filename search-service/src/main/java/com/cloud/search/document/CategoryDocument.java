@@ -47,7 +47,7 @@ public class CategoryDocument {
     /**
      * 分类名称
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String categoryName;
 
     /**
@@ -71,7 +71,7 @@ public class CategoryDocument {
     /**
      * 分类描述
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
     /**

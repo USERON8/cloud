@@ -19,6 +19,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
@@ -75,7 +79,6 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.baomidou</groupId>
@@ -113,25 +116,28 @@
                     <groupId>com.github.ben-manes.caffeine</groupId>
                     <artifactId>caffeine</artifactId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>objenesis</artifactId>
+                    <groupId>org.objenesis</groupId>
+                </exclusion>
+                <!-- 排除不兼容的annotations-api -->
+                <exclusion>
+                    <groupId>org.apache.tomcat</groupId>
+                    <artifactId>annotations-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>api-module</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
         <!-- API文档 -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
-            <version>${swagger.version}</version>
-            <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-rocketmq</artifactId>
-        </dependency>
+        
 
     </dependencies>
 

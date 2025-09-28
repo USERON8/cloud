@@ -2,12 +2,14 @@ package com.cloud.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.common.cache.annotation.MultiLevelCacheEvict;
-import com.cloud.common.cache.annotation.MultiLevelCacheable;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -37,8 +39,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "categoryTreeCache", key = "'tree'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "categoryTreeCache", key = "'tree'")
     public List<Category> getCategoryTree() {
         log.info("从数据库获取分类树");
         // 获取所有启用的分类
@@ -85,8 +86,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "categoryCache", key = "'children:' + #parentId",
-            expire = 90, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "categoryCache", key = "'children:' + #parentId")
     public List<Category> getChildrenByParentId(Long parentId) {
         log.debug("从数据库获取父分类ID为{}的子分类", parentId);
         return this.list(new LambdaQueryWrapper<Category>()
@@ -104,8 +104,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "categoryCache", key = "'level:' + #level",
-            expire = 90, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "categoryCache", key = "'level:' + #level")
     public List<Category> getCategoriesByLevel(Integer level) {
         log.debug("从数据库获取{}级分类", level);
         return this.list(new LambdaQueryWrapper<Category>()
@@ -124,7 +123,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean save(Category entity) {
         log.info("保存分类: {}", entity.getName());
         return super.save(entity);
@@ -138,7 +137,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean updateById(Category entity) {
         log.info("更新分类: ID={}, Name={}", entity.getId(), entity.getName());
         return super.updateById(entity);
@@ -152,7 +151,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean removeById(java.io.Serializable id) {
         log.info("删除分类: {}", id);
         return super.removeById(id);
@@ -166,7 +165,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean removeByIds(java.util.Collection<?> idList) {
         log.info("批量删除分类: {}", idList);
         return super.removeByIds(idList);
@@ -177,7 +176,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     /**
      * 清除分类缓存
      */
-    @MultiLevelCacheEvict(value = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public void clearCategoryCache() {
         log.info("清除所有分类缓存");
     }
@@ -187,7 +186,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
      *
      * @param categoryId 分类ID
      */
-    @MultiLevelCacheEvict(value = "categoryCache", key = "'children:' + #categoryId")
+    @CacheEvict(cacheNames = "categoryCache", key = "'children:' + #categoryId")
     public void evictCategoryCache(Long categoryId) {
         log.info("清除分类缓存: {}", categoryId);
     }

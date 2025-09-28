@@ -10,8 +10,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.order", "com.cloud.common"},
-    exclude = {com.cloud.common.config.RedissonConfig.class}
+    scanBasePackages = {"com.cloud.order", "com.cloud.common"}
 )
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.cloud.api")

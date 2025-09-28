@@ -16,9 +16,9 @@ import java.util.Map;
 
 /**
  * 健康检查控制器基类
- * 提供统一的健康检查接口
+ * 提供统一的健康检查接口模板
+ * 注意：此类仅用于继承，不作为Spring Controller Bean
  */
-@RestController
 @RequiredArgsConstructor
 public class BaseHealthCheckController {
 

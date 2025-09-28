@@ -2,16 +2,16 @@ package com.cloud.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.MerchantDTO;
-import com.cloud.user.annotation.MultiLevelCacheEvict;
-import com.cloud.user.annotation.MultiLevelCachePut;
-import com.cloud.user.annotation.MultiLevelCacheable;
-import com.cloud.user.annotation.MultiLevelCaching;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.mapper.MerchantMapper;
 import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.service.MerchantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,10 +44,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
      * @return 商家信息DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = MERCHANT_CACHE_NAME,
+    @Cacheable(
+            cacheNames = MERCHANT_CACHE_NAME,
             key = "'id:' + #id",
-            expire = 1800,
             unless = "#result == null"
     )
     public MerchantDTO getMerchantByIdWithCache(Long id) {
@@ -62,10 +61,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
      * @return 商家信息DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = MERCHANT_CACHE_NAME,
+    @Cacheable(
+            cacheNames = MERCHANT_CACHE_NAME,
             key = "'name:' + #merchantName",
-            expire = 1800,
             unless = "#result == null"
     )
     public MerchantDTO getMerchantByNameWithCache(String merchantName) {
@@ -81,10 +79,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = MERCHANT_CACHE_NAME, key = "'id:' + #merchant.id"),
-                    @MultiLevelCacheEvict(cacheName = MERCHANT_CACHE_NAME, key = "'name:' + #merchant.merchantName", condition = "#merchant.merchantName != null")
+                    @CacheEvict(cacheNames = MERCHANT_CACHE_NAME, key = "'id:' + #merchant.id"),
+                    @CacheEvict(cacheNames = MERCHANT_CACHE_NAME, key = "'name:' + #merchant.merchantName", condition = "#merchant.merchantName != null")
             }
     )
     public boolean updateById(Merchant merchant) {
@@ -100,10 +98,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCachePut(
-            cacheName = MERCHANT_CACHE_NAME,
-            key = "'id:' + #merchant.id",
-            expire = 1800
+    @CachePut(
+            cacheNames = MERCHANT_CACHE_NAME,
+            key = "'id:' + #merchant.id"
     )
     public boolean save(Merchant merchant) {
         merchant.setCreatedAt(LocalDateTime.now());
@@ -120,8 +117,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = MERCHANT_CACHE_NAME,
+    @CacheEvict(
+            cacheNames = MERCHANT_CACHE_NAME,
             key = "'id:' + #id"
     )
     public boolean removeById(java.io.Serializable id) {

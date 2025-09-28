@@ -9,7 +9,11 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.FilterType;
 import org.mybatis.spring.annotation.MapperScan;
+import com.cloud.common.config.RedissonConfig;
+import com.cloud.common.config.base.BaseHealthCheckController;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -17,7 +21,25 @@ import org.mybatis.spring.annotation.MapperScan;
 @Slf4j
 @EnableFeignClients(basePackages = "com.cloud.api")
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@ComponentScan(basePackages = {"com.cloud.product", "com.cloud.common"})
+@ComponentScan(
+    basePackages = {"com.cloud.product", "com.cloud.common"},
+    excludeFilters = {
+        @ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = {
+                BaseHealthCheckController.class,
+                com.cloud.common.cache.listener.CacheMessageListener.class,
+                com.cloud.common.cache.metrics.CacheMetricsCollector.class,
+                com.cloud.common.monitoring.PerformanceMonitor.class,
+                com.cloud.common.security.RateLimitManager.class
+            }
+        ),
+        @ComponentScan.Filter(
+            type = FilterType.REGEX,
+            pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
+        )
+    }
+)
 @MapperScan("com.cloud.product.mapper")
 public class ProductApplication {
     public static void main(String[] args) {

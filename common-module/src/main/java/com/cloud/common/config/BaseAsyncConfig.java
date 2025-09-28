@@ -1,10 +1,6 @@
 package com.cloud.common.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -14,33 +10,22 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 异步处理基础配置类
  * 提供通用的线程池配置模板和工厂方法
  * 各服务可以继承此类并根据业务特点定制线程池
+ * 注意：此类仅用于继承，不作为Spring Bean
  *
  * @author cloud
  * @date 2024-01-20
  * @version 2.0
  */
 @Slf4j
-@Configuration
-@EnableAsync
-public class BaseAsyncConfig implements AsyncConfigurer {
+public class BaseAsyncConfig {
 
     /**
-     * 获取默认异步执行器
-     * 实现AsyncConfigurer接口，提供全局默认异步执行器
-     */
-    @Override
-    public Executor getAsyncExecutor() {
-        return defaultAsyncExecutor();
-    }
-
-    /**
-     * 默认异步任务执行器
+     * 默认异步任务执行器工厂方法
      * 适用于通用异步任务处理
      *
      * @return Executor
      */
-    @Bean("defaultAsyncExecutor")
-    public Executor defaultAsyncExecutor() {
+    protected Executor createDefaultAsyncExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
                 Math.max(4, processors),
@@ -54,16 +39,13 @@ public class BaseAsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
-
-
     /**
-     * 消息发送异步任务执行器
+     * 消息发送异步任务执行器工厂方法
      * 专门用于消息发送相关的异步任务
      *
      * @return Executor
      */
-    @Bean("asyncMessageExecutor")
-    public Executor asyncMessageExecutor() {
+    protected Executor createAsyncMessageExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
                 3,
                 8,
@@ -76,13 +58,12 @@ public class BaseAsyncConfig implements AsyncConfigurer {
     }
 
     /**
-     * 批处理异步任务执行器
+     * 批处理异步任务执行器工厂方法
      * 专门用于批量消息处理相关的异步任务
      *
      * @return Executor
      */
-    @Bean("batchProcessExecutor")
-    public Executor batchProcessExecutor() {
+    protected Executor createBatchProcessExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
                 2,
                 6,

@@ -1,2 +1,2 @@
 com.cloud.common.config.DistributedLockAutoConfiguration
-com.cloud.common.config.RedissonConfig
+com.cloud.common.config.RedisConfig

@@ -9,8 +9,7 @@ import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -135,14 +134,15 @@ public class MinioServiceImpl implements MinioService {
      * @return 用户ID
      */
     private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
+        String userId = UserContextUtils.getCurrentUserId();
+        if (userId == null) {
             throw new IllegalStateException("无法获取当前用户信息");
         }
-
-        // 这里假设认证信息中包含用户ID，实际项目中需要根据认证方式调整
-        // 例如从JWT token中解析用户ID
-        // 为了演示，我们返回一个固定值
-        return 1L;
+        
+        try {
+            return Long.parseLong(userId);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("用户ID格式错误: " + userId);
+        }
     }
 }

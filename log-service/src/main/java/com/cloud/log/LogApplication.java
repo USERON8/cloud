@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.FilterType;
 
 /**
  * 日志服务启动类
@@ -13,10 +15,18 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  */
 @Slf4j
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.log", "com.cloud.common"},
     exclude = {
         com.cloud.common.config.RedissonConfig.class,
         org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class
+    }
+)
+@ComponentScan(
+    basePackages = {"com.cloud.log", "com.cloud.common"},
+    excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+            com.cloud.common.config.BaseAsyncConfig.class,
+            com.cloud.common.config.MybatisPlusConfig.class
+        })
     }
 )
 @EnableDiscoveryClient

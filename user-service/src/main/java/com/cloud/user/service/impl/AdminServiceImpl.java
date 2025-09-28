@@ -2,15 +2,15 @@ package com.cloud.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.AdminDTO;
-import com.cloud.user.annotation.MultiLevelCacheEvict;
-import com.cloud.user.annotation.MultiLevelCachePut;
-import com.cloud.user.annotation.MultiLevelCacheable;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,10 +37,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
      * @return 管理员DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = ADMIN_CACHE_NAME,
+    @Cacheable(
+            cacheNames = ADMIN_CACHE_NAME,
             key = "#id",
-            expire = 1800,
             unless = "#result == null"
     )
     public AdminDTO getAdminById(Long id) {
@@ -55,10 +54,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
      * @return 管理员DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = ADMIN_CACHE_NAME,
+    @Cacheable(
+            cacheNames = ADMIN_CACHE_NAME,
             key = "'username:' + #username",
-            expire = 1800,
             unless = "#result == null"
     )
     public AdminDTO getAdminByUsername(String username) {
@@ -74,8 +72,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = ADMIN_CACHE_NAME,
+    @CacheEvict(
+            cacheNames = ADMIN_CACHE_NAME,
             key = "#admin.id"
     )
     public boolean updateById(Admin admin) {
@@ -91,8 +89,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = ADMIN_CACHE_NAME,
+    @CacheEvict(
+            cacheNames = ADMIN_CACHE_NAME,
             key = "#id"
     )
     public boolean removeById(java.io.Serializable id) {
@@ -108,10 +106,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCachePut(
-            cacheName = ADMIN_CACHE_NAME,
-            key = "#admin.id",
-            expire = 1800
+    @CachePut(
+            cacheNames = ADMIN_CACHE_NAME,
+            key = "#admin.id"
     )
     public boolean save(Admin admin) {
         log.info("保存管理员信息, username: {}", admin.getUsername());

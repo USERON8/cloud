@@ -1,8 +1,6 @@
 package com.cloud.common.config.base;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -16,6 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * 遵循服务自治原则：
  * - common-module只提供基础模板
  * - 具体服务自行决定是否启用和如何配置Redis
+ * 注意：此类仅用于继承，不作为Spring Bean
  *
  * @author what's up
  */
@@ -23,29 +22,25 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public abstract class BaseRedisConfig {
 
     /**
-     * 创建标准的RedisTemplate配置
-     * 子类可以通过@Primary注解覆盖此配置
+     * 创建标准的RedisTemplate配置工厂方法
+     * 子类可以使用此方法创建RedisTemplate Bean
      *
      * @param redisConnectionFactory Redis连接工厂
      * @return 配置好的RedisTemplate
      */
-    @Bean
-    @ConditionalOnMissingBean(RedisTemplate.class)
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    protected RedisTemplate<String, Object> createRedisTemplateBean(RedisConnectionFactory redisConnectionFactory) {
         log.info("初始化Redis模板配置");
         return createRedisTemplate(redisConnectionFactory);
     }
 
     /**
-     * 创建StringRedisTemplate
+     * 创建StringRedisTemplate工厂方法
      * 用于简单的字符串操作
      *
      * @param redisConnectionFactory Redis连接工厂
      * @return StringRedisTemplate
      */
-    @Bean
-    @ConditionalOnMissingBean(StringRedisTemplate.class)
-    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    protected StringRedisTemplate createStringRedisTemplateBean(RedisConnectionFactory redisConnectionFactory) {
         log.info("初始化StringRedisTemplate配置");
         StringRedisTemplate template = new StringRedisTemplate();
         template.setConnectionFactory(redisConnectionFactory);

@@ -16,8 +16,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.cloud.common.messaging.AsyncLogProducer;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +40,7 @@ import java.util.Map;
 public class LogRestController {
 
     private final LogService logService;
+    private final AsyncLogProducer asyncLogProducer;
 
     /**
      * 获取日志列表（支持分页和查询参数）
@@ -44,6 +48,8 @@ public class LogRestController {
     @GetMapping
     @RequireUserType({UserType.ADMIN})
     @RequireScope("log:read")
+    @Cacheable(cacheNames = "logQueryCache", 
+               key = "'logs:' + #page + ':' + #size + ':' + (#level != null ? #level : 'null') + ':' + (#service != null ? #service : 'null')")
     @Operation(summary = "获取日志列表", description = "获取日志列表，支持分页和查询参数")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
@@ -62,6 +68,10 @@ public class LogRestController {
         try {
             log.debug("获取日志列表 - 页码: {}, 大小: {}, 级别: {}", page, size, level);
             PageResult<Object> result = logService.getLogs(page, size, level, service, startTime, endTime, keyword);
+            
+            // 记录日志查询操作
+            recordLogOperation("GET_LOGS", result.getTotal());
+            
             return Result.success("查询成功", result);
         } catch (Exception e) {
             log.error("获取日志列表失败", e);
@@ -253,6 +263,10 @@ public class LogRestController {
         try {
             log.info("清理日志 - 保留天数: {}, 类型: {}", retentionDays, logType);
             boolean result = logService.cleanupLogs(retentionDays, logType);
+            
+            // 记录清理操作
+            recordLogOperation("CLEANUP_LOGS", result ? 1L : 0L);
+            
             return result ? Result.success("清理成功", true) : Result.error("清理失败");
         } catch (Exception e) {
             log.error("清理日志失败", e);
@@ -306,4 +320,27 @@ public class LogRestController {
             return Result.error("搜索日志失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 记录日志操作
+     */
+    private void recordLogOperation(String operation, Long resultCount) {
+        try {
+            asyncLogProducer.sendBusinessLogAsync(
+                    "log-service",
+                    "LOG_MANAGEMENT",
+                    operation,
+                    "日志管理操作",
+                    operation,
+                    "LOG",
+                    null,
+                    String.format("{\"operation\":\"%s\",\"resultCount\":%d}", operation, resultCount),
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "日志操作: " + operation + ", 结果数: " + resultCount
+            );
+        } catch (Exception e) {
+            log.warn("记录日志操作失败", e);
+        }
+    }
+    
 }

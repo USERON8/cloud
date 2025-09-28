@@ -9,126 +9,194 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import com.cloud.common.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.time.LocalDateTime;
 
 /**
- * MyBatis Plus 通用配置类
- * 提供默认的MyBatis Plus配置，子服务可以通过继承或重写来个性化配置
+ * MyBatis Plus 统一配置类
+ * 
+ * 主要功能：
+ * - 统一的MyBatis Plus拦截器配置（分页、乐观锁、防全表更新）
+ * - 通用的元数据自动填充处理器
+ * - 支持创建时间、更新时间、版本号、操作人等字段的自动填充
+ * - 集成Spring Security获取当前用户信息
  *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
+ * @author CloudDevAgent
+ * @version 2.0
+ * @since 2025-09-27
  */
 @Slf4j
 @Configuration
 public class MybatisPlusConfig {
 
     /**
-     * MyBatis Plus 拦截器配置
-     * 包含分页插件、乐观锁插件、防全表更新插件
-     * 子服务可以通过@Primary注解覆盖此配置
+     * MyBatis Plus 统一拦截器配置
+     * 
+     * 包含功能：
+     * - 分页插件：支持MySQL分页查询
+     * - 乐观锁插件：防止并发更新冲突
+     * - 防全表更新插件：防止误操作全表数据
+     * 
+     * 使用@Primary注解确保优先使用此配置
      */
     @Bean
-    @ConditionalOnMissingBean(MybatisPlusInterceptor.class)
+    @Primary
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
-        log.info("初始化MyBatis Plus默认拦截器配置");
+        log.info("初始化MyBatis Plus统一拦截器配置");
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        // 分页插件 - 默认MySQL
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        // 1. 分页插件 - 默认MySQL，支持多种数据库
+        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+        paginationInterceptor.setMaxLimit(1000L); // 设置最大单页限制
+        paginationInterceptor.setOverflow(false); // 禁止超过总数后返回空结果
+        interceptor.addInnerInterceptor(paginationInterceptor);
 
-        // 乐观锁插件
+        // 2. 乐观锁插件 - 防止并发更新冲突
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
-        // 防全表更新插件
+        // 3. 防全表更新插件 - 防止误操作
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
 
         return interceptor;
     }
 
     /**
-     * 默认的元数据处理器
-     * 自动填充创建时间、更新时间、版本号等字段
-     * 子服务可以通过@Primary注解覆盖此配置
+     * MyBatis Plus 统一元数据处理器
+     * 
+     * 主要功能：
+     * - 自动填充创建时间（createdAt）、更新时间（updatedAt）
+     * - 自动填充版本号（version）用于乐观锁
+     * - 自动填充创建人（createBy）、更新人（updateBy）
+     * - 集成Spring Security获取当前用户信息
+     * 
+     * 使用@Primary注解确保优先使用此配置
      */
     @Bean
-    @ConditionalOnMissingBean(MetaObjectHandler.class)
+    @Primary
     public MetaObjectHandler metaObjectHandler() {
-        log.info("初始化MyBatis Plus默认元数据处理器");
-        return new DefaultMetaObjectHandler();
+        log.info("初始化MyBatis Plus统一元数据处理器");
+        return new UnifiedMetaObjectHandler();
     }
 
     /**
-     * 默认元数据处理器实现
-     * 提供通用的字段自动填充功能
+     * 统一元数据处理器实现
+     * 
+     * 提供全平台统一的字段自动填充功能，支持：
+     * - 标准时间字段：createdAt, updatedAt
+     * - 乐观锁字段：version
+     * - 操作人字段：createBy, updateBy
+     * - 兼容多种命名风格：驼峰命名和下划线命名
      */
-    public static class DefaultMetaObjectHandler implements MetaObjectHandler {
+    public static class UnifiedMetaObjectHandler implements MetaObjectHandler {
 
         /**
          * 插入时自动填充
+         * 
+         * 支持多种字段命名风格：
+         * - 驼峰命名：createdAt, updatedAt, createBy, updateBy
+         * - 下划线命名：created_at, updated_at, create_by, update_by
          */
         @Override
         public void insertFill(MetaObject metaObject) {
             log.debug("开始插入填充 - 实体类: {}", metaObject.getOriginalObject().getClass().getSimpleName());
 
             LocalDateTime now = LocalDateTime.now();
+            Long currentUserId = getCurrentUserId();
 
-            // 填充创建时间
-            this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, now);
+            // 1. 填充创建时间（支持多种命名）
+            fillDateTimeField(metaObject, new String[]{"createdAt", "created_at", "createTime", "create_time"}, now);
 
-            // 填充更新时间
-            this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
+            // 2. 填充更新时间（支持多种命名）
+            fillDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
-            // 填充版本号（乐观锁）
-            this.strictInsertFill(metaObject, "version", Integer.class, 1);
+            // 3. 填充版本号（乐观锁）
+            fillField(metaObject, new String[]{"version"}, Integer.class, 1);
 
-            // 填充创建人（如果字段存在）
-            if (metaObject.hasGetter("createBy")) {
-                Long currentUserId = getCurrentUserId();
-                this.strictInsertFill(metaObject, "createBy", Long.class, currentUserId);
-            }
+            // 4. 填充创建人
+            fillField(metaObject, new String[]{"createBy", "create_by", "createdBy", "created_by"}, Long.class, currentUserId);
 
-            // 填充更新人（如果字段存在）
-            if (metaObject.hasGetter("updateBy")) {
-                Long currentUserId = getCurrentUserId();
-                this.strictInsertFill(metaObject, "updateBy", Long.class, currentUserId);
-            }
+            // 5. 填充更新人
+            fillField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
 
-            log.debug("插入填充完成 - createdAt: {}, updatedAt: {}", now, now);
+            // 6. 填充逻辑删除标记（如果存在）
+            fillField(metaObject, new String[]{"deleted", "is_deleted"}, Integer.class, 0);
+
+            log.debug("插入填充完成 - createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
         }
 
         /**
          * 更新时自动填充
+         * 
+         * 自动填充更新时间和更新人信息
          */
         @Override
         public void updateFill(MetaObject metaObject) {
             log.debug("开始更新填充 - 实体类: {}", metaObject.getOriginalObject().getClass().getSimpleName());
 
             LocalDateTime now = LocalDateTime.now();
+            Long currentUserId = getCurrentUserId();
 
-            // 填充更新时间
-            this.strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, now);
+            // 1. 填充更新时间（支持多种命名）
+            updateDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
-            // 填充更新人（如果字段存在）
-            if (metaObject.hasGetter("updateBy")) {
-                Long currentUserId = getCurrentUserId();
-                this.strictUpdateFill(metaObject, "updateBy", Long.class, currentUserId);
+            // 2. 填充更新人（支持多种命名）
+            updateField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
+
+            log.debug("更新填充完成 - updatedAt: {}, userId: {}", now, currentUserId);
+        }
+        /**
+         * 通用字段填充方法（插入时）
+         */
+        private <T> void fillField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
+            for (String fieldName : fieldNames) {
+                if (metaObject.hasGetter(fieldName)) {
+                    this.strictInsertFill(metaObject, fieldName, fieldType, value);
+                    log.debug("填充字段: {} = {}", fieldName, value);
+                    break; // 只填充第一个匹配的字段
+                }
             }
+        }
 
-            log.debug("更新填充完成 - updatedAt: {}", now);
+        /**
+         * 通用时间字段填充方法（插入时）
+         */
+        private void fillDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
+            fillField(metaObject, fieldNames, LocalDateTime.class, value);
+        }
+
+        /**
+         * 通用字段更新方法（更新时）
+         */
+        private <T> void updateField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
+            for (String fieldName : fieldNames) {
+                if (metaObject.hasGetter(fieldName)) {
+                    this.strictUpdateFill(metaObject, fieldName, fieldType, value);
+                    log.debug("更新字段: {} = {}", fieldName, value);
+                    break; // 只更新第一个匹配的字段
+                }
+            }
+        }
+
+        /**
+         * 通用时间字段更新方法（更新时）
+         */
+        private void updateDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
+            updateField(metaObject, fieldNames, LocalDateTime.class, value);
         }
 
         /**
          * 获取当前用户ID
-         * 优先从SecurityUtils获取，如果获取失败则返回系统用户ID
+         * 
+         * 优先从 SecurityUtils 获取当前登录用户ID，
+         * 如果获取失败（未登录或系统初始化时）则返回系统用户ID
          */
         private Long getCurrentUserId() {
             try {
-                return SecurityUtils.getCurrentUserId();
+                Long userId = SecurityUtils.getCurrentUserId();
+                return userId != null ? userId : 0L;
             } catch (Exception e) {
                 log.debug("获取当前用户ID失败，使用系统用户ID: {}", e.getMessage());
                 return 0L; // 系统用户ID

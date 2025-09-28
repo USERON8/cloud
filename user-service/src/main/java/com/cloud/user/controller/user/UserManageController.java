@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,7 @@ public class UserManageController {
 
     @PutMapping("/{id}")
     @Operation(summary = "更新用户信息", description = "更新用户信息")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     public Result<Boolean> update(@PathVariable
                                   @Parameter(description = "用户ID") Long id,
                                   @RequestBody
@@ -58,6 +60,7 @@ public class UserManageController {
 
     @PostMapping("/delete")
     @Operation(summary = "删除用户", description = "逻辑删除指定用户")
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     public Result<Boolean> delete(@RequestBody
                                   @Parameter(description = "用户ID")
                                   @NotNull(message = "用户ID不能为空") Long id,
@@ -79,6 +82,7 @@ public class UserManageController {
 
     @PostMapping("/deleteBatch")
     @Operation(summary = "批量删除用户", description = "批量逻辑删除用户")
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     public Result<Boolean> deleteBatch(@RequestBody
                                        @Parameter(description = "用户ID数组")
                                        @NotNull(message = "用户ID数组不能为空") Long[] ids,

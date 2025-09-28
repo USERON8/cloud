@@ -271,6 +271,8 @@ services:
       - ES_JAVA_OPTS=-Xms1g -Xmx1g  # JVM 堆内存
       - bootstrap.memory_lock=true  # 禁用交换分区
       - xpack.security.enabled=false  # 关闭安全认证
+      - http.cors.enabled=true
+      - http.cors.allow-origin=" *"
     volumes:
       - type: bind
         source: D:\docker\es\data
@@ -278,9 +280,6 @@ services:
       - type: bind
         source: D:\docker\es\plugins
         target: /usr/share/elasticsearch/plugins
-      - type: bind
-        source: D:\docker\es\config\elasticsearch.yml # 宿主机配置文件路径
-        target: /usr/share/elasticsearch/config/elasticsearch.yml # 容器内配置文件路径
     ports:
       - "9200:9200"  # HTTP API 端口
       - "9300:9300"  # 集群通信端口
@@ -293,7 +292,49 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+  # Kibana
+  kibana:
+    image: kibana:9.1.2
+    container_name: kibana_es
+    depends_on:
+      - elasticsearch
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.100
+    ports:
+      - "5601:5601"
+    environment:
+      # 核心连接配置
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+      - SERVER_NAME=kibana-service
 
+      # 性能调优参数
+      - NODE_OPTIONS=--max-old-space-size=2048
+
+      # 禁用不需要的功能模块
+      - XPACK_APM_ENABLED=false
+      - XPACK_INFRA_ENABLED=false
+      - XPACK_MONITORING_UI_ENABLED=false
+      - XPACK_OBSERVABILITY_ENABLED=false
+      - TELEMETRY_ENABLED=false
+
+      # 日志配置
+      - LOGGING_JSON_ENABLED=false
+    volumes:
+      - type: bind
+        source: D:\docker\kibana\config
+        target: /usr/share/kibana/config
+        # 挂载数据目录 (可选)
+      - type: bind
+        source: D:\docker\kibana\data
+        target: /usr/share/kibana/data
+    healthcheck: # 增加健康检查
+      test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 # 网络配置
 networks:
   service_net:

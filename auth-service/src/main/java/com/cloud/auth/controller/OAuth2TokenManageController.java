@@ -6,8 +6,8 @@ import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
@@ -27,13 +27,24 @@ import java.util.Set;
 @Slf4j
 @RestController
 @RequestMapping("/auth/tokens")
-@RequiredArgsConstructor
 @Tag(name = "🔑 OAuth2 Token管理", description = "OAuth2 Token管理和监控接口")
 public class OAuth2TokenManageController {
 
     private final OAuth2AuthorizationService authorizationService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final TokenBlacklistService tokenBlacklistService;
+    
+    /**
+     * 构造函数，使用显式的@Qualifier注解指定RedisTemplate
+     */
+    public OAuth2TokenManageController(
+            OAuth2AuthorizationService authorizationService,
+            @Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate,
+            TokenBlacklistService tokenBlacklistService) {
+        this.authorizationService = authorizationService;
+        this.redisTemplate = redisTemplate;
+        this.tokenBlacklistService = tokenBlacklistService;
+    }
 
     /**
      * 查看token存储统计信息

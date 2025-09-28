@@ -13,7 +13,7 @@
 
 基于 Spring Boot 3.5.3 + Spring Cloud 2025 + OAuth2.1 构建的高性能分布式电商解决方案
 
-[快速开始](#-快速开始) • [架构设计](#-系统架构) • [技术栈](#-技术栈) • [开发指南](#-开发指南) • [部署文档](#-部署指南)
+[快速开始](#-快速开始) • [架构设计](#-系统架构) • [技术栈](#-技术栈) • [缓存架构](docs/cache-architecture-guide.md) • [开发指南](#-开发指南) • [部署文档](#-部署指南)
 
 </div>
 
@@ -92,6 +92,10 @@ cloud/                         # 根目录
 ├── api-module/               # 📌 API定义 [Feign接口、DTO定义]
 ├── sql/                      # 🗍️ 数据库脚本
 ├── docs/                     # 📚 项目文档
+│   ├── cache-architecture-guide.md    # 🚀 缓存架构完整指南
+│   ├── cache-migration-guide.md       # 🔄 缓存代码迁移指南  
+│   ├── cache-best-practices.md        # 📋 缓存使用最佳实践
+│   └── multi-level-cache-guide.md     # 🎯 多级缓存使用指南
 ├── pom.xml                   # Maven父POM
 ├── README.md                 # 项目说明
 └── RULE.md                   # 开发规范
@@ -121,9 +125,12 @@ cloud/                         # 根目录
 
 ### 🔄 高性能缓存
 - **多级缓存**: L1(Caffeine) + L2(Redis) 双层缓存架构
+- **智能存储**: 根据数据特性自动选择String/Hash存储策略
+- **缓存一致性**: Redis Pub/Sub保证分布式缓存同步
 - **缓存预热**: 启动时自动加载热点数据
 - **缓存更新**: 基于消息队列的缓存同步机制
-- **缓存穿透防护**: 布隆过滤器 + 空值缓存
+- **缓存穿透防护**: 布隆过滤器 + 空值缓存 + 智能防护机制
+- **性能监控**: 完整的缓存指标收集、分析与告警
 
 ### 🔒 分布式并发控制
 - **Redisson分布式锁**: 可重入锁、公平锁、读写锁
@@ -248,6 +255,23 @@ http://localhost/doc.html
 # 健康检查
 curl http://localhost/actuator/health
 ```
+
+## 🚀 缓存架构文档
+
+### 📋 缓存相关文档
+- **[🚀 缓存架构完整指南](docs/cache-architecture-guide.md)** - 企业级多级缓存架构详细说明
+- **[🔄 缓存代码迁移指南](docs/cache-migration-guide.md)** - 从服务专用注解迁移到统一注解
+- **[📋 缓存使用最佳实践](docs/cache-best-practices.md)** - Redis缓存使用最佳实践
+- **[🎯 多级缓存使用指南](docs/multi-level-cache-guide.md)** - 多级缓存配置与优化
+
+### 🎨 缓存架构特点
+- **统一注解系统**: 所有多级缓存注解统一到`common-module`
+- **智能存储策略**: String/Hash自动选择，根据数据特性优化
+- **缓存一致性**: Redis Pub/Sub保证分布式环境下的数据一致性
+- **性能监控**: 完整的指标收集、分析与告警机制
+- **防护机制**: 穿透、击穿、雪崩完整防护方案
+
+---
 
 ## 📚 开发指南
 
@@ -411,6 +435,13 @@ kubectl apply -f k8s/ingress.yaml
 ## 📦 版本发布
 
 ### v0.0.1-SNAPSHOT (当前版本) - 2025.01
+
+#### 🔄 最新更新 (2025-01-18) - 配置架构重构完成
+- ✅ **代码重构**: 删除重复的 SecurityUtils 类，统一使用 common-module 中的版本
+- ✅ **配置重构**: 将 RedissonConfig 和 HybridCacheConfig 重构为抽象基类
+- ✅ **继承优化**: 所有子服务配置类现在继承 common-module 基类，消除代码重复
+- ✅ **编译验证**: 项目编译成功，配置重构无破坏性更改
+- ✅ **架构优化**: 提高代码复用性，降低维护成本
 
 #### ✅ 完成功能
 - 🏗️ **微服务架构**: 完整的微服务基础设施

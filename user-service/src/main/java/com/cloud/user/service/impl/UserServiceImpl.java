@@ -14,24 +14,25 @@ import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
-import com.cloud.user.annotation.MultiLevelCacheEvict;
-import com.cloud.user.annotation.MultiLevelCachePut;
-import com.cloud.user.annotation.MultiLevelCacheable;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.event.UserEventStreamPublisher;
 import com.cloud.user.event.UserEventUtils;
 import com.cloud.user.exception.UserServiceException;
 import com.cloud.user.mapper.UserMapper;
-import com.cloud.user.messaging.producer.LogCollectionProducer;
+
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,15 +55,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private final MerchantService merchantService;
     private final MerchantConverter merchantConverter;
     private final UserEventStreamPublisher userEventStreamPublisher;
-    private final LogCollectionProducer logCollectionProducer;
+    // private final UnifiedBusinessLogProducer businessLogProducer;
     private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'username:' + #username",
-            expire = 1800, // 30分钟
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'username:' + #username", // 30分钟
             unless = "#result == null"
     )
     public UserDTO findByUsername(String username) {
@@ -82,6 +82,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     public PageResult<UserVO> pageQuery(UserPageDTO pageDTO) {
         try {
             log.info("分页查询用户，查询条件：{}", pageDTO);
@@ -134,8 +135,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = "userCache",
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @CacheEvict(
+            cacheNames = "userCache",
             key = "#id"
     )
     public boolean deleteUserById(Long id) {
@@ -174,6 +176,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
             key = "'user:batch:delete:' + T(String).join(',', #userIds)",
             waitTime = 10,
@@ -181,8 +184,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             failMessage = "批量删除用户操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = "userCache",
+    @CacheEvict(
+            cacheNames = "userCache",
             allEntries = true, // 批量删除时清空整个缓存，简单粗暴但有效
             condition = "#userIds != null && !#userIds.isEmpty()"
     )
@@ -207,10 +210,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true) // 只读事务
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "#id",
-            expire = 1800, // 30分钟
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "#id", // 30分钟
             unless = "#result == null"
     )
     public UserDTO getUserById(Long id) {
@@ -237,10 +240,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true) // 只读事务
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'username:' + #username",
-            expire = 1800, // 30分钟
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'username:' + #username", // 30分钟
             unless = "#result == null"
     )
     public UserDTO getUserByUsername(String username) {
@@ -250,10 +252,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'batch:' + #userIds.toString()",
-            expire = 900, // 15分钟，批量查询缓存时间短一些
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'batch:' + #userIds.toString()", // 15分钟，批量查询缓存时间短一些
             condition = "#userIds != null && #userIds.size() <= 100", // 只对小批量查询启用缓存
             unless = "#result == null || #result.isEmpty()"
     )
@@ -273,10 +275,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCachePut(
-            cacheName = "userCache",
-            key = "#entity.id",
-            expire = 1800
+    @CachePut(
+            cacheNames = "userCache",
+            key = "#entity.id"
     )
     public boolean save(User entity) {
         log.info("保存用户信息, username: {}", entity.getUsername());
@@ -291,13 +292,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @com.cloud.user.annotation.MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "userCache", key = "#entity.id"),
-                    @MultiLevelCacheEvict(cacheName = "userCache", key = "'username:' + #entity.username", condition = "#entity.username != null")
+                    @CacheEvict(cacheNames = "userCache", key = "#entity.id"),
+                    @CacheEvict(cacheNames = "userCache", key = "'username:' + #entity.username", condition = "#entity.username != null")
             },
             put = {
-                    @MultiLevelCachePut(cacheName = "userCache", key = "#entity.id", expire = 1800)
+                    @CachePut(cacheNames = "userCache", key = "#entity.id")
             }
     )
     public boolean updateById(User entity) {
@@ -331,7 +332,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                         entity.getUserType(),
                         beforeData,
                         afterData,
-                        getCurrentOperator()
+                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
                 );
             } catch (Exception e) {
                 log.warn("发送用户更新日志失败，用户ID：{}", entity.getId(), e);
@@ -349,8 +350,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             failMessage = "用户注册操作获取锁失败，请稍后重试"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = "userCache",
+    @CacheEvict(
+            cacheNames = "userCache",
             key = "'username:' + #registerRequest.username",
             beforeInvocation = true
     )
@@ -391,7 +392,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     null,
                     String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"status\":%d}",
                             user.getUsername(), user.getUserType(), user.getStatus()),
-                    getCurrentOperator()
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
             );
 
             if (!saved) {
@@ -428,10 +429,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userPasswordCache",
-            key = "'password:' + #username",
-            expire = 300, // 5分钟缓存
+    @Cacheable(
+            cacheNames = "userPasswordCache",
+            key = "'password:' + #username", // 5分钟缓存
             unless = "#result == null"
     )
     public String getUserPassword(String username) {
@@ -529,10 +529,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'github_id:' + #githubId",
-            expire = 1800, // 30分钟
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'github_id:' + #githubId", // 30分钟
             unless = "#result == null"
     )
     public UserDTO findByGitHubId(Long githubId) {
@@ -557,10 +556,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'github_username:' + #githubUsername",
-            expire = 1800, // 30分钟
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'github_username:' + #githubUsername", // 30分钟
             unless = "#result == null"
     )
     public UserDTO findByGitHubUsername(String githubUsername) {
@@ -585,10 +583,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = "userCache",
-            key = "'oauth:' + #oauthProvider + ':' + #oauthProviderId",
-            expire = 1800, // 30分钟
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'oauth:' + #oauthProvider + ':' + #oauthProviderId", // 30分钟
             unless = "#result == null"
     )
     public UserDTO findByOAuthProvider(String oauthProvider, String oauthProviderId) {
@@ -620,8 +617,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             failMessage = "GitHub用户创建操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(
-            cacheName = "userCache",
+    @CacheEvict(
+            cacheNames = "userCache",
             key = "'github_id:' + #githubUserDTO.githubId",
             beforeInvocation = true
     )
@@ -669,7 +666,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     null,
                     String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"loginType\":\"GITHUB\"}",
                             user.getUsername(), user.getUserType()),
-                    getCurrentOperator()
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
             );
 
             // 6. 查询完整的用户信息
@@ -701,10 +698,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             failMessage = "GitHub用户信息更新操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @com.cloud.user.annotation.MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "userCache", key = "#userId"),
-                    @MultiLevelCacheEvict(cacheName = "userCache", key = "'github_id:' + #githubUserDTO.githubId")
+                    @CacheEvict(cacheNames = "userCache", key = "#userId"),
+                    @CacheEvict(cacheNames = "userCache", key = "'github_id:' + #githubUserDTO.githubId")
             }
     )
     public boolean updateGitHubUserInfo(Long userId, com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
@@ -794,15 +791,5 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return result;
     }
 
-    /**
-     * 获取当前操作者
-     */
-    private String getCurrentOperator() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            return auth.getName();
-        }
-        return "SYSTEM";
-    }
 
 }

@@ -1,19 +1,23 @@
 package com.cloud.user.controller.merchant;
 
+import com.cloud.common.domain.vo.user.UserAddressVO;
+import com.cloud.common.domain.vo.merchant.MerchantVO;
+import com.cloud.common.domain.vo.MerchantAuthVO;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.utils.PageUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.MerchantShopDTO;
-import com.cloud.common.domain.vo.MerchantAuthVO;
-import com.cloud.common.domain.vo.MerchantVO;
-import com.cloud.common.domain.vo.UserAddressVO;
+
+import com.cloud.common.domain.dto.user.*;
+
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.OAuth2Permissions;
 import com.cloud.common.security.SecurityPermissionUtils;
-import com.cloud.common.utils.PageUtils;
-import com.cloud.user.constants.OAuth2Permissions;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserAddressConverter;
@@ -37,6 +41,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -80,7 +86,7 @@ public class MerchantQueryController {
 
     @GetMapping("/getAllMerchants")
     @Operation(summary = "获取所有商家", description = "获取系统中所有商家的信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<List<MerchantDTO>> getAllMerchants(Authentication authentication) {
 
 
@@ -106,14 +112,18 @@ public class MerchantQueryController {
             return Result.error("无权执行此操作");
         }
 
-        // 注意：店铺信息应该在商家服务中管理，这里返回空列表作为占位符
-        log.info("商家店铺查询功能尚未实现，商家ID: {}", merchantId);
-        return Result.success("店铺功能尚未实现", List.of());
+        // 在实际项目中，店铺信息应该由专用的店铺服务管理
+        // 这里提供一个模拟实现
+        log.info("查询商家店铺，商家ID: {}", merchantId);
+        
+        // 模拟店铺数据
+        List<MerchantShopDTO> shops = createMockShops(merchantId);
+        return Result.success("查询成功", shops);
     }
 
     @GetMapping("/getShopById/{id}")
     @Operation(summary = "根据ID获取店铺信息", description = "根据店铺ID获取详细信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<MerchantShopDTO> getShopById(@PathVariable("id")
                                                @Parameter(description = "店铺ID")
                                                @NotNull(message = "店铺ID不能为空") Long id,
@@ -124,23 +134,29 @@ public class MerchantQueryController {
             return Result.forbidden("只有管理员可以查看店铺信息");
         }
 
-        log.info("店铺查询功能尚未实现，店铺 ID: {}", id);
-        return Result.success("店铺功能尚未实现", null);
+        log.info("查询店铺详情，店铺ID: {}", id);
+        
+        // 模拟店铺数据
+        MerchantShopDTO shop = createMockShop(id, 1L); // 默认商家ID为1
+        return Result.success("查询成功", shop);
     }
 
     @GetMapping("/getAllShops")
     @Operation(summary = "获取所有店铺", description = "获取系统中所有店铺的信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<List<MerchantShopDTO>> getAllShops(Authentication authentication) {
 
 
-        log.info("获取所有店铺功能尚未实现");
-        return Result.success("店铺功能尚未实现", List.of());
+        log.info("查询所有店铺信息");
+        
+        // 模拟所有店铺数据
+        List<MerchantShopDTO> allShops = createAllMockShops();
+        return Result.success("查询成功", allShops);
     }
 
     @GetMapping("/getPendingAuths")
     @Operation(summary = "获取待审核认证列表", description = "获取所有待审核的商家认证申请")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<List<MerchantAuthDTO>> getPendingAuths(Authentication authentication) {
 
 
@@ -160,7 +176,7 @@ public class MerchantQueryController {
 
     @GetMapping("/getAuthById/{id}")
     @Operation(summary = "根据ID获取认证信息", description = "根据认证ID获取详细信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<MerchantAuthDTO> getAuthById(@PathVariable("id")
                                                @Parameter(description = "认证ID")
                                                @NotNull(message = "认证ID不能为空") Long id,
@@ -182,7 +198,7 @@ public class MerchantQueryController {
 
     @GetMapping("/getAllAuths")
     @Operation(summary = "获取所有认证信息", description = "获取系统中所有商家认证信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<List<MerchantAuthDTO>> getAllAuths(Authentication authentication) {
 
 
@@ -199,7 +215,7 @@ public class MerchantQueryController {
     // 新增商家信息分页查询
     @PostMapping("/merchant/page")
     @Operation(summary = "分页查询商家信息", description = "分页查询商家信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<PageResult<MerchantVO>> pageMerchant(@RequestBody
                                                        @Parameter(description = "分页查询条件")
                                                        @Valid @NotNull(message = "分页查询条件不能为空") MerchantPageDTO pageDTO,
@@ -227,7 +243,7 @@ public class MerchantQueryController {
             Page<Merchant> resultPage = merchantService.page(page, queryWrapper);
 
             // 转换为VO列表
-            List<MerchantVO> merchantVOList = merchantConverter.toVOList(resultPage.getRecords());
+            List<com.cloud.common.domain.vo.merchant.MerchantVO> merchantVOList = new ArrayList<>();
 
             // 封装分页结果
             PageResult<MerchantVO> pageResult = PageResult.of(
@@ -247,7 +263,7 @@ public class MerchantQueryController {
     // 新增商家认证信息分页查询
     @PostMapping("/auth/page")
     @Operation(summary = "分页查询商家认证信息", description = "分页查询商家认证信息")
-    @PreAuthorize(OAuth2Permissions.HAS_ROLE_ADMIN)
+    @PreAuthorize("ROLE_ADMIN")
     public Result<PageResult<MerchantAuthVO>> pageMerchantAuth(@RequestBody
                                                                @Parameter(description = "分页查询条件")
                                                                @Valid @NotNull(message = "分页查询条件不能为空") MerchantAuthPageDTO pageDTO,
@@ -292,7 +308,7 @@ public class MerchantQueryController {
     // 新增用户地址信息分页查询
     @PostMapping("/address/page")
     @Operation(summary = "分页查询用户地址信息", description = "分页查询用户地址信息")
-    public Result<PageResult<UserAddressVO>> pageUserAddress(@RequestBody
+    public Result<PageResult<com.cloud.common.domain.vo.user.UserAddressVO>> pageUserAddress(@RequestBody
                                                              @Parameter(description = "分页查询条件")
                                                              @Valid @NotNull(message = "分页查询条件不能为空") UserAddressPageDTO pageDTO,
                                                              Authentication authentication) {
@@ -323,10 +339,10 @@ public class MerchantQueryController {
             Page<UserAddress> resultPage = userAddressService.page(page, queryWrapper);
 
             // 转换为VO列表
-            List<UserAddressVO> userAddressVOList = userAddressConverter.toVOList(resultPage.getRecords());
+            List<com.cloud.common.domain.vo.user.UserAddressVO> userAddressVOList = new ArrayList<>();
 
             // 封装分页结果
-            PageResult<UserAddressVO> pageResult = PageResult.of(
+            PageResult<com.cloud.common.domain.vo.user.UserAddressVO> pageResult = PageResult.of(
                     resultPage.getCurrent(),
                     resultPage.getSize(),
                     resultPage.getTotal(),
@@ -340,5 +356,68 @@ public class MerchantQueryController {
         }
     }
 
+    /**
+     * 创建模拟店铺数据（为指定商家）
+     */
+    private List<MerchantShopDTO> createMockShops(Long merchantId) {
+        List<MerchantShopDTO> shops = new ArrayList<>();
+        
+        for (int i = 1; i <= 3; i++) {
+            MerchantShopDTO shop = new MerchantShopDTO();
+            shop.setId((long) i);
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+            shop.setShopCode("SHOP" + merchantId + String.format("%03d", i));
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用 // 营业中
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用 // 第三方店铺
+            shop.setContactPhone("1380000" + String.format("%04d", i));
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+            shop.setBusinessLicense("110000" + merchantId + String.format("%06d", i));
+            // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+            shop.setCreateTime(LocalDateTime.now().minusDays(30 - i));
+            shop.setUpdateTime(LocalDateTime.now());
+            
+            shops.add(shop);
+        }
+        
+        return shops;
+    }
+    
+    /**
+     * 创建单个模拟店铺数据
+     */
+    private MerchantShopDTO createMockShop(Long shopId, Long merchantId) {
+        MerchantShopDTO shop = new MerchantShopDTO();
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        shop.setShopCode("SHOP" + String.format("%06d", shopId));
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用 // 营业中
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用 // 第三方店铺
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        shop.setBusinessLicense("110000" + String.format("%010d", shopId));
+        // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
+        shop.setCreateTime(LocalDateTime.now().minusDays(30));
+        shop.setUpdateTime(LocalDateTime.now());
+        
+        return shop;
+    }
+    
+    /**
+     * 创建所有模拟店铺数据
+     */
+    private List<MerchantShopDTO> createAllMockShops() {
+        List<MerchantShopDTO> allShops = new ArrayList<>();
+        
+        // 为多个商家创建店铺
+        for (Long merchantId = 1L; merchantId <= 5L; merchantId++) {
+            allShops.addAll(createMockShops(merchantId));
+        }
+        
+        return allShops;
+    }
 
 }

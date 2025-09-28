@@ -24,10 +24,10 @@ spring:
       timeout: 10000ms
       lettuce:
         pool:
-          max-active: 8
+          max-active: 16
           max-wait: -1ms
           max-idle: 8
-          min-idle: 0
+          min-idle: 2
 
 # MinIO 配置
 minio:

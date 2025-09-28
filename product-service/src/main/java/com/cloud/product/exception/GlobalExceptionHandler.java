@@ -2,7 +2,6 @@ package com.cloud.product.exception;
 
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.Result;
-import com.cloud.product.utils.ResponseHelper;
 import com.cloud.product.exception.ProductServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -44,7 +43,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Object> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
         log.warn("权限拒绝 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.forbidden("您没有权限执行此操作");
+        return Result.error("FORBIDDEN", "您没有权限执行此操作");
     }
 
     /**
@@ -54,7 +53,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.CONFLICT)
     public Result<Object> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
         log.warn("数据重复冲突 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.businessError("数据已存在，请检查重复项");
+        return Result.error("BUSINESS_ERROR", "数据已存在，请检查重复项");
     }
 
     /**
@@ -67,20 +66,20 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
 
         // 根据异常类型返回更具体的响应
         if (e instanceof ProductServiceException.ProductNotFoundException) {
-            return ResponseHelper.ProductResponse.productNotFound((String) null);
+            return Result.error("NOT_FOUND", "商品不存在");
         } else if (e instanceof ProductServiceException.ProductAlreadyExistsException) {
-            return ResponseHelper.ProductResponse.productAlreadyExists(null);
+            return Result.error("BUSINESS_ERROR", "商品已存在");
         } else if (e instanceof ProductServiceException.ProductStatusException) {
-            return ResponseHelper.ProductResponse.productStatusError(null, "status change");
+            return Result.error("BUSINESS_ERROR", "商品状态不允许执行此操作");
         } else if (e instanceof ProductServiceException.CategoryNotFoundException) {
-            return ResponseHelper.CategoryResponse.categoryNotFound((String) null);
+            return Result.error("NOT_FOUND", "商品分类不存在");
         } else if (e instanceof ProductServiceException.StockInsufficientException) {
-            return ResponseHelper.ProductResponse.stockInsufficient(null, 0, 0);
+            return Result.error("BUSINESS_ERROR", "库存不足");
         } else if (e instanceof ProductServiceException.ProductPermissionException) {
-            return ResponseHelper.forbidden(e.getMessage());
+            return Result.error("FORBIDDEN", e.getMessage());
         }
 
-        return ResponseHelper.businessError(e.getMessage());
+        return Result.error("BUSINESS_ERROR", e.getMessage());
     }
 
 
@@ -96,7 +95,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
                 String.format("参数 %s %s", e.getFieldError().getField(), e.getFieldError().getDefaultMessage()) :
                 "参数绑定失败";
 
-        return ResponseHelper.badRequest(message);
+        return Result.error("BAD_REQUEST", message);
     }
 
 
@@ -107,7 +106,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleTypeMismatchException(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
         log.warn("参数类型不匹配 [{}]: 参数 {} 类型错误", request.getRequestURI(), e.getName());
-        return ResponseHelper.badRequest(String.format("参数 %s 类型错误，期望类型: %s",
+        return Result.error("BAD_REQUEST", String.format("参数 %s 类型错误，期望类型: %s",
                 e.getName(), e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown"));
     }
 
@@ -118,7 +117,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleMissingParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
         log.warn("缺少请求参数 [{}]: {}", request.getRequestURI(), e.getParameterName());
-        return ResponseHelper.badRequest(String.format("缺少必需参数: %s", e.getParameterName()));
+        return Result.error("BAD_REQUEST", String.format("缺少必需参数: %s", e.getParameterName()));
     }
 
     /**
@@ -128,7 +127,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
         log.warn("文件上传大小超限 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.badRequest("文件上传大小超过限制");
+        return Result.error("BAD_REQUEST", "文件上传大小超过限制");
     }
 
     /**
@@ -138,7 +137,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
         log.warn("数据完整性违反 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return ResponseHelper.businessError("数据操作失败，请检查数据的完整性");
+        return Result.error("BUSINESS_ERROR", "数据操作失败，请检查数据的完整性");
     }
 
     /**
@@ -148,7 +147,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Object> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
         log.error("运行时异常 [{}]: {}", request.getRequestURI(), e.getMessage(), e);
-        return ResponseHelper.systemError("系统内部错误，请稍后重试");
+        return Result.error("SYSTEM_ERROR", "系统内部错误，请稍后重试");
     }
 
 }

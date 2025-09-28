@@ -2,16 +2,16 @@ package com.cloud.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
-import com.cloud.user.annotation.MultiLevelCacheEvict;
-import com.cloud.user.annotation.MultiLevelCachePut;
-import com.cloud.user.annotation.MultiLevelCacheable;
-import com.cloud.user.annotation.MultiLevelCaching;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,10 +44,9 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
      * @return 商家认证信息DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = MERCHANT_AUTH_CACHE_NAME,
+    @Cacheable(
+            cacheNames = MERCHANT_AUTH_CACHE_NAME,
             key = "'id:' + #id",
-            expire = 1800,
             unless = "#result == null"
     )
     public MerchantAuthDTO getMerchantAuthByIdWithCache(Long id) {
@@ -62,10 +61,9 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
      * @return 商家认证信息DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = MERCHANT_AUTH_CACHE_NAME,
+    @Cacheable(
+            cacheNames = MERCHANT_AUTH_CACHE_NAME,
             key = "'merchantId:' + #merchantId",
-            expire = 1800,
             unless = "#result == null"
     )
     public MerchantAuthDTO getMerchantAuthByMerchantIdWithCache(Long merchantId) {
@@ -81,10 +79,10 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
-                    @MultiLevelCacheEvict(cacheName = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId")
+                    @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
+                    @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId")
             }
     )
     public boolean updateById(MerchantAuth merchantAuth) {
@@ -100,10 +98,10 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             put = {
-                    @MultiLevelCachePut(cacheName = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id", expire = 1800),
-                    @MultiLevelCachePut(cacheName = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId", expire = 1800)
+                    @CachePut(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
+                    @CachePut(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId")
             }
     )
     public boolean save(MerchantAuth merchantAuth) {

@@ -19,15 +19,15 @@ spring:
     redis:
       host: localhost
       port: 6379
-      database: 2
+      database: 5
       password: root
       timeout: 5000ms
       lettuce:
         pool:
-          max-active: 20
+          max-active: 16
           max-wait: -1ms
           max-idle: 8
-          min-idle: 0
+          min-idle: 2
 
 # 日志级别配置
 logging:

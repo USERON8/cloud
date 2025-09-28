@@ -5,9 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.event.OrderCompleteEvent;
 import com.cloud.common.domain.event.OrderCreateEvent;
-import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.messaging.UnifiedBusinessLogProducer;
 import com.cloud.payment.mapper.PaymentMapper;
-import com.cloud.payment.messaging.producer.LogCollectionProducer;
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         implements PaymentService {
 
-    private final LogCollectionProducer logCollectionProducer;
-    private final AsyncLogProducer asyncLogProducer;
+    private final UnifiedBusinessLogProducer businessLogProducer;
 
     @Override
     @DistributedLock(
@@ -53,20 +51,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
             boolean saved = save(payment);
 
             if (saved) {
-                // 异步发送支付记录创建日志 - 不阻塞主业务流程
-                asyncLogProducer.sendBusinessLogAsync(
-                        "payment-service",
-                        "PAYMENT_MANAGEMENT",
-                        "CREATE",
-                        "支付记录创建",
-                        payment.getId().toString(),
-                        "PAYMENT",
-                        null,
-                        String.format("{\"orderId\":%s,\"amount\":%s,\"method\":\"支付宝\"}",
-                                event.getOrderId(), event.getTotalAmount()),
-                        "SYSTEM",
-                        "订单ID: " + event.getOrderId()
-                );
+                // 支付记录创建不记录到日志系统（根据需求精简）
 
                 log.info("为订单创建支付记录成功 - 支付ID: {}", payment.getId());
             } else {
@@ -110,19 +95,8 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
             boolean updated = updateById(payment);
 
             if (updated) {
-                // 异步发送支付完成日志 - 不阻塞主业务流程
-                asyncLogProducer.sendBusinessLogAsync(
-                        "payment-service",
-                        "PAYMENT_PROCESSING",
-                        "COMPLETE",
-                        "支付完成处理",
-                        payment.getId().toString(),
-                        "PAYMENT",
-                        "0", // 待支付状态
-                        "1", // 已支付状态
-                        "SYSTEM",
-                        String.format("订单ID: %s, 金额: %s", event.getOrderId(), payment.getAmount())
-                );
+                // 发送支付成功日志
+                sendPaymentSuccessLog(payment, event.getOrderId(), "SYSTEM");
 
                 log.info("订单支付完成 - 支付ID: {}, 订单ID: {}", payment.getId(), event.getOrderId());
             } else {
@@ -184,5 +158,70 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
             log.error("创建支付记录异常 - 订单ID: {}, 错误: {}", event.getOrderId(), e.getMessage(), e);
             return false;
         }
+    }
+    
+    // ===================== 业务日志发送方法（仅记录关键操作）=====================
+    
+    /**
+     * 发送支付成功日志
+     */
+    private void sendPaymentSuccessLog(Payment payment, Long orderId, String operator) {
+        try {
+            businessLogProducer.sendPaymentSuccessLog(
+                    "payment-service",
+                    payment.getId(),
+                    orderId,
+                    "ORDER_" + orderId, // 简化订单号处理
+                    payment.getUserId(),
+                    "User_" + payment.getUserId(),
+                    payment.getAmount(),
+                    getPaymentMethodName(payment.getChannel()),
+                    null, // 第三方交易号，实际项目中应该从payment实体获取
+                    operator
+            );
+        } catch (Exception e) {
+            log.warn("发送支付成功日志失败 - 支付ID: {}, 订单ID: {}", payment.getId(), orderId, e);
+        }
+    }
+    
+    /**
+     * 发送支付退款日志
+     */
+    public void sendPaymentRefundLog(Long paymentId, Long refundId, Long orderId, 
+                                     Long userId, java.math.BigDecimal refundAmount, 
+                                     String refundReason, String operator) {
+        try {
+            businessLogProducer.sendPaymentRefundLog(
+                    "payment-service",
+                    paymentId,
+                    refundId,
+                    orderId,
+                    "ORDER_" + orderId, // 简化订单号处理
+                    userId,
+                    "User_" + userId,
+                    refundAmount,
+                    refundReason,
+                    "FULL", // 简化处理，实际应根据退款类型判断
+                    "ALIPAY", // 简化处理，实际应从支付记录获取
+                    operator
+            );
+        } catch (Exception e) {
+            log.warn("发送支付退款日志失败 - 支付ID: {}, 退款ID: {}, 订单ID: {}", 
+                    paymentId, refundId, orderId, e);
+        }
+    }
+    
+    /**
+     * 获取支付方式名称
+     */
+    private String getPaymentMethodName(Integer channel) {
+        if (channel == null) return "UNKNOWN";
+        return switch (channel) {
+            case 1 -> "ALIPAY";
+            case 2 -> "WECHAT";
+            case 3 -> "BANK_CARD";
+            case 4 -> "BALANCE";
+            default -> "OTHER";
+        };
     }
 }

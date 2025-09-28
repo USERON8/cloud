@@ -1,9 +1,9 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.CategorySearchEvent;
-import com.cloud.search.annotation.MultiLevelCacheEvict;
-import com.cloud.search.annotation.MultiLevelCacheable;
-import com.cloud.search.annotation.MultiLevelCaching;
+
+
+
 import com.cloud.search.document.CategoryDocument;
 import com.cloud.search.repository.CategoryDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
@@ -19,6 +19,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 
 /**
  * 分类搜索服务实现
@@ -42,10 +46,10 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "categorySearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "categorySuggestionCache", allEntries = true)
+                    @CacheEvict(cacheNames = "categorySearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "categorySuggestionCache", allEntries = true)
             }
     )
     public void saveOrUpdateCategory(CategorySearchEvent event) {
@@ -78,10 +82,10 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "categorySearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "categorySuggestionCache", allEntries = true)
+                    @CacheEvict(cacheNames = "categorySearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "categorySuggestionCache", allEntries = true)
             }
     )
     public void deleteCategory(Long categoryId) {
@@ -125,20 +129,19 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "categorySearchCache",
+    @Cacheable(cacheNames = "categorySearchCache",
                         key = "'category:' + #categoryId",
-                        condition = "#categoryId != null",
-                        expire = 30, timeUnit = TimeUnit.MINUTES)
+                        condition = "#categoryId != null")
     public CategoryDocument findByCategoryId(Long categoryId) {
         return categoryDocumentRepository.findById(String.valueOf(categoryId)).orElse(null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "categorySearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "categorySuggestionCache", allEntries = true)
+                    @CacheEvict(cacheNames = "categorySearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "categorySuggestionCache", allEntries = true)
             }
     )
     public void batchSaveCategories(List<CategorySearchEvent> events) {

@@ -4,52 +4,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 /**
- * Redisson配置类
- * 提供Redisson客户端的配置和初始化
+ * Redisson基础配置类
+ * 提供Redisson客户端的配置和初始化模板
+ * 注意：此类仅用于继承，不作为Spring Bean
  *
  * @author what's up
  * @date 2025-01-15
  * @since 1.0.0
  */
 @Slf4j
-@Configuration
-@ConditionalOnProperty(name = "spring.data.redis.host")
-public class RedissonConfig {
+public abstract class RedissonConfig {
 
-    @Value("${spring.data.redis.host:localhost}")
-    private String host;
-
-    @Value("${spring.data.redis.port:6379}")
-    private int port;
-
-    @Value("${spring.data.redis.password:}")
-    private String password;
-
-    @Value("${spring.data.redis.database:0}")
-    private int database;
-
-    @Value("${spring.data.redis.timeout:3000}")
-    private String timeoutStr;
-
-    @Value("${spring.data.redis.lettuce.pool.max-active:8}")
-    private int maxActive;
-
-    @Value("${spring.data.redis.lettuce.pool.max-idle:8}")
-    private int maxIdle;
-
-    @Value("${spring.data.redis.lettuce.pool.min-idle:0}")
-    private int minIdle;
-
-    @Value("${spring.data.redis.lettuce.pool.max-wait:-1}")
-    private String maxWaitStr;
+    protected String host = "localhost";
+    protected int port = 6379;
+    protected String password = "";
+    protected int database = 0;
+    protected String timeoutStr = "3000";
+    protected int maxActive = 8;
+    protected int maxIdle = 8;
+    protected int minIdle = 0;
+    protected String maxWaitStr = "-1";
     
     private int getTimeout() {
         return parseIntValue(timeoutStr, 3000);
@@ -82,13 +59,11 @@ public class RedissonConfig {
     }
 
     /**
-     * 创建Redisson客户端
+     * 创建Redisson客户端工厂方法
      *
      * @return RedissonClient实例
      */
-    @Bean
-    @ConditionalOnMissingBean(RedissonClient.class)
-    public RedissonClient redissonClient() {
+    protected RedissonClient createRedissonClient() {
         Config config = new Config();
 
         // 单机模式配置
@@ -128,15 +103,10 @@ public class RedissonConfig {
     }
 
     /**
-     * 集群模式配置（可选）
-     * 当配置了集群节点时启用
+     * 集群模式配置工厂方法
+     * 当配置了集群节点时使用
      */
-    @Bean
-    @ConditionalOnProperty(name = "spring.data.redis.cluster.nodes")
-    @ConditionalOnMissingBean(RedissonClient.class)
-    public RedissonClient redissonClusterClient(
-            @Value("${spring.data.redis.cluster.nodes}") String clusterNodes,
-            @Value("${spring.data.redis.cluster.max-redirects:3}") int maxRedirects) {
+    protected RedissonClient createRedissonClusterClient(String clusterNodes, int maxRedirects) {
 
         Config config = new Config();
 
@@ -183,15 +153,10 @@ public class RedissonConfig {
     }
 
     /**
-     * 哨兵模式配置（可选）
-     * 当配置了哨兵节点时启用
+     * 哨兵模式配置工厂方法
+     * 当配置了哨兵节点时使用
      */
-    @Bean
-    @ConditionalOnProperty(name = "spring.data.redis.sentinel.nodes")
-    @ConditionalOnMissingBean(RedissonClient.class)
-    public RedissonClient redissonSentinelClient(
-            @Value("${spring.data.redis.sentinel.nodes}") String sentinelNodes,
-            @Value("${spring.data.redis.sentinel.master}") String masterName) {
+    protected RedissonClient createRedissonSentinelClient(String sentinelNodes, String masterName) {
 
         Config config = new Config();
 

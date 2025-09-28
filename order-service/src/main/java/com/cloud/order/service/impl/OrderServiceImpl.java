@@ -13,7 +13,8 @@ import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
 import com.cloud.order.exception.OrderStatusException;
 import com.cloud.order.mapper.OrderMapper;
-import com.cloud.order.messaging.producer.LogCollectionProducer;
+import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
@@ -21,6 +22,12 @@ import com.cloud.order.service.OrderItemService;
 import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +53,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     private final OrderConverter orderConverter;
     private final OrderItemService orderItemService;
     private final OrderEventProducer orderEventProducer;
-    private final LogCollectionProducer logCollectionProducer;
+    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     public Page<OrderVO> pageQuery(OrderPageQueryDTO queryDTO) {
         try {
             Page<Order> page = new Page<>(queryDTO.getCurrent(), queryDTO.getSize());
@@ -72,7 +81,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Cacheable(cacheNames = "orderCache", key = "#id", unless = "#result == null")
     public OrderDTO getByOrderEntityId(Long id) {
         try {
             // 直接从数据库查询
@@ -93,6 +104,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication)")
     public Boolean saveOrder(OrderDTO orderDTO) {
         try {
             Order order = orderConverter.toEntity(orderDTO);
@@ -111,6 +123,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "orderCache", key = "#orderDTO.id"),
+                    @CacheEvict(cacheNames = "orderListCache", key = "'user:' + #orderDTO.userId"),
+                    @CacheEvict(cacheNames = "orderPageCache", allEntries = true)
+            }
+    )
     public Boolean updateOrder(OrderDTO orderDTO) {
         try {
             // 根据ID获取现有订单记录
@@ -137,6 +157,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
             key = "'order:pay:' + #orderId",
             waitTime = 5,
@@ -159,15 +180,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
-                // 发送订单支付日志
+                // 发送订单支付日志 - 使用统一业务日志系统
                 try {
-                    logCollectionProducer.sendOrderOperationLog(
-                            orderId,
-                            "ORDER_" + orderId,
-                            order.getUserId(),
+                    asyncLogProducer.sendBusinessLogAsync(
+                            "order-service",
+                            "ORDER_MANAGEMENT",
                             "PAY",
-                            order.getPayAmount(),
-                            "SYSTEM"
+                            "订单支付操作",
+                            orderId.toString(),
+                            "ORDER",
+                            String.format("{\"status\":%d,\"amount\":%s}", 0, order.getPayAmount()),
+                            String.format("{\"status\":%d,\"amount\":%s}", 1, order.getPayAmount()),
+                            UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                            "订单: " + order.getOrderNo()
                     );
                 } catch (Exception e) {
                     log.warn("发送订单支付日志失败，订单ID：{}", orderId, e);
@@ -185,6 +210,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @PreAuthorize("@permissionChecker.checkPermission(authentication, 'order:manage') or @permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
             key = "'order:ship:' + #orderId",
             waitTime = 3,
@@ -207,15 +233,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
-                // 发送订单发货日志
+                // 发送订单发货日志 - 使用统一业务日志系统
                 try {
-                    logCollectionProducer.sendOrderOperationLog(
-                            orderId,
-                            "ORDER_" + orderId,
-                            order.getUserId(),
+                    asyncLogProducer.sendBusinessLogAsync(
+                            "order-service",
+                            "ORDER_MANAGEMENT",
                             "SHIP",
-                            order.getTotalAmount(),
-                            "SYSTEM"
+                            "订单发货操作",
+                            orderId.toString(),
+                            "ORDER",
+                            String.format("{\"status\":%d,\"amount\":%s}", 1, order.getTotalAmount()),
+                            String.format("{\"status\":%d,\"amount\":%s}", 2, order.getTotalAmount()),
+                            UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                            "订单: " + order.getOrderNo()
                     );
                 } catch (Exception e) {
                     log.warn("发送订单发货日志失败，订单ID：{}", orderId, e);
@@ -255,15 +285,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
-                // 发送订单完成日志
+                // 发送订单完成日志 - 使用统一业务日志系统
                 try {
-                    logCollectionProducer.sendOrderOperationLog(
-                            orderId,
-                            "ORDER_" + orderId,
-                            order.getUserId(),
+                    asyncLogProducer.sendBusinessLogAsync(
+                            "order-service",
+                            "ORDER_MANAGEMENT",
                             "COMPLETE",
-                            order.getTotalAmount(),
-                            "SYSTEM"
+                            "订单完成操作",
+                            orderId.toString(),
+                            "ORDER",
+                            String.format("{\"status\":%d,\"amount\":%s}", 2, order.getTotalAmount()),
+                            String.format("{\"status\":%d,\"amount\":%s}", 3, order.getTotalAmount()),
+                            UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                            "订单: " + order.getOrderNo()
                     );
                 } catch (Exception e) {
                     log.warn("发送订单完成日志失败，订单ID：{}", orderId, e);
@@ -307,15 +341,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
-                // 发送订单取消日志
+                // 发送订单取消日志 - 使用统一业务日志系统
                 try {
-                    logCollectionProducer.sendOrderOperationLog(
-                            orderId,
-                            "ORDER_" + orderId,
-                            order.getUserId(),
+                    asyncLogProducer.sendBusinessLogAsync(
+                            "order-service",
+                            "ORDER_MANAGEMENT",
                             "CANCEL",
-                            order.getTotalAmount(),
-                            "SYSTEM"
+                            "订单取消操作",
+                            orderId.toString(),
+                            "ORDER",
+                            String.format("{\"status\":%d,\"amount\":%s}", order.getStatus(), order.getTotalAmount()),
+                            String.format("{\"status\":%d,\"amount\":%s}", -1, order.getTotalAmount()),
+                            UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                            "订单: " + order.getOrderNo()
                     );
                 } catch (Exception e) {
                     log.warn("发送订单取消日志失败，订单ID：{}", orderId, e);
@@ -372,15 +410,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 throw new RuntimeException("创建订单明细失败");
             }
 
-            // 发送订单创建日志
+            // 发送订单创建日志 - 使用统一业务日志系统
             try {
-                logCollectionProducer.sendOrderOperationLog(
-                        order.getId(),
-                        "ORDER_" + order.getId(),
-                        order.getUserId(),
+                asyncLogProducer.sendBusinessLogAsync(
+                        "order-service",
+                        "ORDER_MANAGEMENT",
                         "CREATE",
-                        order.getTotalAmount(),
-                        currentUserId
+                        "订单创建操作",
+                        order.getId().toString(),
+                        "ORDER",
+                        null,
+                        String.format("{\"status\":%d,\"amount\":%s,\"userId\":%d}",
+                                0, order.getTotalAmount(), order.getUserId()),
+                        currentUserId != null ? currentUserId : (UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"),
+                        "订单: ORDER_" + order.getId()
                 );
             } catch (Exception e) {
                 log.warn("发送订单创建日志失败，订单ID：{}", order.getId(), e);
@@ -519,6 +562,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "orderListCache", key = "'user:' + #userId", unless = "#result == null or #result.isEmpty()")
     public List<OrderDTO> getOrdersByUserId(Long userId) {
         try {
             List<Order> orders = this.lambdaQuery()
@@ -580,4 +625,5 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             // 事件发布失败不应该影响订单状态更新的主流程
         }
     }
+
 }

@@ -5,10 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
-import com.cloud.common.cache.annotation.MultiLevelCacheEvict;
-import com.cloud.common.cache.annotation.MultiLevelCachePut;
-import com.cloud.common.cache.annotation.MultiLevelCacheable;
-import com.cloud.common.cache.annotation.MultiLevelCaching;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.common.utils.PageUtils;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.event.ProductSearchEvent;
@@ -20,7 +19,7 @@ import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
-import com.cloud.product.messaging.producer.ProductLogProducer;
+import com.cloud.common.messaging.UnifiedBusinessLogProducer;
 import com.cloud.product.messaging.producer.ProductSearchEventProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Category;
@@ -31,6 +30,12 @@ import com.cloud.product.service.ProductService;
 import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -55,7 +60,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
 
     private final ProductConverter productConverter;
-    private final ProductLogProducer productLogProducer;
+    private final UnifiedBusinessLogProducer businessLogProducer;
     private final ProductSearchEventProducer productSearchEventProducer;
     private final AsyncLogProducer asyncLogProducer;
     private final ShopService shopService;
@@ -66,143 +71,208 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCachePut(value = "productCache", key = "#result",
-            condition = "#result != null",
-            timeUnit = TimeUnit.MINUTES)
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @CachePut(cacheNames = "productCache", key = "#result",
+            condition = "#result != null")
     public Long createProduct(ProductRequestDTO requestDTO) throws ProductServiceException {
+        if (requestDTO == null || !StringUtils.hasText(requestDTO.getName())) {
+            throw new BusinessException("商品信息不能为空");
+        }
+        
         log.info("创建商品: {}", requestDTO.getName());
 
-        // 转换为实体
-        Product product = productConverter.requestDTOToEntity(requestDTO);
-
-        // 保存商品
-        boolean saved = save(product);
-        if (!saved) {
-            throw new ProductServiceException("创建商品失败");
-        }
-
-        // 异步发送商品创建日志 - 不阻塞主业务流程
-        asyncLogProducer.sendBusinessLogAsync(
-                "product-service",
-                "PRODUCT_MANAGEMENT",
-                "CREATE",
-                "商品创建操作",
-                product.getId().toString(),
-                "PRODUCT",
-                null,
-                String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                        product.getName(), product.getPrice(), product.getStatus()),
-                "SYSTEM",
-                "商品: " + product.getName()
-        );
-
-        // 发送商品搜索事件
         try {
-            sendProductSearchEvent(product, "PRODUCT_CREATED");
-        } catch (Exception e) {
-            log.warn("发送商品搜索事件失败，商品ID：{}", product.getId(), e);
-        }
+            // 转换为实体
+            Product product = productConverter.requestDTOToEntity(requestDTO);
+            
+            // 设置默认状态
+            if (product.getStatus() == null) {
+                product.setStatus(0); // 默认下架状态
+            }
 
-        log.info("商品创建成功, ID: {}", product.getId());
-        return product.getId();
+            // 保存商品
+            boolean saved = save(product);
+            if (!saved) {
+                throw new BusinessException("商品保存失败");
+            }
+
+            // 异步发送商品创建日志 - 不阻塞主业务流程
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    "CREATE",
+                    "商品创建操作",
+                    product.getId().toString(),
+                    "PRODUCT",
+                    null,
+                    String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                            product.getName(), product.getPrice(), product.getStatus()),
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "商品: " + product.getName()
+            );
+
+            // 发送商品搜索事件
+            try {
+                sendProductSearchEvent(product, "PRODUCT_CREATED");
+            } catch (Exception e) {
+                log.warn("发送商品搜索事件失败，商品ID：{}", product.getId(), e);
+            }
+
+            log.info("商品创建成功, ID: {}", product.getId());
+            return product.getId();
+            
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("创建商品时发生未预期异常，商品名称: {}", requestDTO.getName(), e);
+            throw new BusinessException("创建商品失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id",
-                    condition = "#result == true",
-                    timeUnit = TimeUnit.MINUTES),
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id",
+                    condition = "#result == true"),
             evict = {
-                    @MultiLevelCacheEvict(value = "productListCache", allEntries = true),
-                    @MultiLevelCacheEvict(value = "productStatsCache", allEntries = true)
+                    @CacheEvict(cacheNames = "productListCache", allEntries = true),
+                    @CacheEvict(cacheNames = "productStatsCache", allEntries = true)
             }
     )
     public Boolean updateProduct(Long id, ProductRequestDTO requestDTO) throws ProductServiceException {
+        if (id == null || id <= 0) {
+            throw new BusinessException("商品ID不能为空或小于等于0");
+        }
+        if (requestDTO == null || !StringUtils.hasText(requestDTO.getName())) {
+            throw new BusinessException("商品信息不能为空");
+        }
+        
         log.info("更新商品: ID={}, Name={}", id, requestDTO.getName());
 
-        // 检查商品是否存�?
-        Product existingProduct = getById(id);
-        if (existingProduct == null) {
-            throw new RuntimeException("商品不存�? " + id);
-        }
-
-        // 更新商品信息
-        Product updatedProduct = productConverter.requestDTOToEntity(requestDTO);
-        updatedProduct.setId(id);
-        // 保持创建时间不变
-        updatedProduct.setCreatedAt(existingProduct.getCreatedAt());
-
-        boolean updated = updateById(updatedProduct);
-        if (!updated) {
-            throw new RuntimeException("更新商品失败");
-        }
-
-        // 异步发送商品更新日志 - 不阻塞主业务流程
-        String beforeData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                existingProduct.getName(), existingProduct.getPrice(), existingProduct.getStatus());
-        String afterData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                updatedProduct.getName(), updatedProduct.getPrice(), updatedProduct.getStatus());
-
-        asyncLogProducer.sendBusinessLogAsync(
-                "product-service",
-                "PRODUCT_MANAGEMENT",
-                "UPDATE",
-                "商品更新操作",
-                id.toString(),
-                "PRODUCT",
-                beforeData,
-                afterData,
-                "SYSTEM",
-                "商品: " + updatedProduct.getName()
-        );
-
-        // 发送商品搜索事件
         try {
-            sendProductSearchEvent(updatedProduct, "PRODUCT_UPDATED");
-        } catch (Exception e) {
-            log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
-        }
+            // 检查商品是否存在
+            Product existingProduct = getById(id);
+            if (existingProduct == null) {
+                throw new EntityNotFoundException("商品", id);
+            }
 
-        log.info("商品更新成功: {}", id);
-        return true;
+            // 更新商品信息
+            Product updatedProduct = productConverter.requestDTOToEntity(requestDTO);
+            updatedProduct.setId(id);
+            // 保持创建时间不变
+            updatedProduct.setCreatedAt(existingProduct.getCreatedAt());
+
+            boolean updated = updateById(updatedProduct);
+            if (!updated) {
+                throw new BusinessException("商品更新失败");
+            }
+
+            // 异步发送商品更新日志 - 不阻塞主业务流程
+            String beforeData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                    existingProduct.getName(), existingProduct.getPrice(), existingProduct.getStatus());
+            String afterData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                    updatedProduct.getName(), updatedProduct.getPrice(), updatedProduct.getStatus());
+
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    "UPDATE",
+                    "商品更新操作",
+                    id.toString(),
+                    "PRODUCT",
+                    beforeData,
+                    afterData,
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "商品: " + updatedProduct.getName()
+            );
+
+            // 发送商品搜索事件
+            try {
+                sendProductSearchEvent(updatedProduct, "PRODUCT_UPDATED");
+            } catch (Exception e) {
+                log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
+            }
+
+            log.info("商品更新成功: {}", id);
+            return true;
+            
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("更新商品时发生未预期异常，商品ID: {}", id, e);
+            throw new BusinessException("更新商品失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(value = {"productCache"}, key = "#id"),
-                    @MultiLevelCacheEvict(value = "productListCache", allEntries = true),
-                    @MultiLevelCacheEvict(value = "productStatsCache", allEntries = true)
+                    @CacheEvict(cacheNames = {"productCache"}, key = "#id"),
+                    @CacheEvict(cacheNames = "productListCache", allEntries = true),
+                    @CacheEvict(cacheNames = "productStatsCache", allEntries = true)
             }
     )
     public Boolean deleteProduct(Long id) throws ProductServiceException {
+        if (id == null || id <= 0) {
+            throw new BusinessException("商品ID不能为空或小于等于0");
+        }
+        
         log.info("删除商品: {}", id);
 
-        // 检查商品是否存�?
-        Product product = getById(id);
-        if (product == null) {
-            throw new RuntimeException("商品不存�? " + id);
-        }
-
-        boolean deleted = removeById(id);
-        if (!deleted) {
-            throw new RuntimeException("删除商品失败");
-        }
-
-        // 发送商品搜索事件
         try {
-            sendProductSearchEvent(product, "PRODUCT_DELETED");
-        } catch (Exception e) {
-            log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
-        }
+            // 检查商品是否存在
+            Product product = getById(id);
+            if (product == null) {
+                throw new EntityNotFoundException("商品", id);
+            }
 
-        log.info("商品删除成功: {}", id);
-        return true;
+            boolean deleted = removeById(id);
+            if (!deleted) {
+                throw new BusinessException("商品删除失败");
+            }
+            
+            // 异步发送商品删除日志
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    "DELETE",
+                    "商品删除操作",
+                    id.toString(),
+                    "PRODUCT",
+                    String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
+                            product.getName(), product.getPrice(), product.getStatus()),
+                    null,
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "商品: " + product.getName()
+            );
+
+            // 发送商品搜索事件
+            try {
+                sendProductSearchEvent(product, "PRODUCT_DELETED");
+            } catch (Exception e) {
+                log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
+            }
+
+            log.info("商品删除成功: {}", id);
+            return true;
+            
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("删除商品时发生未预期异常，商品ID: {}", id, e);
+            throw new BusinessException("删除商品失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
             key = "'product:batch:delete:' + T(String).join(',', #ids)",
             waitTime = 10,
@@ -210,43 +280,71 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             failMessage = "批量删除商品操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
     public Boolean batchDeleteProducts(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            throw new BusinessException("商品ID列表不能为空");
+        }
+        
+        if (ids.size() > 100) {
+            throw new BusinessException("批量操作数量不能超过100");
+        }
+        
         log.info("批量删除商品: {}", ids);
 
-        if (CollectionUtils.isEmpty(ids)) {
-            return true;
-        }
-
-        // 先获取要删除的商品信息
-        List<Product> productsToDelete = listByIds(ids);
-
-        boolean deleted = removeBatchByIds(ids);
-        if (!deleted) {
-            throw new RuntimeException("批量删除商品失败");
-        }
-
-        // 发送批量商品搜索事件
         try {
-            for (Product product : productsToDelete) {
-                sendProductSearchEvent(product, "PRODUCT_DELETED");
+            // 先获取要删除的商品信息
+            List<Product> productsToDelete = listByIds(ids);
+            if (productsToDelete.size() != ids.size()) {
+                log.warn("部分商品不存在，请求删除: {}, 实际找到: {}", ids.size(), productsToDelete.size());
             }
-        } catch (Exception e) {
-            log.warn("发送批量商品搜索事件失败，商品数量：{}", ids.size(), e);
-        }
 
-        log.info("批量删除商品成功, 数量: {}", ids.size());
-        return true;
+            boolean deleted = removeBatchByIds(ids);
+            if (!deleted) {
+                throw new BusinessException("批量删除商品失败");
+            }
+            
+            // 异步发送批量商品删除日志
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    "BATCH_DELETE",
+                    "批量删除商品操作",
+                    ids.toString(),
+                    "PRODUCT",
+                    String.format("{\"count\":%d,\"ids\":%s}", ids.size(), ids.toString()),
+                    null,
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "批量删除 " + ids.size() + " 个商品"
+            );
+
+            // 发送批量商品搜索事件
+            try {
+                for (Product product : productsToDelete) {
+                    sendProductSearchEvent(product, "PRODUCT_DELETED");
+                }
+            } catch (Exception e) {
+                log.warn("发送批量商品搜索事件失败，商品数量：{}", ids.size(), e);
+            }
+
+            log.info("批量删除商品成功, 数量: {}", ids.size());
+            return true;
+            
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("批量删除商品时发生未预期异常，商品数量: {}", ids.size(), e);
+            throw new BusinessException("批量删除商品失败: " + e.getMessage(), e);
+        }
     }
 
     // ================= 查询操作 =================
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productCache", key = "#id",
-            condition = "#id != null",
-            timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productCache", key = "#id",
+            condition = "#id != null")
     public ProductVO getProductById(Long id) throws ProductServiceException.ProductNotFoundException {
         log.debug("获取商品详情: {}", id);
 
@@ -260,10 +358,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productCache",
+    @Cacheable(cacheNames = "productCache",
             key = "'batch:' + T(String).join(',', #ids)",
-            condition = "!T(org.springframework.util.CollectionUtils).isEmpty(#ids)",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+            condition = "!T(org.springframework.util.CollectionUtils).isEmpty(#ids)")
     public List<ProductVO> getProductsByIds(List<Long> ids) {
         log.debug("批量获取商品: {}", ids);
 
@@ -277,9 +374,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache",
-            key = "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.name ?: 'null') + ':' + (#pageDTO.status ?: 'null')",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache",
+            key = "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.name ?: 'null') + ':' + (#pageDTO.status ?: 'null')")
     public PageResult<ProductVO> getProductsPage(ProductPageDTO pageDTO) {
         log.debug("分页查询商品: {}", pageDTO);
 
@@ -294,9 +390,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache",
-            key = "'category:' + #categoryId + ':' + (#status ?: 'null')",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache",
+            key = "'category:' + #categoryId + ':' + (#status ?: 'null')")
     public List<ProductVO> getProductsByCategoryId(Long categoryId, Integer status) {
         log.debug("根据分类查询商品: categoryId={}, status={}", categoryId, status);
 
@@ -313,9 +408,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache",
-            key = "'brand:' + #brandId + ':' + (#status ?: 'null')",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache",
+            key = "'brand:' + #brandId + ':' + (#status ?: 'null')")
     public List<ProductVO> getProductsByBrandId(Long brandId, Integer status) {
         log.debug("根据品牌查询商品: brandId={}, status={}", brandId, status);
 
@@ -332,9 +426,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache",
-            key = "'search:' + #name + ':' + (#status ?: 'null')",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache",
+            key = "'search:' + #name + ':' + (#status ?: 'null')")
     public List<ProductVO> searchProductsByName(String name, Integer status) {
         log.debug("搜索商品: name={}, status={}", name, status);
 
@@ -357,11 +450,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id"),
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id"),
             evict = {
-                    @MultiLevelCacheEvict(value = "productListCache", allEntries = true),
-                    @MultiLevelCacheEvict(value = "productStatsCache", allEntries = true)
+                    @CacheEvict(cacheNames = "productListCache", allEntries = true),
+                    @CacheEvict(cacheNames = "productStatsCache", allEntries = true)
             }
     )
     public Boolean enableProduct(Long id) throws ProductServiceException {
@@ -370,11 +463,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id"),
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id"),
             evict = {
-                    @MultiLevelCacheEvict(value = "productListCache", allEntries = true),
-                    @MultiLevelCacheEvict(value = "productStatsCache", allEntries = true)
+                    @CacheEvict(cacheNames = "productListCache", allEntries = true),
+                    @CacheEvict(cacheNames = "productStatsCache", allEntries = true)
             }
     )
     public Boolean disableProduct(Long id) throws ProductServiceException {
@@ -389,7 +482,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             failMessage = "批量上架商品操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
     public Boolean batchEnableProducts(List<Long> ids) {
         return batchUpdateProductStatus(ids, 1, "批量上架");
@@ -403,7 +496,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             failMessage = "批量下架商品操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
     public Boolean batchDisableProducts(List<Long> ids) {
         return batchUpdateProductStatus(ids, 0, "批量下架");
@@ -413,9 +506,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id"),
-            evict = @MultiLevelCacheEvict(value = {"productStatsCache"}, allEntries = true)
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id"),
+            evict = @CacheEvict(cacheNames = {"productStatsCache"}, allEntries = true)
     )
     public Boolean updateStock(Long id, Integer stock) {
         log.info("更新商品库存: ID={}, Stock={}", id, stock);
@@ -437,9 +530,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id"),
-            evict = @MultiLevelCacheEvict(value = {"productStatsCache"}, allEntries = true)
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id"),
+            evict = @CacheEvict(cacheNames = {"productStatsCache"}, allEntries = true)
     )
     public Boolean increaseStock(Long id, Integer quantity) {
         log.info("增加商品库存: ID={}, Quantity={}", id, quantity);
@@ -462,9 +555,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "productCache", key = "#id"),
-            evict = @MultiLevelCacheEvict(value = {"productStatsCache"}, allEntries = true)
+    @Caching(
+            put = @CachePut(cacheNames = "productCache", key = "#id"),
+            evict = @CacheEvict(cacheNames = {"productStatsCache"}, allEntries = true)
     )
     public Boolean decreaseStock(Long id, Integer quantity) {
         log.info("减少商品库存: ID={}, Quantity={}", id, quantity);
@@ -488,8 +581,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productCache", key = "'stock:' + #id + ':' + #quantity",
-            expire = 5, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productCache", key = "'stock:' + #id + ':' + #quantity")
     public Boolean checkStock(Long id, Integer quantity) {
         log.debug("检查商品库存: ID={}, Quantity={}", id, quantity);
 
@@ -509,16 +601,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productStatsCache", key = "'total'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productStatsCache", key = "'total'")
     public Long getTotalProductCount() {
         return count();
     }
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productStatsCache", key = "'enabled'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productStatsCache", key = "'enabled'")
     public Long getEnabledProductCount() {
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Product::getStatus, 1);
@@ -527,8 +617,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productStatsCache", key = "'disabled'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productStatsCache", key = "'disabled'")
     public Long getDisabledProductCount() {
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Product::getStatus, 0);
@@ -537,8 +626,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productStatsCache", key = "'category:' + #categoryId",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productStatsCache", key = "'category:' + #categoryId")
     public Long getProductCountByCategoryId(Long categoryId) {
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Product::getCategoryId, categoryId);
@@ -547,8 +635,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productStatsCache", key = "'brand:' + #brandId",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productStatsCache", key = "'brand:' + #brandId")
     public Long getProductCountByBrandId(Long brandId) {
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Product::getBrandId, brandId);
@@ -558,13 +645,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     // ================= 缓存管理 =================
 
     @Override
-    @MultiLevelCacheEvict(value = {"productCache"}, key = "#id")
+    @CacheEvict(cacheNames = {"productCache"}, key = "#id")
     public void evictProductCache(Long id) {
         log.info("清除商品缓存: {}", id);
     }
 
     @Override
-    @MultiLevelCacheEvict(value = {"productCache", "productListCache", "productStatsCache"},
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
     public void evictAllProductCache() {
         log.info("清除所有商品缓存");
@@ -602,9 +689,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productCache", key = "'feign:' + #id",
-            condition = "#id != null",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productCache", key = "'feign:' + #id",
+            condition = "#id != null")
     public ProductDTO getProductByIdForFeign(Long id) {
         log.debug("获取商品详情（Feign): {}", id);
 
@@ -635,8 +721,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache", key = "'all'",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache", key = "'all'")
     public List<ProductDTO> getAllProducts() {
         log.debug("获取所有商品（Feign)");
 
@@ -647,9 +732,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "productListCache",
-            key = "'shop:' + #shopId",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "productListCache",
+            key = "'shop:' + #shopId")
     public List<ProductDTO> getProductsByShopId(Long shopId) {
         log.debug("根据店铺ID获取商品列表（Feign): {}", shopId);
 
@@ -765,69 +849,114 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 更新商品状�?
+     * 更新商品状态
      */
     private Boolean updateProductStatus(Long id, Integer status, String operation) {
+        if (id == null || id <= 0) {
+            throw new BusinessException("商品ID不能为空或小于等于0");
+        }
+        
         log.info("{}商品: {}", operation, id);
 
-        // 检查商品是否存�?
-        Product product = getById(id);
-        if (product == null) {
-            throw new RuntimeException("商品不存在 " + id);
-        }
+        try {
+            // 检查商品是否存在
+            Product product = getById(id);
+            if (product == null) {
+                throw new EntityNotFoundException("商品", id);
+            }
 
-        // 检查状态是否已经是目标状态
-        Integer beforeStatus = product.getStatus();
-        if (product.getStatus().equals(status)) {
-            log.warn("商品已经是{}状态 {}", operation, id);
-            return true;
-        }
+            // 检查状态是否已经是目标状态
+            Integer beforeStatus = product.getStatus();
+            if (product.getStatus().equals(status)) {
+                log.warn("商品已经是{}状态 {}", operation, id);
+                return true;
+            }
 
-        LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(Product::getId, id).set(Product::getStatus, status);
+            LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.eq(Product::getId, id).set(Product::getStatus, status);
 
-        boolean updated = update(updateWrapper);
-        if (!updated) {
-            throw new RuntimeException(operation + "商品失败");
-        }
+            boolean updated = update(updateWrapper);
+            if (!updated) {
+                throw new BusinessException(operation + "商品失败");
+            }
 
         // 发送商品状态变更日志
         try {
-            productLogProducer.sendProductStatusLog(
-                    product.getId(),
-                    product.getName(),
-                    beforeStatus,
-                    status,
-                    "SYSTEM"
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    operation.toUpperCase(),
+                    "商品" + operation + "操作",
+                    id.toString(),
+                    "PRODUCT",
+                    String.format("{\"status\":%d}", beforeStatus),
+                    String.format("{\"status\":%d}", status),
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    "商品: " + product.getName()
             );
         } catch (Exception e) {
             log.warn("发送商品状态变更日志失败，商品ID：{}", id, e);
         }
 
-        log.info("{}商品成功: {}", operation, id);
-        return true;
+            log.info("{}商品成功: {}", operation, id);
+            return true;
+            
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("{}商品时发生未预期异常，商品ID: {}", operation, id, e);
+            throw new BusinessException(operation + "商品失败: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * 批量更新商品状�?
+     * 批量更新商品状态
      */
     private Boolean batchUpdateProductStatus(List<Long> ids, Integer status, String operation) {
+        if (CollectionUtils.isEmpty(ids)) {
+            throw new BusinessException("商品ID列表不能为空");
+        }
+        
+        if (ids.size() > 100) {
+            throw new BusinessException("批量操作数量不能超过100");
+        }
+        
         log.info("{}, 数量: {}", operation, ids.size());
 
-        if (CollectionUtils.isEmpty(ids)) {
+        try {
+            LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.in(Product::getId, ids).set(Product::getStatus, status);
+
+            boolean updated = update(updateWrapper);
+            if (!updated) {
+                throw new BusinessException(operation + "失败");
+            }
+            
+            // 发送批量状态变更日志
+            asyncLogProducer.sendBusinessLogAsync(
+                    "product-service",
+                    "PRODUCT_MANAGEMENT",
+                    operation.toUpperCase().replace("批量", "BATCH_"),
+                    operation + "操作",
+                    ids.toString(),
+                    "PRODUCT",
+                    null,
+                    String.format("{\"status\":%d,\"count\":%d,\"ids\":%s}", status, ids.size(), ids.toString()),
+                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                    operation + " " + ids.size() + " 个商品"
+            );
+
+            log.info("{}成功, 数量: {}", operation, ids.size());
             return true;
+            
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("{}时发生未预期异常，商品数量: {}", operation, ids.size(), e);
+            throw new BusinessException(operation + "失败: " + e.getMessage(), e);
         }
-
-        LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.in(Product::getId, ids).set(Product::getStatus, status);
-
-        boolean updated = update(updateWrapper);
-        if (!updated) {
-            throw new RuntimeException(operation + "失败");
-        }
-
-        log.info("{}成功, 数量: {}", operation, ids.size());
-        return true;
     }
 
     // ================= 搜索事件发送辅助方法 =================
@@ -970,4 +1099,5 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             return "品牌" + brandId;
         }
     }
+
 }

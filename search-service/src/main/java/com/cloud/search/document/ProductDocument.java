@@ -48,13 +48,13 @@ public class ProductDocument {
     /**
      * 店铺名称（与数据库merchant_shop.shop_name对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String shopName;
 
     /**
      * 商品名称（与数据库product.product_name对应，支持中文分词）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String productName;
 
     /**
@@ -84,7 +84,7 @@ public class ProductDocument {
     /**
      * 分类名称（与数据库category.name对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String categoryName;
 
     /**
@@ -102,7 +102,7 @@ public class ProductDocument {
     /**
      * 品牌名称（与数据库product.brand_name对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String brandName;
 
     /**
@@ -120,7 +120,7 @@ public class ProductDocument {
     /**
      * 商品描述（与数据库product.description对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
     /**
@@ -138,7 +138,7 @@ public class ProductDocument {
     /**
      * 商品标签（与数据库product.tags对应，用于搜索）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String tags;
 
     /**
@@ -228,12 +228,12 @@ public class ProductDocument {
     /**
      * 商家名称（与数据库product.merchant_name对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String merchantName;
 
     /**
      * 备注（与数据库product.remark对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String remark;
 }

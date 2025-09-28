@@ -50,26 +50,52 @@ public class ResourceServerConfig extends BaseOAuth2ResourceServerConfig {
     @Override
     protected void configureProtectedPaths(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-        auth
-                // 内部API统一权限验证 - 修复安全问题
-                // 注意：这些接口仅供服务间调用，需要internal_api scope
-                .requestMatchers("/user/internal/**").hasAuthority("SCOPE_internal_api")
-
-                // 用户管理接口 - 需要特定权限控制（已通过方法级权限控制）
-                .requestMatchers("/user/manage/**").authenticated()
-
-                // 管理员管理接口 - 需要管理员权限
-                .requestMatchers("/admin/manage/**").hasAuthority("ROLE_ADMIN")
-
-                // 用户相关接口需要对应的OAuth2.1 scope
-                .requestMatchers("/api/user/profile/**").hasAnyAuthority("SCOPE_user.read", "SCOPE_user.write")
-                .requestMatchers("/api/user/address/**").hasAnyAuthority("SCOPE_user.read", "SCOPE_user.write")
-
-                // 商户相关接口需要merchant scope
-                .requestMatchers("/api/user/merchant/**").hasAnyAuthority("SCOPE_read", "SCOPE_write")
-
-                // 权限示例接口需要认证
-                .requestMatchers("/example/permissions/**").authenticated();
+        if (isUnifiedSecurityEnabled()) {
+            // 使用统一权限管理
+            auth
+                    // 内部API需要internal_api scope
+                    .requestMatchers("/user/internal/**")
+                    .hasAuthority("SCOPE_internal_api")
+                    
+                    // 管理员管理接口 - 需要管理员权限
+                    .requestMatchers("/admin/manage/**")
+                    .hasAuthority("SCOPE_admin")
+                    
+                    // 用户管理接口 - 需要管理权限
+                    .requestMatchers("/user/manage/**")
+                    .hasAuthority("SCOPE_admin")
+                    
+                    // 用户资料接口 - 用户可以访问自己的或管理员可以访问任何用户的
+                    .requestMatchers("/api/user/profile/**")
+                    .hasAnyAuthority("SCOPE_user", "SCOPE_admin")
+                        
+                    // 用户地址接口 - 用户权限
+                    .requestMatchers("/api/user/address/**")
+                    .hasAnyAuthority("SCOPE_user", "SCOPE_admin")
+                        
+                    // 商户相关接口 - 商户权限或管理员权限
+                    .requestMatchers("/api/user/merchant/**")
+                    .hasAnyAuthority("SCOPE_merchant", "SCOPE_admin")
+                        
+                    // 权限示例接口需要认证
+                    .requestMatchers("/example/permissions/**").authenticated();
+        } else {
+            // 回退到标准OAuth2权限
+            auth
+                    // 内部API统一权限验证
+                    .requestMatchers("/user/internal/**").hasAuthority("SCOPE_internal_api")
+                    // 用户管理接口
+                    .requestMatchers("/user/manage/**").authenticated()
+                    // 管理员管理接口
+                    .requestMatchers("/admin/manage/**").hasAuthority("ROLE_ADMIN")
+                    // 用户相关接口
+                    .requestMatchers("/api/user/profile/**").hasAnyAuthority("SCOPE_user.read", "SCOPE_user.write")
+                    .requestMatchers("/api/user/address/**").hasAnyAuthority("SCOPE_user.read", "SCOPE_user.write")
+                    // 商户相关接口
+                    .requestMatchers("/api/user/merchant/**").hasAnyAuthority("SCOPE_read", "SCOPE_write")
+                    // 权限示例接口
+                    .requestMatchers("/example/permissions/**").authenticated();
+        }
     }
 
     @Override

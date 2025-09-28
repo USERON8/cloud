@@ -37,13 +37,30 @@ public class ResourceServerConfig extends BaseOAuth2ResourceServerConfig {
     @Override
     protected void configureProtectedPaths(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-        auth
-                // 内部API需要internal_api scope
-                .requestMatchers("/api/stock/internal/**").hasAuthority("SCOPE_internal_api")
-                // 库存查询接口需要read scope
-                .requestMatchers("/api/stock/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_user.read")
-                // 库存管理接口需要write scope
-                .requestMatchers("/api/stock/manage/**").hasAnyAuthority("SCOPE_write", "SCOPE_user.write");
+        if (isUnifiedSecurityEnabled()) {
+            // 使用统一权限管理
+            auth
+                    // 内部API需要internal_api scope
+                    .requestMatchers("/api/stock/internal/**")
+                    .hasAuthority("SCOPE_internal_api")
+                    
+                    // 库存管理接口 - 需要库存管理权限或管理员权限
+                    .requestMatchers("/api/stock/manage/**")
+                    .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
+                    
+                    // 库存查询接口 - 需要库存查询权限或管理员权限
+                    .requestMatchers("/api/stock/query/**")
+                    .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN");
+        } else {
+            // 回退到标准OAuth2权限
+            auth
+                    // 内部API需要internal_api scope
+                    .requestMatchers("/api/stock/internal/**").hasAuthority("SCOPE_internal_api")
+                    // 库存查询接口需要read scope
+                    .requestMatchers("/api/stock/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_user.read")
+                    // 库存管理接口需要write scope
+                    .requestMatchers("/api/stock/manage/**").hasAnyAuthority("SCOPE_write", "SCOPE_user.write");
+        }
     }
 
     @Override

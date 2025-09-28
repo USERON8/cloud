@@ -10,22 +10,18 @@
     </parent>
 
     <artifactId>api-module</artifactId>
-    <packaging>jar</packaging>
-    <version>0.0.1-SNAPSHOT</version>
 
     <dependencies>
         <!-- 项目内部模块 -->
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
         <!-- Spring Cloud组件 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
-            <version>${openfeign.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -9,8 +9,8 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
-import com.cloud.stock.annotation.RedisCacheEvict;
-import com.cloud.stock.annotation.RedisCacheable;
+
+
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.exception.StockFrozenException;
 import com.cloud.stock.exception.StockInsufficientException;
@@ -18,7 +18,9 @@ import com.cloud.stock.exception.StockOperationException;
 import com.cloud.stock.mapper.StockInMapper;
 import com.cloud.stock.mapper.StockMapper;
 import com.cloud.stock.mapper.StockOutMapper;
-import com.cloud.stock.messaging.producer.StockLogProducer;
+import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.module.entity.StockIn;
@@ -27,11 +29,17 @@ import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CachePut;
 
 /**
  * 库存服务实现类
@@ -47,14 +55,14 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     private final StockInMapper stockInMapper;
     private final StockOutMapper stockOutMapper;
     private final StockConverter stockConverter;
-    private final StockLogProducer stockLogProducer;
+    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(readOnly = true)
-    @RedisCacheable(
-            cacheName = "stockCache",
+    @Cacheable(
+            cacheNames = "stockCache",
             key = "#id",
-            expire = 1800,
             unless = "#result == null"
     )
     public StockDTO getStockById(Long id) {
@@ -78,10 +86,9 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(readOnly = true)
-    @RedisCacheable(
-            cacheName = "stockCache",
+    @Cacheable(
+            cacheNames = "stockCache",
             key = "'product:' + #productId",
-            expire = 1800,
             unless = "#result == null"
     )
     public StockDTO getStockByProductId(Long productId) {
@@ -103,10 +110,9 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(readOnly = true)
-    @RedisCacheable(
-            cacheName = "stockCache",
+    @Cacheable(
+            cacheNames = "stockCache",
             key = "'batch:' + #productIds.toString()",
-            expire = 900,
             condition = "#productIds != null && #productIds.size() <= 100",
             unless = "#result == null || #result.isEmpty()"
     )
@@ -167,9 +173,10 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
 
     @Override
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             key = "#id"
     )
     public boolean deleteStock(Long id) {
@@ -192,9 +199,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:batch:delete:' + T(String).join(',', #ids)",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "批量删除库存操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             allEntries = true,
             condition = "#ids != null && !#ids.isEmpty()"
     )
@@ -216,9 +230,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:in:' + #productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "库存入库操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             key = "'product:' + #productId"
     )
     public boolean stockIn(Long productId, Integer quantity, String remark) {
@@ -240,12 +261,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 创建入库记录
             createStockInRecord(stock, quantity, remark);
 
-            // 发送库存变更日志
+            // 发送库存变更日志 - 使用统一业务日志系统
             try {
                 Integer originalStock = stock.getStockQuantity() - quantity; // 计算原始库存
-                String beforeData = String.format("{\"stock\":%d}", originalStock);
-                String afterData = String.format("{\"stock\":%d}", stock.getStockQuantity());
-                stockLogProducer.sendStockChangeLog(productId, "STOCK_IN", beforeData, afterData, "SYSTEM");
+                asyncLogProducer.sendBusinessLogAsync(
+                        "stock-service",
+                        "STOCK_MANAGEMENT",
+                        "STOCK_IN",
+                        "库存入库操作",
+                        productId.toString(),
+                        "PRODUCT",
+                        String.format("{\"stock\":%d,\"quantity\":%d}", originalStock, quantity),
+                        String.format("{\"stock\":%d,\"quantity\":%d}", stock.getStockQuantity(), quantity),
+                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                        "商品: " + productId + " 入库 " + quantity + " 件"
+                );
             } catch (Exception e) {
                 log.warn("发送库存入库日志失败，商品ID：{}", productId, e);
             }
@@ -259,9 +289,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:out:' + #productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "库存出库操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             key = "'product:' + #productId"
     )
     public boolean stockOut(Long productId, Integer quantity, Long orderId, String orderNo, String remark) {
@@ -290,9 +327,24 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 创建出库记录
             createStockOutRecord(stock, quantity, orderId, orderNo, remark);
 
-            // 发送库存扣减日志
+            // 发送库存扣减日志 - 使用统一业务日志系统
             try {
-                stockLogProducer.sendStockDeductLog(productId, quantity, orderNo != null ? orderNo : String.valueOf(orderId), "SYSTEM");
+                Integer originalStock = stock.getStockQuantity() + quantity; // 计算原始库存
+                asyncLogProducer.sendBusinessLogAsync(
+                        "stock-service",
+                        "STOCK_MANAGEMENT",
+                        "STOCK_OUT",
+                        "库存出库操作",
+                        productId.toString(),
+                        "PRODUCT",
+                        String.format("{\"stock\":%d,\"quantity\":%d,\"orderId\":%s}",
+                                originalStock, quantity, orderId != null ? orderId.toString() : "null"),
+                        String.format("{\"stock\":%d,\"quantity\":%d,\"orderId\":%s}",
+                                stock.getStockQuantity(), quantity, orderId != null ? orderId.toString() : "null"),
+                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                        "商品: " + productId + " 出库 " + quantity + " 件" +
+                                (orderNo != null ? " (订单号: " + orderNo + ")" : "")
+                );
             } catch (Exception e) {
                 log.warn("发送库存出库日志失败，商品ID：{}", productId, e);
             }
@@ -306,9 +358,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:reserve:' + #productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "库存预留操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             key = "'product:' + #productId"
     )
     public boolean reserveStock(Long productId, Integer quantity) {
@@ -326,9 +385,20 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                 throw new StockFrozenException("预留", productId, quantity);
             }
 
-            // 发送库存冻结日志
+            // 发送库存冻结日志 - 使用统一业务日志系统
             try {
-                stockLogProducer.sendStockFreezeLog(productId, quantity, "RESERVE_" + System.currentTimeMillis(), "SYSTEM");
+                asyncLogProducer.sendBusinessLogAsync(
+                        "stock-service",
+                        "STOCK_MANAGEMENT",
+                        "RESERVE",
+                        "预留库存操作",
+                        productId.toString(),
+                        "PRODUCT",
+                        String.format("{\"frozen\":%d,\"quantity\":%d}", stock.getFrozenQuantity() - quantity, quantity),
+                        String.format("{\"frozen\":%d,\"quantity\":%d}", stock.getFrozenQuantity(), quantity),
+                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                        "商品: " + productId + " 预留 " + quantity + " 件"
+                );
             } catch (Exception e) {
                 log.warn("发送库存冻结日志失败，商品ID：{}", productId, e);
             }
@@ -342,9 +412,16 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:release:' + #productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "库存释放预留操作获取锁失败"
+    )
     @Transactional(rollbackFor = Exception.class)
-    @RedisCacheEvict(
-            cacheName = "stockCache",
+    @CacheEvict(
+            cacheNames = "stockCache",
             key = "'product:' + #productId"
     )
     public boolean releaseReservedStock(Long productId, Integer quantity) {
@@ -362,9 +439,20 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                 throw new StockFrozenException("释放", productId, quantity);
             }
 
-            // 发送库存解冻日志
+            // 发送库存解冻日志 - 使用统一业务日志系统
             try {
-                stockLogProducer.sendStockUnfreezeLog(productId, quantity, "RELEASE_" + System.currentTimeMillis(), "SYSTEM");
+                asyncLogProducer.sendBusinessLogAsync(
+                        "stock-service",
+                        "STOCK_MANAGEMENT",
+                        "RELEASE",
+                        "释放预留库存操作",
+                        productId.toString(),
+                        "PRODUCT",
+                        String.format("{\"frozen\":%d,\"quantity\":%d}", stock.getFrozenQuantity() + quantity, quantity),
+                        String.format("{\"frozen\":%d,\"quantity\":%d}", stock.getFrozenQuantity(), quantity),
+                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
+                        "商品: " + productId + " 释放预留 " + quantity + " 件"
+                );
             } catch (Exception e) {
                 log.warn("发送库存解冻日志失败，商品ID：{}", productId, e);
             }
@@ -438,11 +526,11 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     @Transactional(rollbackFor = Exception.class)
     public boolean unfreezeAndDeductStock(com.cloud.common.domain.event.OrderCompletedEvent event) {
         log.info("解冻并扣减库存，订单ID：{}，商品数量：{}", event.getOrderId(),
-                event.getStockDeductions() != null ? event.getStockDeductions().size() : 0);
+                event.getOrderItems() != null ? event.getOrderItems().size() : 0);
         try {
             // 遍历库存扣减信息，解冻并扣减库存
-            if (event.getStockDeductions() != null) {
-                for (com.cloud.common.domain.event.OrderCompletedEvent.StockDeductionInfo item : event.getStockDeductions()) {
+            if (event.getOrderItems() != null) {
+                for (com.cloud.common.domain.event.OrderCompletedEvent.OrderItem item : event.getOrderItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -457,6 +545,51 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             return true;
         } catch (Exception e) {
             log.error("解冻并扣减库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isStockReserved(Long orderId) {
+        log.info("检查库存是否已预留，订单ID：{}", orderId);
+        try {
+            // 这里可以通过查询预留记录表或者其他方式来判断
+            // 简化实现：假设如果没有出库记录但有冻结库存，则认为库存已预留
+            boolean reserved = isStockFrozen(orderId);
+            log.info("库存预留检查结果，订单ID：{}，是否已预留：{}", orderId, reserved);
+            return reserved;
+        } catch (Exception e) {
+            log.error("检查库存是否已预留失败，订单ID：{}", orderId, e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isStockConfirmed(Long orderId) {
+        log.info("检查库存是否已确认，订单ID：{}", orderId);
+        try {
+            // 这里可以通过查询确认记录表或者其他方式来判断
+            // 简化实现：假设如果有出库记录，则认为库存已确认
+            boolean confirmed = isStockDeducted(orderId);
+            log.info("库存确认检查结果，订单ID：{}，是否已确认：{}", orderId, confirmed);
+            return confirmed;
+        } catch (Exception e) {
+            log.error("检查库存是否已确认失败，订单ID：{}", orderId, e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isStockRolledBack(Long orderId) {
+        log.info("检查库存是否已回滚，订单ID：{}", orderId);
+        try {
+            // 这里可以通过查询回滚记录表或者其他方式来判断
+            // 简化实现：假设如果没有出库记录，则认为库存已回滚
+            boolean rolledBack = !isStockDeducted(orderId);
+            log.info("库存回滚检查结果，订单ID：{}，是否已回滚：{}", orderId, rolledBack);
+            return rolledBack;
+        } catch (Exception e) {
+            log.error("检查库存是否已回滚失败，订单ID：{}", orderId, e);
             return false;
         }
     }
@@ -482,7 +615,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         try {
             // 遍历订单项，冻结库存
             if (event.getOrderItems() != null) {
-                for (com.cloud.common.domain.event.OrderCreatedEvent.OrderItemInfo item : event.getOrderItems()) {
+                for (com.cloud.common.domain.event.OrderCreatedEvent.OrderItem item : event.getOrderItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -497,6 +630,115 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             return false;
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean reserveStock(com.cloud.common.domain.event.StockReserveEvent event) {
+        log.info("预留库存，订单ID：{}，商品数量：{}", event.getOrderId(),
+                event.getReserveItems() != null ? event.getReserveItems().size() : 0);
+        try {
+            // 遍历预留项，预留库存
+            if (event.getReserveItems() != null) {
+                for (com.cloud.common.domain.event.StockReserveEvent.StockReserveItem item : event.getReserveItems()) {
+                    Long productId = item.getProductId();
+                    Integer quantity = item.getQuantity();
+
+                    // 预留库存
+                    reserveStock(productId, quantity);
+                    
+                    // 发送库存预留日志
+                    try {
+                        asyncLogProducer.sendBusinessLogAsync(
+                                "stock-service",
+                                "STOCK_MANAGEMENT",
+                                "RESERVE",
+                                "预留库存操作",
+                                productId.toString(),
+                                "PRODUCT",
+                                String.format("{\"quantity\":%d}", quantity),
+                                String.format("{\"reserved\":true}"),
+                                event.getOperator() != null ? event.getOperator() : "SYSTEM",
+                                "商品: " + productId + " 预留 " + quantity + " 件"
+                        );
+                    } catch (Exception e) {
+                        log.warn("发送库存预留日志失败，商品ID：{}", productId, e);
+                    }
+                }
+            }
+            log.info("预留库存成功，订单ID：{}", event.getOrderId());
+            return true;
+        } catch (Exception e) {
+            log.error("预留库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean confirmStock(com.cloud.common.domain.event.StockConfirmEvent event) {
+        log.info("确认库存，订单ID：{}，商品数量：{}", event.getOrderId(),
+                event.getConfirmItems() != null ? event.getConfirmItems().size() : 0);
+        try {
+            // 遍历确认项，确认库存扣减
+            if (event.getConfirmItems() != null) {
+                for (com.cloud.common.domain.event.StockConfirmEvent.StockConfirmItem item : event.getConfirmItems()) {
+                    Long productId = item.getProductId();
+                    Integer quantity = item.getQuantity();
+
+                    // 确认库存扣减（这里可以添加具体的确认逻辑）
+                    log.info("确认库存扣减，商品ID：{}，数量：{}", productId, quantity);
+                    
+                    // 发送库存确认日志
+                    try {
+                        asyncLogProducer.sendBusinessLogAsync(
+                                "stock-service",
+                                "STOCK_MANAGEMENT",
+                                "CONFIRM",
+                                "确认库存扣减操作",
+                                productId.toString(),
+                                "PRODUCT",
+                                String.format("{\"quantity\":%d}", quantity),
+                                String.format("{\"confirmed\":true}"),
+                                event.getOperator() != null ? event.getOperator() : "SYSTEM",
+                                "商品: " + productId + " 确认扣减 " + quantity + " 件"
+                        );
+                    } catch (Exception e) {
+                        log.warn("发送库存确认日志失败，商品ID：{}", productId, e);
+                    }
+                }
+            }
+            log.info("确认库存成功，订单ID：{}", event.getOrderId());
+            return true;
+        } catch (Exception e) {
+            log.error("确认库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean rollbackStock(com.cloud.common.domain.event.StockRollbackEvent event) {
+        log.info("回滚库存，订单ID：{}，商品数量：{}", event.getOrderId(),
+                event.getRollbackItems() != null ? event.getRollbackItems().size() : 0);
+        try {
+            // 遍历订单项，回滚库存（释放预留）
+            if (event.getRollbackItems() != null) {
+                for (com.cloud.common.domain.event.StockRollbackEvent.StockRollbackItem item : event.getRollbackItems()) {
+                    Long productId = item.getProductId();
+                    Integer quantity = item.getQuantity();
+
+                    // 释放预留库存
+                    releaseReservedStock(productId, quantity);
+                }
+            }
+            log.info("回滚库存成功，订单ID：{}", event.getOrderId());
+            return true;
+        } catch (Exception e) {
+            log.error("回滚库存失败，订单ID：{}", event.getOrderId(), e);
+            return false;
+        }
+    }
+
 
 }
 

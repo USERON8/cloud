@@ -4,16 +4,16 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.UserAddressDTO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
-import com.cloud.user.annotation.MultiLevelCacheEvict;
-import com.cloud.user.annotation.MultiLevelCachePut;
-import com.cloud.user.annotation.MultiLevelCacheable;
-import com.cloud.user.annotation.MultiLevelCaching;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
 import com.cloud.user.module.entity.UserAddress;
 import com.cloud.user.service.UserAddressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,12 +44,12 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             put = {
-                    @MultiLevelCachePut(cacheName = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id", expire = 1800)
+                    @CachePut(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id")
             },
             evict = {
-                    @MultiLevelCacheEvict(cacheName = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
             }
     )
     public boolean save(UserAddress entity) {
@@ -74,12 +74,12 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             put = {
-                    @MultiLevelCachePut(cacheName = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id", expire = 1800)
+                    @CachePut(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id")
             },
             evict = {
-                    @MultiLevelCacheEvict(cacheName = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
             }
     )
     public boolean updateById(UserAddress entity) {
@@ -114,10 +114,9 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      * @return 用户地址DTO
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = USER_ADDRESS_CACHE_NAME,
+    @Cacheable(
+            cacheNames = USER_ADDRESS_CACHE_NAME,
             key = "'detail:' + #id",
-            expire = 1800,
             unless = "#result == null"
     )
     public UserAddressDTO getUserAddressByIdWithCache(Long id) {
@@ -132,10 +131,9 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      * @return 用户地址DTO列表
      */
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(
-            cacheName = USER_ADDRESS_CACHE_NAME,
-            key = "'list:' + #userId",
-            expire = 900, // 列表缓存时间短一些，15分钟
+    @Cacheable(
+            cacheNames = USER_ADDRESS_CACHE_NAME,
+            key = "'list:' + #userId", // 列表缓存时间短一些，15分钟
             unless = "#result == null || #result.isEmpty()"
     )
     public List<UserAddressDTO> getUserAddressListByUserIdWithCache(Long userId) {
@@ -163,10 +161,10 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         return removeByIdWithCacheEvict(id, existingAddress.getUserId());
     }
 
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #addressId"),
-                    @MultiLevelCacheEvict(cacheName = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #addressId"),
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
             }
     )
     private boolean removeByIdWithCacheEvict(Long addressId, Long userId) {

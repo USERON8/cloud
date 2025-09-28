@@ -48,7 +48,7 @@ public class PermissionChecker {
      * @return 是否是商家
      */
     public boolean checkMerchantPermission(UserType currentType) {
-        return UserType.MERCHANT.equals(currentType);
+        return UserType.ADMIN.equals(currentType);
     }
 
     /**

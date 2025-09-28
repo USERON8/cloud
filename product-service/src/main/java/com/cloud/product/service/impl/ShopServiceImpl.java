@@ -4,10 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.common.cache.annotation.MultiLevelCacheEvict;
-import com.cloud.common.cache.annotation.MultiLevelCachePut;
-import com.cloud.common.cache.annotation.MultiLevelCacheable;
-import com.cloud.common.cache.annotation.MultiLevelCaching;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ShopConverter;
 import com.cloud.product.mapper.ShopMapper;
@@ -18,6 +14,10 @@ import com.cloud.product.module.vo.ShopVO;
 import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -48,9 +48,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCachePut(value = "shopCache", key = "#result",
-            condition = "#result != null",
-            expire = 60, timeUnit = TimeUnit.MINUTES)
+    @CachePut(cacheNames = "shopCache", key = "#result",
+            condition = "#result != null")
     public Long createShop(ShopRequestDTO requestDTO) {
         log.info("创建店铺: {}", requestDTO.getName());
 
@@ -68,12 +67,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "shopCache", key = "#id",
-                    condition = "#result == true",
-                    expire = 60, timeUnit = TimeUnit.MINUTES),
+    @Caching(
+            put = @CachePut(cacheNames = "shopCache", key = "#id",
+                    condition = "#result == true"),
             evict = {
-                    @MultiLevelCacheEvict(value = "shopListCache", allEntries = true)
+                    @CacheEvict(cacheNames = "shopListCache", allEntries = true)
             }
     )
     public Boolean updateShop(Long id, ShopRequestDTO requestDTO) {
@@ -99,10 +97,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(value = "shopCache", key = "#id"),
-                    @MultiLevelCacheEvict(value = "shopListCache", allEntries = true)
+                    @CacheEvict(cacheNames = "shopCache", key = "#id"),
+                    @CacheEvict(cacheNames = "shopListCache", allEntries = true)
             }
     )
     public Boolean deleteShop(Long id) {
@@ -124,7 +122,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"shopCache", "shopListCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchDeleteShops(List<Long> ids) {
         log.info("批量删除店铺: {}", ids);
 
@@ -145,9 +143,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "#id",
-            condition = "#id != null",
-            expire = 60, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "#id",
+            condition = "#id != null")
     public ShopVO getShopById(Long id) {
         log.debug("获取店铺详情: {}", id);
 
@@ -173,9 +170,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopListCache",
-            key = "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.shopNameKeyword ?: 'null') + ':' + (#pageDTO.status ?: 'null')",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopListCache",
+            key = "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.shopNameKeyword ?: 'null') + ':' + (#pageDTO.status ?: 'null')")
     public PageResult<ShopVO> getShopsPage(ShopPageDTO pageDTO) {
         log.debug("分页查询店铺: {}", pageDTO);
 
@@ -200,9 +196,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopListCache",
-            key = "'merchant:' + #merchantId + ':' + (#status ?: 'null')",
-            expire = 45, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopListCache",
+            key = "'merchant:' + #merchantId + ':' + (#status ?: 'null')")
     public List<ShopVO> getShopsByMerchantId(Long merchantId, Integer status) {
         log.debug("根据商户ID查询店铺: merchantId={}, status={}", merchantId, status);
 
@@ -219,9 +214,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopListCache",
-            key = "'search:' + #shopName + ':' + (#status ?: 'null')",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopListCache",
+            key = "'search:' + #shopName + ':' + (#status ?: 'null')")
     public List<ShopVO> searchShopsByName(String shopName, Integer status) {
         log.debug("搜索店铺: shopName={}, status={}", shopName, status);
 
@@ -244,9 +238,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "shopCache", key = "#id"),
-            evict = @MultiLevelCacheEvict(value = "shopListCache", allEntries = true)
+    @Caching(
+            put = @CachePut(cacheNames = "shopCache", key = "#id"),
+            evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
     )
     public Boolean enableShop(Long id) {
         log.info("启用店铺: {}", id);
@@ -255,9 +249,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
-            put = @MultiLevelCachePut(value = "shopCache", key = "#id"),
-            evict = @MultiLevelCacheEvict(value = "shopListCache", allEntries = true)
+    @Caching(
+            put = @CachePut(cacheNames = "shopCache", key = "#id"),
+            evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
     )
     public Boolean disableShop(Long id) {
         log.info("禁用店铺: {}", id);
@@ -266,7 +260,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"shopCache", "shopListCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchEnableShops(List<Long> ids) {
         log.info("批量启用店铺: {}", ids);
         return batchUpdateShopStatus(ids, 1, "批量启用");
@@ -274,7 +268,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCacheEvict(value = {"shopCache", "shopListCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchDisableShops(List<Long> ids) {
         log.info("批量禁用店铺: {}", ids);
         return batchUpdateShopStatus(ids, 0, "批量禁用");
@@ -284,16 +278,14 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "'stats:total'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "'stats:total'")
     public Long getTotalShopCount() {
         return count();
     }
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "'stats:enabled'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "'stats:enabled'")
     public Long getEnabledShopCount() {
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Shop::getStatus, 1);
@@ -302,8 +294,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "'stats:disabled'",
-            expire = 120, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "'stats:disabled'")
     public Long getDisabledShopCount() {
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Shop::getStatus, 0);
@@ -312,8 +303,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "'stats:merchant:' + #merchantId",
-            expire = 60, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "'stats:merchant:' + #merchantId")
     public Long getShopCountByMerchantId(Long merchantId) {
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Shop::getMerchantId, merchantId);
@@ -322,8 +312,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(value = "shopCache", key = "'permission:' + #merchantId + ':' + #shopId",
-            expire = 30, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "shopCache", key = "'permission:' + #merchantId + ':' + #shopId")
     public Boolean hasPermission(Long merchantId, Long shopId) {
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Shop::getId, shopId)
@@ -334,13 +323,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     // ================= 缓存管理 =================
 
     @Override
-    @MultiLevelCacheEvict(value = "shopCache", key = "#id")
+    @CacheEvict(cacheNames = "shopCache", key = "#id")
     public void evictShopCache(Long id) {
         log.info("清除店铺缓存: {}", id);
     }
 
     @Override
-    @MultiLevelCacheEvict(value = {"shopCache", "shopListCache"}, allEntries = true)
+    @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public void evictAllShopCache() {
         log.info("清除所有店铺缓存");
     }

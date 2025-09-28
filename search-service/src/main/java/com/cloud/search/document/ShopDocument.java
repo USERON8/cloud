@@ -47,7 +47,7 @@ public class ShopDocument {
     /**
      * 店铺名称（与数据库merchant_shop.shop_name对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String shopName;
 
     /**
@@ -65,7 +65,7 @@ public class ShopDocument {
     /**
      * 店铺描述（与数据库merchant_shop.description对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
     /**
@@ -77,7 +77,7 @@ public class ShopDocument {
     /**
      * 详细地址（与数据库merchant_shop.address对应）
      */
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String address;
 
     /**

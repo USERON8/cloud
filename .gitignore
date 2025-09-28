@@ -15,8 +15,9 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
-.idea
+
 .augment
 .xcodemap
 WARP.md
+AI_ASSISTANT_RULES_EN.md
 

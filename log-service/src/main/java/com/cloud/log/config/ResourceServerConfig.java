@@ -39,17 +39,42 @@ public class ResourceServerConfig extends BaseOAuth2ResourceServerConfig {
     @Override
     protected void configureProtectedPaths(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-        auth
-                // 内部API需要internal_api scope
-                .requestMatchers("/log/internal/**").hasAuthority("SCOPE_internal_api")
-                // 日志管理接口需要write scope（管理员权限）
-                .requestMatchers("/log/manage/**").hasAnyAuthority("SCOPE_write", "SCOPE_log.write", "ROLE_ADMIN")
-                // 日志查询接口需要read scope
-                .requestMatchers("/log/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_log.read")
-                // API路径配置
-                .requestMatchers("/api/log/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "SCOPE_log.read", "SCOPE_log.write")
-                // 其他日志接口需要read scope
-                .requestMatchers("/log/**").hasAnyAuthority("SCOPE_read", "SCOPE_log.read");
+        if (isUnifiedSecurityEnabled()) {
+            // 使用统一权限管理
+            auth
+                    // 内部API需要internal_api scope
+                    .requestMatchers("/log/internal/**")
+                    .hasAuthority("SCOPE_internal_api")
+                    
+                    // 日志管理接口 - 仅管理员可以访问
+                    .requestMatchers("/log/manage/**")
+                    .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
+                    
+                    // 日志查询接口 - 需要日志查询权限或管理员权限
+                    .requestMatchers("/log/query/**")
+                    .hasAnyAuthority("SCOPE_read", "SCOPE_log.read", "ROLE_ADMIN")
+                        
+                    // API路径配置 - 需要日志相关权限
+                    .requestMatchers("/api/log/**")
+                    .hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_ADMIN")
+                        
+                    // 其他日志接口 - 需要日志查询权限
+                    .requestMatchers("/log/**")
+                    .hasAnyAuthority("SCOPE_read", "SCOPE_log.read", "ROLE_ADMIN");
+        } else {
+            // 回退到标准OAuth2权限
+            auth
+                    // 内部API需要internal_api scope
+                    .requestMatchers("/log/internal/**").hasAuthority("SCOPE_internal_api")
+                    // 日志管理接口需要write scope（管理员权限）
+                    .requestMatchers("/log/manage/**").hasAnyAuthority("SCOPE_write", "SCOPE_log.write", "ROLE_ADMIN")
+                    // 日志查询接口需要read scope
+                    .requestMatchers("/log/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_log.read")
+                    // API路径配置
+                    .requestMatchers("/api/log/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "SCOPE_log.read", "SCOPE_log.write")
+                    // 其他日志接口需要read scope
+                    .requestMatchers("/log/**").hasAnyAuthority("SCOPE_read", "SCOPE_log.read");
+        }
     }
 
     @Override

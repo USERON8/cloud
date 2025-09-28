@@ -19,6 +19,18 @@ spring:
               back-off-initial-interval: 1000
               back-off-max-interval: 10000
               back-off-multiplier: 2.0
+          # 统一业务日志消费者
+          businessLog-in-0:
+            consumer:
+              group: business-log-consumer-group
+              consume-thread-min: 10
+              consume-thread-max: 30
+              pull-batch-size: 32
+              consume-timeout: 15000
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-max-interval: 10000
+              back-off-multiplier: 2.0
       bindings:
         # 日志收集消费者绑定
         logConsumer-in-0:
@@ -30,8 +42,18 @@ spring:
             back-off-initial-interval: 1000
             back-off-max-interval: 10000
             back-off-multiplier: 2.0
+        # 统一业务日志消费者绑定
+        businessLog-in-0:
+          destination: business-log-topic
+          content-type: application/json
+          group: business-log-consumer-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-max-interval: 10000
+            back-off-multiplier: 2.0
       function:
-        definition: "logConsumer"
+        definition: "logConsumer;businessLogMessageConsumer"
 
 # 日志配置
 logging:

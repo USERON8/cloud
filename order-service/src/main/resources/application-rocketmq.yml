@@ -31,6 +31,14 @@ spring:
               compress-message-body-threshold: 4096
               max-message-size: 4194304
               retry-times-when-send-failed: 2
+          # 统一业务日志生产者
+          businessLog-out-0:
+            producer:
+              group: order-business-log-producer-group
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
           # 支付成功消费者
           paymentSuccessConsumer-in-0:
             consumer:
@@ -61,6 +69,13 @@ spring:
         # 订单完成生产者绑定
         orderCompletedProducer-out-0:
           destination: order-completed-topic
+          content-type: application/json
+          producer:
+            partition-count: 4
+            use-native-encoding: true
+        # 统一业务日志生产者绑定
+        businessLog-out-0:
+          destination: business-log-topic
           content-type: application/json
           producer:
             partition-count: 4

@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +40,7 @@ public class OrderManageController {
      */
     @PutMapping("/{id}")
     @Operation(summary = "更新订单", description = "更新订单信息")
+    @PreAuthorize("@permissionChecker.checkPermission(authentication, 'order:manage') or @permissionManager.hasAdminAccess(authentication)")
     @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> updateOrder(
             @Parameter(description = "订单ID") @PathVariable Long id,
@@ -59,6 +61,7 @@ public class OrderManageController {
      */
     @PostMapping("/{orderId}/pay")
     @Operation(summary = "支付订单", description = "将订单状态更新为已支付")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> payOrder(
             @Parameter(description = "订单ID", required = true)
@@ -79,6 +82,7 @@ public class OrderManageController {
      */
     @PostMapping("/{orderId}/ship")
     @Operation(summary = "发货订单", description = "将订单状态更新为已发货")
+    @PreAuthorize("@permissionChecker.checkPermission(authentication, 'order:manage') or @permissionManager.hasAdminAccess(authentication)")
     public Result<Boolean> shipOrder(
             @Parameter(description = "订单ID", required = true)
             @NotNull(message = "订单ID不能为空")
@@ -116,6 +120,7 @@ public class OrderManageController {
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除订单", description = "管理员删除订单")
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @CacheEvict(value = {"order", "order-list", "order-page"}, allEntries = true)
     public Result<Boolean> deleteOrder(
             @Parameter(description = "订单ID") @NotNull @PathVariable Long id) {
@@ -132,6 +137,7 @@ public class OrderManageController {
      */
     @PostMapping
     @Operation(summary = "创建订单", description = "创建新订单")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication)")
     @CacheEvict(value = {"order-list", "order-page"}, allEntries = true)
     public Result<OrderDTO> createOrder(
             @Parameter(description = "订单信息", required = true)

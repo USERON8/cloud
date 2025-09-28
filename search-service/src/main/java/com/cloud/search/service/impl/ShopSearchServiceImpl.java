@@ -1,9 +1,9 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.ShopSearchEvent;
-import com.cloud.search.annotation.MultiLevelCacheEvict;
-import com.cloud.search.annotation.MultiLevelCacheable;
-import com.cloud.search.annotation.MultiLevelCaching;
+
+
+
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -30,6 +30,10 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+
 /**
  * 店铺搜索服务实现
  *
@@ -51,11 +55,11 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "shopSearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "shopSuggestionCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "hotShopCache", allEntries = true)
+                    @CacheEvict(cacheNames = "shopSearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "shopSuggestionCache", allEntries = true),
+                    @CacheEvict(cacheNames = "hotShopCache", allEntries = true)
             }
     )
     public void saveOrUpdateShop(ShopSearchEvent event) {
@@ -88,12 +92,12 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "shopSearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "shopSuggestionCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "hotShopCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "shopFilterCache", allEntries = true)
+                    @CacheEvict(cacheNames = "shopSearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "shopSuggestionCache", allEntries = true),
+                    @CacheEvict(cacheNames = "hotShopCache", allEntries = true),
+                    @CacheEvict(cacheNames = "shopFilterCache", allEntries = true)
             }
     )
     public void deleteShop(Long shopId) {
@@ -137,22 +141,21 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "shopSearchCache",
+    @Cacheable(cacheNames = "shopSearchCache",
                         key = "'shop:' + #shopId",
-                        condition = "#shopId != null",
-                        expire = 30, timeUnit = TimeUnit.MINUTES)
+                        condition = "#shopId != null")
     public ShopDocument findByShopId(Long shopId) {
         return shopDocumentRepository.findById(String.valueOf(shopId)).orElse(null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @MultiLevelCaching(
+    @Caching(
             evict = {
-                    @MultiLevelCacheEvict(cacheName = "shopSearchCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "shopSuggestionCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "hotShopCache", allEntries = true),
-                    @MultiLevelCacheEvict(cacheName = "shopFilterCache", allEntries = true)
+                    @CacheEvict(cacheNames = "shopSearchCache", allEntries = true),
+                    @CacheEvict(cacheNames = "shopSuggestionCache", allEntries = true),
+                    @CacheEvict(cacheNames = "hotShopCache", allEntries = true),
+                    @CacheEvict(cacheNames = "shopFilterCache", allEntries = true)
             }
     )
     public void batchSaveShops(List<ShopSearchEvent> events) {
@@ -277,10 +280,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "shopSearchCache",
+    @Cacheable(cacheNames = "shopSearchCache",
                         key = "'search:' + #request.hashCode()",
-                        condition = "#request != null",
-                        expire = 10, timeUnit = TimeUnit.MINUTES)
+                        condition = "#request != null")
     public SearchResult<ShopDocument> searchShops(ShopSearchRequest request) {
         try {
             log.info("执行店铺复杂搜索 - 关键字: {}, 商家ID: {}, 状态: {}",
@@ -326,10 +328,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "shopSuggestionCache",
+    @Cacheable(cacheNames = "shopSuggestionCache",
                         key = "'suggestion:' + #keyword + ':' + #size",
-                        condition = "#keyword != null",
-                        expire = 30, timeUnit = TimeUnit.MINUTES)
+                        condition = "#keyword != null")
     public List<String> getSearchSuggestions(String keyword, Integer size) {
         try {
             if (!StringUtils.hasText(keyword)) {
@@ -360,9 +361,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "hotShopCache",
-                        key = "'hot:' + #size",
-                        expire = 60, timeUnit = TimeUnit.MINUTES)
+    @Cacheable(cacheNames = "hotShopCache",
+                        key = "'hot:' + #size")
     public List<ShopDocument> getHotShops(Integer size) {
         try {
             log.info("获取热门店铺 - 数量: {}", size);
@@ -385,10 +385,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    @MultiLevelCacheable(cacheName = "shopFilterCache",
+    @Cacheable(cacheNames = "shopFilterCache",
                         key = "'filter:' + #request.hashCode()",
-                        condition = "#request != null",
-                        expire = 30, timeUnit = TimeUnit.MINUTES)
+                        condition = "#request != null")
     public SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request) {
         try {
             log.info("获取店铺筛选聚合信息");

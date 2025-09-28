@@ -5,11 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.FilterType;
 
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.search", "com.cloud.common"},
-    exclude = {com.cloud.common.config.RedissonConfig.class}
+    scanBasePackages = {"com.cloud.search", "com.cloud.common"}
+)
+@ComponentScan(
+    basePackages = {"com.cloud.search", "com.cloud.common"}
 )
 @EnableDiscoveryClient
 @Slf4j

@@ -1,7 +1,7 @@
 package com.cloud.order.messaging.consumer;
 
 import com.cloud.common.domain.event.PaymentSuccessEvent;
-import com.cloud.order.service.SimpleOrderService;
+import com.cloud.order.service.OrderBusinessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -14,21 +14,21 @@ import java.util.function.Consumer;
  * 支付成功事件消费者
  * 监听支付成功事件，自动更新订单状态并发布订单完成事件
  *
- * @author cloud
- * @since 1.0.0
+ * @author CloudDevAgent
+ * @since 2025-09-26
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class PaymentSuccessEventConsumer {
 
-    private final SimpleOrderService simpleOrderService;
+    private final OrderBusinessService orderBusinessService;
 
     /**
      * 支付成功事件消费者
      */
-    @Bean
-    public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
+    @Bean("paymentSuccessConsumer")
+    public Consumer<Message<PaymentSuccessEvent>> paymentSuccessEventConsumer() {
         return message -> {
             PaymentSuccessEvent event = message.getPayload();
             try {
@@ -48,7 +48,7 @@ public class PaymentSuccessEventConsumer {
                 }
 
                 // 处理支付成功事件
-                boolean success = simpleOrderService.handlePaymentSuccess(
+                boolean success = orderBusinessService.handlePaymentSuccess(
                         event.getOrderId(),
                         event.getPaymentId(),
                         event.getPaymentAmount()
@@ -60,6 +60,8 @@ public class PaymentSuccessEventConsumer {
                 } else {
                     log.error("❌ 支付成功事件处理失败 - 订单ID: {}, 支付ID: {}, 追踪ID: {}",
                             event.getOrderId(), event.getPaymentId(), event.getTraceId());
+                    // 支付成功但订单处理失败的情况需要告警
+                    throw new RuntimeException("支付成功事件处理失败，需要人工干预");
                 }
 
             } catch (Exception e) {

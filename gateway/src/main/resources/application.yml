@@ -80,8 +80,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
-          issuer-uri: http://127.0.0.1:80
+          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
+          issuer-uri: http://127.0.0.1:8081
     headers:
       content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
       xss-protection-enabled: true
@@ -101,6 +101,37 @@ logging:
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
+
+# Spring Boot Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+      base-path: /actuator
+    enabled-by-default: true
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    redis:
+      enabled: false  # Gateway使用Redis但不强依赖
+    nacos:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
 
 # 应用安全配置
 app:
