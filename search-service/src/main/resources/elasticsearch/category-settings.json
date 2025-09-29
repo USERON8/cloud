@@ -1,0 +1,5 @@
+{
+  "number_of_shards": 3,
+  "number_of_replicas": 1,
+  "max_result_window": 50000
+}

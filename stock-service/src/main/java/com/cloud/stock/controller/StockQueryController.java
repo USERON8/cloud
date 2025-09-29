@@ -1,7 +1,7 @@
 package com.cloud.stock.controller;
 
 import com.cloud.common.domain.dto.stock.StockDTO;
-import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.stock.module.dto.StockPageDTO;

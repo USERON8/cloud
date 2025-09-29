@@ -2,7 +2,7 @@ package com.cloud.user.converter;
 
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
-import com.cloud.common.domain.vo.MerchantAuthVO;
+import com.cloud.common.domain.vo.user.MerchantAuthVO;
 import com.cloud.user.module.entity.MerchantAuth;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

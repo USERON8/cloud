@@ -16,7 +16,6 @@ import org.springframework.context.annotation.FilterType;
 @Slf4j
 @SpringBootApplication(
     exclude = {
-        com.cloud.common.config.RedissonConfig.class,
         org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class
     }
 )
@@ -25,7 +24,8 @@ import org.springframework.context.annotation.FilterType;
     excludeFilters = {
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
             com.cloud.common.config.BaseAsyncConfig.class,
-            com.cloud.common.config.MybatisPlusConfig.class
+            com.cloud.common.config.MybatisPlusConfig.class,
+            com.cloud.common.config.RedissonConfig.class
         })
     }
 )

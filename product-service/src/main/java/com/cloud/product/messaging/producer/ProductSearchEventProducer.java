@@ -1,8 +1,8 @@
 package com.cloud.product.messaging.producer;
 
-import com.cloud.common.domain.event.CategorySearchEvent;
-import com.cloud.common.domain.event.ProductSearchEvent;
-import com.cloud.common.domain.event.ShopSearchEvent;
+import com.cloud.common.domain.event.product.CategorySearchEvent;
+import com.cloud.common.domain.event.product.ProductSearchEvent;
+import com.cloud.common.domain.event.product.ShopSearchEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import com.cloud.common.utils.StringUtils;

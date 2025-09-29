@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.consumer;
 
-import com.cloud.common.domain.event.StockChangeEvent;
+import com.cloud.common.domain.event.stock.StockChangeEvent;
 import com.cloud.log.messaging.processor.StockEventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

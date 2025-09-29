@@ -1,0 +1,56 @@
+{
+  "properties": {
+    "categoryId": {
+      "type": "long"
+    },
+    "parentId": {
+      "type": "long"
+    },
+    "categoryName": {
+      "type": "text",
+      "analyzer": "standard",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "level": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "integer"
+    },
+    "icon": {
+      "type": "keyword"
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "standard"
+    },
+    "sortOrder": {
+      "type": "integer"
+    },
+    "productCount": {
+      "type": "integer"
+    },
+    "categoryPath": {
+      "type": "keyword"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss.SSS||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "updatedAt": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss.SSS||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "searchWeight": {
+      "type": "double"
+    },
+    "hotScore": {
+      "type": "double"
+    }
+  }
+}

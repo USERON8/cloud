@@ -1,6 +1,6 @@
 package com.cloud.api.stock;
 
-import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.domain.vo.stock.StockVO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

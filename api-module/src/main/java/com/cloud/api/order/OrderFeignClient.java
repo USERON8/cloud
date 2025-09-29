@@ -1,7 +1,7 @@
 package com.cloud.api.order;
 
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

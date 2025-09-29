@@ -1,6 +1,6 @@
 package com.cloud.product.controller.product;
 
-import com.cloud.common.domain.vo.ProductVO;
+import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.product.module.dto.ProductPageDTO;

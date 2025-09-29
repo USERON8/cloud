@@ -7,19 +7,18 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
-import com.cloud.common.utils.PageUtils;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
-import com.cloud.common.domain.event.ProductSearchEvent;
+import com.cloud.common.domain.event.product.ProductSearchEvent;
 import com.cloud.api.stock.StockFeignClient;
-import com.cloud.common.domain.vo.ProductVO;
-import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.domain.vo.product.ProductVO;
+import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
-import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.product.messaging.producer.ProductSearchEventProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Category;
@@ -43,7 +42,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 商品服务实现
@@ -60,7 +58,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
 
     private final ProductConverter productConverter;
-    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final BusinessLogProducer businessLogProducer;
     private final ProductSearchEventProducer productSearchEventProducer;
     private final AsyncLogProducer asyncLogProducer;
     private final ShopService shopService;

@@ -100,7 +100,8 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             if (complianceChecker != null) {
                 try {
                     OAuth2ComplianceChecker.OAuth2ComplianceResult complianceResult =
-                            complianceChecker.validateCompliance(userDetails, userDTO.getUserType());
+                            complianceChecker.validateCompliance(userDetails,
+                                    userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null);
 
                     if (!complianceResult.isCompliant()) {
                         log.warn("⚠️ OAuth2.1兼容性检查发现错误, username: {}, errors: {}",
@@ -139,7 +140,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
      * @param userType 用户类型
      * @return 权限列表
      */
-    private List<SimpleGrantedAuthority> buildUserAuthorities(String userType) {
+    private List<SimpleGrantedAuthority> buildUserAuthorities(com.cloud.common.enums.UserType userType) {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
         log.debug("🔑 正在为用户类型 {} 构建 OAuth2.1 权限", userType);
@@ -154,8 +155,8 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
         // 根据用户类型添加特定角色和权限（递增式权限继承）
         if (userType != null) {
-            switch (userType.toUpperCase()) {
-                case "ADMIN":
+            switch (userType) {
+                case ADMIN:
                     // 管理员 - 最高权限
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                     authorities.add(new SimpleGrantedAuthority("SCOPE_admin.read"));
@@ -173,7 +174,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
                     authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
                     break;
 
-                case "MERCHANT":
+                case MERCHANT:
                     // 商家 - 中级权限
                     authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
                     authorities.add(new SimpleGrantedAuthority("SCOPE_merchant.read"));
@@ -188,7 +189,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
                     authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
                     break;
 
-                case "USER":
+                case USER:
                 default:
                     // 普通用户 - 基础权限
                     authorities.add(new SimpleGrantedAuthority("SCOPE_user.read"));

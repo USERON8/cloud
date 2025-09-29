@@ -1,9 +1,11 @@
 package com.cloud.payment.controller;
 
 import com.cloud.common.domain.dto.payment.PaymentDTO;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.common.result.Result;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.payment.converter.PaymentConverter;
-import com.cloud.payment.messaging.producer.LogCollectionProducer;
+
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +34,8 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentManageController {
 
     private final PaymentService paymentService;
-    private final LogCollectionProducer logCollectionProducer;
+    private final BusinessLogProducer businessLogProducer;
+
     private final PaymentConverter paymentConverter = PaymentConverter.INSTANCE;
 
     /**
@@ -61,17 +64,24 @@ public class PaymentManageController {
             if (saved) {
                 // 发送支付创建日志
                 try {
-                    logCollectionProducer.sendPaymentOperationLog(
+                    businessLogProducer.sendPaymentSuccessLog(
+                            "payment-service",
                             payment.getId(),
                             paymentDTO.getOrderId(),
-                            "CREATE",
+                            "ORDER_" + paymentDTO.getOrderId(),
+                            Long.valueOf(UserContextUtils.getCurrentUserId()),
+                            "User_" + UserContextUtils.getCurrentUserId(),
                             paymentDTO.getAmount(),
-                            "管理员创建",
-                            currentUserId
+                            getPaymentMethodName(paymentDTO.getChannel()),
+                            null,
+                            UserContextUtils.getCurrentUserId()
                     );
                 } catch (Exception e) {
-                    log.warn("发送管理员支付创建日志失败，支付ID：{}", payment.getId(), e);
+                    log.warn("发送支付创建日志失败 - 支付ID: {}, 错误: {}", payment.getId(), e.getMessage());
                 }
+
+                log.info("支付记录创建成功 - 支付ID: {}, 订单ID: {}, 操作人: {}",
+                        payment.getId(), paymentDTO.getOrderId(), currentUserId);
 
                 log.info("创建支付记录成功，订单ID: {}，操作人: {}", paymentDTO.getOrderId(), currentUserId);
                 return Result.success("创建成功");
@@ -121,17 +131,24 @@ public class PaymentManageController {
             if (updated) {
                 // 发送支付更新日志
                 try {
-                    logCollectionProducer.sendPaymentOperationLog(
+                    businessLogProducer.sendPaymentSuccessLog(
+                            "payment-service",
                             id,
                             paymentDTO.getOrderId(),
-                            "UPDATE",
+                            "ORDER_" + paymentDTO.getOrderId(),
+                            Long.valueOf(UserContextUtils.getCurrentUserId()),
+                            "User_" + UserContextUtils.getCurrentUserId(),
                             paymentDTO.getAmount(),
-                            "管理员更新",
-                            currentUserId
+                            getPaymentMethodName(paymentDTO.getChannel()),
+                            null,
+                            UserContextUtils.getCurrentUserId()
                     );
                 } catch (Exception e) {
-                    log.warn("发送管理员支付更新日志失败，支付ID：{}", id, e);
+                    log.warn("发送支付更新日志失败 - 支付ID: {}, 错误: {}", id, e.getMessage());
                 }
+
+                log.info("支付记录更新成功 - 支付ID: {}, 订单ID: {}, 操作人: {}",
+                        id, paymentDTO.getOrderId(), currentUserId);
 
                 log.info("更新支付记录成功，支付ID: {}，操作人: {}", id, currentUserId);
                 return Result.success("更新成功");
@@ -186,5 +203,23 @@ public class PaymentManageController {
             log.error("删除支付记录异常，支付ID: {}，操作人: {}", id, currentUserId, e);
             return Result.error("删除支付记录失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 获取支付方式名称
+     *
+     * @param channel 支付渠道
+     * @return 支付方式名称
+     */
+    private String getPaymentMethodName(Integer channel) {
+        if (channel == null) {
+            return "未知";
+        }
+        return switch (channel) {
+            case 1 -> "支付宝";
+            case 2 -> "微信支付";
+            case 3 -> "银行卡";
+            default -> "其他";
+        };
     }
 }

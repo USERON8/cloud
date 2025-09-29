@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.processor;
 
-import com.cloud.common.domain.event.UserChangeEvent;
+import com.cloud.common.domain.event.user.UserChangeEvent;
 import com.cloud.common.utils.MessageUtils;
 import com.cloud.log.domain.document.UserEventDocument;
 import com.cloud.log.service.UserEventService;

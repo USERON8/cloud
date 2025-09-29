@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.processor;
 
-import com.cloud.common.domain.event.OrderChangeEvent;
+import com.cloud.common.domain.event.order.OrderChangeEvent;
 import com.cloud.common.utils.MessageUtils;
 import com.cloud.log.domain.document.OrderEventDocument;
 import com.cloud.log.service.OrderEventService;

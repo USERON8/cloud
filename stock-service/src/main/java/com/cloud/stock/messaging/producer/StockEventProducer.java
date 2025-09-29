@@ -1,6 +1,6 @@
 package com.cloud.stock.messaging.producer;
 
-import com.cloud.common.domain.event.StockChangeEvent;
+import com.cloud.common.domain.event.stock.StockChangeEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;

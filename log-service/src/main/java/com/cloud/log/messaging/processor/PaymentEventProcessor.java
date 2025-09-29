@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.processor;
 
-import com.cloud.common.domain.event.PaymentChangeEvent;
+import com.cloud.common.domain.event.payment.PaymentChangeEvent;
 import com.cloud.common.utils.MessageUtils;
 import com.cloud.log.domain.document.PaymentEventDocument;
 import com.cloud.log.service.PaymentEventService;
@@ -41,7 +41,7 @@ public class PaymentEventProcessor {
             MessageUtils.logMessageReceive("payment-events", event, traceId);
 
             // 幂等性检查
-            if (paymentEventService.existsByPaymentIdAndEventType(event.getPaymentId(), eventType, traceId)) {
+            if (paymentEventService.existsByPaymentIdAndEventType(String.valueOf(event.getPaymentId()), eventType, traceId)) {
                 log.warn("⚠️ 支付事件已处理，跳过重复处理 - 支付ID: {}, 事件类型: {}, TraceId: {}",
                         event.getPaymentId(), eventType, traceId);
                 return;
@@ -76,25 +76,25 @@ public class PaymentEventProcessor {
 
         return PaymentEventDocument.builder()
                 .id(generateDocumentId(event.getPaymentId(), eventType, traceId))
-                .paymentId(event.getPaymentId())
-                .orderId(event.getOrderId())
+                .paymentId(String.valueOf(event.getPaymentId()))
+                .orderId(String.valueOf(event.getOrderId()))
                 .userId(event.getUserId())
                 .eventType(eventType)
                 .tag(tag)
                 .traceId(traceId)
-                .paymentMethod(Integer.valueOf(event.getPaymentMethod()))
+                .paymentMethod(convertPaymentMethodToInteger(event.getPaymentMethod()))
                 .paymentAmount(event.getAmount())
-                .oldPaymentStatus(event.getBeforeStatus())
-                .paymentStatus(event.getAfterStatus())
-                .thirdPartyTxnId(event.getThirdPartyTransactionId())
-                .productDescription(event.getDescription())
-                .remark(event.getReason())
-                .operatorId(Long.valueOf(event.getOperatorId()))
-                .operatorName(event.getOperatorName())
-                .paymentIp(event.getClientIp())
-                .userAgent(event.getUserAgent())
-                .deviceInfo(event.getDeviceId())
-                .eventTime(event.getOperateTime() != null ? event.getOperateTime() : LocalDateTime.now())
+                .oldPaymentStatus(convertPaymentStatusToInteger(event.getBeforeStatus()))
+                .paymentStatus(convertPaymentStatusToInteger(event.getAfterStatus()))
+                .thirdPartyTxnId(null) // PaymentChangeEvent没有这个字段
+                .productDescription(null) // PaymentChangeEvent没有这个字段
+                .remark(event.getRemark())
+                .operatorId(null) // PaymentChangeEvent没有这个字段，使用operator字段
+                .operatorName(event.getOperator())
+                .paymentIp(null) // PaymentChangeEvent没有这个字段
+                .userAgent(null) // PaymentChangeEvent没有这个字段
+                .deviceInfo(null) // PaymentChangeEvent没有这个字段
+                .eventTime(event.getChangeTime() != null ? event.getChangeTime() : LocalDateTime.now())
                 .messageTimestamp(timestamp != null ? timestamp : System.currentTimeMillis())
                 .processTime(LocalDateTime.now())
                 .build();
@@ -112,7 +112,73 @@ public class PaymentEventProcessor {
     /**
      * 生成文档ID
      */
-    private String generateDocumentId(String paymentId, String eventType, String traceId) {
+    private String generateDocumentId(Long paymentId, String eventType, String traceId) {
         return String.format("payment_%s_%s_%s_%d", paymentId, eventType, traceId, System.currentTimeMillis());
+    }
+
+    /**
+     * 转换支付方式字符串为整数
+     */
+    private Integer convertPaymentMethodToInteger(String paymentMethod) {
+        if (paymentMethod == null) {
+            return 0; // 默认值
+        }
+
+        // 根据支付方式字符串转换为对应的整数值
+        switch (paymentMethod.toUpperCase()) {
+            case "ALIPAY":
+            case "支付宝":
+                return 1;
+            case "WECHAT":
+            case "WECHAT_PAY":
+            case "微信":
+            case "微信支付":
+                return 2;
+            case "BANK_CARD":
+            case "银行卡":
+                return 3;
+            case "REFUND":
+            case "退款":
+                return 99;
+            default:
+                return 0; // 未知支付方式
+        }
+    }
+
+    /**
+     * 转换支付状态字符串为整数
+     */
+    private Integer convertPaymentStatusToInteger(String status) {
+        if (status == null) {
+            return 0; // 默认值
+        }
+
+        // 根据支付状态字符串转换为对应的整数值
+        switch (status.toUpperCase()) {
+            case "PENDING":
+            case "待支付":
+                return 1;
+            case "PROCESSING":
+            case "支付中":
+                return 2;
+            case "SUCCESS":
+            case "PAID":
+            case "支付成功":
+                return 3;
+            case "FAILED":
+            case "支付失败":
+                return 4;
+            case "REFUNDED":
+            case "REFUND_PENDING":
+            case "已退款":
+                return 5;
+            default:
+                // 尝试直接解析为数字
+                try {
+                    return Integer.parseInt(status);
+                } catch (NumberFormatException e) {
+                    return 0; // 未知状态
+                }
+        }
     }
 }

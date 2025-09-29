@@ -1,7 +1,7 @@
 package com.cloud.payment.converter;
 
 import com.cloud.common.domain.dto.payment.PaymentDTO;
-import com.cloud.common.domain.vo.PaymentVO;
+import com.cloud.common.domain.vo.payment.PaymentVO;
 import com.cloud.payment.module.entity.Payment;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

@@ -1,7 +1,7 @@
 package com.cloud.user.converter;
 
 import com.cloud.common.domain.dto.user.AdminDTO;
-import com.cloud.common.domain.vo.AdminVO;
+import com.cloud.common.domain.vo.user.AdminVO;
 import com.cloud.user.module.entity.Admin;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

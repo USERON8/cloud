@@ -1,9 +1,13 @@
 package com.cloud.order.messaging.producer;
 
 import com.cloud.common.constant.MessageTopicConstants;
-import com.cloud.common.domain.event.OrderChangeEvent;
-import com.cloud.common.domain.event.OrderCompletedEvent;
-import com.cloud.common.domain.event.OrderCreatedEvent;
+import com.cloud.common.domain.event.order.OrderChangeEvent;
+import com.cloud.common.domain.event.order.OrderCompletedEvent;
+import com.cloud.common.domain.event.order.OrderCreatedEvent;
+import com.cloud.common.domain.event.payment.PaymentRecordCreateEvent;
+import com.cloud.common.domain.event.stock.StockConfirmEvent;
+import com.cloud.common.domain.event.stock.StockReserveEvent;
+import com.cloud.common.domain.event.stock.StockRollbackEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -181,7 +185,7 @@ public class OrderEventProducer {
      *
      * @param event 库存预扣减事件
      */
-    public void sendStockReserveEvent(com.cloud.common.domain.event.StockReserveEvent event) {
+    public void sendStockReserveEvent(StockReserveEvent event) {
         try {
             // 构庺消息头
             Map<String, Object> headers = createMessageHeaders(
@@ -191,7 +195,7 @@ public class OrderEventProducer {
             );
 
             // 使用GenericMessage构庺消息
-            Message<com.cloud.common.domain.event.StockReserveEvent> message = new GenericMessage<>(event, headers);
+            Message<StockReserveEvent> message = new GenericMessage<>(event, headers);
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送库存预扣减事件 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}",
@@ -222,7 +226,7 @@ public class OrderEventProducer {
      *
      * @param event 库存确认扣减事件
      */
-    public void sendStockConfirmEvent(com.cloud.common.domain.event.StockConfirmEvent event) {
+    public void sendStockConfirmEvent(StockConfirmEvent event) {
         try {
             // 构庺消息头
             Map<String, Object> headers = createMessageHeaders(
@@ -232,7 +236,7 @@ public class OrderEventProducer {
             );
 
             // 使用GenericMessage构庺消息
-            Message<com.cloud.common.domain.event.StockConfirmEvent> message = new GenericMessage<>(event, headers);
+            Message<StockConfirmEvent> message = new GenericMessage<>(event, headers);
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送库存确认扣减事件 - 订单ID: {}, 订单号: {}, 商品数量: {}, 追踪ID: {}",
@@ -263,7 +267,7 @@ public class OrderEventProducer {
      *
      * @param event 库存回滚事件
      */
-    public void sendStockRollbackEvent(com.cloud.common.domain.event.StockRollbackEvent event) {
+    public void sendStockRollbackEvent(StockRollbackEvent event) {
         try {
             // 构庺消息头
             Map<String, Object> headers = createMessageHeaders(
@@ -273,7 +277,7 @@ public class OrderEventProducer {
             );
 
             // 使用GenericMessage构庺消息
-            Message<com.cloud.common.domain.event.StockRollbackEvent> message = new GenericMessage<>(event, headers);
+            Message<StockRollbackEvent> message = new GenericMessage<>(event, headers);
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送库存回滚事件 - 订单ID: {}, 订单号: {}, 回滚类型: {}, 商品数量: {}, 追踪ID: {}",
@@ -305,7 +309,7 @@ public class OrderEventProducer {
      *
      * @param event 支付记录创建事件
      */
-    public void sendPaymentRecordCreateEvent(com.cloud.common.domain.event.PaymentRecordCreateEvent event) {
+    public void sendPaymentRecordCreateEvent(PaymentRecordCreateEvent event) {
         try {
             // 构庺消息头
             Map<String, Object> headers = createMessageHeaders(
@@ -315,7 +319,7 @@ public class OrderEventProducer {
             );
 
             // 使用GenericMessage构庺消息
-            Message<com.cloud.common.domain.event.PaymentRecordCreateEvent> message = new GenericMessage<>(event, headers);
+            Message<PaymentRecordCreateEvent> message = new GenericMessage<>(event, headers);
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送支付记录创建事件 - 订单ID: {}, 订单号: {}, 支付金额: {}, 追踪ID: {}",

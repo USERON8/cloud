@@ -1,7 +1,7 @@
 package com.cloud.stock.converter;
 
 import com.cloud.common.domain.dto.stock.StockDTO;
-import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.stock.module.entity.Stock;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

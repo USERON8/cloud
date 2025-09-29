@@ -1,0 +1,69 @@
+{
+  "properties": {
+    "shopId": {
+      "type": "long"
+    },
+    "merchantId": {
+      "type": "long"
+    },
+    "shopName": {
+      "type": "text",
+      "analyzer": "standard",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "shopNameKeyword": {
+      "type": "keyword"
+    },
+    "avatarUrl": {
+      "type": "keyword"
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "standard"
+    },
+    "contactPhone": {
+      "type": "keyword"
+    },
+    "address": {
+      "type": "text",
+      "analyzer": "standard"
+    },
+    "status": {
+      "type": "integer"
+    },
+    "productCount": {
+      "type": "integer"
+    },
+    "rating": {
+      "type": "double"
+    },
+    "reviewCount": {
+      "type": "integer"
+    },
+    "followCount": {
+      "type": "integer"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss.SSS||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "updatedAt": {
+      "type": "date", 
+      "format": "yyyy-MM-dd HH:mm:ss.SSS||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "searchWeight": {
+      "type": "double"
+    },
+    "hotScore": {
+      "type": "double"
+    },
+    "recommended": {
+      "type": "boolean"
+    }
+  }
+}

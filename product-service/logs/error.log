@@ -1,0 +1,89 @@
+2025-09-28 18:21:28.701 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+The bean 'redisCacheManager', defined in class path resource [com/cloud/common/config/RedisConfig.class], could not be registered. A bean with that name has already been defined in class path resource [com/cloud/common/cache/config/CacheConfigFactory.class] and overriding is disabled.
+
+Action:
+
+Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
+
+2025-09-28 18:21:58.004 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+An attempt was made to call a method that does not exist. The attempt was made from the following location:
+
+    org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$LegacyResourceElement.<init>(CommonAnnotationBeanPostProcessor.java:781)
+
+The following method did not exist:
+
+    'java.lang.String javax.annotation.Resource.lookup()'
+
+The calling method's class, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$LegacyResourceElement, was loaded from the following location:
+
+    jar:nested:/D:/Download/Code/sofware/cloud/product-service/target/product-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/spring-context-6.2.8.jar!/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor$LegacyResourceElement.class
+
+The called method's class, javax.annotation.Resource, is available from the following locations:
+
+    jar:nested:/D:/Download/Code/sofware/cloud/product-service/target/product-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/annotations-api-6.0.53.jar!/javax/annotation/Resource.class
+
+The called method's class hierarchy was loaded from the following locations:
+
+    javax.annotation.Resource: jar:nested:/D:/Download/Code/sofware/cloud/product-service/target/product-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/annotations-api-6.0.53.jar!/
+
+
+Action:
+
+Correct the classpath of your application so that it contains compatible versions of the classes org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$LegacyResourceElement and javax.annotation.Resource
+
+2025-09-28 18:29:29.815 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.817 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.817 [nacos.publisher-com.alibaba.nacos.common.ability.AbstractAbilityControlManager$AbilityUpdateEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.818 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.815 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.816 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 18:29:29.817 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)

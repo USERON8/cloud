@@ -2,7 +2,7 @@ package com.cloud.payment.controller;
 
 import com.cloud.api.payment.PaymentFeignClient;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
-import com.cloud.common.domain.vo.PaymentVO;
+import com.cloud.common.domain.vo.payment.PaymentVO;
 import com.cloud.common.result.Result;
 import com.cloud.payment.converter.PaymentConverter;
 import com.cloud.payment.module.entity.Payment;

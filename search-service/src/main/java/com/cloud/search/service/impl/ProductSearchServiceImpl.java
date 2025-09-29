@@ -1,6 +1,6 @@
 package com.cloud.search.service.impl;
 
-import com.cloud.common.domain.event.ProductSearchEvent;
+import com.cloud.common.domain.event.product.ProductSearchEvent;
 
 
 
@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.Collections;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;

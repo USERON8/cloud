@@ -3,7 +3,7 @@ package com.cloud.product.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
-import com.cloud.common.domain.vo.ProductVO;
+import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.module.dto.ProductPageDTO;

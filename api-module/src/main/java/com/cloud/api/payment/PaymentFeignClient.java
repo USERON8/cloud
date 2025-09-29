@@ -1,7 +1,7 @@
 package com.cloud.api.payment;
 
 import com.cloud.common.domain.dto.payment.PaymentDTO;
-import com.cloud.common.domain.vo.PaymentVO;
+import com.cloud.common.domain.vo.payment.PaymentVO;
 import com.cloud.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

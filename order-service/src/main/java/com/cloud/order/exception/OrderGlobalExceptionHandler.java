@@ -29,15 +29,7 @@ public class OrderGlobalExceptionHandler extends com.cloud.common.exception.Glob
         return Result.error(ex.getCode(), ex.getMessage());
     }
 
-    /**
-     * 处理订单状态异常
-     */
-    @ExceptionHandler(OrderStatusException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<String> handleOrderStatusException(OrderStatusException ex) {
-        log.warn("订单状态异常: {}", ex.getMessage());
-        return Result.error(ex.getCode(), ex.getMessage());
-    }
+
 
     /**
      * 处理库存不足异常

@@ -8,19 +8,19 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
-import com.cloud.common.domain.vo.UserVO;
+import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.event.UserEventStreamPublisher;
 import com.cloud.user.event.UserEventUtils;
 import com.cloud.user.exception.UserServiceException;
 import com.cloud.user.mapper.UserMapper;
-
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
@@ -32,7 +32,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +54,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private final MerchantService merchantService;
     private final MerchantConverter merchantConverter;
     private final UserEventStreamPublisher userEventStreamPublisher;
-    // private final UnifiedBusinessLogProducer businessLogProducer;
+    // private final BusinessLogProducer businessLogProducer;
     private final AsyncLogProducer asyncLogProducer;
 
     @Override
@@ -506,7 +505,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     userDTO.getNickname() : userDTO.getUsername());
             merchantDTO.setEmail(userDTO.getEmail());
             merchantDTO.setPhone(userDTO.getPhone());
-            merchantDTO.setUserType(userDTO.getUserType());
+            merchantDTO.setUserType(String.valueOf(userDTO.getUserType()));
             merchantDTO.setStatus(userDTO.getStatus());
             merchantDTO.setAuthStatus(0); // 默认为待审核状态
 

@@ -5,7 +5,7 @@ import com.cloud.common.annotation.RequireUserType;
 import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
-import com.cloud.common.domain.vo.UserVO;
+import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.user.service.UserService;

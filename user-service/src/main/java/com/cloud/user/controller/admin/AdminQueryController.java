@@ -8,7 +8,7 @@ import com.cloud.common.annotation.RequireUserType;
 import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminPageDTO;
-import com.cloud.common.domain.vo.AdminVO;
+import com.cloud.common.domain.vo.user.AdminVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.utils.PageUtils;

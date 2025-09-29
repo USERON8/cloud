@@ -1,8 +1,8 @@
 package com.cloud.payment.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cloud.common.domain.event.OrderCompleteEvent;
-import com.cloud.common.domain.event.OrderCreateEvent;
+import com.cloud.common.domain.event.order.OrderCreatedEvent;
+import com.cloud.common.domain.event.payment.PaymentRecordCreateEvent;
 import com.cloud.payment.module.entity.Payment;
 
 /**
@@ -11,10 +11,6 @@ import com.cloud.payment.module.entity.Payment;
  * @createDate 2025-08-17 20:53:31
  */
 public interface PaymentService extends IService<Payment> {
-
-    boolean createPaymentForOrder(OrderCreateEvent event);
-
-    boolean completePaymentForOrder(OrderCompleteEvent event);
 
     /**
      * 检查支付记录是否存在
@@ -30,5 +26,13 @@ public interface PaymentService extends IService<Payment> {
      * @param event 订单创建事件
      * @return 是否成功
      */
-    boolean createPaymentRecord(com.cloud.common.domain.event.OrderCreatedEvent event);
+    boolean createPaymentRecord(OrderCreatedEvent event);
+
+    /**
+     * 创建支付记录
+     *
+     * @param event 支付记录创建事件
+     * @return 是否成功
+     */
+    boolean createPaymentRecord(PaymentRecordCreateEvent event);
 }

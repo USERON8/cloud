@@ -1,0 +1,57 @@
+ackage com.cloud.payment.module.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * 支付宝支付创建响应
+ *
+ * @author what's up
+ * @since 1.0.0
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "支付宝支付创建响应")
+public class AlipayCreateResponse {
+
+    /**
+     * 支付表单HTML
+     */
+    @Schema(description = "支付表单HTML，前端需要将此HTML插入页面并自动提交")
+    private String paymentForm;
+
+    /**
+     * 支付ID
+     */
+    @Schema(description = "支付ID")
+    private Long paymentId;
+
+    /**
+     * 订单号
+     */
+    @Schema(description = "订单号")
+    private String outTradeNo;
+
+    /**
+     * 支付状态
+     */
+    @Schema(description = "支付状态：0-待支付，1-成功，2-失败，3-已退款")
+    private Integer status;
+
+    /**
+     * 创建时间戳
+     */
+    @Schema(description = "创建时间戳")
+    private Long timestamp;
+
+    /**
+     * 跟踪ID
+     */
+    @Schema(description = "跟踪ID，用于幂等性处理")
+    private String traceId;
+}

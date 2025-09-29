@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.processor;
 
-import com.cloud.common.domain.event.StockChangeEvent;
+import com.cloud.common.domain.event.stock.StockChangeEvent;
 import com.cloud.common.utils.MessageUtils;
 import com.cloud.log.domain.document.StockEventDocument;
 import com.cloud.log.service.StockEventService;

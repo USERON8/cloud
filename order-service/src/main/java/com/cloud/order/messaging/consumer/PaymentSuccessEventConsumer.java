@@ -1,6 +1,6 @@
 package com.cloud.order.messaging.consumer;
 
-import com.cloud.common.domain.event.PaymentSuccessEvent;
+import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
 import com.cloud.order.service.OrderBusinessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

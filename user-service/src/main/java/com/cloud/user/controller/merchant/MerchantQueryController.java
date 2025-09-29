@@ -1,23 +1,17 @@
 package com.cloud.user.controller.merchant;
 
-import com.cloud.common.domain.vo.user.UserAddressVO;
-import com.cloud.common.domain.vo.merchant.MerchantVO;
-import com.cloud.common.domain.vo.MerchantAuthVO;
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.common.utils.PageUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.MerchantShopDTO;
-
-import com.cloud.common.domain.dto.user.*;
-
+import com.cloud.common.domain.vo.user.MerchantAuthVO;
+import com.cloud.common.domain.vo.user.MerchantVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
-import com.cloud.common.security.OAuth2Permissions;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.common.utils.PageUtils;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserAddressConverter;
@@ -115,7 +109,7 @@ public class MerchantQueryController {
         // 在实际项目中，店铺信息应该由专用的店铺服务管理
         // 这里提供一个模拟实现
         log.info("查询商家店铺，商家ID: {}", merchantId);
-        
+
         // 模拟店铺数据
         List<MerchantShopDTO> shops = createMockShops(merchantId);
         return Result.success("查询成功", shops);
@@ -135,7 +129,7 @@ public class MerchantQueryController {
         }
 
         log.info("查询店铺详情，店铺ID: {}", id);
-        
+
         // 模拟店铺数据
         MerchantShopDTO shop = createMockShop(id, 1L); // 默认商家ID为1
         return Result.success("查询成功", shop);
@@ -148,7 +142,7 @@ public class MerchantQueryController {
 
 
         log.info("查询所有店铺信息");
-        
+
         // 模拟所有店铺数据
         List<MerchantShopDTO> allShops = createAllMockShops();
         return Result.success("查询成功", allShops);
@@ -243,7 +237,7 @@ public class MerchantQueryController {
             Page<Merchant> resultPage = merchantService.page(page, queryWrapper);
 
             // 转换为VO列表
-            List<com.cloud.common.domain.vo.merchant.MerchantVO> merchantVOList = new ArrayList<>();
+            List<MerchantVO> merchantVOList = new ArrayList<>();
 
             // 封装分页结果
             PageResult<MerchantVO> pageResult = PageResult.of(
@@ -309,9 +303,9 @@ public class MerchantQueryController {
     @PostMapping("/address/page")
     @Operation(summary = "分页查询用户地址信息", description = "分页查询用户地址信息")
     public Result<PageResult<com.cloud.common.domain.vo.user.UserAddressVO>> pageUserAddress(@RequestBody
-                                                             @Parameter(description = "分页查询条件")
-                                                             @Valid @NotNull(message = "分页查询条件不能为空") UserAddressPageDTO pageDTO,
-                                                             Authentication authentication) {
+                                                                                             @Parameter(description = "分页查询条件")
+                                                                                             @Valid @NotNull(message = "分页查询条件不能为空") UserAddressPageDTO pageDTO,
+                                                                                             Authentication authentication) {
 
         // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
@@ -361,7 +355,7 @@ public class MerchantQueryController {
      */
     private List<MerchantShopDTO> createMockShops(Long merchantId) {
         List<MerchantShopDTO> shops = new ArrayList<>();
-        
+
         for (int i = 1; i <= 3; i++) {
             MerchantShopDTO shop = new MerchantShopDTO();
             shop.setId((long) i);
@@ -377,13 +371,13 @@ public class MerchantQueryController {
             // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
             shop.setCreateTime(LocalDateTime.now().minusDays(30 - i));
             shop.setUpdateTime(LocalDateTime.now());
-            
+
             shops.add(shop);
         }
-        
+
         return shops;
     }
-    
+
     /**
      * 创建单个模拟店铺数据
      */
@@ -402,21 +396,21 @@ public class MerchantQueryController {
         // // shop.setter temporarily commented out - waiting for complete MerchantShopDTO implementation // 临时注释掉，等实体类完善后再启用
         shop.setCreateTime(LocalDateTime.now().minusDays(30));
         shop.setUpdateTime(LocalDateTime.now());
-        
+
         return shop;
     }
-    
+
     /**
      * 创建所有模拟店铺数据
      */
     private List<MerchantShopDTO> createAllMockShops() {
         List<MerchantShopDTO> allShops = new ArrayList<>();
-        
+
         // 为多个商家创建店铺
         for (Long merchantId = 1L; merchantId <= 5L; merchantId++) {
             allShops.addAll(createMockShops(merchantId));
         }
-        
+
         return allShops;
     }
 

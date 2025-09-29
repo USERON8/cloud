@@ -1,0 +1,61 @@
+ackage com.cloud.api.user;
+
+import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 用户服务Feign客户端
+ * 用于服务间调用用户服务的接口
+ *
+ * @author what's up
+ */
+@FeignClient(name = "user-service", path = "/user", contextId = "user-feign-client")
+public interface UserFeignClient {
+
+    /**
+     * 根据用户名查找用户
+     *
+     * @param username 用户名
+     * @return 用户信息
+     */
+    @GetMapping("/internal/username/{username}")
+    UserDTO findByUsername(@PathVariable("username") String username);
+
+    /**
+     * 根据ID查找用户
+     *
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    @GetMapping("/internal/id/{id}")
+    UserDTO findById(@PathVariable("id") Long id);
+
+    /**
+     * 保存用户信息
+     *
+     * @param registerRequest 用户注册信息
+     * @return 是否保存成功
+     */
+    @PostMapping("/internal/register")
+    UserDTO register(@RequestBody RegisterRequestDTO registerRequest);
+
+    /**
+     * 更新用户信息
+     *
+     * @param userDTO 用户信息
+     * @return 是否更新成功
+     */
+    @PutMapping("/internal/update")
+    Boolean update(@RequestBody UserDTO userDTO);
+
+    /**
+     * 获取用户密码（仅供auth-service使用）
+     *
+     * @param username 用户名
+     * @return 加密后的密码
+     */
+    @GetMapping("/internal/password/{username}")
+    String getUserPassword(@PathVariable("username") String username);
+}

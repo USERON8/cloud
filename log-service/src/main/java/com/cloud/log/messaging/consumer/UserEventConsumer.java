@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.consumer;
 
-import com.cloud.common.domain.event.UserChangeEvent;
+import com.cloud.common.domain.event.user.UserChangeEvent;
 import com.cloud.log.messaging.processor.UserEventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

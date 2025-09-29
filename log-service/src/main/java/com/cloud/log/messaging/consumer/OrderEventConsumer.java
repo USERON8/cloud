@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.consumer;
 
-import com.cloud.common.domain.event.OrderChangeEvent;
+import com.cloud.common.domain.event.order.OrderChangeEvent;
 import com.cloud.log.messaging.processor.OrderEventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

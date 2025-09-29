@@ -5,7 +5,7 @@ import com.cloud.common.annotation.RequireUserType;
 import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
-import com.cloud.common.domain.vo.UserVO;
+import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "用户服务", description = "用户资源的RESTful API接口")
 public class UserController {
-    
+
     private final UserService userService;
     private final UserConverter userConverter = UserConverter.INSTANCE;
 
@@ -52,14 +52,14 @@ public class UserController {
             @Parameter(description = "用户名") @RequestParam(required = false) String username,
             @Parameter(description = "邮箱") @RequestParam(required = false) String email,
             @Parameter(description = "用户类型") @RequestParam(required = false) String userType) {
-        
+
         UserPageDTO userPageDTO = new UserPageDTO();
         userPageDTO.setCurrent(page.longValue());
         userPageDTO.setSize(size.longValue());
         userPageDTO.setUsername(username);
         userPageDTO.setPhone(email); // UserPageDTO没有email字段，使用phone字段
         userPageDTO.setUserType(userType);
-        
+
         return Result.success(userService.pageQuery(userPageDTO));
     }
 
@@ -85,17 +85,17 @@ public class UserController {
             @Parameter(description = "用户ID") @PathVariable
             @Positive(message = "用户ID必须为正整数") Long id,
             Authentication authentication) {
-        
+
         // 权限检查：管理员或用户本人可以查看
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限查看此用户信息");
         }
-        
+
         UserDTO user = userService.getUserById(id);
         if (user == null) {
             return Result.error("用户不存在");
         }
-        
+
         return Result.success("查询成功", user);
     }
 
@@ -109,17 +109,17 @@ public class UserController {
     public Result<UserDTO> createUser(
             @Parameter(description = "用户信息") @RequestBody
             @Valid @NotNull(message = "用户信息不能为空") UserDTO userDTO) {
-        
+
         try {
             // 转换为注册请求DTO并调用注册方法
             com.cloud.common.domain.dto.auth.RegisterRequestDTO registerRequest =
-                new com.cloud.common.domain.dto.auth.RegisterRequestDTO();
+                    new com.cloud.common.domain.dto.auth.RegisterRequestDTO();
             registerRequest.setUsername(userDTO.getUsername());
             registerRequest.setPassword("123456"); // UserDTO没有password字段，使用默认密码
             // registerRequest.setEmail(userDTO.getEmail()); // RegisterRequestDTO可能没有email字段
             registerRequest.setPhone(userDTO.getPhone());
             registerRequest.setNickname(userDTO.getNickname());
-            registerRequest.setUserType(userDTO.getUserType());
+            registerRequest.setUserType(String.valueOf(userDTO.getUserType()));
 
             UserDTO createdUser = userService.registerUser(registerRequest);
             return Result.success("用户创建成功", createdUser);
@@ -142,7 +142,7 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         userDTO.setId(id);
-        
+
         // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限更新此用户信息");
@@ -169,7 +169,7 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         userDTO.setId(id);
-        
+
         // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限更新此用户信息");
@@ -195,7 +195,7 @@ public class UserController {
     public Result<Boolean> deleteUser(
             @Parameter(description = "用户ID") @PathVariable
             @Positive(message = "用户ID必须为正整数") Long id) {
-        
+
         try {
             boolean result = userService.deleteUserById(id);
             return Result.success("用户删除成功", result);
@@ -213,12 +213,12 @@ public class UserController {
     public Result<UserDTO> getUserProfile(
             @Parameter(description = "用户ID") @PathVariable Long id,
             Authentication authentication) {
-        
+
         // 权限检查：管理员或用户本人可以查看
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限查看此用户档案");
         }
-        
+
         try {
             UserDTO userProfile = userService.getUserById(id);
             return Result.success("查询成功", userProfile);
@@ -241,7 +241,7 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         profileDTO.setId(id);
-        
+
         // 权限检查：管理员或用户本人可以更新
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
             return Result.forbidden("无权限更新此用户档案");
@@ -267,7 +267,7 @@ public class UserController {
     public Result<Boolean> updateUserStatus(
             @Parameter(description = "用户ID") @PathVariable Long id,
             @Parameter(description = "用户状态") @RequestParam Integer status) {
-        
+
         try {
             // 创建用户实体并更新状态
             UserDTO userDTO = userService.getUserById(id);

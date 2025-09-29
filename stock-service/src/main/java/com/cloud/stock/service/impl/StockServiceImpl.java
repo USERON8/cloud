@@ -4,7 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.stock.StockDTO;
-import com.cloud.common.domain.vo.StockVO;
+import com.cloud.common.domain.event.order.OrderCompletedEvent;
+import com.cloud.common.domain.event.order.OrderCreatedEvent;
+import com.cloud.common.domain.event.stock.StockConfirmEvent;
+import com.cloud.common.domain.event.stock.StockReserveEvent;
+import com.cloud.common.domain.event.stock.StockRollbackEvent;
+import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
@@ -18,7 +23,7 @@ import com.cloud.stock.exception.StockOperationException;
 import com.cloud.stock.mapper.StockInMapper;
 import com.cloud.stock.mapper.StockMapper;
 import com.cloud.stock.mapper.StockOutMapper;
-import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.stock.module.dto.StockPageDTO;
@@ -39,7 +44,6 @@ import java.util.List;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CachePut;
 
 /**
  * 库存服务实现类
@@ -55,7 +59,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     private final StockInMapper stockInMapper;
     private final StockOutMapper stockOutMapper;
     private final StockConverter stockConverter;
-    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final BusinessLogProducer businessLogProducer;
     private final AsyncLogProducer asyncLogProducer;
 
     @Override
@@ -524,13 +528,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean unfreezeAndDeductStock(com.cloud.common.domain.event.OrderCompletedEvent event) {
+    public boolean unfreezeAndDeductStock(OrderCompletedEvent event) {
         log.info("解冻并扣减库存，订单ID：{}，商品数量：{}", event.getOrderId(),
                 event.getOrderItems() != null ? event.getOrderItems().size() : 0);
         try {
             // 遍历库存扣减信息，解冻并扣减库存
             if (event.getOrderItems() != null) {
-                for (com.cloud.common.domain.event.OrderCompletedEvent.OrderItem item : event.getOrderItems()) {
+                for (OrderCompletedEvent.OrderItem item : event.getOrderItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -609,13 +613,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean freezeStock(com.cloud.common.domain.event.OrderCreatedEvent event) {
+    public boolean freezeStock(OrderCreatedEvent event) {
         log.info("冻结库存，订单ID：{}，商品数量：{}", event.getOrderId(),
                 event.getOrderItems() != null ? event.getOrderItems().size() : 0);
         try {
             // 遍历订单项，冻结库存
             if (event.getOrderItems() != null) {
-                for (com.cloud.common.domain.event.OrderCreatedEvent.OrderItem item : event.getOrderItems()) {
+                for (OrderCreatedEvent.OrderItem item : event.getOrderItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -633,13 +637,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean reserveStock(com.cloud.common.domain.event.StockReserveEvent event) {
+    public boolean reserveStock(StockReserveEvent event) {
         log.info("预留库存，订单ID：{}，商品数量：{}", event.getOrderId(),
                 event.getReserveItems() != null ? event.getReserveItems().size() : 0);
         try {
             // 遍历预留项，预留库存
             if (event.getReserveItems() != null) {
-                for (com.cloud.common.domain.event.StockReserveEvent.StockReserveItem item : event.getReserveItems()) {
+                for (StockReserveEvent.StockReserveItem item : event.getReserveItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -675,13 +679,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean confirmStock(com.cloud.common.domain.event.StockConfirmEvent event) {
+    public boolean confirmStock(StockConfirmEvent event) {
         log.info("确认库存，订单ID：{}，商品数量：{}", event.getOrderId(),
                 event.getConfirmItems() != null ? event.getConfirmItems().size() : 0);
         try {
             // 遍历确认项，确认库存扣减
             if (event.getConfirmItems() != null) {
-                for (com.cloud.common.domain.event.StockConfirmEvent.StockConfirmItem item : event.getConfirmItems()) {
+                for (StockConfirmEvent.StockConfirmItem item : event.getConfirmItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 
@@ -717,13 +721,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean rollbackStock(com.cloud.common.domain.event.StockRollbackEvent event) {
+    public boolean rollbackStock(StockRollbackEvent event) {
         log.info("回滚库存，订单ID：{}，商品数量：{}", event.getOrderId(),
                 event.getRollbackItems() != null ? event.getRollbackItems().size() : 0);
         try {
             // 遍历订单项，回滚库存（释放预留）
             if (event.getRollbackItems() != null) {
-                for (com.cloud.common.domain.event.StockRollbackEvent.StockRollbackItem item : event.getRollbackItems()) {
+                for (StockRollbackEvent.StockRollbackItem item : event.getRollbackItems()) {
                     Long productId = item.getProductId();
                     Integer quantity = item.getQuantity();
 

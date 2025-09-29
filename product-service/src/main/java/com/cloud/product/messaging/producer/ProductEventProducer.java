@@ -1,7 +1,7 @@
 package com.cloud.product.messaging.producer;
 
 import com.cloud.common.domain.event.MerchantChangeEvent;
-import com.cloud.common.domain.event.ProductChangeEvent;
+import com.cloud.common.domain.event.product.ProductChangeEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;

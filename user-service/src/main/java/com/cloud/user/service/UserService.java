@@ -3,7 +3,7 @@ package com.cloud.user.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
-import com.cloud.common.domain.vo.UserVO;
+import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.user.module.entity.User;
 

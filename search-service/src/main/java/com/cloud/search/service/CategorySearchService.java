@@ -1,6 +1,6 @@
 package com.cloud.search.service;
 
-import com.cloud.common.domain.event.CategorySearchEvent;
+import com.cloud.common.domain.event.product.CategorySearchEvent;
 import com.cloud.search.document.CategoryDocument;
 
 import java.util.List;

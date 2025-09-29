@@ -2,7 +2,7 @@ package com.cloud.user.converter;
 
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
-import com.cloud.common.domain.vo.UserVO;
+import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.user.module.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

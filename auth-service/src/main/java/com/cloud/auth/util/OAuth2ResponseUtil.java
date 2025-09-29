@@ -50,7 +50,7 @@ public class OAuth2ResponseUtil {
         // 设置基本用户信息
         if (userDTO != null) {
             response.setUser(userDTO);
-            response.setUserType(userDTO.getUserType());
+            response.setUserType(userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null);
             response.setNickname(userDTO.getNickname());
         }
 
@@ -101,7 +101,7 @@ public class OAuth2ResponseUtil {
         // 设置用户相关信息
         if (userDTO != null) {
             response.setUser(userDTO);
-            response.setUserType(userDTO.getUserType());
+            response.setUserType(userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null);
             response.setNickname(userDTO.getNickname());
         }
 
@@ -169,7 +169,7 @@ public class OAuth2ResponseUtil {
         // 设置用户相关信息
         if (userDTO != null) {
             response.setUser(userDTO);
-            response.setUserType(userDTO.getUserType());
+            response.setUserType(userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null);
             response.setNickname(userDTO.getNickname());
         }
 

@@ -1,12 +1,12 @@
 package com.cloud.order.service.impl;
 
-import com.cloud.common.domain.event.OrderCompletedEvent;
-import com.cloud.common.domain.event.OrderCreatedEvent;
+import com.cloud.common.domain.event.order.OrderCompletedEvent;
+import com.cloud.common.domain.event.order.OrderCreatedEvent;
 import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.order.dto.SimpleOrderCreateDTO;
 import com.cloud.order.exception.OrderServiceException;
-import com.cloud.order.exception.OrderStatusException;
-import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.exception.InvalidStatusException;
 import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
@@ -38,7 +38,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
     private final OrderService orderService;
     private final OrderItemService orderItemService;
     private final OrderEventProducer orderEventProducer;
-    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final BusinessLogProducer businessLogProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -161,7 +161,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
             }
 
             if (order.getStatus() != 0) {
-                throw new OrderStatusException(orderId, order.getStatus().toString(), "支付完成");
+                throw InvalidStatusException.order(order.getStatus().toString(), "支付完成");
             }
 
             order.setStatus(1); // 设置为已支付状态
@@ -178,7 +178,7 @@ public class SimpleOrderServiceImpl implements SimpleOrderService {
             log.info("✅ 支付成功处理完成 - 订单ID: {}, 支付ID: {}", orderId, paymentId);
             return true;
 
-        } catch (EntityNotFoundException | OrderStatusException e) {
+        } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
             log.error("❌ 处理支付成功事件失败 - 订单ID: {}, 错误: {}", orderId, e.getMessage(), e);

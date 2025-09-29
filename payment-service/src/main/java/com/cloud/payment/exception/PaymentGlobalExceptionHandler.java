@@ -29,25 +29,7 @@ public class PaymentGlobalExceptionHandler extends com.cloud.common.exception.Gl
         return Result.error(ex.getCode(), ex.getMessage());
     }
 
-    /**
-     * 处理支付记录不存在异常
-     */
-    @ExceptionHandler(PaymentNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Result<String> handlePaymentNotFoundException(PaymentNotFoundException ex) {
-        log.warn("支付记录不存在异常: {}", ex.getMessage());
-        return Result.error(ex.getCode(), ex.getMessage());
-    }
 
-    /**
-     * 处理支付状态异常
-     */
-    @ExceptionHandler(PaymentStatusException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<String> handlePaymentStatusException(PaymentStatusException ex) {
-        log.warn("支付状态异常: {}", ex.getMessage());
-        return Result.error(ex.getCode(), ex.getMessage());
-    }
 
     /**
      * 处理余额不足异常

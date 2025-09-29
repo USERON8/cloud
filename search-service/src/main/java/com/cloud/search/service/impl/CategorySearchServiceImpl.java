@@ -1,6 +1,6 @@
 package com.cloud.search.service.impl;
 
-import com.cloud.common.domain.event.CategorySearchEvent;
+import com.cloud.common.domain.event.product.CategorySearchEvent;
 
 
 

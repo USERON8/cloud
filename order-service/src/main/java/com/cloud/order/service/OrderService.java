@@ -4,7 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
+import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.module.entity.Order;
 import jakarta.validation.Valid;
@@ -154,5 +155,5 @@ public interface OrderService extends IService<Order> {
      * @param event 支付成功事件
      * @return 是否更新成功
      */
-    Boolean updateOrderToPaid(com.cloud.common.domain.event.PaymentSuccessEvent event);
+    Boolean updateOrderToPaid(PaymentSuccessEvent event);
 }

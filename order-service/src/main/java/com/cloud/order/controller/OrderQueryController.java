@@ -2,14 +2,13 @@ package com.cloud.order.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.result.Result;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

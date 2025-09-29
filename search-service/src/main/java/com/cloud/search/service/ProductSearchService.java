@@ -1,6 +1,6 @@
 package com.cloud.search.service;
 
-import com.cloud.common.domain.event.ProductSearchEvent;
+import com.cloud.common.domain.event.product.ProductSearchEvent;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;

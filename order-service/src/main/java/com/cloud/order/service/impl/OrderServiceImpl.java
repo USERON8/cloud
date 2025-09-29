@@ -5,15 +5,16 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.event.OrderCompletedEvent;
-import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.common.domain.event.order.OrderCompletedEvent;
+import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
+import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.order.converter.OrderConverter;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
-import com.cloud.order.exception.OrderStatusException;
+import com.cloud.common.exception.InvalidStatusException;
 import com.cloud.order.mapper.OrderMapper;
-import com.cloud.common.messaging.UnifiedBusinessLogProducer;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
@@ -24,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.cloud.common.utils.UserContextUtils;
@@ -53,7 +53,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     private final OrderConverter orderConverter;
     private final OrderItemService orderItemService;
     private final OrderEventProducer orderEventProducer;
-    private final UnifiedBusinessLogProducer businessLogProducer;
+    private final BusinessLogProducer businessLogProducer;
     private final AsyncLogProducer asyncLogProducer;
 
     @Override
@@ -174,7 +174,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是待支付状态）
             if (order.getStatus() != 0) {
-                throw new OrderStatusException(orderId, order.getStatus().toString(), "支付");
+                throw InvalidStatusException.order(order.getStatus().toString(), "支付");
             }
             order.setStatus(1); // 设置为已支付状态
             boolean result = this.baseMapper.updateById(order) > 0;
@@ -201,7 +201,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 log.info("订单支付成功，订单ID: {}", orderId);
             }
             return result;
-        } catch (EntityNotFoundException | OrderStatusException e) {
+        } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
             log.error("支付订单失败: ", e);
@@ -227,7 +227,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是已支付状态）
             if (order.getStatus() != 1) {
-                throw new OrderStatusException(orderId, order.getStatus().toString(), "发货");
+                throw InvalidStatusException.order(order.getStatus().toString(), "发货");
             }
             order.setStatus(2); // 设置为已发货状态
             boolean result = this.baseMapper.updateById(order) > 0;
@@ -254,7 +254,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 log.info("订单发货成功，订单ID: {}", orderId);
             }
             return result;
-        } catch (EntityNotFoundException | OrderStatusException e) {
+        } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
             log.error("发货订单失败: ", e);
@@ -279,7 +279,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是已发货状态）
             if (order.getStatus() != 2) {
-                throw new OrderStatusException(orderId, order.getStatus().toString(), "完成");
+                throw InvalidStatusException.order(order.getStatus().toString(), "完成");
             }
             order.setStatus(3); // 设置为已完成状态
             boolean result = this.baseMapper.updateById(order) > 0;
@@ -310,7 +310,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             }
 
             return result;
-        } catch (EntityNotFoundException | OrderStatusException e) {
+        } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
             log.error("完成订单失败: ", e);
@@ -335,7 +335,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 验证订单状态（必须是待支付或已支付状态）
             if (order.getStatus() != 0 && order.getStatus() != 1) {
-                throw new OrderStatusException(orderId, order.getStatus().toString(), "取消");
+                throw InvalidStatusException.order(order.getStatus().toString(), "取消");
             }
             order.setStatus(-1); // 设置为已取消状态
             boolean result = this.baseMapper.updateById(order) > 0;
@@ -362,7 +362,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 log.info("订单取消成功，订单ID: {}", orderId);
             }
             return result;
-        } catch (EntityNotFoundException | OrderStatusException e) {
+        } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
             log.error("取消订单失败: ", e);
@@ -509,7 +509,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Boolean updateOrderToPaid(com.cloud.common.domain.event.PaymentSuccessEvent event) {
+    public Boolean updateOrderToPaid(PaymentSuccessEvent event) {
         try {
             Order order = this.baseMapper.selectById(event.getOrderId());
             if (order == null) {

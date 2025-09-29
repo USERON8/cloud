@@ -1,7 +1,7 @@
 package com.cloud.order.converter;
 
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.vo.OrderVO;
+import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.order.module.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

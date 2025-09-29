@@ -1,8 +1,9 @@
 package com.cloud.payment.messaging.producer;
 
 import com.cloud.common.constant.MessageTopicConstants;
-import com.cloud.common.domain.event.PaymentChangeEvent;
-import com.cloud.common.domain.event.PaymentSuccessEvent;
+import com.cloud.common.domain.event.RefundCreateEvent;
+import com.cloud.common.domain.event.payment.PaymentChangeEvent;
+import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
 import com.cloud.common.exception.MessageSendException;
 import com.cloud.common.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -147,19 +148,17 @@ public class PaymentEventProducer {
         }
     }
     
-    /*
-     * TODO: 待实现退款功能 - 暂时注释
+    /**
      * 发送退款创建事件
      * 通知相关服务处理退款创建
      *
      * @param event 退款创建事件
      */
-    /*
     public void sendRefundCreateEvent(RefundCreateEvent event) {
         try {
             // 构建消息头
             Map<String, Object> headers = createMessageHeaders(
-                    "refund-create",
+                    MessageTopicConstants.PaymentTags.REFUND_APPLIED,
                     "REFUND_CREATE_" + event.getRefundId(),
                     "REFUND_CREATE"
             );
@@ -169,29 +168,20 @@ public class PaymentEventProducer {
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送退款创建事件 - 退款ID: {}, 原支付ID: {}, 订单ID: {}, 退款金额: {}, 追踪ID: {}",
-                    event.getRefundId(), event.getOriginalPaymentId(), event.getOrderId(), 
+                    event.getRefundId(), event.getOriginalPaymentId(), event.getOrderId(),
                     event.getRefundAmount(), traceId);
 
-            // 发送消息到退款处理队列
-            boolean sent = streamBridge.send("refundCreate-out-0", message);
+            // 发送消息
+            streamBridge.send(PAYMENT_BINDING_NAME, message);
 
-            if (sent) {
-                log.info("✅ 退款创建事件发送成功 - 退款ID: {}, 原支付ID: {}, 订单ID: {}, 退款金额: {}, 追踪ID: {}",
-                        event.getRefundId(), event.getOriginalPaymentId(), event.getOrderId(), 
-                        event.getRefundAmount(), traceId);
-            } else {
-                log.error("❌ 退款创建事件发送失败 - 退款ID: {}, 原支付ID: {}, 订单ID: {}, 追踪ID: {}",
-                        event.getRefundId(), event.getOriginalPaymentId(), event.getOrderId(), traceId);
-                throw new MessageSendException("退款创建事件发送失败");
-            }
+            log.info("✅ 退款创建事件发送成功 - 退款ID: {}, 追踪ID: {}", event.getRefundId(), traceId);
 
         } catch (Exception e) {
-            log.error("❌ 发送退款创建事件时发生异常 - 退款ID: {}, 原支付ID: {}, 错误: {}",
-                    event.getRefundId(), event.getOriginalPaymentId(), e.getMessage(), e);
+            log.error("❌ 发送退款创建事件异常 - 退款ID: {}, 错误: {}",
+                    event.getRefundId(), e.getMessage(), e);
             throw new MessageSendException("发送退款创建事件异常", e);
         }
     }
-    */
 
     /**
      * 统一发送支付事件的内部方法

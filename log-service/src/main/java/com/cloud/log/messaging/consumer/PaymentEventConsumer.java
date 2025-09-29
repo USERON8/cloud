@@ -1,6 +1,6 @@
 package com.cloud.log.messaging.consumer;
 
-import com.cloud.common.domain.event.PaymentChangeEvent;
+import com.cloud.common.domain.event.payment.PaymentChangeEvent;
 import com.cloud.log.messaging.processor.PaymentEventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1267,3 +1267,185 @@ java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.
 2025-09-28 17:26:23.977 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 0 subscriber(s).
 2025-09-28 17:26:23.977 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
 2025-09-28 17:26:23.990 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+2025-09-28 23:05:47.578 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-28 23:05:47.689 [main] INFO  [] com.cloud.auth.AuthApplication - Starting AuthApplication using Java 17.0.14 with PID 34728 (D:\Download\Code\sofware\cloud\auth-service\target\classes started by what's up in D:\Download\Code\sofware\cloud\auth-service)
+2025-09-28 23:05:47.691 [main] DEBUG [] com.cloud.auth.AuthApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-09-28 23:05:47.692 [main] INFO  [] com.cloud.auth.AuthApplication - The following 1 profile is active: "dev"
+2025-09-28 23:05:47.774 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-28 23:05:50.578 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-28 23:05:50.585 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-28 23:05:50.640 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 16 ms. Found 0 Redis repository interfaces.
+2025-09-28 23:05:51.033 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-28 23:05:51.048 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-28 23:05:51.403 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=7def5f31-c694-3026-8773-e8bb11f1be60
+2025-09-28 23:05:53.436 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-28 23:05:53.454 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+2025-09-28 23:05:53.457 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-28 23:05:53.458 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-28 23:05:53.582 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-28 23:05:53.583 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5795 ms
+2025-09-28 23:05:53.970 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
+2025-09-28 23:05:55.588 [main] INFO  [] o.s.cloud.openfeign.FeignClientFactoryBean - For 'user-service' URL not provided. Will try picking an instance via load-balancing.
+2025-09-28 23:05:55.786 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置密码编码器
+2025-09-28 23:05:55.803 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ 密码编码器配置完成，默认算法: bcrypt，支持算法: [argon2, noop, pbkdf2, scrypt, bcrypt]
+2025-09-28 23:05:56.135 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
+2025-09-28 23:05:56.932 [redisson-netty-1-6] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
+2025-09-28 23:05:57.070 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
+2025-09-28 23:05:57.281 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - 🔧 配置OAuth2.1注册客户端仓库
+2025-09-28 23:05:57.298 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - ✅ OAuth2.1注册客户端仓库配置完成，注册客户端数量: 4
+2025-09-28 23:05:57.298 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - Web应用客户端: webapp-client (支持授权码+PKCE)
+2025-09-28 23:05:57.300 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - 移动应用客户端: mobile-client (公共客户端+PKCE)
+2025-09-28 23:05:57.301 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - 服务客户端: service-client (客户端凭证)
+2025-09-28 23:05:57.302 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig -    - 内部服务调用客户端: client-service (内部API访问)
+2025-09-28 23:05:57.309 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - 🔧 配置OAuth2.1授权服务器设置
+2025-09-28 23:05:57.312 [main] INFO  [] c.c.auth.config.OAuth21AuthorizationServerConfig - ✅ OAuth2.1授权服务器设置配置完成
+2025-09-28 23:05:57.330 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置Redis模板
+2025-09-28 23:05:57.486 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ Redis模板配置完成
+2025-09-28 23:05:57.555 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 生成OAuth2.1 RSA密钥对
+2025-09-28 23:05:58.168 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ RSA密钥对生成完成
+2025-09-28 23:05:58.169 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWK源
+2025-09-28 23:05:58.184 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWK源配置完成，密钥ID: 076cf17b-8210-4a74-a0a9-8497dd84e415
+2025-09-28 23:05:58.189 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT解码器
+2025-09-28 23:05:58.235 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT解码器配置完成（远程JWK URI）: http://localhost:8081/.well-known/jwks.json
+2025-09-28 23:05:58.261 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置增强版JWT权限转换器
+2025-09-28 23:05:58.263 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ 增强版JWT权限转换器配置完成
+2025-09-28 23:05:58.284 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2授权服务（Redis存储）
+2025-09-28 23:05:58.286 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2授权服务配置完成
+2025-09-28 23:05:58.296 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT编码器
+2025-09-28 23:05:58.307 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT编码器配置完成
+2025-09-28 23:05:58.319 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置OAuth2.1令牌生成器
+2025-09-28 23:05:58.324 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ OAuth2.1令牌生成器配置完成
+2025-09-28 23:05:58.468 [main] INFO  [] com.cloud.common.cache.config.CacheConfigFactory - 🔧 启用标准Redis缓存管理器: ttl=1800s, nullValues=false
+2025-09-28 23:05:58.501 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
+2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 23:05:58.533 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 23:05:58.555 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
+2025-09-28 23:05:58.556 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
+2025-09-28 23:05:58.653 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 认证异步线程池初始化完成 - 核心线程数: 3, 最大线程数: 8, 队列容量: 300
+2025-09-28 23:05:58.679 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ Token处理线程池初始化完成
+2025-09-28 23:05:58.698 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 安全日志线程池初始化完成 - 核心线程数: 2, 最大线程数: 6, 队列容量: 500
+2025-09-28 23:05:58.719 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ OAuth2处理线程池初始化完成
+2025-09-28 23:05:58.740 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 用户会话管理线程池初始化完成 - 核心线程数: 2, 最大线程数: 5, 队列容量: 200
+2025-09-28 23:05:58.758 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 认证服务通用异步线程池初始化完成
+2025-09-28 23:05:58.777 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置DAO认证提供者
+2025-09-28 23:05:58.786 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ DAO认证提供者配置完成
+2025-09-28 23:05:58.831 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置认证管理器
+2025-09-28 23:05:58.882 [main] INFO  [] o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name daoAuthenticationProvider
+2025-09-28 23:05:58.884 [main] WARN  [] o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2025-09-28 23:05:58.890 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ 认证管理器配置完成
+2025-09-28 23:05:58.893 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置用户详情服务验证器
+2025-09-28 23:05:58.894 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔍 验证用户详情服务配置
+2025-09-28 23:05:58.894 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - ✅ 用户详情服务配置验证通过
+2025-09-28 23:05:58.898 [main] INFO  [] c.cloud.auth.config.AuthenticationProviderConfig - 🔧 配置认证事件监听器
+2025-09-28 23:05:58.902 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - 🔧 配置JWT权限转换器
+2025-09-28 23:05:58.902 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ JWT权限转换器配置完成
+2025-09-28 23:05:58.906 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2同意服务（Redis存储）
+2025-09-28 23:05:58.908 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2同意服务配置完成
+2025-09-28 23:05:58.914 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置OAuth2专用Redis模板
+2025-09-28 23:05:58.914 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - ✅ OAuth2专用Redis模板配置完成
+2025-09-28 23:05:58.933 [main] INFO  [] com.cloud.auth.config.RedisOAuth2Config - 🔧 配置Redis健康检查器
+2025-09-28 23:05:59.076 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置OAuth2.1授权服务器安全过滤器链
+2025-09-28 23:05:59.278 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerMapping - 28 mappings in 'requestMappingHandlerMapping'
+2025-09-28 23:05:59.463 [main] DEBUG [] o.s.web.servlet.handler.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-09-28 23:05:59.946 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 2 endpoints beneath base path '/actuator'
+2025-09-28 23:06:00.149 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ OAuth2.1授权服务器安全过滤器链配置完成
+2025-09-28 23:06:00.783 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/oauth2/**'], Mvc [pattern='/.well-known/**'], Mvc [pattern='/connect/**'], Mvc [pattern='/userinfo']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, AuthorizationServerContextFilter, HeaderWriterFilter, CorsFilter, CsrfFilter, OidcLogoutEndpointFilter, LogoutFilter, OAuth2AuthorizationServerMetadataEndpointFilter, OAuth2AuthorizationEndpointFilter, OAuth2DeviceVerificationEndpointFilter, OidcProviderConfigurationEndpointFilter, NimbusJwkSetEndpointFilter, OAuth2ClientAuthenticationFilter, UsernamePasswordAuthenticationFilter, DefaultResourcesFilter, DefaultLoginPageGeneratingFilter, DefaultLogoutPageGeneratingFilter, ConcurrentSessionFilter, BearerTokenAuthenticationFilter, BasicAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter, OAuth2TokenEndpointFilter, OAuth2TokenIntrospectionEndpointFilter, OAuth2TokenRevocationEndpointFilter, OAuth2DeviceAuthorizationEndpointFilter, OidcUserInfoEndpointFilter
+2025-09-28 23:06:00.788 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置OAuth2.1资源服务器安全过滤器链
+2025-09-28 23:06:00.832 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ OAuth2.1资源服务器安全过滤器链配置完成
+2025-09-28 23:06:00.907 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置CORS跨域设置
+2025-09-28 23:06:00.908 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ CORS跨域设置配置完成
+2025-09-28 23:06:00.926 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure Or [Mvc [pattern='/auth/validate-token'], Mvc [pattern='/auth/refresh-token'], Mvc [pattern='/admin/**'], Mvc [pattern='/management/**']] with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, BearerTokenAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-28 23:06:00.929 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - 🔧 配置默认安全过滤器链
+2025-09-28 23:06:00.987 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ 默认安全过滤器链配置完成
+2025-09-28 23:06:01.033 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-28 23:06:01.047 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
+2025-09-28 23:06:01.288 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 23:06:01.699 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
+2025-09-28 23:06:01.892 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
+2025-09-28 23:06:05.881 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-09-28 23:06:06.307 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-28 23:06:06.309 [main] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 1 subscriber(s).
+2025-09-28 23:06:06.310 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - started bean '_org.springframework.integration.errorLogger'
+2025-09-28 23:06:06.312 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+2025-09-28 23:06:06.333 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/'
+2025-09-28 23:06:06.568 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP auth-service 192.168.43.181:8081 register finished
+2025-09-28 23:06:07.719 [main] INFO  [] com.cloud.auth.AuthApplication - Started AuthApplication in 29.837 seconds (process running for 30.586)
+2025-09-28 23:06:07.732 [main] INFO  [] com.cloud.common.cache.warmup.CacheWarmupManager - 未配置缓存预热策略，跳过预热
+2025-09-28 23:06:07.766 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-28 23:06:07.768 [main] INFO  [] com.cloud.auth.AuthApplication - 认证服务启动完成！
+2025-09-28 23:06:21.542 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.541 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-28 23:06:21.558 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-28 23:06:21.568 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.doClose(ServletWebServerApplicationContext.java:179)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-28 23:06:21.578 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-28 23:06:21.709 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-09-28 23:06:21.712 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-28 23:06:21.713 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'auth-service.errorChannel' has 0 subscriber(s).
+2025-09-28 23:06:21.713 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
+2025-09-28 23:06:21.728 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
