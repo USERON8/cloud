@@ -12,20 +12,24 @@
 
 **功能描述**：存储系统中所有用户的基本信息
 
-| 字段名        | 数据类型            | 约束                                 | 描述                       |
-|------------|-----------------|------------------------------------|--------------------------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY                        | 用户ID                     |
-| username   | VARCHAR(50)     | NOT NULL UNIQUE                    | 用户名                      |
-| password   | VARCHAR(255)    | NOT NULL                           | 加密密码                     |
-| phone      | VARCHAR(20)     | UNIQUE                             | 手机号                      |
-| nickname   | VARCHAR(50)     | NOT NULL                           | 昵称                       |
-| avatar_url | VARCHAR(255)    |                                    | 头像URL                    |
-| email      | VARCHAR(100)    | UNIQUE                             | 邮箱地址（用于GitHub登录）         |
-| status     | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用             |
-| user_type  | ENUM            | NOT NULL DEFAULT 'USER'            | 用户类型：USER/MERCHANT/ADMIN |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                     |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间                     |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记                    |
+| 字段名              | 数据类型            | 约束                                 | 描述                           |
+|------------------|-----------------|------------------------------------|------------------------------|
+| id               | BIGINT UNSIGNED | PRIMARY KEY                        | 用户ID                         |
+| username         | VARCHAR(50)     | NOT NULL UNIQUE                    | 用户名                          |
+| password         | VARCHAR(255)    | NOT NULL                           | 加密密码                         |
+| phone            | VARCHAR(20)     | UNIQUE                             | 手机号                          |
+| nickname         | VARCHAR(50)     | NOT NULL                           | 昵称                           |
+| avatar_url       | VARCHAR(255)    |                                    | 头像URL                        |
+| email            | VARCHAR(100)    | UNIQUE                             | 邮箱地址（用于GitHub登录）             |
+| github_id         | BIGINT UNSIGNED                    |                                    | GitHub用户ID（OAuth登录专用）      |
+| github_username   | VARCHAR(100)                       |                                    | GitHub用户名（OAuth登录专用）      |
+| oauth_provider    | VARCHAR(20)                        |                                    | OAuth提供商（github, wechat等）   |
+| oauth_provider_id | VARCHAR(100)                       |                                    | OAuth提供商用户ID              |
+| status           | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用               |
+| user_type        | ENUM ('USER', 'MERCHANT', 'ADMIN') | NOT NULL DEFAULT 'USER'            | 用户类型：USER/MERCHANT/ADMIN     |
+| created_at       | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                         |
+| updated_at       | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                         |
+| deleted          | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记                        |
 
 **索引**：
 
@@ -34,6 +38,13 @@
 - idx_email (email)
 - idx_status (status)
 - idx_user_type (user_type)
+- idx_github_id (github_id)
+- idx_github_username (github_username)
+- idx_oauth_provider (oauth_provider)
+- idx_oauth_provider_combined (oauth_provider, oauth_provider_id)
+- uk_github_id (github_id) UNIQUE
+- uk_github_username (github_username) UNIQUE
+- uk_oauth_provider_id (oauth_provider, oauth_provider_id) UNIQUE
 
 ### 1.2 用户地址表 (user_address)
 
@@ -238,20 +249,35 @@
 | 字段名          | 数据类型            | 约束                                 | 描述                               |
 |--------------|-----------------|------------------------------------|----------------------------------|
 | id           | BIGINT UNSIGNED | PRIMARY KEY                        | 订单ID                             |
+| order_no     | VARCHAR(32)     | NOT NULL UNIQUE                    | 订单号（业务唯一编号）                     |
 | user_id      | BIGINT UNSIGNED | NOT NULL                           | 用户ID                             |
 | total_amount | DECIMAL(10, 2)  | NOT NULL                           | 订单总额                             |
 | pay_amount   | DECIMAL(10, 2)  | NOT NULL                           | 实付金额                             |
 | status       | TINYINT         | NOT NULL                           | 状态：0-待支付，1-已支付，2-已发货，3-已完成，4-已取消 |
 | address_id   | BIGINT UNSIGNED | NOT NULL                           | 地址ID                             |
-| created_at   | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                             |
-| updated_at   | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间                             |
-| deleted      | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记                            |
+| pay_time     | DATETIME        | NULL                               | 支付时间                             |
+| ship_time    | DATETIME        | NULL                               | 发货时间                             |
+| complete_time| DATETIME        | NULL                               | 完成时间                             |
+| cancel_time  | DATETIME        | NULL                               | 取消时间                             |
+| cancel_reason| VARCHAR(255)    | NULL                               | 取消原因                             |
+| remark       | VARCHAR(500)    | NULL                               | 备注                               |
+| create_time  | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                             |
+| update_time  | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                             |
+| create_by    | BIGINT UNSIGNED | NULL                               | 创建人                              |
+| update_by    | BIGINT UNSIGNED | NULL                               | 更新人                              |
+| version      | INT             | NOT NULL DEFAULT 0                 | 乐观锁版本号                           |
+| deleted      | TINYINT         | NOT NULL DEFAULT 0                 | 逻辑删除：0-未删除,1-已删除                 |
 
 **索引**：
 
+- uk_order_no (order_no) UNIQUE
 - idx_user_status (user_id, status)
-- idx_created_at (created_at)
+- idx_create_time (create_time)
 - idx_status (status)
+- idx_pay_time (pay_time)
+- idx_ship_time (ship_time)
+- idx_complete_time (complete_time)
+- idx_cancel_time (cancel_time)
 
 ### 3.2 订单明细表 (order_item)
 
@@ -265,14 +291,18 @@
 | product_snapshot | JSON            | NOT NULL                           | 商品快照  |
 | quantity         | INT             | NOT NULL                           | 购买数量  |
 | price            | DECIMAL(10, 2)  | NOT NULL                           | 购买时单价 |
-| created_at       | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间  |
-| updated_at       | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间  |
-| deleted          | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记 |
+| create_time      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间  |
+| update_time      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间  |
+| create_by        | BIGINT UNSIGNED | NULL                               | 创建人   |
+| update_by        | BIGINT UNSIGNED | NULL                               | 更新人   |
+| version          | INT             | NOT NULL DEFAULT 0                 | 乐观锁版本号 |
+| deleted          | TINYINT         | NOT NULL DEFAULT 0                 | 逻辑删除：0-未删除,1-已删除 |
 
 **索引**：
 
 - idx_order_product (order_id, product_id)
 - idx_product_id (product_id)
+- idx_create_time (create_time)
 
 ---
 

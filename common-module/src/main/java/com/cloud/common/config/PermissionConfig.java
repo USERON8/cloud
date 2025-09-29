@@ -1,6 +1,8 @@
 package com.cloud.common.config;
 
 import com.cloud.common.annotation.DistributedLock;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -14,11 +16,14 @@ import java.util.concurrent.TimeUnit;
  *
  * @author what's up
  */
+@Setter
+@Getter
 @Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "app.permission")
 public class PermissionConfig {
 
+    // Getters and Setters
     /**
      * 角色权限映射
      * 格式：角色名 -> 权限列表
@@ -247,55 +252,6 @@ public class PermissionConfig {
             existingPermissions.removeAll(permissions);
             log.info("从用户类型 {} 移除权限: {}", userType, permissions);
         }
-    }
-
-    // Getters and Setters
-    public Map<String, List<String>> getRolePermissions() {
-        return rolePermissions;
-    }
-
-    public void setRolePermissions(Map<String, List<String>> rolePermissions) {
-        this.rolePermissions = rolePermissions;
-    }
-
-    public Map<String, List<String>> getUserTypePermissions() {
-        return userTypePermissions;
-    }
-
-    public void setUserTypePermissions(Map<String, List<String>> userTypePermissions) {
-        this.userTypePermissions = userTypePermissions;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public boolean isStrictMode() {
-        return strictMode;
-    }
-
-    public void setStrictMode(boolean strictMode) {
-        this.strictMode = strictMode;
-    }
-
-    public List<String> getDefaultPermissions() {
-        return defaultPermissions;
-    }
-
-    public void setDefaultPermissions(List<String> defaultPermissions) {
-        this.defaultPermissions = defaultPermissions;
-    }
-
-    public List<String> getAdminPermissions() {
-        return adminPermissions;
-    }
-
-    public void setAdminPermissions(List<String> adminPermissions) {
-        this.adminPermissions = adminPermissions;
     }
 
     // ==================== 动态配置更新方法 ====================

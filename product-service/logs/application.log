@@ -129,11 +129,11 @@ Correct the classpath of your application so that it contains compatible version
 2025-09-28 18:23:43.604 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.
 2025-09-28 18:23:44.558 [main] INFO  [] o.s.cloud.openfeign.FeignClientFactoryBean - For 'stock-service' URL not provided. Will try picking an instance via load-balancing.
 2025-09-28 18:23:45.285 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 18:23:45.333 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 18:23:45.338 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 18:23:45.339 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 18:23:45.340 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 18:23:45.341 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 18:23:45.333 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 18:23:45.338 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 18:23:45.339 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 18:23:45.340 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 18:23:45.341 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 18:23:45.368 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 18:23:45.533 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 18:23:45.616 [main] INFO  [] com.cloud.product.config.ProductAsyncConfig - ✅ 商品异步线程池配置完成 - 核心线程数: 2, 最大线程数: 4, 队列容量: 500
@@ -150,7 +150,7 @@ Correct the classpath of your application so that it contains compatible version
 2025-09-28 18:23:47.905 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化统一RedisTemplate配置
 2025-09-28 18:23:47.906 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ RedisTemplate配置完成
 2025-09-28 18:23:47.930 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 18:23:47.935 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 18:23:47.935 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 18:23:47.940 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.
 2025-09-28 18:23:47.967 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.
 2025-09-28 18:23:47.972 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.

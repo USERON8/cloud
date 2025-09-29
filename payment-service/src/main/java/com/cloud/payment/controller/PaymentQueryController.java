@@ -21,6 +21,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +51,7 @@ public class PaymentQueryController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取支付详情", description = "根据ID获取支付详细信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
     @Cacheable(value = "payment", key = "#id")
     @Parameters({
             @Parameter(name = "id", description = "支付ID", required = true)
@@ -91,6 +93,7 @@ public class PaymentQueryController {
      */
     @PostMapping("/page")
     @Operation(summary = "分页查询支付记录", description = "分页查询支付记录列表")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
     @Cacheable(value = "payment-page", key = "'page:' + #page + ':' + #size + ':' + #userId + ':' + #status + ':' + #channel")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",

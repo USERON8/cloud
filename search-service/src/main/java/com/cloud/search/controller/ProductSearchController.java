@@ -21,8 +21,6 @@ import com.cloud.common.utils.UserContextUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import com.cloud.common.messaging.AsyncLogProducer;
-import com.cloud.common.annotation.RequireScope;
-
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -46,7 +44,7 @@ public class ProductSearchController {
 
     @Operation(summary = "复杂商品搜索", description = "支持多条件组合的复杂商品搜索，包含聚合、高亮、排序等功能")
     @PostMapping("/complex-search")
-    @RequireScope("search:read")
+    @PreAuthorize("hasAuthority('SCOPE_search:read')")
     public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
         try {
             log.info("复杂商品搜索请求 - 关键字: {}, 分类: {}, 品牌: {}, 价格范围: {}-{}",

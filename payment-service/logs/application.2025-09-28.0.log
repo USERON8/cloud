@@ -692,11 +692,11 @@ Caused by: java.net.ConnectException: Connection refused: getsockopt
 2025-09-28 21:52:09.165 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 初始化缓存监控指标...
 2025-09-28 21:52:09.175 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 缓存监控指标初始化完成
 2025-09-28 21:52:09.188 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 21:52:09.201 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 21:52:09.201 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 21:52:09.202 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 21:52:09.222 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化统一RedisTemplate配置
 2025-09-28 21:52:09.222 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ RedisTemplate配置完成
 2025-09-28 21:52:09.524 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerMapping - 31 mappings in 'requestMappingHandlerMapping'
@@ -711,7 +711,7 @@ Caused by: java.net.ConnectException: Connection refused: getsockopt
 2025-09-28 21:52:10.072 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - JWT发行者: http://localhost:8080
 2025-09-28 21:52:10.073 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - 统一权限管理: 未启用（仅使用标准OAuth2权限）
 2025-09-28 21:52:10.151 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 21:52:10.153 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 21:52:10.153 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 21:52:10.235 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
 2025-09-28 21:52:10.295 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
 2025-09-28 21:52:10.820 [main] INFO  [] c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@77bc2e16
@@ -836,11 +836,11 @@ java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.
 2025-09-28 23:35:40.466 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 初始化缓存监控指标...
 2025-09-28 23:35:40.484 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 缓存监控指标初始化完成
 2025-09-28 23:35:40.509 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 23:35:40.538 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 23:35:40.539 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 23:35:40.540 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 23:35:40.540 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 23:35:40.541 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 23:35:40.538 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 23:35:40.539 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 23:35:40.540 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 23:35:40.540 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 23:35:40.541 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 23:35:40.586 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化统一RedisTemplate配置
 2025-09-28 23:35:40.586 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ RedisTemplate配置完成
 2025-09-28 23:35:41.228 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerMapping - 31 mappings in 'requestMappingHandlerMapping'
@@ -855,7 +855,7 @@ java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.
 2025-09-28 23:35:42.627 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - JWT发行者: http://localhost:8080
 2025-09-28 23:35:42.627 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - 统一权限管理: 未启用（仅使用标准OAuth2权限）
 2025-09-28 23:35:42.788 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 23:35:42.794 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 23:35:42.794 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 23:35:43.019 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
 2025-09-28 23:35:43.157 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
 2025-09-28 23:35:44.535 [main] INFO  [] c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@40230eb9

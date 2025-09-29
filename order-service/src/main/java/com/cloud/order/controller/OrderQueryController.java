@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +42,7 @@ public class OrderQueryController {
      */
     @GetMapping
     @Operation(summary = "分页查询订单", description = "根据条件分页查询订单列表")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_order:read')")
     @Cacheable(value = "order-page", key = "'page:' + #page + ':' + #size + ':' + #status")
     public Result<Page<OrderVO>> queryOrdersByPage(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -68,6 +70,7 @@ public class OrderQueryController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取订单详情", description = "根据ID获取订单详细信息")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @Cacheable(value = "order", key = "#id")
     public Result<OrderDTO> getOrderById(
             @Parameter(description = "订单ID") @NotNull @PathVariable Long id) {
@@ -83,6 +86,7 @@ public class OrderQueryController {
      */
     @GetMapping("/user/{userId}")
     @Operation(summary = "根据用户ID查询订单", description = "查询指定用户的所有订单")
+    @PreAuthorize("hasRole('ADMIN') or @permissionManager.hasUserAccess(authentication)")
     @Cacheable(value = "order-list", key = "'user:' + #userId")
     public Result<java.util.List<OrderDTO>> getOrdersByUserId(
             @Parameter(description = "用户ID", required = true)
@@ -101,6 +105,7 @@ public class OrderQueryController {
      */
     @GetMapping("/orderNo/{orderNo}")
     @Operation(summary = "根据订单号查询订单", description = "根据订单号查询订单详细信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_order:read')")
     @Cacheable(value = "order", key = "'orderNo:' + #orderNo")
     public Result<OrderDTO> getByOrderNo(
             @Parameter(description = "订单号", required = true)

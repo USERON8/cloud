@@ -243,11 +243,11 @@ java.lang.InterruptedException: null
 2025-09-28 17:54:59.652 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化Redis缓存管理器
 2025-09-28 17:54:59.715 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ Redis缓存管理器配置完成，支持19个特定缓存配置
 2025-09-28 17:54:59.772 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 17:54:59.816 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 17:54:59.821 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 17:54:59.823 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 17:54:59.825 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 17:54:59.825 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 17:54:59.816 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 17:54:59.821 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 17:54:59.823 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 17:54:59.825 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 17:54:59.825 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 17:54:59.851 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 17:54:59.855 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 17:55:00.920 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerMapping - 69 mappings in 'requestMappingHandlerMapping'
@@ -269,7 +269,7 @@ java.lang.InterruptedException: null
 2025-09-28 17:55:02.427 [main] INFO  [] com.cloud.user.config.UserAsyncConfig - 用户统计线程池初始化完成
 2025-09-28 17:55:02.435 [main] INFO  [] com.cloud.user.config.UserAsyncConfig - 用户服务通用异步线程池初始化完成
 2025-09-28 17:55:02.472 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 17:55:02.474 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 17:55:02.474 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 17:55:02.482 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.
 2025-09-28 17:55:02.491 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.
 2025-09-28 17:55:02.494 [main] DEBUG [] o.s.cloud.openfeign.FeignClientFactoryBean - Creating a FeignClientFactoryBean.

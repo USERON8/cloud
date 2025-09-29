@@ -109,11 +109,6 @@
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
-                <!-- 排除Caffeine本地缓存（payment-service只使用Redis） -->
-                <exclusion>
-                    <groupId>com.github.ben-manes.caffeine</groupId>
-                    <artifactId>caffeine</artifactId>
-                </exclusion>
                 <!-- 排除错误处理注解 -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
@@ -133,6 +128,11 @@
             <artifactId>swagger-annotations-jakarta</artifactId>
             <version>${swagger.version}</version>
             <scope>compile</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
             <groupId>com.github.xiaoymin</groupId>

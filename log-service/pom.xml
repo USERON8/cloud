@@ -113,10 +113,6 @@
                     <artifactId>mapstruct</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.github.ben-manes.caffeine</groupId>
-                    <artifactId>caffeine</artifactId>
-                </exclusion>
-                <exclusion>
                     <artifactId>objenesis</artifactId>
                     <groupId>org.objenesis</groupId>
                 </exclusion>
@@ -136,6 +132,11 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
         
 

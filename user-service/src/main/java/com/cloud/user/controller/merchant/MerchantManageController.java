@@ -1,9 +1,5 @@
 package com.cloud.user.controller.merchant;
 
-import com.cloud.common.annotation.RequireAuthentication;
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.result.Result;
@@ -21,6 +17,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -38,8 +35,7 @@ public class MerchantManageController {
     private final MerchantAuthConverter merchantAuthConverter;
 
     @PatchMapping("/{id}/approve")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "审核通过商家", description = "审核通过商家的申请")
     public Result<MerchantDTO> approveMerchant(@PathVariable
                                                @Parameter(description = "商家ID")
@@ -62,8 +58,7 @@ public class MerchantManageController {
     }
 
     @PutMapping("/rejectMerchant/{id}")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "拒绝商家申请", description = "拒绝商家的申请")
     public Result<MerchantDTO> rejectMerchant(@PathVariable("id")
                                               @Parameter(description = "商家ID")
@@ -86,7 +81,7 @@ public class MerchantManageController {
     }
 
     @PutMapping("/updateMerchant/{id}")
-    @RequireAuthentication
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "更新商家信息", description = "更新商家的信息")
     public Result<MerchantDTO> updateMerchant(@PathVariable("id")
                                               @Parameter(description = "商家ID")
@@ -121,8 +116,7 @@ public class MerchantManageController {
     }
 
     @PutMapping("/reviewMerchantAuth/{id}")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "审核商家认证", description = "审核商家的认证申请")
     public Result<MerchantAuthDTO> reviewMerchantAuth(@PathVariable("id")
                                                       @Parameter(description = "认证ID")

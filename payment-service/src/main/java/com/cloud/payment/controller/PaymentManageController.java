@@ -20,6 +20,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -47,6 +48,7 @@ public class PaymentManageController {
      */
     @PostMapping
     @Operation(summary = "创建支付记录", description = "创建新的支付记录")
+    @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"payment-page"}, allEntries = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "支付信息", required = true)
     @ApiResponse(responseCode = "200", description = "创建成功",
@@ -105,6 +107,7 @@ public class PaymentManageController {
      */
     @PutMapping("/{id}")
     @Operation(summary = "更新支付记录", description = "更新支付记录信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"payment", "payment-page"}, allEntries = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "支付信息", required = true)
     @ApiResponse(responseCode = "200", description = "更新成功",
@@ -171,6 +174,7 @@ public class PaymentManageController {
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除支付记录", description = "删除支付记录")
+    @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"payment", "payment-page"}, allEntries = true)
     @Parameters({
             @Parameter(name = "id", description = "支付ID", required = true)

@@ -2,15 +2,15 @@
 USE `user_db`;
 
 -- 插入测试用户数据
-INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, user_type)
+INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, github_id, github_username, oauth_provider, oauth_provider_id, user_type)
 VALUES (1, 'user1', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13800000001', '测试用户1',
-        'https://example.com/avatar1.jpg', 'user1@example.com', 'USER'),
+        'https://example.com/avatar1.jpg', 'user1@example.com', NULL, NULL, NULL, NULL, 'USER'),
        (2, 'user2', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13800000002', '测试用户2',
-        'https://example.com/avatar2.jpg', 'user2@example.com', 'USER'),
+        'https://example.com/avatar2.jpg', 'user2@example.com', 12345678, 'github_user2', 'github', '12345678', 'USER'),
        (3, 'merchant1', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13800000003', '商家用户1',
-        'https://example.com/avatar3.jpg', 'merchant1@example.com', 'MERCHANT'),
+        'https://example.com/avatar3.jpg', 'merchant1@example.com', NULL, NULL, NULL, NULL, 'MERCHANT'),
        (4, 'admin1', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13800000004', '管理员用户1',
-        'https://example.com/avatar4.jpg', 'admin1@example.com', 'ADMIN');
+        'https://example.com/avatar4.jpg', 'admin1@example.com', NULL, NULL, NULL, NULL, 'ADMIN');
 
 -- 插入测试用户地址数据
 INSERT INTO user_address (id, user_id, consignee, phone, province, city, district, street, detail_address, is_default)

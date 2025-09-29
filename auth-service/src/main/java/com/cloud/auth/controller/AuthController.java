@@ -3,10 +3,6 @@ package com.cloud.auth.controller;
 import com.cloud.api.user.UserFeignClient;
 import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.util.OAuth2ResponseUtil;
-import com.cloud.common.annotation.RequireAuthentication;
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.auth.LoginRequestDTO;
 import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
@@ -27,6 +23,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.validation.annotation.Validated;
@@ -269,8 +266,7 @@ public class AuthController {
      * @return 登出结果
      */
     @DeleteMapping("/users/{username}/sessions")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(
             summary = "批量登出",
             description = "撤销用户的所有活跃会话"
@@ -302,7 +298,7 @@ public class AuthController {
      * @throws MissingTokenException 缺少令牌时抛出
      */
     @GetMapping("/tokens/validate")
-    @RequireAuthentication
+    @PreAuthorize("isAuthenticated()")
     public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
         // 从请求头中提取令牌（抛出MissingTokenException）
         String authorizationHeader = request.getHeader("Authorization");

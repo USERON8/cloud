@@ -2,10 +2,6 @@ package com.cloud.user.controller.merchant;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.cloud.common.annotation.RequireAuthentication;
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.result.Result;
@@ -20,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -41,7 +38,7 @@ public class MerchantAuthController {
      * @return 认证信息
      */
     @PostMapping("/apply/{merchantId}")
-    @RequireAuthentication
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "商家申请认证", description = "商家提交认证申请")
     public Result<MerchantAuthDTO> applyForAuth(
             @PathVariable("merchantId")
@@ -93,7 +90,7 @@ public class MerchantAuthController {
      * @return 认证信息
      */
     @GetMapping("/get/{merchantId}")
-    @RequireAuthentication
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "获取商家认证信息", description = "根据商家ID获取认证信息")
     public Result<MerchantAuthDTO> getAuthInfo(@PathVariable("merchantId")
                                                @Parameter(description = "商家ID")
@@ -125,7 +122,7 @@ public class MerchantAuthController {
      * @return 操作结果
      */
     @DeleteMapping("/revoke/{merchantId}")
-    @RequireAuthentication
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "撤销认证申请", description = "撤销商家的认证申请")
     public Result<Boolean> revokeAuth(@PathVariable("merchantId")
                                       @Parameter(description = "商家ID")
@@ -157,8 +154,7 @@ public class MerchantAuthController {
      * @return 操作结果
      */
     @PostMapping("/review/{merchantId}")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "管理员审核商家认证", description = "管理员审核商家认证申请")
     public Result<Boolean> reviewAuth(
             @PathVariable("merchantId")
@@ -198,8 +194,7 @@ public class MerchantAuthController {
      * @return 商家认证信息列表
      */
     @GetMapping("/list")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据状态查询商家认证", description = "根据认证状态查询所有商家认证信息")
     public Result<java.util.List<MerchantAuthDTO>> listAuthByStatus(
             @RequestParam("authStatus")

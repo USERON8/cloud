@@ -1,8 +1,5 @@
 package com.cloud.user.controller.user;
 
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -20,6 +17,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,8 +41,7 @@ public class UserController {
      * 获取用户列表（支持查询参数）
      */
     @GetMapping
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "获取用户列表", description = "获取用户列表，支持分页和查询参数")
     public Result<PageResult<UserVO>> getUsers(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -67,8 +64,7 @@ public class UserController {
      * 根据用户名查询用户
      */
     @GetMapping("/search")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户信息")
     public Result<UserDTO> findByUsername(
             @Parameter(description = "用户名") @RequestParam
@@ -80,16 +76,12 @@ public class UserController {
      * 根据ID获取用户详情
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     @Operation(summary = "获取用户详情", description = "根据用户ID获取用户详细信息")
     public Result<UserDTO> getUserById(
             @Parameter(description = "用户ID") @PathVariable
             @Positive(message = "用户ID必须为正整数") Long id,
             Authentication authentication) {
-
-        // 权限检查：管理员或用户本人可以查看
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限查看此用户信息");
-        }
 
         UserDTO user = userService.getUserById(id);
         if (user == null) {
@@ -103,8 +95,7 @@ public class UserController {
      * 创建用户
      */
     @PostMapping
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "创建用户", description = "创建新用户")
     public Result<UserDTO> createUser(
             @Parameter(description = "用户信息") @RequestBody
@@ -133,6 +124,7 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     @Operation(summary = "更新用户信息", description = "更新用户信息")
     public Result<Boolean> updateUser(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -142,11 +134,6 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         userDTO.setId(id);
-
-        // 使用统一的权限检查工具
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限更新此用户信息");
-        }
 
         try {
             boolean result = userService.updateById(userConverter.toEntity(userDTO));
@@ -161,6 +148,7 @@ public class UserController {
      * 部分更新用户信息
      */
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     @Operation(summary = "部分更新用户信息", description = "部分更新用户信息")
     public Result<Boolean> patchUser(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -169,11 +157,6 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         userDTO.setId(id);
-
-        // 使用统一的权限检查工具
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限更新此用户信息");
-        }
 
         try {
             // 使用现有的updateById方法，因为patchUpdate方法不存在
@@ -189,8 +172,7 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "删除用户", description = "删除用户")
     public Result<Boolean> deleteUser(
             @Parameter(description = "用户ID") @PathVariable
@@ -209,15 +191,11 @@ public class UserController {
      * 获取用户档案
      */
     @GetMapping("/{id}/profile")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     @Operation(summary = "获取用户档案", description = "获取用户详细档案信息")
     public Result<UserDTO> getUserProfile(
             @Parameter(description = "用户ID") @PathVariable Long id,
             Authentication authentication) {
-
-        // 权限检查：管理员或用户本人可以查看
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限查看此用户档案");
-        }
 
         try {
             UserDTO userProfile = userService.getUserById(id);
@@ -232,6 +210,7 @@ public class UserController {
      * 更新用户档案
      */
     @PutMapping("/{id}/profile")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     @Operation(summary = "更新用户档案", description = "更新用户详细档案信息")
     public Result<Boolean> updateUserProfile(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -241,11 +220,6 @@ public class UserController {
 
         // 确保路径参数与请求体中的ID一致
         profileDTO.setId(id);
-
-        // 权限检查：管理员或用户本人可以更新
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限更新此用户档案");
-        }
 
         try {
             // 使用现有的updateById方法
@@ -261,8 +235,7 @@ public class UserController {
      * 启用/禁用用户
      */
     @PatchMapping("/{id}/status")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:write")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "更新用户状态", description = "启用或禁用用户")
     public Result<Boolean> updateUserStatus(
             @Parameter(description = "用户ID") @PathVariable Long id,

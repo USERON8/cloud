@@ -1,10 +1,9 @@
 package com.cloud.log.controller;
 
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
+import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.log.service.LogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,12 +16,10 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import com.cloud.common.utils.UserContextUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import com.cloud.common.messaging.AsyncLogProducer;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,18 +43,17 @@ public class LogRestController {
      * 获取日志列表（支持分页和查询参数）
      */
     @GetMapping
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
-    @Cacheable(cacheNames = "logQueryCache", 
-               key = "'logs:' + #page + ':' + #size + ':' + (#level != null ? #level : 'null') + ':' + (#service != null ? #service : 'null')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
+    @Cacheable(cacheNames = "logQueryCache",
+            key = "'logs:' + #page + ':' + #size + ':' + (#level != null ? #level : 'null') + ':' + (#service != null ? #service : 'null')")
     @Operation(summary = "获取日志列表", description = "获取日志列表，支持分页和查询参数")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = PageResult.class)))
     public Result<PageResult<Object>> getLogs(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") 
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1")
             @Min(1) Integer page,
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") 
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "20")
             @Min(1) @Max(100) Integer size,
             @Parameter(description = "日志级别") @RequestParam(required = false) String level,
             @Parameter(description = "服务名称") @RequestParam(required = false) String service,
@@ -68,10 +64,10 @@ public class LogRestController {
         try {
             log.debug("获取日志列表 - 页码: {}, 大小: {}, 级别: {}", page, size, level);
             PageResult<Object> result = logService.getLogs(page, size, level, service, startTime, endTime, keyword);
-            
+
             // 记录日志查询操作
             recordLogOperation("GET_LOGS", result.getTotal());
-            
+
             return Result.success("查询成功", result);
         } catch (Exception e) {
             log.error("获取日志列表失败", e);
@@ -83,8 +79,7 @@ public class LogRestController {
      * 获取应用日志
      */
     @GetMapping("/applications")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取应用日志", description = "获取应用程序日志")
     public Result<PageResult<Object>> getApplicationLogs(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -108,8 +103,7 @@ public class LogRestController {
      * 获取操作日志
      */
     @GetMapping("/operations")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取操作日志", description = "获取用户操作日志")
     public Result<PageResult<Object>> getOperationLogs(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -133,8 +127,7 @@ public class LogRestController {
      * 获取错误日志
      */
     @GetMapping("/errors")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取错误日志", description = "获取系统错误日志")
     public Result<PageResult<Object>> getErrorLogs(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -158,8 +151,7 @@ public class LogRestController {
      * 获取访问日志
      */
     @GetMapping("/access")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取访问日志", description = "获取API访问日志")
     public Result<PageResult<Object>> getAccessLogs(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -185,8 +177,7 @@ public class LogRestController {
      * 获取审计日志
      */
     @GetMapping("/audit")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:audit")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:audit')")
     @Operation(summary = "获取审计日志", description = "获取系统审计日志")
     public Result<PageResult<Object>> getAuditLogs(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
@@ -211,8 +202,7 @@ public class LogRestController {
      * 获取日志统计信息
      */
     @GetMapping("/statistics")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取日志统计", description = "获取日志统计信息")
     public Result<Map<String, Object>> getLogStatistics(
             @Parameter(description = "统计维度") @RequestParam(defaultValue = "level") String dimension,
@@ -233,8 +223,7 @@ public class LogRestController {
      * 导出日志
      */
     @PostMapping("/export")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:export")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:export')")
     @Operation(summary = "导出日志", description = "导出日志数据")
     public Result<String> exportLogs(
             @Parameter(description = "导出条件") @RequestBody Map<String, Object> exportRequest) {
@@ -253,8 +242,7 @@ public class LogRestController {
      * 清理日志
      */
     @DeleteMapping("/cleanup")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:delete")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:delete')")
     @Operation(summary = "清理日志", description = "清理过期日志数据")
     public Result<Boolean> cleanupLogs(
             @Parameter(description = "保留天数") @RequestParam(defaultValue = "30") Integer retentionDays,
@@ -263,10 +251,10 @@ public class LogRestController {
         try {
             log.info("清理日志 - 保留天数: {}, 类型: {}", retentionDays, logType);
             boolean result = logService.cleanupLogs(retentionDays, logType);
-            
+
             // 记录清理操作
             recordLogOperation("CLEANUP_LOGS", result ? 1L : 0L);
-            
+
             return result ? Result.success("清理成功", true) : Result.error("清理失败");
         } catch (Exception e) {
             log.error("清理日志失败", e);
@@ -278,8 +266,7 @@ public class LogRestController {
      * 获取日志详情
      */
     @GetMapping("/{id}")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "获取日志详情", description = "根据ID获取日志详细信息")
     public Result<Object> getLogById(
             @Parameter(description = "日志ID") @PathVariable String id) {
@@ -300,8 +287,7 @@ public class LogRestController {
      * 搜索日志
      */
     @GetMapping("/search")
-    @RequireUserType({UserType.ADMIN})
-    @RequireScope("log:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_log:read')")
     @Operation(summary = "搜索日志", description = "根据关键词搜索日志")
     public Result<PageResult<Object>> searchLogs(
             @Parameter(description = "搜索关键词") @RequestParam String keyword,
@@ -320,7 +306,7 @@ public class LogRestController {
             return Result.error("搜索日志失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 记录日志操作
      */
@@ -342,5 +328,5 @@ public class LogRestController {
             log.warn("记录日志操作失败", e);
         }
     }
-    
+
 }

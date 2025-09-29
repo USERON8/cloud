@@ -1,8 +1,5 @@
 package com.cloud.user.controller.user;
 
-import com.cloud.common.annotation.RequireScope;
-import com.cloud.common.annotation.RequireUserType;
-import com.cloud.common.annotation.RequireUserType.UserType;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -16,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,8 +28,7 @@ public class UserQueryController {
     private final UserService userService;
 
     @GetMapping
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户信息")
     public Result<UserDTO> findByUsername(@RequestParam
                                           @Parameter(description = "用户名")
@@ -40,8 +37,7 @@ public class UserQueryController {
     }
 
     @GetMapping("/search")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "分页查询用户", description = "分页查询用户信息")
     public Result<PageResult<UserVO>> search(@RequestParam(defaultValue = "1") Integer page,
                                              @RequestParam(defaultValue = "20") Integer size,
@@ -58,8 +54,7 @@ public class UserQueryController {
     }
 
     @RequestMapping("/findByGitHubId")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据GitHub ID查询用户", description = "根据GitHub用户ID查询用户信息（OAuth专用）")
     public Result<UserDTO> findByGitHubId(@RequestParam
                                           @Parameter(description = "GitHub用户ID")
@@ -78,8 +73,7 @@ public class UserQueryController {
     }
 
     @RequestMapping("/findByGitHubUsername")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据GitHub用户名查询用户", description = "根据GitHub用户名查询用户信息（OAuth专用）")
     public Result<UserDTO> findByGitHubUsername(@RequestParam
                                                 @Parameter(description = "GitHub用户名")
@@ -98,8 +92,7 @@ public class UserQueryController {
     }
 
     @RequestMapping("/findByOAuthProvider")
-    @RequireUserType(UserType.ADMIN)
-    @RequireScope("admin:read")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "根据OAuth提供商查询用户", description = "根据OAuth提供商和提供商ID查询用户信息")
     public Result<UserDTO> findByOAuthProvider(@RequestParam
                                                @Parameter(description = "OAuth提供商")

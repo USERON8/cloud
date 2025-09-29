@@ -38,52 +38,65 @@
 
 #### 表结构
 
-##### user_info - 用户信息表
+##### users - 用户信息表
 ```sql
-CREATE TABLE `user_info` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
-  `username` VARCHAR(50) NOT NULL COMMENT '用户名',
-  `password` VARCHAR(255) NOT NULL COMMENT '密码(加密)',
-  `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
-  `phone` VARCHAR(20) DEFAULT NULL COMMENT '手机号',
-  `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
-  `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
-  `gender` TINYINT(1) DEFAULT 0 COMMENT '性别:0-未知,1-男,2-女',
-  `user_type` TINYINT(1) DEFAULT 1 COMMENT '用户类型:1-普通用户,2-商家,3-管理员',
-  `status` TINYINT(1) DEFAULT 1 COMMENT '状态:1-正常,0-禁用',
-  `deleted` TINYINT(1) DEFAULT 0 COMMENT '逻辑删除:0-未删除,1-已删除',
-  `version` INT DEFAULT 0 COMMENT '乐观锁版本号',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `create_by` VARCHAR(50) DEFAULT NULL COMMENT '创建人',
-  `update_by` VARCHAR(50) DEFAULT NULL COMMENT '更新人',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_username` (`username`),
-  UNIQUE KEY `uk_phone` (`phone`),
-  UNIQUE KEY `uk_email` (`email`),
-  KEY `idx_create_time` (`create_time`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';
+CREATE TABLE IF NOT EXISTS users
+(
+    id                BIGINT UNSIGNED PRIMARY KEY COMMENT '用户ID',
+    username          VARCHAR(50)                        NOT NULL UNIQUE COMMENT '用户名',
+    password          VARCHAR(255)                       NOT NULL COMMENT '加密密码',
+    phone             VARCHAR(20) UNIQUE COMMENT '手机号',
+    nickname          VARCHAR(50)                        NOT NULL COMMENT '昵称',
+    avatar_url        VARCHAR(255) COMMENT '头像URL',
+    email             VARCHAR(100) UNIQUE COMMENT '邮箱地址（用于GitHub登录）',
+    github_id         BIGINT UNSIGNED                    NULL COMMENT 'GitHub用户ID（OAuth登录专用）',
+    github_username   VARCHAR(100)                       NULL COMMENT 'GitHub用户名（OAuth登录专用）',
+    oauth_provider    VARCHAR(20)                        NULL COMMENT 'OAuth提供商（github, wechat等）',
+    oauth_provider_id VARCHAR(100)                       NULL COMMENT 'OAuth提供商用户ID',
+    status            TINYINT                            NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    user_type         ENUM ('USER', 'MERCHANT', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '用户类型',
+    created_at        DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at        DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted           TINYINT                            NOT NULL DEFAULT 0 COMMENT '软删除标记',
+
+    INDEX idx_username (username),
+    INDEX idx_phone (phone),
+    INDEX idx_email (email),
+    INDEX idx_status (status),
+    INDEX idx_user_type (user_type),
+    INDEX idx_github_id (github_id),
+    INDEX idx_github_username (github_username),
+    INDEX idx_oauth_provider (oauth_provider),
+    INDEX idx_oauth_provider_combined (oauth_provider, oauth_provider_id),
+    UNIQUE INDEX uk_github_id (github_id),
+    UNIQUE INDEX uk_github_username (github_username),
+    UNIQUE INDEX uk_oauth_provider_id (oauth_provider, oauth_provider_id)
+) COMMENT ='用户表';
 ```
 
 ##### user_address - 用户地址表
 ```sql
-CREATE TABLE `user_address` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '地址ID',
-  `user_id` BIGINT NOT NULL COMMENT '用户ID',
-  `receiver_name` VARCHAR(50) NOT NULL COMMENT '收件人姓名',
-  `receiver_phone` VARCHAR(20) NOT NULL COMMENT '收件人电话',
-  `province` VARCHAR(50) NOT NULL COMMENT '省份',
-  `city` VARCHAR(50) NOT NULL COMMENT '城市',
-  `district` VARCHAR(50) DEFAULT NULL COMMENT '区县',
-  `detail_address` VARCHAR(500) NOT NULL COMMENT '详细地址',
-  `is_default` TINYINT(1) DEFAULT 0 COMMENT '是否默认:0-否,1-是',
-  `deleted` TINYINT(1) DEFAULT 0 COMMENT '逻辑删除',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户地址表';
+CREATE TABLE `user_address`
+(
+    id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '地址ID',
+    user_id        BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+    consignee      VARCHAR(50)     NOT NULL COMMENT '收货人姓名',
+    phone          VARCHAR(20)     NOT NULL COMMENT '联系电话',
+    province       VARCHAR(20)     NOT NULL COMMENT '省份',
+    city           VARCHAR(20)     NOT NULL COMMENT '城市',
+    district       VARCHAR(20)     NOT NULL COMMENT '区县',
+    street         VARCHAR(100)    NOT NULL COMMENT '街道',
+    detail_address VARCHAR(255)    NOT NULL COMMENT '详细地址',
+    is_default     TINYINT         NOT NULL DEFAULT 0 COMMENT '是否默认地址：0-否，1-是',
+    created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted        TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_user_default (user_id, is_default),
+
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) COMMENT ='用户地址表';
 ```
 
 ### 2. 商品数据库 (product_db)
@@ -134,54 +147,62 @@ CREATE TABLE `product_category` (
 
 ### 3. 订单数据库 (order_db)
 
-##### order_info - 订单信息表
+##### orders - 订单信息表
 ```sql
-CREATE TABLE `order_info` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '订单ID',
-  `order_no` VARCHAR(50) NOT NULL COMMENT '订单编号',
-  `user_id` BIGINT NOT NULL COMMENT '用户ID',
-  `total_amount` DECIMAL(10,2) NOT NULL COMMENT '订单总额',
-  `pay_amount` DECIMAL(10,2) NOT NULL COMMENT '实付金额',
-  `freight_amount` DECIMAL(10,2) DEFAULT 0 COMMENT '运费',
-  `discount_amount` DECIMAL(10,2) DEFAULT 0 COMMENT '优惠金额',
-  `pay_type` TINYINT(1) DEFAULT NULL COMMENT '支付类型:1-支付宝,2-微信',
-  `pay_time` DATETIME DEFAULT NULL COMMENT '支付时间',
-  `pay_no` VARCHAR(100) DEFAULT NULL COMMENT '支付流水号',
-  `status` TINYINT DEFAULT 0 COMMENT '订单状态:0-待付款,1-待发货,2-待收货,3-已完成,4-已取消',
-  `receiver_name` VARCHAR(50) NOT NULL COMMENT '收件人',
-  `receiver_phone` VARCHAR(20) NOT NULL COMMENT '收件人电话',
-  `receiver_address` VARCHAR(500) NOT NULL COMMENT '收货地址',
-  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
-  `deleted` TINYINT(1) DEFAULT 0 COMMENT '逻辑删除',
-  `version` INT DEFAULT 0 COMMENT '版本号',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_order_no` (`order_no`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_create_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单信息表';
+CREATE TABLE `orders`
+(
+    id             BIGINT UNSIGNED PRIMARY KEY COMMENT '订单ID',
+    order_no       VARCHAR(32)     NOT NULL UNIQUE COMMENT '订单号（业务唯一编号）',
+    user_id        BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+    total_amount   DECIMAL(10, 2)  NOT NULL COMMENT '订单总额',
+    pay_amount     DECIMAL(10, 2)  NOT NULL COMMENT '实付金额',
+    status         TINYINT         NOT NULL COMMENT '状态：0-待支付，1-已支付，2-已发货，3-已完成，4-已取消',
+    address_id     BIGINT UNSIGNED NOT NULL COMMENT '地址ID',
+    pay_time       DATETIME        NULL COMMENT '支付时间',
+    ship_time      DATETIME        NULL COMMENT '发货时间',
+    complete_time  DATETIME        NULL COMMENT '完成时间',
+    cancel_time    DATETIME        NULL COMMENT '取消时间',
+    cancel_reason  VARCHAR(255)    NULL COMMENT '取消原因',
+    remark         VARCHAR(500)    NULL COMMENT '备注',
+    create_time    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    create_by      BIGINT UNSIGNED NULL COMMENT '创建人',
+    update_by      BIGINT UNSIGNED NULL COMMENT '更新人',
+    version        INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    deleted        TINYINT         NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除,1-已删除',
+
+    UNIQUE KEY uk_order_no (order_no),
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_create_time (create_time),
+    INDEX idx_status (status),
+    INDEX idx_pay_time (pay_time),
+    INDEX idx_ship_time (ship_time),
+    INDEX idx_complete_time (complete_time),
+    INDEX idx_cancel_time (cancel_time)
+) COMMENT ='订单主表';
 ```
 
 ##### order_item - 订单明细表
 ```sql
-CREATE TABLE `order_item` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '明细ID',
-  `order_id` BIGINT NOT NULL COMMENT '订单ID',
-  `order_no` VARCHAR(50) NOT NULL COMMENT '订单编号',
-  `product_id` BIGINT NOT NULL COMMENT '商品ID',
-  `product_name` VARCHAR(200) NOT NULL COMMENT '商品名称',
-  `product_image` VARCHAR(500) DEFAULT NULL COMMENT '商品图片',
-  `product_price` DECIMAL(10,2) NOT NULL COMMENT '商品单价',
-  `quantity` INT NOT NULL COMMENT '购买数量',
-  `total_amount` DECIMAL(10,2) NOT NULL COMMENT '小计金额',
-  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_order_id` (`order_id`),
-  KEY `idx_order_no` (`order_no`),
-  KEY `idx_product_id` (`product_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';
+CREATE TABLE `order_item`
+(
+    id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    order_id         BIGINT UNSIGNED NOT NULL COMMENT '订单ID',
+    product_id       BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+    product_snapshot JSON            NOT NULL COMMENT '商品快照',
+    quantity         INT             NOT NULL COMMENT '购买数量',
+    price            DECIMAL(10, 2)  NOT NULL COMMENT '购买时单价',
+    create_time      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    create_by        BIGINT UNSIGNED NULL COMMENT '创建人',
+    update_by        BIGINT UNSIGNED NULL COMMENT '更新人',
+    version          INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    deleted          TINYINT         NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除,1-已删除',
+
+    INDEX idx_order_product (order_id, product_id),
+    INDEX idx_product_id (product_id),
+    INDEX idx_create_time (create_time)
+) COMMENT ='订单明细表';
 ```
 
 ### 4. 库存数据库 (stock_db)

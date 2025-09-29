@@ -33,7 +33,7 @@ public class UserManageController {
 
     @PutMapping("/{id}")
     @Operation(summary = "更新用户信息", description = "更新用户信息")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
     public Result<Boolean> update(@PathVariable
                                   @Parameter(description = "用户ID") Long id,
                                   @RequestBody
@@ -43,11 +43,6 @@ public class UserManageController {
 
         // 确保路径参数与请求体中的ID一致
         userDTO.setId(id);
-
-        // 使用统一的权限检查工具
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限更新此用户信息");
-        }
 
         try {
             boolean result = userService.updateById(userConverter.toEntity(userDTO));
@@ -60,16 +55,11 @@ public class UserManageController {
 
     @PostMapping("/delete")
     @Operation(summary = "删除用户", description = "逻辑删除指定用户")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> delete(@RequestBody
                                   @Parameter(description = "用户ID")
                                   @NotNull(message = "用户ID不能为空") Long id,
                                   Authentication authentication) {
-
-        // 使用统一的权限检查工具
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, id)) {
-            return Result.forbidden("无权限删除此用户");
-        }
 
         try {
             boolean result = userService.deleteUserById(id);
@@ -82,16 +72,11 @@ public class UserManageController {
 
     @PostMapping("/deleteBatch")
     @Operation(summary = "批量删除用户", description = "批量逻辑删除用户")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Boolean> deleteBatch(@RequestBody
                                        @Parameter(description = "用户ID数组")
                                        @NotNull(message = "用户ID数组不能为空") Long[] ids,
                                        Authentication authentication) {
-
-        // 权限检查：只有管理员可以批量删除用户
-        if (!SecurityPermissionUtils.isAdmin(authentication)) {
-            return Result.forbidden("只有管理员可以批量删除用户");
-        }
 
         if (ids == null || ids.length == 0) {
             return Result.badRequest("请选择要删除的用户");

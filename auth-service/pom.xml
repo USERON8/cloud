@@ -40,10 +40,6 @@
                     <artifactId>mapstruct</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.github.ben-manes.caffeine</groupId>
-                    <artifactId>caffeine</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
@@ -133,6 +129,10 @@
         </dependency>
 
         
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>

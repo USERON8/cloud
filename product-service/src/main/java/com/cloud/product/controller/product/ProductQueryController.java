@@ -18,6 +18,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +45,7 @@ public class ProductQueryController {
 
     @GetMapping("/{id}")
     @Operation(summary = "获取商品详情", description = "根据ID获取商品详细信息")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ProductVO.class)))
@@ -65,6 +67,7 @@ public class ProductQueryController {
 
     @GetMapping("/batch")
     @Operation(summary = "批量获取商品", description = "根据ID列表批量获取商品信息")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> getProductsByIds(
             @Parameter(description = "商品ID列表", required = true)
             @RequestParam("ids") List<Long> ids) {
@@ -87,6 +90,7 @@ public class ProductQueryController {
 
     @GetMapping("/page")
     @Operation(summary = "商品分页查询", description = "根据条件分页查询商品列表")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = PageResult.class)))
@@ -102,6 +106,7 @@ public class ProductQueryController {
 
     @GetMapping("/category/{categoryId}")
     @Operation(summary = "根据分类查询商品", description = "获取指定分类下的商品列表")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> getProductsByCategoryId(
             @Parameter(description = "分类ID", required = true)
             @PathVariable
@@ -120,6 +125,7 @@ public class ProductQueryController {
 
     @GetMapping("/brand/{brandId}")
     @Operation(summary = "根据品牌查询商品", description = "获取指定品牌下的商品列表")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> getProductsByBrandId(
             @Parameter(description = "品牌ID", required = true)
             @PathVariable
@@ -138,6 +144,7 @@ public class ProductQueryController {
 
     @GetMapping("/search")
     @Operation(summary = "搜索商品", description = "根据商品名称模糊搜索")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> searchProductsByName(
             @Parameter(description = "搜索关键字", required = true)
             @RequestParam("keyword") String keyword,
@@ -161,6 +168,7 @@ public class ProductQueryController {
 
     @GetMapping("/stats/total")
     @Operation(summary = "获取商品总数", description = "获取系统中所有商品的数量")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<Long> getTotalProductCount() {
         log.debug("获取商品总数");
         Long count = productService.getTotalProductCount();
@@ -169,6 +177,7 @@ public class ProductQueryController {
 
     @GetMapping("/stats/enabled")
     @Operation(summary = "获取上架商品数量", description = "获取已上架商品的数量")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<Long> getEnabledProductCount() {
         log.debug("获取上架商品数量");
         Long count = productService.getEnabledProductCount();
@@ -177,6 +186,7 @@ public class ProductQueryController {
 
     @GetMapping("/stats/disabled")
     @Operation(summary = "获取下架商品数量", description = "获取已下架商品的数量")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<Long> getDisabledProductCount() {
         log.debug("获取下架商品数量");
         Long count = productService.getDisabledProductCount();
@@ -185,6 +195,7 @@ public class ProductQueryController {
 
     @GetMapping("/stats/category/{categoryId}")
     @Operation(summary = "获取分类商品数量", description = "获取指定分类下的商品数量")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<Long> getProductCountByCategoryId(
             @Parameter(description = "分类ID", required = true)
             @PathVariable
@@ -198,6 +209,7 @@ public class ProductQueryController {
 
     @GetMapping("/stats/brand/{brandId}")
     @Operation(summary = "获取品牌商品数量", description = "获取指定品牌下的商品数量")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<Long> getProductCountByBrandId(
             @Parameter(description = "品牌ID", required = true)
             @PathVariable
@@ -213,6 +225,7 @@ public class ProductQueryController {
 
     @PostMapping("/cache/warmup")
     @Operation(summary = "预热商品缓存", description = "根据指定ID列表预热商品缓存")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<String> warmupProductCache(
             @Parameter(description = "需要预热的商品ID列表", required = true)
             @RequestBody List<Long> ids) {

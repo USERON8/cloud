@@ -758,11 +758,11 @@ Consider defining a bean of type 'io.micrometer.core.instrument.MeterRegistry' i
 2025-09-28 17:09:56.481 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化Redis缓存管理器
 2025-09-28 17:09:56.560 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ Redis缓存管理器配置完成，支持19个特定缓存配置
 2025-09-28 17:09:56.624 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 17:09:56.697 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 17:09:56.700 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 17:09:56.704 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 17:09:56.705 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 17:09:56.707 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 17:09:56.697 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 17:09:56.700 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 17:09:56.704 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 17:09:56.705 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 17:09:56.707 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 17:09:56.787 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 17:09:56.790 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 17:09:56.869 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'performanceMonitor' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/common-module-0.0.1-SNAPSHOT.jar!/com/cloud/common/monitoring/PerformanceMonitor.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'org.springframework.data.redis.core.RedisTemplate<java.lang.String, java.lang.Object>' available: expected single matching bean but found 2: oauth2MainRedisTemplate,oauth2RedisTemplate
@@ -845,11 +845,11 @@ You may need to update both your build tool settings as well as your IDE.
 2025-09-28 17:11:12.369 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化Redis缓存管理器
 2025-09-28 17:11:12.462 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ Redis缓存管理器配置完成，支持19个特定缓存配置
 2025-09-28 17:11:12.592 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 17:11:12.662 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 17:11:12.663 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 17:11:12.664 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 17:11:12.664 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 17:11:12.665 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 17:11:12.662 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 17:11:12.663 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 17:11:12.664 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 17:11:12.664 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 17:11:12.665 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 17:11:12.735 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 17:11:12.739 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 17:11:12.815 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'rateLimitManager' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/common-module-0.0.1-SNAPSHOT.jar!/com/cloud/common/security/RateLimitManager.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'org.springframework.data.redis.core.RedisTemplate<java.lang.String, java.lang.Object>' available: expected single matching bean but found 2: oauth2MainRedisTemplate,oauth2RedisTemplate
@@ -932,11 +932,11 @@ You may need to update both your build tool settings as well as your IDE.
 2025-09-28 17:12:29.574 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化Redis缓存管理器
 2025-09-28 17:12:29.640 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ Redis缓存管理器配置完成，支持19个特定缓存配置
 2025-09-28 17:12:29.718 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 17:12:29.785 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 17:12:29.786 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 17:12:29.793 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 17:12:29.795 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 17:12:29.795 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 17:12:29.785 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 17:12:29.786 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 17:12:29.793 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 17:12:29.795 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 17:12:29.795 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 17:12:29.888 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 17:12:29.893 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 17:12:30.010 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 认证异步线程池初始化完成 - 核心线程数: 3, 最大线程数: 8, 队列容量: 300
@@ -1129,11 +1129,11 @@ Caused by: org.springframework.security.web.UnreachableFilterChainException: A f
 2025-09-28 17:14:21.624 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化Redis缓存管理器
 2025-09-28 17:14:21.694 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ Redis缓存管理器配置完成，支持19个特定缓存配置
 2025-09-28 17:14:21.761 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 17:14:21.830 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 17:14:21.834 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 17:14:21.836 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 17:14:21.840 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 17:14:21.840 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 17:14:21.830 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 17:14:21.834 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 17:14:21.836 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 17:14:21.840 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 17:14:21.840 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 17:14:21.871 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 17:14:21.879 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 17:14:21.951 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 认证异步线程池初始化完成 - 核心线程数: 3, 最大线程数: 8, 队列容量: 300
@@ -1174,7 +1174,7 @@ Caused by: org.springframework.security.web.UnreachableFilterChainException: A f
 2025-09-28 17:14:25.079 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ 默认安全过滤器链配置完成
 2025-09-28 17:14:25.099 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
 2025-09-28 17:14:25.100 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 17:14:25.343 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 17:14:25.343 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 17:14:25.719 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
 2025-09-28 17:14:25.947 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
 2025-09-28 17:14:28.217 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
@@ -1317,11 +1317,11 @@ java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.
 2025-09-28 23:05:58.324 [main] INFO  [] com.cloud.auth.config.JwtPasswordConfig - ✅ OAuth2.1令牌生成器配置完成
 2025-09-28 23:05:58.468 [main] INFO  [] com.cloud.common.cache.config.CacheConfigFactory - 🔧 启用标准Redis缓存管理器: ttl=1800s, nullValues=false
 2025-09-28 23:05:58.501 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
-2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
-2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
-2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
-2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
-2025-09-28 23:05:58.533 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-28 23:05:58.531 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-28 23:05:58.532 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-28 23:05:58.533 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
 2025-09-28 23:05:58.555 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
 2025-09-28 23:05:58.556 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
 2025-09-28 23:05:58.653 [main] INFO  [] com.cloud.auth.config.AuthAsyncConfig - ✅ 认证异步线程池初始化完成 - 核心线程数: 3, 最大线程数: 8, 队列容量: 300
@@ -1362,7 +1362,7 @@ java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.
 2025-09-28 23:06:00.987 [main] INFO  [] com.cloud.auth.config.SecurityFilterChainConfig - ✅ 默认安全过滤器链配置完成
 2025-09-28 23:06:01.033 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
 2025-09-28 23:06:01.047 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
-2025-09-28 23:06:01.288 [main] INFO  [] com.cloud.common.config.UnifiedSecurityConfig - 注册统一权限表达式对象
+2025-09-28 23:06:01.288 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
 2025-09-28 23:06:01.699 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
 2025-09-28 23:06:01.892 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
 2025-09-28 23:06:05.881 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
