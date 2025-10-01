@@ -1,194 +1,351 @@
 package com.cloud.product.controller.product;
 
-import com.cloud.api.product.ProductFeignClient;
-import com.cloud.common.domain.dto.product.ProductDTO;
-import com.cloud.product.converter.ProductConverter;
+import com.cloud.common.domain.dto.product.ProductRequestDTO;
+import com.cloud.common.domain.vo.product.ProductVO;
+import com.cloud.common.result.PageResult;
+import com.cloud.common.result.Result;
+import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 商品服务Feign客户端接口实现控制器
- * 实现商品服务对外提供的Feign接口
+ * 商品RESTful API控制器
+ * 提供商品资源的CRUD操作，参考User服务标准架构
+ *
+ * @author what's up
  */
 @Slf4j
 @RestController
+@RequestMapping("/products")
 @RequiredArgsConstructor
-public class ProductController implements ProductFeignClient {
+@Tag(name = "商品服务", description = "商品资源的RESTful API接口")
+public class ProductController {
 
     private final ProductService productService;
-    private final ProductConverter productConverter;
+
+    /**
+     * 获取商品列表（支持查询参数）
+     */
+    @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @Operation(summary = "获取商品列表", description = "获取商品列表，支持分页和查询参数")
+    public Result<PageResult<ProductVO>> getProducts(
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "商品名称") @RequestParam(required = false) String name,
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "品牌ID") @RequestParam(required = false) Long brandId,
+            @Parameter(description = "商品状态") @RequestParam(required = false) Integer status) {
+
+        ProductPageDTO productPageDTO = new ProductPageDTO();
+        productPageDTO.setPageNum(page.longValue());
+        productPageDTO.setPageSize(size.longValue());
+        productPageDTO.setName(name);
+        productPageDTO.setCategoryId(categoryId);
+        productPageDTO.setBrandId(brandId);
+        productPageDTO.setStatus(status);
+
+        return Result.success(productService.getProductsPage(productPageDTO));
+    }
+
+    /**
+     * 根据商品名称查询商品
+     */
+    @GetMapping("/search")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @Operation(summary = "根据商品名称查询商品", description = "根据商品名称查询商品信息")
+    public Result<List<ProductVO>> findByName(
+            @Parameter(description = "商品名称") @RequestParam
+            @NotNull(message = "商品名称不能为空") String name) {
+        List<ProductVO> products = productService.searchProductsByName(name, null);
+        return Result.success("查询成功", products);
+    }
+
+    /**
+     * 根据ID获取商品详情
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @Operation(summary = "获取商品详情", description = "根据商品ID获取商品详细信息")
+    public Result<ProductVO> getProductById(
+            @Parameter(description = "商品ID") @PathVariable
+            @Positive(message = "商品ID必须为正整数") Long id) {
+
+        ProductVO product = productService.getProductById(id);
+        if (product == null) {
+            return Result.error("商品不存在");
+        }
+
+        return Result.success("查询成功", product);
+    }
 
     /**
      * 创建商品
-     *
-     * @param product 商品信息
-     * @return 创建的商品信息
      */
-    @Override
-    public ProductDTO createProduct(ProductDTO product) {
-        log.info("[商品Feign客户端控制器] 开始处理创建商品请求，商品名称: {}", product.getName());
+    @PostMapping
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:create')")
+    @Operation(summary = "创建商品", description = "创建新商品")
+    public Result<Long> createProduct(
+            @Parameter(description = "商品信息") @RequestBody
+            @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO) {
+
         try {
-            ProductDTO savedProductDTO = productService.createProductForFeign(product);
-            if (savedProductDTO != null) {
-                log.info("[商品Feign客户端控制器] 创建商品成功，商品ID: {}", savedProductDTO.getId());
-                return savedProductDTO;
-            } else {
-                log.error("[商品Feign客户端控制器] 创建商品失败: {}", product.getName());
-                return null;
-            }
+            Long productId = productService.createProduct(requestDTO);
+            return Result.success("商品创建成功", productId);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 创建商品异常", e);
-            return null;
+            log.error("创建商品失败", e);
+            return Result.error("创建商品失败: " + e.getMessage());
         }
     }
 
     /**
-     * 根据ID获取商品
-     *
-     * @param id 商品ID
-     * @return 商品信息
+     * 更新商品信息
      */
-    @Override
-    public ProductDTO getProductById(Long id) {
-        log.info("[商品Feign客户端控制器] 开始处理根据ID获取商品请求，商品ID: {}", id);
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "更新商品信息", description = "更新商品信息")
+    public Result<Boolean> updateProduct(
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "商品信息") @RequestBody
+            @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO,
+            Authentication authentication) {
+
         try {
-            ProductDTO productDTO = productService.getProductByIdForFeign(id);
-            if (productDTO != null) {
-                log.info("[商品Feign客户端控制器] 根据ID获取商品成功，商品ID: {}", id);
-                return productDTO;
-            } else {
-                log.warn("[商品Feign客户端控制器] 商品不存在，商品ID: {}", id);
-                return null;
-            }
+            boolean result = productService.updateProduct(id, requestDTO);
+            return Result.success("商品更新成功", result);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 根据ID获取商品异常，商品ID: {}", id, e);
-            return null;
+            log.error("更新商品信息失败，商品ID: {}", id, e);
+            return Result.error("更新商品信息失败: " + e.getMessage());
         }
     }
 
     /**
-     * 更新商品
-     *
-     * @param id      商品ID
-     * @param product 商品信息
-     * @return 更新后的商品信息
+     * 部分更新商品信息
      */
-    @Override
-    public ProductDTO updateProduct(Long id, ProductDTO product) {
-        log.info("[商品Feign客户端控制器] 开始处理更新商品请求，商品ID: {}", id);
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "部分更新商品信息", description = "部分更新商品信息")
+    public Result<Boolean> patchProduct(
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "商品信息") @RequestBody ProductRequestDTO requestDTO,
+            Authentication authentication) {
+
         try {
-            ProductDTO updatedProductDTO = productService.updateProductForFeign(id, product);
-            if (updatedProductDTO != null) {
-                log.info("[商品Feign客户端控制器] 更新商品成功，商品ID: {}", id);
-                return updatedProductDTO;
-            } else {
-                log.error("[商品Feign客户端控制器] 更新商品失败，商品ID: {}", id);
-                return null;
-            }
+            boolean result = productService.updateProduct(id, requestDTO);
+            return Result.success("商品更新成功", result);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 更新商品异常，商品ID: {}", id, e);
-            return null;
+            log.error("部分更新商品信息失败，商品ID: {}", id, e);
+            return Result.error("更新商品信息失败: " + e.getMessage());
         }
     }
 
     /**
      * 删除商品
-     *
-     * @param id 商品ID
-     * @return 操作结果
      */
-    @Override
-    public Boolean deleteProduct(Long id) {
-        log.info("[商品Feign客户端控制器] 开始处理删除商品请求，商品ID: {}", id);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "删除商品", description = "删除商品")
+    public Result<Boolean> deleteProduct(
+            @Parameter(description = "商品ID") @PathVariable
+            @Positive(message = "商品ID必须为正整数") Long id) {
+
         try {
             boolean result = productService.deleteProduct(id);
-            if (result) {
-                log.info("[商品Feign客户端控制器] 删除商品成功，商品ID: {}", id);
-                return true;
-            } else {
-                log.warn("[商品Feign客户端控制器] 商品不存在或删除失败，商品ID: {}", id);
-                return false;
-            }
+            return Result.success("商品删除成功", result);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 删除商品异常，商品ID: {}", id, e);
-            return false;
+            log.error("删除商品失败，商品ID: {}", id, e);
+            return Result.error("删除商品失败: " + e.getMessage());
         }
     }
 
     /**
-     * 获取所有商品
-     *
-     * @return 商品列表
+     * 批量获取商品
      */
-    @Override
-    public List<ProductDTO> getAllProducts() {
-        log.info("[商品Feign客户端控制器] 开始处理获取所有商品请求");
+    @GetMapping("/batch")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @Operation(summary = "批量获取商品", description = "根据ID列表批量获取商品信息")
+    public Result<List<ProductVO>> getProductsByIds(
+            @Parameter(description = "商品ID列表") @RequestParam
+            @NotNull(message = "商品ID列表不能为空") List<Long> ids) {
+
+        if (ids.size() > 100) {
+            return Result.error("ID列表数量不能超过100个");
+        }
+
+        List<ProductVO> products = productService.getProductsByIds(ids);
+        return Result.success("查询成功", products);
+    }
+
+    /**
+     * 获取商品档案
+     */
+    @GetMapping("/{id}/profile")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @Operation(summary = "获取商品档案", description = "获取商品详细档案信息")
+    public Result<ProductVO> getProductProfile(
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            Authentication authentication) {
+
         try {
-            List<ProductDTO> productDTOs = productService.getAllProducts();
-            log.info("[商品Feign客户端控制器] 获取所有商品成功，共{}条记录", productDTOs.size());
-            return productDTOs;
+            ProductVO productProfile = productService.getProductById(id);
+            return Result.success("查询成功", productProfile);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 获取所有商品异常", e);
-            return List.of();
+            log.error("获取商品档案失败，商品ID: {}", id, e);
+            return Result.error("获取商品档案失败: " + e.getMessage());
         }
     }
 
     /**
-     * 根据店铺ID获取商品列表
-     *
-     * @param shopId 店铺ID
-     * @return 商品列表
+     * 更新商品档案
      */
-    @Override
-    public List<ProductDTO> getProductsByShopId(Long shopId) {
-        log.info("[商品Feign客户端控制器] 开始处理根据店铺ID获取商品列表请求，店铺ID: {}", shopId);
+    @PutMapping("/{id}/profile")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "更新商品档案", description = "更新商品详细档案信息")
+    public Result<Boolean> updateProductProfile(
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "商品档案信息") @RequestBody
+            @Valid @NotNull(message = "商品档案信息不能为空") ProductRequestDTO profileDTO,
+            Authentication authentication) {
+
         try {
-            List<ProductDTO> productDTOs = productService.getProductsByShopId(shopId);
-            log.info("[商品Feign客户端控制器] 根据店铺ID获取商品列表成功，店铺ID: {}，共{}条记录", shopId, productDTOs.size());
-            return productDTOs;
+            boolean result = productService.updateProduct(id, profileDTO);
+            return Result.success("商品档案更新成功", result);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 根据店铺ID获取商品列表异常，店铺ID: {}", shopId, e);
-            return List.of();
+            log.error("更新商品档案失败，商品ID: {}", id, e);
+            return Result.error("更新商品档案失败: " + e.getMessage());
         }
     }
 
-    @Override
-    public Boolean putOnShelf(Long id) {
-        log.info("[商品Feign客户端控制器] 开始处理商品上架请求，商品ID: {}", id);
+    /**
+     * 更新商品状态
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "更新商品状态", description = "启用或禁用商品")
+    public Result<Boolean> updateProductStatus(
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "商品状态") @RequestParam Integer status) {
+
         try {
-            Boolean result = productService.enableProduct(id);
-            if (result) {
-                log.info("[商品Feign客户端控制器] 商品上架成功，商品ID: {}", id);
-                return true;
+            boolean result;
+            if (status == 1) {
+                result = productService.enableProduct(id);
             } else {
-                log.warn("[商品Feign客户端控制器] 商品上架失败，商品ID: {}", id);
-                return false;
+                result = productService.disableProduct(id);
             }
+            return Result.success("商品状态更新成功", result);
         } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 商品上架异常，商品ID: {}", id, e);
-            return false;
+            log.error("更新商品状态失败，商品ID: {}, 状态: {}", id, status, e);
+            return Result.error("更新商品状态失败: " + e.getMessage());
         }
     }
 
-    @Override
-    public Boolean putOffShelf(Long id) {
-        log.info("[商品Feign客户端控制器] 开始处理商品下架请求，商品ID: {}", id);
-        try {
-            Boolean result = productService.disableProduct(id);
-            if (result) {
-                log.info("[商品Feign客户端控制器] 商品下架成功，商品ID: {}", id);
-                return true;
-            } else {
-                log.warn("[商品Feign客户端控制器] 商品下架失败，商品ID: {}", id);
-                return false;
-            }
-        } catch (Exception e) {
-            log.error("[商品Feign客户端控制器] 商品下架异常，商品ID: {}", id, e);
-            return false;
+    /**
+     * 根据分类查询商品
+     */
+    @GetMapping("/category/{categoryId}")
+    @Operation(summary = "根据分类查询商品", description = "获取指定分类下的商品列表")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    public Result<List<ProductVO>> getProductsByCategoryId(
+            @Parameter(description = "分类ID", required = true) @PathVariable
+            @NotNull(message = "分类ID不能为空")
+            @Positive(message = "分类ID必须为正整数") Long categoryId,
+
+            @Parameter(description = "商品状态：1-上架，0-下架") @RequestParam(value = "status", required = false) Integer status) {
+
+        log.debug("根据分类查询商品: categoryId={}, status={}", categoryId, status);
+        List<ProductVO> products = productService.getProductsByCategoryId(categoryId, status);
+        return Result.success(products);
+    }
+
+    /**
+     * 根据品牌查询商品
+     */
+    @GetMapping("/brand/{brandId}")
+    @Operation(summary = "根据品牌查询商品", description = "获取指定品牌下的商品列表")
+    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    public Result<List<ProductVO>> getProductsByBrandId(
+            @Parameter(description = "品牌ID", required = true) @PathVariable
+            @NotNull(message = "品牌ID不能为空")
+            @Positive(message = "品牌ID必须为正整数") Long brandId,
+
+            @Parameter(description = "商品状态：1-上架，0-下架") @RequestParam(value = "status", required = false) Integer status) {
+
+        log.debug("根据品牌查询商品: brandId={}, status={}", brandId, status);
+        List<ProductVO> products = productService.getProductsByBrandId(brandId, status);
+        return Result.success(products);
+    }
+
+    /**
+     * 批量删除商品
+     */
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "批量删除商品", description = "根据ID列表批量删除商品")
+    public Result<Boolean> batchDeleteProducts(
+            @Parameter(description = "商品ID列表", required = true) @RequestBody
+            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+
+        log.info("批量删除商品: {}", ids);
+
+        if (ids.size() > 100) {
+            return Result.error("批量删除数量不能超过100个");
         }
+
+        Boolean success = productService.batchDeleteProducts(ids);
+        return Result.success(success);
+    }
+
+    /**
+     * 批量上架商品
+     */
+    @PutMapping("/batch/enable")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "批量上架商品", description = "批量将商品设为上架状态")
+    public Result<Boolean> batchEnableProducts(
+            @Parameter(description = "商品ID列表", required = true) @RequestBody
+            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+
+        log.info("批量上架商品: {}", ids);
+
+        if (ids.size() > 100) {
+            return Result.error("批量操作数量不能超过100个");
+        }
+
+        Boolean success = productService.batchEnableProducts(ids);
+        return Result.success(success);
+    }
+
+    /**
+     * 批量下架商品
+     */
+    @PutMapping("/batch/disable")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "批量下架商品", description = "批量将商品设为下架状态")
+    public Result<Boolean> batchDisableProducts(
+            @Parameter(description = "商品ID列表", required = true) @RequestBody
+            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+
+        log.info("批量下架商品: {}", ids);
+
+        if (ids.size() > 100) {
+            return Result.error("批量操作数量不能超过100个");
+        }
+
+        Boolean success = productService.batchDisableProducts(ids);
+        return Result.success(success);
     }
 }

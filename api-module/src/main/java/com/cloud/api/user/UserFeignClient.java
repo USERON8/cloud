@@ -5,13 +5,15 @@ import com.cloud.common.domain.dto.user.UserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 用户服务Feign客户端
  * 用于服务间调用用户服务的接口
  *
  * @author what's up
  */
-@FeignClient(name = "user-service", path = "/user", contextId = "user-feign-client")
+@FeignClient(name = "user-service", path = "/user", contextId = "userFeignClient")
 public interface UserFeignClient {
 
     /**

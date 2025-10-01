@@ -28,18 +28,28 @@
 
 #### 同步查询接口
 
-1. `GET /stock/query/product/{productId}`
+1. `GET /stocks/query`
+    - 获取库存列表，支持分页和查询参数
+    - 返回分页结果
+
+2. `GET /stocks/query/search?productId={productId}`
     - 根据商品ID获取库存信息
     - 返回库存VO对象
 
-2. `POST /stock/query/page`
+3. `GET /stocks/query/{id}`
+    - 根据库存ID获取库存详情
+    - 返回库存VO对象
+
+4. `POST /stocks/query/page`
     - 分页查询库存列表
     - 接收分页参数和查询条件
     - 返回分页结果
 
-3. `GET /stock/query/{id}`
-    - 根据库存ID获取库存详情
-    - 返回库存VO对象
+5. `POST /stocks/query/batch`
+    - 批量查询库存
+
+6. `GET /stocks/query/{id}/profile`
+    - 获取库存档案信息
 
 #### 异步查询接口
 
@@ -59,22 +69,39 @@
 5. `POST /stock/async/concurrent`
     - 并发查询多个商品库存
 
-### 库存操作接口
+### 管理接口
 
-1. `POST /stock/count/increase/{productId}?count={count}`
-    - 增加指定商品的库存数量
+1. `POST /stocks/manage`
+    - 创建库存记录
 
-2. `POST /stock/count/reduce/{productId}?count={count}`
-    - 扣减指定商品的库存数量
+2. `PUT /stocks/manage/{id}`
+    - 更新库存信息
 
-3. `POST /stock/count/freeze/{productId}?count={count}`
-    - 冻结指定商品的库存数量
+3. `PATCH /stocks/manage/{id}`
+    - 部分更新库存信息
 
-4. `POST /stock/count/unfreeze/{productId}?count={count}`
-    - 解冻指定商品的库存数量
+4. `DELETE /stocks/manage/{id}`
+    - 删除库存信息
 
-5. `POST /stock/count/batch`
-    - 批量变更多个商品的库存数量
+5. `PATCH /stocks/manage/{id}/status?status={status}`
+    - 更新库存状态
+
+### 业务操作接口
+
+1. `POST /stocks/stockIn?productId={productId}&quantity={quantity}&remark={remark}`
+    - 库存入库
+
+2. `POST /stocks/stockOut`
+    - 库存出库
+
+3. `POST /stocks/reserve?productId={productId}&quantity={quantity}`
+    - 预留库存
+
+4. `POST /stocks/release?productId={productId}&quantity={quantity}`
+    - 释放预留库存
+
+5. `GET /stocks/check/{productId}/{quantity}`
+    - 检查库存是否充足
 
 ### Feign接口
 

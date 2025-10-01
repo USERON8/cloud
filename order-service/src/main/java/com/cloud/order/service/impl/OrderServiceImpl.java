@@ -626,4 +626,145 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         }
     }
 
+    // ================= Feign客户端接口方法实现 =================
+
+    /**
+     * 根据订单ID查询订单信息（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @return 订单信息
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public OrderVO getOrderByOrderIdForFeign(Long orderId) {
+        try {
+            log.debug("[订单服务] 开始处理Feign调用：根据订单ID查询订单信息，订单ID: {}", orderId);
+            
+            // 直接从数据库查询
+            Order order = this.baseMapper.selectById(orderId);
+            if (order == null) {
+                log.warn("[订单服务] 订单不存在，订单ID: {}", orderId);
+                return null;
+            }
+
+            OrderVO orderVO = orderConverter.toVO(order);
+            log.debug("[订单服务] 根据订单ID查询订单信息成功，订单ID: {}", orderId);
+            return orderVO;
+        } catch (Exception e) {
+            log.error("[订单服务] 根据订单ID查询订单信息异常，订单ID: {}", orderId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 创建订单（Feign客户端接口）
+     *
+     * @param orderDTO 订单信息
+     * @return 订单信息
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO createOrderForFeign(OrderDTO orderDTO) {
+        try {
+            log.info("[订单服务] 开始处理Feign调用：创建订单，用户ID: {}", orderDTO.getUserId());
+            
+            // 创建订单实体
+            Order order = orderConverter.toEntity(orderDTO);
+            order.setStatus(0); // 设置为待支付状态
+            
+            boolean saved = this.save(order);
+            if (!saved) {
+                log.error("[订单服务] 创建订单失败");
+                return null;
+            }
+            
+            OrderVO orderVO = orderConverter.toVO(order);
+            log.info("[订单服务] 创建订单成功，订单ID: {}", order.getId());
+            return orderVO;
+        } catch (Exception e) {
+            log.error("[订单服务] 创建订单异常", e);
+            return null;
+        }
+    }
+
+    /**
+     * 更新订单状态（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @param status  订单状态
+     * @return 是否更新成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateOrderStatusForFeign(Long orderId, Integer status) {
+        try {
+            log.info("[订单服务] 开始处理Feign调用：更新订单状态，订单ID: {}，状态: {}", orderId, status);
+            
+            // 查询订单
+            Order order = this.baseMapper.selectById(orderId);
+            if (order == null) {
+                log.warn("[订单服务] 订单不存在，订单ID: {}", orderId);
+                return false;
+            }
+            
+            // 更新状态
+            order.setStatus(status);
+            boolean updated = this.updateById(order);
+            
+            if (updated) {
+                log.info("[订单服务] 更新订单状态成功，订单ID: {}，新状态: {}", orderId, status);
+            } else {
+                log.warn("[订单服务] 更新订单状态失败，订单ID: {}，状态: {}", orderId, status);
+            }
+            
+            return updated;
+        } catch (Exception e) {
+            log.error("[订单服务] 更新订单状态异常，订单ID: {}，状态: {}", orderId, status, e);
+            return false;
+        }
+    }
+
+    /**
+     * 完成订单（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @return 是否更新成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean completeOrderForFeign(Long orderId) {
+        try {
+            log.info("[订单服务] 开始处理Feign调用：完成订单，订单ID: {}", orderId);
+            
+            // 查询订单
+            Order order = this.baseMapper.selectById(orderId);
+            if (order == null) {
+                log.warn("[订单服务] 订单不存在，订单ID: {}", orderId);
+                return false;
+            }
+            
+            // 验证订单状态（必须是已发货状态）
+            if (order.getStatus() != 2) {
+                log.warn("[订单服务] 订单状态不正确，无法完成订单，订单ID: {}，当前状态: {}", orderId, order.getStatus());
+                return false;
+            }
+            
+            // 更新状态为已完成
+            order.setStatus(3);
+            boolean updated = this.updateById(order);
+            
+            if (updated) {
+                log.info("[订单服务] 完成订单成功，订单ID: {}", orderId);
+                // 发布订单完成事件
+                publishOrderCompletedEvent(order);
+            } else {
+                log.warn("[订单服务] 完成订单失败，订单ID: {}", orderId);
+            }
+            
+            return updated;
+        } catch (Exception e) {
+            log.error("[订单服务] 完成订单异常，订单ID: {}", orderId, e);
+            return false;
+        }
+    }
 }

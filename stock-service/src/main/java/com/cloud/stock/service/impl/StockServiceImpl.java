@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 
 /**
@@ -61,6 +62,68 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     private final StockConverter stockConverter;
     private final BusinessLogProducer businessLogProducer;
     private final AsyncLogProducer asyncLogProducer;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CachePut(
+            cacheNames = "stockCache",
+            key = "#result.id",
+            unless = "#result == null"
+    )
+    public StockDTO createStock(StockDTO stockDTO) {
+        if (stockDTO == null) {
+            log.warn("库存信息不能为空");
+            throw new IllegalArgumentException("库存信息不能为空");
+        }
+
+        try {
+            log.info("创建库存记录，商品ID: {}", stockDTO.getProductId());
+            Stock stock = stockConverter.toEntity(stockDTO);
+            boolean saved = save(stock);
+            
+            if (saved) {
+                log.info("库存记录创建成功，ID: {}", stock.getId());
+                return stockConverter.toDTO(stock);
+            } else {
+                log.error("库存记录创建失败，商品ID: {}", stockDTO.getProductId());
+                throw new BusinessException("创建库存记录失败");
+            }
+        } catch (Exception e) {
+            log.error("创建库存记录异常，商品ID: {}", stockDTO.getProductId(), e);
+            throw new BusinessException("创建库存记录失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CachePut(
+            cacheNames = "stockCache",
+            key = "#stockDTO.id",
+            unless = "#result == false"
+    )
+    public boolean updateStock(StockDTO stockDTO) {
+        if (stockDTO == null || stockDTO.getId() == null) {
+            log.warn("库存信息或ID不能为空");
+            throw new IllegalArgumentException("库存信息或ID不能为空");
+        }
+
+        try {
+            log.info("更新库存记录，ID: {}", stockDTO.getId());
+            Stock stock = stockConverter.toEntity(stockDTO);
+            boolean updated = updateById(stock);
+            
+            if (updated) {
+                log.info("库存记录更新成功，ID: {}", stock.getId());
+                return true;
+            } else {
+                log.warn("库存记录更新失败，ID: {}", stockDTO.getId());
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("更新库存记录异常，ID: {}", stockDTO.getId(), e);
+            throw new BusinessException("更新库存记录失败: " + e.getMessage(), e);
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)

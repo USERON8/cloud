@@ -32,12 +32,28 @@ public interface StockService extends IService<Stock> {
     StockDTO getStockById(Long id);
 
     /**
+     * 创建库存记录
+     *
+     * @param stockDTO 库存信息
+     * @return 创建的库存DTO
+     */
+    StockDTO createStock(StockDTO stockDTO);
+
+    /**
      * 根据商品ID获取库存信息
      *
      * @param productId 商品ID
      * @return 库存DTO
      */
     StockDTO getStockByProductId(Long productId);
+
+    /**
+     * 更新库存信息
+     *
+     * @param stockDTO 库存信息
+     * @return 是否成功
+     */
+    boolean updateStock(StockDTO stockDTO);
 
     /**
      * 根据商品ID列表批量获取库存信息

@@ -156,4 +156,39 @@ public interface OrderService extends IService<Order> {
      * @return 是否更新成功
      */
     Boolean updateOrderToPaid(PaymentSuccessEvent event);
+
+    // ================= Feign客户端接口方法 =================
+
+    /**
+     * 根据订单ID查询订单信息（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @return 订单信息
+     */
+    OrderVO getOrderByOrderIdForFeign(Long orderId);
+
+    /**
+     * 创建订单（Feign客户端接口）
+     *
+     * @param orderDTO 订单信息
+     * @return 订单信息
+     */
+    OrderVO createOrderForFeign(OrderDTO orderDTO);
+
+    /**
+     * 更新订单状态（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @param status  订单状态
+     * @return 是否更新成功
+     */
+    Boolean updateOrderStatusForFeign(Long orderId, Integer status);
+
+    /**
+     * 完成订单（Feign客户端接口）
+     *
+     * @param orderId 订单ID
+     * @return 是否更新成功
+     */
+    Boolean completeOrderForFeign(Long orderId);
 }

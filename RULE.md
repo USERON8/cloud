@@ -226,7 +226,72 @@ DELETE /api/v1/users/{id}        # 删除用户
 }
 ```
 
-### 3. 配置管理规范
+### 3. Feign客户端规范
+
+#### 🔄 接口设计原则
+- **直接返回数据**: Feign接口方法应直接返回DTO、VO或其他数据对象，不使用Result包装器
+- **路径一致性**: Feign接口中的@RequestMapping路径必须与服务端Controller中的路径完全一致
+- **职责分离**: 每个服务应创建专门的FeignController来处理外部服务调用，避免与常规API混用
+
+#### 📦 接口定义规范
+```java
+/**
+ * 用户服务Feign客户端
+ * 用于服务间调用用户服务的接口
+ */
+@FeignClient(name = "user-service", path = "/user", contextId = "userFeignClient")
+public interface UserFeignClient {
+    
+    /**
+     * 根据用户名查找用户
+     *
+     * @param username 用户名
+     * @return 用户信息
+     */
+    @GetMapping("/internal/username/{username}")
+    UserDTO findByUsername(@PathVariable("username") String username);
+    
+    /**
+     * 保存用户信息
+     *
+     * @param registerRequest 用户注册信息
+     * @return 用户信息
+     */
+    @PostMapping("/internal/register")
+    UserDTO register(@RequestBody RegisterRequestDTO registerRequest);
+}
+```
+
+#### 🎯 实现方式规范
+- **专用控制器**: 每个服务应创建专门的FeignController来实现Feign接口
+- **路径匹配**: FeignController中的@RequestMapping路径必须与Feign接口定义完全一致
+- **简化处理**: FeignController中应直接调用Service层方法，不添加额外的业务逻辑
+
+#### 📝 注释规范
+- **接口注释**: Feign接口必须添加完整的JavaDoc注释，说明接口用途
+- **方法注释**: 每个方法必须添加详细的注释，说明功能、参数和返回值
+- **参数注释**: 使用@param和@return标准注释格式
+
+#### 📁 包结构规范
+```
+api-module/
+└── com.cloud.api/
+    ├── user/
+    │   ├── UserFeignClient.java        # 用户服务Feign接口
+    │   └── AdminFeignClient.java       # 管理员服务Feign接口
+    ├── product/
+    │   └── ProductFeignClient.java     # 商品服务Feign接口
+    ├── order/
+    │   └── OrderFeignClient.java       # 订单服务Feign接口
+    ├── payment/
+    │   └── PaymentFeignClient.java     # 支付服务Feign接口
+    ├── stock/
+    │   └── StockFeignClient.java       # 库存服务Feign接口
+    └── auth/
+        └── AuthFeignClient.java        # 认证服务Feign接口
+```
+
+### 4. 配置管理规范
 
 #### 🔧 Redis配置规范
 ##### 缓存键命名
@@ -336,7 +401,7 @@ public Result createUser(@Valid @RequestBody UserCreateDTO dto) {
 @Configuration
 @Primary
 public class UserLocalCacheConfig {
-
+    
     @Bean
     @Primary
     public CacheManager cacheManager() {
@@ -435,7 +500,7 @@ public MetaObjectHandler metaObjectHandler() {
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
-
+    
     @ApiOperation(value = "获取用户信息")
     @GetMapping("/{userId}")
     public Result<UserDTO> getUser(@PathVariable Long userId) {
@@ -478,7 +543,7 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```java
 @Slf4j
 public class UserService {
-
+    
     public UserDTO createUser(UserCreateDTO createDTO) {
         log.info("开始创建用户, 用户名: {}", createDTO.getUsername());
         try {
@@ -548,7 +613,6 @@ chore: 构建工具
 - 分页查询使用游标
 
 ### 3. JVM调优
-
 ```bash
 -Xms2G -Xmx2G                    # 堆内存
 -XX:+UseG1GC                     # G1垃圾回收器
@@ -576,11 +640,10 @@ chore: 构建工具
 #### 日志格式
 ```java
 log.info("用户登录成功, userId: {}, username: {}, ip: {}", 
-    userId, username, ipAddress);
+         userId, username, ipAddress);
 ```
 
 ### 3. 告警配置
-
 | 指标 | 阈值 | 告警级别 |
 |------|------|----------|
 | CPU使用率 | >80% | 警告 |

@@ -669,8 +669,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("商品缓存预热完成, 数量: {}", ids.size());
     }
 
-    // ================= Feign客户端接口方法实�?=================
+    // ================= Feign客户端接口方法实现 =================
 
+    /**
+     * 创建商品（Feign客户端接口）
+     * 供其他服务通过Feign调用创建商品
+     *
+     * @param productDTO 商品DTO
+     * @return 创建的商品DTO
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProductDTO createProductForFeign(ProductDTO productDTO) {
@@ -680,11 +687,18 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         ProductRequestDTO requestDTO = productConverter.dtoToRequestDTO(productDTO);
         Long productId = createProduct(requestDTO);
 
-        // 返回创建的商品信�?
+        // 返回创建的商品信息
         ProductVO productVO = getProductById(productId);
         return productConverter.voToDTO(productVO);
     }
 
+    /**
+     * 根据ID获取商品（Feign客户端接口）
+     * 供其他服务通过Feign调用获取商品信息
+     *
+     * @param id 商品ID
+     * @return 商品DTO
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productCache", key = "'feign:' + #id",
@@ -700,6 +714,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return productConverter.voToDTO(productVO);
     }
 
+    /**
+     * 更新商品（Feign客户端接口）
+     * 供其他服务通过Feign调用更新商品信息
+     *
+     * @param id         商品ID
+     * @param productDTO 商品DTO
+     * @return 更新后的商品DTO
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProductDTO updateProductForFeign(Long id, ProductDTO productDTO) {
@@ -717,6 +739,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return null;
     }
 
+    /**
+     * 获取所有商品（Feign客户端接口）
+     * 供其他服务通过Feign调用获取所有商品信息
+     *
+     * @return 商品DTO列表
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productListCache", key = "'all'")
@@ -728,6 +756,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return productConverter.voListToDTOList(productVOs);
     }
 
+    /**
+     * 根据店铺ID获取商品列表（Feign客户端接口）
+     * 供其他服务通过Feign调用根据店铺ID获取商品信息
+     *
+     * @param shopId 店铺ID
+     * @return 商品DTO列表
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productListCache",
@@ -1099,3 +1134,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
 }
+
+
+
+

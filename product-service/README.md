@@ -64,10 +64,17 @@ product-service/
 │   │   ├── ResourceServerConfig.java
 │   │   └── SecurityConfig.java
 │   ├── controller/                         # 控制器层
+│   │   ├── category/
+│   │   │   ├── CategoryManageController.java # 分类管理接口(已废弃)
+│   │   │   ├── CategoryManageNewController.java # 新分类管理接口
+│   │   │   ├── CategoryQueryController.java  # 分类查询接口(已废弃)
+│   │   │   └── CategoryQueryNewController.java  # 新分类查询接口
 │   │   └── product/
 │   │       ├── ProductController.java      # Feign接口实现
-│   │       ├── ProductManageController.java # 管理接口
-│   │       └── ProductQueryController.java  # 查询接口
+│   │       ├── ProductManageController.java # 管理接口(已废弃)
+│   │       ├── ProductManageNewController.java # 新管理接口
+│   │       ├── ProductQueryController.java  # 查询接口(已废弃)
+│   │       └── ProductQueryNewController.java  # 新查询接口
 │   ├── converter/                          # 对象转换器
 │   │   ├── CategoryConverter.java
 │   │   ├── ProductConverter.java
@@ -243,21 +250,21 @@ private LambdaQueryWrapper<Product> buildQueryWrapper(ProductPageDTO pageDTO) {
 
 ## 5. API接口文档
 
-### 4.1 商品查询接口
+### 5.1 商品查询接口
 
 #### 获取商品详情
 
 ```
-GET /api/v1/products/{id}
-权限: 无需权限
+GET /api/v1/products/query/{id}
+权限: PRODUCT_VIEW
 响应: ProductVO
 ```
 
 #### 分页查询商品
 
 ```
-GET /api/v1/products/page?pageNum=1&pageSize=10&keyword=关键字
-权限: 无需权限
+GET /api/v1/products/query?page=1&size=10&name=关键字
+权限: PRODUCT_VIEW
 参数: ProductPageDTO
 响应: PageResult<ProductVO>
 ```
@@ -265,20 +272,20 @@ GET /api/v1/products/page?pageNum=1&pageSize=10&keyword=关键字
 #### 批量获取商品
 
 ```
-GET /api/v1/products/batch?ids=1,2,3
-权限: 无需权限
+GET /api/v1/products/query/batch?ids=1,2,3
+权限: PRODUCT_VIEW
 响应: List<ProductVO>
 ```
 
 #### 搜索商品
 
 ```
-GET /api/v1/products/search?keyword=关键字&status=1
-权限: 无需权限
+GET /api/v1/products/query/search/name?keyword=关键字&status=1
+权限: PRODUCT_VIEW
 响应: List<ProductVO>
 ```
 
-### 4.2 商品管理接口
+### 5.2 商品管理接口
 
 #### 创建商品
 
@@ -298,6 +305,15 @@ PUT /api/v1/products/manage/{id}
 响应: Boolean
 ```
 
+#### 部分更新商品
+
+```
+PATCH /api/v1/products/manage/{id}
+权限: PRODUCT_UPDATE
+请求体: ProductRequestDTO
+响应: Boolean
+```
+
 #### 删除商品
 
 ```
@@ -306,16 +322,24 @@ DELETE /api/v1/products/manage/{id}
 响应: Boolean
 ```
 
-#### 批量删除商品
+#### 更新商品状态
 
 ```
-DELETE /api/v1/products/manage/batch
-权限: PRODUCT_DELETE
-请求体: List<Long> (商品ID列表)
+PATCH /api/v1/products/manage/{id}/status?status=1
+权限: PRODUCT_STATUS
 响应: Boolean
 ```
 
-### 4.3 商品状态管理
+#### 更新商品档案
+
+```
+PUT /api/v1/products/manage/{id}/profile
+权限: PRODUCT_UPDATE
+请求体: ProductRequestDTO
+响应: Boolean
+```
+
+### 5.3 商品状态管理
 
 #### 上架商品
 
@@ -351,7 +375,7 @@ PUT /api/v1/products/manage/batch/disable
 响应: Boolean
 ```
 
-### 4.4 库存管理
+### 5.4 库存管理
 
 #### 更新库存
 
@@ -385,7 +409,7 @@ GET /api/v1/products/manage/{id}/stock/check?quantity=5
 响应: Boolean
 ```
 
-### 4.5 缓存管理
+### 5.5 缓存管理
 
 #### 清除商品缓存
 
@@ -406,15 +430,102 @@ DELETE /api/v1/products/manage/cache/all
 #### 预热商品缓存
 
 ```
-POST /api/v1/products/cache/warmup
+POST /api/v1/products/query/cache/warmup
 权限: 无需权限
 请求体: List<Long> (商品ID列表)
 响应: String
 ```
 
-## 5. 缓存策略
+### 5.6 分类查询接口
 
-### 5.1 多级缓存架构
+#### 获取分类详情
+
+```
+GET /api/v1/categories/query/{id}
+权限: PRODUCT_VIEW
+响应: CategoryDTO
+```
+
+#### 获取分类列表
+
+```
+GET /api/v1/categories/query?name=名称&parentId=父ID&level=层级&status=状态
+权限: PRODUCT_VIEW
+响应: List<CategoryDTO>
+```
+
+#### 获取分类树
+
+```
+GET /api/v1/categories/query/tree
+权限: PRODUCT_VIEW
+响应: List<CategoryDTO>
+```
+
+#### 根据层级获取分类
+
+```
+GET /api/v1/categories/query/level/{level}
+权限: PRODUCT_VIEW
+响应: List<CategoryDTO>
+```
+
+#### 根据父ID获取子分类
+
+```
+GET /api/v1/categories/query/children/{parentId}
+权限: PRODUCT_VIEW
+响应: List<CategoryDTO>
+```
+
+### 5.7 分类管理接口
+
+#### 创建分类
+
+```
+POST /api/v1/categories/manage
+权限: PRODUCT_WRITE
+请求体: CategoryDTO
+响应: CategoryDTO
+```
+
+#### 更新分类
+
+```
+PUT /api/v1/categories/manage/{id}
+权限: PRODUCT_WRITE
+请求体: CategoryDTO
+响应: CategoryDTO
+```
+
+#### 部分更新分类
+
+```
+PATCH /api/v1/categories/manage/{id}
+权限: PRODUCT_WRITE
+请求体: CategoryDTO
+响应: CategoryDTO
+```
+
+#### 删除分类
+
+```
+DELETE /api/v1/categories/manage/{id}
+权限: PRODUCT_WRITE
+响应: Boolean
+```
+
+#### 更新分类状态
+
+```
+PATCH /api/v1/categories/manage/{id}/status?status=1
+权限: PRODUCT_WRITE
+响应: Boolean
+```
+
+## 6. 缓存策略
+
+### 6.1 多级缓存架构
 
 - **L1缓存**: Caffeine本地缓存
     - 初始容量：150
@@ -427,27 +538,29 @@ POST /api/v1/products/cache/warmup
     - 默认过期时间：60分钟
     - Key前缀：product:
 
-### 5.2 缓存Key规范
+### 6.2 缓存Key规范
 
 - 商品详情：`product:productCache:{id}`
 - 商品列表：`product:productListCache:{查询条件hash}`
 - 统计数据：`product:productStatsCache:{统计类型}`
+- 分类详情：`product:categoryCache:{id}`
+- 分类列表：`product:categoryListCache:{查询条件hash}`
 
-### 5.3 缓存更新策略
+### 6.3 缓存更新策略
 
 - **查询操作**: 优先L1缓存，未命中查L2缓存，最后查数据库
 - **写操作**: 先更新数据库，后更新/清除缓存
 - **批量操作**: 清除相关缓存分区
 
-## 6. 配置说明
+## 7. 配置说明
 
-### 6.1 服务配置
+### 7.1 服务配置
 
 - **端口**: 8083 (按照开发文档规范)
 - **数据库**: product_db
 - **Redis数据库**: 1
 
-### 6.2 依赖版本
+### 7.2 依赖版本
 
 遵循项目根目录READ.md文档中的版本规范：
 
@@ -459,9 +572,9 @@ POST /api/v1/products/cache/warmup
 - Caffeine: 3.2.2
 - Knife4j: 4.5.0
 
-## 7. 权限设计
+## 8. 权限设计
 
-### 7.1 权限标识
+### 8.1 权限标识
 
 - `PRODUCT_VIEW`: 查看商品权限
 - `PRODUCT_CREATE`: 创建商品权限
@@ -471,40 +584,40 @@ POST /api/v1/products/cache/warmup
 - `PRODUCT_STOCK`: 库存管理权限
 - `PRODUCT_CACHE`: 缓存管理权限
 
-### 7.2 接口权限控制
+### 8.2 接口权限控制
 
 所有管理接口都需要相应的权限，查询接口无需权限便于商城展示使用。
 
-## 8. 异常处理
+## 9. 异常处理
 
-### 8.1 自定义异常
+### 9.1 自定义异常
 
 - `ProductNotFoundException`: 商品不存在异常
 - `ProductServiceException`: 商品服务异常
 - `ProductStatusException`: 商品状态异常
 - `CategoryNotFoundException`: 分类不存在异常
 
-### 8.2 全局异常处理
+### 9.2 全局异常处理
 
 `GlobalExceptionHandler`统一处理所有异常，返回标准错误响应格式。
 
-## 9. 性能优化
+## 10. 性能优化
 
-### 9.1 缓存优化
+### 10.1 缓存优化
 
 - 使用多级缓存减少数据库访问
 - 支持缓存预热提升响应速度
 - 智能缓存失效策略
 
-### 9.2 查询优化
+### 10.2 查询优化
 
 - 分页查询支持多维度筛选
 - 复杂查询条件自动优化
 - 批量操作减少网络开销
 
-## 10. 测试策略
+## 11. 测试策略
 
-### 10.1 API测试
+### 11.1 API测试
 
 主要通过以下方式测试：
 
@@ -512,23 +625,23 @@ POST /api/v1/products/cache/warmup
 - Knife4j在线文档测试
 - 集成测试验证业务逻辑
 
-### 10.2 测试覆盖
+### 11.2 测试覆盖
 
 - 控制器层接口测试
 - 服务层业务逻辑测试
 - 缓存功能测试
 - 异常处理测试
 
-## 11. 部署说明
+## 12. 部署说明
 
-### 11.1 环境要求
+### 12.1 环境要求
 
 - JDK 17+
 - MySQL 8.0+ (使用product_db数据库)
 - Redis 6.0+ (使用数据库1)
 - Nacos服务
 
-### 11.2 启动方式
+### 12.2 启动方式
 
 ```bash
 # 编译打包
@@ -538,9 +651,9 @@ mvn clean package -DskipTests
 java -jar product-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
-## 12. 监控与运维
+## 13. 监控与运维
 
-### 12.1 健康检查
+### 13.1 健康检查
 
 通过Actuator提供健康检查端点：
 
@@ -548,72 +661,90 @@ java -jar product-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 - `/actuator/metrics`: 性能指标
 - `/actuator/caches`: 缓存状态
 
-### 12.2 日志配置
+### 13.2 日志配置
 
 - 日志级别：DEBUG (开发环境)
 - 日志文件：logs/product-service.log
 - 包含缓存、数据库操作详细日志
 
-## 13. 店铺服务优化
+## 14. 分类服务优化
 
-### 13.1 ShopServiceImpl 优化完成
+### 14.1 Category控制器结构优化
 
-**优化时间**: 2025-01-25
+**优化时间**: 2025-10-01
 
 **优化内容**:
 
-1. **引入ShopConverter转换器**
-    - 使用MapStruct接口定义的ShopConverter进行实体、DTO和VO之间的转换
-    - 替换原有的手动属性赋值代码，提升代码简洁性和维护性
+1. **引入新的控制器结构**
+    - 创建CategoryManageNewController和CategoryQueryNewController
+    - 按照用户服务标准，将分类控制器分为管理接口和查询接口
+    - 使用统一的权限控制和注解
 
-2. **完善缓存注解**
-    - 为更新、删除、状态操作方法添加@MultiLevelCacheEvict注解
-    - 确保数据变更时自动清除相关缓存，保持数据一致性
+2. **API路径标准化**
+    - 管理接口路径：/categories/manage
+    - 查询接口路径：/categories/query
+    - 保持与用户服务一致的API设计风格
 
-3. **优化代码结构**
-    - 使用@RequiredArgsConstructor进行依赖注入
-    - 简化了实体转换逻辑，所有转换操作统一使用ShopConverter
-    - 改进了异常处理和日志记录
+3. **功能完善**
+    - 添加部分更新接口（PATCH）
+    - 添加分类状态更新接口
 
-4. **提升性能**
-    - 减少重复代码，提高执行效率
-    - 优化缓存策略，提升数据访问速度
-    - 统一数据转换逻辑，减少维护成本
+### 14.2 技术规范遵循
 
-**关键改进**:
-
-- **createShop**: 使用shopConverter.requestDTOToEntity()转换
-- **updateShop**: 添加缓存清除，使用转换器更新实体
-- **deleteShop**: 添加缓存清除注解
-- **查询方法**: 统一使用shopConverter.toVO()和toVOList()
-- **状态操作**: 为单个和批量状态操作添加缓存清除
-
-### 13.2 技术规范遵循
-
-- ✅ 使用MapStruct进行对象转换
-- ✅ 遵循多级缓存策略
-- ✅ 符合DRY原则，消除重复代码
-- ✅ 事务注解正确配置
+- ✅ 使用统一的返回结果格式
+- ✅ 遵循权限控制规范
+- ✅ 添加完整的Swagger注解
+- ✅ 保持与用户服务一致的代码风格
 - ✅ 日志记录完善
 
----
+## 15. 商品服务API结构优化
 
-**最近更新**: 2025-01-25
-**修复内容**:
+### 15.1 控制器结构重构
 
-1. **代码清理完成**
-    - 删除冗余配置类和重复代码
-    - 统一异常处理机制
-    - 优化依赖管理
+**优化时间**: 2025-10-01
 
-2. **ShopServiceImpl全面优化**
-    - 集成ShopConverter，消除手动转换代码
-    - 完善多级缓存注解配置
-    - 优化业务逻辑实现
+**优化内容**:
 
-3. **遵循微服务设计原则**
-    - 单一职责原则
-    - DRY原则
-    - 配置统一化
+1. **引入新的控制器结构**
+    - 创建ProductManageNewController和ProductQueryNewController
+    - 按照用户服务标准，将商品控制器分为管理接口和查询接口
+    - 使用统一的权限控制和注解
 
-**注意**: 该服务现在完全遵循微服务最佳实践，代码更加简洁高效，缓存策略完善。
+2. **API路径标准化**
+    - 管理接口路径：/products/manage
+    - 查询接口路径：/products/query
+    - 保持与用户服务一致的API设计风格
+
+3. **功能完善**
+    - 添加部分更新接口（PATCH）
+    - 添加商品档案管理接口
+    - 添加商品状态更新接口
+
+### 15.2 技术规范遵循
+
+- ✅ 使用统一的返回结果格式
+- ✅ 遵循权限控制规范
+- ✅ 添加完整的Swagger注解
+- ✅ 保持与用户服务一致的代码风格
+- ✅ 日志记录完善
+
+--- 
+
+**最近更新**: 2025-10-01
+**更新内容**:
+
+1. **API结构优化**
+    - 按照用户服务标准重构商品和分类控制器结构
+    - 创建新的管理控制器和查询控制器
+    - 统一权限控制和返回结果格式
+
+2. **功能完善**
+    - 添加部分更新接口
+    - 添加商品和分类档案管理接口
+    - 添加商品和分类状态更新接口
+
+3. **文档更新**
+    - 更新README文档，反映新的API结构
+    - 更新接口文档说明
+
+**注意**: 该服务现在完全遵循微服务最佳实践，API结构更加清晰，代码风格与用户服务保持一致。

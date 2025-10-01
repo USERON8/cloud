@@ -9,8 +9,10 @@ import java.util.List;
 /**
  * 管理员服务Feign客户端
  * 用于服务间调用管理员服务的接口
+ *
+ * @author what's up
  */
-@FeignClient(name = "user-service", path = "/admin", contextId = "admin-feign-client")
+@FeignClient(name = "user-service", path = "/admin", contextId = "adminFeignClient")
 public interface AdminFeignClient {
 
     /**

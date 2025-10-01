@@ -18,6 +18,8 @@ buildNumber.properties
 .idea
 .augment
 .xcodemap
+.lingma
+.tongyiignore
 WARP.md
 AI_ASSISTANT_RULES_EN.md
 
