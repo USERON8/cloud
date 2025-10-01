@@ -55,6 +55,15 @@ public interface AdminService extends IService<Admin> {
      */
     Page<AdminDTO> getMerchantsPage(Integer page, Integer size, Integer status);
 
+    /**
+     * 分页获取管理员列表
+     *
+     * @param page 页码
+     * @param size 每页数量
+     * @return 分页结果
+     */
+    Page<AdminDTO> getAdminsPage(Integer page, Integer size);
+
     // ================= 创建和更新操作 =================
 
     /**

@@ -31,7 +31,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
                 com.cloud.common.cache.listener.CacheMessageListener.class,
                 com.cloud.common.cache.metrics.CacheMetricsCollector.class,
                 com.cloud.common.monitoring.PerformanceMonitor.class,
-                com.cloud.common.security.RateLimitManager.class
+                com.cloud.common.security.RateLimitManager.class,
+                com.cloud.common.config.SecurityConfig.class
             }
         ),
         @ComponentScan.Filter(

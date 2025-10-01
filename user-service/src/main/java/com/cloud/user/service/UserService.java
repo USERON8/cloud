@@ -134,4 +134,63 @@ public interface UserService extends IService<User> {
      */
     boolean updateGitHubUserInfo(Long userId, com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO);
 
+    /**
+     * 分页获取用户列表
+     *
+     * @param page 页码
+     * @param size 每页数量
+     * @return 分页结果
+     */
+    com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> getUsersPage(Integer page, Integer size);
+
+    /**
+     * 创建用户
+     *
+     * @param userDTO 用户信息
+     * @return 用户ID
+     */
+    Long createUser(UserDTO userDTO);
+
+    /**
+     * 更新用户
+     *
+     * @param userDTO 用户信息
+     * @return 是否成功
+     */
+    Boolean updateUser(UserDTO userDTO);
+
+    /**
+     * 删除用户
+     *
+     * @param id 用户ID
+     * @return 是否成功
+     */
+    Boolean deleteUser(Long id);
+
+    /**
+     * 更新用户状态
+     *
+     * @param id     用户ID
+     * @param status 状态
+     * @return 是否成功
+     */
+    Boolean updateUserStatus(Long id, Integer status);
+
+    /**
+     * 重置密码
+     *
+     * @param id 用户ID
+     * @return 新密码
+     */
+    String resetPassword(Long id);
+
+    /**
+     * 修改密码
+     *
+     * @param id          用户ID
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     * @return 是否成功
+     */
+    Boolean changePassword(Long id, String oldPassword, String newPassword);
 }

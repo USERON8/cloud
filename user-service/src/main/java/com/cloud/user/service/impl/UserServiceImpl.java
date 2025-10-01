@@ -790,5 +790,122 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return result;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> getUsersPage(Integer page, Integer size) {
+        log.info("分页获取用户列表, page: {}, size: {}", page, size);
+        
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> pageParam = 
+            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> userPage = page(pageParam);
+        
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> dtoPage = 
+            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
+                userPage.getCurrent(), 
+                userPage.getSize(), 
+                userPage.getTotal()
+            );
+        
+        List<UserDTO> dtoList = userPage.getRecords().stream()
+                .map(userConverter::toDTO)
+                .collect(java.util.stream.Collectors.toList());
+        dtoPage.setRecords(dtoList);
+        
+        return dtoPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "userCache", allEntries = true)
+            }
+    )
+    public Long createUser(UserDTO userDTO) {
+        log.info("创建用户, username: {}", userDTO.getUsername());
+        
+        User user = userConverter.toEntity(userDTO);
+        if (org.springframework.util.StringUtils.hasText(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        
+        save(user);
+        return user.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "userCache", key = "#userDTO.id"),
+                    @CacheEvict(cacheNames = "userCache", key = "'username:' + #userDTO.username")
+            }
+    )
+    public Boolean updateUser(UserDTO userDTO) {
+        log.info("更新用户, userId: {}", userDTO.getId());
+        
+        User user = userConverter.toEntity(userDTO);
+        return updateById(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "userCache", key = "#id"),
+                    @CacheEvict(cacheNames = "userCache", allEntries = true)
+            }
+    )
+    public Boolean deleteUser(Long id) {
+        log.info("删除用户, userId: {}", id);
+        return removeById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "userCache", key = "#id")
+    public Boolean updateUserStatus(Long id, Integer status) {
+        log.info("更新用户状态, userId: {}, status: {}", id, status);
+        
+        User user = new User();
+        user.setId(id);
+        user.setStatus(status);
+        return updateById(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "userCache", key = "#id")
+    public String resetPassword(Long id) {
+        log.info("重置用户密码, userId: {}", id);
+        
+        String newPassword = "123456"; // 默认密码
+        User user = new User();
+        user.setId(id);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        updateById(user);
+        
+        return newPassword;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "userCache", key = "#id")
+    public Boolean changePassword(Long id, String oldPassword, String newPassword) {
+        log.info("修改用户密码, userId: {}", id);
+        
+        User user = getById(id);
+        if (user == null) {
+            throw new EntityNotFoundException("用户", id);
+        }
+        
+        // 验证旧密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        return updateById(user);
+    }
 
 }

@@ -51,8 +51,8 @@ public class ProductController {
             @Parameter(description = "商品状态") @RequestParam(required = false) Integer status) {
 
         ProductPageDTO productPageDTO = new ProductPageDTO();
-        productPageDTO.setPageNum(page.longValue());
-        productPageDTO.setPageSize(size.longValue());
+        productPageDTO.setCurrent(page.longValue());
+        productPageDTO.setSize(size.longValue());
         productPageDTO.setName(name);
         productPageDTO.setCategoryId(categoryId);
         productPageDTO.setBrandId(brandId);

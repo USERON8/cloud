@@ -174,7 +174,8 @@ public class AdminController {
             @Parameter(description = "管理员ID") @PathVariable Long id) {
 
         try {
-            boolean result = adminService.resetPassword(id);
+            // 重置为默认密码
+            boolean result = adminService.resetPassword(id, "123456");
             return Result.success("密码重置成功", result);
         } catch (Exception e) {
             log.error("重置密码失败，管理员ID: {}", id, e);

@@ -13,7 +13,15 @@ import org.springframework.context.annotation.FilterType;
     scanBasePackages = {"com.cloud.search", "com.cloud.common"}
 )
 @ComponentScan(
-    basePackages = {"com.cloud.search", "com.cloud.common"}
+    basePackages = {"com.cloud.search", "com.cloud.common"},
+    excludeFilters = {
+        @ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = {
+                com.cloud.common.config.SecurityConfig.class
+            }
+        )
+    }
 )
 @EnableDiscoveryClient
 @Slf4j

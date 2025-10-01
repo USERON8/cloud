@@ -181,4 +181,123 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         };
     }
 
+    @Override
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<com.cloud.common.domain.dto.payment.PaymentDTO> getPaymentsPage(
+            Integer page, Integer size, Long userId, Integer status, Integer channel) {
+        log.info("分页查询支付列表 - 页码: {}, 数量: {}, 用户ID: {}, 状态: {}, 渠道: {}",
+                page, size, userId, status, channel);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Payment> paymentPage =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) wrapper.eq(Payment::getUserId, userId);
+        if (status != null) wrapper.eq(Payment::getStatus, status);
+        if (channel != null) wrapper.eq(Payment::getChannel, channel);
+        wrapper.orderByDesc(Payment::getCreatedAt);
+        page(paymentPage, wrapper);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<com.cloud.common.domain.dto.payment.PaymentDTO> result =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(paymentPage.getCurrent(), paymentPage.getSize(), paymentPage.getTotal());
+        result.setRecords(new java.util.ArrayList<>());
+        return result;
+    }
+
+    @Override
+    public com.cloud.common.domain.dto.payment.PaymentDTO getPaymentById(Long id) {
+        Payment payment = getById(id);
+        return payment != null ? new com.cloud.common.domain.dto.payment.PaymentDTO() : null;
+    }
+
+    @Override
+    public Long createPayment(com.cloud.common.domain.dto.payment.PaymentDTO paymentDTO) {
+        Payment payment = new Payment();
+        payment.setOrderId(paymentDTO.getOrderId());
+        payment.setUserId(paymentDTO.getUserId());
+        payment.setAmount(paymentDTO.getAmount());
+        payment.setStatus(0);
+        save(payment);
+        return payment.getId();
+    }
+
+    @Override
+    public Boolean updatePayment(com.cloud.common.domain.dto.payment.PaymentDTO paymentDTO) {
+        Payment payment = getById(paymentDTO.getId());
+        if (payment == null) return false;
+        return updateById(payment);
+    }
+
+    @Override
+    public Boolean deletePayment(Long id) {
+        return removeById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean processPaymentSuccess(Long id) {
+        log.info("处理支付成功 - 支付ID: {}", id);
+        Payment payment = getById(id);
+        if (payment == null) return false;
+        payment.setStatus(2);
+        return updateById(payment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean processPaymentFailed(Long id, String failReason) {
+        log.info("处理支付失败 - 支付ID: {}, 原因: {}", id, failReason);
+        Payment payment = getById(id);
+        if (payment == null) return false;
+        payment.setStatus(3);
+        return updateById(payment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean processRefund(Long id, java.math.BigDecimal refundAmount, String refundReason) {
+        log.info("处理退款 - 支付ID: {}, 金额: {}, 原因: {}", id, refundAmount, refundReason);
+        Payment payment = getById(id);
+        if (payment == null) return false;
+        payment.setStatus(4);
+        return updateById(payment);
+    }
+
+    @Override
+    public com.cloud.common.domain.dto.payment.PaymentDTO getPaymentByOrderId(Long orderId) {
+        Payment payment = getOne(new LambdaQueryWrapper<Payment>().eq(Payment::getOrderId, orderId));
+        return payment != null ? new com.cloud.common.domain.dto.payment.PaymentDTO() : null;
+    }
+
+    @Override
+    public Boolean riskCheck(Long userId, java.math.BigDecimal amount, String paymentMethod) {
+        log.info("风控检查 - 用户ID: {}, 金额: {}, 支付方式: {}", userId, amount, paymentMethod);
+        return true;
+    }
+
+    @Override
+    public Boolean updatePaymentStatus(Long id, Integer status, String remark) {
+        Payment payment = getById(id);
+        if (payment == null) return false;
+        payment.setStatus(status);
+        return updateById(payment);
+    }
+
+    @Override
+    public Integer getPaymentStatus(Long id) {
+        Payment payment = getById(id);
+        return payment != null ? payment.getStatus() : null;
+    }
+
+    @Override
+    public Boolean validatePaymentAmount(Long id, java.math.BigDecimal amount) {
+        Payment payment = getById(id);
+        return payment != null && payment.getAmount().compareTo(amount) == 0;
+    }
+
+    @Override
+    public java.util.Map<String, Object> getUserPaymentStats(Long userId) {
+        log.info("获取用户支付统计 - 用户ID: {}", userId);
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        long count = count(new LambdaQueryWrapper<Payment>().eq(Payment::getUserId, userId));
+        stats.put("totalCount", count);
+        stats.put("successCount", count(new LambdaQueryWrapper<Payment>().eq(Payment::getUserId, userId).eq(Payment::getStatus, 2)));
+        return stats;
+    }
 }

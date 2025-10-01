@@ -117,8 +117,9 @@ public class UserController {
             @Valid @NotNull(message = "用户信息不能为空") UserDTO userDTO) {
 
         try {
-            UserDTO created = userService.createUser(userDTO);
-            return Result.success("用户创建成功", created);
+            Long userId = userService.createUser(userDTO);
+            userDTO.setId(userId);
+            return Result.success("用户创建成功", userDTO);
         } catch (Exception e) {
             log.error("创建用户失败", e);
             return Result.error("创建用户失败: " + e.getMessage());
@@ -196,8 +197,8 @@ public class UserController {
             @Parameter(description = "用户ID") @PathVariable Long id) {
 
         try {
-            boolean result = userService.resetPassword(id);
-            return Result.success("密码重置成功", result);
+            String newPassword = userService.resetPassword(id);
+            return Result.success("密码重置成功，新密码为: " + newPassword, true);
         } catch (Exception e) {
             log.error("重置密码失败，用户ID: {}", id, e);
             return Result.error("密码重置失败: " + e.getMessage());

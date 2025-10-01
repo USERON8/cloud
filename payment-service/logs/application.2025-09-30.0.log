@@ -1,0 +1,145 @@
+2025-09-29 00:11:17.648 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-09-29 00:11:17.718 [main] INFO  [] com.cloud.payment.PaymentApplication - Starting PaymentApplication using Java 17.0.14 with PID 42084 (D:\Download\Code\sofware\cloud\payment-service\target\classes started by what's up in D:\Download\Code\sofware\cloud\payment-service)
+2025-09-29 00:11:17.720 [main] DEBUG [] com.cloud.payment.PaymentApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-09-29 00:11:17.720 [main] INFO  [] com.cloud.payment.PaymentApplication - The following 1 profile is active: "dev"
+2025-09-29 00:11:17.792 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-09-29 00:11:19.382 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-29 00:11:19.386 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-29 00:11:19.426 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 15 ms. Found 0 Redis repository interfaces.
+2025-09-29 00:11:19.686 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-09-29 00:11:19.696 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-09-29 00:11:19.864 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=0aa48b2b-4b80-3459-a624-bfbbd97b8317
+2025-09-29 00:11:21.035 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8086 (http)
+2025-09-29 00:11:21.056 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8086"]
+2025-09-29 00:11:21.058 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-29 00:11:21.059 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-09-29 00:11:21.145 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-09-29 00:11:21.145 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3350 ms
+2025-09-29 00:11:21.437 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
+2025-09-29 00:11:21.656 [main] INFO  [] com.cloud.payment.config.AlipayConfig - 初始化支付宝客户端 - AppId: 2021000122671234, Gateway: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+2025-09-29 00:11:21.718 [main] INFO  [] com.cloud.common.config.MybatisPlusConfig - 初始化MyBatis Plus统一拦截器配置
+2025-09-29 00:11:21.832 [main] INFO  [] com.cloud.common.config.MybatisPlusConfig - 初始化MyBatis Plus统一元数据处理器
+2025-09-29 00:11:23.587 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
+2025-09-29 00:11:24.174 [redisson-netty-1-7] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
+2025-09-29 00:11:24.308 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
+2025-09-29 00:11:24.412 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
+2025-09-29 00:11:24.477 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
+2025-09-29 00:11:24.559 [main] INFO  [] com.cloud.common.cache.config.CacheConfigFactory - 🔧 启用标准Redis缓存管理器: ttl=1800s, nullValues=false
+2025-09-29 00:11:24.581 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 初始化缓存监控指标...
+2025-09-29 00:11:24.597 [main] INFO  [] c.cloud.common.cache.metrics.CacheMetricsCollector - 缓存监控指标初始化完成
+2025-09-29 00:11:24.623 [main] INFO  [] com.cloud.common.config.PermissionConfig - 权限配置初始化完成，用户类型数量: 3, 角色数量: 3
+2025-09-29 00:11:24.642 [main] INFO  [] com.cloud.common.config.SecurityConfig - 🔐 初始化Cloud平台统一安全权限配置
+2025-09-29 00:11:24.643 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)
+2025-09-29 00:11:24.643 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 启用自定义权限注解(@RequireScope, @RequireUserType, @RequireAuthentication)
+2025-09-29 00:11:24.644 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 集成OAuth2.1 JWT权限验证
+2025-09-29 00:11:24.644 [main] INFO  [] com.cloud.common.config.SecurityConfig - ✓ 提供统一的权限工具类和管理器
+2025-09-29 00:11:24.675 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化统一RedisTemplate配置
+2025-09-29 00:11:24.675 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ RedisTemplate配置完成
+2025-09-29 00:11:25.073 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerMapping - 31 mappings in 'requestMappingHandlerMapping'
+2025-09-29 00:11:25.191 [main] DEBUG [] o.s.web.servlet.handler.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-09-29 00:11:25.482 [main] INFO  [] o.s.b.actuate.endpoint.web.EndpointLinksResolver - Exposing 3 endpoints beneath base path '/actuator'
+2025-09-29 00:11:25.567 [main] DEBUG [] o.s.s.c.a.a.c.AuthenticationConfiguration$DefaultPasswordEncoderAuthenticationManagerBuilder - No authenticationProviders and no parentAuthenticationManager defined. Returning null.
+2025-09-29 00:11:25.736 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig - ✅ JWT解码器配置完成，验证器数量: 1
+2025-09-29 00:11:25.824 [main] DEBUG [] o.s.security.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, LogoutFilter, BearerTokenAuthenticationFilter, AuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-09-29 00:11:25.824 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig - ✅ 支付服务 OAuth2资源服务器配置完成
+2025-09-29 00:11:25.825 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - JWT验证端点: http://127.0.0.1:80/.well-known/jwks.json
+2025-09-29 00:11:25.825 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - JWT缓存时间: PT30M
+2025-09-29 00:11:25.825 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - JWT发行者: http://localhost:8080
+2025-09-29 00:11:25.825 [main] INFO  [] c.c.c.config.base.BaseOAuth2ResourceServerConfig -    - 统一权限管理: 未启用（仅使用标准OAuth2权限）
+2025-09-29 00:11:25.926 [main] INFO  [] com.cloud.common.config.RocketMQConfig - ✅ RocketMQ配置已加载
+2025-09-29 00:11:25.926 [main] INFO  [] com.cloud.common.config.SecurityConfig - 注册统一权限表达式对象
+2025-09-29 00:11:26.059 [main] DEBUG [] o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 2 ResponseBodyAdvice
+2025-09-29 00:11:26.150 [main] DEBUG [] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 4 @ExceptionHandler, 2 ResponseBodyAdvice
+2025-09-29 00:11:26.804 [main] INFO  [] c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@77bc2e16
+2025-09-29 00:11:27.250 [main] WARN  [] o.s.c.f.c.catalog.BeanFactoryAwareFunctionRegistry - Multiple functional beans were found [paymentRecordCreateMessageConsumer, paymentOrderCreatedMessageConsumer], thus can't determine default function definition. Please use 'spring.cloud.function.definition' property to explicitly define it. 
+2025-09-29 00:11:28.587 [main] WARN  [] o.s.c.l.c.LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-09-29 00:11:28.862 [main] INFO  [] com.cloud.common.monitoring.PerformanceMonitor - 性能监控指标已注册到MeterRegistry
+2025-09-29 00:11:28.896 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-29 00:11:28.897 [main] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'payment-service.errorChannel' has 1 subscriber(s).
+2025-09-29 00:11:28.898 [main] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - started bean '_org.springframework.integration.errorLogger'
+2025-09-29 00:11:28.899 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8086"]
+2025-09-29 00:11:28.911 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8086 (http) with context path '/'
+2025-09-29 00:11:29.062 [main] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - nacos registry, DEFAULT_GROUP payment-service 192.168.43.181:8086 register finished
+2025-09-29 00:11:29.636 [main] INFO  [] com.cloud.payment.PaymentApplication - Started PaymentApplication in 15.003 seconds (process running for 15.651)
+2025-09-29 00:11:29.680 [main] INFO  [] com.cloud.common.cache.warmup.CacheWarmupManager - 未配置缓存预热策略，跳过预热
+2025-09-29 00:11:29.692 [main] INFO  [] c.a.cloud.nacos.refresh.NacosContextRefresher - [Nacos Config] Listening config: dataId=common, group=DEFAULT_GROUP
+2025-09-29 00:13:28.867 [pool-5-thread-1] WARN  [] io.micrometer.core.instrument.MeterRegistry - This Gauge has been already registered (MeterId{name='jvm.memory.used', tags=[tag(platform=cloud-microservices),tag(profile=dev),tag(service=payment-service)]}), the registration will be ignored. Note that subsequent logs will be logged at debug level.
+2025-09-29 00:14:18.279 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registering from Nacos Server now...
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.client.naming.event.NamingFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.common.ability.AbstractAbilityControlManager$AbilityUpdateEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.277 [nacos.publisher-com.alibaba.nacos.client.naming.event.InstancesChangeEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-09-29 00:14:18.292 [SpringApplicationShutdownHook] INFO  [] c.a.cloud.nacos.registry.NacosServiceRegistry - De-registration finished.
+2025-09-29 00:14:18.302 [SpringApplicationShutdownHook] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception thrown from ApplicationListener handling ContextClosedEvent
+java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null
+	at com.alibaba.nacos.common.notify.NotifyCenter.deregisterSubscriber(NotifyCenter.java:242)
+	at com.alibaba.nacos.client.naming.remote.gprc.NamingGrpcClientProxy.shutdown(NamingGrpcClientProxy.java:537)
+	at com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate.shutdown(NamingClientProxyDelegate.java:212)
+	at com.alibaba.nacos.client.naming.NacosNamingService.shutDown(NacosNamingService.java:637)
+	at com.alibaba.cloud.nacos.NacosServiceManager.nacosServiceShutDown(NacosServiceManager.java:117)
+	at com.alibaba.cloud.nacos.registry.NacosServiceRegistry.close(NacosServiceRegistry.java:120)
+	at org.springframework.cloud.client.serviceregistry.AbstractAutoServiceRegistration.stop(AbstractAutoServiceRegistration.java:311)
+	at com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration.onContextClosedEvent(NacosAutoServiceRegistration.java:122)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:382)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:254)
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:454)
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:387)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1163)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.doClose(ServletWebServerApplicationContext.java:179)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1126)
+	at org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-09-29 00:14:18.311 [SpringApplicationShutdownHook] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-09-29 00:14:18.446 [tomcat-shutdown] INFO  [] o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-09-29 00:14:18.449 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-09-29 00:14:18.450 [SpringApplicationShutdownHook] INFO  [] o.s.integration.channel.PublishSubscribeChannel - Channel 'payment-service.errorChannel' has 0 subscriber(s).
+2025-09-29 00:14:18.450 [SpringApplicationShutdownHook] INFO  [] o.s.integration.endpoint.EventDrivenConsumer - stopped bean '_org.springframework.integration.errorLogger'
+2025-09-29 00:14:18.464 [SpringApplicationShutdownHook] WARN  [] o.s.beans.factory.support.DisposableBeanAdapter - Custom destroy method 'close' on bean with name 'nacosServiceRegistry' propagated an exception: java.lang.NullPointerException: Cannot read field "sharePublisher" because "com.alibaba.nacos.common.notify.NotifyCenter.INSTANCE" is null

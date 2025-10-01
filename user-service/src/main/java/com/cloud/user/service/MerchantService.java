@@ -15,7 +15,7 @@ import java.util.List;
  * @author what's up
  * @since 1.0.0
  */
-public interface MerchantServiceStandard extends IService<Merchant> {
+public interface MerchantService extends IService<Merchant> {
 
     // ================= 查询操作 =================
 

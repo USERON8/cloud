@@ -7,12 +7,25 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @Slf4j
 @SpringBootApplication(
     scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
+)
+@ComponentScan(
+    basePackages = {"com.cloud.stock", "com.cloud.common"},
+    excludeFilters = {
+        @ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = {
+                com.cloud.common.config.SecurityConfig.class
+            }
+        )
+    }
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient

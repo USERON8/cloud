@@ -7,7 +7,7 @@ import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ import java.util.List;
  * 该控制器专门用于处理其他微服务通过Feign发起的调用
  */
 @Slf4j
-@RestController
+@Component
 @RequiredArgsConstructor
 public class ProductFeignController implements ProductFeignClient {
 

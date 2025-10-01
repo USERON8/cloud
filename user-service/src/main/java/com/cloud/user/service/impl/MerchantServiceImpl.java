@@ -8,7 +8,7 @@ import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.exception.MerchantException;
 import com.cloud.user.mapper.MerchantMapper;
 import com.cloud.user.module.entity.Merchant;
-import com.cloud.user.service.MerchantServiceStandard;
+import com.cloud.user.service.MerchantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MerchantServiceImplStandard extends ServiceImpl<MerchantMapper, Merchant> implements MerchantServiceStandard {
+public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> implements MerchantService {
 
     // 缓存名称
     private static final String MERCHANT_CACHE = "merchant";
@@ -134,7 +134,7 @@ public class MerchantServiceImplStandard extends ServiceImpl<MerchantMapper, Mer
         Page<Merchant> pageParam = new Page<>(page, size);
         Page<Merchant> merchantPage = lambdaQuery()
                 .eq(status != null, Merchant::getStatus, status)
-                .orderByDesc(Merchant::getCreateTime)
+                .orderByDesc(Merchant::getCreatedAt)
                 .page(pageParam);
 
         Page<MerchantDTO> dtoPage = new Page<>(merchantPage.getCurrent(), merchantPage.getSize(), merchantPage.getTotal());
@@ -436,7 +436,7 @@ public class MerchantServiceImplStandard extends ServiceImpl<MerchantMapper, Mer
                 "merchantId", id,
                 "merchantName", merchant.getMerchantName(),
                 "status", merchant.getStatus(),
-                "createTime", merchant.getCreateTime()
+                "createdAt", merchant.getCreatedAt()
                 // 可以添加更多统计信息
         );
     }

@@ -1,11 +1,14 @@
 package com.cloud.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.domain.dto.product.CategoryDTO;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -189,5 +193,199 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @CacheEvict(cacheNames = "categoryCache", key = "'children:' + #categoryId")
     public void evictCategoryCache(Long categoryId) {
         log.info("清除分类缓存: {}", categoryId);
+    }
+
+    // ================= 新增的方法 =================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDTO> getCategoryTree(Boolean onlyEnabled) {
+        log.info("从数据库获取分类树，只返回启用: {}", onlyEnabled);
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        if (Boolean.TRUE.equals(onlyEnabled)) {
+            wrapper.eq(Category::getStatus, 1);
+        }
+        wrapper.orderByAsc(Category::getSortOrder);
+        List<Category> allCategories = this.list(wrapper);
+
+        if (CollectionUtils.isEmpty(allCategories)) {
+            return List.of();
+        }
+
+        // 构建三级分类树
+        List<Category> firstLevel = allCategories.stream()
+                .filter(category -> category.getLevel() == 1)
+                .collect(Collectors.toList());
+
+        firstLevel.forEach(first -> {
+            List<Category> secondLevel = allCategories.stream()
+                    .filter(category -> category.getParentId().equals(first.getId()))
+                    .collect(Collectors.toList());
+
+            secondLevel.forEach(second -> {
+                List<Category> thirdLevel = allCategories.stream()
+                        .filter(category -> category.getParentId().equals(second.getId()))
+                        .collect(Collectors.toList());
+                second.setChildren(thirdLevel);
+            });
+
+            first.setChildren(secondLevel);
+        });
+
+        return convertToDTO(firstLevel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CategoryDTO> getCategoriesPage(Integer page, Integer size, Long parentId, Integer level) {
+        log.info("分页查询分类，页码: {}, 大小: {}, 父ID: {}, 层级: {}", page, size, parentId, level);
+        Page<Category> entityPage = new Page<>(page, size);
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        if (parentId != null) {
+            wrapper.eq(Category::getParentId, parentId);
+        }
+        if (level != null) {
+            wrapper.eq(Category::getLevel, level);
+        }
+        wrapper.orderByAsc(Category::getSortOrder);
+        Page<Category> result = this.page(entityPage, wrapper);
+
+        Page<CategoryDTO> dtoPage = new Page<>();
+        dtoPage.setCurrent(result.getCurrent());
+        dtoPage.setSize(result.getSize());
+        dtoPage.setTotal(result.getTotal());
+        dtoPage.setRecords(convertToDTO(result.getRecords()));
+        return dtoPage;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CategoryDTO getCategoryById(Long categoryId) {
+        log.info("根据ID获取分类: {}", categoryId);
+        Category category = this.getById(categoryId);
+        return category != null ? convertToDTO(category) : null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDTO> getChildrenCategories(Long parentId, Boolean onlyEnabled) {
+        log.info("获取子分类，父ID: {}, 只返回启用: {}", parentId, onlyEnabled);
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Category::getParentId, parentId);
+        if (Boolean.TRUE.equals(onlyEnabled)) {
+            wrapper.eq(Category::getStatus, 1);
+        }
+        wrapper.orderByAsc(Category::getSortOrder);
+        List<Category> children = this.list(wrapper);
+        return convertToDTO(children);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public CategoryDTO createCategory(CategoryDTO categoryDTO) {
+        log.info("创建分类: {}", categoryDTO.getName());
+        Category category = new Category();
+        BeanUtils.copyProperties(categoryDTO, category);
+        this.save(category);
+        categoryDTO.setId(category.getId());
+        return categoryDTO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean updateCategory(CategoryDTO categoryDTO) {
+        log.info("更新分类: ID={}, Name={}", categoryDTO.getId(), categoryDTO.getName());
+        Category category = new Category();
+        BeanUtils.copyProperties(categoryDTO, category);
+        return this.updateById(category);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean deleteCategory(Long categoryId, Boolean force) {
+        log.info("删除分类: {}, 强制删除: {}", categoryId, force);
+        if (Boolean.TRUE.equals(force)) {
+            // 强制删除，包括子分类
+            List<Category> children = this.list(new LambdaQueryWrapper<Category>()
+                    .eq(Category::getParentId, categoryId));
+            if (!CollectionUtils.isEmpty(children)) {
+                List<Long> childIds = children.stream().map(Category::getId).collect(Collectors.toList());
+                this.removeByIds(childIds);
+            }
+        }
+        return this.removeById(categoryId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean updateCategoryStatus(Long categoryId, Integer status) {
+        log.info("更新分类状态: {}, 状态: {}", categoryId, status);
+        Category category = new Category();
+        category.setId(categoryId);
+        category.setStatus(status);
+        return this.updateById(category);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean updateCategorySort(Long categoryId, Integer sort) {
+        log.info("更新分类排序: {}, 排序: {}", categoryId, sort);
+        Category category = new Category();
+        category.setId(categoryId);
+        category.setSortOrder(sort);
+        return this.updateById(category);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean moveCategory(Long categoryId, Long targetParentId) {
+        log.info("移动分类: {}, 目标父ID: {}", categoryId, targetParentId);
+        Category category = new Category();
+        category.setId(categoryId);
+        category.setParentId(targetParentId);
+        return this.updateById(category);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public Boolean deleteCategoriesBatch(List<Long> categoryIds) {
+        log.info("批量删除分类: {}", categoryIds);
+        return this.removeByIds(categoryIds);
+    }
+
+    // ================= 辅助方法 =================
+
+    /**
+     * 将Category实体转换为CategoryDTO
+     */
+    private CategoryDTO convertToDTO(Category category) {
+        if (category == null) {
+            return null;
+        }
+        CategoryDTO dto = new CategoryDTO();
+        BeanUtils.copyProperties(category, dto);
+        if (!CollectionUtils.isEmpty(category.getChildren())) {
+            dto.setChildren(convertToDTO(category.getChildren()));
+        }
+        return dto;
+    }
+
+    /**
+     * 将Category实体列表转换为CategoryDTO列表
+     */
+    private List<CategoryDTO> convertToDTO(List<Category> categories) {
+        if (CollectionUtils.isEmpty(categories)) {
+            return new ArrayList<>();
+        }
+        return categories.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 }

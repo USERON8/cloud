@@ -1,70 +1,28 @@
-2025-09-28 18:33:06.167 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:33:06.209 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 29092 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:33:06.210 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:33:06.211 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:33:06.266 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:33:07.497 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:33:07.498 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:33:07.780 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 273 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:33:07.857 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:33:08.516 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:33:08.517 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:33:08.527 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:33:08.538 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:33:08.540 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:33:08.555 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:33:08.555 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:33:08.556 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:33:08.556 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:33:08.729 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:33:08.737 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:33:08.749 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:33:08.858 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:33:08.905 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=285fa170-e694-3c0c-a82d-2a7c05952214
-2025-09-28 18:33:09.978 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:33:09.998 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:33:10.000 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:33:10.000 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:33:10.074 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:33:10.074 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3806 ms
-2025-09-28 18:33:10.444 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:33:10.503 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:33:10.553 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:33:10.553 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:33:10.553 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:33:10.554 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:33:10.809 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:33:11.856 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:33:12.190 [main] DEBUG [] org.elasticsearch.client.RestClient - request [PUT http://localhost:9200/product_index] returned [HTTP/1.1 400 Bad Request]
-2025-09-28 18:33:12.196 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-2025-09-28 18:33:12.203 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:33:12.277 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+2025-10-01 22:14:23.297 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-10-01 22:14:23.345 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 14732 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
+2025-10-01 22:14:23.347 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-10-01 22:14:23.347 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
+2025-10-01 22:14:23.398 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-10-01 22:14:23.667 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.cloud.search.SearchApplication]
+2025-10-01 22:14:23.733 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
 
 Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:33:12.297 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1222)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1188)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+2025-10-01 22:14:23.754 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
+org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.cloud.search.SearchApplication]
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:194)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:418)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:290)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:349)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:118)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:791)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:609)
 	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
 	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
 	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:33)
+	at com.cloud.search.SearchApplication.main(SearchApplication.java:28)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -72,848 +30,69 @@ org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating
 	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
 	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
 	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1745)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 28 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1826)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1683)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 42 common frames omitted
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:223)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.lambda$instantiateClass$5(RepositoryFactorySupport.java:660)
-	at java.base/java.util.Optional.map(Optional.java:260)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.instantiateClass(RepositoryFactorySupport.java:660)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getTargetRepositoryViaReflection(RepositoryFactorySupport.java:625)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactory.getTargetRepository(ElasticsearchRepositoryFactory.java:81)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getRepository(RepositoryFactorySupport.java:380)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.lambda$afterPropertiesSet$4(RepositoryFactoryBeanSupport.java:350)
-	at org.springframework.data.util.Lazy.getNullable(Lazy.java:135)
-	at org.springframework.data.util.Lazy.get(Lazy.java:113)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.afterPropertiesSet(RepositoryFactoryBeanSupport.java:356)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactoryBean.afterPropertiesSet(ElasticsearchRepositoryFactoryBean.java:69)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)
-	... 52 common frames omitted
-Caused by: org.springframework.data.elasticsearch.UncategorizedElasticsearchException: [es/indices.create] failed: [illegal_argument_exception] Unknown tokenizer type [pinyin] for [my_pinyin]
-	at org.springframework.data.elasticsearch.client.elc.ElasticsearchExceptionTranslator.translateExceptionIfPossible(ElasticsearchExceptionTranslator.java:106)
-	at org.springframework.data.elasticsearch.client.elc.ElasticsearchExceptionTranslator.translateException(ElasticsearchExceptionTranslator.java:65)
-	at org.springframework.data.elasticsearch.client.elc.ChildTemplate.execute(ChildTemplate.java:73)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.doCreate(IndicesTemplate.java:147)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createWithMapping(IndicesTemplate.java:134)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.createIndexAndMappingIfNeeded(SimpleElasticsearchRepository.java:94)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.<init>(SimpleElasticsearchRepository.java:87)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:210)
-	... 65 common frames omitted
-Caused by: co.elastic.clients.elasticsearch._types.ElasticsearchException: [es/indices.create] failed: [illegal_argument_exception] Unknown tokenizer type [pinyin] for [my_pinyin]
-	at co.elastic.clients.transport.ElasticsearchTransportBase.getApiResponse(ElasticsearchTransportBase.java:357)
-	at co.elastic.clients.transport.ElasticsearchTransportBase.performRequest(ElasticsearchTransportBase.java:141)
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.create(ElasticsearchIndicesClient.java:573)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.lambda$doCreate$0(IndicesTemplate.java:147)
-	at org.springframework.data.elasticsearch.client.elc.ChildTemplate.execute(ChildTemplate.java:71)
-	... 75 common frames omitted
-2025-09-28 18:33:12.304 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+Caused by: org.springframework.context.annotation.ConflictingBeanDefinitionException: Annotation-specified bean name 'securityConfig' for bean class [com.cloud.common.config.SecurityConfig] conflicts with existing, non-compatible bean definition of same name and class [com.cloud.search.config.SecurityConfig]
+	at org.springframework.context.annotation.ClassPathBeanDefinitionScanner.checkCandidate(ClassPathBeanDefinitionScanner.java:361)
+	at org.springframework.context.annotation.ClassPathBeanDefinitionScanner.doScan(ClassPathBeanDefinitionScanner.java:288)
+	at org.springframework.context.annotation.ComponentScanAnnotationParser.parse(ComponentScanAnnotationParser.java:128)
+	at org.springframework.context.annotation.ConfigurationClassParser.doProcessConfigurationClass(ConfigurationClassParser.java:346)
+	at org.springframework.context.annotation.ConfigurationClassParser.processConfigurationClass(ConfigurationClassParser.java:281)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:204)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:172)
+	... 20 common frames omitted
+2025-10-01 22:14:23.757 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
 java.lang.InterruptedException: null
 	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
 	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:33:12.303 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+2025-10-01 22:14:23.757 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
 java.lang.InterruptedException: null
 	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
 	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:33:12.303 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+2025-10-01 22:14:23.757 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
 java.lang.InterruptedException: null
 	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
 	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
 	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:35:32.940 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:35:32.991 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 5040 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:35:32.992 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:35:32.992 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:35:33.051 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:35:34.211 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:35:34.211 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:35:34.455 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 234 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:35:34.524 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:35:35.152 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:35:35.153 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:35:35.162 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:35:35.174 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:35:35.176 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:35:35.188 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:35:35.189 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:35:35.189 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:35:35.189 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:35:35.361 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:35:35.368 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:35:35.383 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:35:35.496 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:35:35.553 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=285fa170-e694-3c0c-a82d-2a7c05952214
-2025-09-28 18:35:36.630 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:35:36.662 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:35:36.665 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:35:36.665 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:35:36.719 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:35:36.719 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3665 ms
-2025-09-28 18:35:37.026 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:35:37.085 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:35:37.133 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:35:37.134 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:35:37.134 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:35:37.134 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:35:37.357 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:35:38.402 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:35:38.414 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-2025-09-28 18:35:38.422 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:35:38.505 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:35:38.523 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1222)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1188)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:33)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
-	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1745)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 28 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1826)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1683)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 42 common frames omitted
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:223)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.lambda$instantiateClass$5(RepositoryFactorySupport.java:660)
-	at java.base/java.util.Optional.map(Optional.java:260)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.instantiateClass(RepositoryFactorySupport.java:660)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getTargetRepositoryViaReflection(RepositoryFactorySupport.java:625)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactory.getTargetRepository(ElasticsearchRepositoryFactory.java:81)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getRepository(RepositoryFactorySupport.java:380)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.lambda$afterPropertiesSet$4(RepositoryFactoryBeanSupport.java:350)
-	at org.springframework.data.util.Lazy.getNullable(Lazy.java:135)
-	at org.springframework.data.util.Lazy.get(Lazy.java:113)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.afterPropertiesSet(RepositoryFactoryBeanSupport.java:356)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactoryBean.afterPropertiesSet(ElasticsearchRepositoryFactoryBean.java:69)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)
-	... 52 common frames omitted
-Caused by: org.springframework.data.elasticsearch.core.convert.ConversionException: Cannot parse JSON
-	at org.springframework.data.elasticsearch.core.document.Document.fromJson(Document.java:91)
-	at org.springframework.data.elasticsearch.core.document.Document.parse(Document.java:80)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createMapping(IndicesTemplate.java:210)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createMapping(IndicesTemplate.java:192)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createWithMapping(IndicesTemplate.java:134)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.createIndexAndMappingIfNeeded(SimpleElasticsearchRepository.java:94)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.<init>(SimpleElasticsearchRepository.java:87)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:210)
-	... 65 common frames omitted
-Caused by: com.fasterxml.jackson.core.JsonParseException: Unexpected character ('}' (code 125)): was expecting double-quote to start field name
- at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 18, column: 7]
-	at com.fasterxml.jackson.core.JsonParser._constructReadException(JsonParser.java:2672)
-	at com.fasterxml.jackson.core.base.ParserMinimalBase._reportUnexpectedChar(ParserMinimalBase.java:742)
-	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser._handleOddName(ReaderBasedJsonParser.java:1909)
-	at com.fasterxml.jackson.core.json.ReaderBasedJsonParser.nextFieldName(ReaderBasedJsonParser.java:939)
-	at com.fasterxml.jackson.databind.deser.std.UntypedObjectDeserializerNR._deserializeNR(UntypedObjectDeserializerNR.java:223)
-	at com.fasterxml.jackson.databind.deser.std.UntypedObjectDeserializerNR.deserialize(UntypedObjectDeserializerNR.java:69)
-	at com.fasterxml.jackson.databind.deser.std.MapDeserializer._readAndBindStringKeyMap(MapDeserializer.java:622)
-	at com.fasterxml.jackson.databind.deser.std.MapDeserializer.deserialize(MapDeserializer.java:448)
-	at com.fasterxml.jackson.databind.deser.std.MapDeserializer.deserialize(MapDeserializer.java:31)
-	at com.fasterxml.jackson.databind.deser.DefaultDeserializationContext.readRootValue(DefaultDeserializationContext.java:342)
-	at com.fasterxml.jackson.databind.ObjectReader._bindAndClose(ObjectReader.java:2130)
-	at com.fasterxml.jackson.databind.ObjectReader.readValue(ObjectReader.java:1565)
-	at org.springframework.data.elasticsearch.core.document.Document.fromJson(Document.java:89)
-	... 77 common frames omitted
-2025-09-28 18:35:38.528 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:35:38.528 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:35:38.528 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:37:11.242 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:37:11.286 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 1332 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:37:11.287 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:37:11.288 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:37:11.340 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:37:12.454 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:37:12.455 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:37:12.796 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 331 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:37:12.876 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:37:13.630 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:37:13.631 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:37:13.638 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:37:13.650 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:37:13.650 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:37:13.665 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:37:13.666 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:37:13.666 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:37:13.666 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:37:13.849 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:37:13.855 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:37:13.869 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:37:13.993 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:37:14.038 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=285fa170-e694-3c0c-a82d-2a7c05952214
-2025-09-28 18:37:15.130 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:37:15.148 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:37:15.150 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:37:15.150 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:37:15.196 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:37:15.197 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3853 ms
-2025-09-28 18:37:15.527 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:37:15.598 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:37:15.647 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:37:15.647 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:37:15.647 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:37:15.648 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:37:15.861 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:37:16.872 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:37:17.092 [main] DEBUG [] org.elasticsearch.client.RestClient - request [PUT http://localhost:9200/product_index] returned [HTTP/1.1 400 Bad Request]
-2025-09-28 18:37:17.099 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-2025-09-28 18:37:17.105 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:37:17.187 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:37:17.203 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1222)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1188)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:33)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
-	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1745)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 28 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1826)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1683)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 42 common frames omitted
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:223)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.lambda$instantiateClass$5(RepositoryFactorySupport.java:660)
-	at java.base/java.util.Optional.map(Optional.java:260)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.instantiateClass(RepositoryFactorySupport.java:660)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getTargetRepositoryViaReflection(RepositoryFactorySupport.java:625)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactory.getTargetRepository(ElasticsearchRepositoryFactory.java:81)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getRepository(RepositoryFactorySupport.java:380)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.lambda$afterPropertiesSet$4(RepositoryFactoryBeanSupport.java:350)
-	at org.springframework.data.util.Lazy.getNullable(Lazy.java:135)
-	at org.springframework.data.util.Lazy.get(Lazy.java:113)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.afterPropertiesSet(RepositoryFactoryBeanSupport.java:356)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactoryBean.afterPropertiesSet(ElasticsearchRepositoryFactoryBean.java:69)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)
-	... 52 common frames omitted
-Caused by: org.springframework.data.elasticsearch.UncategorizedElasticsearchException: [es/indices.create] failed: [illegal_argument_exception] Unknown analyzer type [ik_smart] for [ik_smart]
-	at org.springframework.data.elasticsearch.client.elc.ElasticsearchExceptionTranslator.translateExceptionIfPossible(ElasticsearchExceptionTranslator.java:106)
-	at org.springframework.data.elasticsearch.client.elc.ElasticsearchExceptionTranslator.translateException(ElasticsearchExceptionTranslator.java:65)
-	at org.springframework.data.elasticsearch.client.elc.ChildTemplate.execute(ChildTemplate.java:73)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.doCreate(IndicesTemplate.java:147)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createWithMapping(IndicesTemplate.java:134)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.createIndexAndMappingIfNeeded(SimpleElasticsearchRepository.java:94)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.<init>(SimpleElasticsearchRepository.java:87)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:210)
-	... 65 common frames omitted
-Caused by: co.elastic.clients.elasticsearch._types.ElasticsearchException: [es/indices.create] failed: [illegal_argument_exception] Unknown analyzer type [ik_smart] for [ik_smart]
-	at co.elastic.clients.transport.ElasticsearchTransportBase.getApiResponse(ElasticsearchTransportBase.java:357)
-	at co.elastic.clients.transport.ElasticsearchTransportBase.performRequest(ElasticsearchTransportBase.java:141)
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.create(ElasticsearchIndicesClient.java:573)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.lambda$doCreate$0(IndicesTemplate.java:147)
-	at org.springframework.data.elasticsearch.client.elc.ChildTemplate.execute(ChildTemplate.java:71)
-	... 75 common frames omitted
-2025-09-28 18:40:30.065 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:40:30.105 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 46224 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:40:30.106 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:40:30.107 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:40:30.159 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:40:31.320 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:40:31.321 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:40:31.606 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 275 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:40:31.684 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:40:32.277 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:40:32.277 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:40:32.286 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:40:32.305 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:40:32.307 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:40:32.322 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:40:32.322 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:40:32.323 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:40:32.323 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:40:32.472 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:40:32.481 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:40:32.494 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:40:32.619 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:40:32.687 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=285fa170-e694-3c0c-a82d-2a7c05952214
-2025-09-28 18:40:33.758 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:40:33.778 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:40:33.781 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:40:33.782 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:40:33.834 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:40:33.835 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3674 ms
-2025-09-28 18:40:34.156 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:40:34.214 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:40:34.253 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:40:34.254 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:40:34.254 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:40:34.254 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:40:34.441 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:40:35.425 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:40:36.757 [main] DEBUG [] org.elasticsearch.client.RestClient - request [PUT http://localhost:9200/product_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:40:36.955 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
-2025-09-28 18:40:37.481 [redisson-netty-1-6] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:40:37.613 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:40:37.720 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
-2025-09-28 18:40:37.758 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
-2025-09-28 18:40:37.896 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/shop_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:40:37.899 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'shopSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ShopSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'shopSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ShopSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'shopDocumentRepository' defined in com.cloud.search.repository.ShopDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-2025-09-28 18:40:37.928 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:40:38.006 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:40:38.029 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'shopSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ShopSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'shopSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ShopSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'shopDocumentRepository' defined in com.cloud.search.repository.ShopDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1222)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1188)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:33)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
-	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'shopSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ShopSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'shopDocumentRepository' defined in com.cloud.search.repository.ShopDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1745)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 28 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'shopDocumentRepository' defined in com.cloud.search.repository.ShopDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1826)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1683)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1628)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
-	... 42 common frames omitted
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:223)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.lambda$instantiateClass$5(RepositoryFactorySupport.java:660)
-	at java.base/java.util.Optional.map(Optional.java:260)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.instantiateClass(RepositoryFactorySupport.java:660)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getTargetRepositoryViaReflection(RepositoryFactorySupport.java:625)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactory.getTargetRepository(ElasticsearchRepositoryFactory.java:81)
-	at org.springframework.data.repository.core.support.RepositoryFactorySupport.getRepository(RepositoryFactorySupport.java:380)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.lambda$afterPropertiesSet$4(RepositoryFactoryBeanSupport.java:350)
-	at org.springframework.data.util.Lazy.getNullable(Lazy.java:135)
-	at org.springframework.data.util.Lazy.get(Lazy.java:113)
-	at org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport.afterPropertiesSet(RepositoryFactoryBeanSupport.java:356)
-	at org.springframework.data.elasticsearch.repository.support.ElasticsearchRepositoryFactoryBean.afterPropertiesSet(ElasticsearchRepositoryFactoryBean.java:69)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1873)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1822)
-	... 52 common frames omitted
-Caused by: org.springframework.data.elasticsearch.ResourceFailureException: Could not load resource from elasticsearch/shop-settings.json
-	at org.springframework.data.elasticsearch.core.ResourceUtil.readFileFromClasspath(ResourceUtil.java:48)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createSettings(IndicesTemplate.java:257)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createSettings(IndicesTemplate.java:246)
-	at org.springframework.data.elasticsearch.client.elc.IndicesTemplate.createWithMapping(IndicesTemplate.java:134)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.createIndexAndMappingIfNeeded(SimpleElasticsearchRepository.java:94)
-	at org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository.<init>(SimpleElasticsearchRepository.java:87)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
-	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:210)
-	... 65 common frames omitted
-Caused by: java.io.FileNotFoundException: class path resource [elasticsearch/shop-settings.json] cannot be opened because it does not exist
-	at org.springframework.core.io.ClassPathResource.getInputStream(ClassPathResource.java:215)
-	at org.springframework.data.elasticsearch.core.ResourceUtil.readFileFromClasspath(ResourceUtil.java:45)
-	... 76 common frames omitted
-2025-09-28 18:40:38.086 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:40:38.086 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:40:38.086 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
-java.lang.InterruptedException: null
-	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
-	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
-	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
-2025-09-28 18:48:29.641 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:48:29.691 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 10400 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:48:29.692 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:48:29.692 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:48:29.754 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:48:31.005 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:48:31.005 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:48:31.354 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 339 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:48:31.449 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:48:32.283 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:48:32.283 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:48:32.291 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 6 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:48:32.302 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:48:32.304 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:48:32.319 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:48:32.319 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:48:32.319 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:48:32.319 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:48:32.528 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:48:32.534 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:48:32.544 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:48:32.755 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:48:32.835 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=285fa170-e694-3c0c-a82d-2a7c05952214
-2025-09-28 18:48:34.249 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:48:34.273 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:48:34.275 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:48:34.276 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:48:34.347 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:48:34.347 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4591 ms
-2025-09-28 18:48:34.732 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:48:34.803 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:48:34.859 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:48:34.859 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:48:34.859 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:48:34.860 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:48:35.122 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:48:36.319 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:48:36.576 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
-2025-09-28 18:48:37.153 [redisson-netty-1-6] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:48:37.254 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:48:37.372 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
-2025-09-28 18:48:37.421 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
-2025-09-28 18:48:37.572 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/shop_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:48:38.680 [main] DEBUG [] org.elasticsearch.client.RestClient - request [PUT http://localhost:9200/shop_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:48:38.761 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/category_index] returned [HTTP/1.1 404 Not Found]
-2025-09-28 18:48:39.737 [main] DEBUG [] org.elasticsearch.client.RestClient - request [PUT http://localhost:9200/category_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:48:39.779 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'cacheMessageListener' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/common-module-0.0.1-SNAPSHOT.jar!/com/cloud/common/cache/listener/CacheMessageListener.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-2025-09-28 18:48:39.807 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:48:39.895 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:48:39.935 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Parameter 0 of constructor in com.cloud.common.cache.listener.CacheMessageListener required a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' in your configuration.
-
-2025-09-28 18:50:30.039 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 18:50:30.081 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 29164 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 18:50:30.081 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 18:50:30.081 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 18:50:30.129 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 18:50:31.416 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:50:31.418 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:50:31.694 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 268 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 18:50:31.785 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'redisCacheManager' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=cacheConfigFactory; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/cache/config/CacheConfigFactory.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=redisConfig; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/RedisConfig.class]]
-2025-09-28 18:50:31.787 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 18:50:32.614 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:50:32.614 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 18:50:32.628 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 8 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 18:50:32.640 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 18:50:32.642 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 18:50:32.659 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:50:32.661 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:50:32.661 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 18:50:32.661 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 6 ms. Found 0 Redis repository interfaces.
-2025-09-28 18:50:32.846 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 18:50:32.852 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 18:50:32.867 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 18:50:32.989 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 18:50:33.054 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=2f39d118-7ee1-323e-8f4c-1a66a0bc7155
-2025-09-28 18:50:34.408 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 18:50:34.431 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 18:50:34.431 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 18:50:34.431 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 18:50:34.493 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 18:50:34.493 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4362 ms
-2025-09-28 18:50:35.079 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 18:50:35.201 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 18:50:35.312 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 18:50:35.319 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 18:50:35.320 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 18:50:35.320 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 18:50:35.796 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 18:50:38.167 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:50:38.735 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
-2025-09-28 18:50:39.773 [redisson-netty-1-6] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:50:39.898 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 18:50:40.038 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
-2025-09-28 18:50:40.129 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
-2025-09-28 18:50:40.495 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/shop_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:50:40.672 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/category_index] returned [HTTP/1.1 200 OK]
-2025-09-28 18:50:40.790 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'cacheMessageListener' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/common-module-0.0.1-SNAPSHOT.jar!/com/cloud/common/cache/listener/CacheMessageListener.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-2025-09-28 18:50:40.891 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 18:50:41.089 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 18:50:41.166 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Parameter 0 of constructor in com.cloud.common.cache.listener.CacheMessageListener required a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' in your configuration.
-
-2025-09-28 19:07:51.904 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 19:07:51.938 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 31756 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 19:07:51.938 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 19:07:51.939 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 19:07:51.990 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 19:07:53.441 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:07:53.442 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:07:53.706 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 254 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 19:07:53.785 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'redisCacheManager' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=cacheConfigFactory; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/cache/config/CacheConfigFactory.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=redisConfig; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/RedisConfig.class]]
-2025-09-28 19:07:53.787 [main] INFO  [] o.s.b.factory.support.DefaultListableBeanFactory - Overriding bean definition for bean 'securityFilterChain' with a different definition: replacing [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]]
-2025-09-28 19:07:54.505 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:07:54.506 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:07:54.515 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 19:07:54.530 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:07:54.532 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 19:07:54.551 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:07:54.552 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:07:54.552 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:07:54.552 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
-2025-09-28 19:07:54.738 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 19:07:54.744 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 19:07:54.764 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 19:07:54.896 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 19:07:54.962 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=2f39d118-7ee1-323e-8f4c-1a66a0bc7155
-2025-09-28 19:07:56.485 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 19:07:56.508 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 19:07:56.509 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 19:07:56.510 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 19:07:56.579 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 19:07:56.579 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4586 ms
-2025-09-28 19:07:56.933 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 19:07:57.002 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 19:07:57.063 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 19:07:57.063 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 19:07:57.063 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 19:07:57.064 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 19:07:57.341 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 19:07:58.706 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] returned [HTTP/1.1 200 OK]
-2025-09-28 19:07:59.091 [main] INFO  [] org.redisson.Version - Redisson 3.51.0
-2025-09-28 19:07:59.785 [redisson-netty-1-7] INFO  [] org.redisson.connection.ConnectionsHolder - 1 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 19:07:59.881 [redisson-netty-1-20] INFO  [] org.redisson.connection.ConnectionsHolder - 24 connections initialized for localhost/127.0.0.1:6379
-2025-09-28 19:08:00.009 [main] INFO  [] com.cloud.common.config.RedisConfig - 🔧 初始化StringRedisTemplate配置
-2025-09-28 19:08:00.131 [main] INFO  [] com.cloud.common.config.RedisConfig - ✅ StringRedisTemplate配置完成
-2025-09-28 19:08:00.368 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/shop_index] returned [HTTP/1.1 200 OK]
-2025-09-28 19:08:00.451 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/category_index] returned [HTTP/1.1 200 OK]
-2025-09-28 19:08:00.507 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'cacheMessageListener' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/common-module-0.0.1-SNAPSHOT.jar!/com/cloud/common/cache/listener/CacheMessageListener.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-2025-09-28 19:08:00.542 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 19:08:00.647 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 19:08:00.700 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Parameter 0 of constructor in com.cloud.common.cache.listener.CacheMessageListener required a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'com.cloud.common.cache.core.MultiLevelCacheManager' in your configuration.
-
-2025-09-28 19:16:06.501 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 19:16:06.554 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 45564 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 19:16:06.555 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 19:16:06.558 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 19:16:06.627 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 19:16:08.078 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:16:08.079 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:16:08.412 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 320 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 19:16:08.485 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'redisCacheManager' defined in class path resource [com/cloud/common/config/RedisConfig.class]: Cannot register bean definition [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=redisConfig; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/RedisConfig.class]] for bean 'redisCacheManager' since there is already [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=cacheConfigFactory; factoryMethodName=redisCacheManager; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/cache/config/CacheConfigFactory.class]] bound.
-2025-09-28 19:16:08.495 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 19:16:08.523 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-The bean 'redisCacheManager', defined in class path resource [com/cloud/common/config/RedisConfig.class], could not be registered. A bean with that name has already been defined in class path resource [com/cloud/common/cache/config/CacheConfigFactory.class] and overriding is disabled.
-
-Action:
-
-Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
-
-2025-09-28 19:19:05.523 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 19:19:05.569 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 47064 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 19:19:05.571 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 19:19:05.572 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 19:19:05.640 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 19:19:06.992 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:19:06.994 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:19:07.386 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 378 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 19:19:07.482 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'securityFilterChain' defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]: Cannot register bean definition [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=serviceOAuth2ConfigExample; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class]] for bean 'securityFilterChain' since there is already [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=resourceServerConfig; factoryMethodName=securityFilterChain; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/cloud/search/config/ResourceServerConfig.class]] bound.
-2025-09-28 19:19:07.505 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 19:19:07.528 [main] ERROR [] o.s.b.diagnostics.LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-The bean 'securityFilterChain', defined in class path resource [com/cloud/common/config/base/example/ServiceOAuth2ConfigExample.class], could not be registered. A bean with that name has already been defined in class path resource [com/cloud/search/config/ResourceServerConfig.class] and overriding is disabled.
-
-Action:
-
-Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
-
-2025-09-28 19:21:16.030 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
-2025-09-28 19:21:16.082 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 45976 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
-2025-09-28 19:21:16.082 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
-2025-09-28 19:21:16.084 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
-2025-09-28 19:21:16.134 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
-2025-09-28 19:21:17.339 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:21:17.340 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:21:17.709 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 361 ms. Found 3 Elasticsearch repository interfaces.
-2025-09-28 19:21:18.592 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:21:18.593 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
-2025-09-28 19:21:18.602 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Reactive Elasticsearch repository interfaces.
-2025-09-28 19:21:18.614 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
-2025-09-28 19:21:18.616 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
-2025-09-28 19:21:18.634 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:21:18.634 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:21:18.635 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
-2025-09-28 19:21:18.635 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
-2025-09-28 19:21:18.805 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
-2025-09-28 19:21:18.814 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-09-28 19:21:18.825 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-09-28 19:21:18.961 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
-2025-09-28 19:21:19.011 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=e92c79b6-5d26-3368-80fa-162536d0a697
-2025-09-28 19:21:20.193 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
-2025-09-28 19:21:20.219 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
-2025-09-28 19:21:20.224 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
-2025-09-28 19:21:20.224 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
-2025-09-28 19:21:20.279 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2025-09-28 19:21:20.279 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4144 ms
-2025-09-28 19:21:20.625 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
-2025-09-28 19:21:20.679 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
-2025-09-28 19:21:20.732 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
-2025-09-28 19:21:20.732 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
-2025-09-28 19:21:20.732 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
-2025-09-28 19:21:20.733 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
-2025-09-28 19:21:21.017 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
-2025-09-28 19:21:23.495 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] failed
+2025-10-01 22:15:41.486 [background-preinit] INFO  [] org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2025-10-01 22:15:41.527 [main] INFO  [] com.cloud.search.SearchApplication - Starting SearchApplication v0.0.1-SNAPSHOT using Java 17.0.14 with PID 17820 (D:\Download\Code\sofware\cloud\search-service\target\search-service-0.0.1-SNAPSHOT.jar started by what's up in D:\Download\Code\sofware\cloud\search-service)
+2025-10-01 22:15:41.529 [main] DEBUG [] com.cloud.search.SearchApplication - Running with Spring Boot v3.5.3, Spring v6.2.8
+2025-10-01 22:15:41.529 [main] INFO  [] com.cloud.search.SearchApplication - The following 1 profile is active: "dev"
+2025-10-01 22:15:41.580 [main] INFO  [] c.a.cloud.nacos.configdata.NacosConfigDataLoader - [Nacos Config] Load config[dataId=common, group=DEFAULT_GROUP] success
+2025-10-01 22:15:42.697 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-10-01 22:15:42.699 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2025-10-01 22:15:42.934 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 228 ms. Found 3 Elasticsearch repository interfaces.
+2025-10-01 22:15:43.690 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-10-01 22:15:43.691 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2025-10-01 22:15:43.699 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 6 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2025-10-01 22:15:43.711 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-10-01 22:15:43.713 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-10-01 22:15:43.727 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.CategoryDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-10-01 22:15:43.727 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ProductDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-10-01 22:15:43.729 [main] INFO  [] o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.cloud.search.repository.ShopDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-10-01 22:15:43.729 [main] INFO  [] o.s.d.r.config.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+2025-10-01 22:15:43.897 [main] WARN  [] org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.cloud.search]' package. Please check your configuration.
+2025-10-01 22:15:43.903 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-10-01 22:15:43.915 [main] INFO  [] o.s.i.c.DefaultConfiguringBeanFactoryPostProcessor - No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-10-01 22:15:44.025 [main] INFO  [] com.cloud.search.config.SearchCacheConfig - 🔍 搜索服务缓存配置初始化: 支持多级缓存(Caffeine + Redis database:7)
+2025-10-01 22:15:44.073 [main] INFO  [] o.springframework.cloud.context.scope.GenericScope - BeanFactory id=da9d38b3-605a-3e0a-afd8-dcb297f4a448
+2025-10-01 22:15:44.984 [main] INFO  [] o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8087 (http)
+2025-10-01 22:15:45.004 [main] INFO  [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8087"]
+2025-10-01 22:15:45.005 [main] INFO  [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-10-01 22:15:45.006 [main] INFO  [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.42]
+2025-10-01 22:15:45.061 [main] INFO  [] o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-10-01 22:15:45.061 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3479 ms
+2025-10-01 22:15:45.325 [main] DEBUG [] o.s.web.filter.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
+2025-10-01 22:15:45.369 [main] INFO  [] com.cloud.search.config.TransactionCacheConfig - 搜索服务事务和多级缓存配置初始化完成
+2025-10-01 22:15:45.403 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 初始化搜索服务Elasticsearch客户端
+2025-10-01 22:15:45.403 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - ES URIs: http://localhost:9200
+2025-10-01 22:15:45.403 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 连接超时: PT5S, Socket超时: PT1M
+2025-10-01 22:15:45.405 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 最大连接数: 200, 每路由最大连接数: 20
+2025-10-01 22:15:45.615 [main] INFO  [] com.cloud.search.config.ElasticsearchConfig - 搜索服务Elasticsearch客户端初始化完成
+2025-10-01 22:15:46.446 [main] DEBUG [] org.elasticsearch.client.RestClient - request [HEAD http://localhost:9200/product_index] failed
 java.util.concurrent.ExecutionException: java.net.ConnectException: Connection refused: getsockopt
 	at org.apache.http.concurrent.BasicFuture.getResult(BasicFuture.java:71)
 	at org.apache.http.concurrent.BasicFuture.get(BasicFuture.java:84)
@@ -992,7 +171,7 @@ java.util.concurrent.ExecutionException: java.net.ConnectException: Connection r
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:28)
+	at com.cloud.search.SearchApplication.main(SearchApplication.java:36)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -1010,13 +189,13 @@ Caused by: java.net.ConnectException: Connection refused: getsockopt
 	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager.execute(PoolingNHttpClientConnectionManager.java:221)
 	at org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1.run(CloseableHttpAsyncClientBase.java:64)
 	at java.base/java.lang.Thread.run(Thread.java:840)
-2025-09-28 19:21:23.506 [main] DEBUG [] org.elasticsearch.client.RestClient - added [[host=http://localhost:9200]] to blacklist
-2025-09-28 19:21:23.513 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
-2025-09-28 19:21:23.539 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
-2025-09-28 19:21:23.710 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
+2025-10-01 22:15:46.452 [main] DEBUG [] org.elasticsearch.client.RestClient - added [[host=http://localhost:9200]] to blacklist
+2025-10-01 22:15:46.454 [main] WARN  [] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
+2025-10-01 22:15:46.461 [main] INFO  [] org.apache.catalina.core.StandardService - Stopping service [Tomcat]
+2025-10-01 22:15:46.564 [main] INFO  [] o.s.b.a.logging.ConditionEvaluationReportLogger - 
 
 Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-09-28 19:21:23.740 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
+2025-10-01 22:15:46.584 [main] ERROR [] org.springframework.boot.SpringApplication - Application run failed
 org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'productSearchController' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/controller/ProductSearchController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productSearchServiceImpl' defined in URL [jar:nested:/D:/Download/Code/sofware/cloud/search-service/target/search-service-0.0.1-SNAPSHOT.jar/!BOOT-INF/classes/!/com/cloud/search/service/impl/ProductSearchServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'productDocumentRepository' defined in com.cloud.search.repository.ProductDocumentRepository defined in @EnableElasticsearchRepositories declared on ElasticsearchConfig: Failed to instantiate [org.springframework.data.elasticsearch.repository.support.SimpleElasticsearchRepository]: Constructor threw exception
 	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
 	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
@@ -1039,7 +218,7 @@ org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
-	at com.cloud.search.SearchApplication.main(SearchApplication.java:28)
+	at com.cloud.search.SearchApplication.main(SearchApplication.java:36)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -1131,3 +310,21 @@ Caused by: java.net.ConnectException: Connection refused: getsockopt
 	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager.execute(PoolingNHttpClientConnectionManager.java:221)
 	at org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1.run(CloseableHttpAsyncClientBase.java:64)
 	at java.base/java.lang.Thread.run(Thread.java:840)
+2025-10-01 22:15:46.587 [nacos.publisher-com.alibaba.nacos.common.notify.SlowEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-10-01 22:15:46.587 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchLoadEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)
+2025-10-01 22:15:46.587 [nacos.publisher-com.alibaba.nacos.client.config.impl.ConfigFuzzyWatchNotifyEvent] ERROR [] com.alibaba.nacos.common.notify.NotifyCenter - Event listener exception : 
+java.lang.InterruptedException: null
+	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1645)
+	at java.base/java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:420)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.openEventHandler(DefaultPublisher.java:111)
+	at com.alibaba.nacos.common.notify.DefaultPublisher.run(DefaultPublisher.java:95)

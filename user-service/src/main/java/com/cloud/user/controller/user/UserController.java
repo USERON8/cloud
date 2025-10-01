@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.*;
  * @author what's up
  */
 @Slf4j
-@RestController
-@RequestMapping("/users")
+@RestController("userDomainController")
+@RequestMapping("/users-v2")
 @RequiredArgsConstructor
 @Tag(name = "用户服务", description = "用户资源的RESTful API接口")
 public class UserController {
