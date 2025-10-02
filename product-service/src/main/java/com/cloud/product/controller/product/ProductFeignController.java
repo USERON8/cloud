@@ -7,7 +7,7 @@ import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,7 +17,8 @@ import java.util.List;
  * 该控制器专门用于处理其他微服务通过Feign发起的调用
  */
 @Slf4j
-@Component
+@RestController
+@RequestMapping("/internal/product")
 @RequiredArgsConstructor
 public class ProductFeignController implements ProductFeignClient {
 
@@ -30,8 +31,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param product 商品信息
      * @return 创建的商品信息
      */
-    @Override
-    public ProductDTO createProduct(ProductDTO product) {
+@Override
+@PostMapping
+public ProductDTO createProduct(@RequestBody ProductDTO product) {
         log.info("[商品Feign控制器] 开始处理创建商品请求，商品名称: {}", product.getName());
         try {
             ProductDTO savedProductDTO = productService.createProductForFeign(product);
@@ -54,8 +56,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param id 商品ID
      * @return 商品信息
      */
-    @Override
-    public ProductDTO getProductById(Long id) {
+@Override
+@GetMapping("/{id}")
+public ProductDTO getProductById(@PathVariable("id") Long id) {
         log.info("[商品Feign控制器] 开始处理根据ID获取商品请求，商品ID: {}", id);
         try {
             ProductDTO productDTO = productService.getProductByIdForFeign(id);
@@ -79,8 +82,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param product 商品信息
      * @return 更新后的商品信息
      */
-    @Override
-    public ProductDTO updateProduct(Long id, ProductDTO product) {
+@Override
+@PutMapping("/{id}")
+public ProductDTO updateProduct(@PathVariable("id") Long id, @RequestBody ProductDTO product) {
         log.info("[商品Feign控制器] 开始处理更新商品请求，商品ID: {}", id);
         try {
             ProductDTO updatedProductDTO = productService.updateProductForFeign(id, product);
@@ -103,8 +107,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-    @Override
-    public OperationResultVO deleteProduct(Long id) {
+@Override
+@DeleteMapping("/{id}")
+public OperationResultVO deleteProduct(@PathVariable("id") Long id) {
         log.info("[商品Feign控制器] 开始处理删除商品请求，商品ID: {}", id);
         try {
             boolean result = productService.deleteProduct(id);
@@ -126,8 +131,9 @@ public class ProductFeignController implements ProductFeignClient {
      *
      * @return 商品列表
      */
-    @Override
-    public List<ProductDTO> getAllProducts() {
+@Override
+@GetMapping
+public List<ProductDTO> getAllProducts() {
         log.info("[商品Feign控制器] 开始处理获取所有商品请求");
         try {
             List<ProductDTO> productDTOs = productService.getAllProducts();
@@ -145,8 +151,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param shopId 店铺ID
      * @return 商品列表
      */
-    @Override
-    public List<ProductDTO> getProductsByShopId(Long shopId) {
+@Override
+@GetMapping("/shop/{shopId}")
+public List<ProductDTO> getProductsByShopId(@PathVariable("shopId") Long shopId) {
         log.info("[商品Feign控制器] 开始处理根据店铺ID获取商品列表请求，店铺ID: {}", shopId);
         try {
             List<ProductDTO> productDTOs = productService.getProductsByShopId(shopId);
@@ -164,8 +171,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-    @Override
-    public OperationResultVO putOnShelf(Long id) {
+@Override
+@PutMapping("/{id}/shelf-on")
+public OperationResultVO putOnShelf(@PathVariable("id") Long id) {
         log.info("[商品Feign控制器] 开始处理商品上架请求，商品ID: {}", id);
         try {
             Boolean result = productService.enableProduct(id);
@@ -188,8 +196,9 @@ public class ProductFeignController implements ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-    @Override
-    public OperationResultVO putOffShelf(Long id) {
+@Override
+@PutMapping("/{id}/shelf-off")
+public OperationResultVO putOffShelf(@PathVariable("id") Long id) {
         log.info("[商品Feign控制器] 开始处理商品下架请求，商品ID: {}", id);
         try {
             Boolean result = productService.disableProduct(id);

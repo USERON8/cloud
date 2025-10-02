@@ -14,13 +14,15 @@ import org.mybatis.spring.annotation.MapperScan;
 import com.cloud.common.config.RedissonConfig;
 import com.cloud.common.config.base.BaseHealthCheckController;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
 @EnableFeignClients(basePackages = "com.cloud.api")
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+@EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
+@EnableTransactionManagement(proxyTargetClass = true)
 @ComponentScan(
     basePackages = {"com.cloud.product", "com.cloud.common"},
     excludeFilters = {

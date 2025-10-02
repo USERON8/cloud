@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  *
  * @author what's up
  */
-@FeignClient(name = "stock-service", contextId = "stockFeignClient")
+@FeignClient(name = "stock-service", path = "/internal/stock", contextId = "stockFeignClient")
 public interface StockFeignClient {
 
     /**
@@ -23,7 +23,7 @@ public interface StockFeignClient {
      * @param productId 商品ID
      * @return 库存信息
      */
-    @GetMapping("/stock/query/product/{productId}")
+@GetMapping("/product/{productId}")
     StockVO getStockByProductId(@PathVariable("productId") Long productId);
 
     /**
@@ -33,6 +33,6 @@ public interface StockFeignClient {
      * @param quantity  库存数量
      * @return 操作结果
      */
-    @PutMapping("/stocks/{productId}")
+@PutMapping("/{productId}")
     OperationResultVO updateStock(@PathVariable("productId") Long productId, @RequestParam("quantity") Integer quantity);
 }

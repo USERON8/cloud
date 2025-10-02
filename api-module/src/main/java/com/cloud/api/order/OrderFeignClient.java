@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  *
  * @author what's up
  */
-@FeignClient(name = "order-service", path = "/order/feign", contextId = "orderFeignClient")
+@FeignClient(name = "order-service", path = "/internal/order", contextId = "orderFeignClient")
 public interface OrderFeignClient {
 
     /**

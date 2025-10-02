@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("unchecked") // 禁用未检查类型转换警告，用于Elasticsearch泛型操作
 public class ElasticsearchOptimizedService {
 
     private final ElasticsearchClient elasticsearchClient;
@@ -91,7 +92,7 @@ public class ElasticsearchOptimizedService {
             // 处理搜索结果
             List<Map<String, Object>> products = new ArrayList<>();
             for (Hit<Map> hit : response.hits().hits()) {
-                Map<String, Object> product = new HashMap<>(hit.source());
+                Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
                 
                 // 添加高亮信息
                 if (hit.highlight() != null && !hit.highlight().isEmpty()) {
@@ -158,7 +159,7 @@ public class ElasticsearchOptimizedService {
             // 提取建议词并去重
             Set<String> suggestions = new LinkedHashSet<>();
             for (Hit<Map> hit : response.hits().hits()) {
-                Map<String, Object> source = hit.source();
+                Map<String, Object> source = hit.source() != null ? hit.source() : new HashMap<>();
                 if (source.get("productName") != null) {
                     suggestions.add(source.get("productName").toString());
                 }

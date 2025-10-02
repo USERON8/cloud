@@ -1,10 +1,12 @@
 package com.cloud.common.config.base;
 
 
+import com.cloud.common.config.properties.OAuth2ResourceServerProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,7 +46,7 @@ import java.util.List;
 @Slf4j
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
-
+@EnableConfigurationProperties(OAuth2ResourceServerProperties.class)
 public abstract class BaseOAuth2ResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
@@ -55,6 +57,9 @@ public abstract class BaseOAuth2ResourceServerConfig {
 
     @Value("${app.jwt.issuer:http://localhost:8080}")
     protected String jwtIssuer;
+
+    @Autowired(required = false)
+    protected OAuth2ResourceServerProperties resourceServerProperties;
 
     /**
      * 统一权限配置（可选）
@@ -151,9 +156,16 @@ public abstract class BaseOAuth2ResourceServerConfig {
     protected JwtAuthenticationConverter createJwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
-        // OAuth2.1标准：从 scope 声明中提取权限
-        authoritiesConverter.setAuthorityPrefix("SCOPE_");
-        authoritiesConverter.setAuthoritiesClaimName("scope");
+        // 根据配置设置权限提取规则
+        if (resourceServerProperties != null) {
+            OAuth2ResourceServerProperties.AuthorityConfig authorityConfig = resourceServerProperties.getAuthority();
+            authoritiesConverter.setAuthorityPrefix(authorityConfig.getPrefix());
+            authoritiesConverter.setAuthoritiesClaimName(authorityConfig.getClaimName());
+        } else {
+            // OAuth2.1标准：从 scope 声明中提取权限
+            authoritiesConverter.setAuthorityPrefix("SCOPE_");
+            authoritiesConverter.setAuthoritiesClaimName("scope");
+        }
 
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
@@ -174,6 +186,19 @@ public abstract class BaseOAuth2ResourceServerConfig {
         log.info("   - JWT验证端点: {}", jwkSetUri);
         log.info("   - JWT缓存时间: {}", jwtCacheDuration);
         log.info("   - JWT发行者: {}", jwtIssuer);
+        
+        if (resourceServerProperties != null) {
+            OAuth2ResourceServerProperties.AuthorityConfig authorityConfig = resourceServerProperties.getAuthority();
+            log.info("   - 权限前缀: {}", authorityConfig.getPrefix());
+            log.info("   - 权限声明: {}", authorityConfig.getClaimName());
+            
+            OAuth2ResourceServerProperties.JwtConfig jwtConfig = resourceServerProperties.getJwt();
+            log.info("   - JWT黑名单: {}", jwtConfig.isBlacklistEnabled() ? "已启用" : "未启用");
+            log.info("   - Audience验证: {}", jwtConfig.isValidateAudience() ? "已启用" : "未启用");
+            
+            OAuth2ResourceServerProperties.CorsConfig corsConfig = resourceServerProperties.getCors();
+            log.info("   - CORS: {}", corsConfig.isEnabled() ? "已启用" : "未启用");
+        }
         
         if (isUnifiedSecurityEnabled()) {
             log.info("   - 统一权限管理: 已启用");

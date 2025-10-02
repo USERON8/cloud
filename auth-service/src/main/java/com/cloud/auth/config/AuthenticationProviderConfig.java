@@ -1,6 +1,7 @@
 package com.cloud.auth.config;
 
 import com.cloud.auth.service.CustomUserDetailsServiceImpl;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 /**
  * 认证提供者配置
@@ -48,30 +50,8 @@ public class AuthenticationProviderConfig {
         provider.setPasswordEncoder(passwordEncoder);
 
         // OAuth2.1安全配置
-        provider.setHideUserNotFoundExceptions(false);  // 不隐藏用户不存在异常
-        provider.setPreAuthenticationChecks(userDetails -> {
-            // 预认证检查
-            if (!userDetails.isAccountNonExpired()) {
-                log.warn("🚫 用户账户已过期: {}", userDetails.getUsername());
-                throw new org.springframework.security.authentication.AccountExpiredException("账户已过期");
-            }
-            if (!userDetails.isAccountNonLocked()) {
-                log.warn("🔒 用户账户已锁定: {}", userDetails.getUsername());
-                throw new org.springframework.security.authentication.LockedException("账户已锁定");
-            }
-            if (!userDetails.isEnabled()) {
-                log.warn("❌ 用户账户已禁用: {}", userDetails.getUsername());
-                throw new org.springframework.security.authentication.DisabledException("账户已禁用");
-            }
-        });
-
-        provider.setPostAuthenticationChecks(userDetails -> {
-            // 后认证检查
-            if (!userDetails.isCredentialsNonExpired()) {
-                log.warn("🔑 用户凭证已过期: {}", userDetails.getUsername());
-                throw new org.springframework.security.authentication.CredentialsExpiredException("凭证已过期");
-            }
-        });
+        // 注：Spring Security 6.x 会自动处理账户状态检查，无需自定义
+        // DaoAuthenticationProvider 默认已经包含完整的账户状态检查逻辑
 
         log.info("✅ DAO认证提供者配置完成");
         return provider;
@@ -93,45 +73,27 @@ public class AuthenticationProviderConfig {
         return authenticationManager;
     }
 
-    // 注释掉过时的AuthenticationManagerBuilder配置
-    // Spring Security 6.x中该API已过时，直接使用AuthenticationProvider即可
+    // 注释掉不再使用的AuthenticationManagerBuilder配置
+    // 在Spring Security 6.x中推荐使用AuthenticationConfiguration获取AuthenticationManager
 
-    /**
-     * 用户详情服务验证器
-     * 验证UserDetailsService的配置是否正确
-     */
-    @Bean
-    public UserDetailsServiceValidator userDetailsServiceValidator() {
-        log.info("🔧 配置用户详情服务验证器");
-
-        return new UserDetailsServiceValidator(customUserDetailsService);
-    }
-
-    /**
-     * 认证事件监听器
-     * 监听认证成功和失败事件
-     */
-    @Bean
-    public AuthenticationEventListener authenticationEventListener() {
-        log.info("🔧 配置认证事件监听器");
-
-        return new AuthenticationEventListener();
-    }
+    // 注：内部静态类直接使用 @Component 注解，而不是通过 @Bean 创建
 
     /**
      * 用户详情服务验证器实现
      */
+    @Component
+    @Slf4j
     public static class UserDetailsServiceValidator {
         private final CustomUserDetailsServiceImpl userDetailsService;
 
         public UserDetailsServiceValidator(CustomUserDetailsServiceImpl userDetailsService) {
             this.userDetailsService = userDetailsService;
-            validateConfiguration();
         }
 
         /**
          * 验证UserDetailsService配置
          */
+        @PostConstruct
         private void validateConfiguration() {
             log.info("🔍 验证用户详情服务配置");
 
@@ -161,6 +123,8 @@ public class AuthenticationProviderConfig {
     /**
      * 认证事件监听器实现
      */
+    @Component
+    @Slf4j
     public static class AuthenticationEventListener {
 
         @org.springframework.context.event.EventListener

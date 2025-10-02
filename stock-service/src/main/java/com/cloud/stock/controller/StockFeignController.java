@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/feign/stocks")
+@RequestMapping("/internal/stock")
 @RequiredArgsConstructor
 @Tag(name = "库存服务Feign接口", description = "提供内部微服务间调用的库存相关接口")
 public class StockFeignController {

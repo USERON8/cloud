@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  *
  * @author what's up
  */
-@FeignClient(name = "payment-service", path = "/payment/feign", contextId = "paymentFeignClient")
+@FeignClient(name = "payment-service", path = "/internal/payment", contextId = "paymentFeignClient")
 public interface PaymentFeignClient {
 
     /**

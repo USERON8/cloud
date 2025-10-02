@@ -17,15 +17,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
     scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
 )
 @ComponentScan(
-    basePackages = {"com.cloud.stock", "com.cloud.common"},
-    excludeFilters = {
-        @ComponentScan.Filter(
-            type = FilterType.ASSIGNABLE_TYPE,
-            classes = {
-                com.cloud.common.config.SecurityConfig.class
-            }
-        )
-    }
+    basePackages = {"com.cloud.stock", "com.cloud.common"}
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient

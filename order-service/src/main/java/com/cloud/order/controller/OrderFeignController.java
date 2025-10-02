@@ -7,7 +7,7 @@ import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 订单服务Feign客户端接口实现控制器
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
+@RequestMapping("/internal/order")
 @RequiredArgsConstructor
 public class OrderFeignController implements OrderFeignClient {
 
@@ -26,8 +27,9 @@ public class OrderFeignController implements OrderFeignClient {
      * @param orderId 订单ID
      * @return 订单信息
      */
-    @Override
-    public OrderVO getOrderByOrderId(Long orderId) {
+@Override
+@GetMapping("/id/{orderId}")
+public OrderVO getOrderByOrderId(@PathVariable("orderId") Long orderId) {
         log.info("[订单Feign控制器] 开始处理根据订单ID查询订单请求，订单ID: {}", orderId);
         try {
             OrderVO orderVO = orderService.getOrderByOrderIdForFeign(orderId);
@@ -45,8 +47,9 @@ public class OrderFeignController implements OrderFeignClient {
      * @param orderDTO 订单信息
      * @return 订单信息
      */
-    @Override
-    public OrderVO createOrder(OrderDTO orderDTO) {
+@Override
+@PostMapping("/create")
+public OrderVO createOrder(@RequestBody OrderDTO orderDTO) {
         log.info("[订单Feign控制器] 开始处理创建订单请求，用户ID: {}", orderDTO.getUserId());
         try {
             OrderVO orderVO = orderService.createOrderForFeign(orderDTO);
@@ -70,8 +73,9 @@ public class OrderFeignController implements OrderFeignClient {
      * @param status  订单状态
      * @return 操作结果
      */
-    @Override
-    public OperationResultVO updateOrderStatus(Long orderId, Integer status) {
+@Override
+@PostMapping("/update/status/{orderId}/{status}")
+public OperationResultVO updateOrderStatus(@PathVariable("orderId") Long orderId, @PathVariable("status") Integer status) {
         log.info("[订单Feign控制器] 开始处理更新订单状态请求，订单ID: {}，状态: {}", orderId, status);
         try {
             boolean result = orderService.updateOrderStatusForFeign(orderId, status);
@@ -94,8 +98,9 @@ public class OrderFeignController implements OrderFeignClient {
      * @param orderId 订单ID
      * @return 操作结果
      */
-    @Override
-    public OperationResultVO completeOrder(Long orderId) {
+@Override
+@PostMapping("/complete/{orderId}")
+public OperationResultVO completeOrder(@PathVariable("orderId") Long orderId) {
         log.info("[订单Feign控制器] 开始处理完成订单请求，订单ID: {}", orderId);
         try {
             boolean result = orderService.completeOrderForFeign(orderId);

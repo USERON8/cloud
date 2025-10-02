@@ -20,7 +20,7 @@ import java.math.BigDecimal;
  */
 @Slf4j
 @RestController
-@RequestMapping("/feign/payments")
+@RequestMapping("/internal/payment")
 @RequiredArgsConstructor
 @Tag(name = "支付服务Feign接口", description = "提供内部微服务间调用的支付相关接口")
 public class PaymentFeignController {

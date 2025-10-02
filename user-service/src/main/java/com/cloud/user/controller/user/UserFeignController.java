@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/internal/user")
 @RequiredArgsConstructor
 @Tag(name = "用户内部接口", description = "供其他服务调用的用户相关内部接口")
 public class UserFeignController {
     private final UserService userService;
     private final UserConverter userConverter;
 
-    @GetMapping("/internal/username/{username}")
+@GetMapping("/username/{username}")
     @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户详细信息")
     public UserDTO findByUsername(
             @PathVariable
@@ -36,7 +36,7 @@ public class UserFeignController {
         return userService.findByUsername(username);
     }
 
-    @GetMapping("/internal/id/{id}")
+@GetMapping("/id/{id}")
     @Operation(summary = "根据ID查询用户", description = "根据用户ID查询用户详细信息")
     public UserDTO findById(
             @PathVariable
@@ -49,7 +49,7 @@ public class UserFeignController {
         return userService.getUserById(id);
     }
 
-    @PostMapping("/internal/register")
+@PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，支持普通用户和商家用户注册")
     public UserDTO register(
             @RequestBody
@@ -63,7 +63,7 @@ public class UserFeignController {
         return userService.registerUser(registerRequest);
     }
 
-    @PutMapping("/internal/update")
+@PutMapping("/update")
     @Operation(summary = "更新用户信息", description = "更新用户信息")
     public Boolean update(
             @RequestBody
@@ -76,7 +76,7 @@ public class UserFeignController {
         return userService.updateById(userConverter.toEntity(userDTO));
     }
 
-    @GetMapping("/internal/password/{username}")
+@GetMapping("/password/{username}")
     @Operation(summary = "获取用户密码", description = "仅供 auth-service 认证使用")
     public String getUserPassword(
             @PathVariable
@@ -89,7 +89,7 @@ public class UserFeignController {
         return userService.getUserPassword(username);
     }
 
-    @GetMapping("/internal/github-id/{githubId}")
+@GetMapping("/github-id/{githubId}")
     @Operation(summary = "根据GitHub ID查询用户", description = "仅供 auth-service GitHub OAuth 使用")
     public UserDTO findByGitHubId(
             @PathVariable
@@ -102,7 +102,7 @@ public class UserFeignController {
         return userService.findByGitHubId(githubId);
     }
 
-    @PostMapping("/internal/github/create")
+@PostMapping("/github/create")
     @Operation(summary = "创建GitHub OAuth用户", description = "仅供 auth-service GitHub OAuth 使用")
     public UserDTO createGitHubUser(
             @RequestBody
@@ -116,7 +116,7 @@ public class UserFeignController {
         return userService.createGitHubUser(githubUserDTO);
     }
 
-    @PutMapping("/internal/github/update/{userId}")
+@PutMapping("/github/update/{userId}")
     @Operation(summary = "更新GitHub OAuth用户信息", description = "仅供 auth-service GitHub OAuth 使用")
     public Boolean updateGitHubUserInfo(
             @PathVariable

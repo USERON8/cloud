@@ -1,9 +1,12 @@
 package com.cloud.common.config;
 
+import com.cloud.common.config.properties.AsyncProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -19,6 +22,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 public class BaseAsyncConfig {
 
+    @Autowired(required = false)
+    protected AsyncProperties asyncProperties;
+
     /**
      * 默认异步任务执行器工厂方法
      * 适用于通用异步任务处理
@@ -26,16 +32,22 @@ public class BaseAsyncConfig {
      * @return Executor
      */
     protected Executor createDefaultAsyncExecutor() {
-        int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                Math.max(4, processors),
-                processors * 3,
-                300,
-                "async-default-"
-        );
+        ThreadPoolTaskExecutor executor;
+        if (asyncProperties != null) {
+            AsyncProperties.ThreadPoolConfig config = asyncProperties.getDefaultExecutor();
+            executor = createThreadPoolTaskExecutorFromConfig(config, "async-default-");
+        } else {
+            int processors = Runtime.getRuntime().availableProcessors();
+            executor = createThreadPoolTaskExecutor(
+                    Math.max(4, processors),
+                    processors * 3,
+                    300,
+                    "async-default-"
+            );
+        }
         executor.initialize();
-        log.info("✅ 默认异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: 300",
-                Math.max(4, processors), processors * 3);
+        log.info("✅ 默认异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
         return executor;
     }
 
@@ -46,14 +58,16 @@ public class BaseAsyncConfig {
      * @return Executor
      */
     protected Executor createAsyncMessageExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                3,
-                8,
-                100,
-                "async-message-"
-        );
+        ThreadPoolTaskExecutor executor;
+        if (asyncProperties != null) {
+            AsyncProperties.ThreadPoolConfig config = asyncProperties.getMessageExecutor();
+            executor = createThreadPoolTaskExecutorFromConfig(config, "async-message-");
+        } else {
+            executor = createThreadPoolTaskExecutor(3, 8, 100, "async-message-");
+        }
         executor.initialize();
-        log.info("✅ 消息异步线程池初始化完成 - 核心线程数: 3, 最大线程数: 8, 队列容量: 100");
+        log.info("✅ 消息异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
         return executor;
     }
 
@@ -64,14 +78,16 @@ public class BaseAsyncConfig {
      * @return Executor
      */
     protected Executor createBatchProcessExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                6,
-                200,
-                "batch-process-"
-        );
+        ThreadPoolTaskExecutor executor;
+        if (asyncProperties != null) {
+            AsyncProperties.ThreadPoolConfig config = asyncProperties.getBatchExecutor();
+            executor = createThreadPoolTaskExecutorFromConfig(config, "batch-process-");
+        } else {
+            executor = createThreadPoolTaskExecutor(2, 6, 200, "batch-process-");
+        }
         executor.initialize();
-        log.info("✅ 批处理异步线程池初始化完成 - 核心线程数: 2, 最大线程数: 6, 队列容量: 200");
+        log.info("✅ 批处理异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
         return executor;
     }
 
@@ -107,6 +123,46 @@ public class BaseAsyncConfig {
         executor.setAwaitTerminationSeconds(60);
 
         return executor;
+    }
+
+    /**
+     * 从配置对象创建线程池
+     */
+    protected ThreadPoolTaskExecutor createThreadPoolTaskExecutorFromConfig(
+            AsyncProperties.ThreadPoolConfig config, String defaultThreadNamePrefix) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        // 基本配置
+        executor.setCorePoolSize(config.getCorePoolSize());
+        executor.setMaxPoolSize(config.getMaxPoolSize());
+        executor.setQueueCapacity(config.getQueueCapacity());
+        String prefix = config.getThreadNamePrefix();
+        executor.setThreadNamePrefix(prefix != null && !prefix.isEmpty() ? prefix : defaultThreadNamePrefix);
+
+        // 高级配置
+        executor.setKeepAliveSeconds(config.getKeepAliveSeconds());
+        executor.setAllowCoreThreadTimeOut(config.isAllowCoreThreadTimeOut());
+
+        // 拒绝策略
+        executor.setRejectedExecutionHandler(getRejectedExecutionHandler(config.getRejectedExecutionHandler()));
+
+        // 优雅关闭配置
+        executor.setWaitForTasksToCompleteOnShutdown(config.isWaitForTasksToCompleteOnShutdown());
+        executor.setAwaitTerminationSeconds(config.getAwaitTerminationSeconds());
+
+        return executor;
+    }
+
+    /**
+     * 获取拒绝策略
+     */
+    private RejectedExecutionHandler getRejectedExecutionHandler(String handlerType) {
+        return switch (handlerType.toUpperCase()) {
+            case "ABORT" -> new ThreadPoolExecutor.AbortPolicy();
+            case "DISCARD" -> new ThreadPoolExecutor.DiscardPolicy();
+            case "DISCARD_OLDEST" -> new ThreadPoolExecutor.DiscardOldestPolicy();
+            default -> new ThreadPoolExecutor.CallerRunsPolicy();
+        };
     }
 
     /**

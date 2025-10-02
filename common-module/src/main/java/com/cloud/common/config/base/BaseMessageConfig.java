@@ -1,8 +1,11 @@
 package com.cloud.common.config.base;
 
+import com.cloud.common.config.properties.MessageProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageConst;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -21,11 +24,15 @@ import java.util.Map;
  */
 @Slf4j
 @Configuration
+@EnableConfigurationProperties(MessageProperties.class)
 @ConditionalOnProperty(name = "spring.cloud.stream.rocketmq.binder.name-server")
 public abstract class BaseMessageConfig {
 
     @Resource
     protected StreamBridge streamBridge;
+
+    @Autowired(required = false)
+    protected MessageProperties messageProperties;
 
     public BaseMessageConfig() {
         log.info("✅ {} - RocketMQ集成启用", getServiceName());
@@ -51,9 +58,26 @@ public abstract class BaseMessageConfig {
         headers.put(MessageConst.PROPERTY_TAGS, tag);
         headers.put(MessageConst.PROPERTY_KEYS, key);
         headers.put("eventType", eventType);
-        headers.put("traceId", generateTraceId());
-        headers.put("timestamp", System.currentTimeMillis());
-        headers.put("serviceName", getServiceName());
+
+        // 根据配置决定是否自动添加消息头
+        if (messageProperties != null) {
+            MessageProperties.HeaderConfig headerConfig = messageProperties.getHeader();
+            if (headerConfig.isAutoTraceId()) {
+                headers.put("traceId", generateTraceId());
+            }
+            if (headerConfig.isAutoTimestamp()) {
+                headers.put("timestamp", System.currentTimeMillis());
+            }
+            if (headerConfig.isAutoServiceName()) {
+                headers.put("serviceName", getServiceName());
+            }
+        } else {
+            // 默认行为：添加所有消息头
+            headers.put("traceId", generateTraceId());
+            headers.put("timestamp", System.currentTimeMillis());
+            headers.put("serviceName", getServiceName());
+        }
+
         return headers;
     }
 
@@ -72,14 +96,32 @@ public abstract class BaseMessageConfig {
             String traceId = (String) headers.get("traceId");
             String eventType = (String) headers.get("eventType");
 
-            log.info("📨 准备发送消息 - 绑定: {}, 事件类型: {}, 追踪ID: {}",
-                    bindingName, eventType, traceId);
+            // 根据配置决定日志级别和内容
+            boolean verbose = messageProperties == null || messageProperties.getLog().isVerbose();
+            boolean logPayload = messageProperties != null && messageProperties.getLog().isLogPayload();
+            boolean logHeaders = messageProperties == null || messageProperties.getLog().isLogHeaders();
+
+            if (verbose) {
+                if (logPayload) {
+                    String payloadStr = truncatePayload(String.valueOf(payload));
+                    log.info("📨 准备发送消息 - 绑定: {}, 事件类型: {}, 追踪ID: {}, 消息体: {}",
+                            bindingName, eventType, traceId, payloadStr);
+                } else {
+                    log.info("📨 准备发送消息 - 绑定: {}, 事件类型: {}, 追踪ID: {}",
+                            bindingName, eventType, traceId);
+                }
+                if (logHeaders) {
+                    log.debug("消息头: {}", headers);
+                }
+            }
 
             boolean sent = streamBridge.send(bindingName, message);
 
             if (sent) {
-                log.info("✅ 消息发送成功 - 绑定: {}, 事件类型: {}, 追踪ID: {}",
-                        bindingName, eventType, traceId);
+                if (verbose) {
+                    log.info("✅ 消息发送成功 - 绑定: {}, 事件类型: {}, 追踪ID: {}",
+                            bindingName, eventType, traceId);
+                }
             } else {
                 log.error("❌ 消息发送失败 - 绑定: {}, 事件类型: {}, 追踪ID: {}",
                         bindingName, eventType, traceId);
@@ -90,6 +132,17 @@ public abstract class BaseMessageConfig {
             log.error("❌ 发送消息时发生异常 - 绑定: {}, 错误: {}", bindingName, e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     * 截断消息体日志
+     */
+    private String truncatePayload(String payload) {
+        if (messageProperties == null) {
+            return payload.length() > 1000 ? payload.substring(0, 1000) + "..." : payload;
+        }
+        int maxLength = messageProperties.getLog().getPayloadMaxLength();
+        return payload.length() > maxLength ? payload.substring(0, maxLength) + "..." : payload;
     }
 
     /**

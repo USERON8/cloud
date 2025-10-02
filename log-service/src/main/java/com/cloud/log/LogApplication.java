@@ -7,6 +7,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * 日志服务启动类
@@ -30,7 +31,8 @@ import org.springframework.context.annotation.FilterType;
     }
 )
 @EnableDiscoveryClient
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+@EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
+@EnableTransactionManagement(proxyTargetClass = true)
 public class LogApplication {
 
     public static void main(String[] args) {

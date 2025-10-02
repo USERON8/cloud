@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author what's up
  */
-@FeignClient(name = "user-service", path = "/user", contextId = "userFeignClient")
+@FeignClient(name = "user-service", path = "/internal/user", contextId = "userFeignClient")
 public interface UserFeignClient {
 
     /**
@@ -22,7 +22,7 @@ public interface UserFeignClient {
      * @param username 用户名
      * @return 用户信息
      */
-    @GetMapping("/internal/username/{username}")
+@GetMapping("/username/{username}")
     UserDTO findByUsername(@PathVariable("username") String username);
 
     /**
@@ -31,7 +31,7 @@ public interface UserFeignClient {
      * @param id 用户ID
      * @return 用户信息
      */
-    @GetMapping("/internal/id/{id}")
+@GetMapping("/id/{id}")
     UserDTO findById(@PathVariable("id") Long id);
 
     /**
@@ -40,7 +40,7 @@ public interface UserFeignClient {
      * @param registerRequest 用户注册信息
      * @return 是否保存成功
      */
-    @PostMapping("/internal/register")
+@PostMapping("/register")
     UserDTO register(@RequestBody RegisterRequestDTO registerRequest);
 
     /**
@@ -49,7 +49,7 @@ public interface UserFeignClient {
      * @param userDTO 用户信息
      * @return 是否更新成功
      */
-    @PutMapping("/internal/update")
+@PutMapping("/update")
     Boolean update(@RequestBody UserDTO userDTO);
 
     /**
@@ -58,6 +58,6 @@ public interface UserFeignClient {
      * @param username 用户名
      * @return 加密后的密码
      */
-    @GetMapping("/internal/password/{username}")
+@GetMapping("/password/{username}")
     String getUserPassword(@PathVariable("username") String username);
 }

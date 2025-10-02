@@ -1,5 +1,7 @@
-package com.cloud.common.config;
+package com.cloud.log.config;
 
+import com.cloud.common.config.PermissionChecker;
+import com.cloud.common.config.PermissionConfig;
 import com.cloud.common.security.SecurityPermissionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,53 +11,20 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
-/**
- * 统一安全权限配置类
- * <p>
- * 主要功能：
- * - 整合方法级权限控制和网关权限控制
- * - 提供统一的权限检查工具和服务
- * - 支持Spring Security标准注解和自定义注解
- * - 支持OAuth2.1 JWT权限验证
- * - 可配置化的权限策略
- *
- * @author CloudDevAgent
- * @version 2.0
- * @since 2025-09-27
- */
 @Slf4j
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(
-        // 启用@PreAuthorize, @PostAuthorize
-        securedEnabled = true,      // 启用@Secured
-        jsr250Enabled = true       // 启用@RolesAllowed
-)
-@Import({
-        PermissionConfig.class,         // 权限配置
-        PermissionChecker.class         // 权限检查器
-})
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@Import({PermissionConfig.class, PermissionChecker.class})
 public class SecurityConfig {
 
-    /**
-     * 初始化统一安全配置
-     */
     public SecurityConfig() {
-        log.info("🔐 初始化Cloud平台统一安全权限配置");
-        log.info("✓ 启用方法级权限控制(@PreAuthorize, @PostAuthorize, @Secured, @RolesAllowed)");
-        // 已移除自定义权限注解
-        log.info("✓ 集成OAuth2.1 JWT权限验证");
-        log.info("✓ 提供统一的权限工具类和管理器");
+        log.info("🔐 [log-service] 启用方法级权限控制 & 统一权限表达式");
     }
 
-    /**
-     * 权限表达式根对象
-     * 提供自定义的权限检查方法，可在@PreAuthorize中使用
-     */
     @Bean("securityExpressions")
     @ConditionalOnProperty(name = "app.security.expressions.enabled", havingValue = "true", matchIfMissing = true)
     public UnifiedSecurityExpressions securityExpressions() {
-        log.info("注册统一权限表达式对象");
         return new UnifiedSecurityExpressions();
     }
 
@@ -186,3 +155,4 @@ public class SecurityConfig {
         }
     }
 }
+

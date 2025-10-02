@@ -1,0 +1,218 @@
+# ==============================================
+# Spring Cloud 微服务配置示例文件
+# 展示新增的可配置属性
+# ==============================================
+
+# ========================================
+# 消息配置 (MessageProperties)
+# ========================================
+app:
+  message:
+    # 是否启用消息功能
+    enabled: true
+    # 消息发送重试次数
+    send-retry-times: 3
+    # 消息发送超时时间(毫秒)
+    send-timeout: 3000
+    # 是否启用消息追踪
+    trace-enabled: true
+    # 是否启用幂等性检查
+    idempotent-enabled: false
+    # 幂等性检查过期时间(秒)
+    idempotent-expire-seconds: 86400
+    
+    # 消息头配置
+    header:
+      # 是否自动添加追踪ID
+      auto-trace-id: true
+      # 是否自动添加时间戳
+      auto-timestamp: true
+      # 是否自动添加服务名称
+      auto-service-name: true
+      # 自定义消息头前缀
+      custom-prefix: ""
+    
+    # 日志配置
+    log:
+      # 是否启用详细日志
+      verbose: true
+      # 是否记录消息体
+      log-payload: false
+      # 是否记录消息头
+      log-headers: true
+      # 消息体日志最大长度
+      payload-max-length: 1000
+
+# ========================================
+# OAuth2资源服务器配置 (OAuth2ResourceServerProperties)
+# ========================================
+  security:
+    oauth2:
+      resource-server:
+        # 是否启用资源服务器
+        enabled: true
+        
+        # JWT配置
+        jwt:
+          # JWT验证器缓存时长（分钟）
+          cache-minutes: 30
+          # 是否启用JWT黑名单检查
+          blacklist-enabled: false
+          # JWT时钟偏移容忍度（秒）
+          clock-skew-seconds: 60
+          # 是否验证audience
+          validate-audience: false
+          # 期望的audience列表
+          expected-audiences:
+            - api-client
+            - web-client
+          # 是否验证not before
+          validate-not-before: true
+          # JWT最大有效时长（小时）
+          max-validity-hours: 24
+        
+        # 权限配置
+        authority:
+          # 权限前缀
+          prefix: "SCOPE_"
+          # 权限声明名称
+          claim-name: "scope"
+          # 是否启用角色映射
+          role-mapping: false
+          # 角色前缀
+          role-prefix: "ROLE_"
+          # 是否从多个声明中提取权限
+          multi-claim-extraction: false
+          # 额外的权限声明名称列表
+          additional-claim-names:
+            - authorities
+            - permissions
+        
+        # 公开路径配置
+        public-paths:
+          - /actuator/health
+          - /actuator/info
+          - /doc.html
+          - /v3/api-docs/**
+          - /swagger-ui/**
+        
+        # CORS配置
+        cors:
+          # 是否启用CORS
+          enabled: true
+          # 允许的源
+          allowed-origins:
+            - "http://localhost:3000"
+            - "http://localhost:8080"
+          # 允许的方法
+          allowed-methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          # 允许的请求头
+          allowed-headers:
+            - "*"
+          # 暴露的响应头
+          exposed-headers:
+            - Authorization
+            - X-Total-Count
+          # 是否允许凭证
+          allow-credentials: true
+          # 预检请求缓存时间（秒）
+          max-age-seconds: 3600
+        
+        # 会话配置
+        session:
+          # 会话创建策略
+          creation-policy: "STATELESS"
+          # 是否启用会话固定保护
+          session-fixation-protection: false
+          # 最大会话数
+          maximum-sessions: 1
+          # 是否阻止新会话创建
+          max-sessions-prevents-login: false
+
+# ========================================
+# 异步配置 (AsyncProperties)
+# ========================================
+  async:
+    # 是否启用异步功能
+    enabled: true
+    
+    # 默认线程池配置
+    default-executor:
+      core-pool-size: 4
+      max-pool-size: 12
+      queue-capacity: 300
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-default-"
+      allow-core-thread-time-out: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+    
+    # 消息线程池配置
+    message-executor:
+      core-pool-size: 3
+      max-pool-size: 8
+      queue-capacity: 100
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-message-"
+      allow-core-thread-time-out: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+    
+    # 批处理线程池配置
+    batch-executor:
+      core-pool-size: 2
+      max-pool-size: 6
+      queue-capacity: 200
+      keep-alive-seconds: 60
+      thread-name-prefix: "batch-process-"
+      allow-core-thread-time-out: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+    
+    # IO密集型线程池配置
+    io-executor:
+      core-pool-size: 8
+      max-pool-size: 16
+      queue-capacity: 300
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-io-"
+      allow-core-thread-time-out: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+    
+    # CPU密集型线程池配置
+    cpu-executor:
+      core-pool-size: 4
+      max-pool-size: 5
+      queue-capacity: 100
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-cpu-"
+      allow-core-thread-time-out: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+    
+    # 通用配置
+    common:
+      # 是否启用线程池监控
+      monitoring-enabled: false
+      # 线程池监控间隔（秒）
+      monitoring-interval-seconds: 60
+      # 是否启用线程池预热
+      pre-start-core-threads: false
+      # 任务装饰器
+      task-decorator: false
+      # 是否记录慢任务
+      log-slow-tasks: true
+      # 慢任务阈值（毫秒）
+      slow-task-threshold-ms: 5000
+

@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.springframework.util.StringUtils;
+// import org.springframework.util.StringUtils; // 不再使用，改为自定义检查
 
 /**
  * Redisson基础配置类
@@ -80,19 +80,16 @@ public abstract class RedissonConfig {
                 .setRetryInterval(1500);
 
         // 设置密码（如果有）
-        if (StringUtils.hasText(password)) {
+        if (password != null && !password.trim().isEmpty()) {
             config.useSingleServer().setPassword(password);
         }
 
-        // 设置编解码器
-        config.setCodec(new org.redisson.codec.JsonJacksonCodec());
-
+        // 不设置 codec，使用 Redisson 默认的 JsonJackson 编解码器
+        // 注意：Redisson 使用高效的编解码器处理数据序列化
+        
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);
-
-        // 设置锁的看门狗超时时间（默认30秒）
-        config.setLockWatchdogTimeout(30000);
 
         // 创建Redisson客户端
         RedissonClient redissonClient = Redisson.create(config);
@@ -131,19 +128,15 @@ public abstract class RedissonConfig {
                 .setRetryInterval(1500);
 
         // 设置密码（如果有）
-        if (StringUtils.hasText(password)) {
+        if (password != null && !password.trim().isEmpty()) {
             config.useClusterServers().setPassword(password);
         }
 
-        // 设置编解码器
-        config.setCodec(new org.redisson.codec.JsonJacksonCodec());
-
+        // 不设置 codec，使用 Redisson 默认的编解码器
+        
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);
-
-        // 设置锁的看门狗超时时间
-        config.setLockWatchdogTimeout(30000);
 
         RedissonClient redissonClient = Redisson.create(config);
 
@@ -183,19 +176,15 @@ public abstract class RedissonConfig {
                 .setRetryInterval(1500);
 
         // 设置密码（如果有）
-        if (StringUtils.hasText(password)) {
+        if (password != null && !password.trim().isEmpty()) {
             config.useSentinelServers().setPassword(password);
         }
 
-        // 设置编解码器
-        config.setCodec(new org.redisson.codec.JsonJacksonCodec());
-
+        // 不设置 codec，使用 Redisson 默认的编解码器
+        
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);
-
-        // 设置锁的看门狗超时时间
-        config.setLockWatchdogTimeout(30000);
 
         RedissonClient redissonClient = Redisson.create(config);
 

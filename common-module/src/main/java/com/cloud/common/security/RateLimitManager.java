@@ -22,6 +22,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings({"unchecked", "rawtypes"}) // 抑制未检查的类型转换警告 - 由于 Redis Lua 脚本返回类型的限制
 public class RateLimitManager {
 
     // Redis键前缀
@@ -105,14 +106,15 @@ public class RateLimitManager {
                 """;
 
         RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List<Long> result = redisTemplate.execute(script,
+        List result = redisTemplate.execute(script,
                 Collections.singletonList(windowKey),
                 rule.getPermits(),
                 rule.getWindow().getSeconds());
 
-        boolean allowed = result.get(0) == 1;
-        long remaining = result.get(1);
-        long resetTime = result.get(2);
+        // 安全地从 Lua 脚本结果中提取值
+        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
@@ -154,16 +156,17 @@ public class RateLimitManager {
                 """;
 
         RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List<Long> result = redisTemplate.execute(script,
+        List result = redisTemplate.execute(script,
                 Collections.singletonList(redisKey),
                 now,
                 windowStart,
                 rule.getPermits(),
                 rule.getWindow().getSeconds());
 
-        boolean allowed = result.get(0) == 1;
-        long remaining = result.get(1);
-        long resetTime = result.get(2);
+        // 安全地从 Lua 脚本结果中提取值
+        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
@@ -211,15 +214,16 @@ public class RateLimitManager {
                 """;
 
         RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List<Long> result = redisTemplate.execute(script,
+        List result = redisTemplate.execute(script,
                 Collections.singletonList(redisKey),
                 capacity,
                 refillRate,
                 now);
 
-        boolean allowed = result.get(0) == 1;
-        long remaining = result.get(1);
-        long resetTime = result.get(2);
+        // 安全地从 Lua 脚本结果中提取值
+        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
@@ -267,15 +271,16 @@ public class RateLimitManager {
                 """;
 
         RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List<Long> result = redisTemplate.execute(script,
+        List result = redisTemplate.execute(script,
                 Collections.singletonList(redisKey),
                 capacity,
                 leakRate,
                 now);
 
-        boolean allowed = result.get(0) == 1;
-        long remaining = result.get(1);
-        long resetTime = result.get(2);
+        // 安全地从 Lua 脚本结果中提取值
+        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);

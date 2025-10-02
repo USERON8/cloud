@@ -116,7 +116,9 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             }
 
             // 2. 查询分布式缓存(Redis)
-            CacheObject redisCacheObj = (CacheObject) redisTemplate.opsForValue().get(cacheKey);
+            Object redisValue = redisTemplate.opsForValue().get(cacheKey);
+            @SuppressWarnings("unchecked")
+            CacheObject redisCacheObj = (redisValue instanceof CacheObject) ? (CacheObject) redisValue : null;
             if (redisCacheObj != null && redisCacheObj.isValid()) {
                 // Redis命中，回填到本地缓存
                 localCache.put(key, redisCacheObj);
@@ -138,6 +140,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T get(Object key, Callable<T> valueLoader) {
         // 先尝试从缓存获取
         ValueWrapper existingValue = get(key);
