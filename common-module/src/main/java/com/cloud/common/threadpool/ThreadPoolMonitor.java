@@ -31,11 +31,11 @@ public class ThreadPoolMonitor {
      */
     public Map<String, ThreadPoolInfo> getAllThreadPoolInfo() {
         Map<String, ThreadPoolInfo> threadPoolInfoMap = new HashMap<>();
-        
+
         try {
-            Map<String, ThreadPoolTaskExecutor> threadPoolBeans = 
+            Map<String, ThreadPoolTaskExecutor> threadPoolBeans =
                     applicationContext.getBeansOfType(ThreadPoolTaskExecutor.class);
-            
+
             for (Map.Entry<String, ThreadPoolTaskExecutor> entry : threadPoolBeans.entrySet()) {
                 String beanName = entry.getKey();
                 ThreadPoolTaskExecutor executor = entry.getValue();
@@ -45,7 +45,7 @@ public class ThreadPoolMonitor {
         } catch (Exception e) {
             log.error("获取线程池信息失败", e);
         }
-        
+
         return threadPoolInfoMap;
     }
 
@@ -73,16 +73,16 @@ public class ThreadPoolMonitor {
     public ThreadPoolHealthStatus checkThreadPoolHealth() {
         Map<String, ThreadPoolInfo> allThreadPools = getAllThreadPoolInfo();
         ThreadPoolHealthStatus healthStatus = new ThreadPoolHealthStatus();
-        
+
         int totalPools = allThreadPools.size();
         int healthyPools = 0;
         int warningPools = 0;
         int criticalPools = 0;
-        
+
         for (Map.Entry<String, ThreadPoolInfo> entry : allThreadPools.entrySet()) {
             ThreadPoolInfo info = entry.getValue();
             String status = evaluateThreadPoolStatus(info);
-            
+
             switch (status) {
                 case "HEALTHY":
                     healthyPools++;
@@ -97,12 +97,12 @@ public class ThreadPoolMonitor {
                     break;
             }
         }
-        
+
         healthStatus.setTotalPools(totalPools);
         healthStatus.setHealthyPools(healthyPools);
         healthStatus.setWarningPools(warningPools);
         healthStatus.setCriticalPools(criticalPools);
-        
+
         // 设置整体健康状态
         if (criticalPools > 0) {
             healthStatus.setOverallStatus("CRITICAL");
@@ -111,7 +111,7 @@ public class ThreadPoolMonitor {
         } else {
             healthStatus.setOverallStatus("HEALTHY");
         }
-        
+
         return healthStatus;
     }
 
@@ -124,7 +124,7 @@ public class ThreadPoolMonitor {
      */
     private ThreadPoolInfo buildThreadPoolInfo(String beanName, ThreadPoolTaskExecutor executor) {
         ThreadPoolExecutor threadPoolExecutor = executor.getThreadPoolExecutor();
-        
+
         ThreadPoolInfo info = new ThreadPoolInfo();
         info.setBeanName(beanName);
         info.setCorePoolSize(threadPoolExecutor.getCorePoolSize());
@@ -137,18 +137,18 @@ public class ThreadPoolMonitor {
         info.setTotalTaskCount(threadPoolExecutor.getTaskCount());
         info.setKeepAliveTime(threadPoolExecutor.getKeepAliveTime(java.util.concurrent.TimeUnit.SECONDS));
         info.setRejectedExecutionHandler(threadPoolExecutor.getRejectedExecutionHandler().getClass().getSimpleName());
-        
+
         // 计算使用率
         double poolUsageRate = (double) threadPoolExecutor.getActiveCount() / threadPoolExecutor.getMaximumPoolSize() * 100;
-        double queueUsageRate = executor.getQueueCapacity() > 0 ? 
+        double queueUsageRate = executor.getQueueCapacity() > 0 ?
                 (double) threadPoolExecutor.getQueue().size() / executor.getQueueCapacity() * 100 : 0;
-        
+
         info.setPoolUsageRate(poolUsageRate);
         info.setQueueUsageRate(queueUsageRate);
-        
+
         // 设置状态
         info.setStatus(evaluateThreadPoolStatus(info));
-        
+
         return info;
     }
 
@@ -178,7 +178,7 @@ public class ThreadPoolMonitor {
      */
     public void logThreadPoolStatus() {
         Map<String, ThreadPoolInfo> allThreadPools = getAllThreadPoolInfo();
-        
+
         log.info("========== 线程池状态监控 ==========");
         for (Map.Entry<String, ThreadPoolInfo> entry : allThreadPools.entrySet()) {
             ThreadPoolInfo info = entry.getValue();

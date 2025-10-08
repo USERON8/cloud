@@ -45,39 +45,11 @@ public class GitHubOAuth2Controller {
     @GetMapping("/user-info")
     public Result<LoginResponseDTO> getUserInfo(Principal principal) {
         log.info("获取GitHub OAuth2用户信息，principal: {}", principal != null ? principal.getName() : "null");
-
-        try {
-            if (principal == null) {
-                log.warn("未找到认证信息");
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "未认证，请先登录");
-            }
-
-            // 获取OAuth2授权客户端
-            OAuth2AuthorizedClient authorizedClient = authorizedClientService
-                    .loadAuthorizedClient("github", principal.getName());
-
-            if (authorizedClient == null) {
-                log.warn("未找到GitHub OAuth2授权客户端，用户: {}", principal.getName());
-                return Result.error(ResultCode.UNAUTHORIZED.getCode(), "GitHub授权信息不存在");
-            }
-
-            // 获取或创建用户
-            UserDTO userDTO = gitHubUserInfoService.getOrCreateUser(authorizedClient);
-
-            if (userDTO != null) {
-                // 生成JWT响应
-                LoginResponseDTO loginResponse = oauth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
-                log.info("成功获取GitHub用户信息: {}", userDTO.getUsername());
-                return Result.success(loginResponse);
-            } else {
-                log.error("获取GitHub用户信息失败");
-                return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "获取用户信息失败");
-            }
-
-        } catch (Exception e) {
-            log.error("获取GitHub OAuth2用户信息时发生异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取用户信息异常");
-        }
+        
+        LoginResponseDTO loginResponse = gitHubUserInfoService.getUserInfoAndGenerateToken(
+                principal, authorizedClientService, jwtEncoder, oauth2ResponseUtil);
+        
+        return Result.success(loginResponse);
     }
 
     /**
@@ -90,24 +62,11 @@ public class GitHubOAuth2Controller {
     @GetMapping("/status")
     public Result<Boolean> checkAuthStatus(Principal principal) {
         log.info("检查GitHub OAuth2登录状态，principal: {}", principal != null ? principal.getName() : "null");
-
-        try {
-            if (principal == null) {
-                return Result.success(false);
-            }
-
-            OAuth2AuthorizedClient authorizedClient = authorizedClientService
-                    .loadAuthorizedClient("github", principal.getName());
-
-            boolean isAuthenticated = authorizedClient != null;
-            log.info("GitHub OAuth2认证状态: {}", isAuthenticated);
-
-            return Result.success(isAuthenticated);
-
-        } catch (Exception e) {
-            log.error("检查GitHub OAuth2认证状态时发生异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "检查认证状态失败");
-        }
+        
+        boolean isAuthenticated = gitHubUserInfoService.checkAuthStatus(
+                principal, authorizedClientService);
+        
+        return Result.success(isAuthenticated);
     }
 
     /**
@@ -122,17 +81,12 @@ public class GitHubOAuth2Controller {
     public Result<String> handleCallback(@RequestParam("code") String code,
                                          @RequestParam(value = "state", required = false) String state) {
         log.info("接收到GitHub OAuth2回调，code: {}, state: {}", code != null ? "****" : null, state);
-
-        try {
-            // 注意：实际的OAuth2授权码处理由Spring Security OAuth2 Client自动完成
-            // 这个接口主要用于前端重定向或API调用场景
-
-            return Result.success("GitHub OAuth2回调接收成功，请使用 /oauth2/github/user-info 获取用户信息");
-
-        } catch (Exception e) {
-            log.error("处理GitHub OAuth2回调时发生异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "处理OAuth2回调失败");
-        }
+        
+        // 注意：实际的OAuth2授权码处理由Spring Security OAuth2 Client自动完成
+        // 这个接口主要用于前端重定向或API调用场景
+        String message = "GitHub OAuth2回调接收成功，请使用 /oauth2/github/user-info 获取用户信息";
+        
+        return Result.success(message);
     }
 
     /**
@@ -144,17 +98,11 @@ public class GitHubOAuth2Controller {
     @GetMapping("/login-url")
     public Result<String> getGitHubLoginUrl() {
         log.info("获取GitHub OAuth2登录URL");
-
-        try {
-            // 构建GitHub OAuth2登录URL
-            String loginUrl = "/oauth2/authorization/github";
-            log.info("GitHub OAuth2登录URL: {}", loginUrl);
-
-            return Result.success(loginUrl);
-
-        } catch (Exception e) {
-            log.error("获取GitHub OAuth2登录URL时发生异常", e);
-            return Result.error(ResultCode.SYSTEM_ERROR.getCode(), "获取登录URL失败");
-        }
+        
+        // 构建GitHub OAuth2登录URL
+        String loginUrl = "/oauth2/authorization/github";
+        log.info("GitHub OAuth2登录URL: {}", loginUrl);
+        
+        return Result.success(loginUrl);
     }
 }

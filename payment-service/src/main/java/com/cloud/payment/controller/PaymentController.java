@@ -3,6 +3,8 @@ package com.cloud.payment.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.payment.service.PaymentService;
@@ -45,41 +47,37 @@ public class PaymentController {
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
     @Operation(summary = "获取支付列表", description = "获取支付列表，支持分页和查询参数")
     public Result<PageResult<PaymentDTO>> getPayments(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") 
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1")
             @Min(value = 1, message = "页码必须大于0") Integer page,
-            
+
             @Parameter(description = "每页数量") @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "每页数量必须大于0")
             @Max(value = 100, message = "每页数量不能超过100") Integer size,
-            
+
             @Parameter(description = "用户ID") @RequestParam(required = false)
             @Positive(message = "用户ID必须为正整数") Long userId,
-            
+
             @Parameter(description = "支付状态") @RequestParam(required = false)
             @Min(value = 0, message = "支付状态值错误")
             @Max(value = 9, message = "支付状态值错误") Integer status,
-            
+
             @Parameter(description = "支付渠道") @RequestParam(required = false)
             @Min(value = 0, message = "支付渠道值错误")
             @Max(value = 9, message = "支付渠道值错误") Integer channel,
-            
+
             Authentication authentication) {
 
-        try {
-            Page<PaymentDTO> pageResult = paymentService.getPaymentsPage(page, size, userId, status, channel);
-            
-            PageResult<PaymentDTO> result = PageResult.of(
-                    pageResult.getCurrent(),
-                    pageResult.getSize(),
-                    pageResult.getTotal(),
-                    pageResult.getRecords()
-            );
+        Page<PaymentDTO> pageResult = paymentService.getPaymentsPage(page, size, userId, status, channel);
 
-            return Result.success(result);
-        } catch (Exception e) {
-            log.error("获取支付列表失败", e);
-            return Result.error("获取支付列表失败: " + e.getMessage());
-        }
+        PageResult<PaymentDTO> result = PageResult.of(
+                pageResult.getCurrent(),
+                pageResult.getSize(),
+                pageResult.getTotal(),
+                pageResult.getRecords()
+        );
+        
+        log.info("分页查询支付成功: page={}, size={}, total={}", page, size, pageResult.getTotal());
+        return Result.success(result);
     }
 
     /**
@@ -94,16 +92,13 @@ public class PaymentController {
             @Positive(message = "支付ID必须为正整数") Long id,
             Authentication authentication) {
 
-        try {
-            PaymentDTO payment = paymentService.getPaymentById(id);
-            if (payment == null) {
-                return Result.error("支付记录不存在");
-            }
-            return Result.success("查询成功", payment);
-        } catch (Exception e) {
-            log.error("获取支付详情失败，支付ID: {}", id, e);
-            return Result.error("获取支付详情失败: " + e.getMessage());
+        PaymentDTO payment = paymentService.getPaymentById(id);
+        if (payment == null) {
+            log.warn("支付记录不存在: id={}", id);
+            throw new ResourceNotFoundException("Payment", String.valueOf(id));
         }
+        log.info("查询支付成功: paymentId={}", id);
+        return Result.success("查询成功", payment);
     }
 
     /**
@@ -116,13 +111,9 @@ public class PaymentController {
             @Parameter(description = "支付信息") @RequestBody
             @Valid @NotNull(message = "支付信息不能为空") PaymentDTO paymentDTO) {
 
-        try {
-            Long paymentId = paymentService.createPayment(paymentDTO);
-            return Result.success("支付记录创建成功", paymentId);
-        } catch (Exception e) {
-            log.error("创建支付记录失败", e);
-            return Result.error("创建支付记录失败: " + e.getMessage());
-        }
+        Long paymentId = paymentService.createPayment(paymentDTO);
+        log.info("支付记录创建成功: paymentId={}, orderId={}", paymentId, paymentDTO.getOrderId());
+        return Result.success("支付记录创建成功", paymentId);
     }
 
     /**
@@ -139,14 +130,9 @@ public class PaymentController {
 
         // 确保路径参数与请求体中的ID一致
         paymentDTO.setId(id);
-
-        try {
-            Boolean result = paymentService.updatePayment(paymentDTO);
-            return Result.success("支付记录更新成功", result);
-        } catch (Exception e) {
-            log.error("更新支付记录失败，支付ID: {}", id, e);
-            return Result.error("更新支付记录失败: " + e.getMessage());
-        }
+        Boolean result = paymentService.updatePayment(paymentDTO);
+        log.info("支付记录更新成功: paymentId={}", id);
+        return Result.success("支付记录更新成功", result);
     }
 
     /**
@@ -160,13 +146,9 @@ public class PaymentController {
             @NotNull(message = "支付ID不能为空")
             @Positive(message = "支付ID必须为正整数") Long id) {
 
-        try {
-            Boolean result = paymentService.deletePayment(id);
-            return Result.success("支付记录删除成功", result);
-        } catch (Exception e) {
-            log.error("删除支付记录失败，支付ID: {}", id, e);
-            return Result.error("删除支付记录失败: " + e.getMessage());
-        }
+        Boolean result = paymentService.deletePayment(id);
+        log.info("支付记录删除成功: paymentId={}", id);
+        return Result.success("支付记录删除成功", result);
     }
 
     /**
@@ -186,22 +168,17 @@ public class PaymentController {
             @Parameter(description = "支付ID") @PathVariable Long id,
             Authentication authentication) {
 
-        try {
-            log.info("💳 处理支付成功 - 支付ID: {}", id);
-            Boolean result = paymentService.processPaymentSuccess(id);
-            
-            if (result) {
-                log.info("✅ 支付成功处理完成 - 支付ID: {}", id);
-                return Result.success("支付成功处理完成", result);
-            } else {
-                log.warn("⚠️ 支付成功处理失败 - 支付ID: {}", id);
-                return Result.error("支付成功处理失败，请检查支付状态");
-            }
-        } catch (Exception e) {
-            log.error("❌ 支付成功处理失败 - 支付ID: {}, 错误: {}", id, e.getMessage(), e);
-            return Result.error("支付成功处理失败: " + e.getMessage());
+        log.info("💳 处理支付成功 - 支付ID: {}", id);
+        Boolean result = paymentService.processPaymentSuccess(id);
+
+        if (!result) {
+            log.warn("⚠️ 支付成功处理失败 - 支付ID: {}", id);
+            throw new BusinessException("支付成功处理失败，请检查支付状态");
         }
+        log.info("✅ 支付成功处理完成 - 支付ID: {}", id);
+        return Result.success("支付成功处理完成", result);
     }
+
 
     /**
      * 处理支付失败
@@ -221,21 +198,15 @@ public class PaymentController {
             @Parameter(description = "失败原因") @RequestParam(required = false) String failReason,
             Authentication authentication) {
 
-        try {
-            log.info("💳 处理支付失败 - 支付ID: {}, 失败原因: {}", id, failReason);
-            Boolean result = paymentService.processPaymentFailed(id, failReason);
-            
-            if (result) {
-                log.info("✅ 支付失败处理完成 - 支付ID: {}", id);
-                return Result.success("支付失败处理完成", result);
-            } else {
-                log.warn("⚠️ 支付失败处理失败 - 支付ID: {}", id);
-                return Result.error("支付失败处理失败，请检查支付状态");
-            }
-        } catch (Exception e) {
-            log.error("❌ 支付失败处理失败 - 支付ID: {}, 错误: {}", id, e.getMessage(), e);
-            return Result.error("支付失败处理失败: " + e.getMessage());
+        log.info("💳 处理支付失败 - 支付ID: {}, 失败原因: {}", id, failReason);
+        Boolean result = paymentService.processPaymentFailed(id, failReason);
+
+        if (!result) {
+            log.warn("⚠️ 支付失败处理失败 - 支付ID: {}", id);
+            throw new BusinessException("支付失败处理失败，请检查支付状态");
         }
+        log.info("✅ 支付失败处理完成 - 支付ID: {}", id);
+        return Result.success("支付失败处理完成", result);
     }
 
     /**
@@ -257,21 +228,15 @@ public class PaymentController {
             @Parameter(description = "退款原因") @RequestParam(required = false) String refundReason,
             Authentication authentication) {
 
-        try {
-            log.info("💰 处理退款请求 - 支付ID: {}, 退款金额: {}, 原因: {}", id, refundAmount, refundReason);
-            Boolean result = paymentService.processRefund(id, refundAmount, refundReason);
-            
-            if (result) {
-                log.info("✅ 退款处理完成 - 支付ID: {}", id);
-                return Result.success("退款处理完成", result);
-            } else {
-                log.warn("⚠️ 退款处理失败 - 支付ID: {}", id);
-                return Result.error("退款处理失败，请检查支付状态");
-            }
-        } catch (Exception e) {
-            log.error("❌ 退款处理失败 - 支付ID: {}, 错误: {}", id, e.getMessage(), e);
-            return Result.error("退款处理失败: " + e.getMessage());
+        log.info("💰 处理退款请求 - 支付ID: {}, 退款金额: {}, 原因: {}", id, refundAmount, refundReason);
+        Boolean result = paymentService.processRefund(id, refundAmount, refundReason);
+
+        if (!result) {
+            log.warn("⚠️ 退款处理失败 - 支付ID: {}", id);
+            throw new BusinessException("退款处理失败，请检查支付状态");
         }
+        log.info("✅ 退款处理完成 - 支付ID: {}", id);
+        return Result.success("退款处理完成", result);
     }
 
     /**
@@ -284,16 +249,13 @@ public class PaymentController {
             @Parameter(description = "订单ID") @PathVariable Long orderId,
             Authentication authentication) {
 
-        try {
-            PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
-            if (payment == null) {
-                return Result.error("未找到该订单的支付记录");
-            }
-            return Result.success("查询成功", payment);
-        } catch (Exception e) {
-            log.error("根据订单ID查询支付信息失败，订单ID: {}", orderId, e);
-            return Result.error("查询失败: " + e.getMessage());
+        PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
+        if (payment == null) {
+            log.warn("⚠️ 未找到该订单的支付记录 - 订单ID: {}", orderId);
+            throw new ResourceNotFoundException("Payment for Order", String.valueOf(orderId));
         }
+        log.info("查询支付信息成功 - 订单ID: {}, 支付ID: {}", orderId, payment.getId());
+        return Result.success("查询成功", payment);
     }
 
     /**
@@ -315,20 +277,14 @@ public class PaymentController {
             @Parameter(description = "支付方式") @RequestParam String paymentMethod,
             Authentication authentication) {
 
-        try {
-            log.info("🛡️ 支付风控检查 - 用户ID: {}, 金额: {}, 方式: {}", userId, amount, paymentMethod);
-            Boolean riskPassed = paymentService.riskCheck(userId, amount, paymentMethod);
-            
-            if (riskPassed) {
-                log.info("✅ 风控检查通过 - 用户ID: {}, 金额: {}", userId, amount);
-                return Result.success("风控检查通过", true);
-            } else {
-                log.warn("⚠️ 风控检查不通过 - 用户ID: {}, 金额: {}", userId, amount);
-                return Result.success("风控检查不通过", false);
-            }
-        } catch (Exception e) {
-            log.error("❌ 支付风控检查失败 - 用户ID: {}", userId, e);
-            return Result.error("风控检查失败: " + e.getMessage());
+        log.info("🛡️ 支付风控检查 - 用户ID: {}, 金额: {}, 方式: {}", userId, amount, paymentMethod);
+        Boolean riskPassed = paymentService.riskCheck(userId, amount, paymentMethod);
+
+        if (riskPassed) {
+            log.info("✅ 风控检查通过 - 用户ID: {}, 金额: {}", userId, amount);
+        } else {
+            log.warn("⚠️ 风控检查不通过 - 用户ID: {}, 金额: {}", userId, amount);
         }
+        return Result.success(riskPassed ? "风控检查通过" : "风控检查不通过", riskPassed);
     }
 }

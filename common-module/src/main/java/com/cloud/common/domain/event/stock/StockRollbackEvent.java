@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 库存回滚事件
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-28
  */
@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockRollbackEvent {
-    
+
     private Long orderId;
     private String orderNo;
     private Long userId;
@@ -29,7 +29,7 @@ public class StockRollbackEvent {
     private LocalDateTime eventTime;
     private String traceId;
     private String operator;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

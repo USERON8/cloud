@@ -43,8 +43,8 @@ public class UserEventUtils {
     /**
      * 安全的用户事件发布 - 自动处理空值
      */
-    public static void safePublishEvent(UserEventStreamPublisher publisher, User user,
-                                        UserEventStreamPublisher.EventType eventType) {
+    public static void safePublishEvent(UserEventProducer publisher, User user,
+                                        UserEventProducer.EventType eventType) {
         Optional.ofNullable(publisher)
                 .filter(p -> user != null)
                 .ifPresentOrElse(
@@ -57,8 +57,8 @@ public class UserEventUtils {
     /**
      * 条件事件发布 - 仅在满足条件时发布
      */
-    public static void conditionalPublish(UserEventStreamPublisher publisher, User user,
-                                          UserEventStreamPublisher.EventType eventType,
+    public static void conditionalPublish(UserEventProducer publisher, User user,
+                                          UserEventProducer.EventType eventType,
                                           Predicate<User> condition) {
         Optional.ofNullable(user)
                 .filter(condition)
@@ -73,8 +73,8 @@ public class UserEventUtils {
     /**
      * 批量用户事件发布 - 带过滤条件
      */
-    public static void batchPublishWithFilter(UserEventStreamPublisher publisher, List<User> users,
-                                              UserEventStreamPublisher.EventType eventType,
+    public static void batchPublishWithFilter(UserEventProducer publisher, List<User> users,
+                                              UserEventProducer.EventType eventType,
                                               Predicate<User> filter) {
         Optional.ofNullable(users)
                 .map(List::stream)
@@ -87,7 +87,7 @@ public class UserEventUtils {
     /**
      * 智能用户更新事件发布 - 自动检测变更类型
      */
-    public static void smartPublishUpdate(UserEventStreamPublisher publisher,
+    public static void smartPublishUpdate(UserEventProducer publisher,
                                           User oldUser, User newUser) {
         if (publisher == null || oldUser == null || newUser == null) {
             log.warn("🚫 跳过智能更新事件发布 - 参数不完整");
@@ -96,7 +96,7 @@ public class UserEventUtils {
 
         // 检查状态变更
         if (STATUS_CHANGED.test(oldUser, newUser)) {
-            publisher.publishStatusChanged(newUser, oldUser.getStatus());
+            publisher.produceStatusChanged(newUser, oldUser.getStatus());
             return;
         }
 
@@ -108,13 +108,13 @@ public class UserEventUtils {
         }
 
         // 常规更新
-        publisher.publishUpdated(newUser);
+        publisher.produceUpdated(newUser);
     }
 
     /**
      * 用户登录事件发布 - 区分OAuth和常规登录
      */
-    public static void publishLoginEvent(UserEventStreamPublisher publisher, User user,
+    public static void publishLoginEvent(UserEventProducer publisher, User user,
                                          String loginType) {
         if (publisher == null || user == null) {
             log.warn("🚫 跳过登录事件发布 - 参数不完整");
@@ -123,14 +123,14 @@ public class UserEventUtils {
 
         switch (Optional.ofNullable(loginType).orElse("normal").toLowerCase()) {
             case "oauth", "github", "wechat", "qq" -> publisher.publishOAuthLogin(user, loginType);
-            default -> publisher.publishLogin(user);
+            default -> publisher.produceLogin(user);
         }
     }
 
     /**
      * 用户删除事件发布 - 区分软删除和硬删除
      */
-    public static void publishDeleteEvent(UserEventStreamPublisher publisher, User user,
+    public static void publishDeleteEvent(UserEventProducer publisher, User user,
                                           boolean isSoftDelete) {
         if (publisher == null || user == null) {
             log.warn("🚫 跳过删除事件发布 - 参数不完整");
@@ -139,7 +139,7 @@ public class UserEventUtils {
 
         String metadata = String.format("{\"删除类型\":\"%s\"}",
                 isSoftDelete ? "soft" : "hard");
-        publisher.publishEvent(user, UserEventStreamPublisher.EventType.DELETED, metadata);
+        publisher.publishEvent(user, UserEventProducer.EventType.DELETED, metadata);
     }
 
     /**
@@ -154,8 +154,8 @@ public class UserEventUtils {
     /**
      * 发布高优先级用户事件
      */
-    public static void publishHighPriorityEvent(UserEventStreamPublisher publisher, User user,
-                                                UserEventStreamPublisher.EventType eventType) {
+    public static void publishHighPriorityEvent(UserEventProducer publisher, User user,
+                                                UserEventProducer.EventType eventType) {
         if (isHighPriorityUser(user)) {
             String metadata = String.format("{\"priority\":\"high\",\"userType\":\"%s\"}",
                     user.getUserType());

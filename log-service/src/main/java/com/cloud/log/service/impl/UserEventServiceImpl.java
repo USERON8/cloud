@@ -63,8 +63,8 @@ public class UserEventServiceImpl implements UserEventService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "userEventExistsCache",
-               key = "#traceId != null ? 'trace:' + #traceId : 'user:' + #userId + ':' + #eventType",
-               condition = "#userId != null || #traceId != null")
+            key = "#traceId != null ? 'trace:' + #traceId : 'user:' + #userId + ':' + #eventType",
+            condition = "#userId != null || #traceId != null")
     public boolean existsByUserIdAndEventType(Long userId, String eventType, String traceId) {
         try {
             // 优先使用traceId检查，因为它更唯一

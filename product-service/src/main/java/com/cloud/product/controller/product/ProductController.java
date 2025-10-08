@@ -2,6 +2,8 @@ package com.cloud.product.controller.product;
 
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.vo.product.ProductVO;
+import com.cloud.common.exception.ResourceNotFoundException;
+import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.product.module.dto.ProductPageDTO;
@@ -29,7 +31,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/product")
 @RequiredArgsConstructor
 @Tag(name = "商品服务", description = "商品资源的RESTful API接口")
 public class ProductController {
@@ -86,9 +88,10 @@ public class ProductController {
 
         ProductVO product = productService.getProductById(id);
         if (product == null) {
-            return Result.error("商品不存在");
+            log.warn("商品不存在: id={}", id);
+            throw new ResourceNotFoundException("Product", id);
         }
-
+        log.info("查询商品成功: productId={}", id);
         return Result.success("查询成功", product);
     }
 
@@ -102,13 +105,9 @@ public class ProductController {
             @Parameter(description = "商品信息") @RequestBody
             @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO) {
 
-        try {
-            Long productId = productService.createProduct(requestDTO);
-            return Result.success("商品创建成功", productId);
-        } catch (Exception e) {
-            log.error("创建商品失败", e);
-            return Result.error("创建商品失败: " + e.getMessage());
-        }
+        Long productId = productService.createProduct(requestDTO);
+        log.info("商品创建成功: productId={}, name={}", productId, requestDTO.getName());
+        return Result.success("商品创建成功", productId);
     }
 
     /**
@@ -123,13 +122,9 @@ public class ProductController {
             @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO,
             Authentication authentication) {
 
-        try {
-            boolean result = productService.updateProduct(id, requestDTO);
-            return Result.success("商品更新成功", result);
-        } catch (Exception e) {
-            log.error("更新商品信息失败，商品ID: {}", id, e);
-            return Result.error("更新商品信息失败: " + e.getMessage());
-        }
+        boolean result = productService.updateProduct(id, requestDTO);
+        log.info("商品更新成功: productId={}", id);
+        return Result.success("商品更新成功", result);
     }
 
     /**
@@ -143,13 +138,9 @@ public class ProductController {
             @Parameter(description = "商品信息") @RequestBody ProductRequestDTO requestDTO,
             Authentication authentication) {
 
-        try {
-            boolean result = productService.updateProduct(id, requestDTO);
-            return Result.success("商品更新成功", result);
-        } catch (Exception e) {
-            log.error("部分更新商品信息失败，商品ID: {}", id, e);
-            return Result.error("更新商品信息失败: " + e.getMessage());
-        }
+        boolean result = productService.updateProduct(id, requestDTO);
+        log.info("部分更新商品成功: productId={}", id);
+        return Result.success("商品更新成功", result);
     }
 
     /**
@@ -162,13 +153,9 @@ public class ProductController {
             @Parameter(description = "商品ID") @PathVariable
             @Positive(message = "商品ID必须为正整数") Long id) {
 
-        try {
-            boolean result = productService.deleteProduct(id);
-            return Result.success("商品删除成功", result);
-        } catch (Exception e) {
-            log.error("删除商品失败，商品ID: {}", id, e);
-            return Result.error("删除商品失败: " + e.getMessage());
-        }
+        boolean result = productService.deleteProduct(id);
+        log.info("商品删除成功: productId={}", id);
+        return Result.success("商品删除成功", result);
     }
 
     /**
@@ -182,10 +169,12 @@ public class ProductController {
             @NotNull(message = "商品ID列表不能为空") List<Long> ids) {
 
         if (ids.size() > 100) {
-            return Result.error("ID列表数量不能超过100个");
+            log.warn("批量查询商品数量超限: size={}", ids.size());
+            throw new ValidationException("ids", ids, "ID列表数量不能超过100个");
         }
 
         List<ProductVO> products = productService.getProductsByIds(ids);
+        log.info("批量查询商品成功: count={}", products.size());
         return Result.success("查询成功", products);
     }
 
@@ -347,5 +336,91 @@ public class ProductController {
 
         Boolean success = productService.batchDisableProducts(ids);
         return Result.success(success);
+    }
+
+    /**
+     * 批量创建商品
+     */
+    @PostMapping("/batch")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:create')")
+    @Operation(summary = "批量创建商品", description = "批量创建多个商品")
+    public Result<Integer> batchCreateProducts(
+            @Parameter(description = "商品信息列表", required = true) @RequestBody
+            @Valid @NotEmpty(message = "商品信息列表不能为空") List<ProductRequestDTO> productList) {
+
+        if (productList.size() > 100) {
+            return Result.error("批量创建数量不能超过100个");
+        }
+
+        log.info("批量创建商品, count: {}", productList.size());
+
+        int successCount = 0;
+        for (ProductRequestDTO requestDTO : productList) {
+            try {
+                productService.createProduct(requestDTO);
+                successCount++;
+            } catch (Exception e) {
+                log.error("创建商品失败, name: {}", requestDTO.getName(), e);
+            }
+        }
+
+        log.info("批量创建商品完成, 成功: {}/{}", successCount, productList.size());
+        return Result.success(String.format("批量创建商品成功: %d/%d", successCount, productList.size()), successCount);
+    }
+
+    /**
+     * 批量更新商品
+     */
+    @PutMapping("/batch")
+    @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
+    @Operation(summary = "批量更新商品", description = "批量更新多个商品信息")
+    public Result<Integer> batchUpdateProducts(
+            @Parameter(description = "商品更新信息列表", required = true) @RequestBody
+            @Valid @NotEmpty(message = "商品信息列表不能为空") List<ProductUpdateRequest> productList) {
+
+        if (productList.size() > 100) {
+            return Result.error("批量更新数量不能超过100个");
+        }
+
+        log.info("批量更新商品, count: {}", productList.size());
+
+        int successCount = 0;
+        for (ProductUpdateRequest request : productList) {
+            try {
+                if (request.getId() != null && request.getRequestDTO() != null) {
+                    productService.updateProduct(request.getId(), request.getRequestDTO());
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("更新商品失败, id: {}", request.getId(), e);
+            }
+        }
+
+        log.info("批量更新商品完成, 成功: {}/{}", successCount, productList.size());
+        return Result.success(String.format("批量更新商品成功: %d/%d", successCount, productList.size()), successCount);
+    }
+
+    /**
+     * 商品批量更新请求
+     */
+    public static class ProductUpdateRequest {
+        private Long id;
+        private ProductRequestDTO requestDTO;
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public ProductRequestDTO getRequestDTO() {
+            return requestDTO;
+        }
+
+        public void setRequestDTO(ProductRequestDTO requestDTO) {
+            this.requestDTO = requestDTO;
+        }
     }
 }

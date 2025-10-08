@@ -13,16 +13,16 @@ services:
       MYSQL_PASSWORD: "nacos"
     volumes:
       - type: bind
-        source: D:\docker\mysql\data
+        source: ./docker-compose/mysql/data
         target: /var/lib/mysql
       - type: bind
-        source: D:\docker\mysql\conf
+        source: ./docker-compose/mysql/config
         target: /etc/mysql/conf.d
       - type: bind
-        source: D:\docker\mysql\logs
+        source: ./docker-compose/mysql/logs
         target: /var/log/mysql
       - type: bind
-        source: D:\docker\mysql\init
+        source: ./docker-compose/mysql/init
         target: /docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
@@ -42,13 +42,13 @@ services:
     command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
     volumes:
       - type: bind
-        source: D:\docker\redis\data
+        source: ./docker-compose/redis/data
         target: /data
       - type: bind
-        source: D:\docker\redis\conf
+        source: ./docker-compose/redis/conf
         target: /usr/local/etc/redis
       - type: bind
-        source: D:\docker\redis\logs
+        source: ./docker-compose/redis/logs
         target: /var/log/redis
     ports:
       - "6379:6379"
@@ -108,13 +108,13 @@ services:
       - "9848:9848"
     volumes:
       - type: bind
-        source: D:\docker\nacos\logs
+        source: ./docker-compose/nacos/logs
         target: /home/nacos/logs
       - type: bind
-        source: D:\docker\nacos\conf
+        source: ./docker-compose/nacos/conf
         target: /home/nacos/conf
       - type: bind
-        source: D:\docker\nacos\data
+        source: ./docker-compose/nacos/data
         target: /home/nacos/data
     depends_on:
       mysql:
@@ -133,26 +133,17 @@ services:
         ipv4_address: 172.28.0.40
     ports:
       - "39876:9876"  # NameServer 端口
-      - "38080:8080"  # Proxy端口1
-      - "38081:8081"  # Proxy端口2
     volumes:
       - type: bind
-        source: D:\docker\rocketmq\namesrv\logs
+        source: ./docker-compose/rocketmq/namesrv/logs
         target: /home/rocketmq/namesrv/logs
       - type: bind
-        source: D:\docker\rocketmq\namesrv\store
+        source: ./docker-compose/rocketmq/namesrv/store
         target: /home/rocketmq/namesrv/store
-      - type: bind
-        source: D:\docker\rocketmq\proxy\logs
-        target: /home/rocketmq/logs
-      - type: bind
-        source: D:\docker\rocketmq\proxy\conf
-        target: /home/rocketmq/proxy/conf
     environment:
       - NAMESRV_ADDR=172.28.0.40:9876
     command: sh mqnamesrv
-
-  # Broker 服务 (版本 5.3.2)
+  # Broker 服务 (版本 5.3.2) - 采用 Local 模式，与 Proxy 同进程部署
   broker:
     image: apache/rocketmq:5.3.2
     container_name: rmqbroker
@@ -165,43 +156,22 @@ services:
       - "30909:10909"  # Broker VIP 端口
       - "30911:10911"  # Broker 主端口
       - "30912:10912"  # Broker HA 端口
+      - "38080:8080"   # Proxy 端口1 (现在由 Broker 容器暴露)
+      - "38081:8081"   # Proxy 端口2 (现在由 Broker 容器暴露)
     volumes:
       - type: bind
-        source: D:\docker\rocketmq\broker\logs
-        target: /home/rocketmq/broker/logs
-      - type: bind
-        source: D:\docker\rocketmq\broker\store
-        target: /home/rocketmq/broker/store
-      - type: bind
-        source: D:\docker\rocketmq\broker\conf
-        target: /home/rocketmq/broker/conf
-    environment:
-      - NAMESRV_ADDR=172.28.0.40:9876
-    command: sh mqbroker -c /home/rocketmq/broker/conf/broker.conf
-
-  # RocketMQ Proxy 服务 (版本 5.3.2)
-  proxy:
-    image: apache/rocketmq:5.3.2
-    container_name: rmqproxy
-    networks:
-      service_net:
-        ipv4_address: 172.28.0.60
-    depends_on:
-      - broker
-    ports:
-      - "38080:8080"  # Proxy端口1
-      - "38081:8081"  # Proxy端口2
-    restart: on-failure
-    environment:
-      - NAMESRV_ADDR=172.28.0.40:9876
-    volumes:
-      - type: bind
-        source: D:\docker\rocketmq\proxy\logs
+        source: ./docker-compose/rocketmq/broker/logs
         target: /home/rocketmq/logs
       - type: bind
-        source: D:\docker\rocketmq\proxy\conf
-        target: /home/rocketmq/proxy/conf
-    command: sh mqproxy
+        source: ./docker-compose/rocketmq/broker/store
+        target: /home/rocketmq/store
+      - type: bind
+        source: ./docker-compose/rocketmq/broker/conf
+        target: /home/rocketmq/conf
+    environment:
+      - NAMESRV_ADDR=172.28.0.40:9876
+    # 关键：使用 --enable-proxy 参数启动，启用 Local 模式
+    command: sh mqbroker -n 172.28.0.40:9876 --enable-proxy -c /home/rocketmq/conf/broker.conf
 
   # RocketMQ 控制台
   rmq-console:
@@ -229,17 +199,16 @@ services:
       - "443:443"    # HTTPS 服务
     volumes:
       - type: bind
-        source: D:\docker\nginx\conf
+        source: ./docker-compose/nginx/config
         target: /etc/nginx
       - type: bind
-        source: D:\docker\nginx\logs
+        source: ./docker-compose/nginx/logs
         target: /var/log/nginx
       - type: bind
-        source: D:\docker\nginx\html
+        source: ./docker-compose/nginx/html
         target: /usr/share/nginx/html
     depends_on:
       - nacos
-      - proxy
   # MinIO 服务 (版本 RELEASE.2023-05-05T01-05-05Z)
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
@@ -256,7 +225,7 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - type: bind
-        source: D:\docker\minio\data
+        source: ./docker-compose/minio/data
         target: /home/minio/data
   #  Elasticsearch 服务 (版本 9.1.2)
   elasticsearch:
@@ -275,10 +244,10 @@ services:
       - http.cors.allow-origin=" *"
     volumes:
       - type: bind
-        source: D:\docker\es\data
+        source: ./docker-compose/elasticsearch/data
         target: /usr/share/elasticsearch/data
       - type: bind
-        source: D:\docker\es\plugins
+        source: ./docker-compose/elasticsearch/plugins
         target: /usr/share/elasticsearch/plugins
     ports:
       - "9200:9200"  # HTTP API 端口
@@ -323,11 +292,11 @@ services:
       - LOGGING_JSON_ENABLED=false
     volumes:
       - type: bind
-        source: D:\docker\kibana\config
+        source: ./docker-compose/kibana/config
         target: /usr/share/kibana/config
         # 挂载数据目录 (可选)
       - type: bind
-        source: D:\docker\kibana\data
+        source: ./docker-compose/kibana/data
         target: /usr/share/kibana/data
     healthcheck: # 增加健康检查
       test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]

@@ -70,7 +70,7 @@ public class ElasticsearchConfig {
         // 解析多个URI
         String[] uris = elasticsearchUris.split(",");
         HttpHost[] hosts = new HttpHost[uris.length];
-        
+
         for (int i = 0; i < uris.length; i++) {
             String uri = uris[i].trim();
             String[] parts = uri.replace("http://", "").replace("https://", "").split(":");
@@ -86,33 +86,33 @@ public class ElasticsearchConfig {
         // 配置认证（如果提供了用户名和密码）
         if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY, 
-                new UsernamePasswordCredentials(username, password));
-            
-            builder.setHttpClientConfigCallback(httpClientBuilder -> 
-                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-                    .setMaxConnTotal(maxConnections)
-                    .setMaxConnPerRoute(maxConnectionsPerRoute)
-                    // 搜索服务优化：启用连接保持活跃
-                    .setKeepAliveStrategy((response, context) -> Duration.ofMinutes(5).toMillis())
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(username, password));
+
+            builder.setHttpClientConfigCallback(httpClientBuilder ->
+                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+                            .setMaxConnTotal(maxConnections)
+                            .setMaxConnPerRoute(maxConnectionsPerRoute)
+                            // 搜索服务优化：启用连接保持活跃
+                            .setKeepAliveStrategy((response, context) -> Duration.ofMinutes(5).toMillis())
             );
         } else {
             // 仅配置连接池
-            builder.setHttpClientConfigCallback(httpClientBuilder -> 
-                httpClientBuilder
-                    .setMaxConnTotal(maxConnections)
-                    .setMaxConnPerRoute(maxConnectionsPerRoute)
-                    // 搜索服务优化：启用连接保持活跃
-                    .setKeepAliveStrategy((response, context) -> Duration.ofMinutes(5).toMillis())
+            builder.setHttpClientConfigCallback(httpClientBuilder ->
+                    httpClientBuilder
+                            .setMaxConnTotal(maxConnections)
+                            .setMaxConnPerRoute(maxConnectionsPerRoute)
+                            // 搜索服务优化：启用连接保持活跃
+                            .setKeepAliveStrategy((response, context) -> Duration.ofMinutes(5).toMillis())
             );
         }
 
         // 配置请求超时 - 搜索服务需要更长的超时时间
-        builder.setRequestConfigCallback(requestConfigBuilder -> 
-            requestConfigBuilder
-                .setConnectTimeout((int) connectionTimeout.toMillis())
-                .setSocketTimeout((int) socketTimeout.toMillis())
-                .setConnectionRequestTimeout(5000) // 从连接池获取连接的超时时间
+        builder.setRequestConfigCallback(requestConfigBuilder ->
+                requestConfigBuilder
+                        .setConnectTimeout((int) connectionTimeout.toMillis())
+                        .setSocketTimeout((int) socketTimeout.toMillis())
+                        .setConnectionRequestTimeout(5000) // 从连接池获取连接的超时时间
         );
 
         // 配置节点选择器 - 搜索服务优化
@@ -127,7 +127,7 @@ public class ElasticsearchConfig {
 
         // 创建API客户端
         ElasticsearchClient client = new ElasticsearchClient(transport);
-        
+
         log.info("搜索服务Elasticsearch客户端初始化完成");
         return client;
     }

@@ -11,12 +11,12 @@ import java.math.BigDecimal;
 
 /**
  * 支付操作日志事件
- * 
+ * <p>
  * 专门记录支付的关键操作日志，包括：
  * - 支付成功
  * - 支付退款成功
  * 其他支付状态变更暂不记录到日志系统
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */

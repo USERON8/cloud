@@ -26,7 +26,7 @@ public class LogHealthCheckController {
     private static final Logger logger = LoggerFactory.getLogger(LogHealthCheckController.class);
 
     private final MeterRegistry meterRegistry;
-    
+
     public LogHealthCheckController(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
     }
@@ -59,7 +59,7 @@ public class LogHealthCheckController {
         healthInfo.put("elasticsearch", "connected"); // 假设ES连接正常
         healthInfo.put("logCollectionEnabled", true);
         healthInfo.put("realtimeProcessingEnabled", true);
-        
+
         // 如果配置了Micrometer，添加指标信息
         if (meterRegistry != null) {
             healthInfo.put("metrics", "enabled");

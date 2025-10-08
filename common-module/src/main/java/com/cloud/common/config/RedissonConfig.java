@@ -27,15 +27,15 @@ public abstract class RedissonConfig {
     protected int maxIdle = 8;
     protected int minIdle = 0;
     protected String maxWaitStr = "-1";
-    
+
     private int getTimeout() {
         return parseIntValue(timeoutStr, 3000);
     }
-    
+
     private long getMaxWait() {
         return parseLongValue(maxWaitStr, -1L);
     }
-    
+
     private int parseIntValue(String value, int defaultValue) {
         if (value == null || value.trim().isEmpty()) return defaultValue;
         String cleanValue = value.replaceAll("ms$", "").replaceAll("s$", "");
@@ -46,7 +46,7 @@ public abstract class RedissonConfig {
             return defaultValue;
         }
     }
-    
+
     private long parseLongValue(String value, long defaultValue) {
         if (value == null || value.trim().isEmpty()) return defaultValue;
         String cleanValue = value.replaceAll("ms$", "").replaceAll("s$", "");
@@ -86,7 +86,7 @@ public abstract class RedissonConfig {
 
         // 不设置 codec，使用 Redisson 默认的 JsonJackson 编解码器
         // 注意：Redisson 使用高效的编解码器处理数据序列化
-        
+
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);
@@ -133,7 +133,7 @@ public abstract class RedissonConfig {
         }
 
         // 不设置 codec，使用 Redisson 默认的编解码器
-        
+
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);
@@ -181,7 +181,7 @@ public abstract class RedissonConfig {
         }
 
         // 不设置 codec，使用 Redisson 默认的编解码器
-        
+
         // 设置线程池配置
         config.setThreads(16);
         config.setNettyThreads(32);

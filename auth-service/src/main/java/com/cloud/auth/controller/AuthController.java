@@ -218,7 +218,7 @@ public class AuthController {
             return Result.success(response);
         } else {
             log.warn("用户注册并登录失败，用户名已存在或服务不可用, username: {}", registerRequestDTO.getUsername());
-            return Result.error(ResultCode.USER_ALREADY_EXISTS.getCode(), "用户名已存在或服务不可用");
+            throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
         }
     }
 
@@ -235,16 +235,16 @@ public class AuthController {
      */
     @DeleteMapping("/sessions")
     public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
-        // 从请求头中提取令牌（抛出MissingTokenException）
+        // 从请求头中提取令牌
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             log.warn("登出请求缺少有效的Authorization头");
-            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
+            throw new ValidationException("Authorization header", authorizationHeader, "请求头中缺少有效的访问令牌");
         }
 
         String accessToken = authorizationHeader.substring(7); // 移除"Bearer "前缀
 
-        // 调用令牌管理服务撤销令牌（抛出InvalidTokenException）
+        // 调用令牌管理服务撤销令牌
         boolean logoutSuccess = tokenManagementService.logout(accessToken, null);
 
         if (logoutSuccess) {
@@ -254,7 +254,7 @@ public class AuthController {
         } else {
             log.warn("用户登出失败, tokenPrefix: {}",
                     accessToken.substring(0, Math.min(accessToken.length(), 10)) + "...");
-            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
     }
 
@@ -300,15 +300,15 @@ public class AuthController {
     @GetMapping("/tokens/validate")
     @PreAuthorize("isAuthenticated()")
     public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
-        // 从请求头中提取令牌（抛出MissingTokenException）
+        // 从请求头中提取令牌
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "请求头中缺少有效的访问令牌");
+            throw new ValidationException("Authorization header", authorizationHeader, "请求头中缺少有效的访问令牌");
         }
 
         String accessToken = authorizationHeader.substring(7);
 
-        // 验证令牌有效性（抛出InvalidTokenException）
+        // 验证令牌有效性
         boolean isValid = tokenManagementService.isTokenValid(accessToken);
 
         if (isValid) {
@@ -322,7 +322,7 @@ public class AuthController {
             }
         }
 
-        return Result.error(ResultCode.UNAUTHORIZED.getCode(), "令牌无效或已过期");
+        throw new BusinessException(ResultCode.UNAUTHORIZED);
     }
 
     /**
@@ -348,25 +348,25 @@ public class AuthController {
             description = "使用刷新令牌获取新的访问令牌。推荐使用标准OAuth2.1端点 POST /oauth2/token")
     @PostMapping("/tokens/refresh")
     public Result<LoginResponseDTO> refreshToken(@RequestParam("refresh_token") String refreshToken) {
-        // 参数验证（抛出ValidationException）
+        // 参数验证
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
-            return Result.error(ResultCode.PARAM_ERROR.getCode(), "刷新令牌不能为空");
+            throw new ValidationException("refresh_token", refreshToken, "刷新令牌不能为空");
         }
 
         log.info("开始刷新令牌, refreshTokenPrefix: {}",
                 refreshToken.substring(0, Math.min(refreshToken.length(), 10)) + "...");
 
-        // 获取现有授权信息（抛出InvalidTokenException）
+        // 获取现有授权信息
         OAuth2Authorization existingAuth = tokenManagementService.findByToken(refreshToken);
         if (existingAuth == null) {
-            return Result.error(ResultCode.UNAUTHORIZED.getCode(), "刷新令牌无效");
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
 
-        // 获取用户信息重新生成令牌（抛出UserNotFoundException）
+        // 获取用户信息重新生成令牌
         String username = existingAuth.getPrincipalName();
         UserDTO user = userFeignClient.findByUsername(username);
         if (user == null) {
-            return Result.error(ResultCode.USER_NOT_FOUND.getCode(), "用户不存在");
+            throw new ResourceNotFoundException("User", username);
         }
 
         // 撤销旧的授权并生成新的（OAuth2.1令牌轮转特性）
@@ -378,6 +378,4 @@ public class AuthController {
         LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(newAuth, user);
         return Result.success(response);
     }
-
-
 }

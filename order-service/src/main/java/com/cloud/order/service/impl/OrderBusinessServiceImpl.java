@@ -7,17 +7,16 @@ import com.cloud.common.domain.event.payment.PaymentChangeEvent;
 import com.cloud.common.domain.event.stock.StockConfirmEvent;
 import com.cloud.common.domain.event.stock.StockReserveEvent;
 import com.cloud.common.domain.event.stock.StockRollbackEvent;
+import com.cloud.order.converter.OrderConverter;
+import com.cloud.order.converter.OrderConverter;
 import com.cloud.order.dto.OrderCreateRequestDTO;
 import com.cloud.order.enums.OrderStatusEnum;
 import com.cloud.order.exception.OrderBusinessException;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
 import com.cloud.order.service.OrderBusinessService;
-import com.cloud.order.service.OrderService;
 import com.cloud.order.service.OrderItemService;
-import com.cloud.order.converter.OrderConverter;
-import com.cloud.order.messaging.producer.OrderEventProducer;
-import com.cloud.common.messaging.BusinessLogProducer;
+import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -43,165 +42,137 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class OrderBusinessServiceImpl implements OrderBusinessService {
-    
+
     private final OrderService orderService;
     private final OrderItemService orderItemService;
     private final OrderConverter orderConverter;
-    private final OrderEventProducer orderEventProducer;
-    private final BusinessLogProducer businessLogProducer;
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#result", condition = "#result != null")
     public Long createOrder(OrderCreateRequestDTO createRequest, Long operatorId) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("🚀 开始创建订单 - 用户ID: {}, 商品数量: {}, 总金额: {}, 追踪ID: {}", 
-                    createRequest.getUserId(), createRequest.getOrderItems().size(), 
+            log.info("🚀 开始创建订单 - 用户ID: {}, 商品数量: {}, 总金额: {}, 追踪ID: {}",
+                    createRequest.getUserId(), createRequest.getOrderItems().size(),
                     createRequest.getTotalAmount(), traceId);
-            
+
             // 1. 数据验证
             validateCreateRequest(createRequest);
-            
+
             // 2. 创建订单主记录
             Order order = buildOrder(createRequest, operatorId, traceId);
             boolean orderSaved = orderService.save(order);
             if (!orderSaved) {
                 throw new OrderBusinessException("订单主记录保存失败");
             }
-            
+
             // 3. 创建订单项记录
             List<OrderItem> orderItems = buildOrderItems(order.getId(), createRequest, operatorId, traceId);
             boolean itemsSaved = orderItemService.saveBatch(orderItems);
             if (!itemsSaved) {
                 throw new OrderBusinessException(order.getId(), "订单项记录保存失败");
             }
-            
-            // 4. 发送库存预扣减消息
-            sendStockReserveMessage(order, orderItems, traceId);
-            
-            // 5. 发送支付记录创建消息  
-            sendPaymentRecordCreateMessage(order, traceId);
-            
-            // 6. 订单创建不记录到日志系统（根据需求精简）
-            
-            log.info("✅ 订单创建成功 - 订单ID: {}, 订单号: {}, 用户ID: {}, 追踪ID: {}", 
+
+            log.info("✅ 订单创建成功 - 订单ID: {}, 订单号: {}, 用户ID: {}, 追踪ID: {}",
                     order.getId(), order.getOrderNo(), order.getUserId(), traceId);
-            
+
             return order.getId();
-            
+
         } catch (OrderBusinessException e) {
-            log.error("❌ 订单创建失败 - 用户ID: {}, 错误: {}, 追踪ID: {}", 
+            log.error("❌ 订单创建失败 - 用户ID: {}, 错误: {}, 追踪ID: {}",
                     createRequest.getUserId(), e.getMessage(), traceId);
             throw e;
         } catch (Exception e) {
-            log.error("❌ 订单创建异常 - 用户ID: {}, 追踪ID: {}", 
+            log.error("❌ 订单创建异常 - 用户ID: {}, 追踪ID: {}",
                     createRequest.getUserId(), traceId, e);
             throw new OrderBusinessException("订单创建系统异常: " + e.getMessage(), e);
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#orderId")
     public boolean handlePaymentSuccess(Long orderId, Long paymentId, BigDecimal paymentAmount) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("💰 处理支付成功事件 - 订单ID: {}, 支付ID: {}, 支付金额: {}, 追踪ID: {}", 
+            log.info("💰 处理支付成功事件 - 订单ID: {}, 支付ID: {}, 支付金额: {}, 追踪ID: {}",
                     orderId, paymentId, paymentAmount, traceId);
-            
+
             // 1. 获取订单信息（带锁）
             Order order = getOrderForUpdate(orderId);
-            
+
             // 2. 检查订单状态
             if (!order.canPay()) {
-                throw new OrderBusinessException(orderId, 
+                throw new OrderBusinessException(orderId,
                         String.format("订单状态不允许支付，当前状态: %s", order.getStatusEnum().getName()));
             }
-            
+
             // 3. 更新订单状态和支付时间
             order.setStatusEnum(OrderStatusEnum.PAID);
             order.setPayTime(LocalDateTime.now());
             order.setPayAmount(paymentAmount);
             boolean updated = orderService.updateById(order);
-            
+
             if (!updated) {
                 throw new OrderBusinessException(orderId, "更新订单支付状态失败");
             }
-            
-            // 4. 发送库存确认扣减消息
-            sendStockConfirmMessage(order, traceId);
-            
-            // 5. 订单支付成功不记录到日志系统（根据需求精简）
-            
-            log.info("✅ 支付成功事件处理完成 - 订单ID: {}, 支付ID: {}, 追踪ID: {}", 
+
+            log.info("✅ 支付成功事件处理完成 - 订单ID: {}, 支付ID: {}, 追踪ID: {}",
                     orderId, paymentId, traceId);
-            
+
             return true;
-            
+
         } catch (OrderBusinessException e) {
-            log.error("❌ 支付成功事件处理失败 - 订单ID: {}, 支付ID: {}, 错误: {}, 追踪ID: {}", 
+            log.error("❌ 支付成功事件处理失败 - 订单ID: {}, 支付ID: {}, 错误: {}, 追踪ID: {}",
                     orderId, paymentId, e.getMessage(), traceId);
             return false;
         } catch (Exception e) {
-            log.error("❌ 支付成功事件处理异常 - 订单ID: {}, 支付ID: {}, 追踪ID: {}", 
+            log.error("❌ 支付成功事件处理异常 - 订单ID: {}, 支付ID: {}, 追踪ID: {}",
                     orderId, paymentId, traceId, e);
             return false;
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#orderId")
     public boolean cancelOrder(Long orderId, String cancelReason, Long operatorId) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("❌ 开始取消订单 - 订单ID: {}, 取消原因: {}, 操作人: {}, 追踪ID: {}", 
+            log.info("❌ 开始取消订单 - 订单ID: {}, 取消原因: {}, 操作人: {}, 追踪ID: {}",
                     orderId, cancelReason, operatorId, traceId);
-            
+
             // 1. 获取订单信息（带锁）
             Order order = getOrderForUpdate(orderId);
             OrderStatusEnum beforeStatus = order.getStatusEnum();
-            
+
             // 2. 检查订单状态
             if (!order.canCancel()) {
-                throw new OrderBusinessException(orderId, 
+                throw new OrderBusinessException(orderId,
                         String.format("订单状态不允许取消，当前状态: %s", beforeStatus.getName()));
             }
-            
+
             // 3. 更新订单状态和取消信息
             order.setStatusEnum(OrderStatusEnum.CANCELLED);
             order.setCancelTime(LocalDateTime.now());
             order.setCancelReason(cancelReason != null ? cancelReason : "用户主动取消");
             boolean updated = orderService.updateById(order);
-            
+
             if (!updated) {
                 throw new OrderBusinessException(orderId, "更新订单取消状态失败");
             }
-            
-            // 4. 发送库存回滚消息
-            sendStockRollbackMessage(order, traceId);
-            
-            // 5. 如果已支付，需要发起退款流程
-            if (beforeStatus == OrderStatusEnum.PAID) {
-                sendRefundMessage(order, traceId);
-            }
-            
-            // 6. 如果是退款类型的取消，记录退款日志
-            if (beforeStatus == OrderStatusEnum.PAID) {
-                sendOrderRefundLog(order, operatorId, traceId);
-            }
-            
-            log.info("✅ 订单取消成功 - 订单ID: {}, 状态变化: {} -> {}, 追踪ID: {}", 
+
+            log.info("✅ 订单取消成功 - 订单ID: {}, 状态变化: {} -> {}, 追踪ID: {}",
                     orderId, beforeStatus.getName(), OrderStatusEnum.CANCELLED.getName(), traceId);
-            
+
             return true;
-            
+
         } catch (OrderBusinessException e) {
-            log.error("❌ 订单取消失败 - 订单ID: {}, 错误: {}, 追踪ID: {}", 
+            log.error("❌ 订单取消失败 - 订单ID: {}, 错误: {}, 追踪ID: {}",
                     orderId, e.getMessage(), traceId);
             return false;
         } catch (Exception e) {
@@ -209,43 +180,43 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return false;
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#orderId")
     public boolean shipOrder(Long orderId, Long operatorId) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("📦 开始发货订单 - 订单ID: {}, 操作人: {}, 追踪ID: {}", 
+            log.info("📦 开始发货订单 - 订单ID: {}, 操作人: {}, 追踪ID: {}",
                     orderId, operatorId, traceId);
-            
+
             // 1. 获取订单信息（带锁）
             Order order = getOrderForUpdate(orderId);
-            
+
             // 2. 检查订单状态
             if (!order.canShip()) {
-                throw new OrderBusinessException(orderId, 
+                throw new OrderBusinessException(orderId,
                         String.format("订单状态不允许发货，当前状态: %s", order.getStatusEnum().getName()));
             }
-            
+
             // 3. 更新订单状态和发货时间
             order.setStatusEnum(OrderStatusEnum.SHIPPED);
             order.setShipTime(LocalDateTime.now());
             boolean updated = orderService.updateById(order);
-            
+
             if (!updated) {
                 throw new OrderBusinessException(orderId, "更新订单发货状态失败");
             }
-            
+
             // 4. 订单发货不记录到日志系统（根据需求精简）
-            
+
             log.info("✅ 订单发货成功 - 订单ID: {}, 追踪ID: {}", orderId, traceId);
-            
+
             return true;
-            
+
         } catch (OrderBusinessException e) {
-            log.error("❌ 订单发货失败 - 订单ID: {}, 错误: {}, 追踪ID: {}", 
+            log.error("❌ 订单发货失败 - 订单ID: {}, 错误: {}, 追踪ID: {}",
                     orderId, e.getMessage(), traceId);
             return false;
         } catch (Exception e) {
@@ -253,47 +224,41 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return false;
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#orderId")
     public boolean completeOrder(Long orderId, Long operatorId) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("✅ 开始完成订单 - 订单ID: {}, 操作人: {}, 追踪ID: {}", 
+            log.info("✅ 开始完成订单 - 订单ID: {}, 操作人: {}, 追踪ID: {}",
                     orderId, operatorId, traceId);
-            
+
             // 1. 获取订单信息（带锁）
             Order order = getOrderForUpdate(orderId);
-            
+
             // 2. 检查订单状态
             if (!order.canComplete()) {
-                throw new OrderBusinessException(orderId, 
+                throw new OrderBusinessException(orderId,
                         String.format("订单状态不允许完成，当前状态: %s", order.getStatusEnum().getName()));
             }
-            
+
             // 3. 更新订单状态和完成时间
             order.setStatusEnum(OrderStatusEnum.COMPLETED);
             order.setCompleteTime(LocalDateTime.now());
             boolean updated = orderService.updateById(order);
-            
+
             if (!updated) {
                 throw new OrderBusinessException(orderId, "更新订单完成状态失败");
             }
-            
-            // 4. 发送订单完成消息（可触发评价、积分等）
-            sendOrderCompletedMessage(order, traceId);
-            
-            // 5. 发送订单完成日志
-            sendOrderCompletedLog(order, operatorId, traceId);
-            
+
             log.info("✅ 订单完成成功 - 订单ID: {}, 追踪ID: {}", orderId, traceId);
-            
+
             return true;
-            
+
         } catch (OrderBusinessException e) {
-            log.error("❌ 订单完成失败 - 订单ID: {}, 错误: {}, 追踪ID: {}", 
+            log.error("❌ 订单完成失败 - 订单ID: {}, 错误: {}, 追踪ID: {}",
                     orderId, e.getMessage(), traceId);
             return false;
         } catch (Exception e) {
@@ -301,7 +266,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return false;
         }
     }
-    
+
     @Override
     @Cacheable(cacheNames = "order", key = "'status:' + #orderId", unless = "#result == null")
     public OrderStatusEnum checkOrderStatus(Long orderId) {
@@ -313,7 +278,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return null;
         }
     }
-    
+
     @Override
     @Cacheable(cacheNames = "order", key = "'detail:' + #orderId", unless = "#result == null")
     public OrderDTO getOrderWithLock(Long orderId) {
@@ -325,69 +290,64 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return null;
         }
     }
-    
+
     @Override
     public boolean handlePaymentFailed(Long orderId, Long paymentId, String failReason) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
-        
+
         try {
-            log.info("❌ 处理支付失败事件 - 订单ID: {}, 支付ID: {}, 失败原因: {}, 追踪ID: {}", 
+            log.info("❌ 处理支付失败事件 - 订单ID: {}, 支付ID: {}, 失败原因: {}, 追踪ID: {}",
                     orderId, paymentId, failReason, traceId);
-            
+
             // 1. 获取订单信息
             Order order = orderService.getById(orderId);
             if (order == null) {
                 log.warn("订单不存在 - 订单ID: {}, 追踪ID: {}", orderId, traceId);
                 return false;
             }
-            
-            // 2. 发送库存回滚消息（如果有预扣减）
-            sendStockRollbackMessage(order, traceId);
-            
-            // 3. 支付失败不记录到日志系统（根据需求精简）
-            
-            log.info("✅ 支付失败事件处理完成 - 订单ID: {}, 支付ID: {}, 追踪ID: {}", 
+
+            log.info("✅ 支付失败事件处理完成 - 订单ID: {}, 支付ID: {}, 追踪ID: {}",
                     orderId, paymentId, traceId);
-            
+
             return true;
-            
+
         } catch (Exception e) {
-            log.error("❌ 支付失败事件处理异常 - 订单ID: {}, 支付ID: {}, 追踪ID: {}", 
+            log.error("❌ 支付失败事件处理异常 - 订单ID: {}, 支付ID: {}, 追踪ID: {}",
                     orderId, paymentId, traceId, e);
             return false;
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "order", key = "#orderId")
     public boolean handleStockShortage(Long orderId, List<Long> productIds) {
         String traceId = UUID.randomUUID().toString().replace("-", "");
         String cancelReason = "库存不足，商品ID: " + productIds;
-        
+
         try {
-            log.info("📦 处理库存不足事件 - 订单ID: {}, 商品ID: {}, 追踪ID: {}", 
+            log.info("📦 处理库存不足事件 - 订单ID: {}, 商品ID: {}, 追踪ID: {}",
                     orderId, productIds, traceId);
-            
+
             // 自动取消订单
             boolean cancelled = cancelOrder(orderId, cancelReason, 0L); // 系统自动操作
-            
+
             if (cancelled) {
                 log.info("✅ 库存不足自动取消订单成功 - 订单ID: {}, 追踪ID: {}", orderId, traceId);
             } else {
                 log.error("❌ 库存不足自动取消订单失败 - 订单ID: {}, 追踪ID: {}", orderId, traceId);
             }
-            
+
             return cancelled;
-            
+
         } catch (Exception e) {
             log.error("❌ 库存不足事件处理异常 - 订单ID: {}, 追踪ID: {}", orderId, traceId, e);
             return false;
         }
     }
-    
+
     // ===================== 私有辅助方法 =====================
-    
+
     /**
      * 验证创建订单请求参数
      */
@@ -395,35 +355,35 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
         if (request.getUserId() == null || request.getUserId() <= 0) {
             throw new OrderBusinessException("用户ID无效");
         }
-        
+
         if (request.getOrderItems() == null || request.getOrderItems().isEmpty()) {
             throw new OrderBusinessException("订单商品列表不能为空");
         }
-        
+
         if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new OrderBusinessException("订单总金额必须大于0");
         }
-        
+
         if (request.getPayAmount() == null || request.getPayAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new OrderBusinessException("实付金额必须大于0");
         }
-        
+
         // 验证商品信息
         for (OrderCreateRequestDTO.OrderItemCreateDTO item : request.getOrderItems()) {
             if (item.getProductId() == null || item.getProductId() <= 0) {
                 throw new OrderBusinessException("商品ID无效");
             }
-            
+
             if (item.getQuantity() == null || item.getQuantity() <= 0) {
                 throw new OrderBusinessException("商品数量必须大于0");
             }
-            
+
             if (item.getPrice() == null || item.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new OrderBusinessException("商品价格必须大于0");
             }
         }
     }
-    
+
     /**
      * 构建订单主记录
      */
@@ -438,43 +398,43 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
         order.setRemark(request.getRemark());
         // order.setCreateBy(operatorId);
         // order.setUpdateBy(operatorId);
-        
-        log.debug("构建订单主记录 - 订单号: {}, 用户ID: {}, 追踪ID: {}", 
+
+        log.debug("构建订单主记录 - 订单号: {}, 用户ID: {}, 追踪ID: {}",
                 order.getOrderNo(), order.getUserId(), traceId);
-        
+
         return order;
     }
-    
+
     /**
      * 构建订单项列表
      */
-    private List<OrderItem> buildOrderItems(Long orderId, OrderCreateRequestDTO request, 
-                                          Long operatorId, String traceId) {
+    private List<OrderItem> buildOrderItems(Long orderId, OrderCreateRequestDTO request,
+                                            Long operatorId, String traceId) {
         List<OrderItem> orderItems = new ArrayList<>();
-        
+
         for (OrderCreateRequestDTO.OrderItemCreateDTO itemDto : request.getOrderItems()) {
             OrderItem item = new OrderItem();
             item.setOrderId(orderId);
             item.setProductId(itemDto.getProductId());
             item.setQuantity(itemDto.getQuantity());
             item.setPrice(itemDto.getPrice());
-            
+
             // 构建商品快照
             String snapshot = buildProductSnapshot(itemDto);
             item.setProductSnapshot(snapshot);
-            
+
             item.setCreateBy(operatorId);
             item.setUpdateBy(operatorId);
-            
+
             orderItems.add(item);
         }
-        
-        log.debug("构建订单项列表 - 订单ID: {}, 商品数量: {}, 追踪ID: {}", 
+
+        log.debug("构建订单项列表 - 订单ID: {}, 商品数量: {}, 追踪ID: {}",
                 orderId, orderItems.size(), traceId);
-        
+
         return orderItems;
     }
-    
+
     /**
      * 构建商品快照JSON
      */
@@ -490,7 +450,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
                 LocalDateTime.now()
         );
     }
-    
+
     /**
      * 获取订单信息（带锁）
      */
@@ -501,153 +461,8 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
         }
         return order;
     }
-    
-    // ===================== 消息发送方法 =====================
-    
-    private void sendStockReserveMessage(Order order, List<OrderItem> orderItems, String traceId) {
-        try {
-            // 构建库存预扣减事件
-            StockReserveEvent event =
-                    StockReserveEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo(order.getOrderNo())
-                    .userId(order.getUserId())
-                    .reserveItems(buildStockReserveItems(orderItems))
-                    .eventTime(java.time.LocalDateTime.now())
-                    .traceId(traceId)
-                    .operator("ORDER_SERVICE")
-                    .build();
-            
-            // 发送消息到库存服务
-            orderEventProducer.sendStockReserveEvent(event);
-            
-            log.info("✅ 库存预扣减消息发送成功 - 订单ID: {}, 商品数量: {}, 追踪ID: {}", 
-                    order.getId(), orderItems.size(), traceId);
-        } catch (Exception e) {
-            log.error("❌ 发送库存预扣减消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
-            // 库存消息发送失败不应该影响订单创庺，记录日志即可
-        }
-    }
-    
-    private void sendPaymentRecordCreateMessage(Order order, String traceId) {
-        try {
-            // 构建订单创庺事件
-            OrderCreatedEvent event =
-                    OrderCreatedEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo(order.getOrderNo())
-                    .userId(order.getUserId())
-                    .userName("User_" + order.getUserId()) // 简化处理
-                    .totalAmount(order.getTotalAmount())
-                    .payAmount(order.getPayAmount())
-                    // .orderStatus(order.getStatus()) // 临时注释掉
-                    .addressId(order.getAddressId())
-                    .createdTime(java.time.LocalDateTime.now())
-                    .operator("用户")
-                    .traceId(traceId)
-                    .orderItems(java.util.Collections.emptyList()) // 简化处理
-                    .build();
-            
-            // 发送消息到支付服务
-            orderEventProducer.sendOrderCreatedEvent(event);
-            
-            log.info("✅ 支付记录创庺消息发送成功 - 订单ID: {}, 金额: {}, 追踪ID: {}", 
-                    order.getId(), order.getPayAmount(), traceId);
-        } catch (Exception e) {
-            log.error("❌ 发送支付记录创庺消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
-        }
-    }
-    
-    private void sendStockConfirmMessage(Order order, String traceId) {
-        try {
-            // 获取订单项
-            List<OrderItem> orderItems = orderItemService.lambdaQuery()
-                    .eq(OrderItem::getOrderId, order.getId())
-                    .list();
-            
-            // 构建库存确认扣减事件
-            StockConfirmEvent event =
-                    StockConfirmEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo(order.getOrderNo())
-                    .userId(order.getUserId())
-                    .paymentId(System.currentTimeMillis()) // 简化处理
-                    .confirmItems(buildStockConfirmItems(orderItems))
-                    .eventTime(java.time.LocalDateTime.now())
-                    .traceId(traceId)
-                    .operator("ORDER_SERVICE")
-                    .build();
-            
-            // 发送消息到库存服务
-            orderEventProducer.sendStockConfirmEvent(event);
-            
-            log.info("✅ 库存确认扣减消息发送成功 - 订单ID: {}, 商品数量: {}, 追踪ID: {}", 
-                    order.getId(), orderItems.size(), traceId);
-        } catch (Exception e) {
-            log.error("❌ 发送库存确认扣减消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
-        }
-    }
-    
-    private void sendStockRollbackMessage(Order order, String traceId) {
-        try {
-            // 获取订单项
-            List<OrderItem> orderItems = orderItemService.lambdaQuery()
-                    .eq(OrderItem::getOrderId, order.getId())
-                    .list();
-            
-            // 构建库存回滚事件
-            StockRollbackEvent event =
-                    StockRollbackEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo(order.getOrderNo())
-                    .userId(order.getUserId())
-                    .rollbackReason(order.getCancelReason() != null ? order.getCancelReason() : "订单取消")
-                    .rollbackType("CANCEL")
-                    .rollbackItems(buildStockRollbackItems(orderItems))
-                    .eventTime(java.time.LocalDateTime.now())
-                    .traceId(traceId)
-                    .operator("ORDER_SERVICE")
-                    .build();
-            
-            // 发送消息到库存服务
-            orderEventProducer.sendStockRollbackEvent(event);
-            
-            log.info("✅ 库存回滚消息发送成功 - 订单ID: {}, 商品数量: {}, 追踪ID: {}", 
-                    order.getId(), orderItems.size(), traceId);
-        } catch (Exception e) {
-            log.error("❌ 发送库存回滚消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
-        }
-    }
-    
-    private void sendRefundMessage(Order order, String traceId) {
-        try {
-            // 构建退款事件 - 发送到支付服务
-            PaymentChangeEvent event =
-                    PaymentChangeEvent.builder()
-                    .paymentId(System.currentTimeMillis()) // 简化处理
-                    .orderId(order.getId())
-                    .userId(order.getUserId())
-                    .amount(order.getPayAmount())
-                    .paymentMethod("REFUND")
-                    .status("REFUND_PENDING")
-                    .beforeStatus("PAID")
-                    .afterStatus("REFUND_PENDING")
-                    .changeTime(java.time.LocalDateTime.now())
-                    .operator("系统自动")
-                    .remark("订单取消退款，订单号: " + order.getOrderNo())
-                    .traceId(traceId)
-                    .build();
-            
-            // 发送退款消息到支付服务
-            // 使用PaymentEventProducer发送退款申请事件
-            PaymentChangeEvent refundEvent = PaymentChangeEvent.builder()
-                    .paymentId(System.currentTimeMillis()) // 简化处理，实际应该查询支付记录
-                    .orderId(order.getId())
-                    .userId(order.getUserId())
-                    .amount(order.getPayAmount())
-                    .paymentMethod("REFUND")
-                    .status("REFUND_PENDING")
-                    .beforeStatus("PAID")
+
+    // ===================== 私有辅助方法 =====================
                     .afterStatus("REFUND_PENDING")
                     .changeTime(java.time.LocalDateTime.now())
                     .operator("系统自动")
@@ -659,45 +474,45 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             // 或者发送消息到支付服务处理退款
             log.info("退款事件构建完成，需要发送到支付服务处理 - 订单ID: {}, 退款金额: {}",
                     order.getId(), order.getPayAmount());
-            
-            log.info("✅ 退款消息发送成功 - 订单ID: {}, 退款金额: {}, 追踪ID: {}", 
+
+            log.info("✅ 退款消息发送成功 - 订单ID: {}, 退款金额: {}, 追踪ID: {}",
                     order.getId(), order.getPayAmount(), traceId);
         } catch (Exception e) {
             log.error("❌ 发送退款消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
         }
     }
-    
+
     private void sendOrderCompletedMessage(Order order, String traceId) {
         try {
             // 构庺订单完成事件
             OrderCompletedEvent event =
                     OrderCompletedEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo(order.getOrderNo())
-                    .userId(order.getUserId())
-                    .userName("User_" + order.getUserId())
-                    .totalAmount(order.getTotalAmount())
-                    .payAmount(order.getPayAmount())
-                    // .orderStatus(order.getStatus()) // 临时注释掉
-                    .beforeStatus(2) // 之前是已发货状态
-                    .afterStatus(3)  // 现在是已完成状态
-                    .completedTime(order.getCompleteTime())
-                    .operator("用户")
-                    .traceId(traceId)
-                    .build();
-            
+                            .orderId(order.getId())
+                            .orderNo(order.getOrderNo())
+                            .userId(order.getUserId())
+                            .userName("User_" + order.getUserId())
+                            .totalAmount(order.getTotalAmount())
+                            .payAmount(order.getPayAmount())
+                            // .orderStatus(order.getStatus()) // 临时注释掉
+                            .beforeStatus(2) // 之前是已发货状态
+                            .afterStatus(3)  // 现在是已完成状态
+                            .completedTime(order.getCompleteTime())
+                            .operator("用户")
+                            .traceId(traceId)
+                            .build();
+
             // 发送订单完成事件
             orderEventProducer.sendOrderCompletedEvent(event);
-            
-            log.info("✅ 订单完成消息发送成功 - 订单ID: {}, 完成时间: {}, 追踪ID: {}", 
+
+            log.info("✅ 订单完成消息发送成功 - 订单ID: {}, 完成时间: {}, 追踪ID: {}",
                     order.getId(), order.getCompleteTime(), traceId);
         } catch (Exception e) {
             log.error("❌ 发送订单完成消息失败 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId, e);
         }
     }
-    
+
     // ===================== 辅助方法 =====================
-    
+
     private List<StockReserveEvent.StockReserveItem> buildStockReserveItems(List<OrderItem> orderItems) {
         return orderItems.stream()
                 .map(item -> StockReserveEvent.StockReserveItem.builder()
@@ -709,7 +524,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
                         .build())
                 .toList();
     }
-    
+
     private List<StockConfirmEvent.StockConfirmItem> buildStockConfirmItems(List<OrderItem> orderItems) {
         return orderItems.stream()
                 .map(item -> StockConfirmEvent.StockConfirmItem.builder()
@@ -721,7 +536,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
                         .build())
                 .toList();
     }
-    
+
     private List<StockRollbackEvent.StockRollbackItem> buildStockRollbackItems(List<OrderItem> orderItems) {
         return orderItems.stream()
                 .map(item -> StockRollbackEvent.StockRollbackItem.builder()
@@ -733,7 +548,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
                         .build())
                 .toList();
     }
-    
+
     private String 获取商品名称(String productSnapshot) {
         try {
             // 简化处理，从 JSON 中解析商品名称
@@ -749,7 +564,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return "商品";
         }
     }
-    
+
     private String 获取商品规格(String productSnapshot) {
         try {
             // 简化处理，从 JSON 中解析商品规格
@@ -765,9 +580,9 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return "标准规格";
         }
     }
-    
+
     // ===================== 业务日志发送方法（仅记录关键操作）=====================
-    
+
     /**
      * 发送订单完成日志
      * 记录订单完成的关键信息到日志系统
@@ -793,7 +608,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             log.warn("发送订单完成日志失败 - 订单ID: {}, 追踪ID: {}, 错误: {}", order.getId(), traceId, e.getMessage());
         }
     }
-    
+
     /**
      * 发送订单退款日志
      * 记录订单退款的关键信息到日志系统
@@ -818,7 +633,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             log.warn("发送订单退款日志失败 - 订单ID: {}, 追踪ID: {}, 错误: {}", order.getId(), traceId, e.getMessage());
         }
     }
-    
+
     /**
      * 计算订单商品总数量
      */
@@ -835,7 +650,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
             return 0;
         }
     }
-    
+
     /**
      * 获取店铺名称
      */
@@ -844,7 +659,7 @@ public class OrderBusinessServiceImpl implements OrderBusinessService {
         // 这里可以调用shop服务获取店铺名称，暂时简化处理
         return "Shop_" + shopId;
     }
-    
+
     /**
      * 获取支付方式
      */

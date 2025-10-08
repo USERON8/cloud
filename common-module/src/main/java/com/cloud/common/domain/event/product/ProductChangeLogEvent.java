@@ -9,14 +9,14 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * 商品变更日志事件
- * 
+ * <p>
  * 记录商品相关的操作日志，包括：
  * - 商品创建、更新、删除
  * - 商品上架、下架
  * - 商品价格变更
  * - 商品库存变更
  * - 商品分类调整等
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */

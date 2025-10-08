@@ -1,5 +1,8 @@
 package com.cloud.log.service.impl;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.cloud.common.domain.event.base.BaseBusinessLogEvent;
 import com.cloud.common.domain.event.order.OrderOperationLogEvent;
 import com.cloud.common.domain.event.payment.PaymentOperationLogEvent;
@@ -9,24 +12,19 @@ import com.cloud.common.domain.event.user.UserChangeLogEvent;
 import com.cloud.log.service.UnifiedBusinessLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 统一业务日志服务实现
- * 
+ * <p>
  * 基于Elasticsearch存储各种类型的业务日志，
- * 使用Redis进行幂等性检查和缓存管理
- * 
+ * 使用内存缓存进行幂等性检查（log-service不使用Redis）
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */
@@ -35,23 +33,27 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UnifiedBusinessLogServiceImpl implements UnifiedBusinessLogService {
 
-    private final ElasticsearchClient elasticsearchClient;
-    private final RedisTemplate<String, Object> redisTemplate;
-    
-    private static final String PROCESSED_LOG_PREFIX = "processed_log:";
     private static final String USER_LOG_INDEX = "business-log-user";
     private static final String PRODUCT_LOG_INDEX = "business-log-product";
     private static final String SHOP_LOG_INDEX = "business-log-shop";
     private static final String ORDER_LOG_INDEX = "business-log-order";
     private static final String PAYMENT_LOG_INDEX = "business-log-payment";
     private static final String GENERIC_LOG_INDEX = "business-log-generic";
+    private final ElasticsearchClient elasticsearchClient;
+    // log-service不使用Redis，使用简单的内存缓存进行幂等检查
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> processedLogCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
     public boolean isLogProcessed(String logId) {
         try {
-            String key = PROCESSED_LOG_PREFIX + logId;
-            Boolean exists = redisTemplate.hasKey(key);
-            return Boolean.TRUE.equals(exists);
+            // 检查内存缓存（简单的时间戳缓存，7天有效）
+            Long processedTime = processedLogCache.get(logId);
+            if (processedTime != null) {
+                // 检查是否超过7天
+                long expireTime = 7 * 24 * 60 * 60 * 1000L; // 7天毫秒
+                return (System.currentTimeMillis() - processedTime) < expireTime;
+            }
+            return false;
         } catch (Exception e) {
             log.warn("检查日志处理状态失败 - 日志ID: {}, 错误: {}", logId, e.getMessage());
             return false; // 发生异常时假设未处理，允许重新处理
@@ -61,9 +63,13 @@ public class UnifiedBusinessLogServiceImpl implements UnifiedBusinessLogService 
     @Override
     public void markLogProcessed(String logId) {
         try {
-            String key = PROCESSED_LOG_PREFIX + logId;
-            // 设置过期时间为7天，避免Redis内存无限增长
-            redisTemplate.opsForValue().set(key, "1", 7, TimeUnit.DAYS);
+            // 标记为已处理（使用当前时间戳）
+            processedLogCache.put(logId, System.currentTimeMillis());
+            
+            // 定期清理过期的缓存（简单的内存管理）
+            if (processedLogCache.size() > 10000) { // 超过1万条记录时清理
+                cleanExpiredCache();
+            }
         } catch (Exception e) {
             log.warn("标记日志已处理失败 - 日志ID: {}, 错误: {}", logId, e.getMessage());
         }
@@ -117,11 +123,11 @@ public class UnifiedBusinessLogServiceImpl implements UnifiedBusinessLogService 
             IndexResponse response = elasticsearchClient.index(request);
 
             boolean success = response.result().name().equals("CREATED") ||
-                             response.result().name().equals("UPDATED");
+                    response.result().name().equals("UPDATED");
 
             if (success) {
                 log.debug("业务日志保存到ES成功 - 索引: {}, 日志ID: {}, 类型: {}",
-                         fullIndexName, event.getLogId(), event.getLogType());
+                        fullIndexName, event.getLogId(), event.getLogType());
             } else {
                 log.warn("业务日志保存到ES失败 - 索引: {}, 日志ID: {}, 响应: {}",
                         fullIndexName, event.getLogId(), response.result());
@@ -129,8 +135,8 @@ public class UnifiedBusinessLogServiceImpl implements UnifiedBusinessLogService 
 
             return success;
         } catch (Exception e) {
-            log.error("保存业务日志到ES异常 - 索引: {}, 日志ID: {}, 错误: {}", 
-                     indexName, event.getLogId(), e.getMessage(), e);
+            log.error("保存业务日志到ES异常 - 索引: {}, 日志ID: {}, 错误: {}",
+                    indexName, event.getLogId(), e.getMessage(), e);
             return false;
         }
     }
@@ -258,5 +264,22 @@ public class UnifiedBusinessLogServiceImpl implements UnifiedBusinessLogService 
         document.put("logType", event.getLogType());
         document.put("indexTime", LocalDateTime.now());
         return document;
+    }
+
+    /**
+     * 清理过期的缓存记录
+     */
+    private void cleanExpiredCache() {
+        try {
+            long expireTime = 7 * 24 * 60 * 60 * 1000L; // 7天毫秒
+            long currentTime = System.currentTimeMillis();
+            
+            processedLogCache.entrySet().removeIf(entry -> 
+                (currentTime - entry.getValue()) > expireTime);
+                
+            log.info("清理过期缓存完成，当前缓存大小: {}", processedLogCache.size());
+        } catch (Exception e) {
+            log.warn("清理过期缓存失败: {}", e.getMessage());
+        }
     }
 }

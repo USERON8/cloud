@@ -1,7 +1,9 @@
 package com.cloud.product;
 
 
+import com.cloud.common.config.base.BaseHealthCheckController;
 import lombok.extern.slf4j.Slf4j;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -10,10 +12,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
-import org.mybatis.spring.annotation.MapperScan;
-import com.cloud.common.config.RedissonConfig;
-import com.cloud.common.config.base.BaseHealthCheckController;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
@@ -24,23 +22,23 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 @EnableTransactionManagement(proxyTargetClass = true)
 @ComponentScan(
-    basePackages = {"com.cloud.product", "com.cloud.common"},
-    excludeFilters = {
-        @ComponentScan.Filter(
-            type = FilterType.ASSIGNABLE_TYPE,
-            classes = {
-                BaseHealthCheckController.class,
-                com.cloud.common.cache.listener.CacheMessageListener.class,
-                com.cloud.common.cache.metrics.CacheMetricsCollector.class,
-                com.cloud.common.monitoring.PerformanceMonitor.class,
-                com.cloud.common.security.RateLimitManager.class
-            }
-        ),
-        @ComponentScan.Filter(
-            type = FilterType.REGEX,
-            pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
-        )
-    }
+        basePackages = {"com.cloud.product", "com.cloud.common"},
+        excludeFilters = {
+                @ComponentScan.Filter(
+                        type = FilterType.ASSIGNABLE_TYPE,
+                        classes = {
+                                BaseHealthCheckController.class,
+                                com.cloud.common.cache.listener.CacheMessageListener.class,
+                                com.cloud.common.cache.metrics.CacheMetricsCollector.class,
+                                com.cloud.common.monitoring.PerformanceMonitor.class,
+                                com.cloud.common.security.RateLimitManager.class
+                        }
+                ),
+                @ComponentScan.Filter(
+                        type = FilterType.REGEX,
+                        pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
+                )
+        }
 )
 @MapperScan("com.cloud.product.mapper")
 public class ProductApplication {

@@ -49,6 +49,7 @@
         <minio.version>8.5.17</minio.version>
         <redis.version>3.5.3</redis.version>
         <caffeine.version>3.2.2</caffeine.version>
+        <lombok.version>1.18.30</lombok.version>
 
 
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
@@ -62,10 +63,16 @@
         <!-- 日志版本 -->
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.13</logback.version>
-        
+
         <!-- 工具类版本 -->
         <redisson.version>3.51.0</redisson.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <objenesis.version>3.3</objenesis.version>
+        <jackson.version>2.15.2</jackson.version>
+        <jakarta-validation.version>3.0.2</jakarta-validation.version>
+        <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
+        <kotlin.version>1.9.24</kotlin.version>
+        <alipay-sdk.version>4.40.452.ALL</alipay-sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -137,7 +144,7 @@
                 <artifactId>mybatis-plus-jsqlparser</artifactId>
                 <version>${mybatisplus.version}</version>
             </dependency>
-            
+
             <!-- 工具类版本管理 -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
@@ -164,14 +171,14 @@
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
             </dependency>
-            
+
             <!-- 文件处理版本管理 -->
             <dependency>
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
             </dependency>
-            
+
             <!-- API文档版本管理 -->
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
@@ -183,14 +190,19 @@
                 <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
                 <version>${knife4j.version}</version>
             </dependency>
-            
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+
             <!-- Spring Cloud 版本管理 -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-starter-openfeign</artifactId>
                 <version>${openfeign.version}</version>
             </dependency>
-            
+
             <!-- 项目内部模块版本管理 -->
             <dependency>
                 <groupId>com.cloud</groupId>
@@ -202,8 +214,51 @@
                 <artifactId>api-module</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <!-- 其他常用依赖版本管理 -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta-validation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta-servlet.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.objenesis</groupId>
+                <artifactId>objenesis</artifactId>
+                <version>${objenesis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sdk</groupId>
+                <artifactId>alipay-sdk-java</artifactId>
+                <version>${alipay-sdk.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -225,7 +280,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.10.3</version>
+                    <version>${graalvm-native-maven-plugin.version}</version>
                     <extensions>true</extensions>
                     <configuration>
                         <fallback>false</fallback>
@@ -235,7 +290,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.3</version>
+                    <version>3.5.4</version>
                     <configuration>
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
@@ -244,7 +299,14 @@
                             <logDir>${project.build.directory}/logs</logDir>
                             <!-- 配置测试环境 -->
                             <spring.profiles.active>test</spring.profiles.active>
+                            <!-- JUnit 5 测试跟踪配置 -->
+                            <junit.platform.listeners.uid.tracking.enabled>true
+                            </junit.platform.listeners.uid.tracking.enabled>
+                            <junit.platform.listeners.uid.tracking.output.dir>${project.build.directory}/test-ids
+                            </junit.platform.listeners.uid.tracking.output.dir>
                         </systemPropertyVariables>
+                        <!-- 禁用 Surefire 自动生成的 systemProperties -->
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     </configuration>
                 </plugin>
             </plugins>

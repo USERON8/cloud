@@ -1,5 +1,7 @@
 package com.cloud.log.controller;
 
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
@@ -61,18 +63,13 @@ public class LogRestController {
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime,
             @Parameter(description = "关键词") @RequestParam(required = false) String keyword) {
 
-        try {
-            log.debug("获取日志列表 - 页码: {}, 大小: {}, 级别: {}", page, size, level);
-            PageResult<Object> result = logService.getLogs(page, size, level, service, startTime, endTime, keyword);
+        log.debug("获取日志列表 - 页码: {}, 大小: {}, 级别: {}", page, size, level);
+        PageResult<Object> result = logService.getLogs(page, size, level, service, startTime, endTime, keyword);
 
-            // 记录日志查询操作
-            recordLogOperation("GET_LOGS", result.getTotal());
+        // 记录日志查询操作
+        recordLogOperation("GET_LOGS", result.getTotal());
 
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取日志列表失败", e);
-            return Result.error("获取日志列表失败: " + e.getMessage());
-        }
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -89,14 +86,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取应用日志 - 应用: {}, 级别: {}", appName, level);
-            PageResult<Object> result = logService.getApplicationLogs(page, size, appName, level, startTime, endTime);
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取应用日志失败", e);
-            return Result.error("获取应用日志失败: " + e.getMessage());
-        }
+        log.debug("获取应用日志 - 应用: {}, 级别: {}", appName, level);
+        PageResult<Object> result = logService.getApplicationLogs(page, size, appName, level, startTime, endTime);
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -113,14 +105,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取操作日志 - 用户ID: {}, 操作类型: {}", userId, operationType);
-            PageResult<Object> result = logService.getOperationLogs(page, size, userId, operationType, startTime, endTime);
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取操作日志失败", e);
-            return Result.error("获取操作日志失败: " + e.getMessage());
-        }
+        log.debug("获取操作日志 - 用户ID: {}, 操作类型: {}", userId, operationType);
+        PageResult<Object> result = logService.getOperationLogs(page, size, userId, operationType, startTime, endTime);
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -137,14 +124,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取错误日志 - 服务: {}, 错误类型: {}", service, errorType);
-            PageResult<Object> result = logService.getErrorLogs(page, size, service, errorType, startTime, endTime);
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取错误日志失败", e);
-            return Result.error("获取错误日志失败: " + e.getMessage());
-        }
+        log.debug("获取错误日志 - 服务: {}, 错误类型: {}", service, errorType);
+        PageResult<Object> result = logService.getErrorLogs(page, size, service, errorType, startTime, endTime);
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -163,14 +145,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取访问日志 - 用户ID: {}, 路径: {}", userId, path);
-            PageResult<Object> result = logService.getAccessLogs(page, size, userId, path, method, statusCode, startTime, endTime);
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取访问日志失败", e);
-            return Result.error("获取访问日志失败: " + e.getMessage());
-        }
+        log.debug("获取访问日志 - 用户ID: {}, 路径: {}", userId, path);
+        PageResult<Object> result = logService.getAccessLogs(page, size, userId, path, method, statusCode, startTime, endTime);
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -188,14 +165,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取审计日志 - 用户ID: {}, 资源类型: {}, 操作: {}", userId, resourceType, action);
-            PageResult<Object> result = logService.getAuditLogs(page, size, userId, resourceType, action, startTime, endTime);
-            return Result.success("查询成功", result);
-        } catch (Exception e) {
-            log.error("获取审计日志失败", e);
-            return Result.error("获取审计日志失败: " + e.getMessage());
-        }
+        log.debug("获取审计日志 - 用户ID: {}, 资源类型: {}, 操作: {}", userId, resourceType, action);
+        PageResult<Object> result = logService.getAuditLogs(page, size, userId, resourceType, action, startTime, endTime);
+        return Result.success("查询成功", result);
     }
 
     /**
@@ -209,14 +181,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("获取日志统计 - 维度: {}", dimension);
-            Map<String, Object> statistics = logService.getLogStatistics(dimension, startTime, endTime);
-            return Result.success("查询成功", statistics);
-        } catch (Exception e) {
-            log.error("获取日志统计失败", e);
-            return Result.error("获取日志统计失败: " + e.getMessage());
-        }
+        log.debug("获取日志统计 - 维度: {}", dimension);
+        Map<String, Object> statistics = logService.getLogStatistics(dimension, startTime, endTime);
+        return Result.success("查询成功", statistics);
     }
 
     /**
@@ -228,14 +195,9 @@ public class LogRestController {
     public Result<String> exportLogs(
             @Parameter(description = "导出条件") @RequestBody Map<String, Object> exportRequest) {
 
-        try {
-            log.info("导出日志 - 条件: {}", exportRequest);
-            String exportId = logService.exportLogs(exportRequest);
-            return Result.success("导出任务已创建", exportId);
-        } catch (Exception e) {
-            log.error("导出日志失败", e);
-            return Result.error("导出日志失败: " + e.getMessage());
-        }
+        log.info("导出日志 - 条件: {}", exportRequest);
+        String exportId = logService.exportLogs(exportRequest);
+        return Result.success("导出任务已创庺", exportId);
     }
 
     /**
@@ -248,18 +210,17 @@ public class LogRestController {
             @Parameter(description = "保留天数") @RequestParam(defaultValue = "30") Integer retentionDays,
             @Parameter(description = "日志类型") @RequestParam(required = false) String logType) {
 
-        try {
-            log.info("清理日志 - 保留天数: {}, 类型: {}", retentionDays, logType);
-            boolean result = logService.cleanupLogs(retentionDays, logType);
+        log.info("清理日志 - 保留天数: {}, 类型: {}", retentionDays, logType);
+        boolean result = logService.cleanupLogs(retentionDays, logType);
 
-            // 记录清理操作
-            recordLogOperation("CLEANUP_LOGS", result ? 1L : 0L);
+        // 记录清理操作
+        recordLogOperation("CLEANUP_LOGS", result ? 1L : 0L);
 
-            return result ? Result.success("清理成功", true) : Result.error("清理失败");
-        } catch (Exception e) {
-            log.error("清理日志失败", e);
-            return Result.error("清理日志失败: " + e.getMessage());
+        if (!result) {
+            log.warn("⚠️ 清理日志失败");
+            throw new BusinessException("清理失败");
         }
+        return Result.success("清理成功", true);
     }
 
     /**
@@ -271,16 +232,12 @@ public class LogRestController {
     public Result<Object> getLogById(
             @Parameter(description = "日志ID") @PathVariable String id) {
 
-        try {
-            Object logDetail = logService.getLogById(id);
-            if (logDetail == null) {
-                return Result.error("日志不存在");
-            }
-            return Result.success("查询成功", logDetail);
-        } catch (Exception e) {
-            log.error("获取日志详情失败，日志ID: {}", id, e);
-            return Result.error("获取日志详情失败: " + e.getMessage());
+        Object logDetail = logService.getLogById(id);
+        if (logDetail == null) {
+            log.warn("⚠️ 日志不存在 - ID: {}", id);
+            throw new ResourceNotFoundException("Log", id);
         }
+        return Result.success("查询成功", logDetail);
     }
 
     /**
@@ -297,14 +254,9 @@ public class LogRestController {
             @Parameter(description = "开始时间") @RequestParam(required = false) String startTime,
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
-        try {
-            log.debug("搜索日志 - 关键词: {}", keyword);
-            PageResult<Object> result = logService.searchLogs(keyword, page, size, logType, startTime, endTime);
-            return Result.success("搜索成功", result);
-        } catch (Exception e) {
-            log.error("搜索日志失败 - 关键词: {}", keyword, e);
-            return Result.error("搜索日志失败: " + e.getMessage());
-        }
+        log.debug("搜索日志 - 关键词: {}", keyword);
+        PageResult<Object> result = logService.searchLogs(keyword, page, size, logType, startTime, endTime);
+        return Result.success("搜索成功", result);
     }
 
     /**

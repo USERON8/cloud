@@ -1,6 +1,7 @@
 package com.cloud.user.service.impl;
 
 
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MinioService;
@@ -9,7 +10,6 @@ import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -138,7 +138,7 @@ public class MinioServiceImpl implements MinioService {
         if (userId == null) {
             throw new IllegalStateException("无法获取当前用户信息");
         }
-        
+
         try {
             return Long.parseLong(userId);
         } catch (NumberFormatException e) {

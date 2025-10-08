@@ -4,22 +4,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.api.stock.StockFeignClient;
 import com.cloud.common.annotation.DistributedLock;
-import com.cloud.common.exception.BusinessException;
-import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.event.product.ProductSearchEvent;
-import com.cloud.api.stock.StockFeignClient;
 import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.domain.vo.stock.StockVO;
-import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
-import com.cloud.common.messaging.BusinessLogProducer;
-import com.cloud.product.messaging.producer.ProductSearchEventProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Product;
@@ -29,12 +26,11 @@ import com.cloud.product.service.ProductService;
 import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -58,9 +54,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         implements ProductService {
 
     private final ProductConverter productConverter;
-    private final BusinessLogProducer businessLogProducer;
-    private final ProductSearchEventProducer productSearchEventProducer;
-    private final AsyncLogProducer asyncLogProducer;
     private final ShopService shopService;
     private final CategoryService categoryService;
     private final StockFeignClient stockFeignClient;
@@ -76,13 +69,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (requestDTO == null || !StringUtils.hasText(requestDTO.getName())) {
             throw new BusinessException("商品信息不能为空");
         }
-        
+
         log.info("创建商品: {}", requestDTO.getName());
 
         try {
             // 转换为实体
             Product product = productConverter.requestDTOToEntity(requestDTO);
-            
+
             // 设置默认状态
             if (product.getStatus() == null) {
                 product.setStatus(0); // 默认下架状态
@@ -94,31 +87,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 throw new BusinessException("商品保存失败");
             }
 
-            // 异步发送商品创建日志 - 不阻塞主业务流程
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    "CREATE",
-                    "商品创建操作",
-                    product.getId().toString(),
-                    "PRODUCT",
-                    null,
-                    String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                            product.getName(), product.getPrice(), product.getStatus()),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "商品: " + product.getName()
-            );
-
-            // 发送商品搜索事件
-            try {
-                sendProductSearchEvent(product, "PRODUCT_CREATED");
-            } catch (Exception e) {
-                log.warn("发送商品搜索事件失败，商品ID：{}", product.getId(), e);
-            }
-
             log.info("商品创建成功, ID: {}", product.getId());
             return product.getId();
-            
+
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -145,7 +116,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (requestDTO == null || !StringUtils.hasText(requestDTO.getName())) {
             throw new BusinessException("商品信息不能为空");
         }
-        
+
         log.info("更新商品: ID={}, Name={}", id, requestDTO.getName());
 
         try {
@@ -166,35 +137,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 throw new BusinessException("商品更新失败");
             }
 
-            // 异步发送商品更新日志 - 不阻塞主业务流程
-            String beforeData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                    existingProduct.getName(), existingProduct.getPrice(), existingProduct.getStatus());
-            String afterData = String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                    updatedProduct.getName(), updatedProduct.getPrice(), updatedProduct.getStatus());
-
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    "UPDATE",
-                    "商品更新操作",
-                    id.toString(),
-                    "PRODUCT",
-                    beforeData,
-                    afterData,
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "商品: " + updatedProduct.getName()
-            );
-
-            // 发送商品搜索事件
-            try {
-                sendProductSearchEvent(updatedProduct, "PRODUCT_UPDATED");
-            } catch (Exception e) {
-                log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
-            }
-
             log.info("商品更新成功: {}", id);
             return true;
-            
+
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (BusinessException e) {
@@ -219,7 +164,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (id == null || id <= 0) {
             throw new BusinessException("商品ID不能为空或小于等于0");
         }
-        
+
         log.info("删除商品: {}", id);
 
         try {
@@ -233,32 +178,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             if (!deleted) {
                 throw new BusinessException("商品删除失败");
             }
-            
-            // 异步发送商品删除日志
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    "DELETE",
-                    "商品删除操作",
-                    id.toString(),
-                    "PRODUCT",
-                    String.format("{\"name\":\"%s\",\"price\":%s,\"status\":%d}",
-                            product.getName(), product.getPrice(), product.getStatus()),
-                    null,
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "商品: " + product.getName()
-            );
-
-            // 发送商品搜索事件
-            try {
-                sendProductSearchEvent(product, "PRODUCT_DELETED");
-            } catch (Exception e) {
-                log.warn("发送商品搜索事件失败，商品ID：{}", id, e);
-            }
 
             log.info("商品删除成功: {}", id);
             return true;
-            
+
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (BusinessException e) {
@@ -284,11 +207,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (CollectionUtils.isEmpty(ids)) {
             throw new BusinessException("商品ID列表不能为空");
         }
-        
+
         if (ids.size() > 100) {
             throw new BusinessException("批量操作数量不能超过100");
         }
-        
+
         log.info("批量删除商品: {}", ids);
 
         try {
@@ -302,33 +225,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             if (!deleted) {
                 throw new BusinessException("批量删除商品失败");
             }
-            
-            // 异步发送批量商品删除日志
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    "BATCH_DELETE",
-                    "批量删除商品操作",
-                    ids.toString(),
-                    "PRODUCT",
-                    String.format("{\"count\":%d,\"ids\":%s}", ids.size(), ids.toString()),
-                    null,
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "批量删除 " + ids.size() + " 个商品"
-            );
-
-            // 发送批量商品搜索事件
-            try {
-                for (Product product : productsToDelete) {
-                    sendProductSearchEvent(product, "PRODUCT_DELETED");
-                }
-            } catch (Exception e) {
-                log.warn("发送批量商品搜索事件失败，商品数量：{}", ids.size(), e);
-            }
 
             log.info("批量删除商品成功, 数量: {}", ids.size());
             return true;
-            
+
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -888,7 +788,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (id == null || id <= 0) {
             throw new BusinessException("商品ID不能为空或小于等于0");
         }
-        
+
         log.info("{}商品: {}", operation, id);
 
         try {
@@ -913,27 +813,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 throw new BusinessException(operation + "商品失败");
             }
 
-        // 发送商品状态变更日志
-        try {
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    operation.toUpperCase(),
-                    "商品" + operation + "操作",
-                    id.toString(),
-                    "PRODUCT",
-                    String.format("{\"status\":%d}", beforeStatus),
-                    String.format("{\"status\":%d}", status),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "商品: " + product.getName()
-            );
-        } catch (Exception e) {
-            log.warn("发送商品状态变更日志失败，商品ID：{}", id, e);
-        }
-
             log.info("{}商品成功: {}", operation, id);
             return true;
-            
+
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (BusinessException e) {
@@ -951,11 +833,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         if (CollectionUtils.isEmpty(ids)) {
             throw new BusinessException("商品ID列表不能为空");
         }
-        
+
         if (ids.size() > 100) {
             throw new BusinessException("批量操作数量不能超过100");
         }
-        
+
         log.info("{}, 数量: {}", operation, ids.size());
 
         try {
@@ -966,73 +848,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             if (!updated) {
                 throw new BusinessException(operation + "失败");
             }
-            
-            // 发送批量状态变更日志
-            asyncLogProducer.sendBusinessLogAsync(
-                    "product-service",
-                    "PRODUCT_MANAGEMENT",
-                    operation.toUpperCase().replace("批量", "BATCH_"),
-                    operation + "操作",
-                    ids.toString(),
-                    "PRODUCT",
-                    null,
-                    String.format("{\"status\":%d,\"count\":%d,\"ids\":%s}", status, ids.size(), ids.toString()),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    operation + " " + ids.size() + " 个商品"
-            );
 
             log.info("{}成功, 数量: {}", operation, ids.size());
             return true;
-            
+
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             log.error("{}时发生未预期异常，商品数量: {}", operation, ids.size(), e);
             throw new BusinessException(operation + "失败: " + e.getMessage(), e);
-        }
-    }
-
-    // ================= 搜索事件发送辅助方法 =================
-
-    /**
-     * 发送商品搜索事件
-     */
-    private void sendProductSearchEvent(Product product, String eventType) {
-        try {
-            ProductSearchEvent event = ProductSearchEvent.builder()
-                    .eventType(eventType)
-                    .productId(product.getId())
-                    .shopId(product.getShopId())
-                    .shopName(getShopName(product.getShopId()))
-                    .productName(product.getName())
-                    .price(product.getPrice())
-                    .stockQuantity(getStockQuantity(product.getId()))
-                    .categoryId(product.getCategoryId())
-                    .categoryName(getCategoryName(product.getCategoryId()))
-                    .brandId(product.getBrandId())
-                    .brandName(getBrandName(product.getBrandId()))
-                    .status(product.getStatus())
-                    .description(product.getDescription())
-                    .imageUrl(product.getImageUrl())
-                    .tags(product.getTags())
-                    .salesCount(0) // 默认销量为0，实际应该从订单服务获取
-                    .rating(java.math.BigDecimal.ZERO) // 默认评分为0，实际应该从评价服务获取
-                    .reviewCount(0) // 默认评价数为0，实际应该从评价服务获取
-                    .createdAt(product.getCreatedAt())
-                    .updatedAt(product.getUpdatedAt())
-                    .operator("SYSTEM")
-                    .operateTime(java.time.LocalDateTime.now())
-                    .traceId(com.cloud.common.utils.StringUtils.generateTraceId())
-                    .remark("商品数据变更同步到搜索服务")
-                    .build();
-
-            productSearchEventProducer.sendProductSearchEvent(event, eventType);
-            log.debug("商品搜索事件发送成功 - 商品ID: {}, 事件类型: {}", product.getId(), eventType);
-
-        } catch (Exception e) {
-            log.error("发送商品搜索事件失败 - 商品ID: {}, 事件类型: {}, 错误: {}",
-                    product.getId(), eventType, e.getMessage(), e);
-            // 不抛出异常，避免影响主业务流程
         }
     }
 

@@ -6,14 +6,14 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.*;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.Highlight;
 import co.elastic.clients.elasticsearch.core.search.HighlightField;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -38,35 +38,34 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked") // 禁用未检查类型转换警告，用于Elasticsearch泛型操作
 public class ElasticsearchOptimizedService {
 
-    private final ElasticsearchClient elasticsearchClient;
-    private final StringRedisTemplate redisTemplate;
-
     private static final String SEARCH_CACHE_KEY = "search:cache:";
     private static final String HOT_SEARCH_KEY = "search:hot:";
     private static final int DEFAULT_SEARCH_SIZE = 20;
     private static final int MAX_SEARCH_SIZE = 100;
+    private final ElasticsearchClient elasticsearchClient;
+    private final StringRedisTemplate redisTemplate;
 
     /**
      * 智能商品搜索
      * 支持多字段搜索、高亮、排序、过滤
      *
-     * @param keyword 搜索关键词
+     * @param keyword    搜索关键词
      * @param categoryId 分类ID
-     * @param minPrice 最低价格
-     * @param maxPrice 最高价格
-     * @param sortField 排序字段
-     * @param sortOrder 排序方向
-     * @param from 起始位置
-     * @param size 查询数量
+     * @param minPrice   最低价格
+     * @param maxPrice   最高价格
+     * @param sortField  排序字段
+     * @param sortOrder  排序方向
+     * @param from       起始位置
+     * @param size       查询数量
      * @return 搜索结果
      */
     @Transactional(readOnly = true)
-    public SearchResult smartProductSearch(String keyword, Long categoryId, 
-                                         Double minPrice, Double maxPrice,
-                                         String sortField, String sortOrder,
-                                         int from, int size) {
+    public SearchResult smartProductSearch(String keyword, Long categoryId,
+                                           Double minPrice, Double maxPrice,
+                                           String sortField, String sortOrder,
+                                           int from, int size) {
         try {
-            log.info("执行智能商品搜索 - 关键词: {}, 分类: {}, 价格区间: [{}, {}], 排序: {}:{}", 
+            log.info("执行智能商品搜索 - 关键词: {}, 分类: {}, 价格区间: [{}, {}], 排序: {}:{}",
                     keyword, categoryId, minPrice, maxPrice, sortField, sortOrder);
 
             // 记录热门搜索
@@ -74,17 +73,17 @@ public class ElasticsearchOptimizedService {
 
             // 构建查询
             Query query = buildProductSearchQuery(keyword, categoryId, minPrice, maxPrice);
-            
+
             // 构建搜索请求
             SearchRequest searchRequest = SearchRequest.of(s -> s
-                .index("product_index")
-                .query(query)
-                .from(from)
-                .size(Math.min(size, MAX_SEARCH_SIZE))
-                .sort(buildSortOptions(sortField, sortOrder))
-                .highlight(buildHighlight())
-                .aggregations(buildAggregations())
-                .source(src -> src.fetch(true))
+                    .index("product_index")
+                    .query(query)
+                    .from(from)
+                    .size(Math.min(size, MAX_SEARCH_SIZE))
+                    .sort(buildSortOptions(sortField, sortOrder))
+                    .highlight(buildHighlight())
+                    .aggregations(buildAggregations())
+                    .source(src -> src.fetch(true))
             );
 
             SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
@@ -93,12 +92,12 @@ public class ElasticsearchOptimizedService {
             List<Map<String, Object>> products = new ArrayList<>();
             for (Hit<Map> hit : response.hits().hits()) {
                 Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
-                
+
                 // 添加高亮信息
                 if (hit.highlight() != null && !hit.highlight().isEmpty()) {
                     product.put("highlight", hit.highlight());
                 }
-                
+
                 // 添加评分
                 product.put("score", hit.score());
                 products.add(product);
@@ -137,21 +136,21 @@ public class ElasticsearchOptimizedService {
 
             // 构建建议查询
             Query query = Query.of(q -> q
-                .multiMatch(m -> m
-                    .query(keyword)
-                    .fields("productName^3", "productName.pinyin^2", "categoryName", "brandName")
-                    .type(TextQueryType.BoolPrefix)
-                    .fuzziness("AUTO")
-                )
+                    .multiMatch(m -> m
+                            .query(keyword)
+                            .fields("productName^3", "productName.pinyin^2", "categoryName", "brandName")
+                            .type(TextQueryType.BoolPrefix)
+                            .fuzziness("AUTO")
+                    )
             );
 
             SearchRequest searchRequest = SearchRequest.of(s -> s
-                .index("product_index")
-                .query(query)
-                .size(limit * 2) // 获取更多结果用于去重
-                .source(src -> src
-                    .filter(f -> f.includes("productName", "categoryName", "brandName"))
-                )
+                    .index("product_index")
+                    .query(query)
+                    .size(limit * 2) // 获取更多结果用于去重
+                    .source(src -> src
+                            .filter(f -> f.includes("productName", "categoryName", "brandName"))
+                    )
             );
 
             SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
@@ -169,7 +168,7 @@ public class ElasticsearchOptimizedService {
                 if (source.get("brandName") != null) {
                     suggestions.add(source.get("brandName").toString());
                 }
-                
+
                 if (suggestions.size() >= limit) {
                     break;
                 }
@@ -236,13 +235,13 @@ public class ElasticsearchOptimizedService {
         // 关键词搜索
         if (keyword != null && !keyword.trim().isEmpty()) {
             Query keywordQuery = Query.of(q -> q
-                .multiMatch(m -> m
-                    .query(keyword)
-                    .fields("productName^3", "productName.pinyin^2", "description", "categoryName", "brandName")
-                    .type(TextQueryType.BestFields)
-                    .fuzziness("AUTO")
-                    .minimumShouldMatch("75%")
-                )
+                    .multiMatch(m -> m
+                            .query(keyword)
+                            .fields("productName^3", "productName.pinyin^2", "description", "categoryName", "brandName")
+                            .type(TextQueryType.BestFields)
+                            .fuzziness("AUTO")
+                            .minimumShouldMatch("75%")
+                    )
             );
             boolQuery.must(keywordQuery);
         }
@@ -250,10 +249,10 @@ public class ElasticsearchOptimizedService {
         // 分类过滤
         if (categoryId != null) {
             Query categoryQuery = Query.of(q -> q
-                .term(t -> t
-                    .field("categoryId")
-                    .value(FieldValue.of(categoryId))
-                )
+                    .term(t -> t
+                            .field("categoryId")
+                            .value(FieldValue.of(categoryId))
+                    )
             );
             boolQuery.filter(categoryQuery);
         }
@@ -266,10 +265,10 @@ public class ElasticsearchOptimizedService {
 
         // 状态过滤（只搜索上架商品）
         Query statusQuery = Query.of(q -> q
-            .term(t -> t
-                .field("status")
-                .value(FieldValue.of(1))
-            )
+                .term(t -> t
+                        .field("status")
+                        .value(FieldValue.of(1))
+                )
         );
         boolQuery.filter(statusQuery);
 
@@ -284,33 +283,33 @@ public class ElasticsearchOptimizedService {
 
         if (sortField != null && !sortField.isEmpty()) {
             SortOrder order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
-            
+
             switch (sortField.toLowerCase()) {
                 case "price":
                     sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("price").order(order))
+                            .field(f -> f.field("price").order(order))
                     ));
                     break;
                 case "sales":
                     sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("salesCount").order(order))
+                            .field(f -> f.field("salesCount").order(order))
                     ));
                     break;
                 case "created":
                     sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("createdAt").order(order))
+                            .field(f -> f.field("createdAt").order(order))
                     ));
                     break;
                 default:
                     // 默认按相关性排序
                     sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .score(sc -> sc.order(SortOrder.Desc))
+                            .score(sc -> sc.order(SortOrder.Desc))
                     ));
             }
         } else {
             // 默认按相关性排序
             sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                .score(sc -> sc.order(SortOrder.Desc))
+                    .score(sc -> sc.order(SortOrder.Desc))
             ));
         }
 
@@ -322,18 +321,18 @@ public class ElasticsearchOptimizedService {
      */
     private Highlight buildHighlight() {
         return Highlight.of(h -> h
-            .fields("productName", HighlightField.of(hf -> hf
-                .preTags("<em class='highlight'>")
-                .postTags("</em>")
-                .fragmentSize(100)
-                .numberOfFragments(1)
-            ))
-            .fields("description", HighlightField.of(hf -> hf
-                .preTags("<em class='highlight'>")
-                .postTags("</em>")
-                .fragmentSize(200)
-                .numberOfFragments(1)
-            ))
+                .fields("productName", HighlightField.of(hf -> hf
+                        .preTags("<em class='highlight'>")
+                        .postTags("</em>")
+                        .fragmentSize(100)
+                        .numberOfFragments(1)
+                ))
+                .fields("description", HighlightField.of(hf -> hf
+                        .preTags("<em class='highlight'>")
+                        .postTags("</em>")
+                        .fragmentSize(200)
+                        .numberOfFragments(1)
+                ))
         );
     }
 
@@ -345,29 +344,29 @@ public class ElasticsearchOptimizedService {
 
         // 分类聚合
         aggregations.put("categories", Aggregation.of(a -> a
-            .terms(t -> t
-                .field("categoryId")
-                .size(20)
-            )
+                .terms(t -> t
+                        .field("categoryId")
+                        .size(20)
+                )
         ));
 
         // 品牌聚合
         aggregations.put("brands", Aggregation.of(a -> a
-            .terms(t -> t
-                .field("brandName.keyword")
-                .size(20)
-            )
+                .terms(t -> t
+                        .field("brandName.keyword")
+                        .size(20)
+                )
         ));
 
         // 价格区间聚合
         aggregations.put("priceRanges", Aggregation.of(a -> a
-            .range(r -> r
-                .field("price")
-                .ranges(range -> range.to(100.0))
-                .ranges(range -> range.from(100.0).to(500.0))
-                .ranges(range -> range.from(500.0).to(1000.0))
-                .ranges(range -> range.from(1000.0))
-            )
+                .range(r -> r
+                        .field("price")
+                        .ranges(range -> range.to(100.0))
+                        .ranges(range -> range.from(100.0).to(500.0))
+                        .ranges(range -> range.from(500.0).to(1000.0))
+                        .ranges(range -> range.from(1000.0))
+                )
         ));
 
         return aggregations;
@@ -412,91 +411,6 @@ public class ElasticsearchOptimizedService {
                 redisTemplate.expire(key, 7, TimeUnit.DAYS); // 7天过期
             } catch (Exception e) {
                 log.warn("记录热门搜索失败 - 关键词: {}, 错误: {}", keyword, e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * 热门关键词内部类
-     */
-    private static class HotKeyword {
-        final String keyword;
-        final long count;
-
-        HotKeyword(String keyword, long count) {
-            this.keyword = keyword;
-            this.count = count;
-        }
-    }
-
-    /**
-     * 搜索结果封装类
-     */
-    public static class SearchResult {
-        private final List<Map<String, Object>> documents;
-        private final long total;
-        private final int from;
-        private final int size;
-        private final Map<String, Object> aggregations;
-
-        private SearchResult(List<Map<String, Object>> documents, long total, int from, int size, Map<String, Object> aggregations) {
-            this.documents = documents;
-            this.total = total;
-            this.from = from;
-            this.size = size;
-            this.aggregations = aggregations;
-        }
-
-        public static SearchResultBuilder builder() {
-            return new SearchResultBuilder();
-        }
-
-        public static SearchResult empty(int from, int size) {
-            return new SearchResult(List.of(), 0, from, size, Map.of());
-        }
-
-        // Getters
-        public List<Map<String, Object>> getDocuments() { return documents; }
-        public long getTotal() { return total; }
-        public int getFrom() { return from; }
-        public int getSize() { return size; }
-        public Map<String, Object> getAggregations() { return aggregations; }
-        public boolean hasMore() { return from + size < total; }
-
-        public static class SearchResultBuilder {
-            private List<Map<String, Object>> documents;
-            private long total;
-            private int from;
-            private int size;
-            private Map<String, Object> aggregations;
-
-            public SearchResultBuilder documents(List<Map<String, Object>> documents) {
-                this.documents = documents;
-                return this;
-            }
-
-            public SearchResultBuilder total(long total) {
-                this.total = total;
-                return this;
-            }
-
-            public SearchResultBuilder from(int from) {
-                this.from = from;
-                return this;
-            }
-
-            public SearchResultBuilder size(int size) {
-                this.size = size;
-                return this;
-            }
-
-            public SearchResultBuilder aggregations(Map<String, Object> aggregations) {
-                this.aggregations = aggregations;
-                return this;
-            }
-
-            public SearchResult build() {
-                return new SearchResult(documents, total, from, size, aggregations);
             }
         }
     }
@@ -560,6 +474,108 @@ public class ElasticsearchOptimizedService {
         } catch (Exception e) {
             log.error("批量索引失败 - 索引: {}, 文档数: {}", indexName, documents.size(), e);
             return 0;
+        }
+    }
+
+    /**
+     * 热门关键词内部类
+     */
+    private static class HotKeyword {
+        final String keyword;
+        final long count;
+
+        HotKeyword(String keyword, long count) {
+            this.keyword = keyword;
+            this.count = count;
+        }
+    }
+
+    /**
+     * 搜索结果封装类
+     */
+    public static class SearchResult {
+        private final List<Map<String, Object>> documents;
+        private final long total;
+        private final int from;
+        private final int size;
+        private final Map<String, Object> aggregations;
+
+        private SearchResult(List<Map<String, Object>> documents, long total, int from, int size, Map<String, Object> aggregations) {
+            this.documents = documents;
+            this.total = total;
+            this.from = from;
+            this.size = size;
+            this.aggregations = aggregations;
+        }
+
+        public static SearchResultBuilder builder() {
+            return new SearchResultBuilder();
+        }
+
+        public static SearchResult empty(int from, int size) {
+            return new SearchResult(List.of(), 0, from, size, Map.of());
+        }
+
+        // Getters
+        public List<Map<String, Object>> getDocuments() {
+            return documents;
+        }
+
+        public long getTotal() {
+            return total;
+        }
+
+        public int getFrom() {
+            return from;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public Map<String, Object> getAggregations() {
+            return aggregations;
+        }
+
+        public boolean hasMore() {
+            return from + size < total;
+        }
+
+        public static class SearchResultBuilder {
+            private List<Map<String, Object>> documents;
+            private long total;
+            private int from;
+            private int size;
+            private Map<String, Object> aggregations;
+
+            public SearchResultBuilder documents(List<Map<String, Object>> documents) {
+                this.documents = documents;
+                return this;
+            }
+
+            public SearchResultBuilder total(long total) {
+                this.total = total;
+                return this;
+            }
+
+            public SearchResultBuilder from(int from) {
+                this.from = from;
+                return this;
+            }
+
+            public SearchResultBuilder size(int size) {
+                this.size = size;
+                return this;
+            }
+
+            public SearchResultBuilder aggregations(Map<String, Object> aggregations) {
+                this.aggregations = aggregations;
+                return this;
+            }
+
+            public SearchResult build() {
+                return new SearchResult(documents, total, from, size, aggregations);
+            }
         }
     }
 }

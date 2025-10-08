@@ -88,7 +88,7 @@ public interface CategoryServiceStandard extends IService<Category> {
      * @param categoryDTO 分类信息
      * @return 创建的分类DTO
      * @throws CategoryException.CategoryAlreadyExistsException 分类已存在异常
-     * @throws CategoryException.CategoryHierarchyException    分类层级异常
+     * @throws CategoryException.CategoryHierarchyException     分类层级异常
      */
     CategoryDTO createCategory(CategoryDTO categoryDTO)
             throws CategoryException.CategoryAlreadyExistsException, CategoryException.CategoryHierarchyException;
@@ -108,9 +108,9 @@ public interface CategoryServiceStandard extends IService<Category> {
      * @param id      分类ID
      * @param cascade 是否级联删除子分类
      * @return 是否删除成功
-     * @throws CategoryException.CategoryNotFoundException     分类不存在异常
-     * @throws CategoryException.CategoryHasChildrenException  分类包含子分类异常
-     * @throws CategoryException.CategoryHasProductsException  分类包含商品异常
+     * @throws CategoryException.CategoryNotFoundException    分类不存在异常
+     * @throws CategoryException.CategoryHasChildrenException 分类包含子分类异常
+     * @throws CategoryException.CategoryHasProductsException 分类包含商品异常
      */
     boolean deleteCategory(Long id, Boolean cascade)
             throws CategoryException.CategoryNotFoundException,
@@ -173,7 +173,7 @@ public interface CategoryServiceStandard extends IService<Category> {
      * @param id          分类ID
      * @param newParentId 新父分类ID
      * @return 是否移动成功
-     * @throws CategoryException.CategoryNotFoundException    分类不存在异常
+     * @throws CategoryException.CategoryNotFoundException  分类不存在异常
      * @throws CategoryException.CategoryHierarchyException 分类层级异常
      */
     boolean moveCategory(Long id, Long newParentId)

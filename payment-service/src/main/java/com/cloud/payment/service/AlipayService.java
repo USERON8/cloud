@@ -2,7 +2,6 @@ package com.cloud.payment.service;
 
 import com.cloud.payment.module.dto.AlipayCreateRequest;
 import com.cloud.payment.module.dto.AlipayCreateResponse;
-import com.cloud.payment.module.dto.AlipayNotifyRequest;
 
 import java.math.BigDecimal;
 import java.util.Map;

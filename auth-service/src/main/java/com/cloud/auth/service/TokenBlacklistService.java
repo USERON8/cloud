@@ -1,6 +1,5 @@
 package com.cloud.auth.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,7 +24,7 @@ public class TokenBlacklistService {
     private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
     private static final String BLACKLIST_STATS_KEY = "oauth2:blacklist:stats";
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     public TokenBlacklistService(@Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
@@ -267,6 +266,20 @@ public class TokenBlacklistService {
             this.totalBlacklisted = totalBlacklisted;
             this.activeBlacklisted = activeBlacklisted;
             this.lastUpdated = lastUpdated;
+        }
+        
+        /**
+         * 获取总黑名单数量
+         */
+        public long totalCount() {
+            return totalBlacklisted;
+        }
+        
+        /**
+         * 获取活跃黑名单数量
+         */
+        public int activeCount() {
+            return activeBlacklisted;
         }
     }
 }

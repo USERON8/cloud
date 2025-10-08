@@ -24,8 +24,8 @@ public interface LogService {
      * @param keyword   关键词
      * @return 分页结果
      */
-    PageResult<Object> getLogs(Integer page, Integer size, String level, String service, 
-                              String startTime, String endTime, String keyword);
+    PageResult<Object> getLogs(Integer page, Integer size, String level, String service,
+                               String startTime, String endTime, String keyword);
 
     /**
      * 获取应用日志
@@ -38,8 +38,8 @@ public interface LogService {
      * @param endTime   结束时间
      * @return 分页结果
      */
-    PageResult<Object> getApplicationLogs(Integer page, Integer size, String appName, 
-                                         String level, String startTime, String endTime);
+    PageResult<Object> getApplicationLogs(Integer page, Integer size, String appName,
+                                          String level, String startTime, String endTime);
 
     /**
      * 获取操作日志
@@ -52,8 +52,8 @@ public interface LogService {
      * @param endTime       结束时间
      * @return 分页结果
      */
-    PageResult<Object> getOperationLogs(Integer page, Integer size, Long userId, 
-                                       String operationType, String startTime, String endTime);
+    PageResult<Object> getOperationLogs(Integer page, Integer size, Long userId,
+                                        String operationType, String startTime, String endTime);
 
     /**
      * 获取错误日志
@@ -66,8 +66,8 @@ public interface LogService {
      * @param endTime   结束时间
      * @return 分页结果
      */
-    PageResult<Object> getErrorLogs(Integer page, Integer size, String service, 
-                                   String errorType, String startTime, String endTime);
+    PageResult<Object> getErrorLogs(Integer page, Integer size, String service,
+                                    String errorType, String startTime, String endTime);
 
     /**
      * 获取访问日志
@@ -82,8 +82,8 @@ public interface LogService {
      * @param endTime    结束时间
      * @return 分页结果
      */
-    PageResult<Object> getAccessLogs(Integer page, Integer size, Long userId, String path, 
-                                    String method, Integer statusCode, String startTime, String endTime);
+    PageResult<Object> getAccessLogs(Integer page, Integer size, Long userId, String path,
+                                     String method, Integer statusCode, String startTime, String endTime);
 
     /**
      * 获取审计日志
@@ -97,8 +97,8 @@ public interface LogService {
      * @param endTime      结束时间
      * @return 分页结果
      */
-    PageResult<Object> getAuditLogs(Integer page, Integer size, Long userId, String resourceType, 
-                                   String action, String startTime, String endTime);
+    PageResult<Object> getAuditLogs(Integer page, Integer size, Long userId, String resourceType,
+                                    String action, String startTime, String endTime);
 
     /**
      * 获取日志统计信息
@@ -146,6 +146,6 @@ public interface LogService {
      * @param endTime   结束时间
      * @return 搜索结果
      */
-    PageResult<Object> searchLogs(String keyword, Integer page, Integer size, String logType, 
-                                 String startTime, String endTime);
+    PageResult<Object> searchLogs(String keyword, Integer page, Integer size, String logType,
+                                  String startTime, String endTime);
 }

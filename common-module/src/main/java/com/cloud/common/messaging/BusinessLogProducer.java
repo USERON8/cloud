@@ -21,13 +21,13 @@ public class BusinessLogProducer {
 
     private static final String LOG_BINDING_NAME = "logProducer-out-0";
     private final AsyncMessageProducer asyncMessageProducer;
-    
+
     /**
      * 发送用户操作日志
      *
-     * @param userId 用户ID
+     * @param userId    用户ID
      * @param operation 操作类型
-     * @param details 操作详情
+     * @param details   操作详情
      */
     public void sendUserOperationLog(Long userId, String operation, String details) {
         try {
@@ -64,11 +64,11 @@ public class BusinessLogProducer {
             log.warn("发送用户操作日志失败 - userId: {}, operation: {}, 错误: {}", userId, operation, e.getMessage());
         }
     }
-    
+
     /**
      * 发送系统日志
      *
-     * @param level 日志级别
+     * @param level   日志级别
      * @param message 日志消息
      */
     public void sendSystemLog(String level, String message) {
@@ -103,14 +103,14 @@ public class BusinessLogProducer {
             log.warn("发送系统日志失败 - level: {}, message: {}, 错误: {}", level, message, e.getMessage());
         }
     }
-    
+
     /**
      * 发送订单完成日志
      */
     public void sendOrderCompletedLog(String traceId, Long orderId, String orderNo,
-                                    Long userId, String userName, java.math.BigDecimal totalAmount,
-                                    java.math.BigDecimal payAmount, Integer orderStatus, Long shopId,
-                                    String completedTime, String operator, String operatorId) {
+                                      Long userId, String userName, java.math.BigDecimal totalAmount,
+                                      java.math.BigDecimal payAmount, Integer orderStatus, Long shopId,
+                                      String completedTime, String operator, String operatorId) {
         try {
             log.info("订单完成日志 - orderId: {}, orderNo: {}, userId: {}, amount: {}",
                     orderId, orderNo, userId, payAmount);
@@ -149,14 +149,14 @@ public class BusinessLogProducer {
             log.warn("发送订单完成日志失败 - orderId: {}, 错误: {}", orderId, e.getMessage());
         }
     }
-    
+
     /**
      * 发送订单退款日志
      */
     public void sendOrderRefundLog(String traceId, Long orderId, String orderNo,
-                                 Long userId, String userName, java.math.BigDecimal refundAmount,
-                                 String refundReason, String refundTime, Long shopId,
-                                 String operator, String operatorId) {
+                                   Long userId, String userName, java.math.BigDecimal refundAmount,
+                                   String refundReason, String refundTime, Long shopId,
+                                   String operator, String operatorId) {
         try {
             log.info("订单退款日志 - orderId: {}, orderNo: {}, userId: {}, refundAmount: {}",
                     orderId, orderNo, userId, refundAmount);
@@ -201,8 +201,8 @@ public class BusinessLogProducer {
      * 发送支付成功日志
      */
     public void sendPaymentSuccessLog(String serviceName, Long paymentId, Long orderId, String orderNo,
-                                    Long userId, String userName, java.math.BigDecimal amount,
-                                    String paymentMethod, String thirdPartyTradeNo, String operator) {
+                                      Long userId, String userName, java.math.BigDecimal amount,
+                                      String paymentMethod, String thirdPartyTradeNo, String operator) {
         try {
             log.info("支付成功日志 - paymentId: {}, orderId: {}, orderNo: {}, userId: {}, amount: {}, method: {}",
                     paymentId, orderId, orderNo, userId, amount, paymentMethod);
@@ -247,8 +247,8 @@ public class BusinessLogProducer {
      * 发送支付退款日志
      */
     public void sendPaymentRefundLog(String serviceName, Long paymentId, Long refundId, Long orderId,
-                                   String orderNo, Long userId, String userName, java.math.BigDecimal refundAmount,
-                                   String refundReason, String refundType, String paymentMethod, String operator) {
+                                     String orderNo, Long userId, String userName, java.math.BigDecimal refundAmount,
+                                     String refundReason, String refundType, String paymentMethod, String operator) {
         try {
             log.info("支付退款日志 - paymentId: {}, refundId: {}, orderId: {}, orderNo: {}, userId: {}, refundAmount: {}",
                     paymentId, refundId, orderId, orderNo, userId, refundAmount);

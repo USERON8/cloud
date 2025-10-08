@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 
 /**
  * 支付记录创建事件
- * 
+ * <p>
  * 当订单创建完成需要生成支付记录时发送此事件，
  * 通知支付服务创建支付记录，准备支付流程
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-26
  */

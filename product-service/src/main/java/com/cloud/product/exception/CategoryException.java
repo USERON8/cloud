@@ -13,6 +13,18 @@ import lombok.Getter;
 @Getter
 public class CategoryException extends BusinessException {
 
+    public CategoryException(int code, String message) {
+        super(code, message);
+    }
+
+    public CategoryException(String message) {
+        super(message);
+    }
+
+    public CategoryException(int code, String message, Throwable cause) {
+        super(code, message, cause);
+    }
+
     /**
      * 分类不存在异常
      */
@@ -73,17 +85,5 @@ public class CategoryException extends BusinessException {
         public CategoryHasProductsException(Long categoryId) {
             super(400, "分类下存在商品，无法删除: " + categoryId);
         }
-    }
-
-    public CategoryException(int code, String message) {
-        super(code, message);
-    }
-
-    public CategoryException(String message) {
-        super(message);
-    }
-
-    public CategoryException(int code, String message, Throwable cause) {
-        super(code, message, cause);
     }
 }

@@ -215,4 +215,56 @@ public class MerchantAuthController {
         return Result.success(result);
     }
 
+    /**
+     * 批量审核商家认证申请
+     *
+     * @param merchantIds 商家ID列表
+     * @param authStatus  审核状态（1: 通过，2: 拒绝）
+     * @return 操作结果
+     */
+    @PostMapping("/review/batch")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @Operation(summary = "批量审核商家认证", description = "批量审核商家认证申请")
+    public Result<Boolean> reviewAuthBatch(
+            @RequestBody
+            @Parameter(description = "商家ID列表")
+            @NotNull(message = "商家ID列表不能为空") java.util.List<Long> merchantIds,
+            @RequestParam("authStatus")
+            @Parameter(description = "审核状态")
+            @NotNull(message = "审核状态不能为空") Integer authStatus) {
+
+        if (merchantIds == null || merchantIds.isEmpty()) {
+            return Result.badRequest("商家ID列表不能为空");
+        }
+
+        if (merchantIds.size() > 100) {
+            return Result.badRequest("批量审核数量不能超过100个");
+        }
+
+        log.info("批量审核商家认证, merchantIds: {}, authStatus: {}", merchantIds, authStatus);
+
+        int successCount = 0;
+        for (Long merchantId : merchantIds) {
+            try {
+                LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
+                queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
+                MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
+
+                if (merchantAuth != null) {
+                    merchantAuth.setAuthStatus(authStatus);
+                    merchantAuth.setUpdatedAt(LocalDateTime.now());
+                    if (merchantAuthService.updateById(merchantAuth)) {
+                        successCount++;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("审核商家认证失败, merchantId: {}", merchantId, e);
+            }
+        }
+
+        String statusDesc = authStatus == 1 ? "审核通过" : "审核拒绝";
+        log.info("批量审核商家认证完成, 成功: {}/{}", successCount, merchantIds.size());
+        return Result.success(String.format("批量%s成功: %d/%d", statusDesc, successCount, merchantIds.size()), true);
+    }
+
 }

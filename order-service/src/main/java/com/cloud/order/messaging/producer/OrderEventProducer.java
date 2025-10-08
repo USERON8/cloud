@@ -178,7 +178,7 @@ public class OrderEventProducer {
             throw new MessageSendException("发送订单完成事件异常", e);
         }
     }
-    
+
     /**
      * 发送库存预扣减事件
      * 通知库存服务预扣减库存
@@ -219,7 +219,7 @@ public class OrderEventProducer {
             throw new MessageSendException("发送库存预扣减事件异常", e);
         }
     }
-    
+
     /**
      * 发送库存确认扣减事件
      * 通知库存服务确认扣减库存
@@ -260,7 +260,7 @@ public class OrderEventProducer {
             throw new MessageSendException("发送库存确认扣减事件异常", e);
         }
     }
-    
+
     /**
      * 发送库存回滚事件
      * 通知库存服务回滚库存
@@ -281,7 +281,7 @@ public class OrderEventProducer {
             String traceId = event.getTraceId();
 
             log.info("📨 准备发送库存回滚事件 - 订单ID: {}, 订单号: {}, 回滚类型: {}, 商品数量: {}, 追踪ID: {}",
-                    event.getOrderId(), event.getOrderNo(), event.getRollbackType(), 
+                    event.getOrderId(), event.getOrderNo(), event.getRollbackType(),
                     event.getRollbackItems().size(), traceId);
 
             // 发送消息到库存服务
@@ -302,7 +302,7 @@ public class OrderEventProducer {
             throw new MessageSendException("发送库存回滚事件异常", e);
         }
     }
-    
+
     /**
      * 发送支付记录创建事件
      * 通知支付服务创建支付记录

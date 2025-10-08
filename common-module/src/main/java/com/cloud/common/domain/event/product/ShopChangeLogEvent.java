@@ -9,14 +9,14 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * 店铺变更日志事件
- * 
+ * <p>
  * 记录店铺相关的操作日志，包括：
  * - 店铺注册、更新、删除
  * - 店铺状态变更
  * - 店铺认证信息变更
  * - 店铺经营类目调整
  * - 店铺权限变更等
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */

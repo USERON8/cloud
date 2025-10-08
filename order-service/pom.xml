@@ -129,12 +129,8 @@
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
         </dependency>
-        
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-        
+
+
         <!-- 显式添加objenesis依赖，Redisson运行时需要 -->
         <dependency>
             <groupId>org.objenesis</groupId>

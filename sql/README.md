@@ -39,6 +39,7 @@
 #### 表结构
 
 ##### users - 用户信息表
+
 ```sql
 CREATE TABLE IF NOT EXISTS users
 (
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS users
 ```
 
 ##### user_address - 用户地址表
+
 ```sql
 CREATE TABLE `user_address`
 (
@@ -102,6 +104,7 @@ CREATE TABLE `user_address`
 ### 2. 商品数据库 (product_db)
 
 ##### product - 商品表
+
 ```sql
 CREATE TABLE `product` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '商品ID',
@@ -128,6 +131,7 @@ CREATE TABLE `product` (
 ```
 
 ##### product_category - 商品分类表
+
 ```sql
 CREATE TABLE `product_category` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '分类ID',
@@ -148,6 +152,7 @@ CREATE TABLE `product_category` (
 ### 3. 订单数据库 (order_db)
 
 ##### orders - 订单信息表
+
 ```sql
 CREATE TABLE `orders`
 (
@@ -183,6 +188,7 @@ CREATE TABLE `orders`
 ```
 
 ##### order_item - 订单明细表
+
 ```sql
 CREATE TABLE `order_item`
 (
@@ -208,6 +214,7 @@ CREATE TABLE `order_item`
 ### 4. 库存数据库 (stock_db)
 
 ##### stock - 库存表
+
 ```sql
 CREATE TABLE `stock` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '库存ID',
@@ -226,6 +233,7 @@ CREATE TABLE `stock` (
 ```
 
 ##### stock_record - 库存变动记录表
+
 ```sql
 CREATE TABLE `stock_record` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID',
@@ -248,6 +256,7 @@ CREATE TABLE `stock_record` (
 ### 5. 支付数据库 (payment_db)
 
 ##### payment_order - 支付订单表
+
 ```sql
 CREATE TABLE `payment_order` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '支付订单ID',
@@ -278,31 +287,31 @@ CREATE TABLE `payment_order` (
 
 ### 索引类型说明
 
-| 索引类型 | 前缀 | 用途 | 示例 |
-|---------|------|------|------|
-| 主键索引 | PRIMARY | 唯一标识 | PRIMARY KEY (`id`) |
-| 唯一索引 | uk_ | 业务唯一约束 | uk_username |
-| 普通索引 | idx_ | 查询优化 | idx_create_time |
-| 联合索引 | idx_ | 多字段查询 | idx_user_status |
+| 索引类型 | 前缀      | 用途     | 示例                 |
+|------|---------|--------|--------------------|
+| 主键索引 | PRIMARY | 唯一标识   | PRIMARY KEY (`id`) |
+| 唯一索引 | uk_     | 业务唯一约束 | uk_username        |
+| 普通索引 | idx_    | 查询优化   | idx_create_time    |
+| 联合索引 | idx_    | 多字段查询  | idx_user_status    |
 
 ### 索引设计原则
 
 1. **主键设计**
-   - 使用BIGINT自增主键
-   - 避免使用UUID作为主键
+    - 使用BIGINT自增主键
+    - 避免使用UUID作为主键
 
 2. **唯一索引**
-   - 业务唯一字段必须创建唯一索引
-   - 如：用户名、订单号、支付单号等
+    - 业务唯一字段必须创建唯一索引
+    - 如：用户名、订单号、支付单号等
 
 3. **查询索引**
-   - 高频查询字段创建索引
-   - WHERE条件字段创建索引
-   - JOIN关联字段创建索引
+    - 高频查询字段创建索引
+    - WHERE条件字段创建索引
+    - JOIN关联字段创建索引
 
 4. **联合索引**
-   - 遵循最左前缀原则
-   - 选择性高的字段放在前面
+    - 遵循最左前缀原则
+    - 选择性高的字段放在前面
 
 ## 📝 初始化脚本
 
@@ -325,83 +334,83 @@ mysql -uroot -p < init_data.sql
 
 ### 脚本文件说明
 
-| 文件名 | 说明 | 依赖 |
-|--------|------|------|
-| init.sql | 创建数据库和用户 | 无 |
-| user_db.sql | 用户服务表结构 | init.sql |
-| product_db.sql | 商品服务表结构 | init.sql |
-| order_db.sql | 订单服务表结构 | init.sql |
-| stock_db.sql | 库存服务表结构 | init.sql |
-| payment_db.sql | 支付服务表结构 | init.sql |
-| init_data.sql | 初始化测试数据 | 所有表结构 |
+| 文件名            | 说明       | 依赖       |
+|----------------|----------|----------|
+| init.sql       | 创建数据库和用户 | 无        |
+| user_db.sql    | 用户服务表结构  | init.sql |
+| product_db.sql | 商品服务表结构  | init.sql |
+| order_db.sql   | 订单服务表结构  | init.sql |
+| stock_db.sql   | 库存服务表结构  | init.sql |
+| payment_db.sql | 支付服务表结构  | init.sql |
+| init_data.sql  | 初始化测试数据  | 所有表结构    |
 
 ## 🔧 数据库优化建议
 
 ### 表设计优化
 
 1. **字段类型选择**
-   - 金额使用DECIMAL(10,2)
-   - 时间使用DATETIME
-   - 状态使用TINYINT
-   - 长文本使用TEXT
+    - 金额使用DECIMAL(10,2)
+    - 时间使用DATETIME
+    - 状态使用TINYINT
+    - 长文本使用TEXT
 
 2. **字段默认值**
-   - 数值类型默认0
-   - 时间类型默认CURRENT_TIMESTAMP
-   - 状态类型默认正常状态
+    - 数值类型默认0
+    - 时间类型默认CURRENT_TIMESTAMP
+    - 状态类型默认正常状态
 
 3. **逻辑删除**
-   - 使用deleted字段实现软删除
-   - 0-未删除，1-已删除
+    - 使用deleted字段实现软删除
+    - 0-未删除，1-已删除
 
 ### 查询优化
 
 1. **避免全表扫描**
-   - 合理使用索引
-   - 避免在WHERE子句中使用函数
+    - 合理使用索引
+    - 避免在WHERE子句中使用函数
 
 2. **分页查询**
-   - 大数据量使用游标分页
-   - 避免深度分页
+    - 大数据量使用游标分页
+    - 避免深度分页
 
 3. **批量操作**
-   - 使用批量插入
-   - 使用批量更新
+    - 使用批量插入
+    - 使用批量更新
 
 ### 事务处理
 
 1. **事务隔离级别**
-   - 默认使用READ COMMITTED
-   - 特殊场景使用SERIALIZABLE
+    - 默认使用READ COMMITTED
+    - 特殊场景使用SERIALIZABLE
 
 2. **锁机制**
-   - 使用乐观锁(version字段)
-   - 必要时使用悲观锁(SELECT ... FOR UPDATE)
+    - 使用乐观锁(version字段)
+    - 必要时使用悲观锁(SELECT ... FOR UPDATE)
 
 ## 📊 监控指标
 
 ### 关键监控指标
 
-| 指标 | 阈值 | 说明 |
-|------|------|------|
-| 慢查询 | >1s | 需要优化SQL或添加索引 |
-| 连接数 | <80% | 防止连接池耗尽 |
-| 锁等待 | <3s | 避免长时间锁等待 |
-| 死锁次数 | 0 | 出现死锁需要立即处理 |
+| 指标   | 阈值   | 说明           |
+|------|------|--------------|
+| 慢查询  | >1s  | 需要优化SQL或添加索引 |
+| 连接数  | <80% | 防止连接池耗尽      |
+| 锁等待  | <3s  | 避免长时间锁等待     |
+| 死锁次数 | 0    | 出现死锁需要立即处理   |
 
 ### 定期维护
 
 1. **每日任务**
-   - 检查慢查询日志
-   - 监控表空间使用率
+    - 检查慢查询日志
+    - 监控表空间使用率
 
 2. **每周任务**
-   - 分析表优化建议
-   - 更新统计信息
+    - 分析表优化建议
+    - 更新统计信息
 
 3. **每月任务**
-   - 清理历史数据
-   - 重建碎片化索引
+    - 清理历史数据
+    - 重建碎片化索引
 
 ## 📚 相关文档
 

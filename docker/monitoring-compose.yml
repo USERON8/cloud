@@ -7,43 +7,55 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
     ports:
       - "9201:9200"
       - "9301:9300"
     volumes:
       - type: bind
-        source: D:\docker\elasticsearch\data
+        source: ./monitor/elasticsearch/data
         target: /usr/share/elasticsearch/data
       - type: bind
-        source: D:\docker\elasticsearch\logs
+        source: ./monitor/elasticsearch/logs
         target: /usr/share/elasticsearch/logs
+      - type: bind
+        source: ./monitor/elasticsearch/plugins
+        target: /usr/share/elasticsearch/plugins
+      - type: bind
+        source: ./monitor/elasticsearch/config
+        target: /usr/share/elasticsearch/config
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     networks:
       - monitoring
 
   # Logstash
   logstash:
-    image:
-      logstash:9.1.2
+    image: logstash:9.1.2
     container_name: logstash
     depends_on:
       - elasticsearch
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "5044:5044" # Beats 输出
+      - "9600:9600" # Logstash API
     volumes:
       - type: bind
-        source: ./logstash/pipeline
+        source: ./monitor/logstash/pipeline
         target: /usr/share/logstash/pipeline
       - type: bind
-        source: ../logs
-        target: /app/logs
+        source: ./monitor/logstash/config
+        target: /usr/share/logstash/config
+      - type: bind
+        source: ./monitor/logstash/logs
+        target: /usr/share/logstash/logs
     networks:
       - monitoring
 
   # Kibana
   kibana:
-    image:
-      kibana:9.1.2
+    image: kibana:9.1.2
     container_name: kibana
     depends_on:
       - elasticsearch
@@ -51,6 +63,11 @@ services:
       - "5601:5601"
     environment:
       - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
+      - I18N_LOCALE=zh-CN
+    volumes:
+      - type: bind
+        source: ./monitor/kibana/config
+        target: /usr/share/kibana/config
     networks:
       - monitoring
 
@@ -62,14 +79,11 @@ services:
       - "9099:9090"
     volumes:
       - type: bind
-        source: ./prometheus
+        source: ./monitor/prometheus/config
         target: /etc/prometheus
       - type: bind
-        source: D:\docker\prometheus\data
+        source: ./monitor/prometheus/data
         target: /prometheus
-      - type: bind
-        source: D:\docker\prometheus\logs
-        target: /prometheus/logs
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -82,8 +96,7 @@ services:
 
   # Grafana
   grafana:
-    image:
-      grafana/grafana:12.2.0-17084981832
+    image: grafana/grafana:12.2.0-17084981832
     container_name: grafana
     depends_on:
       - prometheus
@@ -91,21 +104,20 @@ services:
       - "3000:3000"
     volumes:
       - type: bind
-        source: D:\docker\grafana\data
+        source: ./monitor/grafana/data
         target: /var/lib/grafana
       - type: bind
-        source: D:\docker\grafana\logs
-        target: /var/log/grafana
+        source: ./monitor/grafana/provisioning
+        target: /etc/grafana/provisioning
+      - type: bind
+        source: ./monitor/grafana/config
+        target: /etc/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     networks:
       - monitoring
-
-volumes:
-  elasticsearch_data:
-  prometheus_data:
-  grafana_data:
 
 networks:
   monitoring:

@@ -11,16 +11,16 @@ import java.util.concurrent.Callable;
 
 /**
  * 多级缓存实现类
- * 
+ * <p>
  * 实现Spring Cache接口，提供Caffeine + Redis双级缓存功能。
  * 支持缓存穿透防护、过期时间控制和跨节点一致性保证。
- * 
+ * <p>
  * 缓存查询策略：
  * 1. 先查询本地缓存(Caffeine)，命中则直接返回
  * 2. 本地未命中时查询分布式缓存(Redis)
  * 3. Redis命中则回填到本地缓存并返回
  * 4. 都未命中返回null，由@Cacheable注解驱动方法执行
- * 
+ *
  * @author CloudDevAgent
  * @version 2.0
  * @since 2025-09-26
@@ -68,14 +68,14 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
      */
     private final boolean allowNullValues;
 
-    public MultiLevelCache(String name, 
-                          Cache<Object, CacheObject> localCache,
-                          RedisTemplate<String, Object> redisTemplate,
-                          long defaultExpireSeconds,
-                          String keyPrefix,
-                          String nodeId,
-                          String messageTopic,
-                          boolean allowNullValues) {
+    public MultiLevelCache(String name,
+                           Cache<Object, CacheObject> localCache,
+                           RedisTemplate<String, Object> redisTemplate,
+                           long defaultExpireSeconds,
+                           String keyPrefix,
+                           String nodeId,
+                           String messageTopic,
+                           boolean allowNullValues) {
         super(allowNullValues);
         this.name = name;
         this.localCache = localCache;
@@ -99,14 +99,14 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 缓存查询核心逻辑
-     * 
+     *
      * @param key 缓存键
      * @return 缓存值，未命中返回null
      */
     @Override
     protected Object lookup(Object key) {
         String cacheKey = generateRedisKey(key);
-        
+
         try {
             // 1. 先查询本地缓存(Caffeine)
             CacheObject localCacheObj = localCache.getIfPresent(key);
@@ -161,24 +161,24 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 写入缓存（双写模式）
-     * 
-     * @param key 缓存键
+     *
+     * @param key   缓存键
      * @param value 缓存值
      */
     @Override
     public void put(Object key, Object value) {
         String cacheKey = generateRedisKey(key);
-        
+
         try {
             // 创建缓存对象
-            CacheObject cacheObj = (value == null && allowNullValues) 
-                ? CacheObject.nullObject(defaultExpireSeconds)
-                : CacheObject.of(value, defaultExpireSeconds);
+            CacheObject cacheObj = (value == null && allowNullValues)
+                    ? CacheObject.nullObject(defaultExpireSeconds)
+                    : CacheObject.of(value, defaultExpireSeconds);
 
             // 1. 写入Redis
             if (defaultExpireSeconds > 0) {
-                redisTemplate.opsForValue().set(cacheKey, cacheObj, 
-                    java.time.Duration.ofSeconds(defaultExpireSeconds));
+                redisTemplate.opsForValue().set(cacheKey, cacheObj,
+                        java.time.Duration.ofSeconds(defaultExpireSeconds));
             } else {
                 redisTemplate.opsForValue().set(cacheKey, cacheObj);
             }
@@ -198,13 +198,13 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 清除指定缓存项
-     * 
+     *
      * @param key 缓存键
      */
     @Override
     public void evict(Object key) {
         String cacheKey = generateRedisKey(key);
-        
+
         try {
             // 1. 清除Redis缓存
             redisTemplate.delete(cacheKey);
@@ -247,7 +247,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 处理其他节点发送的缓存一致性消息
-     * 
+     *
      * @param message 缓存消息
      */
     public void handleCacheMessage(CacheMessage message) {
@@ -262,8 +262,8 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
                 case DELETE:
                     // 清除本地缓存中的指定键
                     localCache.invalidate(message.getKey());
-                    log.debug("收到缓存消息-清除本地缓存: cacheName={}, key={}, operation={}", 
-                        message.getCacheName(), message.getKey(), message.getOperationType());
+                    log.debug("收到缓存消息-清除本地缓存: cacheName={}, key={}, operation={}",
+                            message.getCacheName(), message.getKey(), message.getOperationType());
                     break;
                 case CLEAR:
                     // 清空本地缓存
@@ -278,7 +278,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 生成Redis缓存键
-     * 
+     *
      * @param key 原始键
      * @return Redis缓存键
      */
@@ -288,7 +288,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 发布缓存一致性消息
-     * 
+     *
      * @param message 缓存消息
      */
     private void publishCacheMessage(CacheMessage message) {
@@ -301,12 +301,12 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
     /**
      * 获取缓存统计信息（用于监控）
-     * 
+     *
      * @return 统计信息字符串
      */
     public String getStats() {
         com.github.benmanes.caffeine.cache.stats.CacheStats stats = localCache.stats();
-        return String.format("Cache[%s] Stats: hitRate=%.2f%%, missCount=%d, evictionCount=%d", 
-            name, stats.hitRate() * 100, stats.missCount(), stats.evictionCount());
+        return String.format("Cache[%s] Stats: hitRate=%.2f%%, missCount=%d, evictionCount=%d",
+                name, stats.hitRate() * 100, stats.missCount(), stats.evictionCount());
     }
 }

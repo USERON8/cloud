@@ -1,15 +1,15 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.product.CategorySearchEvent;
-
-
-
 import com.cloud.search.document.CategoryDocument;
 import com.cloud.search.repository.CategoryDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
 import com.cloud.search.service.ElasticsearchOptimizedService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -19,10 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 
 /**
  * 分类搜索服务实现
@@ -130,8 +126,8 @@ public class CategorySearchServiceImpl implements CategorySearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "categorySearchCache",
-                        key = "'category:' + #categoryId",
-                        condition = "#categoryId != null")
+            key = "'category:' + #categoryId",
+            condition = "#categoryId != null")
     public CategoryDocument findByCategoryId(Long categoryId) {
         return categoryDocumentRepository.findById(String.valueOf(categoryId)).orElse(null);
     }

@@ -1,21 +1,39 @@
+﻿# ===== Java & Maven =====
 target/
+*.class
+*.jar
+*.war
+*.ear
+dependency-reduced-pom.xml
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.xml.next
 release.properties
-dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 # https://maven.apache.org/wrapper/#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
 
-# Eclipse m2e generated files
-# Eclipse Core
-.project
-# JDT-specific (Eclipse Java Development Tools)
+# ===== IDE Files =====
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.settings/
 .classpath
-.idea
+.project
+.metadata/
+bin/
+
+# VSCode
+.vscode/
+
+# AI Assistant
 .augment
 .xcodemap
 .lingma
@@ -23,3 +41,39 @@ buildNumber.properties
 WARP.md
 AI_ASSISTANT_RULES_EN.md
 
+# ===== Logs =====
+logs/
+*.log
+**/logs/
+
+# ===== Docker & Data =====
+# Elasticsearch
+docker/docker-compose/elasticsearch/data/
+# MySQL
+docker/docker-compose/mysql/data/
+# Redis
+docker/docker-compose/redis/data/
+# RocketMQ
+docker/docker-compose/rocketmq/data/
+# Minio
+docker/docker-compose/minio/data/
+
+# ===== Application =====
+# Spring Boot
+application-local.yml
+application-local.properties
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*-backup.*
+*-old.*
+*-new.*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Keep essential files
+!README.md

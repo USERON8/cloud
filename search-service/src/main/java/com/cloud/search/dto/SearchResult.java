@@ -106,8 +106,8 @@ public class SearchResult<T> {
     /**
      * 构建带聚合信息的分页结果
      */
-    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took, 
-                                        Map<String, Object> aggregations) {
+    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
+                                         Map<String, Object> aggregations) {
         SearchResult<T> result = of(list, total, page, size, took);
         result.setAggregations(aggregations);
         return result;
@@ -117,7 +117,7 @@ public class SearchResult<T> {
      * 构建带高亮的分页结果
      */
     public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
-                                        Map<String, Object> aggregations, Map<String, List<String>> highlights) {
+                                         Map<String, Object> aggregations, Map<String, List<String>> highlights) {
         SearchResult<T> result = of(list, total, page, size, took, aggregations);
         result.setHighlights(highlights);
         return result;

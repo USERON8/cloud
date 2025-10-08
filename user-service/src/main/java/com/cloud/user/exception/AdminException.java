@@ -13,6 +13,18 @@ import lombok.Getter;
 @Getter
 public class AdminException extends BusinessException {
 
+    public AdminException(int code, String message) {
+        super(code, message);
+    }
+
+    public AdminException(String message) {
+        super(message);
+    }
+
+    public AdminException(int code, String message, Throwable cause) {
+        super(code, message, cause);
+    }
+
     /**
      * 管理员不存在异常
      */
@@ -64,17 +76,5 @@ public class AdminException extends BusinessException {
         public AdminPasswordException(String message) {
             super(400, message);
         }
-    }
-
-    public AdminException(int code, String message) {
-        super(code, message);
-    }
-
-    public AdminException(String message) {
-        super(message);
-    }
-
-    public AdminException(int code, String message, Throwable cause) {
-        super(code, message, cause);
     }
 }

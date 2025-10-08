@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 
 /**
  * 退款创建事件
- * 
+ * <p>
  * 当订单取消或需要退款时发送此事件，
  * 通知支付服务创建退款记录并进行退款处理
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-26
  */
@@ -69,7 +69,7 @@ public class RefundCreateEvent implements Serializable {
     /**
      * 退款类型
      * CANCEL - 订单取消退款
-     * RETURN - 订单退货退款  
+     * RETURN - 订单退货退款
      * PARTIAL - 部分退款
      */
     private String refundType;

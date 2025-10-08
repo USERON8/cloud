@@ -33,93 +33,93 @@ public class StockEventProducer {
     private final StreamBridge streamBridge;
 
     /**
-     * 发送入库事件
+     * 生产入库事件
      */
-    public void sendStockInEvent(StockChangeEvent event) {
+    public void produceStockIn(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_IN", "stock-in");
     }
 
     /**
-     * 发送出库事件
+     * 生产出库事件
      */
-    public void sendStockOutEvent(StockChangeEvent event) {
+    public void produceStockOut(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_OUT", "stock-out");
     }
 
     /**
-     * 发送库存预扣事件
+     * 生产库存预扣事件
      */
-    public void sendStockReservedEvent(StockChangeEvent event) {
+    public void produceStockReserved(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_RESERVED", "stock-reserved");
     }
 
     /**
-     * 发送释放预扣事件
+     * 生产释放预扣事件
      */
-    public void sendStockReleasedEvent(StockChangeEvent event) {
+    public void produceStockReleased(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_RELEASED", "stock-released");
     }
 
     /**
-     * 发送库存锁定事件
+     * 生产库存锁定事件
      */
-    public void sendStockLockedEvent(StockChangeEvent event) {
+    public void produceStockLocked(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_LOCKED", "stock-locked");
     }
 
     /**
-     * 发送库存解锁事件
+     * 生产库存解锁事件
      */
-    public void sendStockUnlockedEvent(StockChangeEvent event) {
+    public void produceStockUnlocked(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_UNLOCKED", "stock-unlocked");
     }
 
     /**
-     * 发送盘点调整事件
+     * 生产盘点调整事件
      */
-    public void sendStockAdjustedEvent(StockChangeEvent event) {
+    public void produceStockAdjusted(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_ADJUSTED", "stock-adjusted");
     }
 
     /**
-     * 发送库存调拨事件
+     * 生产库存调拨事件
      */
-    public void sendStockTransferredEvent(StockChangeEvent event) {
+    public void produceStockTransferred(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_TRANSFERRED", "stock-transferred");
     }
 
     /**
-     * 发送库存冻结事件
+     * 生产库存冻结事件
      */
-    public void sendStockFrozenEvent(StockChangeEvent event) {
+    public void produceStockFrozen(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_FROZEN", "stock-frozen");
     }
 
     /**
-     * 发送库存解冻事件
+     * 生产库存解冻事件
      */
-    public void sendStockUnfrozenEvent(StockChangeEvent event) {
+    public void produceStockUnfrozen(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_UNFROZEN", "stock-unfrozen");
     }
 
     /**
-     * 发送库存报废事件
+     * 生产库存报废事件
      */
-    public void sendStockScrapedEvent(StockChangeEvent event) {
+    public void produceStockScraped(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_SCRAPED", "stock-scraped");
     }
 
     /**
-     * 发送库存警告事件
+     * 生产库存警告事件
      */
-    public void sendStockWarningEvent(StockChangeEvent event) {
+    public void produceStockWarning(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_WARNING", "stock-warning");
     }
 
     /**
-     * 发送库存同步事件
+     * 生产库存同步事件
      */
-    public void sendStockSyncEvent(StockChangeEvent event) {
+    public void produceStockSync(StockChangeEvent event) {
         sendStockEvent(event, "STOCK_SYNC", "stock-sync");
     }
 
@@ -148,13 +148,13 @@ public class StockEventProducer {
             boolean sent = streamBridge.send(STOCK_BINDING_NAME, message);
 
             if (sent) {
-                log.info("✅ 库存事件发送成功 - 事件类型: {}, 库存ID: {}, 商品ID: {}, 商品名称: {}, 操作人: {}, Tag: {}, TraceId: {}",
+                log.info("✅ 库存事件生产成功 - 事件类型: {}, 库存ID: {}, 商品ID: {}, 商品名称: {}, 操作人: {}, Tag: {}, TraceId: {}",
                         changeType, event.getStockId(), event.getProductId(), event.getProductName(),
                         event.getOperator(), tag, traceId);
             } else {
-                log.error("❌ 库存事件发送失败 - 事件类型: {}, 库存ID: {}, TraceId: {}",
+                log.error("❌ 库存事件生产失败 - 事件类型: {}, 库存ID: {}, TraceId: {}",
                         changeType, event.getStockId(), traceId);
-                throw new MessageSendException("库存事件发送失败");
+                throw new MessageSendException("库存事件生产失败");
             }
 
         } catch (Exception e) {

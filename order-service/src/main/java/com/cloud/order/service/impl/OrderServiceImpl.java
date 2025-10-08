@@ -9,13 +9,14 @@ import com.cloud.common.domain.event.order.OrderCompletedEvent;
 import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
 import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.common.exception.InvalidStatusException;
+import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.messaging.BusinessLogProducer;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.order.converter.OrderConverter;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
-import com.cloud.common.exception.InvalidStatusException;
 import com.cloud.order.mapper.OrderMapper;
-import com.cloud.common.messaging.BusinessLogProducer;
-import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
@@ -23,11 +24,10 @@ import com.cloud.order.service.OrderItemService;
 import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -639,7 +639,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public OrderVO getOrderByOrderIdForFeign(Long orderId) {
         try {
             log.debug("[订单服务] 开始处理Feign调用：根据订单ID查询订单信息，订单ID: {}", orderId);
-            
+
             // 直接从数据库查询
             Order order = this.baseMapper.selectById(orderId);
             if (order == null) {
@@ -667,17 +667,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public OrderVO createOrderForFeign(OrderDTO orderDTO) {
         try {
             log.info("[订单服务] 开始处理Feign调用：创建订单，用户ID: {}", orderDTO.getUserId());
-            
+
             // 创建订单实体
             Order order = orderConverter.toEntity(orderDTO);
             order.setStatus(0); // 设置为待支付状态
-            
+
             boolean saved = this.save(order);
             if (!saved) {
                 log.error("[订单服务] 创建订单失败");
                 return null;
             }
-            
+
             OrderVO orderVO = orderConverter.toVO(order);
             log.info("[订单服务] 创建订单成功，订单ID: {}", order.getId());
             return orderVO;
@@ -699,24 +699,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public Boolean updateOrderStatusForFeign(Long orderId, Integer status) {
         try {
             log.info("[订单服务] 开始处理Feign调用：更新订单状态，订单ID: {}，状态: {}", orderId, status);
-            
+
             // 查询订单
             Order order = this.baseMapper.selectById(orderId);
             if (order == null) {
                 log.warn("[订单服务] 订单不存在，订单ID: {}", orderId);
                 return false;
             }
-            
+
             // 更新状态
             order.setStatus(status);
             boolean updated = this.updateById(order);
-            
+
             if (updated) {
                 log.info("[订单服务] 更新订单状态成功，订单ID: {}，新状态: {}", orderId, status);
             } else {
                 log.warn("[订单服务] 更新订单状态失败，订单ID: {}，状态: {}", orderId, status);
             }
-            
+
             return updated;
         } catch (Exception e) {
             log.error("[订单服务] 更新订单状态异常，订单ID: {}，状态: {}", orderId, status, e);
@@ -735,24 +735,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public Boolean completeOrderForFeign(Long orderId) {
         try {
             log.info("[订单服务] 开始处理Feign调用：完成订单，订单ID: {}", orderId);
-            
+
             // 查询订单
             Order order = this.baseMapper.selectById(orderId);
             if (order == null) {
                 log.warn("[订单服务] 订单不存在，订单ID: {}", orderId);
                 return false;
             }
-            
+
             // 验证订单状态（必须是已发货状态）
             if (order.getStatus() != 2) {
                 log.warn("[订单服务] 订单状态不正确，无法完成订单，订单ID: {}，当前状态: {}", orderId, order.getStatus());
                 return false;
             }
-            
+
             // 更新状态为已完成
             order.setStatus(3);
             boolean updated = this.updateById(order);
-            
+
             if (updated) {
                 log.info("[订单服务] 完成订单成功，订单ID: {}", orderId);
                 // 发布订单完成事件
@@ -760,7 +760,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             } else {
                 log.warn("[订单服务] 完成订单失败，订单ID: {}", orderId);
             }
-            
+
             return updated;
         } catch (Exception e) {
             log.error("[订单服务] 完成订单异常，订单ID: {}", orderId, e);

@@ -8,18 +8,28 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.search", "com.cloud.common"}
+        scanBasePackages = {"com.cloud.search", "com.cloud.common"},
+        exclude = {
+                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration.class
+        }
 )
 @ComponentScan(
-    basePackages = {"com.cloud.search", "com.cloud.common"}
+        basePackages = {"com.cloud.search", "com.cloud.common"},
+        excludeFilters = {
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
+                        classes = {
+                                com.cloud.common.config.MybatisPlusConfig.class,
+                                com.cloud.common.monitoring.PerformanceMonitor.class
+                        })
+        }
 )
 @EnableDiscoveryClient
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
-@EnableTransactionManagement(proxyTargetClass = true)
 public class SearchApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");

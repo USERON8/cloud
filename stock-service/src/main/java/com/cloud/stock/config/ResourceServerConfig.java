@@ -1,70 +1,119 @@
 package com.cloud.stock.config;
 
-import com.cloud.common.config.base.BaseOAuth2ResourceServerConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 库存服务 OAuth2资源服务器配置
- * 继承通用配置，添加库存服务特定的安全配置
+ * 库存服务 OAuth2.1资源服务器配置
+ * 独立的OAuth2资源服务器配置，不依赖common-module
  *
  * @author what's up
  */
 @Slf4j
 @Configuration
-public class ResourceServerConfig extends BaseOAuth2ResourceServerConfig {
+@EnableWebSecurity
+public class ResourceServerConfig {
 
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:http://127.0.0.1:80/.well-known/jwks.json}")
+    private String jwkSetUri;
+
+    /**
+     * 配置库存服务的安全过滤器链
+     */
     @Bean
+    @Order(100)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        SecurityFilterChain chain = createSecurityFilterChain(http);
-        logConfigurationComplete();
-        return chain;
+        log.info("🔧 配置库存服务OAuth2.1资源服务器安全过滤器链");
+
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowCredentials(true);
+                    config.addAllowedOriginPattern("*");
+                    config.addAllowedHeader("*");
+                    config.addAllowedMethod("*");
+                    return config;
+                }))
+                .authorizeHttpRequests(authz -> authz
+                        // 公共端点放行
+                        .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+                        .requestMatchers("/doc.html/**", "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
+                        
+                        // 内部API需要internal_api scope
+                        .requestMatchers("/api/stock/internal/**")
+                        .hasAuthority("SCOPE_internal_api")
+
+                        // 库存管理接口 - 需要库存管理权限或管理员权限
+                        .requestMatchers("/api/stock/manage/**")
+                        .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
+
+                        // 库存查询接口 - 需要库存查询权限或管理员权限
+                        .requestMatchers("/api/stock/query/**")
+                        .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
+                        
+                        // 其他请求需要认证
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            log.warn("🔒 JWT认证失败: {}", authException.getMessage());
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"unauthorized\",\"message\":\"JWT令牌无效或已过期\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            log.warn("🚫 JWT授权失败: {}", accessDeniedException.getMessage());
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"access_denied\",\"message\":\"权限不足\"}"
+                            );
+                        })
+                );
+
+        log.info("✅ 库存服务OAuth2.1资源服务器安全过滤器链配置完成");
+        return http.build();
     }
 
-    @Override
-    protected void configurePublicPaths(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-        auth
-                // 公开访问的端点
-                .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
-                // Swagger和API文档端点
-                .requestMatchers("/doc.html/**", "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll();
+    /**
+     * JWT解码器配置
+     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        log.info("🔧 配置库存服务JWT解码器，JWK端点: {}", jwkSetUri);
+        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
     }
 
-    @Override
-    protected void configureProtectedPaths(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-        if (isUnifiedSecurityEnabled()) {
-            // 使用统一权限管理
-            auth
-                    // 内部API需要internal_api scope
-                    .requestMatchers("/api/stock/internal/**")
-                    .hasAuthority("SCOPE_internal_api")
-                    
-                    // 库存管理接口 - 需要库存管理权限或管理员权限
-                    .requestMatchers("/api/stock/manage/**")
-                    .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
-                    
-                    // 库存查询接口 - 需要库存查询权限或管理员权限
-                    .requestMatchers("/api/stock/query/**")
-                    .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN");
-        } else {
-            // 回退到标准OAuth2权限
-            auth
-                    // 内部API需要internal_api scope
-                    .requestMatchers("/api/stock/internal/**").hasAuthority("SCOPE_internal_api")
-                    // 库存查询接口需要read scope
-                    .requestMatchers("/api/stock/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_user.read")
-                    // 库存管理接口需要write scope
-                    .requestMatchers("/api/stock/manage/**").hasAnyAuthority("SCOPE_write", "SCOPE_user.write");
-        }
-    }
-
-    @Override
-    protected String getServiceName() {
-        return "库存服务";
+    /**
+     * JWT认证转换器配置
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // OAuth2.1标准：从scope字段中提取权限，使用SCOPE_前缀
+        authoritiesConverter.setAuthorityPrefix("SCOPE_");
+        authoritiesConverter.setAuthoritiesClaimName("scope");
+        
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        
+        return converter;
     }
 }

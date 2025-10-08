@@ -266,6 +266,97 @@ public class UserAddressController {
     }
 
     /**
+     * 批量删除用户地址
+     */
+    @DeleteMapping("/deleteBatch")
+    @Operation(summary = "批量删除用户地址", description = "批量删除指定的用户地址")
+    public Result<Boolean> deleteAddressBatch(
+            @RequestBody
+            @Parameter(description = "地址ID列表")
+            @NotNull(message = "地址ID列表不能为空") List<Long> addressIds,
+            Authentication authentication) {
+
+        if (addressIds == null || addressIds.isEmpty()) {
+            return Result.badRequest("地址ID列表不能为空");
+        }
+
+        if (addressIds.size() > 100) {
+            return Result.badRequest("批量删除数量不能超过100个");
+        }
+
+        log.info("批量删除用户地址, addressIds: {}", addressIds);
+
+        // 权限检查：需要检查每个地址是否属于当前用户或者是管理员
+        int successCount = 0;
+        for (Long addressId : addressIds) {
+            try {
+                UserAddress existingAddress = userAddressService.getById(addressId);
+                if (existingAddress != null) {
+                    if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+                        if (userAddressService.removeById(addressId)) {
+                            successCount++;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("删除地址失败, addressId: {}", addressId, e);
+            }
+        }
+
+        log.info("批量删除地址完成, 成功: {}/{}", successCount, addressIds.size());
+        return Result.success(String.format("批量删除地址成功: %d/%d", successCount, addressIds.size()), true);
+    }
+
+    /**
+     * 批量更新用户地址
+     */
+    @PutMapping("/updateBatch")
+    @Operation(summary = "批量更新用户地址", description = "批量更新多个用户地址信息")
+    public Result<Boolean> updateAddressBatch(
+            @RequestBody
+            @Parameter(description = "地址信息列表")
+            @Valid @NotNull(message = "地址信息列表不能为空") List<UserAddressRequestDTO> addressList,
+            Authentication authentication) {
+
+        if (addressList == null || addressList.isEmpty()) {
+            return Result.badRequest("地址信息列表不能为空");
+        }
+
+        if (addressList.size() > 100) {
+            return Result.badRequest("批量更新数量不能超过100个");
+        }
+
+        log.info("批量更新用户地址, count: {}", addressList.size());
+
+        int successCount = 0;
+        for (UserAddressRequestDTO addressDTO : addressList) {
+            try {
+                if (addressDTO.getId() == null) {
+                    continue;
+                }
+
+                UserAddress existingAddress = userAddressService.getById(addressDTO.getId());
+                if (existingAddress != null) {
+                    if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+                        UserAddress userAddress = userAddressConverter.toEntity(addressDTO);
+                        userAddress.setId(addressDTO.getId());
+                        userAddress.setUpdatedAt(LocalDateTime.now());
+
+                        if (userAddressService.updateById(userAddress)) {
+                            successCount++;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("更新地址失败, addressId: {}", addressDTO.getId(), e);
+            }
+        }
+
+        log.info("批量更新地址完成, 成功: {}/{}", successCount, addressList.size());
+        return Result.success(String.format("批量更新地址成功: %d/%d", successCount, addressList.size()), true);
+    }
+
+    /**
      * 将用户其他地址设为非默认
      *
      * @param userId 用户ID

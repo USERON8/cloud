@@ -1,9 +1,8 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.product.ProductSearchEvent;
-
-
-
+import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
@@ -12,30 +11,24 @@ import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.data.domain.PageRequest;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import com.cloud.common.messaging.AsyncLogProducer;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.Objects;
-import java.util.Collections;
-import java.util.*;
-
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 
 /**
  * 商品搜索服务实现
@@ -149,8 +142,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productSearchCache",
-                        key = "'product:' + #productId",
-                        condition = "#productId != null")
+            key = "'product:' + #productId",
+            condition = "#productId != null")
     public ProductDocument findByProductId(Long productId) {
         return productDocumentRepository.findById(String.valueOf(productId)).orElse(null);
     }
@@ -378,8 +371,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productSearchCache",
-                        key = "'search:' + #request.hashCode()",
-                        condition = "#request != null")
+            key = "'search:' + #request.hashCode()",
+            condition = "#request != null")
     public SearchResult<ProductDocument> searchProducts(ProductSearchRequest request) {
         try {
             log.info("执行商品复杂搜索 - 关键字: {}, 分类: {}, 品牌: {}, 价格范围: {}-{}",
@@ -427,8 +420,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "searchSuggestionCache",
-                        key = "'suggestion:' + #keyword + ':' + #size",
-                        condition = "#keyword != null")
+            key = "'suggestion:' + #keyword + ':' + #size",
+            condition = "#keyword != null")
     public List<String> getSearchSuggestions(String keyword, Integer size) {
         try {
             if (!StringUtils.hasText(keyword)) {
@@ -460,7 +453,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "hotSearchCache",
-                        key = "'hot:' + #size")
+            key = "'hot:' + #size")
     public List<String> getHotSearchKeywords(Integer size) {
         try {
             log.info("获取热门搜索关键字 - 数量: {}", size);
@@ -508,8 +501,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "filterCache",
-                        key = "'filter:' + #request.hashCode()",
-                        condition = "#request != null")
+            key = "'filter:' + #request.hashCode()",
+            condition = "#request != null")
     public SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request) {
         try {
             log.info("获取商品筛选聚合信息");
@@ -559,7 +552,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
         return Sort.by(direction, request.getSortBy());
     }
-    
+
     /**
      * 记录商品索引操作日志
      */
@@ -582,6 +575,6 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             log.warn("记录商品索引日志失败", e);
         }
     }
-    
+
 
 }

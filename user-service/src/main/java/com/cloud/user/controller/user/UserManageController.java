@@ -92,4 +92,67 @@ public class UserManageController {
             return Result.systemError("批量删除用户失败");
         }
     }
+
+    @PostMapping("/updateBatch")
+    @Operation(summary = "批量更新用户信息", description = "批量更新多个用户的信息")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Boolean> updateBatch(@RequestBody
+                                       @Parameter(description = "用户信息列表")
+                                       @Valid @NotNull(message = "用户信息列表不能为空") List<UserDTO> userDTOList,
+                                       Authentication authentication) {
+
+        if (userDTOList == null || userDTOList.isEmpty()) {
+            return Result.badRequest("用户信息列表不能为空");
+        }
+
+        if (userDTOList.size() > 100) {
+            return Result.badRequest("批量更新数量不能超过100个");
+        }
+
+        try {
+            boolean result = userService.updateBatchById(
+                    userDTOList.stream()
+                            .map(userConverter::toEntity)
+                            .collect(java.util.stream.Collectors.toList())
+            );
+            return Result.success(String.format("批量更新%d个用户成功", userDTOList.size()), result);
+        } catch (Exception e) {
+            log.error("批量更新用户失败", e);
+            return Result.systemError("批量更新用户失败");
+        }
+    }
+
+    @PostMapping("/updateStatusBatch")
+    @Operation(summary = "批量更新用户状态", description = "批量启用或禁用用户")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Boolean> updateStatusBatch(@RequestParam
+                                             @Parameter(description = "用户ID列表")
+                                             @NotNull(message = "用户ID列表不能为空") List<Long> ids,
+                                             @RequestParam
+                                             @Parameter(description = "用户状态")
+                                             @NotNull(message = "用户状态不能为空") Integer status,
+                                             Authentication authentication) {
+
+        if (ids == null || ids.isEmpty()) {
+            return Result.badRequest("用户ID列表不能为空");
+        }
+
+        if (ids.size() > 100) {
+            return Result.badRequest("批量操作数量不能超过100个");
+        }
+
+        try {
+            int successCount = 0;
+            for (Long id : ids) {
+                if (userService.updateUserStatus(id, status)) {
+                    successCount++;
+                }
+            }
+            log.info("批量更新用户状态完成, 成功: {}/{}", successCount, ids.size());
+            return Result.success(String.format("批量更新用户状态成功: %d/%d", successCount, ids.size()), true);
+        } catch (Exception e) {
+            log.error("批量更新用户状态失败, IDs: {}", ids, e);
+            return Result.systemError("批量更新用户状态失败");
+        }
+    }
 }

@@ -71,6 +71,27 @@
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
+                <!-- search-service无需MySQL，排除MyBatis-Plus相关依赖 -->
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-annotation</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-extension</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-jsqlparser</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

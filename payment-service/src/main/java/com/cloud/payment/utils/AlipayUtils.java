@@ -65,9 +65,9 @@ public class AlipayUtils {
         if (outTradeNo == null || outTradeNo.trim().isEmpty()) {
             return false;
         }
-        
-        return outTradeNo.startsWith(OUT_TRADE_NO_PREFIX) && 
-               outTradeNo.split("_").length >= 3;
+
+        return outTradeNo.startsWith(OUT_TRADE_NO_PREFIX) &&
+                outTradeNo.split("_").length >= 3;
     }
 
     /**
@@ -100,7 +100,7 @@ public class AlipayUtils {
         if (tradeStatus == null) {
             return "未知状态";
         }
-        
+
         switch (tradeStatus) {
             case "WAIT_BUYER_PAY":
                 return "交易创建，等待买家付款";
@@ -125,19 +125,19 @@ public class AlipayUtils {
         if (params == null || params.isEmpty()) {
             return false;
         }
-        
+
         // 检查必要参数
         String[] requiredParams = {
-            "trade_status", "out_trade_no", "trade_no", "total_amount", "app_id"
+                "trade_status", "out_trade_no", "trade_no", "total_amount", "app_id"
         };
-        
+
         for (String param : requiredParams) {
             if (!params.containsKey(param) || params.get(param) == null || params.get(param).trim().isEmpty()) {
                 log.error("缺少必要参数: {}", param);
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -151,7 +151,7 @@ public class AlipayUtils {
         if (tradeNo == null || tradeNo.length() <= 8) {
             return tradeNo;
         }
-        
+
         int length = tradeNo.length();
         return tradeNo.substring(0, 4) + "****" + tradeNo.substring(length - 4);
     }
@@ -166,17 +166,17 @@ public class AlipayUtils {
         if (buyerLogonId == null || buyerLogonId.length() <= 4) {
             return buyerLogonId;
         }
-        
+
         if (buyerLogonId.contains("@")) {
             // 邮箱格式
             String[] parts = buyerLogonId.split("@");
             String username = parts[0];
             String domain = parts[1];
-            
+
             if (username.length() <= 2) {
                 return buyerLogonId;
             }
-            
+
             return username.substring(0, 2) + "***@" + domain;
         } else {
             // 手机号格式

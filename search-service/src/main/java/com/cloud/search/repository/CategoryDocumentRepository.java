@@ -111,9 +111,9 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     /**
      * 根据排序字段查询分类
      *
-     * @param parentId  父分类ID
-     * @param status    状态
-     * @param pageable  分页参数（包含排序）
+     * @param parentId 父分类ID
+     * @param status   状态
+     * @param pageable 分页参数（包含排序）
      * @return 搜索结果
      */
     @Query("{\"bool\": {\"must\": [{\"term\": {\"parentId\": ?0}}, {\"term\": {\"status\": ?1}}]}}")

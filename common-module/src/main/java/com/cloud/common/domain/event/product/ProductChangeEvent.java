@@ -7,12 +7,20 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 商品变更事件对象
- * 用于在服务间传递商品变更信息
+ * 
+ * 标准字段设计：
+ * - 核心标识: productId, shopId, eventType
+ * - 关联字段: categoryId (分类关联)
+ * - 状态变更: beforeStatus, afterStatus
+ * - 追踪信息: timestamp, traceId
+ * - 扩展信息: metadata, operator
+ * 
+ * @author CloudDevAgent
+ * @since 2025-10-04
  */
 @Data
 @Builder
@@ -28,67 +36,60 @@ public class ProductChangeEvent implements Serializable {
     private Long productId;
 
     /**
-     * 商品名称
-     */
-    private String productName;
-
-    /**
-     * 商品价格
-     */
-    private BigDecimal price;
-
-    /**
-     * 商品库存
-     */
-    private Integer stockQuantity;
-
-    /**
-     * 商品分类ID
-     */
-    private Long categoryId;
-
-    /**
-     * 商品状态
-     */
-    private Integer status;
-
-    /**
      * 店铺ID
      */
     private Long shopId;
 
     /**
-     * 变更前数量
+     * 分类ID
      */
-    private Integer beforeCount;
+    private Long categoryId;
 
     /**
-     * 变更数量
+     * 事件类型
+     * CREATED - 创建商品
+     * UPDATED - 更新商品
+     * DELETED - 删除商品
+     * STATUS_CHANGED - 状态变更
+     * STOCK_CHANGED - 库存变更
+     * PRICE_CHANGED - 价格变更
      */
-    private Integer changeCount;
+    private String eventType;
 
     /**
-     * 变更后数量
+     * 变更前状态
+     * null表示新建操作
      */
-    private Integer afterCount;
+    private Integer beforeStatus;
 
     /**
-     * 变更类型：1-创建商品，2-更新商品，3-删除商品
+     * 变更后状态
      */
-    private Integer changeType;
+    private Integer afterStatus;
 
     /**
-     * 操作人
+     * 事件发生时间
+     */
+    private LocalDateTime timestamp;
+
+    /**
+     * 分布式追踪ID (用于全链路追踪和幂等处理)
+     */
+    private String traceId;
+
+    /**
+     * 操作人标识
      */
     private String operator;
 
     /**
-     * 操作时间
+     * 扩展数据 (JSON格式)
+     * 用于特定场景的额外信息，避免频繁修改事件结构
+     * 
+     * 示例:
+     * - 创建商品: {"productName": "苹果", "price": "5.99", "stock": 100}
+     * - 库存变更: {"beforeStock": 100, "changeStock": -10, "afterStock": 90}
+     * - 价格变更: {"beforePrice": "5.99", "afterPrice": "4.99"}
      */
-    private LocalDateTime operateTime;
-
-    /**
-     * 跟踪ID，用于幂等性处理
-     */
-    private String traceId;
+    private String metadata;
 }

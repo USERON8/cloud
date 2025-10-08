@@ -166,7 +166,7 @@ public class JwtPasswordConfig {
 
         // 返回一个简单的解码器，仅用于开发环境
         // 生产环境建议使用远程JWK URI
-        return NimbusJwtDecoder.withJwkSetUri("http://localhost:8080/oauth2/jwks")
+        return NimbusJwtDecoder.withJwkSetUri("http://localhost:8081/.well-known/jwks.json")
                 .build();
     }
 

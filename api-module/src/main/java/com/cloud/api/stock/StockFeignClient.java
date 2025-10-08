@@ -23,7 +23,7 @@ public interface StockFeignClient {
      * @param productId 商品ID
      * @return 库存信息
      */
-@GetMapping("/product/{productId}")
+    @GetMapping("/product/{productId}")
     StockVO getStockByProductId(@PathVariable("productId") Long productId);
 
     /**
@@ -33,6 +33,6 @@ public interface StockFeignClient {
      * @param quantity  库存数量
      * @return 操作结果
      */
-@PutMapping("/{productId}")
+    @PutMapping("/{productId}")
     OperationResultVO updateStock(@PathVariable("productId") Long productId, @RequestParam("quantity") Integer quantity);
 }

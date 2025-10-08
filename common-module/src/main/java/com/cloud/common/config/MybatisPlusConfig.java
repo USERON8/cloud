@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 
 /**
  * MyBatis Plus 统一配置类
- * 
+ * <p>
  * 主要功能：
  * - 统一的MyBatis Plus拦截器配置（分页、乐观锁、防全表更新）
  * - 通用的元数据自动填充处理器
@@ -34,12 +34,12 @@ public class MybatisPlusConfig {
 
     /**
      * MyBatis Plus 统一拦截器配置
-     * 
+     * <p>
      * 包含功能：
      * - 分页插件：支持MySQL分页查询
      * - 乐观锁插件：防止并发更新冲突
      * - 防全表更新插件：防止误操作全表数据
-     * 
+     * <p>
      * 使用@Primary注解确保优先使用此配置
      */
     @Bean
@@ -65,13 +65,13 @@ public class MybatisPlusConfig {
 
     /**
      * MyBatis Plus 统一元数据处理器
-     * 
+     * <p>
      * 主要功能：
      * - 自动填充创建时间（createdAt）、更新时间（updatedAt）
      * - 自动填充版本号（version）用于乐观锁
      * - 自动填充创建人（createBy）、更新人（updateBy）
      * - 集成Spring Security获取当前用户信息
-     * 
+     * <p>
      * 使用@Primary注解确保优先使用此配置
      */
     @Bean
@@ -83,7 +83,7 @@ public class MybatisPlusConfig {
 
     /**
      * 统一元数据处理器实现
-     * 
+     * <p>
      * 提供全平台统一的字段自动填充功能，支持：
      * - 标准时间字段：createdAt, updatedAt
      * - 乐观锁字段：version
@@ -94,7 +94,7 @@ public class MybatisPlusConfig {
 
         /**
          * 插入时自动填充
-         * 
+         * <p>
          * 支持多种字段命名风格：
          * - 驼峰命名：createdAt, updatedAt, createBy, updateBy
          * - 下划线命名：created_at, updated_at, create_by, update_by
@@ -129,7 +129,7 @@ public class MybatisPlusConfig {
 
         /**
          * 更新时自动填充
-         * 
+         * <p>
          * 自动填充更新时间和更新人信息
          */
         @Override
@@ -147,6 +147,7 @@ public class MybatisPlusConfig {
 
             log.debug("更新填充完成 - updatedAt: {}, userId: {}", now, currentUserId);
         }
+
         /**
          * 通用字段填充方法（插入时）
          */
@@ -189,7 +190,7 @@ public class MybatisPlusConfig {
 
         /**
          * 获取当前用户ID
-         * 
+         * <p>
          * 优先从 SecurityUtils 获取当前登录用户ID，
          * 如果获取失败（未登录或系统初始化时）则返回系统用户ID
          */

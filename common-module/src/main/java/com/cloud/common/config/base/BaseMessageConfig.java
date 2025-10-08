@@ -1,6 +1,7 @@
 package com.cloud.common.config.base;
 
 import com.cloud.common.config.properties.MessageProperties;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
-import jakarta.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 

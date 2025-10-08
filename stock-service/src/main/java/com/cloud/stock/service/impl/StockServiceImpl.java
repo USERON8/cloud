@@ -3,6 +3,7 @@ package com.cloud.stock.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.stock.StockDTO;
 import com.cloud.common.domain.event.order.OrderCompletedEvent;
 import com.cloud.common.domain.event.order.OrderCreatedEvent;
@@ -12,10 +13,11 @@ import com.cloud.common.domain.event.stock.StockRollbackEvent;
 import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.common.messaging.AsyncLogProducer;
+import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
-
-
+import com.cloud.common.utils.UserContextUtils;
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.exception.StockFrozenException;
 import com.cloud.stock.exception.StockInsufficientException;
@@ -23,9 +25,6 @@ import com.cloud.stock.exception.StockOperationException;
 import com.cloud.stock.mapper.StockInMapper;
 import com.cloud.stock.mapper.StockMapper;
 import com.cloud.stock.mapper.StockOutMapper;
-import com.cloud.common.messaging.BusinessLogProducer;
-import com.cloud.common.messaging.AsyncLogProducer;
-import com.cloud.common.annotation.DistributedLock;
 import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.module.entity.StockIn;
@@ -34,17 +33,15 @@ import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.cloud.common.utils.UserContextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
-
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 
 /**
  * 库存服务实现类
@@ -80,7 +77,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             log.info("创建库存记录，商品ID: {}", stockDTO.getProductId());
             Stock stock = stockConverter.toEntity(stockDTO);
             boolean saved = save(stock);
-            
+
             if (saved) {
                 log.info("库存记录创建成功，ID: {}", stock.getId());
                 return stockConverter.toDTO(stock);
@@ -111,7 +108,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             log.info("更新库存记录，ID: {}", stockDTO.getId());
             Stock stock = stockConverter.toEntity(stockDTO);
             boolean updated = updateById(stock);
-            
+
             if (updated) {
                 log.info("库存记录更新成功，ID: {}", stock.getId());
                 return true;
@@ -712,7 +709,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
                     // 预留库存
                     reserveStock(productId, quantity);
-                    
+
                     // 发送库存预留日志
                     try {
                         asyncLogProducer.sendBusinessLogAsync(
@@ -723,7 +720,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                                 productId.toString(),
                                 "PRODUCT",
                                 String.format("{\"quantity\":%d}", quantity),
-                                String.format("{\"reserved\":true}"),
+                                "{\"reserved\":true}",
                                 event.getOperator() != null ? event.getOperator() : "SYSTEM",
                                 "商品: " + productId + " 预留 " + quantity + " 件"
                         );
@@ -754,7 +751,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
                     // 确认库存扣减（这里可以添加具体的确认逻辑）
                     log.info("确认库存扣减，商品ID：{}，数量：{}", productId, quantity);
-                    
+
                     // 发送库存确认日志
                     try {
                         asyncLogProducer.sendBusinessLogAsync(
@@ -765,7 +762,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                                 productId.toString(),
                                 "PRODUCT",
                                 String.format("{\"quantity\":%d}", quantity),
-                                String.format("{\"confirmed\":true}"),
+                                "{\"confirmed\":true}",
                                 event.getOperator() != null ? event.getOperator() : "SYSTEM",
                                 "商品: " + productId + " 确认扣减 " + quantity + " 件"
                         );

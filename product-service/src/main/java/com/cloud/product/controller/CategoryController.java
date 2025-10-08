@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/category")
 @RequiredArgsConstructor
 @Tag(name = "商品分类服务", description = "商品分类资源的RESTful API接口")
 public class CategoryController {
@@ -253,6 +253,73 @@ public class CategoryController {
         } catch (Exception e) {
             log.error("批量删除分类失败，分类IDs: {}", ids, e);
             return Result.error("批量删除失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量更新分类状态
+     */
+    @PatchMapping("/batch/status")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @Operation(summary = "批量更新分类状态", description = "批量启用或禁用分类")
+    public Result<Integer> updateCategoryStatusBatch(
+            @Parameter(description = "分类ID列表") @RequestParam
+            @NotNull(message = "分类ID列表不能为空") List<Long> ids,
+            @Parameter(description = "分类状态") @RequestParam
+            @NotNull(message = "分类状态不能为空") Integer status) {
+
+        if (ids == null || ids.isEmpty()) {
+            return Result.badRequest("分类ID列表不能为空");
+        }
+
+        if (ids.size() > 100) {
+            return Result.badRequest("批量操作数量不能超过100个");
+        }
+
+        try {
+            int successCount = 0;
+            for (Long id : ids) {
+                if (categoryService.updateCategoryStatus(id, status)) {
+                    successCount++;
+                }
+            }
+            log.info("批量更新分类状态完成, 成功: {}/{}", successCount, ids.size());
+            return Result.success(String.format("批量更新分类状态成功: %d/%d", successCount, ids.size()), successCount);
+        } catch (Exception e) {
+            log.error("批量更新分类状态失败, IDs: {}", ids, e);
+            return Result.error("批量更新状态失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量创建分类
+     */
+    @PostMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @Operation(summary = "批量创建分类", description = "批量创建多个分类")
+    public Result<Integer> createCategoriesBatch(
+            @Parameter(description = "分类信息列表") @RequestBody
+            @Valid @NotEmpty(message = "分类信息列表不能为空") List<CategoryDTO> categoryList) {
+
+        if (categoryList.size() > 100) {
+            return Result.badRequest("批量创建数量不能超过100个");
+        }
+
+        try {
+            int successCount = 0;
+            for (CategoryDTO categoryDTO : categoryList) {
+                try {
+                    categoryService.createCategory(categoryDTO);
+                    successCount++;
+                } catch (Exception e) {
+                    log.error("创建分类失败, name: {}", categoryDTO.getName(), e);
+                }
+            }
+            log.info("批量创建分类完成, 成功: {}/{}", successCount, categoryList.size());
+            return Result.success(String.format("批量创建分类成功: %d/%d", successCount, categoryList.size()), successCount);
+        } catch (Exception e) {
+            log.error("批量创建分类失败", e);
+            return Result.error("批量创建失败: " + e.getMessage());
         }
     }
 }

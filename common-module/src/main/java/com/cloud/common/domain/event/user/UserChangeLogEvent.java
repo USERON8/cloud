@@ -9,13 +9,13 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * 用户变更日志事件
- * 
+ * <p>
  * 记录用户相关的操作日志，包括：
  * - 用户注册、更新、删除
  * - 用户状态变更
  * - 用户登录、登出
  * - 用户权限变更等
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */

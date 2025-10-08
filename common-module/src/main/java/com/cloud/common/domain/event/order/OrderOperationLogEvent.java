@@ -11,12 +11,12 @@ import java.math.BigDecimal;
 
 /**
  * 订单操作日志事件
- * 
+ * <p>
  * 专门记录订单的关键操作日志，包括：
  * - 订单完成
  * - 订单退款
  * 其他订单状态变更暂不记录到日志系统
- * 
+ *
  * @author CloudDevAgent
  * @since 2025-09-27
  */

@@ -30,7 +30,6 @@ public class PaymentGlobalExceptionHandler extends com.cloud.common.exception.Gl
     }
 
 
-
     /**
      * 处理余额不足异常
      */

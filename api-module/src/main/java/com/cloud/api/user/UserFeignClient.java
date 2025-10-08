@@ -5,8 +5,6 @@ import com.cloud.common.domain.dto.user.UserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * 用户服务Feign客户端
  * 用于服务间调用用户服务的接口
@@ -22,7 +20,7 @@ public interface UserFeignClient {
      * @param username 用户名
      * @return 用户信息
      */
-@GetMapping("/username/{username}")
+    @GetMapping("/username/{username}")
     UserDTO findByUsername(@PathVariable("username") String username);
 
     /**
@@ -31,7 +29,7 @@ public interface UserFeignClient {
      * @param id 用户ID
      * @return 用户信息
      */
-@GetMapping("/id/{id}")
+    @GetMapping("/id/{id}")
     UserDTO findById(@PathVariable("id") Long id);
 
     /**
@@ -40,7 +38,7 @@ public interface UserFeignClient {
      * @param registerRequest 用户注册信息
      * @return 是否保存成功
      */
-@PostMapping("/register")
+    @PostMapping("/register")
     UserDTO register(@RequestBody RegisterRequestDTO registerRequest);
 
     /**
@@ -49,7 +47,7 @@ public interface UserFeignClient {
      * @param userDTO 用户信息
      * @return 是否更新成功
      */
-@PutMapping("/update")
+    @PutMapping("/update")
     Boolean update(@RequestBody UserDTO userDTO);
 
     /**
@@ -58,6 +56,6 @@ public interface UserFeignClient {
      * @param username 用户名
      * @return 加密后的密码
      */
-@GetMapping("/password/{username}")
+    @GetMapping("/password/{username}")
     String getUserPassword(@PathVariable("username") String username);
 }

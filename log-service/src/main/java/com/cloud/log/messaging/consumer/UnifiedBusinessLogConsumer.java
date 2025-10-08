@@ -180,7 +180,7 @@ public class UnifiedBusinessLogConsumer {
         String[] parts = email.split("@");
         String localPart = parts[0];
         String domain = parts[1];
-        
+
         if (localPart.length() <= 2) {
             return email;
         }

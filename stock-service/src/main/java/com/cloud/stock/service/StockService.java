@@ -169,50 +169,50 @@ public interface StockService extends IService<Stock> {
      */
     boolean freezeStock(OrderCreatedEvent event);
 
-    
+
     /**
      * 检查库存是否已预留
-     * 
+     *
      * @param orderId 订单ID
      * @return 是否已预留
      */
     boolean isStockReserved(Long orderId);
-    
+
     /**
      * 检查库存是否已确认
-     * 
+     *
      * @param orderId 订单ID
      * @return 是否已确认
      */
     boolean isStockConfirmed(Long orderId);
-    
+
     /**
      * 检查库存是否已回滚
-     * 
+     *
      * @param orderId 订单ID
      * @return 是否已回滚
      */
     boolean isStockRolledBack(Long orderId);
-    
+
     /**
      * 预留库存（处理预留事件）
-     * 
+     *
      * @param event 库存预留事件
      * @return 预留结果
      */
     boolean reserveStock(StockReserveEvent event);
-    
+
     /**
      * 确认库存扣减（处理确认事件）
-     * 
+     *
      * @param event 库存确认事件
      * @return 确认结果
      */
     boolean confirmStock(StockConfirmEvent event);
-    
+
     /**
      * 回滚库存（处理回滚事件）
-     * 
+     *
      * @param event 库存回滚事件
      * @return 回滚结果
      */

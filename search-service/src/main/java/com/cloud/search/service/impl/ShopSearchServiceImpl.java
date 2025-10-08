@@ -1,9 +1,6 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.common.domain.event.product.ShopSearchEvent;
-
-
-
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -12,9 +9,11 @@ import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ShopSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.data.domain.PageRequest;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,13 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 
 /**
  * 店铺搜索服务实现
@@ -139,8 +137,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "shopSearchCache",
-                        key = "'shop:' + #shopId",
-                        condition = "#shopId != null")
+            key = "'shop:' + #shopId",
+            condition = "#shopId != null")
     public ShopDocument findByShopId(Long shopId) {
         return shopDocumentRepository.findById(String.valueOf(shopId)).orElse(null);
     }
@@ -274,12 +272,11 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     }
 
 
-
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "shopSearchCache",
-                        key = "'search:' + #request.hashCode()",
-                        condition = "#request != null")
+            key = "'search:' + #request.hashCode()",
+            condition = "#request != null")
     public SearchResult<ShopDocument> searchShops(ShopSearchRequest request) {
         try {
             log.info("执行店铺复杂搜索 - 关键字: {}, 商家ID: {}, 状态: {}",
@@ -326,8 +323,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "shopSuggestionCache",
-                        key = "'suggestion:' + #keyword + ':' + #size",
-                        condition = "#keyword != null")
+            key = "'suggestion:' + #keyword + ':' + #size",
+            condition = "#keyword != null")
     public List<String> getSearchSuggestions(String keyword, Integer size) {
         try {
             if (!StringUtils.hasText(keyword)) {
@@ -359,7 +356,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "hotShopCache",
-                        key = "'hot:' + #size")
+            key = "'hot:' + #size")
     public List<ShopDocument> getHotShops(Integer size) {
         try {
             log.info("获取热门店铺 - 数量: {}", size);
@@ -383,8 +380,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "shopFilterCache",
-                        key = "'filter:' + #request.hashCode()",
-                        condition = "#request != null")
+            key = "'filter:' + #request.hashCode()",
+            condition = "#request != null")
     public SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request) {
         try {
             log.info("获取店铺筛选聚合信息");

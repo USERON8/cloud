@@ -23,33 +23,39 @@
 ### 1.1 命名规范
 
 #### 包命名
+
 - 全部小写
 - 使用域名倒序
 - 示例: `com.cloud.user.service`
 
 #### 类命名
+
 - 使用大驼峰命名法 (PascalCase)
 - 类名应该是名词
 - 示例: `UserService`, `OrderController`
 
 #### 方法命名
+
 - 使用小驼峰命名法 (camelCase)
 - 方法名应该是动词或动词短语
 - 示例: `getUserById()`, `createOrder()`
 
 #### 变量命名
+
 - 使用小驼峰命名法
 - 变量名应该具有描述性
 - 避免单字母变量名（除了循环变量）
 - 示例: `userId`, `orderList`
 
 #### 常量命名
+
 - 全部大写，单词间用下划线分隔
 - 示例: `MAX_RETRY_COUNT`, `DEFAULT_PAGE_SIZE`
 
 ### 1.2 代码结构
 
 #### Controller 层
+
 ```java
 @RestController
 @RequestMapping("/api/user")
@@ -68,6 +74,7 @@ public class UserController {
 ```
 
 #### Service 层
+
 ```java
 @Service
 @Slf4j
@@ -86,6 +93,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 #### Mapper 层
+
 ```java
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
@@ -102,6 +110,7 @@ public interface UserMapper extends BaseMapper<User> {
 ### 1.3 注释规范
 
 #### 类注释
+
 ```java
 /**
  * 用户服务实现类
@@ -116,6 +125,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 #### 方法注释
+
 ```java
 /**
  * 创建用户
@@ -129,6 +139,7 @@ public UserVO createUser(UserDTO userDTO) {
 ```
 
 #### 复杂逻辑注释
+
 ```java
 // 1. 验证用户名是否重复
 // 2. 加密用户密码
@@ -146,6 +157,7 @@ public UserVO createUser(UserDTO userDTO) {
 ### 1.5 最佳实践
 
 #### 使用 Lombok 简化代码
+
 ```java
 @Data
 @Builder
@@ -159,6 +171,7 @@ public class UserDTO {
 ```
 
 #### 使用 Optional 处理空值
+
 ```java
 public Optional<User> findUserById(Long id) {
     return Optional.ofNullable(userMapper.selectById(id));
@@ -166,6 +179,7 @@ public Optional<User> findUserById(Long id) {
 ```
 
 #### 使用 Stream API 处理集合
+
 ```java
 List<Long> userIds = users.stream()
     .map(User::getId)
@@ -196,6 +210,7 @@ List<Long> userIds = users.stream()
 ```
 
 #### Type 类型
+
 - `feat`: 新功能
 - `fix`: Bug 修复
 - `docs`: 文档更新
@@ -206,6 +221,7 @@ List<Long> userIds = users.stream()
 - `chore`: 构建/工具变动
 
 #### 示例
+
 ```
 feat(user): 添加用户注册功能
 
@@ -229,6 +245,7 @@ Closes #123
 ### 3.1 RESTful API 设计
 
 #### URL 设计
+
 ```
 GET    /api/users          # 获取用户列表
 GET    /api/users/{id}     # 获取单个用户
@@ -238,6 +255,7 @@ DELETE /api/users/{id}     # 删除用户
 ```
 
 #### 版本控制
+
 ```
 /api/v1/users
 /api/v2/users
@@ -246,6 +264,7 @@ DELETE /api/users/{id}     # 删除用户
 ### 3.2 请求参数
 
 #### 路径参数
+
 ```java
 @GetMapping("/users/{id}")
 public Result<UserVO> getUser(@PathVariable Long id) {
@@ -253,6 +272,7 @@ public Result<UserVO> getUser(@PathVariable Long id) {
 ```
 
 #### 查询参数
+
 ```java
 @GetMapping("/users")
 public Result<PageResult<UserVO>> listUsers(
@@ -262,6 +282,7 @@ public Result<PageResult<UserVO>> listUsers(
 ```
 
 #### 请求体
+
 ```java
 @PostMapping("/users")
 public Result<UserVO> createUser(@RequestBody @Valid UserDTO userDTO) {
@@ -271,6 +292,7 @@ public Result<UserVO> createUser(@RequestBody @Valid UserDTO userDTO) {
 ### 3.3 响应格式
 
 #### 统一响应结构
+
 ```json
 {
   "code": 200,
@@ -284,6 +306,7 @@ public Result<UserVO> createUser(@RequestBody @Valid UserDTO userDTO) {
 ```
 
 #### 分页响应
+
 ```json
 {
   "code": 200,
@@ -298,6 +321,7 @@ public Result<UserVO> createUser(@RequestBody @Valid UserDTO userDTO) {
 ```
 
 #### 错误响应
+
 ```json
 {
   "code": 400,
@@ -335,18 +359,19 @@ public Result<UserVO> createUser(@RequestBody @Valid UserDTO userDTO) {
 
 ### 4.3 字段类型
 
-| 数据类型 | 使用场景 |
-|---------|---------|
-| BIGINT | ID、金额（分） |
-| VARCHAR | 字符串 |
-| TEXT | 长文本 |
-| DATETIME | 时间戳 |
-| DECIMAL | 精确小数 |
-| TINYINT | 状态、标志位 |
+| 数据类型     | 使用场景     |
+|----------|----------|
+| BIGINT   | ID、金额（分） |
+| VARCHAR  | 字符串      |
+| TEXT     | 长文本      |
+| DATETIME | 时间戳      |
+| DECIMAL  | 精确小数     |
+| TINYINT  | 状态、标志位   |
 
 ### 4.4 必备字段
 
 每个表必须包含以下字段：
+
 ```sql
 CREATE TABLE users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
@@ -373,6 +398,7 @@ CREATE INDEX idx_user_id_status ON orders(user_id, status);
 ### 4.6 SQL 编写规范
 
 #### 查询优化
+
 ```sql
 -- 好的示例
 SELECT id, username, email FROM users WHERE status = 1 LIMIT 100;
@@ -384,6 +410,7 @@ SELECT id, username, email FROM users WHERE status = 1 LIMIT 100;
 ```
 
 #### 事务处理
+
 ```java
 @Transactional(rollbackFor = Exception.class)
 public void createOrder(OrderDTO orderDTO) {
@@ -398,6 +425,7 @@ public void createOrder(OrderDTO orderDTO) {
 ### 5.1 异常分类
 
 #### 业务异常
+
 ```java
 public class BusinessException extends RuntimeException {
     private final Integer code;
@@ -406,6 +434,7 @@ public class BusinessException extends RuntimeException {
 ```
 
 #### 系统异常
+
 ```java
 public class SystemException extends RuntimeException {
     private final Integer code;
@@ -416,6 +445,7 @@ public class SystemException extends RuntimeException {
 ### 5.2 异常处理
 
 #### 全局异常处理器
+
 ```java
 @RestControllerAdvice
 @Slf4j
@@ -603,32 +633,35 @@ User selectByUsername(@Param("username") String username);
 项目采用 Docker Compose 进行本地开发环境和测试环境的容器化部署，包含以下核心组件：
 
 #### 核心服务 (docker-compose.yml)
-| 服务 | 版本 | 端口 | IP地址 | 说明 |
-|------|------|------|--------|------|
-| MySQL | 9.3.0 | 3306 | 172.28.0.10 | 关系型数据库 |
-| Redis | 7.4.5-bookworm | 6379 | 172.28.0.20 | 缓存数据库 |
-| Nacos | v3.0.2 | 8848/9090/9848 | 172.28.0.30 | 配置中心/服务注册 |
-| RocketMQ NameServer | 5.3.2 | 39876 | 172.28.0.40 | 消息队列命名服务 |
-| RocketMQ Broker | 5.3.2 | 30909/30911/30912 | 172.28.0.50 | 消息队列代理 |
-| RocketMQ Proxy | 5.3.2 | 38080/38081 | 172.28.0.60 | 消息队列代理 |
-| RocketMQ Console | 2.1.0 | 38082 | 172.28.0.65 | 消息队列管控台 |
-| Nginx | stable-perl | 80/443 | 172.28.0.70 | 反向代理/负载均衡 |
-| MinIO | 2025-07-23 | 9000/9001 | 172.28.0.80 | 对象存储 |
-| Elasticsearch | 9.1.2 | 9200/9300 | 172.28.0.90 | 搜索引擎 |
-| Kibana | 9.1.2 | 5601 | 172.28.0.100 | ES 可视化工具 |
+
+| 服务                  | 版本             | 端口                | IP地址         | 说明        |
+|---------------------|----------------|-------------------|--------------|-----------|
+| MySQL               | 9.3.0          | 3306              | 172.28.0.10  | 关系型数据库    |
+| Redis               | 7.4.5-bookworm | 6379              | 172.28.0.20  | 缓存数据库     |
+| Nacos               | v3.0.2         | 8848/9090/9848    | 172.28.0.30  | 配置中心/服务注册 |
+| RocketMQ NameServer | 5.3.2          | 39876             | 172.28.0.40  | 消息队列命名服务  |
+| RocketMQ Broker     | 5.3.2          | 30909/30911/30912 | 172.28.0.50  | 消息队列代理    |
+| RocketMQ Proxy      | 5.3.2          | 38080/38081       | 172.28.0.60  | 消息队列代理    |
+| RocketMQ Console    | 2.1.0          | 38082             | 172.28.0.65  | 消息队列管控台   |
+| Nginx               | stable-perl    | 80/443            | 172.28.0.70  | 反向代理/负载均衡 |
+| MinIO               | 2025-07-23     | 9000/9001         | 172.28.0.80  | 对象存储      |
+| Elasticsearch       | 9.1.2          | 9200/9300         | 172.28.0.90  | 搜索引擎      |
+| Kibana              | 9.1.2          | 5601              | 172.28.0.100 | ES 可视化工具  |
 
 #### 监控服务 (monitoring-compose.yml)
-| 服务 | 版本 | 端口 | 说明 |
-|------|------|------|------|
-| Prometheus | 3.5.0 | 9099 | 指标采集与监控 |
-| Grafana | 12.2.0 | 3000 | 监控数据可视化 |
-| Elasticsearch | 9.1.2 | 9201/9301 | 日志存储 |
-| Logstash | 9.1.2 | 5044/9600 | 日志收集处理 |
-| Kibana | 9.1.2 | 5601 | 日志可视化 |
+
+| 服务            | 版本     | 端口        | 说明      |
+|---------------|--------|-----------|---------|
+| Prometheus    | 3.5.0  | 9099      | 指标采集与监控 |
+| Grafana       | 12.2.0 | 3000      | 监控数据可视化 |
+| Elasticsearch | 9.1.2  | 9201/9301 | 日志存储    |
+| Logstash      | 9.1.2  | 5044/9600 | 日志收集处理  |
+| Kibana        | 9.1.2  | 5601      | 日志可视化   |
 
 ### 9.2 环境启动
 
 #### 启动核心服务
+
 ```bash
 # 进入 docker 目录
 cd docker
@@ -647,6 +680,7 @@ docker-compose logs -f [service-name]
 ```
 
 #### 启动监控服务
+
 ```bash
 # 启动监控栈
 docker-compose -f monitoring-compose.yml up -d
@@ -656,6 +690,7 @@ docker-compose -f monitoring-compose.yml ps
 ```
 
 #### 停止服务
+
 ```bash
 # 停止所有服务
 docker-compose down
@@ -667,6 +702,7 @@ docker-compose down -v
 ### 9.3 服务配置说明
 
 #### MySQL 配置
+
 ```yaml
 数据库: nacos_config
 管理员账号: root / root
@@ -678,6 +714,7 @@ docker-compose down -v
 ```
 
 #### Redis 配置
+
 ```yaml
 配置文件: D:\docker\redis\conf\redis.conf
 持久化: AOF 模式 (appendonly yes)
@@ -685,6 +722,7 @@ docker-compose down -v
 ```
 
 #### Nacos 配置
+
 ```yaml
 访问地址: http://localhost:8848/nacos
 管理员账号: root / root
@@ -696,6 +734,7 @@ JVM 内存: -Xms512m -Xmx512m
 ```
 
 #### RocketMQ 配置
+
 ```yaml
 NameServer: 172.28.0.40:9876
 Broker 配置: /home/rocketmq/broker/conf/broker.conf
@@ -704,6 +743,7 @@ VIP通道: 已禁用
 ```
 
 #### MinIO 配置
+
 ```yaml
 API端口: 9000
 控制台端口: 9001
@@ -713,6 +753,7 @@ API端口: 9000
 ```
 
 #### Elasticsearch 配置
+
 ```yaml
 HTTP端口: 9200
 集群通信端口: 9300
@@ -722,6 +763,7 @@ JVM内存: -Xms1g -Xmx1g
 ```
 
 #### Prometheus & Grafana
+
 ```yaml
 Prometheus地址: http://localhost:9099
 Grafana地址: http://localhost:3000
@@ -733,6 +775,7 @@ Grafana账号: admin / admin
 ### 9.4 网络配置
 
 #### 核心服务网络
+
 ```yaml
 网络名称: service_net
 网络驱动: bridge
@@ -742,6 +785,7 @@ IP范围: 172.28.0.10 - 172.28.0.100
 ```
 
 #### 监控服务网络
+
 ```yaml
 网络名称: monitoring
 网络驱动: bridge
@@ -799,6 +843,7 @@ Grafana → Prometheus
 ### 9.8 常见问题处理
 
 #### 问题1: Nacos 启动失败
+
 ```bash
 # 检查 MySQL 是否正常运行
 docker-compose ps mysql
@@ -811,6 +856,7 @@ docker exec -it mysql_db mysql -unacos -pnacos -e "show databases;"
 ```
 
 #### 问题2: RocketMQ Broker 连接失败
+
 ```bash
 # 检查 NameServer 状态
 docker-compose ps namesrv
@@ -823,6 +869,7 @@ docker exec -it rmqbroker ping 172.28.0.40
 ```
 
 #### 问题3: Elasticsearch 内存不足
+
 ```bash
 # Windows 需要增加 WSL2 内存限制
 # 编辑 %USERPROFILE%\.wslconfig
@@ -836,6 +883,7 @@ wsl --shutdown
 ### 9.9 部署清单
 
 #### 开发环境部署检查
+
 - [ ] Docker 和 Docker Compose 已安装
 - [ ] 端口无冲突 (3306, 6379, 8848, 9000 等)
 - [ ] 数据目录已创建 (`D:\docker`)
@@ -844,6 +892,7 @@ wsl --shutdown
 - [ ] 访问各服务管理界面确认正常
 
 #### 生产环境部署注意事项
+
 - [ ] 修改默认密码和密钥
 - [ ] 启用 HTTPS 和 SSL 证书
 - [ ] 配置防火墙规则
@@ -894,6 +943,7 @@ wsl --shutdown
 ### 11.1 推荐工具
 
 #### 开发工具
+
 - **IDE**: IntelliJ IDEA Ultimate
 - **代码质量**: SonarQube
 - **代码格式化**: Checkstyle / Alibaba Java Coding Guidelines
@@ -901,6 +951,7 @@ wsl --shutdown
 - **数据库工具**: Navicat / DBeaver / DataGrip
 
 #### 运维工具
+
 - **容器管理**: Docker Desktop / Portainer
 - **服务监控**: Prometheus + Grafana
 - **日志分析**: ELK Stack (Elasticsearch + Logstash + Kibana)
@@ -908,6 +959,7 @@ wsl --shutdown
 - **负载测试**: JMeter / Gatling
 
 #### DevOps 工具
+
 - **版本控制**: Git / GitLab
 - **CI/CD**: Jenkins / GitLab CI / GitHub Actions
 - **镜像仓库**: Docker Hub / Harbor
@@ -917,6 +969,7 @@ wsl --shutdown
 ### 11.2 推荐插件
 
 #### IntelliJ IDEA 插件
+
 - **Lombok**: 简化 Java 代码
 - **MyBatisX**: MyBatis 增强
 - **Alibaba Java Coding Guidelines**: 阿里巴巴代码规范检查
@@ -929,6 +982,7 @@ wsl --shutdown
 - **Database Navigator**: 数据库工具
 
 #### VSCode 插件（可选）
+
 - **Java Extension Pack**
 - **Spring Boot Extension Pack**
 - **Docker**
@@ -938,6 +992,7 @@ wsl --shutdown
 ### 11.3 技术栈版本说明
 
 #### 后端技术栈
+
 ```yaml
 Java: 17 LTS
 Spring Boot: 3.x
@@ -948,6 +1003,7 @@ Lombok: 1.18.x
 ```
 
 #### 中间件版本
+
 ```yaml
 MySQL: 9.3.0
 Redis: 7.4.5
@@ -959,6 +1015,7 @@ MinIO: 2025-07-23
 ```
 
 #### 监控工具版本
+
 ```yaml
 Prometheus: 3.5.0
 Grafana: 12.2.0
@@ -969,6 +1026,7 @@ Logstash: 9.1.2
 ### 11.4 开发环境要求
 
 #### 硬件要求
+
 ```
 CPU: 4核及以上
 内存: 16GB 及以上（推荐 32GB）
@@ -976,6 +1034,7 @@ CPU: 4核及以上
 ```
 
 #### 软件要求
+
 ```
 操作系统: Windows 10/11, macOS, Linux
 JDK: OpenJDK 17 或 Oracle JDK 17
@@ -1016,6 +1075,7 @@ cloud/
 ### 11.6 参考资料
 
 #### 官方文档
+
 - [Spring Boot 官方文档](https://spring.io/projects/spring-boot)
 - [Spring Cloud 官方文档](https://spring.io/projects/spring-cloud)
 - [Spring Cloud Alibaba 文档](https://spring-cloud-alibaba-group.github.io/github-pages/2023/zh-cn/)
@@ -1024,16 +1084,19 @@ cloud/
 - [RocketMQ 文档](https://rocketmq.apache.org/zh/docs/)
 
 #### 编码规范
+
 - [阿里巴巴 Java 开发手册](https://github.com/alibaba/p3c)
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Effective Java](https://www.oracle.com/java/technologies/effective-java.html)
 
 #### 架构设计
+
 - [微服务架构设计模式](https://microservices.io/)
 - [领域驱动设计 (DDD)](https://domainlanguage.com/ddd/)
 - [12-Factor App](https://12factor.net/zh_cn/)
 
 #### Docker 与 Kubernetes
+
 - [Docker 官方文档](https://docs.docker.com/)
 - [Docker Compose 文档](https://docs.docker.com/compose/)
 - [Kubernetes 文档](https://kubernetes.io/zh-cn/docs/)

@@ -83,27 +83,27 @@ public class ElasticsearchConfig {
         if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY,
-                new UsernamePasswordCredentials(username, password));
+                    new UsernamePasswordCredentials(username, password));
 
             builder.setHttpClientConfigCallback(httpClientBuilder ->
-                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-                    .setMaxConnTotal(maxConnections)
-                    .setMaxConnPerRoute(maxConnectionsPerRoute)
+                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+                            .setMaxConnTotal(maxConnections)
+                            .setMaxConnPerRoute(maxConnectionsPerRoute)
             );
         } else {
             // 仅配置连接池
             builder.setHttpClientConfigCallback(httpClientBuilder ->
-                httpClientBuilder
-                    .setMaxConnTotal(maxConnections)
-                    .setMaxConnPerRoute(maxConnectionsPerRoute)
+                    httpClientBuilder
+                            .setMaxConnTotal(maxConnections)
+                            .setMaxConnPerRoute(maxConnectionsPerRoute)
             );
         }
 
         // 配置请求超时
         builder.setRequestConfigCallback(requestConfigBuilder ->
-            requestConfigBuilder
-                .setConnectTimeout((int) connectionTimeout.toMillis())
-                .setSocketTimeout((int) socketTimeout.toMillis())
+                requestConfigBuilder
+                        .setConnectTimeout((int) connectionTimeout.toMillis())
+                        .setSocketTimeout((int) socketTimeout.toMillis())
         );
 
         // 创建低级客户端

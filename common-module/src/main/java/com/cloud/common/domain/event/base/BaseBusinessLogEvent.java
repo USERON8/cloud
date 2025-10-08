@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 
 /**
  * 统一业务日志事件基类
- * 
+ * <p>
  * 定义所有业务日志事件的通用字段和结构，
  * 简化日志事件的创建和处理，确保日志格式统一
- * 
- * @author CloudDevAgent  
+ *
+ * @author CloudDevAgent
  * @since 2025-09-27
  */
 @Data
@@ -43,7 +43,7 @@ public abstract class BaseBusinessLogEvent implements Serializable {
     /**
      * 操作类型
      * CREATE - 创建
-     * UPDATE - 更新  
+     * UPDATE - 更新
      * DELETE - 删除
      * STATUS_CHANGE - 状态变更
      * COMPLETE - 完成
@@ -130,7 +130,7 @@ public abstract class BaseBusinessLogEvent implements Serializable {
 
     /**
      * 获取日志类型，子类需要实现此方法
-     * 
+     *
      * @return 日志类型标识
      */
     public abstract String getLogType();

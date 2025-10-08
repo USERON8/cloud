@@ -58,12 +58,12 @@ public class OAuth21AuthorizationServerConfig {
 
         AuthorizationServerSettings settings = AuthorizationServerSettings.builder()
                 // OAuth2.1标准端点配置
-                .issuer("http://localhost:8080")                    // 发行者URL
+                .issuer("http://127.0.0.1")                         // 发行者URL - 使用网关地址(端口80)
                 .authorizationEndpoint("/oauth2/authorize")         // 授权端点
                 .tokenEndpoint("/oauth2/token")                     // 令牌端点  
                 .tokenIntrospectionEndpoint("/oauth2/introspect")   // 令牌内省端点
                 .tokenRevocationEndpoint("/oauth2/revoke")          // 令牌撤销端点
-                .jwkSetEndpoint("/oauth2/jwks")                     // JWK集合端点
+                .jwkSetEndpoint("/.well-known/jwks.json")           // JWK集合端点
                 .oidcLogoutEndpoint("/connect/logout")              // OIDC登出端点
                 .oidcUserInfoEndpoint("/userinfo")                  // OIDC用户信息端点
                 .oidcClientRegistrationEndpoint("/connect/register") // OIDC客户端注册端点
@@ -85,8 +85,8 @@ public class OAuth21AuthorizationServerConfig {
 
         // 创建默认的Web应用客户端（支持授权码流程 + PKCE）
         RegisteredClient webAppClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("webapp-client")
-                .clientSecret("{noop}webapp-secret")  // 开发环境使用简单密码，生产环境需要加密
+                .clientId("web-client")
+                .clientSecret("{noop}WebClient@2024#Secure")  // 开发环境使用简单密码，生产环境需要加密
 
                 // OAuth2.1推荐的认证方法
                 .clientAuthenticationMethods(methods -> {
@@ -103,9 +103,10 @@ public class OAuth21AuthorizationServerConfig {
 
                 // 回调URL配置
                 .redirectUris(uris -> {
-                    uris.add("http://localhost:3000/callback");      // 前端应用回调
-                    uris.add("http://localhost:8080/login/callback"); // 后端应用回调
-                    uris.add("http://127.0.0.1:8080/login/callback"); // 本地回调
+                    uris.add("http://127.0.0.1/authorized");        // 请求中使用的回调地址
+                    uris.add("http://localhost:3000/callback");     // 前端应用回调
+                    uris.add("http://localhost:80/login/callback"); // 后端应用回调
+                    uris.add("http://127.0.0.1:80/login/callback"); // 本地回调
                 })
 
                 // OAuth2.1标准作用域 + 自定义作用域
@@ -116,6 +117,10 @@ public class OAuth21AuthorizationServerConfig {
                     scopes.add("read");
                     scopes.add("write");
                     scopes.add("admin");
+                    scopes.add("user.read");
+                    scopes.add("user.write");
+                    scopes.add("order.read");
+                    scopes.add("order.write");
                 })
 
                 // 客户端设置 - 强制使用OAuth2.1安全特性

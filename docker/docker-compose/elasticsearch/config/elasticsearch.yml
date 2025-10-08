@@ -1,0 +1,15 @@
+cluster.name: my-application
+node.name: ${HOSTNAME}
+node.roles: [ master, data, ingest ]
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+bootstrap.memory_lock: true
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+discovery.type: single-node
+xpack.security.enabled: false-
+# gateway.recover_after_nodes: 1
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-credentials: true

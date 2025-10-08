@@ -37,7 +37,7 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true
+          enabled: false  # 禁用自动服务发现,使用application-route.yml中的手动路由配置
           lower-case-service-id: true
       csrf:
         enabled: true

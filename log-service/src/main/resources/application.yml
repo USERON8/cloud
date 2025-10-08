@@ -97,6 +97,7 @@ spring:
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration
 
   # OAuth2 资源服务器配置
   security:

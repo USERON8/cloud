@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * 安全过滤器链配置
@@ -66,12 +67,16 @@ public class SecurityFilterChainConfig {
 
         http
                 // 匹配OAuth2和OpenID Connect相关端点
-                .securityMatcher(
-                        "/oauth2/**",
-                        "/.well-known/**",
-                        "/connect/**",
-                        "/userinfo"
-                )
+                .securityMatcher(new RequestMatcher() {
+                    @Override
+                    public boolean matches(jakarta.servlet.http.HttpServletRequest request) {
+                        String path = request.getRequestURI();
+                        return path.startsWith("/oauth2/") || 
+                               path.startsWith("/.well-known/") || 
+                               path.startsWith("/connect/") || 
+                               "/userinfo".equals(path);
+                    }
+                })
 
                 // 应用OAuth2授权服务器配置
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
@@ -87,24 +92,8 @@ public class SecurityFilterChainConfig {
                     return config;
                 }))
 
-                // 授权配置
+                // 授权配置 - OAuth2授权服务器会自动处理端点授权
                 .authorizeHttpRequests(authorize -> authorize
-                        // 公开端点（OAuth2.1标准要求）
-                        .requestMatchers(
-                                "/.well-known/**",           // 发现端点
-                                "/oauth2/token",             // 令牌端点
-                                "/oauth2/jwks",              // JWK集合端点
-                                "/oauth2/revoke",            // 令牌撤销端点
-                                "/oauth2/introspect"         // 令牌内省端点
-                        ).permitAll()
-
-                        // 需要认证的端点
-                        .requestMatchers(
-                                "/oauth2/authorize",         // 授权端点
-                                "/connect/**",               // OpenID Connect端点
-                                "/userinfo"                  // 用户信息端点
-                        ).authenticated()
-
                         .anyRequest().authenticated()
                 )
 
@@ -240,11 +229,13 @@ public class SecurityFilterChainConfig {
                                 "/login",                 // 简单登录页面
                                 "/login/**",              // 登录相关资源
 
-                                // 公开API
-                                "/auth/register",        // 用户注册
-                                "/auth/login",           // 用户登录
-                                "/auth/logout",          // 用户登出
-                                "/auth/register-and-login"  // 注册并登录
+                        // 公开API
+                        "/auth/register",         // 用户注册
+                        "/auth/login",            // 用户登录
+                        "/auth/logout",           // 用户登出
+                        "/auth/register-and-login", // 注册并登录
+                        "/auth/refresh-token",    // 刷新令牌
+                        "/auth/github/**"         // GitHub OAuth2
                         ).permitAll()
 
                         // 其他请求允许访问（由网关统一鉴权）
@@ -306,5 +297,20 @@ public class SecurityFilterChainConfig {
 
         log.info("✅ CORS跨域设置配置完成");
         return source;
+    }
+    
+    /**
+     * 配置服务器Web交换防火墙，允许包含"//"的URL
+     * 解决StrictServerWebExchangeFirewall拒绝包含"//"的URL的问题
+     */
+    @Bean
+    public ServerWebExchangeFirewall serverWebExchangeFirewall() {
+        StrictServerWebExchangeFirewall firewall = new StrictServerWebExchangeFirewall();
+        // 允许包含"//"的URL，解决因双斜杠导致的400错误
+        firewall.setAllowUrlEncodedSlash(true);
+        firewall.setAllowBackSlash(true);
+        firewall.setAllowUrlEncodedPercent(true);
+        firewall.setAllowUrlEncodedPeriod(true);
+        return firewall;
     }
 }

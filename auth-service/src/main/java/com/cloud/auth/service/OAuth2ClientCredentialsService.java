@@ -24,12 +24,10 @@ import java.util.concurrent.TimeUnit;
 public class OAuth2ClientCredentialsService {
 
     private final AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager;
-
-    @Autowired(required = false)
-    private RedissonLockManager redissonLockManager;
-
     // 用于防止循环调用的标记
     private final ThreadLocal<Boolean> gettingToken = new ThreadLocal<>();
+    @Autowired(required = false)
+    private RedissonLockManager redissonLockManager;
     @Value("${spring.security.oauth2.client.registration.client-service.client-id:client-service}")
     private String clientId;
 
@@ -153,7 +151,7 @@ public class OAuth2ClientCredentialsService {
             if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
                 String token = authorizedClient.getAccessToken().getTokenValue();
                 log.debug("✅ 成功获取内部API令牌（同步方式）: {}...",
-                    token.length() > 20 ? token.substring(0, 20) : token);
+                        token.length() > 20 ? token.substring(0, 20) : token);
                 return token;
             } else {
                 log.error("❌ 无法获取内部API令牌（同步方式）");

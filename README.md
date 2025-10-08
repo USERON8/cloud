@@ -25,22 +25,22 @@
 
 ### 🏗️ 技术栈
 
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 基础框架 |
-| Spring Cloud | 2025.0.0 | 微服务框架 |
+| 技术                   | 版本                 | 说明        |
+|----------------------|--------------------|-----------|
+| Spring Boot          | 3.5.3              | 基础框架      |
+| Spring Cloud         | 2025.0.0           | 微服务框架     |
 | Spring Cloud Alibaba | 2025.0.0.0-preview | 阿里巴巴微服务组件 |
-| Spring Security | 6.x | 安全框架 |
-| OAuth2 | 2.1 | 认证授权标准 |
-| Nacos | 2.x | 服务注册与配置中心 |
-| Sentinel | 1.8+ | 流量控制组件 |
-| Seata | 2.x | 分布式事务 |
-| RocketMQ | 5.x | 消息队列 |
-| MySQL | 9.3.0 | 关系型数据库 |
-| Redis | 7.x | 缓存数据库 |
-| Elasticsearch | 8.x | 搜索引擎 |
-| MyBatis Plus | 3.5.13 | ORM框架 |
-| Redisson | 3.51.0 | Redis客户端 |
+| Spring Security      | 6.x                | 安全框架      |
+| OAuth2               | 2.1                | 认证授权标准    |
+| Nacos                | 2.x                | 服务注册与配置中心 |
+| Sentinel             | 1.8+               | 流量控制组件    |
+| Seata                | 2.x                | 分布式事务     |
+| RocketMQ             | 5.x                | 消息队列      |
+| MySQL                | 9.3.0              | 关系型数据库    |
+| Redis                | 7.x                | 缓存数据库     |
+| Elasticsearch        | 8.x                | 搜索引擎      |
+| MyBatis Plus         | 3.5.13             | ORM框架     |
+| Redisson             | 3.51.0             | Redis客户端  |
 
 ---
 
@@ -235,17 +235,17 @@ curl -X GET "http://localhost:8000/api/user/info" \
 
 ### API 分类
 
-| 服务 | 端口 | 文档地址 | 说明 |
-|------|------|----------|------|
+| 服务      | 端口   | 文档地址      | 说明        |
+|---------|------|-----------|-----------|
 | Gateway | 8000 | /doc.html | 聚合所有服务API |
-| Auth | 8080 | /doc.html | 认证授权API |
-| User | 8081 | /doc.html | 用户管理API |
-| Order | 8082 | /doc.html | 订单管理API |
-| Product | 8083 | /doc.html | 商品管理API |
-| Stock | 8084 | /doc.html | 库存管理API |
-| Payment | 8085 | /doc.html | 支付管理API |
-| Log | 8086 | /doc.html | 日志管理API |
-| Search | 8087 | /doc.html | 搜索服务API |
+| Auth    | 8080 | /doc.html | 认证授权API   |
+| User    | 8081 | /doc.html | 用户管理API   |
+| Order   | 8082 | /doc.html | 订单管理API   |
+| Product | 8083 | /doc.html | 商品管理API   |
+| Stock   | 8084 | /doc.html | 库存管理API   |
+| Payment | 8085 | /doc.html | 支付管理API   |
+| Log     | 8086 | /doc.html | 日志管理API   |
+| Search  | 8087 | /doc.html | 搜索服务API   |
 
 ---
 
@@ -274,12 +274,14 @@ spring:
 ### 环境配置
 
 支持多环境配置：
+
 - `application.yml` - 默认配置
 - `application-dev.yml` - 开发环境
 - `application-test.yml` - 测试环境
 - `application-prod.yml` - 生产环境
 
 激活方式：
+
 ```bash
 # 开发环境
 java -jar service.jar --spring.profiles.active=dev
@@ -370,6 +372,7 @@ docker-compose -f docker/docker-compose-services.yml logs -f auth-service
 详细开发规范请查看: [RULE.md](RULE.md)
 
 包括：
+
 - 代码规范
 - Git 提交规范
 - 接口设计规范
@@ -381,6 +384,7 @@ docker-compose -f docker/docker-compose-services.yml logs -f auth-service
 ## 🔄 版本历史
 
 ### v2.0.0 (2025-01-20)
+
 - ✅ 升级到 Spring Boot 3.5.3
 - ✅ 升级到 Spring Cloud 2025.0.0
 - ✅ 新增配置外部化支持
@@ -388,6 +392,7 @@ docker-compose -f docker/docker-compose-services.yml logs -f auth-service
 - ✅ 增强安全配置
 
 ### v1.0.0 (2024-12-01)
+
 - ✨ 初始版本发布
 - ✨ 完成核心业务功能
 - ✨ 完成基础设施搭建

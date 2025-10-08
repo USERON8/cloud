@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/admins")
+@RequestMapping("/admin")
 @RequiredArgsConstructor
 @Tag(name = "管理员服务", description = "管理员资源的RESTful API接口")
 public class AdminController {

@@ -1,6 +1,8 @@
 package com.cloud.stock.controller;
 
 import com.cloud.common.domain.dto.stock.StockDTO;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
 import com.cloud.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,20 +37,15 @@ public class StockFeignController {
     public Result<StockDTO> getStockById(
             @Parameter(description = "库存ID") @PathVariable Long stockId) {
 
-        try {
-            log.debug("🔍 Feign调用获取库存信息 - 库存ID: {}", stockId);
-            StockDTO stock = stockService.getStockById(stockId);
-            
-            if (stock == null) {
-                log.warn("⚠️ 库存记录不存在 - 库存ID: {}", stockId);
-                return Result.error("库存记录不存在");
-            }
-            
-            return Result.success(stock);
-        } catch (Exception e) {
-            log.error("❌ Feign调用获取库存信息失败 - 库存ID: {}, 错误: {}", stockId, e.getMessage(), e);
-            return Result.error("获取库存信息失败: " + e.getMessage());
+        log.debug("🔍 Feign调用获取库存信息 - 库存ID: {}", stockId);
+        StockDTO stock = stockService.getStockById(stockId);
+
+        if (stock == null) {
+            log.warn("⚠️ 库存记录不存在 - 库存ID: {}", stockId);
+            throw new ResourceNotFoundException("Stock", String.valueOf(stockId));
         }
+
+        return Result.success(stock);
     }
 
     /**
@@ -59,20 +56,15 @@ public class StockFeignController {
     public Result<StockDTO> getStockByProductId(
             @Parameter(description = "商品ID") @PathVariable Long productId) {
 
-        try {
-            log.debug("🔍 Feign调用根据商品ID获取库存信息 - 商品ID: {}", productId);
-            StockDTO stock = stockService.getStockByProductId(productId);
-            
-            if (stock == null) {
-                log.warn("⚠️ 商品对应的库存记录不存在 - 商品ID: {}", productId);
-                return Result.error("商品对应的库存记录不存在");
-            }
-            
-            return Result.success(stock);
-        } catch (Exception e) {
-            log.error("❌ Feign调用根据商品ID获取库存信息失败 - 商品ID: {}, 错误: {}", productId, e.getMessage(), e);
-            return Result.error("获取库存信息失败: " + e.getMessage());
+        log.debug("🔍 Feign调用根据商品ID获取库存信息 - 商品ID: {}", productId);
+        StockDTO stock = stockService.getStockByProductId(productId);
+
+        if (stock == null) {
+            log.warn("⚠️ 商品对应的库存记录不存在 - 商品ID: {}", productId);
+            throw new ResourceNotFoundException("Stock for Product", String.valueOf(productId));
         }
+
+        return Result.success(stock);
     }
 
     /**
@@ -83,15 +75,10 @@ public class StockFeignController {
     public Result<List<StockDTO>> getStocksByProductIds(
             @Parameter(description = "商品ID列表") @RequestBody List<Long> productIds) {
 
-        try {
-            log.debug("🔍 Feign调用批量获取库存信息 - 商品数量: {}", productIds.size());
-            List<StockDTO> stocks = stockService.getStocksByProductIds(productIds);
-            
-            return Result.success("获取成功", stocks);
-        } catch (Exception e) {
-            log.error("❌ Feign调用批量获取库存信息失败 - 错误: {}", e.getMessage(), e);
-            return Result.error("批量获取库存信息失败: " + e.getMessage());
-        }
+        log.debug("🔍 Feign调用批量获取库存信息 - 商品数量: {}", productIds.size());
+        List<StockDTO> stocks = stockService.getStocksByProductIds(productIds);
+        log.debug("✅ 批量获取库存信息成功 - 返回数量: {}", stocks.size());
+        return Result.success("获取成功", stocks);
     }
 
     /**
@@ -103,15 +90,10 @@ public class StockFeignController {
             @Parameter(description = "商品ID") @PathVariable Long productId,
             @Parameter(description = "所需数量") @PathVariable Integer quantity) {
 
-        try {
-            log.debug("🔍 Feign调用检查库存是否充足 - 商品ID: {}, 数量: {}", productId, quantity);
-            boolean sufficient = stockService.checkStockSufficient(productId, quantity);
-            
-            return Result.success(sufficient);
-        } catch (Exception e) {
-            log.error("❌ Feign调用检查库存是否充足失败 - 商品ID: {}, 数量: {}, 错误: {}", productId, quantity, e.getMessage(), e);
-            return Result.error("检查库存是否充足失败: " + e.getMessage());
-        }
+        log.debug("🔍 Feign调用检查库存是否充足 - 商品ID: {}, 数量: {}", productId, quantity);
+        boolean sufficient = stockService.checkStockSufficient(productId, quantity);
+        log.debug("✅ 库存检查完成 - 商品ID: {}, 数量: {}, 结果: {}", productId, quantity, sufficient);
+        return Result.success(sufficient);
     }
 
     /**
@@ -125,21 +107,15 @@ public class StockFeignController {
             @Parameter(description = "订单ID") @RequestParam(required = false) Long orderId,
             @Parameter(description = "订单号") @RequestParam(required = false) String orderNo) {
 
-        try {
-            log.info("📤 Feign调用库存扣减 - 商品ID: {}, 数量: {}, 订单: {}/{}", productId, quantity, orderId, orderNo);
-            boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "Feign调用扣减");
-            
-            if (result) {
-                log.info("✅ 库存扣减成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("库存扣减成功", true);
-            } else {
-                log.warn("⚠️ 库存扣减失败 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.error("库存扣减失败");
-            }
-        } catch (Exception e) {
-            log.error("❌ Feign调用库存扣减失败 - 商品ID: {}, 数量: {}, 错误: {}", productId, quantity, e.getMessage(), e);
-            return Result.error("库存扣减失败: " + e.getMessage());
+        log.info("📤 Feign调用库存扣减 - 商品ID: {}, 数量: {}, 订单: {}/{}", productId, quantity, orderId, orderNo);
+        boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "Feign调用扣减");
+
+        if (!result) {
+            log.warn("⚠️ 库存扣减失败 - 商品ID: {}, 数量: {}", productId, quantity);
+            throw new BusinessException("库存扣减失败");
         }
+        log.info("✅ 库存扣减成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("库存扣减成功", true);
     }
 
     /**
@@ -151,21 +127,15 @@ public class StockFeignController {
             @Parameter(description = "商品ID") @RequestParam Long productId,
             @Parameter(description = "预留数量") @RequestParam Integer quantity) {
 
-        try {
-            log.info("🔒 Feign调用预留库存 - 商品ID: {}, 数量: {}", productId, quantity);
-            boolean result = stockService.reserveStock(productId, quantity);
-            
-            if (result) {
-                log.info("✅ 库存预留成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("库存预留成功", true);
-            } else {
-                log.warn("⚠️ 库存预留失败 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.error("库存预留失败");
-            }
-        } catch (Exception e) {
-            log.error("❌ Feign调用预留库存失败 - 商品ID: {}, 数量: {}, 错误: {}", productId, quantity, e.getMessage(), e);
-            return Result.error("预留库存失败: " + e.getMessage());
+        log.info("🔒 Feign调用预留库存 - 商品ID: {}, 数量: {}", productId, quantity);
+        boolean result = stockService.reserveStock(productId, quantity);
+
+        if (!result) {
+            log.warn("⚠️ 库存预留失败 - 商品ID: {}, 数量: {}", productId, quantity);
+            throw new BusinessException("库存预留失败");
         }
+        log.info("✅ 库存预留成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("库存预留成功", true);
     }
 
     /**
@@ -177,21 +147,15 @@ public class StockFeignController {
             @Parameter(description = "商品ID") @RequestParam Long productId,
             @Parameter(description = "释放数量") @RequestParam Integer quantity) {
 
-        try {
-            log.info("🔓 Feign调用释放预留库存 - 商品ID: {}, 数量: {}", productId, quantity);
-            boolean result = stockService.releaseReservedStock(productId, quantity);
-            
-            if (result) {
-                log.info("✅ 释放预留库存成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("释放预留库存成功", true);
-            } else {
-                log.warn("⚠️ 释放预留库存失败 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.error("释放预留库存失败");
-            }
-        } catch (Exception e) {
-            log.error("❌ Feign调用释放预留库存失败 - 商品ID: {}, 数量: {}, 错误: {}", productId, quantity, e.getMessage(), e);
-            return Result.error("释放预留库存失败: " + e.getMessage());
+        log.info("🔓 Feign调用释放预留库存 - 商品ID: {}, 数量: {}", productId, quantity);
+        boolean result = stockService.releaseReservedStock(productId, quantity);
+
+        if (!result) {
+            log.warn("⚠️ 释放预留库存失败 - 商品ID: {}, 数量: {}", productId, quantity);
+            throw new BusinessException("释放预留库存失败");
         }
+        log.info("✅ 释放预留库存成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("释放预留库存成功", true);
     }
 
     /**
@@ -204,20 +168,14 @@ public class StockFeignController {
             @Parameter(description = "入库数量") @RequestParam Integer quantity,
             @Parameter(description = "备注") @RequestParam(required = false) String remark) {
 
-        try {
-            log.info("📦 Feign调用库存入库 - 商品ID: {}, 数量: {}, 备注: {}", productId, quantity, remark);
-            boolean result = stockService.stockIn(productId, quantity, remark != null ? remark : "Feign调用入库");
-            
-            if (result) {
-                log.info("✅ 库存入库成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("库存入库成功", true);
-            } else {
-                log.warn("⚠️ 库存入库失败 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.error("库存入库失败");
-            }
-        } catch (Exception e) {
-            log.error("❌ Feign调用库存入库失败 - 商品ID: {}, 数量: {}, 错误: {}", productId, quantity, e.getMessage(), e);
-            return Result.error("库存入库失败: " + e.getMessage());
+        log.info("📦 Feign调用库存入库 - 商品ID: {}, 数量: {}, 备注: {}", productId, quantity, remark);
+        boolean result = stockService.stockIn(productId, quantity, remark != null ? remark : "Feign调用入库");
+
+        if (!result) {
+            log.warn("⚠️ 库存入库失败 - 商品ID: {}, 数量: {}", productId, quantity);
+            throw new BusinessException("库存入库失败");
         }
+        log.info("✅ 库存入库成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("库存入库成功", true);
     }
 }

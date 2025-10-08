@@ -2,9 +2,7 @@ package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.event.order.OrderCreatedEvent;
-import com.cloud.common.domain.event.order.OrderCompletedEvent;
 import com.cloud.common.domain.event.payment.PaymentRecordCreateEvent;
 import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.payment.mapper.PaymentMapper;
@@ -27,7 +25,6 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         implements PaymentService {
 
     private final BusinessLogProducer businessLogProducer;
-
 
 
     @Override

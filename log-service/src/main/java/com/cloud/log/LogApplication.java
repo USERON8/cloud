@@ -4,10 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * 日志服务启动类
@@ -16,23 +12,19 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  */
 @Slf4j
 @SpringBootApplication(
-    exclude = {
-        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class
-    }
-)
-@ComponentScan(
-    basePackages = {"com.cloud.log", "com.cloud.common"},
-    excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-            com.cloud.common.config.BaseAsyncConfig.class,
-            com.cloud.common.config.MybatisPlusConfig.class,
-            com.cloud.common.config.RedissonConfig.class
-        })
-    }
+        scanBasePackages = {
+            "com.cloud.log"
+        },
+        exclude = {
+                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration.class
+        }
 )
 @EnableDiscoveryClient
-@EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
-@EnableTransactionManagement(proxyTargetClass = true)
 public class LogApplication {
 
     public static void main(String[] args) {

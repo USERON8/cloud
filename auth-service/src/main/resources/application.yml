@@ -74,11 +74,11 @@ spring:
             token-uri: http://127.0.0.1:80/oauth2/token
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
 
   # 自动配置排除
   autoconfigure:
-    exclude: 
+    exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
@@ -100,7 +100,7 @@ logging:
 app:
   jwt:
     test-mode: true
-    issuer: http://localhost:8081
+    issuer: http://127.0.0.1
     access-token-validity: PT2H
     test-token-validity: P365D
 
@@ -116,7 +116,7 @@ springdoc:
     operations-sorter: alpha
   group-configs:
     - group: 'auth'
-      paths-to-match: '/api/v1/auth/**'
+      paths-to-match: '/auth/**'
     - group: 'oauth2'
       paths-to-match: '/oauth2/**'
   default-flat-param-object: true

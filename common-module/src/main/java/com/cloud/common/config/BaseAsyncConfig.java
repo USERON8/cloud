@@ -16,8 +16,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 注意：此类仅用于继承，不作为Spring Bean
  *
  * @author cloud
- * @date 2024-01-20
  * @version 2.0
+ * @date 2024-01-20
  */
 @Slf4j
 public class BaseAsyncConfig {

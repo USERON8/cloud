@@ -3,6 +3,8 @@ package com.cloud.stock.controller;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.stock.StockDTO;
 import com.cloud.common.domain.vo.stock.StockVO;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.stock.module.dto.StockPageDTO;
@@ -11,7 +13,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,13 +53,10 @@ public class StockController {
             @Valid @NotNull(message = "分页查询条件不能为空") StockPageDTO pageDTO,
             Authentication authentication) {
 
-        try {
-            PageResult<StockVO> pageResult = stockService.pageQuery(pageDTO);
-            return Result.success(pageResult);
-        } catch (Exception e) {
-            log.error("分页查询库存失败", e);
-            return Result.error("分页查询库存失败: " + e.getMessage());
-        }
+        PageResult<StockVO> pageResult = stockService.pageQuery(pageDTO);
+        log.info("分页查询库存成功: page={}, size={}, total={}", 
+                pageDTO.getCurrent(), pageDTO.getSize(), pageResult.getTotal());
+        return Result.success(pageResult);
     }
 
     /**
@@ -69,16 +71,13 @@ public class StockController {
             @Positive(message = "库存ID必须为正整数") Long id,
             Authentication authentication) {
 
-        try {
-            StockDTO stock = stockService.getStockById(id);
-            if (stock == null) {
-                return Result.error("库存记录不存在");
-            }
-            return Result.success("查询成功", stock);
-        } catch (Exception e) {
-            log.error("获取库存详情失败，库存ID: {}", id, e);
-            return Result.error("获取库存详情失败: " + e.getMessage());
+        StockDTO stock = stockService.getStockById(id);
+        if (stock == null) {
+            log.warn("库存记录不存在: id={}", id);
+            throw new ResourceNotFoundException("Stock", String.valueOf(id));
         }
+        log.info("查询库存成功: stockId={}", id);
+        return Result.success("查询成功", stock);
     }
 
     /**
@@ -92,16 +91,13 @@ public class StockController {
             @Positive(message = "商品ID必须为正整数") Long productId,
             Authentication authentication) {
 
-        try {
-            StockDTO stock = stockService.getStockByProductId(productId);
-            if (stock == null) {
-                return Result.error("该商品暂无库存信息");
-            }
-            return Result.success("查询成功", stock);
-        } catch (Exception e) {
-            log.error("根据商品ID获取库存信息失败，商品ID: {}", productId, e);
-            return Result.error("查询失败: " + e.getMessage());
+        StockDTO stock = stockService.getStockByProductId(productId);
+        if (stock == null) {
+            log.warn("商品暂无库存信息: productId={}", productId);
+            throw new ResourceNotFoundException("Stock for Product", String.valueOf(productId));
         }
+        log.info("根据商品ID查询库存成功: productId={}", productId);
+        return Result.success("查询成功", stock);
     }
 
     /**
@@ -114,13 +110,9 @@ public class StockController {
             @NotNull(message = "商品ID列表不能为空")
             @NotEmpty(message = "商品ID列表不能为空") List<Long> productIds) {
 
-        try {
-            List<StockDTO> stocks = stockService.getStocksByProductIds(productIds);
-            return Result.success("查询成功", stocks);
-        } catch (Exception e) {
-            log.error("批量获取库存信息失败", e);
-            return Result.error("批量查询失败: " + e.getMessage());
-        }
+        List<StockDTO> stocks = stockService.getStocksByProductIds(productIds);
+        log.info("批量获取库存信息成功: count={}", stocks.size());
+        return Result.success("查询成功", stocks);
     }
 
     /**
@@ -133,13 +125,9 @@ public class StockController {
             @Parameter(description = "库存信息") @RequestBody
             @Valid @NotNull(message = "库存信息不能为空") StockDTO stockDTO) {
 
-        try {
-            StockDTO createdStock = stockService.createStock(stockDTO);
-            return Result.success("库存创建成功", createdStock);
-        } catch (Exception e) {
-            log.error("创建库存失败", e);
-            return Result.error("创建库存失败: " + e.getMessage());
-        }
+        StockDTO createdStock = stockService.createStock(stockDTO);
+        log.info("库存创建成功: stockId={}, productId={}", createdStock.getId(), createdStock.getProductId());
+        return Result.success("库存创建成功", createdStock);
     }
 
     /**
@@ -157,13 +145,13 @@ public class StockController {
         // 确保路径参数与请求体中的ID一致
         stockDTO.setId(id);
 
-        try {
-            boolean result = stockService.updateStock(stockDTO);
-            return Result.success("库存更新成功", result);
-        } catch (Exception e) {
-            log.error("更新库存信息失败，库存ID: {}", id, e);
-            return Result.error("更新库存信息失败: " + e.getMessage());
+        boolean result = stockService.updateStock(stockDTO);
+        if (!result) {
+            log.warn("库存更新失败: stockId={}", id);
+            throw new BusinessException("库存更新失败");
         }
+        log.info("库存更新成功: stockId={}", id);
+        return Result.success("库存更新成功", result);
     }
 
     /**
@@ -176,13 +164,13 @@ public class StockController {
             @Parameter(description = "库存ID") @PathVariable
             @NotNull(message = "库存ID不能为空") Long id) {
 
-        try {
-            boolean result = stockService.deleteStock(id);
-            return Result.success("删除成功", result);
-        } catch (Exception e) {
-            log.error("删除库存信息失败，库存ID: {}", id, e);
-            return Result.error("删除失败: " + e.getMessage());
+        boolean result = stockService.deleteStock(id);
+        if (!result) {
+            log.warn("删除库存失败: stockId={}", id);
+            throw new BusinessException("删除库存失败");
         }
+        log.info("删除库存成功: stockId={}", id);
+        return Result.success("删除成功", result);
     }
 
     /**
@@ -195,13 +183,13 @@ public class StockController {
             @Parameter(description = "库存ID列表") @RequestParam("ids")
             @Valid @NotNull(message = "库存ID列表不能为空") Collection<Long> ids) {
 
-        try {
-            boolean result = stockService.deleteStocksByIds(ids);
-            return Result.success("批量删除成功", result);
-        } catch (Exception e) {
-            log.error("批量删除库存信息失败，数量: {}", ids.size(), e);
-            return Result.error("批量删除失败: " + e.getMessage());
+        boolean result = stockService.deleteStocksByIds(ids);
+        if (!result) {
+            log.warn("批量删除库存失败: count={}", ids.size());
+            throw new BusinessException("批量删除库存失败");
         }
+        log.info("批量删除库存成功: count={}", ids.size());
+        return Result.success("批量删除成功", result);
     }
 
     // ==================== 业务操作接口 ====================
@@ -228,21 +216,15 @@ public class StockController {
             @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
             Authentication authentication) {
 
-        try {
-            log.info("📦 库存入库 - 商品ID: {}, 数量: {}, 备注: {}", productId, quantity, remark);
-            boolean result = stockService.stockIn(productId, quantity, remark);
-            
-            if (result) {
-                log.info("✅ 库存入库成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("入库成功", result);
-            } else {
-                log.warn("⚠️ 库存入库失败 - 商品ID: {}", productId);
-                return Result.error("入库失败，请检查库存信息");
-            }
-        } catch (Exception e) {
-            log.error("❌ 库存入库失败 - 商品ID: {}, 错误: {}", productId, e.getMessage(), e);
-            return Result.error("入库失败: " + e.getMessage());
+        log.info("📦 库存入库 - 商品ID: {}, 数量: {}, 备注: {}", productId, quantity, remark);
+        boolean result = stockService.stockIn(productId, quantity, remark);
+
+        if (!result) {
+            log.warn("⚠️ 库存入库失败 - 商品ID: {}", productId);
+            throw new BusinessException("入库失败，请检查库存信息");
         }
+        log.info("✅ 库存入库成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("入库成功", result);
     }
 
     /**
@@ -269,22 +251,16 @@ public class StockController {
             @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
             Authentication authentication) {
 
-        try {
-            log.info("📤 库存出库 - 商品ID: {}, 数量: {}, 订单: {}/{}, 备注: {}",
-                    productId, quantity, orderId, orderNo, remark);
-            boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, remark);
-            
-            if (result) {
-                log.info("✅ 库存出库成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("出库成功", result);
-            } else {
-                log.warn("⚠️ 库存出库失败 - 商品ID: {}, 可能库存不足", productId);
-                return Result.error("出库失败，库存可能不足");
-            }
-        } catch (Exception e) {
-            log.error("❌ 库存出库失败 - 商品ID: {}, 错误: {}", productId, e.getMessage(), e);
-            return Result.error("出库失败: " + e.getMessage());
+        log.info("📤 库存出库 - 商品ID: {}, 数量: {}, 订单: {}/{}, 备注: {}",
+                productId, quantity, orderId, orderNo, remark);
+        boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, remark);
+
+        if (!result) {
+            log.warn("⚠️ 库存出库失败 - 商品ID: {}, 可能库存不足", productId);
+            throw new BusinessException("出库失败，库存可能不足");
         }
+        log.info("✅ 库存出库成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("出库成功", result);
     }
 
     /**
@@ -308,21 +284,15 @@ public class StockController {
             @Min(value = 1, message = "预留数量必须大于0") Integer quantity,
             Authentication authentication) {
 
-        try {
-            log.info("🔒 库存预留 - 商品ID: {}, 数量: {}", productId, quantity);
-            boolean result = stockService.reserveStock(productId, quantity);
-            
-            if (result) {
-                log.info("✅ 库存预留成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("预留成功", result);
-            } else {
-                log.warn("⚠️ 库存预留失败 - 商品ID: {}, 可能库存不足", productId);
-                return Result.error("预留失败，库存可能不足");
-            }
-        } catch (Exception e) {
-            log.error("❌ 库存预留失败 - 商品ID: {}, 错误: {}", productId, e.getMessage(), e);
-            return Result.error("预留失败: " + e.getMessage());
+        log.info("🔒 库存预留 - 商品ID: {}, 数量: {}", productId, quantity);
+        boolean result = stockService.reserveStock(productId, quantity);
+
+        if (!result) {
+            log.warn("⚠️ 库存预留失败 - 商品ID: {}, 可能库存不足", productId);
+            throw new BusinessException("预留失败，库存可能不足");
         }
+        log.info("✅ 库存预留成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("预留成功", result);
     }
 
     /**
@@ -346,21 +316,15 @@ public class StockController {
             @Min(value = 1, message = "释放数量必须大于0") Integer quantity,
             Authentication authentication) {
 
-        try {
-            log.info("🔓 库存释放 - 商品ID: {}, 数量: {}", productId, quantity);
-            boolean result = stockService.releaseReservedStock(productId, quantity);
-            
-            if (result) {
-                log.info("✅ 库存释放成功 - 商品ID: {}, 数量: {}", productId, quantity);
-                return Result.success("释放成功", result);
-            } else {
-                log.warn("⚠️ 库存释放失败 - 商品ID: {}", productId);
-                return Result.error("释放失败，请检查预留库存");
-            }
-        } catch (Exception e) {
-            log.error("❌ 库存释放失败 - 商品ID: {}, 错误: {}", productId, e.getMessage(), e);
-            return Result.error("释放失败: " + e.getMessage());
+        log.info("🔓 库存释放 - 商品ID: {}, 数量: {}", productId, quantity);
+        boolean result = stockService.releaseReservedStock(productId, quantity);
+
+        if (!result) {
+            log.warn("⚠️ 库存释放失败 - 商品ID: {}", productId);
+            throw new BusinessException("释放失败，请检查预留库存");
         }
+        log.info("✅ 库存释放成功 - 商品ID: {}, 数量: {}", productId, quantity);
+        return Result.success("释放成功", result);
     }
 
     /**
@@ -376,13 +340,9 @@ public class StockController {
             @NotNull(message = "所需数量不能为空")
             @Positive(message = "所需数量必须为正整数") Integer quantity) {
 
-        try {
-            boolean sufficient = stockService.checkStockSufficient(productId, quantity);
-            return Result.success("检查完成", sufficient);
-        } catch (Exception e) {
-            log.error("检查库存是否充足失败，商品ID: {}, 数量: {}", productId, quantity, e);
-            return Result.error("检查失败: " + e.getMessage());
-        }
+        boolean sufficient = stockService.checkStockSufficient(productId, quantity);
+        log.info("检查库存是否充足: productId={}, quantity={}, sufficient={}", productId, quantity, sufficient);
+        return Result.success("检查完成", sufficient);
     }
 
     // ==================== 高级业务功能 ====================
@@ -407,31 +367,208 @@ public class StockController {
             @Parameter(description = "订单ID") @RequestParam Long orderId,
             @Parameter(description = "订单号") @RequestParam String orderNo) {
 
-        try {
-            log.info("⚡ 秒杀库存扣减 - 商品ID: {}, 数量: {}, 订单: {}", productId, quantity, orderNo);
-            
-            // 检查库存是否充足
-            boolean sufficient = stockService.checkStockSufficient(productId, quantity);
-            if (!sufficient) {
-                log.warn("❌ 秒杀商品库存不足 - 商品ID: {}, 需要数量: {}", productId, quantity);
-                return Result.error("商品库存不足");
-            }
+        log.info("⚡ 秒杀库存扣减 - 商品ID: {}, 数量: {}, 订单: {}", productId, quantity, orderNo);
 
-            // 执行库存扣减
-            boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "秒杀扣减");
-            
-            if (result) {
-                log.info("✅ 秒杀库存扣减成功 - 商品ID: {}, 订单: {}", productId, orderNo);
-                return Result.success("秒杀成功", true);
-            } else {
-                log.warn("❌ 秒杀库存扣减失败 - 商品ID: {}, 订单: {}", productId, orderNo);
-                return Result.error("秒杀失败，库存不足");
-            }
-        } catch (Exception e) {
-            log.error("❌ 秒杀库存扣减异常 - 商品ID: {}, 订单: {}", productId, orderNo, e);
-            return Result.error("秒杀失败: " + e.getMessage());
+        // 检查库存是否充足
+        boolean sufficient = stockService.checkStockSufficient(productId, quantity);
+        if (!sufficient) {
+            log.warn("❌ 秒杀商品库存不足 - 商品ID: {}, 需要数量: {}", productId, quantity);
+            throw new BusinessException("商品库存不足");
         }
+
+        // 执行库存扣减
+        boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "秒杀扣减");
+
+        if (!result) {
+            log.warn("❌ 秒杀库存扣减失败 - 商品ID: {}, 订单: {}", productId, orderNo);
+            throw new BusinessException("秒杀失败，库存不足");
+        }
+        log.info("✅ 秒杀库存扣减成功 - 商品ID: {}, 订单: {}", productId, orderNo);
+        return Result.success("秒杀成功", true);
     }
+
+    // ==================== 批量管理接口 ====================
+
+    /**
+     * 批量创建库存记录
+     */
+    @PostMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @Operation(summary = "批量创建库存记录", description = "批量创建新的库存记录")
+    public Result<Integer> createStockBatch(
+            @Parameter(description = "库存信息列表") @RequestBody
+            @Valid @NotNull(message = "库存信息列表不能为空") List<StockDTO> stockDTOList) {
+
+        if (stockDTOList == null || stockDTOList.isEmpty()) {
+            return Result.badRequest("库存信息列表不能为空");
+        }
+
+        if (stockDTOList.size() > 100) {
+            return Result.badRequest("批量创建数量不能超过100个");
+        }
+
+        log.info("批量创建库存记录, count: {}", stockDTOList.size());
+
+        int successCount = 0;
+        for (StockDTO stockDTO : stockDTOList) {
+            try {
+                stockService.createStock(stockDTO);
+                successCount++;
+            } catch (Exception e) {
+                log.error("创建库存记录失败, productId: {}", stockDTO.getProductId(), e);
+            }
+        }
+
+        log.info("批量创建库存记录完成, 成功: {}/{}", successCount, stockDTOList.size());
+        return Result.success(String.format("批量创建库存记录成功: %d/%d", successCount, stockDTOList.size()), successCount);
+    }
+
+    /**
+     * 批量更新库存信息
+     */
+    @PutMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "批量更新库存信息", description = "批量更新库存信息")
+    public Result<Integer> updateStockBatch(
+            @Parameter(description = "库存信息列表") @RequestBody
+            @Valid @NotNull(message = "库存信息列表不能为空") List<StockDTO> stockDTOList,
+            Authentication authentication) {
+
+        if (stockDTOList == null || stockDTOList.isEmpty()) {
+            return Result.badRequest("库存信息列表不能为空");
+        }
+
+        if (stockDTOList.size() > 100) {
+            return Result.badRequest("批量更新数量不能超过100个");
+        }
+
+        log.info("批量更新库存信息, count: {}", stockDTOList.size());
+
+        int successCount = 0;
+        for (StockDTO stockDTO : stockDTOList) {
+            try {
+                if (stockService.updateStock(stockDTO)) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("更新库存信息失败, stockId: {}", stockDTO.getId(), e);
+            }
+        }
+
+        log.info("批量更新库存信息完成, 成功: {}/{}", successCount, stockDTOList.size());
+        return Result.success(String.format("批量更新库存信息成功: %d/%d", successCount, stockDTOList.size()), successCount);
+    }
+
+    /**
+     * 批量库存入库
+     */
+    @PostMapping("/stock-in/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "批量库存入库", description = "批量对多个商品进行入库操作")
+    public Result<Integer> stockInBatch(
+            @Parameter(description = "入库请求列表") @RequestBody
+            @NotNull(message = "入库请求列表不能为空") List<StockAdjustmentRequest> requests,
+            Authentication authentication) {
+
+        if (requests == null || requests.isEmpty()) {
+            return Result.badRequest("入库请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            return Result.badRequest("批量入库数量不能超过100个");
+        }
+
+        log.info("📦 批量库存入库 - 数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockAdjustmentRequest request : requests) {
+            try {
+                if (stockService.stockIn(request.getProductId(), request.getQuantity(), request.getRemark())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("入库失败, productId: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("✅ 批量库存入库完成, 成功: {}/{}", successCount, requests.size());
+        return Result.success(String.format("批量入库成功: %d/%d", successCount, requests.size()), successCount);
+    }
+
+    /**
+     * 批量库存出库
+     */
+    @PostMapping("/stock-out/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "批量库存出库", description = "批量对多个商品进行出库操作")
+    public Result<Integer> stockOutBatch(
+            @Parameter(description = "出库请求列表") @RequestBody
+            @NotNull(message = "出库请求列表不能为空") List<StockAdjustmentRequest> requests,
+            Authentication authentication) {
+
+        if (requests == null || requests.isEmpty()) {
+            return Result.badRequest("出库请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            return Result.badRequest("批量出库数量不能超过100个");
+        }
+
+        log.info("📤 批量库存出库 - 数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockAdjustmentRequest request : requests) {
+            try {
+                if (stockService.stockOut(request.getProductId(), request.getQuantity(), 
+                                         request.getOrderId(), request.getOrderNo(), request.getRemark())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("出库失败, productId: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("✅ 批量库存出库完成, 成功: {}/{}", successCount, requests.size());
+        return Result.success(String.format("批量出库成功: %d/%d", successCount, requests.size()), successCount);
+    }
+
+    /**
+     * 批量预留库存
+     */
+    @PostMapping("/reserve/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "批量预留库存", description = "批量预留多个商品的库存")
+    public Result<Integer> reserveStockBatch(
+            @Parameter(description = "预留请求列表") @RequestBody
+            @NotNull(message = "预留请求列表不能为空") List<StockAdjustmentRequest> requests,
+            Authentication authentication) {
+
+        if (requests == null || requests.isEmpty()) {
+            return Result.badRequest("预留请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            return Result.badRequest("批量预留数量不能超过100个");
+        }
+
+        log.info("🔒 批量库存预留 - 数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockAdjustmentRequest request : requests) {
+            try {
+                if (stockService.reserveStock(request.getProductId(), request.getQuantity())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("预留失败, productId: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("✅ 批量库存预留完成, 成功: {}/{}", successCount, requests.size());
+        return Result.success(String.format("批量预留成功: %d/%d", successCount, requests.size()), successCount);
+    }
+
+    // ==================== 内部类 ====================
 
     /**
      * 库存调整请求DTO
@@ -443,13 +580,88 @@ public class StockController {
         private String remark;
 
         // Getters and Setters
-        public Long getProductId() { return productId; }
-        public void setProductId(Long productId) { this.productId = productId; }
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-        public Integer getQuantity() { return quantity; }
-        public void setQuantity(Integer quantity) { this.quantity = quantity; }
-        public String getRemark() { return remark; }
-        public void setRemark(String remark) { this.remark = remark; }
+        public Long getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Long productId) {
+            this.productId = productId;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+
+        public String getRemark() {
+            return remark;
+        }
+
+        public void setRemark(String remark) {
+            this.remark = remark;
+        }
+    }
+
+    /**
+     * 批量调整请求
+     */
+    public static class StockAdjustmentRequest {
+        private Long productId;
+        private Integer quantity;
+        private Long orderId;
+        private String orderNo;
+        private String remark;
+
+        // Getters and Setters
+        public Long getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Long productId) {
+            this.productId = productId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+
+        public Long getOrderId() {
+            return orderId;
+        }
+
+        public void setOrderId(Long orderId) {
+            this.orderId = orderId;
+        }
+
+        public String getOrderNo() {
+            return orderNo;
+        }
+
+        public void setOrderNo(String orderNo) {
+            this.orderNo = orderNo;
+        }
+
+        public String getRemark() {
+            return remark;
+        }
+
+        public void setRemark(String remark) {
+            this.remark = remark;
+        }
     }
 }

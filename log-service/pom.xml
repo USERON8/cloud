@@ -80,6 +80,7 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
             <exclusions>
+                <!-- log-service无需MySQL，排除MyBatis-Plus相关依赖 -->
                 <exclusion>
                     <groupId>com.baomidou</groupId>
                     <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -100,10 +101,30 @@
                     <groupId>com.baomidou</groupId>
                     <artifactId>mybatis-plus-jsqlparser</artifactId>
                 </exclusion>
+                <!-- log-service无需Redis，排除Redis相关依赖 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-redis</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.redisson</groupId>
+                    <artifactId>redisson-spring-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-pool2</artifactId>
+                </exclusion>
+                <!-- 排除文件存储相关 -->
                 <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
+                <!-- 排除缓存相关 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-cache</artifactId>
+                </exclusion>
+                <!-- 排除其他不需要的依赖 -->
                 <exclusion>
                     <artifactId>nimbus-jose-jwt</artifactId>
                     <groupId>com.nimbusds</groupId>
@@ -133,12 +154,12 @@
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
-        
+
 
     </dependencies>
 

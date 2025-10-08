@@ -22,7 +22,7 @@ public interface ProductFeignClient {
      * @param product 商品信息
      * @return 创建的商品信息
      */
-@PostMapping
+    @PostMapping
     ProductDTO createProduct(@RequestBody ProductDTO product);
 
     /**
@@ -31,7 +31,7 @@ public interface ProductFeignClient {
      * @param id 商品ID
      * @return 商品信息
      */
-@GetMapping("/{id}")
+    @GetMapping("/{id}")
     ProductDTO getProductById(@PathVariable("id") Long id);
 
     /**
@@ -41,7 +41,7 @@ public interface ProductFeignClient {
      * @param product 商品信息
      * @return 更新后的商品信息
      */
-@PutMapping("/{id}")
+    @PutMapping("/{id}")
     ProductDTO updateProduct(@PathVariable("id") Long id, @RequestBody ProductDTO product);
 
     /**
@@ -50,7 +50,7 @@ public interface ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-@DeleteMapping("/{id}")
+    @DeleteMapping("/{id}")
     OperationResultVO deleteProduct(@PathVariable("id") Long id);
 
     /**
@@ -58,7 +58,7 @@ public interface ProductFeignClient {
      *
      * @return 商品列表
      */
-@GetMapping
+    @GetMapping
     List<ProductDTO> getAllProducts();
 
     /**
@@ -67,7 +67,7 @@ public interface ProductFeignClient {
      * @param shopId 店铺ID
      * @return 商品列表
      */
-@GetMapping("/shop/{shopId}")
+    @GetMapping("/shop/{shopId}")
     List<ProductDTO> getProductsByShopId(@PathVariable("shopId") Long shopId);
 
     /**
@@ -76,7 +76,7 @@ public interface ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-@PutMapping("/{id}/shelf-on")
+    @PutMapping("/{id}/shelf-on")
     OperationResultVO putOnShelf(@PathVariable("id") Long id);
 
     /**
@@ -85,6 +85,6 @@ public interface ProductFeignClient {
      * @param id 商品ID
      * @return 操作结果
      */
-@PutMapping("/{id}/shelf-off")
+    @PutMapping("/{id}/shelf-off")
     OperationResultVO putOffShelf(@PathVariable("id") Long id);
 }

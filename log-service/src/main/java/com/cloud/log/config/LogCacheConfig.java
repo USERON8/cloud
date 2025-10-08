@@ -29,9 +29,9 @@ public class LogCacheConfig {
     @Primary
     public CacheManager logCacheManager() {
         log.info("初始化日志服务缓存管理器");
-        
+
         ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
-        
+
         // 设置缓存名称
         cacheManager.setCacheNames(java.util.Arrays.asList(
                 "userEventCache",           // 用户事件缓存
@@ -42,10 +42,10 @@ public class LogCacheConfig {
                 "stockEventCache",          // 库存事件缓存
                 "logStatsCache"             // 日志统计缓存
         ));
-        
+
         // 允许空值缓存
         cacheManager.setAllowNullValues(true);
-        
+
         log.info("日志服务缓存管理器初始化完成");
         return cacheManager;
     }

@@ -13,6 +13,18 @@ import lombok.Getter;
 @Getter
 public class MerchantException extends BusinessException {
 
+    public MerchantException(int code, String message) {
+        super(code, message);
+    }
+
+    public MerchantException(String message) {
+        super(message);
+    }
+
+    public MerchantException(int code, String message, Throwable cause) {
+        super(code, message, cause);
+    }
+
     /**
      * 商家不存在异常
      */
@@ -68,17 +80,5 @@ public class MerchantException extends BusinessException {
         public MerchantPermissionException(String message) {
             super(403, message);
         }
-    }
-
-    public MerchantException(int code, String message) {
-        super(code, message);
-    }
-
-    public MerchantException(String message) {
-        super(message);
-    }
-
-    public MerchantException(int code, String message, Throwable cause) {
-        super(code, message, cause);
     }
 }

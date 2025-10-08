@@ -1,5 +1,6 @@
 package com.cloud.auth.config;
 
+import com.cloud.common.config.BaseAsyncConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -8,12 +9,11 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 认证服务异步配置类
  * 继承基础异步配置类，提供认证服务专用的线程池配置
- * 
+ * <p>
  * 认证服务特点：
  * - 高并发的认证请求处理
  * - Token生成和验证
@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "auth.async.enabled", havingValue = "true", matchIfMissing = true)
-public class AuthAsyncConfig {
+public class AuthAsyncConfig extends BaseAsyncConfig {
 
     /**
      * 认证业务异步线程池
@@ -128,73 +128,4 @@ public class AuthAsyncConfig {
         return executor;
     }
 
-    /**
-     * 创建线程池任务执行器的工厂方法
-     * 提供统一的线程池配置模板
-     */
-    private ThreadPoolTaskExecutor createThreadPoolTaskExecutor(int corePoolSize, int maxPoolSize,
-                                                                int queueCapacity, String threadNamePrefix) {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-
-        // 基本配置
-        executor.setCorePoolSize(corePoolSize);
-        executor.setMaxPoolSize(maxPoolSize);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setThreadNamePrefix(threadNamePrefix);
-
-        // 高级配置
-        executor.setKeepAliveSeconds(60);
-        executor.setAllowCoreThreadTimeOut(false);
-
-        // 拒绝策略：调用者运行策略（保证任务不丢失）
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-        // 优雅关闭配置
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
-
-        return executor;
-    }
-
-    /**
-     * 创建通用异步执行器
-     * 适用于各服务的通用异步任务
-     */
-    private ThreadPoolTaskExecutor createCommonAsyncExecutor() {
-        int processors = Runtime.getRuntime().availableProcessors();
-        return createThreadPoolTaskExecutor(
-                Math.max(2, processors / 2),
-                processors * 2,
-                200,
-                "common-async-"
-        );
-    }
-
-    /**
-     * 创建高并发查询专用线程池
-     * 适用于查询密集型业务
-     */
-    private ThreadPoolTaskExecutor createQueryExecutor(String threadNamePrefix) {
-        int processors = Runtime.getRuntime().availableProcessors();
-        return createThreadPoolTaskExecutor(
-                Math.max(4, processors),
-                processors * 4,
-                500,
-                threadNamePrefix
-        );
-    }
-
-    /**
-     * 创建IO密集型线程池
-     * 适用于文件上传、网络请求等IO密集型任务
-     */
-    private ThreadPoolTaskExecutor createIOExecutor(String threadNamePrefix) {
-        int processors = Runtime.getRuntime().availableProcessors();
-        return createThreadPoolTaskExecutor(
-                processors * 2,
-                processors * 4,
-                300,
-                threadNamePrefix
-        );
-    }
 }

@@ -9,15 +9,14 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @Slf4j
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
+        scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
 )
 @ComponentScan(
-    basePackages = {"com.cloud.stock", "com.cloud.common"}
+        basePackages = {"com.cloud.stock", "com.cloud.common"}
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient

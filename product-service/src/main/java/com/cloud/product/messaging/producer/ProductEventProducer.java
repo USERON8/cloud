@@ -35,58 +35,58 @@ public class ProductEventProducer {
     private final StreamBridge streamBridge;
 
     /**
-     * 发送商品创建事件
+     * 生产商品创建事件
      */
-    public void sendProductCreatedEvent(ProductChangeEvent event) {
+    public void produceProductCreated(ProductChangeEvent event) {
         sendProductEvent(event, "PRODUCT_CREATED", "product-created");
     }
 
     /**
-     * 发送商品更新事件
+     * 生产商品更新事件
      */
-    public void sendProductUpdatedEvent(ProductChangeEvent event) {
+    public void produceProductUpdated(ProductChangeEvent event) {
         sendProductEvent(event, "PRODUCT_UPDATED", "product-updated");
     }
 
     /**
-     * 发送商品删除事件
+     * 生产商品删除事件
      */
-    public void sendProductDeletedEvent(ProductChangeEvent event) {
+    public void produceProductDeleted(ProductChangeEvent event) {
         sendProductEvent(event, "PRODUCT_DELETED", "product-deleted");
     }
 
     /**
-     * 发送商品上架事件
+     * 生产商品上架事件
      */
-    public void sendProductOnSaleEvent(ProductChangeEvent event) {
+    public void produceProductOnSale(ProductChangeEvent event) {
         sendProductEvent(event, "PRODUCT_ON_SALE", "product-on-sale");
     }
 
     /**
-     * 发送商品下架事件
+     * 生产商品下架事件
      */
-    public void sendProductOffSaleEvent(ProductChangeEvent event) {
+    public void produceProductOffSale(ProductChangeEvent event) {
         sendProductEvent(event, "PRODUCT_OFF_SALE", "product-off-sale");
     }
 
     /**
-     * 发送商家创建事件
+     * 生产商家创建事件
      */
-    public void sendMerchantCreatedEvent(MerchantChangeEvent event) {
+    public void produceMerchantCreated(MerchantChangeEvent event) {
         sendMerchantEvent(event, "MERCHANT_CREATED", "merchant-created");
     }
 
     /**
-     * 发送商家更新事件
+     * 生产商家更新事件
      */
-    public void sendMerchantUpdatedEvent(MerchantChangeEvent event) {
+    public void produceMerchantUpdated(MerchantChangeEvent event) {
         sendMerchantEvent(event, "MERCHANT_UPDATED", "merchant-updated");
     }
 
     /**
-     * 发送商家状态变更事件
+     * 生产商家状态变更事件
      */
-    public void sendMerchantStatusChangedEvent(MerchantChangeEvent event) {
+    public void produceMerchantStatusChanged(MerchantChangeEvent event) {
         sendMerchantEvent(event, "MERCHANT_STATUS_CHANGED", "merchant-status-changed");
     }
 
@@ -115,12 +115,12 @@ public class ProductEventProducer {
             boolean sent = streamBridge.send(PRODUCT_BINDING_NAME, message);
 
             if (sent) {
-                log.info("✅ 商品事件发送成功 - 事件类型: {}, 商品ID: {}, Tag: {}, TraceId: {}",
+                log.info("✅ 商品事件生产成功 - 事件类型: {}, 商品ID: {}, Tag: {}, TraceId: {}",
                         changeType, event.getProductId(), tag, traceId);
             } else {
-                log.error("❌ 商品事件发送失败 - 事件类型: {}, 商品ID: {}, TraceId: {}",
+                log.error("❌ 商品事件生产失败 - 事件类型: {}, 商品ID: {}, TraceId: {}",
                         changeType, event.getProductId(), traceId);
-                throw new MessageSendException("商品事件发送失败");
+                throw new MessageSendException("商品事件生产失败");
             }
 
         } catch (Exception e) {
@@ -154,12 +154,12 @@ public class ProductEventProducer {
             boolean sent = streamBridge.send(MERCHANT_BINDING_NAME, message);
 
             if (sent) {
-                log.info("✅ 商家事件发送成功 - 事件类型: {}, 商家ID: {}, Tag: {}, TraceId: {}",
+                log.info("✅ 商家事件生产成功 - 事件类型: {}, 商家ID: {}, Tag: {}, TraceId: {}",
                         changeType, event.getMerchantId(), tag, traceId);
             } else {
-                log.error("❌ 商家事件发送失败 - 事件类型: {}, 商家ID: {}, TraceId: {}",
+                log.error("❌ 商家事件生产失败 - 事件类型: {}, 商家ID: {}, TraceId: {}",
                         changeType, event.getMerchantId(), traceId);
-                throw new MessageSendException("商家事件发送失败");
+                throw new MessageSendException("商家事件生产失败");
             }
 
         } catch (Exception e) {

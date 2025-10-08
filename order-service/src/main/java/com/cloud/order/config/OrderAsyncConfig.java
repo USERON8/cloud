@@ -1,5 +1,6 @@
 package com.cloud.order.config;
 
+import com.cloud.common.config.BaseAsyncConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -8,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 订单服务异步配置类
@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "order.async.enabled", havingValue = "true", matchIfMissing = true)
-public class OrderAsyncConfig {
+public class OrderAsyncConfig extends BaseAsyncConfig {
 
     /**
      * 订单业务异步线程池
@@ -114,38 +114,5 @@ public class OrderAsyncConfig {
         log.info("订单支付线程池初始化完成");
         return executor;
     }
-    
-    /**
-     * 创建线程池任务执行器的工厂方法
-     * 提供统一的线程池配置模板
-     *
-     * @param corePoolSize     核心线程数
-     * @param maxPoolSize      最大线程数
-     * @param queueCapacity    队列容量
-     * @param threadNamePrefix 线程名前缀
-     * @return ThreadPoolTaskExecutor
-     */
-    private ThreadPoolTaskExecutor createThreadPoolTaskExecutor(int corePoolSize, int maxPoolSize,
-                                                                  int queueCapacity, String threadNamePrefix) {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        // 基本配置
-        executor.setCorePoolSize(corePoolSize);
-        executor.setMaxPoolSize(maxPoolSize);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setThreadNamePrefix(threadNamePrefix);
-
-        // 高级配置
-        executor.setKeepAliveSeconds(60);
-        executor.setAllowCoreThreadTimeOut(false);
-
-        // 拒绝策略：调用者运行策略（保证任务不丢失）
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-        // 优雅关闭配置
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
-
-        return executor;
-    }
 }

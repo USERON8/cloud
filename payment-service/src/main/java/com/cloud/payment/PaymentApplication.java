@@ -9,7 +9,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @SpringBootApplication(
-    scanBasePackages = {"com.cloud.payment", "com.cloud.common"}
+        scanBasePackages = {"com.cloud.payment", "com.cloud.common"}
 )
 @EnableDiscoveryClient
 @Slf4j

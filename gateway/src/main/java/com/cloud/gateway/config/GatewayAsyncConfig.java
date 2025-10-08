@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * 网关异步配置
  * 专门为网关服务配置异步线程池和监控功能
- *
+ * <p>
  * 网关服务特点：
  * - 高并发的请求路由
  * - 实时监控和统计
@@ -167,14 +167,14 @@ public class GatewayAsyncConfig implements AsyncConfigurer {
     /**
      * 创建线程池任务执行器
      *
-     * @param corePoolSize    核心线程数
-     * @param maxPoolSize     最大线程数
-     * @param queueCapacity   队列容量
+     * @param corePoolSize     核心线程数
+     * @param maxPoolSize      最大线程数
+     * @param queueCapacity    队列容量
      * @param threadNamePrefix 线程名前缀
      * @return ThreadPoolTaskExecutor
      */
     private ThreadPoolTaskExecutor createThreadPoolTaskExecutor(int corePoolSize, int maxPoolSize,
-                                                               int queueCapacity, String threadNamePrefix) {
+                                                                int queueCapacity, String threadNamePrefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
         executor.setCorePoolSize(corePoolSize);

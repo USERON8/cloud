@@ -30,7 +30,6 @@ public class OrderGlobalExceptionHandler extends com.cloud.common.exception.Glob
     }
 
 
-
     /**
      * 处理库存不足异常
      */

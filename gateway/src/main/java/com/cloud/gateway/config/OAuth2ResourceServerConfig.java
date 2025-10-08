@@ -42,40 +42,101 @@ public class OAuth2ResourceServerConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> {
                     var authExchanges = exchanges
-                            // OAuth2.1标准端点 - 完全开放
+                            // ========== OAuth2.1标准端点 - 完全开放 ==========
                             .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
+                            .pathMatchers("/connect/**").permitAll()  // OpenID Connect端点
 
-                            // 认证服务所有端点 - 完全开放，无需token验证
-                            .pathMatchers("/auth/**", "/auth-service/**").permitAll()
-                            .pathMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
+                            // ========== 认证服务公开API - 无需token ==========
+                            // 认证服务端点
+                            .pathMatchers(
+                                "/auth/register",
+                                "/auth/login", 
+                                "/auth/logout",
+                                "/auth/register-and-login",
+                                "/auth/refresh-token",
+                                "/auth/github/**",
+                                "/auth/**"  // 所有auth服务端点公开（可根据需要调整）
+                            ).permitAll()
+                            
+                            // 服务前缀路径（兼容性）
+                            .pathMatchers("/auth-service/**").permitAll()
+                            
+                            // 通用认证路径
                             .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
 
-                            // 健康检查和监控端点
-                            .pathMatchers("/actuator/**").permitAll()
+                            // ========== 健康检查和监控 ==========
+                            .pathMatchers("/actuator/**", "/health/**", "/metrics/**").permitAll()
 
-                            // Knife4j和API文档相关路径 - 完整覆盖
+                            // ========== Knife4j和API文档 - 完全开放 ==========
+                            // Knife4j核心路径
                             .pathMatchers(
-                                    "/doc.html", "/swagger-ui.html", "/swagger-ui/**",
-                                    "/webjars/**", "/v3/api-docs/**", "/swagger-resources/**",
-                                    "/favicon.ico", "/csrf",
-                                    // Knife4j 聚合相关路径
-                                    "/swagger-resources", "/swagger-resources/configuration/ui",
-                                    "/swagger-resources/configuration/security",
-                                    // 通过网关访问各服务的文档
-                                    "/auth-service/doc.html", "/auth-service/v3/api-docs/**",
-                                    "/user-service/doc.html", "/user-service/v3/api-docs/**",
-                                    "/auth-service/swagger-ui/**", "/user-service/swagger-ui/**",
-                                    "/auth-service/webjars/**", "/user-service/webjars/**"
+                                "/doc.html",
+                                "/doc.html/**",  
+                                "/**/doc.html",  // 匹配所有服务的doc.html
+                                "/**/doc.html/**"
+                            ).permitAll()
+                            
+                            // Swagger UI
+                            .pathMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/**/swagger-ui/**"
+                            ).permitAll()
+                            
+                            // API文档资源
+                            .pathMatchers(
+                                "/v3/api-docs/**",
+                                "/**/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/**/swagger-resources/**",
+                                "/webjars/**",
+                                "/**/webjars/**"
+                            ).permitAll()
+                            
+                            // 静态资源
+                            .pathMatchers(
+                                "/favicon.ico",
+                                "/csrf",
+                                "/error",
+                                "/static/**",
+                                "/public/**"
+                            ).permitAll()
+                            
+                            // 各微服务的文档端点（明确列出）
+                            .pathMatchers(
+                                "/auth-service/doc.html", "/auth-service/doc.html/**",
+                                "/user-service/doc.html", "/user-service/doc.html/**",
+                                "/product-service/doc.html", "/product-service/doc.html/**",
+                                "/order-service/doc.html", "/order-service/doc.html/**",
+                                "/payment-service/doc.html", "/payment-service/doc.html/**",
+                                "/stock-service/doc.html", "/stock-service/doc.html/**",
+                                "/search-service/doc.html", "/search-service/doc.html/**",
+                                "/log-service/doc.html", "/log-service/doc.html/**"
                             ).permitAll();
 
                     // 根据配置决定是否开放测试API
                     if (enableTestApi) {
                         log.warn("⚠️ 测试API已开放，生产环境请关闭此配置");
-                        authExchanges = authExchanges.pathMatchers("/api/test/**").permitAll();
+                        authExchanges = authExchanges.pathMatchers("/test/**").permitAll();
                     }
 
-                    // 业务API需要认证 - 收紧安全配置
-                    authExchanges.pathMatchers("/api/**").authenticated()
+                    // 需要认证的业务端点
+                    authExchanges
+                            // 用户服务 - 需要认证
+                            .pathMatchers("/users/**", "/merchant/**", "/admin/**").authenticated()
+                            // 商品服务 - 部分公开（浏览），部分需要认证（管理）
+                            .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
+                            .pathMatchers("/product/**", "/category/**").permitAll()  // 商品浏览公开
+                            // 订单服务 - 需要认证
+                            .pathMatchers("/order/**", "/cart/**").authenticated()
+                            // 支付服务 - 需要认证
+                            .pathMatchers("/payment/**").authenticated()
+                            // 库存服务 - 需要认证
+                            .pathMatchers("/stock/**").authenticated()
+                            // 搜索服务 - 公开
+                            .pathMatchers("/search/**").permitAll()
+                            // 日志服务 - 需要认证
+                            .pathMatchers("/log/**").authenticated()
                             // 其他所有请求都需要认证
                             .anyExchange().authenticated();
                 })

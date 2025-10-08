@@ -14,35 +14,35 @@ import org.springframework.context.annotation.FilterType;
  */
 @Slf4j
 @SpringBootApplication(
-    exclude = {
-        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
-    }
+        exclude = {
+                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+        }
 )
 @ComponentScan(
-    basePackages = {"com.cloud.auth", "com.cloud.common"},
-    excludeFilters = {
-        @ComponentScan.Filter(
-            type = FilterType.ASSIGNABLE_TYPE,
-            classes = {
-                MybatisPlusConfig.class, 
-                com.cloud.common.config.RedissonConfig.class,
-                com.cloud.common.config.base.BaseHealthCheckController.class,
-                com.cloud.common.cache.listener.CacheMessageListener.class,
-                com.cloud.common.cache.metrics.CacheMetricsCollector.class,
-                com.cloud.common.monitoring.PerformanceMonitor.class,
-                com.cloud.common.security.RateLimitManager.class
-            }
-        ),
-        @ComponentScan.Filter(
-            type = FilterType.REGEX,
-            pattern = "com\\.cloud\\.common\\.config\\.HybridCacheConfig"
-        ),
-        @ComponentScan.Filter(
-            type = FilterType.REGEX,
-            pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
-        )
-    }
+        basePackages = {"com.cloud.auth", "com.cloud.common"},
+        excludeFilters = {
+                @ComponentScan.Filter(
+                        type = FilterType.ASSIGNABLE_TYPE,
+                        classes = {
+                                MybatisPlusConfig.class,
+                                com.cloud.common.config.RedissonConfig.class,
+                                com.cloud.common.config.base.BaseHealthCheckController.class,
+                                com.cloud.common.cache.listener.CacheMessageListener.class,
+                                com.cloud.common.cache.metrics.CacheMetricsCollector.class,
+                                com.cloud.common.monitoring.PerformanceMonitor.class,
+                                com.cloud.common.security.RateLimitManager.class
+                        }
+                ),
+                @ComponentScan.Filter(
+                        type = FilterType.REGEX,
+                        pattern = "com\\.cloud\\.common\\.config\\.HybridCacheConfig"
+                ),
+                @ComponentScan.Filter(
+                        type = FilterType.REGEX,
+                        pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
+                )
+        }
 )
 @EnableFeignClients(basePackages = "com.cloud.api")
 @EnableAspectJAutoProxy(proxyTargetClass = true)

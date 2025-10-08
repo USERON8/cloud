@@ -11,14 +11,10 @@ import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
-import com.cloud.common.messaging.AsyncLogProducer;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
-import com.cloud.common.utils.UserContextUtils;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserConverter;
-import com.cloud.user.event.UserEventStreamPublisher;
-import com.cloud.user.event.UserEventUtils;
 import com.cloud.user.exception.UserServiceException;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -53,9 +49,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private final PasswordEncoder passwordEncoder;
     private final MerchantService merchantService;
     private final MerchantConverter merchantConverter;
-    private final UserEventStreamPublisher userEventStreamPublisher;
-    // private final BusinessLogProducer businessLogProducer;
-    private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -157,12 +150,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 使用MyBatis-Plus的逻辑删除
             boolean result = removeById(id);
-
-            // 发布用户删除事件 - 函数式风格（简化版）
-            UserEventUtils.safeExecuteEvent(
-                    () -> UserEventUtils.publishDeleteEvent(userEventStreamPublisher, user, true),
-                    "用户逻辑删除事件"
-            );
 
             log.info("用户逻辑删除完成, id: {}, result: {}", id, result);
             return result;
@@ -303,40 +290,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public boolean updateById(User entity) {
         log.info("更新用户信息, userId: {}", entity.getId());
 
-        // 获取更新前的用户信息用于事件发布
-        User oldUser = null;
-        if (userEventStreamPublisher != null && entity.getId() != null) {
-            oldUser = getById(entity.getId());
-        }
-
         boolean result = super.updateById(entity);
-
-        // 发布用户更新事件 - 函数式风格（智能检测变更类型）
-        if (result && oldUser != null) {
-            UserEventUtils.smartPublishUpdate(userEventStreamPublisher, oldUser, entity);
-
-            // 发送用户变更日志到日志服务
-            try {
-                String beforeData = String.format("{\"username\":\"%s\",\"status\":%d}",
-                        oldUser.getUsername(), oldUser.getStatus());
-                String afterData = String.format("{\"username\":\"%s\",\"status\":%d}",
-                        entity.getUsername(), entity.getStatus());
-
-                // 异步发送用户更新日志 - 不阻塞主业务流程
-                asyncLogProducer.sendUserOperationLogAsync(
-                        "user-service",
-                        "UPDATE",
-                        entity.getId(),
-                        entity.getUsername(),
-                        entity.getUserType(),
-                        beforeData,
-                        afterData,
-                        UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
-                );
-            } catch (Exception e) {
-                log.warn("发送用户更新日志失败，用户ID：{}", entity.getId(), e);
-            }
-        }
 
         return result;
     }
@@ -373,26 +327,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             // 3. 保存用户（使用缓存注解的save方法）
             boolean saved = save(user);
-
-            // 发布用户创建事件 - 函数式风格
-            UserEventUtils.safePublishEvent(
-                    userEventStreamPublisher,
-                    user,
-                    UserEventStreamPublisher.EventType.CREATED
-            );
-
-            // 异步发送用户创建日志 - 不阻塞主业务流程
-            asyncLogProducer.sendUserOperationLogAsync(
-                    "user-service",
-                    "REGISTER",
-                    user.getId(),
-                    user.getUsername(),
-                    user.getUserType(),
-                    null,
-                    String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"status\":%d}",
-                            user.getUsername(), user.getUserType(), user.getStatus()),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
-            );
 
             if (!saved) {
                 log.error("❌ 用户注册失败，数据保存失败: {}", registerRequest.getUsername());
@@ -652,23 +586,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 throw new BusinessException("GitHub用户创建失败");
             }
 
-            // 5. 发布GitHub用户创建事件 - 函数式风格
-            UserEventUtils.publishLoginEvent(userEventStreamPublisher, user, "github");
-
-            // 异步发送GitHub用户创建日志 - 不阻塞主业务流程
-            asyncLogProducer.sendUserOperationLogAsync(
-                    "user-service",
-                    "GITHUB_LOGIN",
-                    user.getId(),
-                    user.getUsername(),
-                    user.getUserType(),
-                    null,
-                    String.format("{\"username\":\"%s\",\"userType\":\"%s\",\"loginType\":\"GITHUB\"}",
-                            user.getUsername(), user.getUserType()),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"
-            );
-
-            // 6. 查询完整的用户信息
+            // 5. 查询完整的用户信息
             UserDTO userDTO = findByUsername(systemUsername);
             if (userDTO == null) {
                 log.error("❌ GitHub用户创建后查询失败: username={}", systemUsername);
@@ -794,23 +712,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(readOnly = true)
     public com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> getUsersPage(Integer page, Integer size) {
         log.info("分页获取用户列表, page: {}, size: {}", page, size);
-        
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> pageParam = 
-            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> pageParam =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> userPage = page(pageParam);
-        
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> dtoPage = 
-            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
-                userPage.getCurrent(), 
-                userPage.getSize(), 
-                userPage.getTotal()
-            );
-        
+
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> dtoPage =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
+                        userPage.getCurrent(),
+                        userPage.getSize(),
+                        userPage.getTotal()
+                );
+
         List<UserDTO> dtoList = userPage.getRecords().stream()
                 .map(userConverter::toDTO)
                 .collect(java.util.stream.Collectors.toList());
         dtoPage.setRecords(dtoList);
-        
+
         return dtoPage;
     }
 
@@ -823,12 +741,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     public Long createUser(UserDTO userDTO) {
         log.info("创建用户, username: {}", userDTO.getUsername());
-        
+
         User user = userConverter.toEntity(userDTO);
         if (org.springframework.util.StringUtils.hasText(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-        
+
         save(user);
         return user.getId();
     }
@@ -843,7 +761,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     public Boolean updateUser(UserDTO userDTO) {
         log.info("更新用户, userId: {}", userDTO.getId());
-        
+
         User user = userConverter.toEntity(userDTO);
         return updateById(user);
     }
@@ -866,7 +784,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @CacheEvict(cacheNames = "userCache", key = "#id")
     public Boolean updateUserStatus(Long id, Integer status) {
         log.info("更新用户状态, userId: {}, status: {}", id, status);
-        
+
         User user = new User();
         user.setId(id);
         user.setStatus(status);
@@ -878,13 +796,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @CacheEvict(cacheNames = "userCache", key = "#id")
     public String resetPassword(Long id) {
         log.info("重置用户密码, userId: {}", id);
-        
+
         String newPassword = "123456"; // 默认密码
         User user = new User();
         user.setId(id);
         user.setPassword(passwordEncoder.encode(newPassword));
         updateById(user);
-        
+
         return newPassword;
     }
 
@@ -893,17 +811,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @CacheEvict(cacheNames = "userCache", key = "#id")
     public Boolean changePassword(Long id, String oldPassword, String newPassword) {
         log.info("修改用户密码, userId: {}", id);
-        
+
         User user = getById(id);
         if (user == null) {
             throw new EntityNotFoundException("用户", id);
         }
-        
+
         // 验证旧密码
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new BusinessException("旧密码错误");
         }
-        
+
         user.setPassword(passwordEncoder.encode(newPassword));
         return updateById(user);
     }

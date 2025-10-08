@@ -45,7 +45,7 @@ public interface OrderFeignClient {
      */
     @PostMapping("/update/status/{orderId}/{status}")
     OperationResultVO updateOrderStatus(@PathVariable("orderId") Long orderId,
-                              @PathVariable("status") Integer status);
+                                        @PathVariable("status") Integer status);
 
     /**
      * 完成订单

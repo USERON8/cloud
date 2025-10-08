@@ -150,7 +150,7 @@ public interface AdminService extends IService<Admin> {
      * @param oldPassword 旧密码
      * @param newPassword 新密码
      * @return 是否修改成功
-     * @throws AdminException.AdminNotFoundException  管理员不存在异常
+     * @throws AdminException.AdminNotFoundException 管理员不存在异常
      * @throws AdminException.AdminPasswordException 密码错误异常
      */
     boolean changePassword(Long id, String oldPassword, String newPassword)
