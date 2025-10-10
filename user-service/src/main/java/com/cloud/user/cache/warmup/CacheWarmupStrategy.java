@@ -23,7 +23,7 @@ public class UserCacheWarmupStrategy implements CacheWarmupStrategy {
             // 模拟预热用户缓存数据
             log.info("预热热门用户数据...");
 
-            // 这里可以添加具体的预热逻辑：
+            // TODO 这里可以添加具体的预热逻辑：
             // 1. 从数据库加载热门用户
             // 2. 预热到缓存中
             // 3. 返回预热的数据数量
