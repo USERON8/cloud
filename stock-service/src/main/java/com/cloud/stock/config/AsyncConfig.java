@@ -18,7 +18,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Configuration
 @EnableAsync
-public class StockAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 库存查询专用线程池

@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "order.async.enabled", havingValue = "true", matchIfMissing = true)
-public class OrderAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 订单业务异步线程池

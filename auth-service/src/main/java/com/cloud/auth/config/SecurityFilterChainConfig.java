@@ -71,10 +71,10 @@ public class SecurityFilterChainConfig {
                     @Override
                     public boolean matches(jakarta.servlet.http.HttpServletRequest request) {
                         String path = request.getRequestURI();
-                        return path.startsWith("/oauth2/") || 
-                               path.startsWith("/.well-known/") || 
-                               path.startsWith("/connect/") || 
-                               "/userinfo".equals(path);
+                        return path.startsWith("/oauth2/") ||
+                                path.startsWith("/.well-known/") ||
+                                path.startsWith("/connect/") ||
+                                "/userinfo".equals(path);
                     }
                 })
 
@@ -229,13 +229,13 @@ public class SecurityFilterChainConfig {
                                 "/login",                 // 简单登录页面
                                 "/login/**",              // 登录相关资源
 
-                        // 公开API
-                        "/auth/register",         // 用户注册
-                        "/auth/login",            // 用户登录
-                        "/auth/logout",           // 用户登出
-                        "/auth/register-and-login", // 注册并登录
-                        "/auth/refresh-token",    // 刷新令牌
-                        "/auth/github/**"         // GitHub OAuth2
+                                // 公开API
+                                "/auth/register",         // 用户注册
+                                "/auth/login",            // 用户登录
+                                "/auth/logout",           // 用户登出
+                                "/auth/register-and-login", // 注册并登录
+                                "/auth/refresh-token",    // 刷新令牌
+                                "/auth/github/**"         // GitHub OAuth2
                         ).permitAll()
 
                         // 其他请求允许访问（由网关统一鉴权）
@@ -298,19 +298,5 @@ public class SecurityFilterChainConfig {
         log.info("✅ CORS跨域设置配置完成");
         return source;
     }
-    
-    /**
-     * 配置服务器Web交换防火墙，允许包含"//"的URL
-     * 解决StrictServerWebExchangeFirewall拒绝包含"//"的URL的问题
-     */
-    @Bean
-    public ServerWebExchangeFirewall serverWebExchangeFirewall() {
-        StrictServerWebExchangeFirewall firewall = new StrictServerWebExchangeFirewall();
-        // 允许包含"//"的URL，解决因双斜杠导致的400错误
-        firewall.setAllowUrlEncodedSlash(true);
-        firewall.setAllowBackSlash(true);
-        firewall.setAllowUrlEncodedPercent(true);
-        firewall.setAllowUrlEncodedPeriod(true);
-        return firewall;
-    }
+
 }

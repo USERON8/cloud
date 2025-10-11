@@ -18,7 +18,7 @@
 - ✅ **分布式事务**: Seata 支持跨服务事务一致性
 - ✅ **消息队列**: RocketMQ 实现异步消息处理
 - ✅ **搜索服务**: Elasticsearch 提供全文搜索能力
-- ✅ **分布式缓存**: Redis + Caffeine 多级缓存方案
+- ✅ **多级缓存**: Redis + Caffeine 双层缓存,支持本地缓存和分布式缓存
 - ✅ **限流降级**: Sentinel 实现服务保护
 - ✅ **链路追踪**: Sleuth + Zipkin 实现全链路监控
 - ✅ **API文档**: Knife4j 提供交互式API文档
@@ -364,6 +364,134 @@ docker-compose -f docker/docker-compose-services.yml ps
 # 查看日志
 docker-compose -f docker/docker-compose-services.yml logs -f auth-service
 ```
+
+---
+
+## 💾 缓存系统
+
+### 架构说明
+
+项目采用**双层缓存架构**(L1 + L2):
+
+- **L1缓存**: Caffeine 本地缓存(响应时间1-5ms)
+- **L2缓存**: Redis 分布式缓存(响应时间10-20ms)
+
+### 核心特性
+
+- ✅ **自动降级**: L1未命中自动查询L2
+- ✅ **自动回填**: L2命中后自动回填L1
+- ✅ **灵活配置**: 支持单Redis或多级缓存切换
+- ✅ **指标监控**: 内置命中率、响应时间等指标
+- ✅ **预热策略**: 启动时自动预热热点数据
+- ✅ **统一管理**: REST API管理缓存
+
+### 快速开始
+
+在 `application-common.yml` 中启用:
+
+```yaml
+cache:
+  multi-level: true  # 启用多级缓存
+  ttl:
+    user: 1800      # 用户缓存30分钟
+    product: 2700   # 商品缓存45分钟
+    stock: 300      # 库存缓存5分钟
+```
+
+代码中使用标准Spring Cache注解:
+
+```java
+@Cacheable(cacheNames = "user", key = "#userId")
+public UserDTO getUserById(Long userId) {
+    return userMapper.selectById(userId);
+}
+```
+
+### 监控管理
+
+访问缓存监控API: `http://localhost:8081/api/cache/monitor/stats`
+
+查看缓存命中率、响应时间等指标。
+
+### 详细文档
+
+完整的缓存使用指南请查看: [docs/CACHE.md](docs/CACHE.md)
+
+---
+
+## 🔒 分布式锁
+
+### 技术选型
+
+项目使用 **Redisson** 实现分布式锁,支持多种锁类型和灵活配置。
+
+**核心特性:**
+- 基于Redis的高性能分布式锁
+- 支持可重入锁、公平锁、读写锁
+- Watch Dog自动续期机制
+- 支持注解和编程两种方式
+
+### 快速开始
+
+**注解方式** (推荐):
+
+```java
+@Service
+public class StockService {
+
+    @DistributedLock(
+        key = "'stock:' + #productId",
+        waitTime = 5,
+        leaseTime = 10
+    )
+    public void deductStock(Long productId, Integer quantity) {
+        // 业务逻辑自动在锁保护下执行
+        stockMapper.deduct(productId, quantity);
+    }
+}
+```
+
+**编程方式**:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final DistributedLockTemplate lockTemplate;
+
+    public void processOrder(Long orderId) {
+        lockTemplate.execute(
+            "order:" + orderId,
+            Duration.ofSeconds(10),
+            () -> {
+                // 业务逻辑
+                orderMapper.updateStatus(orderId);
+            }
+        );
+    }
+}
+```
+
+### 锁类型
+
+| 类型 | 说明 | 使用场景 |
+|-----|------|---------|
+| **REENTRANT** | 可重入锁(默认) | 通用场景 |
+| **FAIR** | 公平锁 | 需要按顺序处理 |
+| **READ** | 读锁 | 读多写少 |
+| **WRITE** | 写锁 | 写操作保护 |
+| **RED_LOCK** | 红锁 | 高可用场景 |
+
+### 监控管理
+
+访问分布式锁监控API: `http://localhost:8081/api/lock/monitor/stats`
+
+查看锁状态、持有时间等信息。
+
+### 详细文档
+
+完整的分布式锁使用指南请查看: [docs/DISTRIBUTED_LOCK.md](docs/DISTRIBUTED_LOCK.md)
 
 ---
 

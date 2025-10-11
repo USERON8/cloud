@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "auth.async.enabled", havingValue = "true", matchIfMissing = true)
-public class AuthAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 认证业务异步线程池

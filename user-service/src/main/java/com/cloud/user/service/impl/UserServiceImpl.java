@@ -53,8 +53,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "userCache",
-            key = "'username:' + #username", // 30分钟
+            cacheNames = "user",  // 使用配置的user缓存(30分钟TTL)
+            key = "'username:' + #username",
             unless = "#result == null"
     )
     public UserDTO findByUsername(String username) {
@@ -129,7 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @CacheEvict(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "#id"
     )
     public boolean deleteUserById(Long id) {
@@ -171,7 +171,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
-            cacheNames = "userCache",
+            cacheNames = "user",
             allEntries = true, // 批量删除时清空整个缓存，简单粗暴但有效
             condition = "#userIds != null && !#userIds.isEmpty()"
     )
@@ -198,8 +198,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(readOnly = true) // 只读事务
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @Cacheable(
-            cacheNames = "userCache",
-            key = "#id", // 30分钟
+            cacheNames = "userInfo",  // 使用配置的userInfo缓存(30分钟TTL)
+            key = "#id",
             unless = "#result == null"
     )
     public UserDTO getUserById(Long id) {
@@ -227,7 +227,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true) // 只读事务
     @Cacheable(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'username:' + #username", // 30分钟
             unless = "#result == null"
     )
@@ -240,7 +240,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @Cacheable(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'batch:' + #userIds.toString()", // 15分钟，批量查询缓存时间短一些
             condition = "#userIds != null && #userIds.size() <= 100", // 只对小批量查询启用缓存
             unless = "#result == null || #result.isEmpty()"
@@ -262,7 +262,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CachePut(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "#entity.id"
     )
     public boolean save(User entity) {
@@ -280,11 +280,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "userCache", key = "#entity.id"),
-                    @CacheEvict(cacheNames = "userCache", key = "'username:' + #entity.username", condition = "#entity.username != null")
+                    @CacheEvict(cacheNames = "user", key = "#entity.id"),
+                    @CacheEvict(cacheNames = "user", key = "'username:' + #entity.username", condition = "#entity.username != null")
             },
             put = {
-                    @CachePut(cacheNames = "userCache", key = "#entity.id")
+                    @CachePut(cacheNames = "user", key = "#entity.id")
             }
     )
     public boolean updateById(User entity) {
@@ -304,7 +304,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'username:' + #registerRequest.username",
             beforeInvocation = true
     )
@@ -363,7 +363,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "userPasswordCache",
+            cacheNames = "auth",
             key = "'password:' + #username", // 5分钟缓存
             unless = "#result == null"
     )
@@ -463,7 +463,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'github_id:' + #githubId", // 30分钟
             unless = "#result == null"
     )
@@ -490,7 +490,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'github_username:' + #githubUsername", // 30分钟
             unless = "#result == null"
     )
@@ -517,7 +517,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'oauth:' + #oauthProvider + ':' + #oauthProviderId", // 30分钟
             unless = "#result == null"
     )
@@ -551,7 +551,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
-            cacheNames = "userCache",
+            cacheNames = "user",
             key = "'github_id:' + #githubUserDTO.githubId",
             beforeInvocation = true
     )
@@ -617,8 +617,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "userCache", key = "#userId"),
-                    @CacheEvict(cacheNames = "userCache", key = "'github_id:' + #githubUserDTO.githubId")
+                    @CacheEvict(cacheNames = "user", key = "#userId"),
+                    @CacheEvict(cacheNames = "user", key = "'github_id:' + #githubUserDTO.githubId")
             }
     )
     public boolean updateGitHubUserInfo(Long userId, com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO) {
@@ -657,8 +657,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             return result;
 
-        } catch (EntityNotFoundException e) {
-            throw e;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -736,7 +734,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "userCache", allEntries = true)
+                    @CacheEvict(cacheNames = "user", allEntries = true)
             }
     )
     public Long createUser(UserDTO userDTO) {
@@ -755,8 +753,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "userCache", key = "#userDTO.id"),
-                    @CacheEvict(cacheNames = "userCache", key = "'username:' + #userDTO.username")
+                    @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
+                    @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username")
             }
     )
     public Boolean updateUser(UserDTO userDTO) {
@@ -770,8 +768,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "userCache", key = "#id"),
-                    @CacheEvict(cacheNames = "userCache", allEntries = true)
+                    @CacheEvict(cacheNames = "user", key = "#id"),
+                    @CacheEvict(cacheNames = "user", allEntries = true)
             }
     )
     public Boolean deleteUser(Long id) {
@@ -781,7 +779,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "userCache", key = "#id")
+    @CacheEvict(cacheNames = "user", key = "#id")
     public Boolean updateUserStatus(Long id, Integer status) {
         log.info("更新用户状态, userId: {}, status: {}", id, status);
 
@@ -793,7 +791,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "userCache", key = "#id")
+    @CacheEvict(cacheNames = "user", key = "#id")
     public String resetPassword(Long id) {
         log.info("重置用户密码, userId: {}", id);
 
@@ -808,7 +806,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "userCache", key = "#id")
+    @CacheEvict(cacheNames = "user", key = "#id")
     public Boolean changePassword(Long id, String oldPassword, String newPassword) {
         log.info("修改用户密码, userId: {}", id);
 

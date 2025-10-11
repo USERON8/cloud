@@ -33,7 +33,7 @@ public class TokenBlacklistChecker implements OAuth2TokenValidator<Jwt> {
             String tokenId = extractTokenId(jwt);
             String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
 
-            boolean isBlacklisted = Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
+            boolean isBlacklisted = redisTemplate.hasKey(blacklistKey);
 
             if (isBlacklisted) {
                 log.warn("🚫 检测到黑名单JWT令牌: subject={}, jti={}",

@@ -1,14 +1,19 @@
 package com.cloud.common.domain.dto.user;
 
+import com.cloud.common.domain.BaseEntity;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
  * 用户地址请求DTO
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class UserAddressRequestDTO implements Serializable {
+public class UserAddressRequestDTO extends BaseEntity<UserAddressRequestDTO> implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
     /**
      * 收货人姓名

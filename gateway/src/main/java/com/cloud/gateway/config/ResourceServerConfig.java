@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Configuration
 @EnableWebFluxSecurity
-public class OAuth2ResourceServerConfig {
+public class ResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
@@ -49,18 +49,18 @@ public class OAuth2ResourceServerConfig {
                             // ========== 认证服务公开API - 无需token ==========
                             // 认证服务端点
                             .pathMatchers(
-                                "/auth/register",
-                                "/auth/login", 
-                                "/auth/logout",
-                                "/auth/register-and-login",
-                                "/auth/refresh-token",
-                                "/auth/github/**",
-                                "/auth/**"  // 所有auth服务端点公开（可根据需要调整）
+                                    "/auth/register",
+                                    "/auth/login",
+                                    "/auth/logout",
+                                    "/auth/register-and-login",
+                                    "/auth/refresh-token",
+                                    "/auth/github/**",
+                                    "/auth/**"  // 所有auth服务端点公开（可根据需要调整）
                             ).permitAll()
-                            
+
                             // 服务前缀路径（兼容性）
                             .pathMatchers("/auth-service/**").permitAll()
-                            
+
                             // 通用认证路径
                             .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
 
@@ -70,48 +70,48 @@ public class OAuth2ResourceServerConfig {
                             // ========== Knife4j和API文档 - 完全开放 ==========
                             // Knife4j核心路径
                             .pathMatchers(
-                                "/doc.html",
-                                "/doc.html/**",  
-                                "/**/doc.html",  // 匹配所有服务的doc.html
-                                "/**/doc.html/**"
+                                    "/doc.html",
+                                    "/doc.html/**",
+                                    "/**/doc.html",  // 匹配所有服务的doc.html
+                                    "/**/doc.html/**"
                             ).permitAll()
-                            
+
                             // Swagger UI
                             .pathMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/**/swagger-ui/**"
+                                    "/swagger-ui.html",
+                                    "/swagger-ui/**",
+                                    "/**/swagger-ui/**"
                             ).permitAll()
-                            
+
                             // API文档资源
                             .pathMatchers(
-                                "/v3/api-docs/**",
-                                "/**/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/**/swagger-resources/**",
-                                "/webjars/**",
-                                "/**/webjars/**"
+                                    "/v3/api-docs/**",
+                                    "/**/v3/api-docs/**",
+                                    "/swagger-resources/**",
+                                    "/**/swagger-resources/**",
+                                    "/webjars/**",
+                                    "/**/webjars/**"
                             ).permitAll()
-                            
+
                             // 静态资源
                             .pathMatchers(
-                                "/favicon.ico",
-                                "/csrf",
-                                "/error",
-                                "/static/**",
-                                "/public/**"
+                                    "/favicon.ico",
+                                    "/csrf",
+                                    "/error",
+                                    "/static/**",
+                                    "/public/**"
                             ).permitAll()
-                            
+
                             // 各微服务的文档端点（明确列出）
                             .pathMatchers(
-                                "/auth-service/doc.html", "/auth-service/doc.html/**",
-                                "/user-service/doc.html", "/user-service/doc.html/**",
-                                "/product-service/doc.html", "/product-service/doc.html/**",
-                                "/order-service/doc.html", "/order-service/doc.html/**",
-                                "/payment-service/doc.html", "/payment-service/doc.html/**",
-                                "/stock-service/doc.html", "/stock-service/doc.html/**",
-                                "/search-service/doc.html", "/search-service/doc.html/**",
-                                "/log-service/doc.html", "/log-service/doc.html/**"
+                                    "/auth-service/doc.html", "/auth-service/doc.html/**",
+                                    "/user-service/doc.html", "/user-service/doc.html/**",
+                                    "/product-service/doc.html", "/product-service/doc.html/**",
+                                    "/order-service/doc.html", "/order-service/doc.html/**",
+                                    "/payment-service/doc.html", "/payment-service/doc.html/**",
+                                    "/stock-service/doc.html", "/stock-service/doc.html/**",
+                                    "/search-service/doc.html", "/search-service/doc.html/**",
+                                    "/log-service/doc.html", "/log-service/doc.html/**"
                             ).permitAll();
 
                     // 根据配置决定是否开放测试API

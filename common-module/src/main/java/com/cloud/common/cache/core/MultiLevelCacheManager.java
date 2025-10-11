@@ -1,5 +1,6 @@
 package com.cloud.common.cache.core;
 
+import com.cloud.common.cache.metrics.CacheMetricsCollector;
 import com.cloud.common.cache.model.CacheObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -45,15 +46,22 @@ public class MultiLevelCacheManager implements CacheManager {
      */
     private final String nodeId;
 
+    /**
+     * 缓存指标收集器（可选）
+     */
+    private final CacheMetricsCollector metricsCollector;
+
     public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
                                   MultiLevelCacheConfig cacheConfig,
-                                  String nodeId) {
+                                  String nodeId,
+                                  CacheMetricsCollector metricsCollector) {
         this.redisTemplate = redisTemplate;
         this.cacheConfig = cacheConfig;
         this.nodeId = nodeId;
+        this.metricsCollector = metricsCollector;
 
-        log.info("多级缓存管理器初始化完成: nodeId={}, keyPrefix={}, messageTopic={}",
-                nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic());
+        log.info("多级缓存管理器初始化完成: nodeId={}, keyPrefix={}, messageTopic={}, metricsEnabled={}",
+                nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic(), (metricsCollector != null));
     }
 
     @Override
@@ -85,11 +93,12 @@ public class MultiLevelCacheManager implements CacheManager {
                 cacheConfig.getKeyPrefix(),
                 nodeId,
                 cacheConfig.getMessageTopic(),
-                cacheConfig.isAllowNullValues()
+                cacheConfig.isAllowNullValues(),
+                metricsCollector  // 传递指标收集器
         );
 
-        log.info("创建多级缓存: name={}, expireSeconds={}, allowNullValues={}",
-                name, cacheConfig.getDefaultExpireSeconds(), cacheConfig.isAllowNullValues());
+        log.info("创建多级缓存: name={}, expireSeconds={}, allowNullValues={}, metricsEnabled={}",
+                name, cacheConfig.getDefaultExpireSeconds(), cacheConfig.isAllowNullValues(), (metricsCollector != null));
 
         return cache;
     }

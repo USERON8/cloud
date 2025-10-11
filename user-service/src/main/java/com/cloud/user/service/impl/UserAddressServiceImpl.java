@@ -167,7 +167,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
                     @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
             }
     )
-    private boolean removeByIdWithCacheEvict(Long addressId, Long userId) {
+    protected boolean removeByIdWithCacheEvict(Long addressId, Long userId) {
         // 删除数据库记录
         boolean removed = super.removeById(addressId);
         if (!removed) {

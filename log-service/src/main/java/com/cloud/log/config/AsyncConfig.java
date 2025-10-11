@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "log.async.enabled", havingValue = "true", matchIfMissing = true)
-public class LogAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
 
     /**

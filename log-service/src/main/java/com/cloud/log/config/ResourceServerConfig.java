@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * 日志服务OAuth2资源服务器配置
- * 
+ * <p>
  * 主要功能：
  * - JWT验证和解码
  * - 权限提取和转换
@@ -40,7 +40,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
-public class LogOAuth2ResourceServerConfig {
+public class ResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
@@ -58,7 +58,7 @@ public class LogOAuth2ResourceServerConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("📋 配置日志服务安全过滤器链");
-        
+
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -73,19 +73,19 @@ public class LogOAuth2ResourceServerConfig {
                             "/webjars/**",
                             "/favicon.ico"
                     ).permitAll();
-                    
+
                     // 内部API - 需要内部权限（主要用于日志收集）
                     auth.requestMatchers("/log/internal/**")
                             .hasAuthority("SCOPE_internal_api");
-                    
+
                     // 管理API - 需要管理员权限
                     auth.requestMatchers("/log/manage/**")
                             .hasRole("ADMIN");
-                    
+
                     // 日志查询API - 需要认证，允许查看权限
                     auth.requestMatchers("/log/query/**", "/log/search/**")
                             .hasAnyAuthority("SCOPE_log_read", "ROLE_ADMIN", "ROLE_MANAGER");
-                    
+
                     // 其他所有请求都需要认证
                     auth.anyRequest().authenticated();
                 })
@@ -112,7 +112,7 @@ public class LogOAuth2ResourceServerConfig {
 
         // 创建验证器列表
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
-        
+
         // 添加默认验证器（包含发行者验证）
         validators.add(JwtValidators.createDefaultWithIssuer(jwtIssuer));
 
@@ -134,7 +134,7 @@ public class LogOAuth2ResourceServerConfig {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        
+
         // OAuth2.1标准：从 scope 声明中提取权限
         authoritiesConverter.setAuthorityPrefix("SCOPE_");
         authoritiesConverter.setAuthoritiesClaimName("scope");

@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableAsync
 @EnableScheduling
 @ConditionalOnProperty(name = "gateway.async.enabled", havingValue = "true", matchIfMissing = true)
-public class GatewayAsyncConfig implements AsyncConfigurer {
+public class AsyncConfig implements AsyncConfigurer {
 
     /**
      * 网关路由异步线程池

@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "search.async.enabled", havingValue = "true", matchIfMissing = true)
-public class SearchAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 搜索查询异步线程池

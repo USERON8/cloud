@@ -5,19 +5,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.event.order.OrderCompletedEvent;
-import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
 import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.exception.InvalidStatusException;
-import com.cloud.common.messaging.AsyncLogProducer;
-import com.cloud.common.messaging.BusinessLogProducer;
 import com.cloud.common.utils.UserContextUtils;
 import com.cloud.order.converter.OrderConverter;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
 import com.cloud.order.mapper.OrderMapper;
-import com.cloud.order.messaging.producer.OrderEventProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.module.entity.OrderItem;
 import com.cloud.order.service.OrderItemService;
@@ -52,9 +47,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
     private final OrderConverter orderConverter;
     private final OrderItemService orderItemService;
-    private final OrderEventProducer orderEventProducer;
-    private final BusinessLogProducer businessLogProducer;
-    private final AsyncLogProducer asyncLogProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -182,14 +174,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             if (result) {
                 // 发送订单支付日志 - 使用统一业务日志系统
                 try {
-                    asyncLogProducer.sendBusinessLogAsync(
-                            "order-service",
-                            "ORDER_MANAGEMENT",
-                            "PAY",
-                            "订单支付操作",
-                            orderId.toString(),
-                            "ORDER",
-                            String.format("{\"status\":%d,\"amount\":%s}", 0, order.getPayAmount()),
                             String.format("{\"status\":%d,\"amount\":%s}", 1, order.getPayAmount()),
                             UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
                             "订单: " + order.getOrderNo()
@@ -235,14 +219,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             if (result) {
                 // 发送订单发货日志 - 使用统一业务日志系统
                 try {
-                    asyncLogProducer.sendBusinessLogAsync(
-                            "order-service",
-                            "ORDER_MANAGEMENT",
-                            "SHIP",
-                            "订单发货操作",
-                            orderId.toString(),
-                            "ORDER",
-                            String.format("{\"status\":%d,\"amount\":%s}", 1, order.getTotalAmount()),
                             String.format("{\"status\":%d,\"amount\":%s}", 2, order.getTotalAmount()),
                             UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
                             "订单: " + order.getOrderNo()
@@ -287,14 +263,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             if (result) {
                 // 发送订单完成日志 - 使用统一业务日志系统
                 try {
-                    asyncLogProducer.sendBusinessLogAsync(
-                            "order-service",
-                            "ORDER_MANAGEMENT",
-                            "COMPLETE",
-                            "订单完成操作",
-                            orderId.toString(),
-                            "ORDER",
-                            String.format("{\"status\":%d,\"amount\":%s}", 2, order.getTotalAmount()),
                             String.format("{\"status\":%d,\"amount\":%s}", 3, order.getTotalAmount()),
                             UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
                             "订单: " + order.getOrderNo()
@@ -306,17 +274,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 log.info("订单完成成功，订单ID: {}", orderId);
 
                 // 发布订单完成事件
-                publishOrderCompletedEvent(order);
-            }
-
-            return result;
-        } catch (EntityNotFoundException | InvalidStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("完成订单失败: ", e);
-            throw e;
-        }
-    }
 
     @Override
     @DistributedLock(
@@ -343,14 +300,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             if (result) {
                 // 发送订单取消日志 - 使用统一业务日志系统
                 try {
-                    asyncLogProducer.sendBusinessLogAsync(
-                            "order-service",
-                            "ORDER_MANAGEMENT",
-                            "CANCEL",
-                            "订单取消操作",
-                            orderId.toString(),
-                            "ORDER",
-                            String.format("{\"status\":%d,\"amount\":%s}", order.getStatus(), order.getTotalAmount()),
                             String.format("{\"status\":%d,\"amount\":%s}", -1, order.getTotalAmount()),
                             UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
                             "订单: " + order.getOrderNo()
@@ -412,15 +361,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
 
             // 发送订单创建日志 - 使用统一业务日志系统
             try {
-                asyncLogProducer.sendBusinessLogAsync(
-                        "order-service",
-                        "ORDER_MANAGEMENT",
-                        "CREATE",
-                        "订单创建操作",
-                        order.getId().toString(),
-                        "ORDER",
-                        null,
-                        String.format("{\"status\":%d,\"amount\":%s,\"userId\":%d}",
                                 0, order.getTotalAmount(), order.getUserId()),
                         currentUserId != null ? currentUserId : (UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM"),
                         "订单: ORDER_" + order.getId()
@@ -595,36 +535,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
      * 发布订单完成事件
      * 通知库存服务进行库存扣减
      */
-    private void publishOrderCompletedEvent(Order order) {
-        try {
-            String traceId = UUID.randomUUID().toString().replace("-", "");
-
-            // 构建订单完成事件
-            OrderCompletedEvent event = OrderCompletedEvent.builder()
-                    .orderId(order.getId())
-                    .orderNo("ORDER_" + order.getId()) // 简化订单号生成
-                    .userId(order.getUserId())
-                    .userName("User_" + order.getUserId()) // 简化用户名
-                    .totalAmount(order.getTotalAmount())
-                    .payAmount(order.getPayAmount())
-                    .orderStatus(3) // 已完成状态
-                    .beforeStatus(2) // 之前是已发货状态
-                    .afterStatus(3)  // 现在是已完成状态
-                    .completedTime(LocalDateTime.now())
-                    .operator("SYSTEM")
-                    .traceId(traceId)
-                    .build();
-
-            // 发布事件
-            orderEventProducer.sendOrderCompletedEvent(event);
-
-            log.info("📨 订单完成事件发布成功 - 订单ID: {}, 追踪ID: {}", order.getId(), traceId);
-
-        } catch (Exception e) {
-            log.error("❌ 发布订单完成事件失败 - 订单ID: {}, 错误: {}", order.getId(), e.getMessage(), e);
-            // 事件发布失败不应该影响订单状态更新的主流程
-        }
-    }
 
     // ================= Feign客户端接口方法实现 =================
 
@@ -756,15 +666,4 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             if (updated) {
                 log.info("[订单服务] 完成订单成功，订单ID: {}", orderId);
                 // 发布订单完成事件
-                publishOrderCompletedEvent(order);
-            } else {
-                log.warn("[订单服务] 完成订单失败，订单ID: {}", orderId);
-            }
-
-            return updated;
-        } catch (Exception e) {
-            log.error("[订单服务] 完成订单异常，订单ID: {}", orderId, e);
-            return false;
-        }
-    }
 }

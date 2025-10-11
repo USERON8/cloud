@@ -68,10 +68,12 @@ spring:
       timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
-          max-active: ${REDIS_MAX_ACTIVE:16}
-          max-wait: ${REDIS_MAX_WAIT:-1ms}
-          max-idle: ${REDIS_MAX_IDLE:8}
-          min-idle: ${REDIS_MIN_IDLE:2}
+          max-active: ${REDIS_MAX_ACTIVE:50}      # 最大连接数(优化后)
+          max-wait: ${REDIS_MAX_WAIT:3000ms}      # 最大等待时间(避免无限等待)
+          max-idle: ${REDIS_MAX_IDLE:20}          # 最大空闲连接
+          min-idle: ${REDIS_MIN_IDLE:5}           # 最小空闲连接
+          time-between-eviction-runs: 60000       # 空闲连接检测周期(毫秒)
+        shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
 
 # 日志通用配置
 logging:
@@ -128,6 +130,19 @@ knife4j:
     swagger-model-name: 实体类列表
     enable-footer-custom: true
     footer-custom-content: "Cloud 微服务平台 API 文档"
+
+# 缓存通用配置
+cache:
+  multi-level: ${CACHE_MULTI_LEVEL:true}  # 启用多级缓存(Caffeine + Redis)
+  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # 缓存一致性机制(暂时关闭)
+  ttl:
+    user: ${CACHE_TTL_USER:1800}        # 用户相关: 30分钟
+    product: ${CACHE_TTL_PRODUCT:2700}  # 商品相关: 45分钟
+    stock: ${CACHE_TTL_STOCK:300}       # 库存相关: 5分钟 (高频变化)
+    order: ${CACHE_TTL_ORDER:900}       # 订单相关: 15分钟
+    payment: ${CACHE_TTL_PAYMENT:600}   # 支付相关: 10分钟
+    search: ${CACHE_TTL_SEARCH:1200}    # 搜索相关: 20分钟
+    auth: ${CACHE_TTL_AUTH:3600}        # 权限相关: 1小时
 
 # 分布式锁通用配置
 cloud:

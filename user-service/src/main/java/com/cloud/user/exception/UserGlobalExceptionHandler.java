@@ -2,6 +2,7 @@ package com.cloud.user.exception;
 
 import com.cloud.common.exception.GlobalExceptionHandler;
 import com.cloud.common.result.Result;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
  */
 @Slf4j
 @RestControllerAdvice
+@Hidden
 public class UserGlobalExceptionHandler extends GlobalExceptionHandler {
 
     // BusinessException 已由父类 GlobalExceptionHandler 处理

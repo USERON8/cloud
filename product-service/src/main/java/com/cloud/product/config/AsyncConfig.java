@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "product.async.enabled", havingValue = "true", matchIfMissing = true)
-public class ProductAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 商品业务异步线程池

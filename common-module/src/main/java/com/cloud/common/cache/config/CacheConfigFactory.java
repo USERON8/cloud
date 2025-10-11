@@ -1,8 +1,10 @@
 package com.cloud.common.cache.config;
 
 import com.cloud.common.cache.core.MultiLevelCacheManager;
+import com.cloud.common.cache.metrics.CacheMetricsCollector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -39,6 +41,9 @@ public class CacheConfigFactory {
 
     private final RedisConnectionFactory redisConnectionFactory;
 
+    @Autowired(required = false)
+    private CacheMetricsCollector cacheMetricsCollector;
+
     /**
      * 多级缓存管理器
      * <p>
@@ -58,11 +63,16 @@ public class CacheConfigFactory {
         // 生成节点ID
         String nodeId = generateNodeId();
 
-        // 创建多级缓存管理器
-        MultiLevelCacheManager cacheManager = new MultiLevelCacheManager(redisTemplate, config, nodeId);
+        // 创建多级缓存管理器（传递可选的metricsCollector）
+        MultiLevelCacheManager cacheManager = new MultiLevelCacheManager(
+                redisTemplate,
+                config,
+                nodeId,
+                cacheMetricsCollector
+        );
 
-        log.info("🚀 启用多级缓存管理器: nodeId={}, keyPrefix={}, defaultExpire={}s",
-                nodeId, config.getKeyPrefix(), config.getDefaultExpireSeconds());
+        log.info("🚀 启用多级缓存管理器: nodeId={}, keyPrefix={}, defaultExpire={}s, metricsEnabled={}",
+                nodeId, config.getKeyPrefix(), config.getDefaultExpireSeconds(), (cacheMetricsCollector != null));
 
         return cacheManager;
     }

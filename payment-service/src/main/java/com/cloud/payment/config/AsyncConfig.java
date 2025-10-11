@@ -28,7 +28,7 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "payment.async.enabled", havingValue = "true", matchIfMissing = true)
-public class PaymentAsyncConfig extends BaseAsyncConfig {
+public class AsyncConfig extends BaseAsyncConfig {
 
     /**
      * 支付业务异步线程池

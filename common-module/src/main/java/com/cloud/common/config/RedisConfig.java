@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cache.CacheManager;
@@ -46,6 +47,28 @@ import java.util.Map;
 @EnableCaching
 @ConditionalOnClass({RedisConnectionFactory.class, RedisTemplate.class})
 public class RedisConfig {
+
+    // 从配置文件读取TTL(秒),提供默认值
+    @Value("${cache.ttl.user:1800}")
+    private long userTtl;
+
+    @Value("${cache.ttl.product:2700}")
+    private long productTtl;
+
+    @Value("${cache.ttl.stock:300}")
+    private long stockTtl;
+
+    @Value("${cache.ttl.order:900}")
+    private long orderTtl;
+
+    @Value("${cache.ttl.payment:600}")
+    private long paymentTtl;
+
+    @Value("${cache.ttl.search:1200}")
+    private long searchTtl;
+
+    @Value("${cache.ttl.auth:3600}")
+    private long authTtl;
 
     /**
      * 统一的JSON序列化器
@@ -144,40 +167,40 @@ public class RedisConfig {
                 .disableCachingNullValues()  // 不缓存null值，防止缓存穿透
                 .computePrefixWith(cacheName -> "cache:" + cacheName + ":");  // 统一缓存前缀
 
-        // 特定业务场景的缓存配置
+        // 特定业务场景的缓存配置(从配置文件读取TTL)
         Map<String, RedisCacheConfiguration> configMap = new HashMap<>();
 
-        // 用户相关缓存 - 30分钟过期
-        configMap.put("user", createCacheConfig(jsonSerializer, Duration.ofMinutes(30)));
-        configMap.put("userInfo", createCacheConfig(jsonSerializer, Duration.ofMinutes(30)));
-        configMap.put("userProfile", createCacheConfig(jsonSerializer, Duration.ofMinutes(20)));
+        // 用户相关缓存
+        configMap.put("user", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl)));
+        configMap.put("userInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl)));
+        configMap.put("userProfile", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl - 600)));
 
-        // 商品相关缓存 - 45分钟过期
-        configMap.put("product", createCacheConfig(jsonSerializer, Duration.ofMinutes(45)));
-        configMap.put("productInfo", createCacheConfig(jsonSerializer, Duration.ofMinutes(45)));
-        configMap.put("productList", createCacheConfig(jsonSerializer, Duration.ofMinutes(30)));
+        // 商品相关缓存
+        configMap.put("product", createCacheConfig(jsonSerializer, Duration.ofSeconds(productTtl)));
+        configMap.put("productInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(productTtl)));
+        configMap.put("productList", createCacheConfig(jsonSerializer, Duration.ofSeconds(productTtl - 900)));
 
-        // 订单相关缓存 - 15分钟过期（变化频繁）
-        configMap.put("order", createCacheConfig(jsonSerializer, Duration.ofMinutes(15)));
-        configMap.put("orderInfo", createCacheConfig(jsonSerializer, Duration.ofMinutes(15)));
+        // 订单相关缓存
+        configMap.put("order", createCacheConfig(jsonSerializer, Duration.ofSeconds(orderTtl)));
+        configMap.put("orderInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(orderTtl)));
 
-        // 库存相关缓存 - 5分钟过期（高频变化）
-        configMap.put("stock", createCacheConfig(jsonSerializer, Duration.ofMinutes(5)));
-        configMap.put("stockInfo", createCacheConfig(jsonSerializer, Duration.ofMinutes(5)));
+        // 库存相关缓存
+        configMap.put("stock", createCacheConfig(jsonSerializer, Duration.ofSeconds(stockTtl)));
+        configMap.put("stockInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(stockTtl)));
 
-        // 支付相关缓存 - 10分钟过期
-        configMap.put("payment", createCacheConfig(jsonSerializer, Duration.ofMinutes(10)));
-        configMap.put("paymentInfo", createCacheConfig(jsonSerializer, Duration.ofMinutes(10)));
+        // 支付相关缓存
+        configMap.put("payment", createCacheConfig(jsonSerializer, Duration.ofSeconds(paymentTtl)));
+        configMap.put("paymentInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(paymentTtl)));
 
-        // 搜索相关缓存 - 20分钟过期
-        configMap.put("search", createCacheConfig(jsonSerializer, Duration.ofMinutes(20)));
-        configMap.put("searchResult", createCacheConfig(jsonSerializer, Duration.ofMinutes(15)));
+        // 搜索相关缓存
+        configMap.put("search", createCacheConfig(jsonSerializer, Duration.ofSeconds(searchTtl)));
+        configMap.put("searchResult", createCacheConfig(jsonSerializer, Duration.ofSeconds(searchTtl - 300)));
 
-        // 权限相关缓存 - 1小时过期
-        configMap.put("auth", createCacheConfig(jsonSerializer, Duration.ofHours(1)));
-        configMap.put("permission", createCacheConfig(jsonSerializer, Duration.ofHours(1)));
+        // 权限相关缓存
+        configMap.put("auth", createCacheConfig(jsonSerializer, Duration.ofSeconds(authTtl)));
+        configMap.put("permission", createCacheConfig(jsonSerializer, Duration.ofSeconds(authTtl)));
 
-        // 配置统计信息缓存 - 10分钟过期
+        // 配置统计信息缓存
         configMap.put("stats", createCacheConfig(jsonSerializer, Duration.ofMinutes(10)));
         configMap.put("metrics", createCacheConfig(jsonSerializer, Duration.ofMinutes(5)));
 

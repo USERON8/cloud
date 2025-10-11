@@ -1,6 +1,7 @@
 package com.cloud.common.cache.core;
 
 import com.cloud.common.cache.message.CacheMessage;
+import com.cloud.common.cache.metrics.CacheMetricsCollector;
 import com.cloud.common.cache.model.CacheObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,11 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
      */
     private final boolean allowNullValues;
 
+    /**
+     * 缓存指标收集器（可选）
+     */
+    private final CacheMetricsCollector metricsCollector;
+
     public MultiLevelCache(String name,
                            Cache<Object, CacheObject> localCache,
                            RedisTemplate<String, Object> redisTemplate,
@@ -75,7 +81,8 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
                            String keyPrefix,
                            String nodeId,
                            String messageTopic,
-                           boolean allowNullValues) {
+                           boolean allowNullValues,
+                           CacheMetricsCollector metricsCollector) {
         super(allowNullValues);
         this.name = name;
         this.localCache = localCache;
@@ -85,6 +92,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
         this.nodeId = nodeId;
         this.messageTopic = messageTopic;
         this.allowNullValues = allowNullValues;
+        this.metricsCollector = metricsCollector;
     }
 
     @Override
@@ -106,12 +114,21 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
     @Override
     protected Object lookup(Object key) {
         String cacheKey = generateRedisKey(key);
+        long startTime = System.nanoTime();
 
         try {
             // 1. 先查询本地缓存(Caffeine)
             CacheObject localCacheObj = localCache.getIfPresent(key);
             if (localCacheObj != null && localCacheObj.isValid()) {
                 log.debug("缓存L1命中: cacheName={}, key={}", name, key);
+
+                // 记录指标
+                if (metricsCollector != null) {
+                    long duration = (System.nanoTime() - startTime) / 1_000_000; // 转换为毫秒
+                    metricsCollector.recordCacheHit(name, key.toString());
+                    metricsCollector.recordCacheAccessTime(name, duration);
+                }
+
                 return localCacheObj.getRealValue();
             }
 
@@ -123,6 +140,14 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
                 // Redis命中，回填到本地缓存
                 localCache.put(key, redisCacheObj);
                 log.debug("缓存L2命中并回填: cacheName={}, key={}", name, key);
+
+                // 记录指标
+                if (metricsCollector != null) {
+                    long duration = (System.nanoTime() - startTime) / 1_000_000;
+                    metricsCollector.recordCacheHit(name, key.toString());
+                    metricsCollector.recordCacheAccessTime(name, duration);
+                }
+
                 return redisCacheObj.getRealValue();
             }
 
@@ -130,6 +155,13 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             if (redisCacheObj != null && redisCacheObj.isExpired()) {
                 redisTemplate.delete(cacheKey);
                 log.debug("清理过期缓存: cacheName={}, key={}", name, key);
+            }
+
+            // 记录未命中
+            if (metricsCollector != null) {
+                long duration = (System.nanoTime() - startTime) / 1_000_000;
+                metricsCollector.recordCacheMiss(name, key.toString());
+                metricsCollector.recordCacheAccessTime(name, duration);
             }
 
         } catch (Exception e) {
