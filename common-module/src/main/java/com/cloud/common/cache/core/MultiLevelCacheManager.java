@@ -49,7 +49,7 @@ public class MultiLevelCacheManager implements CacheManager {
     /**
      * 缓存指标收集器（可选）
      */
-    private final CacheMetricsCollector metricsCollector;
+    private CacheMetricsCollector metricsCollector;
 
     public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
                                   MultiLevelCacheConfig cacheConfig,
@@ -62,6 +62,29 @@ public class MultiLevelCacheManager implements CacheManager {
 
         log.info("多级缓存管理器初始化完成: nodeId={}, keyPrefix={}, messageTopic={}, metricsEnabled={}",
                 nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic(), (metricsCollector != null));
+    }
+
+    /**
+     * 重载构造函数，支持延迟设置缓存指标收集器
+     */
+    public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
+                                  MultiLevelCacheConfig cacheConfig,
+                                  String nodeId) {
+        this.redisTemplate = redisTemplate;
+        this.cacheConfig = cacheConfig;
+        this.nodeId = nodeId;
+        this.metricsCollector = null; // 延迟设置
+
+        log.info("多级缓存管理器初始化完成（延迟设置指标收集器）: nodeId={}, keyPrefix={}, messageTopic={}",
+                nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic());
+    }
+
+    /**
+     * 设置缓存指标收集器（用于解决循环依赖）
+     */
+    public void setMetricsCollector(CacheMetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
+        log.info("缓存指标收集器已设置: metricsEnabled={}", (metricsCollector != null));
     }
 
     @Override

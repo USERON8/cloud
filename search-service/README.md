@@ -16,14 +16,14 @@
 
 ### 📊 服务信息
 
-| 配置项 | 值 |
-|--------|---|
-| **服务名** | search-service |
-| **端口** | 8087 |
-| **数据存储** | Elasticsearch (无MySQL) |
-| **缓存** | Redis database:7 + Caffeine |
-| **消息队列** | RocketMQ (端口39876) |
-| **认证** | OAuth2.1 JWT |
+| 配置项      | 值                           |
+|----------|-----------------------------|
+| **服务名**  | search-service              |
+| **端口**   | 8087                        |
+| **数据存储** | Elasticsearch (无MySQL)      |
+| **缓存**   | Redis database:7 + Caffeine |
+| **消息队列** | RocketMQ (端口39876)          |
+| **认证**   | OAuth2.1 JWT                |
 
 ### 🗄️ 数据存储架构
 
@@ -103,21 +103,21 @@ java -jar target/search-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 
 ### 🔍 搜索接口
 
-| 接口 | 方法 | 描述 |
-|------|------|------|
-| `/search/product/query` | POST | 商品搜索 |
-| `/search/shop/query` | POST | 商家搜索 |
+| 接口                       | 方法   | 描述   |
+|--------------------------|------|------|
+| `/search/product/query`  | POST | 商品搜索 |
+| `/search/shop/query`     | POST | 商家搜索 |
 | `/search/category/query` | POST | 分类搜索 |
-| `/search/suggest` | GET | 搜索建议 |
-| `/search/hot` | GET | 热门搜索 |
+| `/search/suggest`        | GET  | 搜索建议 |
+| `/search/hot`            | GET  | 热门搜索 |
 
 ### 🎛️ 管理接口
 
-| 接口 | 方法 | 描述 |
-|------|------|------|
+| 接口                             | 方法   | 描述   |
+|--------------------------------|------|------|
 | `/search/manage/index/rebuild` | POST | 重建索引 |
-| `/search/manage/cache/clear` | POST | 清除缓存 |
-| `/search/manage/sync` | POST | 数据同步 |
+| `/search/manage/cache/clear`   | POST | 清除缓存 |
+| `/search/manage/sync`          | POST | 数据同步 |
 
 ## 🔧 配置说明
 
@@ -220,10 +220,10 @@ cache:
 
 ### 📬 消费的事件类型
 
-| 事件类型 | Topic | 处理逻辑 |
-|---------|-------|----------|
-| 商品变更 | PRODUCT_CHANGE_TOPIC | 更新product_index |
-| 商家变更 | SHOP_CHANGE_TOPIC | 更新shop_index |
+| 事件类型 | Topic                 | 处理逻辑             |
+|------|-----------------------|------------------|
+| 商品变更 | PRODUCT_CHANGE_TOPIC  | 更新product_index  |
+| 商家变更 | SHOP_CHANGE_TOPIC     | 更新shop_index     |
 | 分类变更 | CATEGORY_CHANGE_TOPIC | 更新category_index |
 
 ### ⚡ RocketMQ配置
@@ -266,12 +266,12 @@ spring:
 
 ### 🎯 关键指标
 
-| 指标 | 说明 | 监控端点 |
-|------|------|----------|
-| **搜索QPS** | 每秒查询数 | `/actuator/metrics/http.server.requests` |
-| **ES响应时间** | 平均响应时间 | `/actuator/metrics/elasticsearch.client.request` |
-| **缓存命中率** | L1/L2缓存命中率 | `/actuator/metrics/cache.*` |
-| **线程池状态** | 异步处理线程池 | `/actuator/metrics/executor.*` |
+| 指标         | 说明         | 监控端点                                             |
+|------------|------------|--------------------------------------------------|
+| **搜索QPS**  | 每秒查询数      | `/actuator/metrics/http.server.requests`         |
+| **ES响应时间** | 平均响应时间     | `/actuator/metrics/elasticsearch.client.request` |
+| **缓存命中率**  | L1/L2缓存命中率 | `/actuator/metrics/cache.*`                      |
+| **线程池状态**  | 异步处理线程池    | `/actuator/metrics/executor.*`                   |
 
 ### 📊 自定义线程池
 
@@ -291,11 +291,13 @@ spring:
 ### ❌ 启动失败
 
 **Q: 提示数据源配置错误**
+
 ```
 Failed to configure a DataSource: 'url' attribute is not specified
 ```
 
 **A: 确认已正确排除数据源自动配置**
+
 ```java
 @SpringBootApplication(exclude = {
     DataSourceAutoConfiguration.class,
@@ -305,6 +307,7 @@ Failed to configure a DataSource: 'url' attribute is not specified
 ```
 
 **Q: MyBatis-Plus类找不到**
+
 ```
 ClassNotFoundException: com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor
 ```
@@ -314,20 +317,24 @@ ClassNotFoundException: com.baomidou.mybatisplus.extension.plugins.inner.InnerIn
 ### 🔄 缓存问题
 
 **Q: Redis连接失败**
+
 - 检查Redis服务状态: `redis-cli ping`
 - 确认database编号: `database: 7`
 
 **Q: Caffeine缓存不生效**
+
 - 检查缓存配置: `cache.multi-level.enabled: true`
 - 查看日志: `logging.level.com.cloud.search: debug`
 
 ### 🔍 Elasticsearch问题
 
 **Q: ES连接超时**
+
 - 确认ES服务状态: `curl http://localhost:9200/_cluster/health`
 - 检查网络连接和防火墙设置
 
 **Q: 索引不存在**
+
 - 执行索引创建: `POST /search/manage/index/rebuild`
 - 检查索引状态: `GET http://localhost:9200/_cat/indices`
 
@@ -374,6 +381,7 @@ ClassNotFoundException: com.baomidou.mybatisplus.extension.plugins.inner.InnerIn
 ## 📝 更新日志
 
 ### v1.0.0 (2025-10-03)
+
 - ✅ 修复数据源配置问题，成功排除MySQL依赖
 - ✅ 实现多级缓存架构 (Caffeine + Redis)
 - ✅ 集成Elasticsearch 8.x搜索功能

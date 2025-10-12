@@ -75,8 +75,8 @@ public class PaymentController {
                 pageResult.getTotal(),
                 pageResult.getRecords()
         );
-        
-        log.info("分页查询支付成功: page={}, size={}, total={}", page, size, pageResult.getTotal());
+
+        log.info("查询支付列表 - 页码: {}, 每页数量: {}, 总数: {}", page, size, pageResult.getTotal());
         return Result.success(result);
     }
 

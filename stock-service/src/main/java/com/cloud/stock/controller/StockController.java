@@ -54,7 +54,7 @@ public class StockController {
             Authentication authentication) {
 
         PageResult<StockVO> pageResult = stockService.pageQuery(pageDTO);
-        log.info("分页查询库存成功: page={}, size={}, total={}", 
+        log.info("分页查询库存成功: page={}, size={}, total={}",
                 pageDTO.getCurrent(), pageDTO.getSize(), pageResult.getTotal());
         return Result.success(pageResult);
     }
@@ -103,7 +103,7 @@ public class StockController {
     /**
      * 批量获取库存信息
      */
-    @PostMapping("/batch")
+    @PostMapping("/batch/query")
     @Operation(summary = "批量获取库存信息", description = "根据商品ID列表批量获取库存信息")
     public Result<List<StockDTO>> getByProductIds(
             @Parameter(description = "商品ID列表") @RequestBody
@@ -519,8 +519,8 @@ public class StockController {
         int successCount = 0;
         for (StockAdjustmentRequest request : requests) {
             try {
-                if (stockService.stockOut(request.getProductId(), request.getQuantity(), 
-                                         request.getOrderId(), request.getOrderNo(), request.getRemark())) {
+                if (stockService.stockOut(request.getProductId(), request.getQuantity(),
+                        request.getOrderId(), request.getOrderNo(), request.getRemark())) {
                     successCount++;
                 }
             } catch (Exception e) {

@@ -17,7 +17,6 @@
         <module>gateway</module>
         <module>auth-service</module>
         <module>user-service</module>
-        <module>log-service</module>
         <module>order-service</module>
         <module>stock-service</module>
         <module>payment-service</module>
@@ -73,6 +72,13 @@
         <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
         <kotlin.version>1.9.24</kotlin.version>
         <alipay-sdk.version>4.40.452.ALL</alipay-sdk.version>
+
+        <!-- 测试相关版本 -->
+        <junit.version>5.10.3</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+        <testcontainers.version>1.19.8</testcontainers.version>
+        <jacoco.version>0.8.11</jacoco.version>
+        <assertj.version>3.25.3</assertj.version>
     </properties>
 
     <dependencyManagement>
@@ -256,6 +262,7 @@
                 <artifactId>alipay-sdk-java</artifactId>
                 <version>${alipay-sdk.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -309,6 +316,7 @@
                         <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     </configuration>
                 </plugin>
+
             </plugins>
         </pluginManagement>
 

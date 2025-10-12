@@ -121,7 +121,7 @@ public class TokenBlacklistService {
         String tokenId = extractTokenId(jwt);
         String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
 
-        boolean exists = Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
+        boolean exists = redisTemplate.hasKey(blacklistKey);
 
         if (exists) {
             log.debug("检测到黑名单令牌: tokenId={}, subject={}", tokenId, jwt.getSubject());
@@ -144,7 +144,7 @@ public class TokenBlacklistService {
         String tokenId = generateTokenId(tokenValue);
         String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
 
-        return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
+        return redisTemplate.hasKey(blacklistKey);
     }
 
     /**
@@ -267,14 +267,14 @@ public class TokenBlacklistService {
             this.activeBlacklisted = activeBlacklisted;
             this.lastUpdated = lastUpdated;
         }
-        
+
         /**
          * 获取总黑名单数量
          */
         public long totalCount() {
             return totalBlacklisted;
         }
-        
+
         /**
          * 获取活跃黑名单数量
          */

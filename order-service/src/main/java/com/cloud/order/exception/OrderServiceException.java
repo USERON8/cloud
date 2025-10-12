@@ -60,4 +60,57 @@ public class OrderServiceException extends BusinessException {
         super(message, cause);
     }
 
+    // 订单相关特定异常
+
+    public static class OrderNotFoundException extends OrderServiceException {
+        public OrderNotFoundException(String message) {
+            super(ResultCode.ORDER_NOT_FOUND, message);
+        }
+
+        public OrderNotFoundException(Long orderId) {
+            super(ResultCode.ORDER_NOT_FOUND, String.format("订单不存在，订单ID: %d", orderId));
+        }
+    }
+
+    public static class OrderCreateFailedException extends OrderServiceException {
+        public OrderCreateFailedException(String message) {
+            super(ResultCode.ORDER_CREATE_FAILED, message);
+        }
+    }
+
+    public static class OrderUpdateFailedException extends OrderServiceException {
+        public OrderUpdateFailedException(String message) {
+            super(ResultCode.ORDER_UPDATE_FAILED, message);
+        }
+    }
+
+    public static class OrderDeleteFailedException extends OrderServiceException {
+        public OrderDeleteFailedException(String message) {
+            super(ResultCode.ORDER_DELETE_FAILED, message);
+        }
+    }
+
+    public static class OrderStatusErrorException extends OrderServiceException {
+        public OrderStatusErrorException(String message) {
+            super(ResultCode.ORDER_STATUS_ERROR, message);
+        }
+    }
+
+    public static class OrderQueryFailedException extends OrderServiceException {
+        public OrderQueryFailedException(String message) {
+            super(ResultCode.ORDER_QUERY_FAILED, message);
+        }
+    }
+
+    public static class OrderPaymentFailedException extends OrderServiceException {
+        public OrderPaymentFailedException(String message) {
+            super(ResultCode.BUSINESS_ERROR, "订单支付失败: " + message);
+        }
+    }
+
+    public static class OrderShippingFailedException extends OrderServiceException {
+        public OrderShippingFailedException(String message) {
+            super(ResultCode.BUSINESS_ERROR, "订单发货失败: " + message);
+        }
+    }
 }

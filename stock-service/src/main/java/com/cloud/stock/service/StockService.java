@@ -2,11 +2,6 @@ package com.cloud.stock.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.stock.StockDTO;
-import com.cloud.common.domain.event.order.OrderCompletedEvent;
-import com.cloud.common.domain.event.order.OrderCreatedEvent;
-import com.cloud.common.domain.event.stock.StockConfirmEvent;
-import com.cloud.common.domain.event.stock.StockReserveEvent;
-import com.cloud.common.domain.event.stock.StockRollbackEvent;
 import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.stock.module.dto.StockPageDTO;
@@ -146,29 +141,12 @@ public interface StockService extends IService<Stock> {
     boolean isStockDeducted(Long orderId);
 
     /**
-     * 解冻并扣减库存
-     *
-     * @param event 订单完成事件
-     * @return 是否成功
-     */
-    boolean unfreezeAndDeductStock(OrderCompletedEvent event);
-
-    /**
      * 检查库存是否已冻结
      *
      * @param orderId 订单ID
      * @return 是否已冻结
      */
     boolean isStockFrozen(Long orderId);
-
-    /**
-     * 冻结库存
-     *
-     * @param event 订单创建事件
-     * @return 是否成功
-     */
-    boolean freezeStock(OrderCreatedEvent event);
-
 
     /**
      * 检查库存是否已预留
@@ -193,30 +171,6 @@ public interface StockService extends IService<Stock> {
      * @return 是否已回滚
      */
     boolean isStockRolledBack(Long orderId);
-
-    /**
-     * 预留库存（处理预留事件）
-     *
-     * @param event 库存预留事件
-     * @return 预留结果
-     */
-    boolean reserveStock(StockReserveEvent event);
-
-    /**
-     * 确认库存扣减（处理确认事件）
-     *
-     * @param event 库存确认事件
-     * @return 确认结果
-     */
-    boolean confirmStock(StockConfirmEvent event);
-
-    /**
-     * 回滚库存（处理回滚事件）
-     *
-     * @param event 库存回滚事件
-     * @return 回滚结果
-     */
-    boolean rollbackStock(StockRollbackEvent event);
 
 }
 

@@ -83,6 +83,11 @@ public class ThreadPoolInfo {
     private String status;
 
     /**
+     * 时间戳
+     */
+    private long timestamp;
+
+    /**
      * 获取等待执行的任务数
      */
     public long getPendingTaskCount() {

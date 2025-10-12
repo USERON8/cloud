@@ -88,4 +88,52 @@ public class UserServiceException extends BusinessException {
             super(ResultCode.FILE_SIZE_EXCEEDED, message);
         }
     }
+
+    public static class UserCreateFailedException extends UserServiceException {
+        public UserCreateFailedException(String message) {
+            super(ResultCode.USER_CREATE_FAILED, message);
+        }
+    }
+
+    public static class UserUpdateFailedException extends UserServiceException {
+        public UserUpdateFailedException(String message) {
+            super(ResultCode.USER_UPDATE_FAILED, message);
+        }
+    }
+
+    public static class UserDeleteFailedException extends UserServiceException {
+        public UserDeleteFailedException(String message) {
+            super(ResultCode.USER_DELETE_FAILED, message);
+        }
+    }
+
+    public static class UserQueryFailedException extends UserServiceException {
+        public UserQueryFailedException(String message) {
+            super(ResultCode.USER_QUERY_FAILED, message);
+        }
+    }
+
+    public static class UserTypeMismatchException extends UserServiceException {
+        public UserTypeMismatchException(String message) {
+            super(ResultCode.USER_TYPE_MISMATCH, message);
+        }
+    }
+
+    public static class UserDisabledException extends UserServiceException {
+        public UserDisabledException(String message) {
+            super(ResultCode.USER_DISABLED, message);
+        }
+    }
+
+    public static class PasswordErrorException extends UserServiceException {
+        public PasswordErrorException(String message) {
+            super(ResultCode.PASSWORD_ERROR, message);
+        }
+    }
+
+    public static class ParamValidationFailedException extends UserServiceException {
+        public ParamValidationFailedException(String message) {
+            super(ResultCode.PARAM_VALIDATION_FAILED, message);
+        }
+    }
 }

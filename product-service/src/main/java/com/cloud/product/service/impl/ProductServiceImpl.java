@@ -8,7 +8,6 @@ import com.cloud.api.stock.StockFeignClient;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
-import com.cloud.common.domain.event.product.ProductSearchEvent;
 import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.domain.vo.stock.StockVO;
 import com.cloud.common.exception.BusinessException;

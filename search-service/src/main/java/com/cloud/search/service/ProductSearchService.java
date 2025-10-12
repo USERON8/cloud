@@ -1,6 +1,6 @@
 package com.cloud.search.service;
 
-import com.cloud.common.domain.event.product.ProductSearchEvent;
+
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
@@ -15,13 +15,6 @@ import java.util.List;
  * @since 1.0.0
  */
 public interface ProductSearchService {
-
-    /**
-     * 保存或更新商品到Elasticsearch
-     *
-     * @param event 商品搜索事件
-     */
-    void saveOrUpdateProduct(ProductSearchEvent event);
 
     /**
      * 删除商品从Elasticsearch
@@ -45,13 +38,6 @@ public interface ProductSearchService {
      * @return 商品文档
      */
     ProductDocument findByProductId(Long productId);
-
-    /**
-     * 批量保存商品
-     *
-     * @param events 商品事件列表
-     */
-    void batchSaveProducts(List<ProductSearchEvent> events);
 
     /**
      * 批量删除商品

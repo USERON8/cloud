@@ -77,21 +77,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     }
 
 
-    /**
-     * 处理绑定异常
-     */
-    @ExceptionHandler(BindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleBindException(BindException e, HttpServletRequest request) {
-        log.warn("参数绑定失败 [{}]: {}", request.getRequestURI(), e.getMessage());
-
-        String message = e.getFieldError() != null ?
-                String.format("参数 %s %s", e.getFieldError().getField(), e.getFieldError().getDefaultMessage()) :
-                "参数绑定失败";
-
-        return Result.error("BAD_REQUEST", message);
-    }
-
+  
 
     /**
      * 处理参数类型不匹配异常
@@ -104,16 +90,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
                 e.getName(), e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown"));
     }
 
-    /**
-     * 处理缺少请求参数异常
-     */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleMissingParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
-        log.warn("缺少请求参数 [{}]: {}", request.getRequestURI(), e.getParameterName());
-        return Result.error("BAD_REQUEST", String.format("缺少必需参数: %s", e.getParameterName()));
-    }
-
+    
     /**
      * 处理文件上传大小超限异常
      */
@@ -134,14 +111,5 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
         return Result.error("BUSINESS_ERROR", "数据操作失败，请检查数据的完整性");
     }
 
-    /**
-     * 处理运行时异常
-     */
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<Object> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
-        log.error("运行时异常 [{}]: {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.error("SYSTEM_ERROR", "系统内部错误，请稍后重试");
-    }
-
+    
 }

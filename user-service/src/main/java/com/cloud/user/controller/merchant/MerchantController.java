@@ -234,7 +234,7 @@ public class MerchantController {
     @Operation(summary = "批量删除商家", description = "批量删除商家")
     public Result<Boolean> deleteMerchantsBatch(
             @Parameter(description = "商家ID列表") @RequestBody
-            @jakarta.validation.constraints.NotNull(message = "商家ID列表不能为空") 
+            @jakarta.validation.constraints.NotNull(message = "商家ID列表不能为空")
             @jakarta.validation.constraints.NotEmpty(message = "商家ID列表不能为空") java.util.List<Long> ids) {
 
         if (ids.size() > 100) {

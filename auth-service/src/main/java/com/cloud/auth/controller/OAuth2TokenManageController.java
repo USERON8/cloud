@@ -3,7 +3,6 @@ package com.cloud.auth.controller;
 import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
 import com.cloud.auth.service.TokenBlacklistService;
 import com.cloud.common.exception.ResourceNotFoundException;
-import com.cloud.common.exception.SystemException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -76,7 +75,7 @@ public class OAuth2TokenManageController {
             stats.put("serviceStats", serviceStats);
         }
 
-        log.info("获取token统计信息成功: authCount={}, tokenCount={}", 
+        log.info("获取token统计信息成功: authCount={}, tokenCount={}",
                 stats.get("authorizationCount"), stats.get("tokenIndexCount"));
         return Result.success(stats);
     }
@@ -122,7 +121,7 @@ public class OAuth2TokenManageController {
         }
 
         details.put("tokens", tokens);
-        
+
         log.info("查看授权详情成功: id={}, principalName={}", id, authorization.getPrincipalName());
         return Result.success(details);
     }
@@ -163,7 +162,7 @@ public class OAuth2TokenManageController {
         Map<String, Object> result = new HashMap<>();
         result.put("message", "清理任务已执行");
         result.put("note", "Redis TTL机制会自动清理过期数据");
-        
+
         log.info("管理员手动触发token清理任务");
         return Result.success(result);
     }
@@ -252,7 +251,7 @@ public class OAuth2TokenManageController {
         result.put("tokenValue", tokenValue.substring(0, Math.min(tokenValue.length(), 20)) + "...");
         result.put("isBlacklisted", isBlacklisted);
         result.put("checkTime", java.time.Instant.now());
-        
+
         log.info("检查令牌黑名单状态: isBlacklisted={}", isBlacklisted);
         return Result.success(result);
     }
@@ -270,7 +269,7 @@ public class OAuth2TokenManageController {
         result.put("cleanedCount", cleanedCount);
         result.put("message", "黑名单清理完成");
         result.put("cleanupTime", java.time.Instant.now());
-        
+
         log.info("管理员手动清理黑名单: cleanedCount={}", cleanedCount);
         return Result.success(result);
     }

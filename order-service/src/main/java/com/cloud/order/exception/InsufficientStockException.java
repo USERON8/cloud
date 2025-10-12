@@ -12,6 +12,8 @@ public class InsufficientStockException extends BusinessException {
 
     private static final int INSUFFICIENT_STOCK_ERROR_CODE = 40002;
 
+    private Long productId;
+
     public InsufficientStockException(String message) {
         super(INSUFFICIENT_STOCK_ERROR_CODE, message);
     }
@@ -19,6 +21,7 @@ public class InsufficientStockException extends BusinessException {
     public InsufficientStockException(Long productId, Integer required, Integer available) {
         super(INSUFFICIENT_STOCK_ERROR_CODE,
                 String.format("商品[ID:%d]库存不足，需要：%d，可用：%d", productId, required, available));
+        this.productId = productId;
     }
 
     public InsufficientStockException(String productName, Integer required, Integer available) {
@@ -28,5 +31,13 @@ public class InsufficientStockException extends BusinessException {
 
     public InsufficientStockException(String message, Throwable cause) {
         super(INSUFFICIENT_STOCK_ERROR_CODE, message, cause);
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Long productId) {
+        this.productId = productId;
     }
 }

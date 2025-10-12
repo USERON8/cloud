@@ -8,20 +8,39 @@ USE `product_db`;
 -- 商品表
 CREATE TABLE `products`
 (
-    id             BIGINT UNSIGNED PRIMARY KEY COMMENT '商品ID',
-    shop_id        BIGINT UNSIGNED NOT NULL COMMENT '店铺ID',
-    product_name   VARCHAR(100)    NOT NULL COMMENT '商品名称',
-    price          DECIMAL(10, 2)  NOT NULL COMMENT '售价',
-    stock_quantity INT             NOT NULL DEFAULT 0 COMMENT '库存数量',
-    category_id    BIGINT UNSIGNED COMMENT '分类ID',
-    status         TINYINT         NOT NULL DEFAULT 0 COMMENT '状态：0-下架，1-上架',
-    created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    deleted        TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
+    id                  BIGINT UNSIGNED PRIMARY KEY COMMENT '商品ID',
+    shop_id             BIGINT UNSIGNED NOT NULL COMMENT '店铺ID',
+    product_name        VARCHAR(100)    NOT NULL COMMENT '商品名称',
+    product_description TEXT COMMENT '商品描述',
+    price               DECIMAL(10, 2)  NOT NULL COMMENT '售价',
+    original_price      DECIMAL(10, 2)  COMMENT '原价',
+    stock_quantity      INT             NOT NULL DEFAULT 0 COMMENT '库存数量',
+    category_id         BIGINT UNSIGNED COMMENT '分类ID',
+    brand               VARCHAR(50)     COMMENT '品牌',
+    status              TINYINT         NOT NULL DEFAULT 0 COMMENT '状态：0-下架，1-上架',
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted             TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     INDEX idx_shop_id (shop_id),
     INDEX idx_status (status),
-    INDEX idx_category_id (category_id)
+    INDEX idx_category_id (category_id),
+
+    -- 性能优化索引
+    INDEX idx_shop_status (shop_id, status),
+    INDEX idx_category_status (category_id, status),
+    INDEX idx_price (price),
+    INDEX idx_brand (brand),
+    INDEX idx_name_status (product_name(20), status),
+    INDEX idx_category_brand (category_id, brand),
+    INDEX idx_shop_category (shop_id, category_id),
+    INDEX idx_status_price (status, price),
+    INDEX idx_created_status (created_at, status),
+
+    -- 全文索引
+    FULLTEXT INDEX ft_product_name (product_name),
+    FULLTEXT INDEX ft_product_desc (product_description)
 ) COMMENT ='商品表';
 
 -- 商品分类表
@@ -56,6 +75,13 @@ CREATE TABLE `merchant_shop`
     updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted       TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     INDEX idx_merchant_id (merchant_id),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+
+    -- 性能优化索引
+    INDEX idx_name_status (shop_name(20), status),
+
+    -- 全文索引
+    FULLTEXT INDEX ft_shop_desc (description)
 ) COMMENT ='商家店铺表';

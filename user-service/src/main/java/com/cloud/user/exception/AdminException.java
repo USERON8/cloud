@@ -77,4 +77,49 @@ public class AdminException extends BusinessException {
             super(400, message);
         }
     }
+
+    /**
+     * 管理员创建失败异常
+     */
+    public static class AdminCreateFailedException extends AdminException {
+        public AdminCreateFailedException(String message) {
+            super(500, "管理员创建失败: " + message);
+        }
+    }
+
+    /**
+     * 管理员更新失败异常
+     */
+    public static class AdminUpdateFailedException extends AdminException {
+        public AdminUpdateFailedException(String message) {
+            super(500, "管理员更新失败: " + message);
+        }
+    }
+
+    /**
+     * 管理员删除失败异常
+     */
+    public static class AdminDeleteFailedException extends AdminException {
+        public AdminDeleteFailedException(String message) {
+            super(500, "管理员删除失败: " + message);
+        }
+    }
+
+    /**
+     * 管理员状态错误异常
+     */
+    public static class AdminStatusErrorException extends AdminException {
+        public AdminStatusErrorException(String message) {
+            super(400, "管理员状态错误: " + message);
+        }
+    }
+
+    /**
+     * 管理员查询失败异常
+     */
+    public static class AdminQueryFailedException extends AdminException {
+        public AdminQueryFailedException(String message) {
+            super(500, "管理员查询失败: " + message);
+        }
+    }
 }

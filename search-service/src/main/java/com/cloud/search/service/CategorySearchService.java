@@ -1,6 +1,5 @@
 package com.cloud.search.service;
 
-import com.cloud.common.domain.event.product.CategorySearchEvent;
 import com.cloud.search.document.CategoryDocument;
 
 import java.util.List;
@@ -13,13 +12,6 @@ import java.util.List;
  * @since 1.0.0
  */
 public interface CategorySearchService {
-
-    /**
-     * 保存或更新分类到Elasticsearch
-     *
-     * @param event 分类搜索事件
-     */
-    void saveOrUpdateCategory(CategorySearchEvent event);
 
     /**
      * 删除分类从Elasticsearch
@@ -44,12 +36,6 @@ public interface CategorySearchService {
      */
     CategoryDocument findByCategoryId(Long categoryId);
 
-    /**
-     * 批量保存分类
-     *
-     * @param events 分类事件列表
-     */
-    void batchSaveCategories(List<CategorySearchEvent> events);
 
     /**
      * 批量删除分类

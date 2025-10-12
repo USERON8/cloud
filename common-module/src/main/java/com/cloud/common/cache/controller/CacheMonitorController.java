@@ -11,9 +11,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.lang.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * 缓存监控控制器
@@ -31,12 +33,16 @@ import java.util.concurrent.ConcurrentMap;
 @RestController
 @RequestMapping("/api/cache/monitor")
 @Tag(name = "缓存监控", description = "缓存统计和管理接口")
-@RequiredArgsConstructor
 @ConditionalOnBean(CacheManager.class)
 public class CacheMonitorController {
 
     private final CacheManager cacheManager;
     private final CacheMetricsCollector metricsCollector;
+
+    public CacheMonitorController(CacheManager cacheManager, @Nullable CacheMetricsCollector metricsCollector) {
+        this.cacheManager = cacheManager;
+        this.metricsCollector = metricsCollector;
+    }
 
     /**
      * 获取所有缓存名称
@@ -57,7 +63,7 @@ public class CacheMonitorController {
         try {
             Cache cache = cacheManager.getCache(cacheName);
             if (cache == null) {
-                return Result.fail("缓存 " + cacheName + " 不存在");
+                return Result.error("缓存 " + cacheName + " 不存在");
             }
 
             Map<String, Object> stats = new HashMap<>();
@@ -65,9 +71,7 @@ public class CacheMonitorController {
             stats.put("cacheType", cache.getClass().getSimpleName());
 
             // 如果是多级缓存,获取详细统计
-            if (cache instanceof com.cloud.common.cache.core.MultiLevelCache) {
-                com.cloud.common.cache.core.MultiLevelCache multiCache =
-                        (com.cloud.common.cache.core.MultiLevelCache) cache;
+            if (cache instanceof com.cloud.common.cache.core.MultiLevelCache multiCache) {
                 stats.put("stats", multiCache.getStats());
             }
 
@@ -89,7 +93,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("获取缓存统计失败: {}", cacheName, e);
-            return Result.fail("获取缓存统计失败: " + e.getMessage());
+            return Result.error("获取缓存统计失败: " + e.getMessage());
         }
     }
 
@@ -126,7 +130,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("获取所有缓存统计失败", e);
-            return Result.fail("获取所有缓存统计失败: " + e.getMessage());
+            return Result.error("获取所有缓存统计失败: " + e.getMessage());
         }
     }
 
@@ -141,14 +145,14 @@ public class CacheMonitorController {
 
         try {
             if (metricsCollector == null) {
-                return Result.fail("指标收集器未启用");
+                return Result.error("指标收集器未启用");
             }
 
             CacheMetricsCollector.CacheStats cacheStats =
                     metricsCollector.getCacheStats(cacheName);
 
             if (cacheStats == null) {
-                return Result.fail("缓存 " + cacheName + " 的统计信息不存在");
+                return Result.error("缓存 " + cacheName + " 的统计信息不存在");
             }
 
             Map<String, Long> hotspotData = cacheStats.getTopAccessedKeys(limit);
@@ -156,7 +160,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("获取热点数据失败: {}", cacheName, e);
-            return Result.fail("获取热点数据失败: " + e.getMessage());
+            return Result.error("获取热点数据失败: " + e.getMessage());
         }
     }
 
@@ -169,7 +173,7 @@ public class CacheMonitorController {
         try {
             Cache cache = cacheManager.getCache(cacheName);
             if (cache == null) {
-                return Result.fail("缓存 " + cacheName + " 不存在");
+                return Result.error("缓存 " + cacheName + " 不存在");
             }
 
             cache.clear();
@@ -178,7 +182,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("清除缓存失败: {}", cacheName, e);
-            return Result.fail("清除缓存失败: " + e.getMessage());
+            return Result.error("清除缓存失败: " + e.getMessage());
         }
     }
 
@@ -203,7 +207,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("清除所有缓存失败", e);
-            return Result.fail("清除所有缓存失败: " + e.getMessage());
+            return Result.error("清除所有缓存失败: " + e.getMessage());
         }
     }
 
@@ -220,8 +224,7 @@ public class CacheMonitorController {
             info.put("cacheNames", cacheManager.getCacheNames());
 
             // 如果是多级缓存管理器,获取额外信息
-            if (cacheManager instanceof MultiLevelCacheManager) {
-                MultiLevelCacheManager multiManager = (MultiLevelCacheManager) cacheManager;
+            if (cacheManager instanceof MultiLevelCacheManager multiManager) {
                 info.put("nodeId", multiManager.getNodeId());
                 info.put("cacheConfig", multiManager.getCacheConfig());
             }
@@ -230,7 +233,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("获取缓存管理器信息失败", e);
-            return Result.fail("获取缓存管理器信息失败: " + e.getMessage());
+            return Result.error("获取缓存管理器信息失败: " + e.getMessage());
         }
     }
 
@@ -242,7 +245,7 @@ public class CacheMonitorController {
     public Result<Map<String, Object>> getCacheMetricsSummary() {
         try {
             if (metricsCollector == null) {
-                return Result.fail("指标收集器未启用");
+                return Result.error("指标收集器未启用");
             }
 
             Map<String, Object> summary = new HashMap<>();
@@ -279,7 +282,7 @@ public class CacheMonitorController {
 
         } catch (Exception e) {
             log.error("获取缓存指标汇总失败", e);
-            return Result.fail("获取缓存指标汇总失败: " + e.getMessage());
+            return Result.error("获取缓存指标汇总失败: " + e.getMessage());
         }
     }
 }

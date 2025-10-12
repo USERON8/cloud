@@ -2,6 +2,7 @@ package com.cloud.stock.config;
 
 import com.cloud.common.config.BaseAsyncConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -18,6 +19,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Configuration
 @EnableAsync
+@ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
     /**
@@ -36,7 +38,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("库存查询线程池初始化完成");
+        log.info("✅ [STOCK-SERVICE-QUERY] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -54,7 +58,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("库存操作线程池初始化完成");
+        log.info("✅ [STOCK-SERVICE-OPERATION] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -73,7 +79,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("库存服务通用异步线程池初始化完成");
+        log.info("✅ [STOCK-SERVICE-COMMON] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 

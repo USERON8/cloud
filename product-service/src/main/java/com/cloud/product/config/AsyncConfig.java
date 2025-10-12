@@ -38,7 +38,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ 商品异步线程池配置完成 - 核心线程数: 2, 最大线程数: 4, 队列容量: 500");
+        log.info("✅ [PRODUCT-SERVICE-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -56,7 +58,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ 商品日志线程池配置完成 - 核心线程数: 1, 最大线程数: 2, 队列容量: 1000");
+        log.info("✅ [PRODUCT-SERVICE-LOG] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -68,14 +72,16 @@ public class AsyncConfig extends BaseAsyncConfig {
     @ConditionalOnProperty(name = "product.statistics.enabled", havingValue = "true", matchIfMissing = true)
     public Executor productStatisticsExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                1,
-                3,
-                2000,
+                2,
+                4,
+                500,
                 "product-statistics-"
         );
         executor.initialize();
 
-        log.info("✅ 商品统计线程池配置完成 - 核心线程数: 1, 最大线程数: 3, 队列容量: 2000");
+        log.info("✅ [PRODUCT-SERVICE-STATISTICS] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -94,7 +100,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ 商品搜索线程池配置完成 - 核心线程数: 1, 最大线程数: 2, 队列容量: 300");
+        log.info("✅ [PRODUCT-SERVICE-SEARCH] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 }

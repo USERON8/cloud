@@ -147,7 +147,7 @@ public class RedissonClientConfiguration {
     /**
      * 配置集群模式
      */
-    private void configureCl uster(Config config) {
+    private void configureCluster(Config config) {
         String[] nodes = clusterNodes.split(",");
         String[] addresses = new String[nodes.length];
 

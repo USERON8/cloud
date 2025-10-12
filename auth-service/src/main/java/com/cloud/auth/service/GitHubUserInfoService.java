@@ -190,72 +190,72 @@ public class GitHubUserInfoService implements ApplicationContextAware {
      * 获取GitHub用户信息并生成Token
      * Controller层调用的标准方法
      *
-     * @param principal                  认证主体
-     * @param authorizedClientService    OAuth2客户端服务
-     * @param jwtEncoder                JWT编码器
-     * @param oauth2ResponseUtil        OAuth2响应工具
+     * @param principal               认证主体
+     * @param authorizedClientService OAuth2客户端服务
+     * @param jwtEncoder              JWT编码器
+     * @param oauth2ResponseUtil      OAuth2响应工具
      * @return 登录响应DTO
      * @throws OAuth2Exception 当认证失败或授权信息不存在时抛出
-     * @throws SystemException  当系统处理失败时抛出
+     * @throws SystemException 当系统处理失败时抛出
      */
     public LoginResponseDTO getUserInfoAndGenerateToken(
             Principal principal,
             OAuth2AuthorizedClientService authorizedClientService,
             JwtEncoder jwtEncoder,
             OAuth2ResponseUtil oauth2ResponseUtil) {
-        
+
         // 1. 验证principal
         if (principal == null) {
             log.warn("未找到认证信息");
             throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "未认证，请先登录");
         }
-        
+
         // 2. 获取OAuth2授权客户端
         OAuth2AuthorizedClient authorizedClient = authorizedClientService
                 .loadAuthorizedClient("github", principal.getName());
-        
+
         if (authorizedClient == null) {
             log.warn("未找到GitHub OAuth2授权客户端，用户: {}", principal.getName());
             throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "GitHub授权信息不存在");
         }
-        
+
         // 3. 获取或创建用户
         UserDTO userDTO = getOrCreateUser(authorizedClient);
-        
+
         if (userDTO == null) {
             log.error("获取GitHub用户信息失败");
             throw new SystemException("获取用户信息失败");
         }
-        
+
         // 4. 生成JWT响应
         LoginResponseDTO loginResponse = oauth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
         log.info("成功获取GitHub用户信息: {}", userDTO.getUsername());
-        
+
         return loginResponse;
     }
-    
+
     /**
      * 检查GitHub OAuth2认证状态
      * Controller层调用的标准方法
      *
-     * @param principal                  认证主体
-     * @param authorizedClientService    OAuth2客户端服务
+     * @param principal               认证主体
+     * @param authorizedClientService OAuth2客户端服务
      * @return 是否已认证
      */
     public boolean checkAuthStatus(
             Principal principal,
             OAuth2AuthorizedClientService authorizedClientService) {
-        
+
         if (principal == null) {
             return false;
         }
-        
+
         OAuth2AuthorizedClient authorizedClient = authorizedClientService
                 .loadAuthorizedClient("github", principal.getName());
-        
+
         boolean isAuthenticated = authorizedClient != null;
         log.info("GitHub OAuth2认证状态: {}", isAuthenticated);
-        
+
         return isAuthenticated;
     }
 

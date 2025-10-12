@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users
     updated_at        DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted           TINYINT                            NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     INDEX idx_username (username),
     INDEX idx_phone (phone),
     INDEX idx_email (email),
@@ -36,7 +37,11 @@ CREATE TABLE IF NOT EXISTS users
     INDEX idx_oauth_provider_combined (oauth_provider, oauth_provider_id),
     UNIQUE INDEX uk_github_id (github_id),
     UNIQUE INDEX uk_github_username (github_username),
-    UNIQUE INDEX uk_oauth_provider_id (oauth_provider, oauth_provider_id)
+    UNIQUE INDEX uk_oauth_provider_id (oauth_provider, oauth_provider_id),
+
+    -- 性能优化索引
+    INDEX idx_type_status (user_type, status),
+    INDEX idx_created_at (created_at)
 ) COMMENT ='用户表';
 
 -- 用户地址表
@@ -56,6 +61,7 @@ CREATE TABLE `user_address`
     updated_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted        TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     INDEX idx_user_id (user_id),
     INDEX idx_user_default (user_id, is_default),
 
@@ -78,7 +84,10 @@ CREATE TABLE `admin`
 
     INDEX idx_username (username),
     INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+
+    -- 性能优化索引
+    INDEX idx_date_type (DATE(created_at), user_type)
 ) COMMENT ='管理员表';
 
 -- 商家表

@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 分布式锁监控控制器
@@ -37,9 +36,8 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnBean(RedissonClient.class)
 public class DistributedLockMonitorController {
 
-    private final RedissonClient redissonClient;
-
     private static final String LOCK_PREFIX_PATTERN = "distributed:lock:*";
+    private final RedissonClient redissonClient;
 
     /**
      * 获取所有锁信息
@@ -64,7 +62,7 @@ public class DistributedLockMonitorController {
 
         } catch (Exception e) {
             log.error("获取所有锁信息失败", e);
-            return Result.fail("获取所有锁信息失败: " + e.getMessage());
+            return Result.error("获取所有锁信息失败: " + e.getMessage());
         }
     }
 
@@ -82,14 +80,14 @@ public class DistributedLockMonitorController {
             Map<String, Object> lockInfo = getLockInfo(fullKey);
 
             if (lockInfo == null) {
-                return Result.fail("锁不存在: " + lockKey);
+                return Result.error("锁不存在: " + lockKey);
             }
 
             return Result.success(lockInfo);
 
         } catch (Exception e) {
             log.error("获取锁详情失败: {}", lockKey, e);
-            return Result.fail("获取锁详情失败: " + e.getMessage());
+            return Result.error("获取锁详情失败: " + e.getMessage());
         }
     }
 
@@ -107,7 +105,7 @@ public class DistributedLockMonitorController {
             RLock lock = redissonClient.getLock(fullKey);
 
             if (!lock.isLocked()) {
-                return Result.fail("锁不存在或已释放: " + lockKey);
+                return Result.error("锁不存在或已释放: " + lockKey);
             }
 
             // 强制解锁
@@ -118,7 +116,7 @@ public class DistributedLockMonitorController {
 
         } catch (Exception e) {
             log.error("强制释放锁失败: {}", lockKey, e);
-            return Result.fail("强制释放锁失败: " + e.getMessage());
+            return Result.error("强制释放锁失败: " + e.getMessage());
         }
     }
 
@@ -167,7 +165,7 @@ public class DistributedLockMonitorController {
 
         } catch (Exception e) {
             log.error("获取锁统计信息失败", e);
-            return Result.fail("获取锁统计信息失败: " + e.getMessage());
+            return Result.error("获取锁统计信息失败: " + e.getMessage());
         }
     }
 
@@ -198,7 +196,7 @@ public class DistributedLockMonitorController {
 
         } catch (Exception e) {
             log.error("清除过期锁失败", e);
-            return Result.fail("清除过期锁失败: " + e.getMessage());
+            return Result.error("清除过期锁失败: " + e.getMessage());
         }
     }
 

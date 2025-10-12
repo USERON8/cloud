@@ -1,0 +1,243 @@
+# ==================== 异步配置统一模板 ====================
+# 此文件为各服务的异步配置提供统一模板
+# 各服务可以在自己的application.yml中引入或覆盖相应配置
+
+app:
+  async:
+    # 全局异步功能开关
+    enabled: true
+
+    # 动态配置开关
+    dynamic-enabled: false
+
+    # 默认线程池配置
+    default-executor:
+      core-pool-size: 4
+      max-pool-size: 12
+      queue-capacity: 300
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-default-"
+      allow-core-thread-timeout: false
+      rejected-execution-handler: "CALLER_RUNS"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 60
+
+    # 消息线程池配置
+    message-executor:
+      core-pool-size: 3
+      max-pool-size: 8
+      queue-capacity: 100
+      keep-alive-seconds: 60
+      thread-name-prefix: "async-message-"
+
+    # 批处理线程池配置
+    batch-executor:
+      core-pool-size: 2
+      max-pool-size: 6
+      queue-capacity: 200
+      keep-alive-seconds: 60
+      thread-name-prefix: "batch-process-"
+
+    # IO密集型线程池配置
+    io-executor:
+      core-pool-size: 8
+      max-pool-size: 16
+      queue-capacity: 300
+      keep-alive-seconds: 60
+      thread-name-prefix: "io-"
+
+    # CPU密集型线程池配置
+    cpu-executor:
+      core-pool-size: 4
+      max-pool-size: 5
+      queue-capacity: 100
+      keep-alive-seconds: 60
+      thread-name-prefix: "cpu-"
+
+    # 通用配置
+    common:
+      # 监控配置
+      monitoring-enabled: true
+      monitoring-interval-seconds: 30
+      pre-start-core-threads: false
+      task-decorator: true
+      log-slow-tasks: true
+      slow-task-threshold-ms: 3000
+
+      # 动态调整配置
+      dynamic-adjustment-enabled: false
+      dynamic-adjustment-interval-seconds: 60
+
+      # 告警配置
+      alert-threshold-usage-rate: 80.0
+      alert-threshold-queue-rate: 85.0
+
+    # 服务特定配置
+    services:
+      # 用户服务配置
+      user:
+        async:
+          enabled: true
+          query:
+            core-pool-size: 4
+            max-pool-size: 16
+            queue-capacity: 500
+          operation:
+            core-pool-size: 2
+            max-pool-size: 8
+            queue-capacity: 200
+          log:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 800
+          statistics:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 500
+          notification:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 300
+
+      # 订单服务配置
+      order:
+        async:
+          enabled: true
+          default:
+            core-pool-size: 4
+            max-pool-size: 8
+            queue-capacity: 400
+          payment:
+            core-pool-size: 2
+            max-pool-size: 8
+            queue-capacity: 200
+          log:
+            core-pool-size: 1
+            max-pool-size: 3
+            queue-capacity: 1000
+          statistics:
+            core-pool-size: 1
+            max-pool-size: 2
+            queue-capacity: 1200
+          notification:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 300
+
+      # 支付服务配置
+      payment:
+        async:
+          enabled: true
+          default:
+            core-pool-size: 3
+            max-pool-size: 8
+            queue-capacity: 400
+          callback:
+            type: "io-intensive"
+          notification:
+            core-pool-size: 2
+            max-pool-size: 5
+            queue-capacity: 300
+          reconciliation:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 200
+          statistics:
+            type: "cpu-intensive"
+          log:
+            core-pool-size: 1
+            max-pool-size: 3
+            queue-capacity: 1000
+          refund:
+            core-pool-size: 2
+            max-pool-size: 6
+            queue-capacity: 250
+
+      # 商品服务配置
+      product:
+        async:
+          enabled: true
+          default:
+            core-pool-size: 2
+            max-pool-size: 4
+            queue-capacity: 500
+          log:
+            core-pool-size: 1
+            max-pool-size: 2
+            queue-capacity: 1000
+          statistics:
+            core-pool-size: 1
+            max-pool-size: 3
+            queue-capacity: 500
+          search:
+            core-pool-size: 1
+            max-pool-size: 2
+            queue-capacity: 300
+
+      # 库存服务配置
+      stock:
+        async:
+          enabled: true
+          query:
+            core-pool-size: 4
+            max-pool-size: 16
+            queue-capacity: 500
+          operation:
+            core-pool-size: 2
+            max-pool-size: 10
+            queue-capacity: 100
+          common:
+            core-pool-size: 2
+            max-pool-size: 8
+            queue-capacity: 200
+
+# ==================== Spring Boot 配置 ====================
+spring:
+  # 异步任务配置
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 8
+        queue-capacity: 100
+        keep-alive: 60s
+      thread-name-prefix: "spring-task-"
+    scheduling:
+      pool:
+        size: 4
+      thread-name-prefix: "spring-schedule-"
+
+# ==================== 日志配置 ====================
+logging:
+  level:
+    # 异步配置相关日志级别
+    com.cloud.common.config: INFO
+    com.cloud.common.threadpool: INFO
+    org.springframework.scheduling: INFO
+  pattern:
+    # 控制台日志模式
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"
+    # 文件日志模式
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"
+
+# ==================== 监控配置 ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,threadpool
+  endpoint:
+    threadpool:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+    tags:
+      application: ${spring.application.name:unknown}
+      profile: ${spring.profiles.active:default}

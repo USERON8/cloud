@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.metrics.cache.CacheMetricsRegistrar;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +46,7 @@ public class CacheMetricsCollector {
     private Counter cacheEvictionCounter;
 
     public CacheMetricsCollector(MeterRegistry meterRegistry,
-                                 CacheManager cacheManager,
+                                 @Lazy CacheManager cacheManager,
                                  CacheMetricsRegistrar cacheMetricsRegistrar) {
         this.meterRegistry = meterRegistry;
         this.cacheManager = cacheManager;

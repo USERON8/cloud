@@ -1,6 +1,5 @@
 package com.cloud.search.service.impl;
 
-import com.cloud.common.domain.event.product.CategorySearchEvent;
 import com.cloud.search.document.CategoryDocument;
 import com.cloud.search.repository.CategoryDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
@@ -40,41 +39,6 @@ public class CategorySearchServiceImpl implements CategorySearchService {
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
     private final StringRedisTemplate redisTemplate;
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = "categorySearchCache", allEntries = true),
-                    @CacheEvict(cacheNames = "categorySuggestionCache", allEntries = true)
-            }
-    )
-    public void saveOrUpdateCategory(CategorySearchEvent event) {
-        try {
-            log.info("保存或更新分类到ES - 分类ID: {}, 分类名称: {}",
-                    event.getCategoryId(), event.getCategoryName());
-
-            CategoryDocument document = convertToCategoryDocument(event);
-
-            // 使用优化的ES服务进行高性能写入
-            boolean success = elasticsearchOptimizedService.indexDocument(
-                    "category_index",
-                    String.valueOf(event.getCategoryId()),
-                    document
-            );
-
-            if (success) {
-                log.info("✅ 分类保存到ES成功 - 分类ID: {}", event.getCategoryId());
-            } else {
-                log.error("❌ 分类保存到ES失败 - 分类ID: {}", event.getCategoryId());
-                throw new RuntimeException("分类保存到ES失败");
-            }
-
-        } catch (Exception e) {
-            log.error("❌ 保存分类到ES失败 - 分类ID: {}, 错误: {}",
-                    event.getCategoryId(), e.getMessage(), e);
-            throw new RuntimeException("保存分类到ES失败", e);
-        }
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -132,32 +96,6 @@ public class CategorySearchServiceImpl implements CategorySearchService {
         return categoryDocumentRepository.findById(String.valueOf(categoryId)).orElse(null);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = "categorySearchCache", allEntries = true),
-                    @CacheEvict(cacheNames = "categorySuggestionCache", allEntries = true)
-            }
-    )
-    public void batchSaveCategories(List<CategorySearchEvent> events) {
-        try {
-            log.info("批量保存分类到ES - 数量: {}", events.size());
-
-            List<CategoryDocument> documents = events.stream()
-                    .map(this::convertToCategoryDocument)
-                    .toList();
-
-            // 使用优化的ES服务进行批量写入
-            int successCount = elasticsearchOptimizedService.bulkIndex("category_index", documents);
-
-            log.info("✅ 批量保存分类到ES完成 - 总数: {}, 成功: {}", events.size(), successCount);
-
-        } catch (Exception e) {
-            log.error("❌ 批量保存分类到ES失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("批量保存分类到ES失败", e);
-        }
-    }
 
     @Override
     public void batchDeleteCategories(List<Long> categoryIds) {
@@ -255,20 +193,5 @@ public class CategorySearchServiceImpl implements CategorySearchService {
         }
     }
 
-    /**
-     * 将事件转换为分类文档
-     */
-    private CategoryDocument convertToCategoryDocument(CategorySearchEvent event) {
-        return CategoryDocument.builder()
-                .id(String.valueOf(event.getCategoryId()))
-                .categoryId(event.getCategoryId())
-                .parentId(event.getParentId())
-                .categoryName(event.getCategoryName())
-                .level(event.getLevel())
-                .status(event.getStatus())
-                .sortOrder(event.getSortOrder() != null ? event.getSortOrder() : 0)
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .build();
-    }
+
 }

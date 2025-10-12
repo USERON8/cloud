@@ -19,8 +19,14 @@ CREATE TABLE `stock`
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted         TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     UNIQUE KEY uk_product_id (product_id),
-    INDEX idx_stock_status (stock_status)
+    INDEX idx_stock_status (stock_status),
+
+    -- 性能优化索引
+    INDEX idx_product_status (product_id, stock_status),
+    INDEX idx_status_quantity (stock_status, stock_quantity),
+    INDEX idx_updated_status (updated_at, stock_status)
 ) COMMENT ='库存主表';
 
 -- 入库记录表
@@ -33,7 +39,11 @@ CREATE TABLE `stock_in`
     updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted    TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
-    INDEX idx_product_id (product_id)
+    -- 基础索引
+    INDEX idx_product_id (product_id),
+
+    -- 性能优化索引
+    INDEX idx_created_at (created_at)
 ) COMMENT ='入库记录表';
 
 -- 出库记录表
@@ -47,6 +57,10 @@ CREATE TABLE `stock_out`
     updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted    TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
+    -- 基础索引
     INDEX idx_product_id (product_id),
-    INDEX idx_order_id (order_id)
+    INDEX idx_order_id (order_id),
+
+    -- 性能优化索引
+    INDEX idx_created_at (created_at)
 ) COMMENT ='出库记录表';

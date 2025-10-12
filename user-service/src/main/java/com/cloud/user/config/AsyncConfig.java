@@ -2,6 +2,7 @@ package com.cloud.user.config;
 
 import com.cloud.common.config.BaseAsyncConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -16,6 +17,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Configuration
 @EnableAsync
+@ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
     /**
@@ -24,17 +26,12 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("userQueryExecutor")
     public Executor userQueryExecutor() {
-        // 根据用户查询的特点，使用更多核心线程来处理高并发查询
-        int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                Math.max(4, processors),
-                processors * 4,
-                500,
-                "user-query-"
-        );
+        ThreadPoolTaskExecutor executor = createQueryExecutor("user-query-");
         executor.initialize();
 
-        log.info("用户查询线程池初始化完成");
+        log.info("✅ [USER-SERVICE-QUERY] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -44,15 +41,12 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("userOperationExecutor")
     public Executor userOperationExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                10,
-                100,
-                "user-operation-"
-        );
+        ThreadPoolTaskExecutor executor = createWriteExecutor("user-operation-");
         executor.initialize();
 
-        log.info("用户操作线程池初始化完成");
+        log.info("✅ [USER-SERVICE-OPERATION] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -63,14 +57,16 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("userLogExecutor")
     public Executor userLogExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                1,
                 2,
+                4,
                 800,
                 "user-log-"
         );
         executor.initialize();
 
-        log.info("用户日志线程池初始化完成");
+        log.info("✅ [USER-SERVICE-LOG] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -82,13 +78,15 @@ public class AsyncConfig extends BaseAsyncConfig {
     public Executor userNotificationExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
                 2,
-                4,
-                200,
+                6,
+                300,
                 "user-notification-"
         );
         executor.initialize();
 
-        log.info("用户通知线程池初始化完成");
+        log.info("✅ [USER-SERVICE-NOTIFICATION] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -99,14 +97,16 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("userStatisticsExecutor")
     public Executor userStatisticsExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                1,
                 2,
-                1500,
+                4,
+                500,
                 "user-statistics-"
         );
         executor.initialize();
 
-        log.info("用户统计线程池初始化完成");
+        log.info("✅ [USER-SERVICE-STATISTICS] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 

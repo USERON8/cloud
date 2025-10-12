@@ -31,14 +31,16 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("orderAsyncExecutor")
     public Executor orderAsyncExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                3,
-                6,
+                4,
+                8,
                 400,
                 "order-async-"
         );
         executor.initialize();
 
-        log.info("订单异步线程池初始化完成");
+        log.info("✅ [ORDER-SERVICE-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -56,7 +58,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("订单日志线程池初始化完成");
+        log.info("✅ [ORDER-SERVICE-LOG] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -74,7 +78,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("订单通知线程池初始化完成");
+        log.info("✅ [ORDER-SERVICE-NOTIFICATION] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -93,7 +99,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("订单统计线程池初始化完成");
+        log.info("✅ [ORDER-SERVICE-STATISTICS] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -103,15 +111,12 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("orderPaymentExecutor")
     public Executor orderPaymentExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                5,
-                200,
-                "order-payment-"
-        );
+        ThreadPoolTaskExecutor executor = createWriteExecutor("order-payment-");
         executor.initialize();
 
-        log.info("订单支付线程池初始化完成");
+        log.info("✅ [ORDER-SERVICE-PAYMENT] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 

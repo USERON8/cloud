@@ -3,8 +3,10 @@ package com.cloud.product.controller.product;
 import com.cloud.api.product.ProductFeignClient;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.vo.OperationResultVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
+import com.cloud.common.result.Result;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +61,7 @@ public class ProductFeignController implements ProductFeignClient {
         ProductDTO productDTO = productService.getProductByIdForFeign(id);
         if (productDTO == null) {
             log.warn("[商品Feign控制器] 商品不存在，商品ID: {}", id);
-            throw new ResourceNotFoundException("Product", id);
+            throw new ResourceNotFoundException("Product", String.valueOf(id));
         }
         log.info("[商品Feign控制器] 根据ID获取商品成功，商品ID: {}", id);
         return productDTO;

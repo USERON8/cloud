@@ -1,6 +1,6 @@
 package com.cloud.search.service.impl;
 
-import com.cloud.common.domain.event.product.ShopSearchEvent;
+
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -48,42 +48,6 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
     private final StringRedisTemplate redisTemplate;
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = "shopSearchCache", allEntries = true),
-                    @CacheEvict(cacheNames = "shopSuggestionCache", allEntries = true),
-                    @CacheEvict(cacheNames = "hotShopCache", allEntries = true)
-            }
-    )
-    public void saveOrUpdateShop(ShopSearchEvent event) {
-        try {
-            log.info("保存或更新店铺到ES - 店铺ID: {}, 店铺名称: {}",
-                    event.getShopId(), event.getShopName());
-
-            ShopDocument document = convertToShopDocument(event);
-
-            // 使用优化的ES服务进行高性能写入
-            boolean success = elasticsearchOptimizedService.indexDocument(
-                    "shop_index",
-                    String.valueOf(event.getShopId()),
-                    document
-            );
-
-            if (success) {
-                log.info("✅ 店铺保存到ES成功 - 店铺ID: {}", event.getShopId());
-            } else {
-                log.error("❌ 店铺保存到ES失败 - 店铺ID: {}", event.getShopId());
-                throw new RuntimeException("店铺保存到ES失败");
-            }
-
-        } catch (Exception e) {
-            log.error("❌ 保存店铺到ES失败 - 店铺ID: {}, 错误: {}",
-                    event.getShopId(), e.getMessage(), e);
-            throw new RuntimeException("保存店铺到ES失败", e);
-        }
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -143,34 +107,6 @@ public class ShopSearchServiceImpl implements ShopSearchService {
         return shopDocumentRepository.findById(String.valueOf(shopId)).orElse(null);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = "shopSearchCache", allEntries = true),
-                    @CacheEvict(cacheNames = "shopSuggestionCache", allEntries = true),
-                    @CacheEvict(cacheNames = "hotShopCache", allEntries = true),
-                    @CacheEvict(cacheNames = "shopFilterCache", allEntries = true)
-            }
-    )
-    public void batchSaveShops(List<ShopSearchEvent> events) {
-        try {
-            log.info("批量保存店铺到ES - 数量: {}", events.size());
-
-            List<ShopDocument> documents = events.stream()
-                    .map(this::convertToShopDocument)
-                    .toList();
-
-            // 使用优化的ES服务进行批量写入
-            int successCount = elasticsearchOptimizedService.bulkIndex("shop_index", documents);
-
-            log.info("✅ 批量保存店铺到ES完成 - 总数: {}, 成功: {}", events.size(), successCount);
-
-        } catch (Exception e) {
-            log.error("❌ 批量保存店铺到ES失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("批量保存店铺到ES失败", e);
-        }
-    }
 
     @Override
     public void batchDeleteShops(List<Long> shopIds) {
@@ -432,83 +368,4 @@ public class ShopSearchServiceImpl implements ShopSearchService {
         return Sort.by(direction, request.getSortBy());
     }
 
-    /**
-     * 将事件转换为店铺文档
-     */
-    private ShopDocument convertToShopDocument(ShopSearchEvent event) {
-        return ShopDocument.builder()
-                .id(String.valueOf(event.getShopId()))
-                .shopId(event.getShopId())
-                .merchantId(event.getMerchantId())
-                .shopName(event.getShopName())
-                .shopNameKeyword(event.getShopName())
-                .avatarUrl(event.getAvatarUrl())
-                .description(event.getDescription())
-                .contactPhone(event.getContactPhone())
-                .address(event.getAddress())
-                .status(event.getStatus())
-                .productCount(event.getProductCount() != null ? event.getProductCount() : 0)
-                .rating(event.getRating() != null ? event.getRating() : 0.0)
-                .reviewCount(event.getReviewCount() != null ? event.getReviewCount() : 0)
-                .followCount(event.getFollowCount() != null ? event.getFollowCount() : 0)
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .searchWeight(calculateShopSearchWeight(event))
-                .hotScore(calculateShopHotScore(event))
-                .recommended(event.getRecommended() != null ? event.getRecommended() : false)
-                .build();
-    }
-
-    /**
-     * 计算店铺搜索权重
-     */
-    private Double calculateShopSearchWeight(ShopSearchEvent event) {
-        double weight = 1.0;
-
-        // 根据评分增加权重
-        if (event.getRating() != null && event.getRating() > 0) {
-            weight += event.getRating() * 0.3;
-        }
-
-        // 根据商品数量增加权重
-        if (event.getProductCount() != null && event.getProductCount() > 0) {
-            weight += Math.log10(event.getProductCount()) * 0.2;
-        }
-
-        // 根据关注数增加权重
-        if (event.getFollowCount() != null && event.getFollowCount() > 0) {
-            weight += Math.log10(event.getFollowCount()) * 0.1;
-        }
-
-        return weight;
-    }
-
-    /**
-     * 计算店铺热度分数
-     */
-    private Double calculateShopHotScore(ShopSearchEvent event) {
-        double score = 0.0;
-
-        // 评分权重
-        if (event.getRating() != null) {
-            score += event.getRating() * 20;
-        }
-
-        // 商品数量权重
-        if (event.getProductCount() != null) {
-            score += event.getProductCount() * 0.5;
-        }
-
-        // 关注数权重
-        if (event.getFollowCount() != null) {
-            score += event.getFollowCount() * 0.3;
-        }
-
-        // 评价数量权重
-        if (event.getReviewCount() != null) {
-            score += event.getReviewCount() * 0.2;
-        }
-
-        return score;
-    }
 }

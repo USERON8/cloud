@@ -49,7 +49,7 @@ public class ResourceServerConfig {
                         // 公共端点放行
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html/**", "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
-                        
+
                         // 内部API需要internal_api scope
                         .requestMatchers("/api/stock/internal/**")
                         .hasAuthority("SCOPE_internal_api")
@@ -61,7 +61,7 @@ public class ResourceServerConfig {
                         // 库存查询接口 - 需要库存查询权限或管理员权限
                         .requestMatchers("/api/stock/query/**")
                         .hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
-                        
+
                         // 其他请求需要认证
                         .anyRequest().authenticated()
                 )
@@ -110,10 +110,10 @@ public class ResourceServerConfig {
         // OAuth2.1标准：从scope字段中提取权限，使用SCOPE_前缀
         authoritiesConverter.setAuthorityPrefix("SCOPE_");
         authoritiesConverter.setAuthoritiesClaimName("scope");
-        
+
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        
+
         return converter;
     }
 }

@@ -85,10 +85,10 @@ public class OrderController {
 
         OrderDTO order = orderService.getByOrderEntityId(id);
         if (order == null) {
-            log.warn("订单不存在: id={}", id);
+            log.warn("订单不存在，订单ID: {}", id);
             throw new ResourceNotFoundException("Order", String.valueOf(id));
         }
-        log.info("查询订单成功: orderId={}", id);
+        log.info("查询订单成功，订单ID: {}", id);
         return Result.success("查询成功", order);
     }
 
@@ -109,12 +109,10 @@ public class OrderController {
             @Parameter(description = "订单信息") @RequestBody
             @Valid @NotNull(message = "订单信息不能为空") OrderCreateDTO orderCreateDTO) {
 
-        log.info("🛍️ 创建订单请求 - 用户ID: {}, 商品数量: {}",
-                orderCreateDTO.getUserId(), orderCreateDTO.getOrderItems().size());
+        log.info("开始创建订单，用户ID: {}, 商品数量: {}", orderCreateDTO.getUserId(), orderCreateDTO.getOrderItems().size());
 
         OrderDTO orderDTO = orderService.createOrder(orderCreateDTO);
-        log.info("✅ 订单创建成功 - 订单ID: {}, 用户ID: {}",
-                orderDTO.getId(), orderDTO.getUserId());
+        log.info("订单创建成功，订单ID: {}, 用户ID: {}", orderDTO.getId(), orderDTO.getUserId());
 
         return Result.success("订单创建成功", orderDTO);
     }
@@ -134,7 +132,7 @@ public class OrderController {
         // 确保路径参数与请求体中的ID一致
         orderDTO.setId(id);
         Boolean result = orderService.updateOrder(orderDTO);
-        log.info("订单更新成功: orderId={}", id);
+        log.info("订单更新成功，订单ID: {}, 操作人: {}", id, authentication.getName());
         return Result.success("订单更新成功", result);
     }
 

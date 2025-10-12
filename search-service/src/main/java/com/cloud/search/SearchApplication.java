@@ -20,7 +20,7 @@ import org.springframework.context.annotation.FilterType;
 @ComponentScan(
         basePackages = {"com.cloud.search", "com.cloud.common"},
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
                         classes = {
                                 com.cloud.common.config.MybatisPlusConfig.class,
                                 com.cloud.common.monitoring.PerformanceMonitor.class

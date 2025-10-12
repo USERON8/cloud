@@ -10,6 +10,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
@@ -41,8 +42,8 @@ public class CacheConfigFactory {
 
     private final RedisConnectionFactory redisConnectionFactory;
 
-    @Autowired(required = false)
-    private CacheMetricsCollector cacheMetricsCollector;
+    // 使用ApplicationContext获取来避免循环依赖
+    private final org.springframework.context.ApplicationContext applicationContext;
 
     /**
      * 多级缓存管理器
@@ -63,18 +64,44 @@ public class CacheConfigFactory {
         // 生成节点ID
         String nodeId = generateNodeId();
 
-        // 创建多级缓存管理器（传递可选的metricsCollector）
+        // 创建多级缓存管理器，不传递 CacheMetricsCollector，完全避免循环依赖
         MultiLevelCacheManager cacheManager = new MultiLevelCacheManager(
                 redisTemplate,
                 config,
-                nodeId,
-                cacheMetricsCollector
+                nodeId
         );
 
-        log.info("🚀 启用多级缓存管理器: nodeId={}, keyPrefix={}, defaultExpire={}s, metricsEnabled={}",
-                nodeId, config.getKeyPrefix(), config.getDefaultExpireSeconds(), (cacheMetricsCollector != null));
+        log.info("🚀 启用多级缓存管理器: nodeId={}, keyPrefix={}, defaultExpire={}s",
+                nodeId, config.getKeyPrefix(), config.getDefaultExpireSeconds());
 
         return cacheManager;
+    }
+
+    /**
+     * 缓存指标收集器初始化后的回调
+     * 用于在CacheMetricsCollector创建后将其设置到MultiLevelCacheManager中
+     */
+    @Bean
+    @ConditionalOnProperty(prefix = "cache", name = "multi-level", havingValue = "true")
+    public org.springframework.beans.factory.config.BeanPostProcessor cacheMetricsPostProcessor() {
+        return new org.springframework.beans.factory.config.BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) {
+                if (bean instanceof CacheMetricsCollector metricsCollector) {
+                    // 在CacheMetricsCollector初始化后，将其设置到已存在的MultiLevelCacheManager中
+                    try {
+                        CacheManager cacheManager = applicationContext.getBean(CacheManager.class);
+                        if (cacheManager instanceof MultiLevelCacheManager multiLevelCacheManager) {
+                            multiLevelCacheManager.setMetricsCollector(metricsCollector);
+                            log.info("✅ 缓存指标收集器已设置到多级缓存管理器");
+                        }
+                    } catch (Exception e) {
+                        log.warn("设置缓存指标收集器失败: {}", e.getMessage());
+                    }
+                }
+                return bean;
+            }
+        };
     }
 
     /**

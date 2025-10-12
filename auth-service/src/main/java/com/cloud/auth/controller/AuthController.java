@@ -71,17 +71,84 @@ public class AuthController {
     @PostMapping("/users/register")
     @Operation(
             summary = "用户注册",
-            description = "注册新用户并返回 OAuth2 令牌"
+            description = "注册新用户并返回 OAuth2 令牌。注册成功后自动登录并返回访问令牌和刷新令牌。"
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "用户注册信息",
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = RegisterRequestDTO.class),
+                    examples = {
+                            @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    name = "用户注册示例",
+                                    summary = "正常注册用户的请求示例",
+                                    value = """
+                                            {
+                                              "username": "newuser",
+                                              "password": "password123",
+                                              "email": "user@example.com",
+                                              "phone": "13800138000",
+                                              "nickname": "新用户",
+                                              "userType": "USER"
+                                            }
+                                            """
+                            )
+                    }
+            )
     )
     @ApiResponse(
             responseCode = "201",
             description = "注册成功",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = Result.class))
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Result.class),
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "注册成功响应",
+                            value = """
+                                    {
+                                      "code": 201,
+                                      "message": "注册成功",
+                                      "data": {
+                                        "accessToken": "eyJhbGciOiJSUzI1NiIs...",
+                                        "refreshToken": "eyJhbGciOiJSUzI1NiIs...",
+                                        "tokenType": "Bearer",
+                                        "expiresIn": 7200,
+                                        "userInfo": {
+                                          "id": 1,
+                                          "username": "newuser",
+                                          "email": "user@example.com"
+                                        }
+                                      },
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "注册失败 - 用户已存在或参数无效",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "用户已存在错误",
+                            value = """
+                                    {
+                                      "code": 1002,
+                                      "message": "用户名已存在",
+                                      "data": null,
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
     )
     public Result<LoginResponseDTO> register(
-            @RequestBody
-            @Parameter(description = "用户注册信息", required = true)
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "用户注册信息",
+                    required = true
+            )
             @Valid
             @NotNull(message = "注册信息不能为空") RegisterRequestDTO registerRequestDTO) {
 
@@ -117,10 +184,97 @@ public class AuthController {
      * @throws ValidationException     请求参数验证失败时抛出
      */
     @PostMapping("/sessions")
-    @Operation(summary = "用户登录", description = "验证用户名密码后返回OAuth2.1标准令牌")
+    @Operation(
+            summary = "用户登录",
+            description = "验证用户名密码后返回OAuth2.1标准令牌。支持多种用户类型登录，包括普通用户和管理员。"
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "用户登录信息",
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = LoginRequestDTO.class),
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "用户登录示例",
+                            summary = "正常用户登录请求示例",
+                            value = """
+                                    {
+                                      "username": "testuser",
+                                      "password": "password123",
+                                      "userType": "USER"
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "登录成功",
+            content = @Content(
+                    schema = @Schema(implementation = Result.class),
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "登录成功响应",
+                            value = """
+                                    {
+                                      "code": 200,
+                                      "message": "登录成功",
+                                      "data": {
+                                        "accessToken": "eyJhbGciOiJSUzI1NiIs...",
+                                        "refreshToken": "eyJhbGciOiJSUzI1NiIs...",
+                                        "tokenType": "Bearer",
+                                        "expiresIn": 7200,
+                                        "userInfo": {
+                                          "id": 1,
+                                          "username": "testuser",
+                                          "email": "user@example.com",
+                                          "userType": "USER"
+                                        }
+                                      },
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "401",
+            description = "登录失败 - 用户名或密码错误",
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "认证失败错误",
+                            value = """
+                                    {
+                                      "code": 1003,
+                                      "message": "用户名或密码错误",
+                                      "data": null,
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "403",
+            description = "登录失败 - 账户已被禁用",
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "账户禁用错误",
+                            value = """
+                                    {
+                                      "code": 1004,
+                                      "message": "账户已被禁用",
+                                      "data": null,
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
     public Result<LoginResponseDTO> login(
-            @RequestBody
-            @Parameter(description = "用户登录信息", required = true)
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "用户登录信息",
+                    required = true
+            )
             @Valid @NotNull(message = "登录信息不能为空") LoginRequestDTO loginRequestDTO) {
 
         String username = loginRequestDTO.getUsername();
@@ -234,6 +388,44 @@ public class AuthController {
      * @throws MissingTokenException 缺少令牌时抛出
      */
     @DeleteMapping("/sessions")
+    @Operation(
+            summary = "用户登出",
+            description = "撤销指定的访问令牌，使其立即失效。需要在请求头中提供Bearer令牌。"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "登出成功",
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "登出成功响应",
+                            value = """
+                                    {
+                                      "code": 200,
+                                      "message": "登出成功",
+                                      "data": null,
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "401",
+            description = "登出失败 - 令牌无效或缺失",
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            name = "令牌无效错误",
+                            value = """
+                                    {
+                                      "code": 1005,
+                                      "message": "请求头中缺少有效的访问令牌",
+                                      "data": null,
+                                      "timestamp": 1704067200000
+                                    }
+                                    """
+                    )
+            )
+    )
     public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
         // 从请求头中提取令牌
         String authorizationHeader = request.getHeader("Authorization");

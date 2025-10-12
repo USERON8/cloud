@@ -3,8 +3,6 @@ package com.cloud.payment.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
-import com.cloud.common.domain.event.order.OrderCreatedEvent;
-import com.cloud.common.domain.event.payment.PaymentRecordCreateEvent;
 import com.cloud.payment.module.entity.Payment;
 
 import java.math.BigDecimal;
@@ -24,22 +22,6 @@ public interface PaymentService extends IService<Payment> {
      * @return 是否存在
      */
     boolean isPaymentRecordExists(Long orderId);
-
-    /**
-     * 创建支付记录
-     *
-     * @param event 订单创建事件
-     * @return 是否成功
-     */
-    boolean createPaymentRecord(OrderCreatedEvent event);
-
-    /**
-     * 创建支付记录
-     *
-     * @param event 支付记录创建事件
-     * @return 是否成功
-     */
-    boolean createPaymentRecord(PaymentRecordCreateEvent event);
 
     /**
      * 分页查询支付列表

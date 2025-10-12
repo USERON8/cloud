@@ -22,6 +22,7 @@
 项目使用 **Redisson** 实现分布式锁,Redisson是Redis官方推荐的Java客户端,提供了完整的分布式锁实现。
 
 **技术栈:**
+
 - Redisson 3.51.0
 - Redis 7.x
 - Spring AOP (声明式锁)
@@ -54,15 +55,15 @@
 
 ### 1.3 锁特性
 
-| 特性 | 说明 |
-|-----|------|
-| **可重入** | 同一线程可多次获取同一锁 |
+| 特性       | 说明                          |
+|----------|-----------------------------|
+| **可重入**  | 同一线程可多次获取同一锁                |
 | **自动续期** | Redisson Watch Dog机制自动延长锁时间 |
-| **公平锁** | 支持按请求顺序获取锁 |
-| **读写锁** | 支持读写分离,多读单写 |
-| **红锁** | 支持多Redis实例的高可用锁 |
-| **尝试锁** | 支持非阻塞获取锁 |
-| **自动释放** | 方法执行完自动释放锁 |
+| **公平锁**  | 支持按请求顺序获取锁                  |
+| **读写锁**  | 支持读写分离,多读单写                 |
+| **红锁**   | 支持多Redis实例的高可用锁             |
+| **尝试锁**  | 支持非阻塞获取锁                    |
+| **自动释放** | 方法执行完自动释放锁                  |
 
 ---
 
@@ -150,17 +151,17 @@ public void updateUser(Long userId, UserDTO dto) {
 
 **注解参数说明:**
 
-| 参数 | 类型 | 默认值 | 说明 |
-|-----|------|--------|------|
-| `key` | String | 必填 | 锁键,支持SpEL表达式 |
-| `prefix` | String | "" | 锁前缀 |
-| `waitTime` | long | 3 | 等待获取锁的时间(秒) |
-| `leaseTime` | long | 10 | 锁自动释放时间(秒) |
-| `timeUnit` | TimeUnit | SECONDS | 时间单位 |
-| `lockType` | LockType | REENTRANT | 锁类型 |
-| `failStrategy` | LockFailStrategy | THROW_EXCEPTION | 失败策略 |
-| `failMessage` | String | "获取分布式锁失败" | 失败消息 |
-| `autoRelease` | boolean | true | 是否自动释放 |
+| 参数             | 类型               | 默认值             | 说明           |
+|----------------|------------------|-----------------|--------------|
+| `key`          | String           | 必填              | 锁键,支持SpEL表达式 |
+| `prefix`       | String           | ""              | 锁前缀          |
+| `waitTime`     | long             | 3               | 等待获取锁的时间(秒)  |
+| `leaseTime`    | long             | 10              | 锁自动释放时间(秒)   |
+| `timeUnit`     | TimeUnit         | SECONDS         | 时间单位         |
+| `lockType`     | LockType         | REENTRANT       | 锁类型          |
+| `failStrategy` | LockFailStrategy | THROW_EXCEPTION | 失败策略         |
+| `failMessage`  | String           | "获取分布式锁失败"      | 失败消息         |
+| `autoRelease`  | boolean          | true            | 是否自动释放       |
 
 ### 3.2 SpEL表达式
 
@@ -473,13 +474,13 @@ public void criticalOperation(Long id) {
 
 **基础路径**: `/api/lock/monitor`
 
-| 接口 | 方法 | 说明 |
-|-----|------|------|
-| `/locks` | GET | 获取所有分布式锁 |
-| `/lock/{lockKey}` | GET | 获取指定锁详情 |
-| `/stats` | GET | 获取锁统计信息 |
+| 接口                | 方法     | 说明          |
+|-------------------|--------|-------------|
+| `/locks`          | GET    | 获取所有分布式锁    |
+| `/lock/{lockKey}` | GET    | 获取指定锁详情     |
+| `/stats`          | GET    | 获取锁统计信息     |
 | `/lock/{lockKey}` | DELETE | 强制释放锁(危险操作) |
-| `/clear-expired` | DELETE | 清除所有过期锁 |
+| `/clear-expired`  | DELETE | 清除所有过期锁     |
 
 ### 6.2 查看所有锁
 

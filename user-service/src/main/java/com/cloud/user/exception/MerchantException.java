@@ -81,4 +81,58 @@ public class MerchantException extends BusinessException {
             super(403, message);
         }
     }
+
+    /**
+     * 商家创建失败异常
+     */
+    public static class MerchantCreateFailedException extends MerchantException {
+        public MerchantCreateFailedException(String message) {
+            super(500, "商家创建失败: " + message);
+        }
+    }
+
+    /**
+     * 商家更新失败异常
+     */
+    public static class MerchantUpdateFailedException extends MerchantException {
+        public MerchantUpdateFailedException(String message) {
+            super(500, "商家更新失败: " + message);
+        }
+    }
+
+    /**
+     * 商家删���失败异常
+     */
+    public static class MerchantDeleteFailedException extends MerchantException {
+        public MerchantDeleteFailedException(String message) {
+            super(500, "商家删除失败: " + message);
+        }
+    }
+
+    /**
+     * 商家状态错误异常
+     */
+    public static class MerchantStatusErrorException extends MerchantException {
+        public MerchantStatusErrorException(String message) {
+            super(400, "商家状态错误: " + message);
+        }
+    }
+
+    /**
+     * 商家查询失败异常
+     */
+    public static class MerchantQueryFailedException extends MerchantException {
+        public MerchantQueryFailedException(String message) {
+            super(500, "商家查询失败: " + message);
+        }
+    }
+
+    /**
+     * 用户非商家异常
+     */
+    public static class UserNotMerchantException extends MerchantException {
+        public UserNotMerchantException(String message) {
+            super(400, "用户非商家: " + message);
+        }
+    }
 }

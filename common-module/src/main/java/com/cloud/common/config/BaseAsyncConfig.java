@@ -1,8 +1,10 @@
 package com.cloud.common.config;
 
 import com.cloud.common.config.properties.AsyncProperties;
+import com.cloud.common.threadpool.ContextAwareTaskDecorator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -25,6 +27,9 @@ public class BaseAsyncConfig {
     @Autowired(required = false)
     protected AsyncProperties asyncProperties;
 
+    @Autowired(required = false)
+    protected ContextAwareTaskDecorator taskDecorator;
+
     /**
      * 默认异步任务执行器工厂方法
      * 适用于通用异步任务处理
@@ -46,8 +51,9 @@ public class BaseAsyncConfig {
             );
         }
         executor.initialize();
-        log.info("✅ 默认异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+        log.info("✅ [DEFAULT-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -66,8 +72,9 @@ public class BaseAsyncConfig {
             executor = createThreadPoolTaskExecutor(3, 8, 100, "async-message-");
         }
         executor.initialize();
-        log.info("✅ 消息异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+        log.info("✅ [MESSAGE-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -86,8 +93,9 @@ public class BaseAsyncConfig {
             executor = createThreadPoolTaskExecutor(2, 6, 200, "batch-process-");
         }
         executor.initialize();
-        log.info("✅ 批处理异步线程池初始化完成 - 核心线程数: {}, 最大线程数: {}, 队列容量: {}",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+        log.info("✅ [BATCH-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
+                executor.getKeepAliveSeconds());
         return executor;
     }
 
@@ -121,6 +129,11 @@ public class BaseAsyncConfig {
         // 优雅关闭配置
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
+
+        // 设置任务装饰器（如果可用）
+        if (taskDecorator != null && shouldUseTaskDecorator()) {
+            executor.setTaskDecorator(taskDecorator);
+        }
 
         return executor;
     }
@@ -246,5 +259,15 @@ public class BaseAsyncConfig {
                 100,
                 threadNamePrefix
         );
+    }
+
+    /**
+     * 判断是否应该使用任务装饰器
+     */
+    protected boolean shouldUseTaskDecorator() {
+        if (asyncProperties != null && asyncProperties.getCommon() != null) {
+            return asyncProperties.getCommon().isTaskDecorator();
+        }
+        return true; // 默认启用
     }
 }

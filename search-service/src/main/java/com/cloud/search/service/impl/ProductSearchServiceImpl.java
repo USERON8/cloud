@@ -1,8 +1,5 @@
 package com.cloud.search.service.impl;
 
-import com.cloud.common.domain.event.product.ProductSearchEvent;
-import com.cloud.common.messaging.AsyncLogProducer;
-import com.cloud.common.utils.UserContextUtils;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
@@ -19,12 +16,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -47,48 +42,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
     private final StringRedisTemplate redisTemplate;
-    private final AsyncLogProducer asyncLogProducer;
 
-    @Override
-    @PreAuthorize("@permissionManager.hasSystemAccess() or @permissionManager.hasAdminAccess(authentication)")
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = "productSearchCache", allEntries = true),
-                    @CacheEvict(cacheNames = "searchSuggestionCache", allEntries = true),
-                    @CacheEvict(cacheNames = "hotSearchCache", allEntries = true)
-            }
-    )
-    public void saveOrUpdateProduct(ProductSearchEvent event) {
-        try {
-            log.info("保存或更新商品到ES - 商品ID: {}, 商品名称: {}",
-                    event.getProductId(), event.getProductName());
-
-            ProductDocument document = convertToDocument(event);
-
-            // 使用优化的ES服务进行高性能写入
-            boolean success = elasticsearchOptimizedService.indexDocument(
-                    "product_index",
-                    String.valueOf(event.getProductId()),
-                    document
-            );
-
-            if (success) {
-                // 记录操作日志
-                recordProductIndexLog("INDEX_PRODUCT", event.getProductId(), event.getProductName(), true);
-                log.info("✅ 商品保存到ES成功 - 商品ID: {}", event.getProductId());
-            } else {
-                recordProductIndexLog("INDEX_PRODUCT", event.getProductId(), event.getProductName(), false);
-                log.error("❌ 商品保存到ES失败 - 商品ID: {}", event.getProductId());
-                throw new RuntimeException("商品保存到ES失败");
-            }
-
-        } catch (Exception e) {
-            log.error("❌ 保存商品到ES失败 - 商品ID: {}, 错误: {}",
-                    event.getProductId(), e.getMessage(), e);
-            throw new RuntimeException("保存商品到ES失败", e);
-        }
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -159,26 +113,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                     @CacheEvict(cacheNames = "aggregationCache", allEntries = true)
             }
     )
-    public void batchSaveProducts(List<ProductSearchEvent> events) {
-        try {
-            log.info("批量保存商品到ES - 数量: {}", events.size());
 
-            List<ProductDocument> documents = events.stream()
-                    .map(this::convertToDocument)
-                    .toList();
-
-            // 使用优化的ES服务进行批量写入
-            int successCount = elasticsearchOptimizedService.bulkIndex("product_index", documents);
-
-            log.info("✅ 批量保存商品到ES完成 - 总数: {}, 成功: {}", events.size(), successCount);
-
-        } catch (Exception e) {
-            log.error("❌ 批量保存商品到ES失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("批量保存商品到ES失败", e);
-        }
-    }
-
-    @Override
     public void batchDeleteProducts(List<Long> productIds) {
         try {
             log.info("批量删除商品从ES - 数量: {}", productIds.size());
@@ -273,82 +208,6 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             log.error("❌ 删除商品索引失败 - 错误: {}", e.getMessage(), e);
             throw new RuntimeException("删除商品索引失败", e);
         }
-    }
-
-    /**
-     * 将事件转换为文档
-     */
-    private ProductDocument convertToDocument(ProductSearchEvent event) {
-        return ProductDocument.builder()
-                .id(String.valueOf(event.getProductId()))
-                .productId(event.getProductId())
-                .shopId(event.getShopId())
-                .shopName(event.getShopName())
-                .productName(event.getProductName())
-                .price(event.getPrice())
-                .stockQuantity(event.getStockQuantity())
-                .categoryId(event.getCategoryId())
-                .categoryName(event.getCategoryName())
-                .brandId(event.getBrandId())
-                .brandName(event.getBrandName())
-                .status(event.getStatus())
-                .description(event.getDescription())
-                .imageUrl(event.getImageUrl())
-                .tags(event.getTags())
-                .salesCount(event.getSalesCount() != null ? event.getSalesCount() : 0)
-                .rating(event.getRating() != null ? event.getRating() : BigDecimal.ZERO)
-                .reviewCount(event.getReviewCount() != null ? event.getReviewCount() : 0)
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .searchWeight(calculateSearchWeight(event))
-                .hotScore(calculateHotScore(event))
-                .recommended(false)
-                .isNew(isNewProduct(event.getCreatedAt()))
-                .isHot(isHotProduct(event.getSalesCount()))
-                .build();
-    }
-
-    /**
-     * 计算搜索权重
-     */
-    private Double calculateSearchWeight(ProductSearchEvent event) {
-        double weight = 1.0;
-
-        // 根据销量增加权重
-        if (event.getSalesCount() != null && event.getSalesCount() > 0) {
-            weight += Math.log10(event.getSalesCount()) * 0.1;
-        }
-
-        // 根据评分增加权重
-        if (event.getRating() != null && event.getRating().compareTo(BigDecimal.ZERO) > 0) {
-            weight += event.getRating().doubleValue() * 0.2;
-        }
-
-        return weight;
-    }
-
-    /**
-     * 计算热度分数
-     */
-    private Double calculateHotScore(ProductSearchEvent event) {
-        double score = 0.0;
-
-        // 销量权重
-        if (event.getSalesCount() != null) {
-            score += event.getSalesCount() * 0.3;
-        }
-
-        // 评分权重
-        if (event.getRating() != null) {
-            score += event.getRating().doubleValue() * 20;
-        }
-
-        // 评价数量权重
-        if (event.getReviewCount() != null) {
-            score += event.getReviewCount() * 0.1;
-        }
-
-        return score;
     }
 
     /**
@@ -551,29 +410,6 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         return Sort.by(direction, request.getSortBy());
-    }
-
-    /**
-     * 记录商品索引操作日志
-     */
-    private void recordProductIndexLog(String operation, Long productId, String productName, boolean success) {
-        try {
-            asyncLogProducer.sendBusinessLogAsync(
-                    "search-service",
-                    "SEARCH_INDEX",
-                    operation,
-                    "商品搜索索引操作",
-                    productId.toString(),
-                    "PRODUCT",
-                    null,
-                    String.format("{\"productId\":%d,\"productName\":\"%s\",\"success\":%s}",
-                            productId, productName, success),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "SYSTEM",
-                    "商品: " + productName + " 索引操作" + (success ? "成功" : "失败")
-            );
-        } catch (Exception e) {
-            log.warn("记录商品索引日志失败", e);
-        }
     }
 
 

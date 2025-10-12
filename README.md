@@ -57,7 +57,6 @@ cloud/
 ├── product-service/        # 商品服务 - 商品管理
 ├── stock-service/          # 库存服务 - 库存管理
 ├── payment-service/        # 支付服务 - 支付处理
-├── log-service/            # 日志服务 - 日志收集
 ├── search-service/         # 搜索服务 - 全文搜索
 ├── docker/                 # Docker配置文件
 ├── docs/                   # 项目文档
@@ -89,7 +88,6 @@ cloud/
 
 #### 📊 支撑服务层
 
-- **log-service**: 日志中心，收集和管理系统日志
 - **search-service**: 搜索中心，提供全文搜索能力
 
 ---
@@ -157,8 +155,7 @@ mvn clean install -DskipTests -T 4
 5. `ProductServiceApplication` - 商品服务 (8083)
 6. `StockServiceApplication` - 库存服务 (8084)
 7. `PaymentServiceApplication` - 支付服务 (8085)
-8. `LogServiceApplication` - 日志服务 (8086)
-9. `SearchServiceApplication` - 搜索服务 (8087)
+8. `SearchServiceApplication` - 搜索服务 (8087)
 
 #### 方式二：命令行启动
 
@@ -244,7 +241,6 @@ curl -X GET "http://localhost:8000/api/user/info" \
 | Product | 8083 | /doc.html | 商品管理API   |
 | Stock   | 8084 | /doc.html | 库存管理API   |
 | Payment | 8085 | /doc.html | 支付管理API   |
-| Log     | 8086 | /doc.html | 日志管理API   |
 | Search  | 8087 | /doc.html | 搜索服务API   |
 
 ---
@@ -426,6 +422,7 @@ public UserDTO getUserById(Long userId) {
 项目使用 **Redisson** 实现分布式锁,支持多种锁类型和灵活配置。
 
 **核心特性:**
+
 - 基于Redis的高性能分布式锁
 - 支持可重入锁、公平锁、读写锁
 - Watch Dog自动续期机制
@@ -475,13 +472,13 @@ public class OrderService {
 
 ### 锁类型
 
-| 类型 | 说明 | 使用场景 |
-|-----|------|---------|
-| **REENTRANT** | 可重入锁(默认) | 通用场景 |
-| **FAIR** | 公平锁 | 需要按顺序处理 |
-| **READ** | 读锁 | 读多写少 |
-| **WRITE** | 写锁 | 写操作保护 |
-| **RED_LOCK** | 红锁 | 高可用场景 |
+| 类型            | 说明       | 使用场景    |
+|---------------|----------|---------|
+| **REENTRANT** | 可重入锁(默认) | 通用场景    |
+| **FAIR**      | 公平锁      | 需要按顺序处理 |
+| **READ**      | 读锁       | 读多写少    |
+| **WRITE**     | 写锁       | 写操作保护   |
+| **RED_LOCK**  | 红锁       | 高可用场景   |
 
 ### 监控管理
 

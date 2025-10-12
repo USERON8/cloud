@@ -33,7 +33,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
-        
+
         <!-- Spring Security (仅用于工具类和异常处理) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

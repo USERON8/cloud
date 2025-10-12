@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
-import com.cloud.common.domain.event.payment.PaymentSuccessEvent;
 import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.module.entity.Order;
@@ -149,13 +148,6 @@ public interface OrderService extends IService<Order> {
      */
     Boolean isOrderPaid(Long orderId);
 
-    /**
-     * 更新订单为已支付状态
-     *
-     * @param event 支付成功事件
-     * @return 是否更新成功
-     */
-    Boolean updateOrderToPaid(PaymentSuccessEvent event);
 
     // ================= Feign客户端接口方法 =================
 

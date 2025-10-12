@@ -149,6 +149,9 @@ public class ThreadPoolMonitor {
         // 设置状态
         info.setStatus(evaluateThreadPoolStatus(info));
 
+        // 设置时间戳
+        info.setTimestamp(System.currentTimeMillis());
+
         return info;
     }
 

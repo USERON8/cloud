@@ -37,8 +37,9 @@ bin/
 .augment
 .xcodemap
 .lingma
-.tongyiignore
+.claude
 WARP.md
+CLAUDE.md
 AI_ASSISTANT_RULES_EN.md
 
 # ===== Logs =====

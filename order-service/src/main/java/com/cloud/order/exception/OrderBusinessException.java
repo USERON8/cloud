@@ -56,4 +56,16 @@ public class OrderBusinessException extends RuntimeException {
     public String getErrorCode() {
         return errorCode;
     }
+
+    public int getCode() {
+        // 将String类型的errorCode转换为int，如果为null则返回500
+        if (errorCode != null) {
+            try {
+                return Integer.parseInt(errorCode);
+            } catch (NumberFormatException e) {
+                return 500;
+            }
+        }
+        return 500;
+    }
 }

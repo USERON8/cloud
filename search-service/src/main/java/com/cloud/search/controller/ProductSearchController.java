@@ -1,8 +1,7 @@
 package com.cloud.search.controller;
 
-import com.cloud.common.messaging.AsyncLogProducer;
+
 import com.cloud.common.result.Result;
-import com.cloud.common.utils.UserContextUtils;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
@@ -41,7 +40,7 @@ public class ProductSearchController {
     private final ProductSearchService productSearchService;
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
-    private final AsyncLogProducer asyncLogProducer;
+
 
     @Operation(summary = "复杂商品搜索", description = "支持多条件组合的复杂商品搜索，包含聚合、高亮、排序等功能")
     @PostMapping("/complex-search")
@@ -257,19 +256,7 @@ public class ProductSearchController {
      */
     private void recordSearchLog(String searchType, String keyword, long resultCount) {
         try {
-            asyncLogProducer.sendBusinessLogAsync(
-                    "search-service",
-                    "SEARCH_OPERATION",
-                    searchType,
-                    "商品搜索操作",
-                    keyword != null ? keyword : "null",
-                    "SEARCH",
-                    null,
-                    String.format("{\"keyword\":\"%s\",\"resultCount\":%d}",
-                            keyword != null ? keyword : "", resultCount),
-                    UserContextUtils.getCurrentUsername() != null ? UserContextUtils.getCurrentUsername() : "ANONYMOUS",
-                    "搜索关键词: " + (keyword != null ? keyword : "空") + ", 结果数: " + resultCount
-            );
+           
         } catch (Exception e) {
             log.warn("记录搜索日志失败", e);
         }

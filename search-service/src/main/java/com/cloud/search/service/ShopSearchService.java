@@ -1,6 +1,6 @@
 package com.cloud.search.service;
 
-import com.cloud.common.domain.event.product.ShopSearchEvent;
+
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -15,13 +15,6 @@ import java.util.List;
  * @since 1.0.0
  */
 public interface ShopSearchService {
-
-    /**
-     * 保存或更新店铺到Elasticsearch
-     *
-     * @param event 店铺搜索事件
-     */
-    void saveOrUpdateShop(ShopSearchEvent event);
 
     /**
      * 删除店铺从Elasticsearch
@@ -45,13 +38,6 @@ public interface ShopSearchService {
      * @return 店铺文档
      */
     ShopDocument findByShopId(Long shopId);
-
-    /**
-     * 批量保存店铺
-     *
-     * @param events 店铺事件列表
-     */
-    void batchSaveShops(List<ShopSearchEvent> events);
 
     /**
      * 批量删除店铺

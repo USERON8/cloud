@@ -15,7 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 /**
  * OAuth2资源服务器基础配置
  * 提供通用的JWT验证和权限配置，减少各服务的重复代码
- * 
+ *
  * @author what's up
  * @since 2025-10-05
  */
@@ -36,45 +36,45 @@ public abstract class BaseResourceServerConfig {
         log.info("🔧 配置{}的OAuth2.1资源服务器安全过滤器链", serviceName);
 
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(request -> {
-                var config = new org.springframework.web.cors.CorsConfiguration();
-                config.setAllowCredentials(true);
-                config.addAllowedOriginPattern("*");
-                config.addAllowedHeader("*");
-                config.addAllowedMethod("*");
-                return config;
-            }))
-            .authorizeHttpRequests(authz -> {
-                // 配置公共端点
-                configurePublicEndpoints(authz);
-                // 配置服务特定的端点
-                configureServiceEndpoints(authz);
-                // 其他请求需要认证
-                authz.anyRequest().authenticated();
-            })
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
-                .authenticationEntryPoint((request, response, authException) -> {
-                    log.warn("🔒 JWT认证失败: {}", authException.getMessage());
-                    response.setStatus(401);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write(
-                        "{\"error\":\"unauthorized\",\"message\":\"JWT令牌无效或已过期\"}"
-                    );
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowCredentials(true);
+                    config.addAllowedOriginPattern("*");
+                    config.addAllowedHeader("*");
+                    config.addAllowedMethod("*");
+                    return config;
+                }))
+                .authorizeHttpRequests(authz -> {
+                    // 配置公共端点
+                    configurePublicEndpoints(authz);
+                    // 配置服务特定的端点
+                    configureServiceEndpoints(authz);
+                    // 其他请求需要认证
+                    authz.anyRequest().authenticated();
                 })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    log.warn("🚫 JWT授权失败: {}", accessDeniedException.getMessage());
-                    response.setStatus(403);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write(
-                        "{\"error\":\"access_denied\",\"message\":\"权限不足\"}"
-                    );
-                })
-            );
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            log.warn("🔒 JWT认证失败: {}", authException.getMessage());
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"unauthorized\",\"message\":\"JWT令牌无效或已过期\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            log.warn("🚫 JWT授权失败: {}", accessDeniedException.getMessage());
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"access_denied\",\"message\":\"权限不足\"}"
+                            );
+                        })
+                );
 
         log.info("✅ {}OAuth2.1资源服务器安全过滤器链配置完成", serviceName);
         return http.build();
@@ -84,12 +84,12 @@ public abstract class BaseResourceServerConfig {
      * 配置公共端点（所有服务通用）
      */
     protected void configurePublicEndpoints(
-        org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
+            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         authz
-            // 健康检查和监控
-            .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
-            // API文档
-            .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll();
+                // 健康检查和监控
+                .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+                // API文档
+                .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll();
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class BaseResourceServerConfig {
      * 子类必须实现此方法来定义自己的端点权限
      */
     protected abstract void configureServiceEndpoints(
-        org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz);
+            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz);
 
     /**
      * 获取服务名称
@@ -123,10 +123,10 @@ public abstract class BaseResourceServerConfig {
         // OAuth2.1标准：从scope字段中提取权限，使用SCOPE_前缀
         authoritiesConverter.setAuthorityPrefix("SCOPE_");
         authoritiesConverter.setAuthoritiesClaimName("scope");
-        
+
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        
+
         return converter;
     }
 }
