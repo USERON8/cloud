@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: payment-service-test
+  profiles:
+    active: test
+
+  # 数据库配置 - 使用H2内存数据库
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test_payment_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+
+  # RocketMQ Stream 配置
+  cloud:
+    stream:
+      function:
+        definition: orderCreatedConsumer
+
+      # 使用内存绑定进行测试
+      default-binder: test-binder
+
+      bindings:
+        # 支付成功事件 - 输出
+        paymentSuccessProducer-out-0:
+          destination: test-payment-success
+          content-type: application/json
+
+        # 订单创建事件 - 输入
+        orderCreatedConsumer-in-0:
+          destination: test-order-created
+          content-type: application/json
+          group: test-payment-consumer-group
+
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 15
+
+  # OAuth2 资源服务器配置 - 测试环境禁用
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+
+# MyBatis Plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+# 日志配置
+logging:
+  level:
+    com.cloud.payment: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    org.springframework.messaging: DEBUG

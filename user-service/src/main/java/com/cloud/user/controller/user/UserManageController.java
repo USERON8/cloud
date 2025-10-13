@@ -109,14 +109,13 @@ public class UserManageController {
                                              Authentication authentication) {
 
         BatchValidationUtils.validateIdList(ids, "批量更新用户状态");
-        log.info("开始批量更新用户状态，数量: {}", ids.size());
-        int successCount = 0;
-        for (Long id : ids) {
-            if (userService.updateUserStatus(id, status)) {
-                successCount++;
-            }
-        }
-        log.info("批量更新用户状态完成，总数: {}, 成功: {}", ids.size(), successCount);
+        log.info("开始批量更新用户状态，数量: {}, 操作人: {}", ids.size(), authentication.getName());
+
+        // 使用批量更新方法，替代循环单个更新
+        Integer successCount = userService.batchUpdateUserStatus(ids, status);
+
+        log.info("批量更新用户状态完成，总数: {}, 成功: {}, 操作人: {}",
+                ids.size(), successCount, authentication.getName());
         return Result.success(String.format("批量更新用户状态成功: %d/%d", successCount, ids.size()), true);
     }
 }

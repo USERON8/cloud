@@ -59,16 +59,12 @@ public class UserQueryController {
     public Result<UserDTO> findByGitHubId(@RequestParam
                                           @Parameter(description = "GitHub用户ID")
                                           @NotNull(message = "GitHub用户ID不能为空") Long githubId) {
-        try {
-            UserDTO userDTO = userService.findByGitHubId(githubId);
-            if (userDTO != null) {
-                return Result.success("查询成功", userDTO);
-            } else {
-                return Result.error(404, "未找到对应的GitHub用户");
-            }
-        } catch (Exception e) {
-            log.error("根据GitHub ID查询用户失败, githubId: {}", githubId, e);
-            return Result.error(500, "查询失败: " + e.getMessage());
+        log.info("根据GitHub ID查询用户: {}", githubId);
+        UserDTO userDTO = userService.findByGitHubId(githubId);
+        if (userDTO != null) {
+            return Result.success("查询成功", userDTO);
+        } else {
+            return Result.error(404, "未找到对应的GitHub用户");
         }
     }
 
@@ -78,16 +74,12 @@ public class UserQueryController {
     public Result<UserDTO> findByGitHubUsername(@RequestParam
                                                 @Parameter(description = "GitHub用户名")
                                                 @NotBlank(message = "GitHub用户名不能为空") String githubUsername) {
-        try {
-            UserDTO userDTO = userService.findByGitHubUsername(githubUsername);
-            if (userDTO != null) {
-                return Result.success("查询成功", userDTO);
-            } else {
-                return Result.error(404, "未找到对应的GitHub用户");
-            }
-        } catch (Exception e) {
-            log.error("根据GitHub用户名查询用户失败, githubUsername: {}", githubUsername, e);
-            return Result.error(500, "查询失败: " + e.getMessage());
+        log.info("根据GitHub用户名查询用户: {}", githubUsername);
+        UserDTO userDTO = userService.findByGitHubUsername(githubUsername);
+        if (userDTO != null) {
+            return Result.success("查询成功", userDTO);
+        } else {
+            return Result.error(404, "未找到对应的GitHub用户");
         }
     }
 
@@ -100,17 +92,12 @@ public class UserQueryController {
                                                @RequestParam
                                                @Parameter(description = "OAuth提供商用户ID")
                                                @NotBlank(message = "OAuth提供商用户ID不能为空") String oauthProviderId) {
-        try {
-            UserDTO userDTO = userService.findByOAuthProvider(oauthProvider, oauthProviderId);
-            if (userDTO != null) {
-                return Result.success("查询成功", userDTO);
-            } else {
-                return Result.error(404, "未找到对应的OAuth用户");
-            }
-        } catch (Exception e) {
-            log.error("根据OAuth提供商查询用户失败, provider: {}, providerId: {}",
-                    oauthProvider, oauthProviderId, e);
-            return Result.error(500, "查询失败: " + e.getMessage());
+        log.info("根据OAuth提供商查询用户: provider={}, providerId={}", oauthProvider, oauthProviderId);
+        UserDTO userDTO = userService.findByOAuthProvider(oauthProvider, oauthProviderId);
+        if (userDTO != null) {
+            return Result.success("查询成功", userDTO);
+        } else {
+            return Result.error(404, "未找到对应的OAuth用户");
         }
     }
 }

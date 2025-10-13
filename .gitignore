@@ -38,6 +38,7 @@ bin/
 .xcodemap
 .lingma
 .claude
+AGENTS.md
 WARP.md
 CLAUDE.md
 AI_ASSISTANT_RULES_EN.md

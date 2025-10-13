@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: order-service-test
+  profiles:
+    active: test
+
+  # 数据库配置 - 使用H2内存数据库
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test_order_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+
+  # H2控制台配置
+  h2:
+    console:
+      enabled: false
+
+  # RocketMQ Stream 配置
+  cloud:
+    stream:
+      function:
+        definition: paymentSuccessConsumer;stockFreezeFailedConsumer
+
+      # 使用内存绑定进行测试（不需要真实的RocketMQ）
+      default-binder: test-binder
+      binders:
+        test-binder:
+          type: rabbit  # 使用内存模拟，可以用任何类型
+          environment:
+            spring:
+              rabbitmq:
+                host: localhost
+
+      bindings:
+        # 订单创建事件 - 输出
+        orderCreatedProducer-out-0:
+          destination: test-order-created
+          content-type: application/json
+
+        # 订单取消事件 - 输出
+        orderCancelledProducer-out-0:
+          destination: test-order-cancelled
+          content-type: application/json
+
+        # 支付成功事件 - 输入
+        paymentSuccessConsumer-in-0:
+          destination: test-payment-success
+          content-type: application/json
+          group: test-order-consumer-group
+
+        # 库存冻结失败事件 - 输入
+        stockFreezeFailedConsumer-in-0:
+          destination: test-stock-freeze-failed
+          content-type: application/json
+          group: test-order-consumer-group
+
+  # Redis配置 - 使用embedded redis或mock
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 15  # 使用独立的测试数据库
+
+  # OAuth2 资源服务器配置 - 测试环境禁用
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+
+# MyBatis Plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+# 日志配置
+logging:
+  level:
+    com.cloud.order: DEBUG
+    org.springframework.cloud.stream: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.integration: DEBUG

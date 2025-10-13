@@ -1,0 +1,61 @@
+spring:
+  cloud:
+    stream:
+      # 定义函数绑定
+      function:
+        definition: paymentSuccessConsumer;stockFreezeFailedConsumer
+
+      # RocketMQ Binder配置
+      rocketmq:
+        binder:
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+        bindings:
+          # 订单创建事件生产者
+          orderCreatedProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false  # 异步发送
+
+          # 订单取消事件生产者
+          orderCancelledProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
+          # 支付成功事件消费者
+          paymentSuccessConsumer-in-0:
+            consumer:
+              # 标签过滤
+              subscription: 'PAYMENT_SUCCESS'
+              # 并发消费
+              orderly: false
+
+          # 库存冻结失败事件消费者
+          stockFreezeFailedConsumer-in-0:
+            consumer:
+              subscription: 'STOCK_FREEZE_FAILED'
+              orderly: false
+
+      # Binding配置
+      bindings:
+        # 订单创建事件 - 输出
+        orderCreatedProducer-out-0:
+          destination: order-created
+          content-type: application/json
+
+        # 订单取消事件 - 输出
+        orderCancelledProducer-out-0:
+          destination: order-cancelled
+          content-type: application/json
+
+        # 支付成功事件 - 输入
+        paymentSuccessConsumer-in-0:
+          destination: payment-success
+          content-type: application/json
+          group: order-consumer-group
+
+        # 库存冻结失败事件 - 输入
+        stockFreezeFailedConsumer-in-0:
+          destination: stock-freeze-failed
+          content-type: application/json
+          group: order-consumer-group

@@ -549,6 +549,152 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         return false;
     }
 
+    // ================= 批量操作方法实现 =================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchCreateStocks(List<StockDTO> stockDTOList) {
+        if (stockDTOList == null || stockDTOList.isEmpty()) {
+            log.warn("批量创建库存记录失败，库存信息列表为空");
+            throw new BusinessException("库存信息列表不能为空");
+        }
+
+        if (stockDTOList.size() > 100) {
+            throw new BusinessException("批量创建数量不能超过100");
+        }
+
+        log.info("开始批量创建库存记录，数量: {}", stockDTOList.size());
+
+        int successCount = 0;
+        for (StockDTO stockDTO : stockDTOList) {
+            try {
+                createStock(stockDTO);
+                successCount++;
+            } catch (Exception e) {
+                log.error("创建库存记录失败，商品ID: {}", stockDTO.getProductId(), e);
+            }
+        }
+
+        log.info("批量创建库存记录完成，成功: {}/{}", successCount, stockDTOList.size());
+        return successCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchUpdateStocks(List<StockDTO> stockDTOList) {
+        if (stockDTOList == null || stockDTOList.isEmpty()) {
+            log.warn("批量更新库存信息失败，库存信息列表为空");
+            throw new BusinessException("库存信息列表不能为空");
+        }
+
+        if (stockDTOList.size() > 100) {
+            throw new BusinessException("批量更新数量不能超过100");
+        }
+
+        log.info("开始批量更新库存信息，数量: {}", stockDTOList.size());
+
+        int successCount = 0;
+        for (StockDTO stockDTO : stockDTOList) {
+            try {
+                if (updateStock(stockDTO)) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("更新库存信息失败，库存ID: {}", stockDTO.getId(), e);
+            }
+        }
+
+        log.info("批量更新库存信息完成，成功: {}/{}", successCount, stockDTOList.size());
+        return successCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchStockIn(List<StockService.StockAdjustmentRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            log.warn("批量入库失败，入库请求列表为空");
+            throw new BusinessException("入库请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            throw new BusinessException("批量入库数量不能超过100");
+        }
+
+        log.info("开始批量入库，数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockService.StockAdjustmentRequest request : requests) {
+            try {
+                if (stockIn(request.getProductId(), request.getQuantity(), request.getRemark())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("入库失败，商品ID: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("批量入库完成，成功: {}/{}", successCount, requests.size());
+        return successCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchStockOut(List<StockService.StockAdjustmentRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            log.warn("批量出库失败，出库请求列表为空");
+            throw new BusinessException("出库请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            throw new BusinessException("批量出库数量不能超过100");
+        }
+
+        log.info("开始批量出库，数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockService.StockAdjustmentRequest request : requests) {
+            try {
+                if (stockOut(request.getProductId(), request.getQuantity(),
+                        request.getOrderId(), request.getOrderNo(), request.getRemark())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("出库失败，商品ID: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("批量出库完成，成功: {}/{}", successCount, requests.size());
+        return successCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchReserveStock(List<StockService.StockAdjustmentRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            log.warn("批量预留库存失败，预留请求列表为空");
+            throw new BusinessException("预留请求列表不能为空");
+        }
+
+        if (requests.size() > 100) {
+            throw new BusinessException("批量预留数量不能超过100");
+        }
+
+        log.info("开始批量预留库存，数量: {}", requests.size());
+
+        int successCount = 0;
+        for (StockService.StockAdjustmentRequest request : requests) {
+            try {
+                if (reserveStock(request.getProductId(), request.getQuantity())) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.error("预留库存失败，商品ID: {}", request.getProductId(), e);
+            }
+        }
+
+        log.info("批量预留库存完成，成功: {}/{}", successCount, requests.size());
+        return successCount;
+    }
 
 }
 

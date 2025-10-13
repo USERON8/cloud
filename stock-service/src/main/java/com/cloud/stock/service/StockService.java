@@ -172,5 +172,99 @@ public interface StockService extends IService<Stock> {
      */
     boolean isStockRolledBack(Long orderId);
 
+    // ================= 批量操作方法 =================
+
+    /**
+     * 批量创建库存记录
+     *
+     * @param stockDTOList 库存信息列表
+     * @return 成功创建的数量
+     */
+    Integer batchCreateStocks(List<StockDTO> stockDTOList);
+
+    /**
+     * 批量更新库存信息
+     *
+     * @param stockDTOList 库存信息列表
+     * @return 成功更新的数量
+     */
+    Integer batchUpdateStocks(List<StockDTO> stockDTOList);
+
+    /**
+     * 批量入库操作
+     *
+     * @param requests 入库请求列表（包含商品ID、数量、备注）
+     * @return 成功入库的数量
+     */
+    Integer batchStockIn(List<StockAdjustmentRequest> requests);
+
+    /**
+     * 批量出库操作
+     *
+     * @param requests 出库请求列表（包含商品ID、数量、订单信息、备注）
+     * @return 成功出库的数量
+     */
+    Integer batchStockOut(List<StockAdjustmentRequest> requests);
+
+    /**
+     * 批量预留库存
+     *
+     * @param requests 预留请求列表（包含商品ID、数量）
+     * @return 成功预留的数量
+     */
+    Integer batchReserveStock(List<StockAdjustmentRequest> requests);
+
+    /**
+     * 库存调整请求DTO
+     */
+    class StockAdjustmentRequest {
+        private Long productId;
+        private Integer quantity;
+        private Long orderId;
+        private String orderNo;
+        private String remark;
+
+        // Getters and Setters
+        public Long getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Long productId) {
+            this.productId = productId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+
+        public Long getOrderId() {
+            return orderId;
+        }
+
+        public void setOrderId(Long orderId) {
+            this.orderId = orderId;
+        }
+
+        public String getOrderNo() {
+            return orderNo;
+        }
+
+        public void setOrderNo(String orderNo) {
+            this.orderNo = orderNo;
+        }
+
+        public String getRemark() {
+            return remark;
+        }
+
+        public void setRemark(String remark) {
+            this.remark = remark;
+        }
+    }
+
 }
 

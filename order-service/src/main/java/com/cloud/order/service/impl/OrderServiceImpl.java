@@ -313,4 +313,74 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public Boolean completeOrderForFeign(Long orderId) {
         return null;
     }
+
+    // ================= 批量操作方法实现 =================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "orderCache", allEntries = true)
+    public Integer batchUpdateOrderStatus(List<Long> orderIds, Integer status) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            log.warn("批量更新订单状态失败，订单ID集合为空");
+            throw new OrderServiceException("订单ID集合不能为空");
+        }
+
+        if (status == null) {
+            log.warn("批量更新订单状态失败，状态值为空");
+            throw new OrderServiceException("状态值不能为空");
+        }
+
+        log.info("开始批量更新订单状态，订单数量: {}, 状态值: {}", orderIds.size(), status);
+
+        try {
+            // 使用 MyBatis Plus 的 lambdaUpdate 批量更新
+            com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Order> wrapper =
+                    new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
+            wrapper.in(Order::getId, orderIds);
+
+            Order updateEntity = new Order();
+            updateEntity.setStatus(status);
+
+            boolean result = this.update(updateEntity, wrapper);
+
+            if (result) {
+                log.info("批量更新订单状态成功，订单数量: {}", orderIds.size());
+                return orderIds.size();
+            } else {
+                log.warn("批量更新订单状态失败");
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("批量更新订单状态时发生异常，订单IDs: {}", orderIds, e);
+            throw new OrderServiceException("批量更新订单状态失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "orderCache", allEntries = true)
+    public Integer batchDeleteOrders(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            log.warn("批量删除订单失败，订单ID集合为空");
+            throw new OrderServiceException("订单ID集合不能为空");
+        }
+
+        log.info("开始批量删除订单，订单数量: {}", orderIds.size());
+
+        try {
+            // 使用 MyBatis Plus 的批量删除（逻辑删除）
+            boolean result = this.removeByIds(orderIds);
+
+            if (result) {
+                log.info("批量删除订单成功，订单数量: {}", orderIds.size());
+                return orderIds.size();
+            } else {
+                log.warn("批量删除订单失败");
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("批量删除订单时发生异常，订单IDs: {}", orderIds, e);
+            throw new OrderServiceException("批量删除订单失败: " + e.getMessage(), e);
+        }
+    }
 }

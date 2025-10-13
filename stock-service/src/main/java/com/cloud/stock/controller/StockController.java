@@ -409,15 +409,8 @@ public class StockController {
 
         log.info("批量创建库存记录, count: {}", stockDTOList.size());
 
-        int successCount = 0;
-        for (StockDTO stockDTO : stockDTOList) {
-            try {
-                stockService.createStock(stockDTO);
-                successCount++;
-            } catch (Exception e) {
-                log.error("创建库存记录失败, productId: {}", stockDTO.getProductId(), e);
-            }
-        }
+        // 使用批量创建方法
+        Integer successCount = stockService.batchCreateStocks(stockDTOList);
 
         log.info("批量创建库存记录完成, 成功: {}/{}", successCount, stockDTOList.size());
         return Result.success(String.format("批量创建库存记录成功: %d/%d", successCount, stockDTOList.size()), successCount);
@@ -444,16 +437,8 @@ public class StockController {
 
         log.info("批量更新库存信息, count: {}", stockDTOList.size());
 
-        int successCount = 0;
-        for (StockDTO stockDTO : stockDTOList) {
-            try {
-                if (stockService.updateStock(stockDTO)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("更新库存信息失败, stockId: {}", stockDTO.getId(), e);
-            }
-        }
+        // 使用批量更新方法
+        Integer successCount = stockService.batchUpdateStocks(stockDTOList);
 
         log.info("批量更新库存信息完成, 成功: {}/{}", successCount, stockDTOList.size());
         return Result.success(String.format("批量更新库存信息成功: %d/%d", successCount, stockDTOList.size()), successCount);
@@ -467,7 +452,7 @@ public class StockController {
     @Operation(summary = "批量库存入库", description = "批量对多个商品进行入库操作")
     public Result<Integer> stockInBatch(
             @Parameter(description = "入库请求列表") @RequestBody
-            @NotNull(message = "入库请求列表不能为空") List<StockAdjustmentRequest> requests,
+            @NotNull(message = "入库请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
@@ -480,16 +465,8 @@ public class StockController {
 
         log.info("📦 批量库存入库 - 数量: {}", requests.size());
 
-        int successCount = 0;
-        for (StockAdjustmentRequest request : requests) {
-            try {
-                if (stockService.stockIn(request.getProductId(), request.getQuantity(), request.getRemark())) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("入库失败, productId: {}", request.getProductId(), e);
-            }
-        }
+        // 使用批量入库方法
+        Integer successCount = stockService.batchStockIn(requests);
 
         log.info("✅ 批量库存入库完成, 成功: {}/{}", successCount, requests.size());
         return Result.success(String.format("批量入库成功: %d/%d", successCount, requests.size()), successCount);
@@ -503,7 +480,7 @@ public class StockController {
     @Operation(summary = "批量库存出库", description = "批量对多个商品进行出库操作")
     public Result<Integer> stockOutBatch(
             @Parameter(description = "出库请求列表") @RequestBody
-            @NotNull(message = "出库请求列表不能为空") List<StockAdjustmentRequest> requests,
+            @NotNull(message = "出库请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
@@ -516,17 +493,8 @@ public class StockController {
 
         log.info("📤 批量库存出库 - 数量: {}", requests.size());
 
-        int successCount = 0;
-        for (StockAdjustmentRequest request : requests) {
-            try {
-                if (stockService.stockOut(request.getProductId(), request.getQuantity(),
-                        request.getOrderId(), request.getOrderNo(), request.getRemark())) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("出库失败, productId: {}", request.getProductId(), e);
-            }
-        }
+        // 使用批量出库方法
+        Integer successCount = stockService.batchStockOut(requests);
 
         log.info("✅ 批量库存出库完成, 成功: {}/{}", successCount, requests.size());
         return Result.success(String.format("批量出库成功: %d/%d", successCount, requests.size()), successCount);
@@ -540,7 +508,7 @@ public class StockController {
     @Operation(summary = "批量预留库存", description = "批量预留多个商品的库存")
     public Result<Integer> reserveStockBatch(
             @Parameter(description = "预留请求列表") @RequestBody
-            @NotNull(message = "预留请求列表不能为空") List<StockAdjustmentRequest> requests,
+            @NotNull(message = "预留请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
@@ -553,16 +521,8 @@ public class StockController {
 
         log.info("🔒 批量库存预留 - 数量: {}", requests.size());
 
-        int successCount = 0;
-        for (StockAdjustmentRequest request : requests) {
-            try {
-                if (stockService.reserveStock(request.getProductId(), request.getQuantity())) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("预留失败, productId: {}", request.getProductId(), e);
-            }
-        }
+        // 使用批量预留方法
+        Integer successCount = stockService.batchReserveStock(requests);
 
         log.info("✅ 批量库存预留完成, 成功: {}/{}", successCount, requests.size());
         return Result.success(String.format("批量预留成功: %d/%d", successCount, requests.size()), successCount);

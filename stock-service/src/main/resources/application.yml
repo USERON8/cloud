@@ -12,6 +12,7 @@ spring:
     name: stock-service
   profiles:
     active: dev
+    include: rocketmq  # 引入RocketMQ配置
 
   # Nacos 配置
   cloud:
@@ -42,36 +43,6 @@ spring:
           enabled: true
         response:
           enabled: true
-
-    # RocketMQ Stream 配置
-    stream:
-      rocketmq:
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
-      bindings:
-        stockLog-out-0:
-          destination: LOG_STOCK_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
-        stockUpdate-out-0:
-          destination: STOCK_UPDATE_TOPIC
-          content-type: application/json
-        stockToOrder-out-0:
-          destination: STOCK_TO_ORDER_TOPIC
-          content-type: application/json
-        orderToStock-in-0:
-          destination: ORDER_TO_STOCK_TOPIC
-          content-type: application/json
-          group: stock-order-group
-        paymentToStock-in-0:
-          destination: PAYMENT_TO_STOCK_TOPIC
-          content-type: application/json
-          group: stock-payment-group
-        stock-producer-out-0:
-          destination: stock-events
-          content-type: application/json
-          group: stock-producer-group
 
   # Config 配置
   config:

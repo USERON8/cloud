@@ -183,4 +183,23 @@ public interface OrderService extends IService<Order> {
      * @return 是否更新成功
      */
     Boolean completeOrderForFeign(Long orderId);
+
+    // ================= 批量操作方法 =================
+
+    /**
+     * 批量更新订单状态
+     *
+     * @param orderIds 订单ID集合
+     * @param status   订单状态
+     * @return 更新成功的数量
+     */
+    Integer batchUpdateOrderStatus(List<Long> orderIds, Integer status);
+
+    /**
+     * 批量删除订单
+     *
+     * @param orderIds 订单ID集合
+     * @return 删除成功的数量
+     */
+    Integer batchDeleteOrders(List<Long> orderIds);
 }

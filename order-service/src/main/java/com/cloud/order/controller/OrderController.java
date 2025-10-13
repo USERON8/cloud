@@ -312,16 +312,8 @@ public class OrderController {
 
         log.info("批量删除订单, count: {}", ids.size());
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (orderService.deleteOrder(id)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("删除订单失败, orderId: {}", id, e);
-            }
-        }
+        // 使用批量删除方法，性能更优
+        Integer successCount = orderService.batchDeleteOrders(ids);
 
         log.info("批量删除订单完成, 成功: {}/{}", successCount, ids.size());
         return Result.success(String.format("批量删除订单成功: %d/%d", successCount, ids.size()), successCount);
@@ -349,16 +341,8 @@ public class OrderController {
 
         log.info("❓ 批量取消订单, count: {}, reason: {}", ids.size(), cancelReason);
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (orderService.cancelOrder(id)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("取消订单失败, orderId: {}", id, e);
-            }
-        }
+        // 使用批量更新方法，将订单状态设置为取消状态（假设4为取消状态）
+        Integer successCount = orderService.batchUpdateOrderStatus(ids, 4);
 
         log.info("✅ 批量取消订单完成, 成功: {}/{}", successCount, ids.size());
         return Result.success(String.format("批量取消订单成功: %d/%d", successCount, ids.size()), successCount);
@@ -385,16 +369,8 @@ public class OrderController {
 
         log.info("📦 批量发货订单, count: {}", ids.size());
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (orderService.shipOrder(id)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("发货订单失败, orderId: {}", id, e);
-            }
-        }
+        // 使用批量更新方法，将订单状态设置为已发货状态（2）
+        Integer successCount = orderService.batchUpdateOrderStatus(ids, 2);
 
         log.info("✅ 批量发货订单完成, 成功: {}/{}", successCount, ids.size());
         return Result.success(String.format("批量发货订单成功: %d/%d", successCount, ids.size()), successCount);
@@ -421,16 +397,8 @@ public class OrderController {
 
         log.info("✅ 批量完成订单, count: {}", ids.size());
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (orderService.completeOrder(id)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("完成订单失败, orderId: {}", id, e);
-            }
-        }
+        // 使用批量更新方法，将订单状态设置为已完成状态（3）
+        Integer successCount = orderService.batchUpdateOrderStatus(ids, 3);
 
         log.info("✅ 批量完成订单完成, 成功: {}/{}", successCount, ids.size());
         return Result.success(String.format("批量完成订单成功: %d/%d", successCount, ids.size()), successCount);
@@ -457,16 +425,8 @@ public class OrderController {
 
         log.info("💳 批量支付订单, count: {}", ids.size());
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (orderService.payOrder(id)) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.error("支付订单失败, orderId: {}", id, e);
-            }
-        }
+        // 使用批量更新方法，将订单状态设置为已支付状态（1）
+        Integer successCount = orderService.batchUpdateOrderStatus(ids, 1);
 
         log.info("✅ 批量支付订单完成, 成功: {}/{}", successCount, ids.size());
         return Result.success(String.format("批量支付订单成功: %d/%d", successCount, ids.size()), successCount);

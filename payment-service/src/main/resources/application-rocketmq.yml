@@ -1,0 +1,38 @@
+spring:
+  cloud:
+    stream:
+      # 定义函数绑定
+      function:
+        definition: orderCreatedConsumer
+
+      # RocketMQ Binder配置
+      rocketmq:
+        binder:
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+        bindings:
+          # 支付成功事件生产者
+          paymentSuccessProducer-out-0:
+            producer:
+              group: payment-producer-group
+              sync: false  # 异步发送
+
+          # 订单创建事件消费者
+          orderCreatedConsumer-in-0:
+            consumer:
+              # 标签过滤
+              subscription: 'ORDER_CREATED'
+              # 并发消费
+              orderly: false
+
+      # Binding配置
+      bindings:
+        # 支付成功事件 - 输出
+        paymentSuccessProducer-out-0:
+          destination: payment-success
+          content-type: application/json
+
+        # 订单创建事件 - 输入
+        orderCreatedConsumer-in-0:
+          destination: order-created
+          content-type: application/json
+          group: payment-consumer-group

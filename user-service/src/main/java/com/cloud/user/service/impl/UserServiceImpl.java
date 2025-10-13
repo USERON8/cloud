@@ -824,4 +824,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return updateById(user);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "user", allEntries = true)
+    public Integer batchUpdateUserStatus(Collection<Long> userIds, Integer status) {
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("批量更新用户状态失败，用户ID集合为空");
+            throw new BusinessException("用户ID集合不能为空");
+        }
+
+        if (status == null) {
+            log.warn("批量更新用户状态失败，状态值为空");
+            throw new BusinessException("状态值不能为空");
+        }
+
+        log.info("开始批量更新用户状态，用户数量: {}, 状态值: {}", userIds.size(), status);
+
+        try {
+            // 使用 MyBatis Plus 的 lambdaUpdate 批量更新
+            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+            wrapper.in(User::getId, userIds);
+
+            User updateEntity = new User();
+            updateEntity.setStatus(status);
+
+            boolean result = update(updateEntity, wrapper);
+
+            if (result) {
+                log.info("批量更新用户状态成功，用户数量: {}", userIds.size());
+                return userIds.size();
+            } else {
+                log.warn("批量更新用户状态失败");
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("批量更新用户状态时发生异常，用户IDs: {}", userIds, e);
+            throw new BusinessException("批量更新用户状态失败: " + e.getMessage(), e);
+        }
+    }
+
 }

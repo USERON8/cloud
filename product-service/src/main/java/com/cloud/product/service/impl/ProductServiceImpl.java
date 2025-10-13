@@ -411,7 +411,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("更新商品库存: ID={}, Stock={}", id, stock);
 
         if (stock < 0) {
-            throw new RuntimeException("库存数量不能为负数");
+            throw new BusinessException("库存数量不能为负数");
         }
 
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
@@ -419,7 +419,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new RuntimeException("更新库存失败");
+            throw new BusinessException("更新库存失败");
         }
 
         return true;
@@ -435,7 +435,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("增加商品库存: ID={}, Quantity={}", id, quantity);
 
         if (quantity <= 0) {
-            throw new RuntimeException("增加数量必须大于0");
+            throw new BusinessException("增加数量必须大于0");
         }
 
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
@@ -444,7 +444,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new RuntimeException("增加库存失败");
+            throw new BusinessException("增加库存失败");
         }
 
         return true;
@@ -460,7 +460,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("减少商品库存: ID={}, Quantity={}", id, quantity);
 
         if (quantity <= 0) {
-            throw new RuntimeException("减少数量必须大于0");
+            throw new BusinessException("减少数量必须大于0");
         }
 
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
@@ -470,7 +470,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new RuntimeException("库存不足或减少失败");
+            throw new BusinessException("库存不足或减少失败");
         }
 
         return true;

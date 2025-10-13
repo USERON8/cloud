@@ -12,6 +12,7 @@ spring:
     name: payment-service
   profiles:
     active: dev
+    include: rocketmq  # 引入RocketMQ配置
 
   # Nacos 配置
   cloud:
@@ -42,35 +43,6 @@ spring:
           enabled: true
         response:
           enabled: true
-
-    # RocketMQ Stream 配置
-    stream:
-      rocketmq:
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
-      bindings:
-        paymentLog-out-0:
-          destination: LOG_PAYMENT_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
-        paymentToOrder-out-0:
-          destination: PAYMENT_TO_ORDER_TOPIC
-          content-type: application/json
-        paymentToStock-out-0:
-          destination: PAYMENT_TO_STOCK_TOPIC
-          content-type: application/json
-        orderToPayment-in-0:
-          destination: ORDER_TO_PAYMENT_TOPIC
-          content-type: application/json
-          group: payment-order-group
-        payment-producer-out-0:
-          destination: payment-events
-          content-type: application/json
-          group: payment-producer-group
-          producer:
-            maxRequestSize: 4194304
-            sync: true
 
   # Config 配置
   config:

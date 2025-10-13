@@ -193,4 +193,13 @@ public interface UserService extends IService<User> {
      * @return 是否成功
      */
     Boolean changePassword(Long id, String oldPassword, String newPassword);
+
+    /**
+     * 批量更新用户状态
+     *
+     * @param userIds 用户ID集合
+     * @param status  状态值
+     * @return 更新成功的数量
+     */
+    Integer batchUpdateUserStatus(Collection<Long> userIds, Integer status);
 }
