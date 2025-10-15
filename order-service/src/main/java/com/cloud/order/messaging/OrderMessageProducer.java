@@ -120,4 +120,56 @@ public class OrderMessageProducer {
             return false;
         }
     }
+
+    /**
+     * 发送库存恢复事件
+     * 通知库存服务恢复退款订单的库存
+     *
+     * @param orderId              订单ID
+     * @param orderNo              订单号
+     * @param refundId             退款ID
+     * @param refundNo             退款单号
+     * @param productQuantityMap   商品数量映射
+     * @return 是否发送成功
+     */
+    public boolean sendStockRestoreEvent(Long orderId, String orderNo, Long refundId,
+                                        String refundNo, Map<Long, Integer> productQuantityMap) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("eventId", UUID.randomUUID().toString());
+            payload.put("eventType", "STOCK_RESTORE");
+            payload.put("timestamp", System.currentTimeMillis());
+            payload.put("orderId", orderId);
+            payload.put("orderNo", orderNo);
+            payload.put("refundId", refundId);
+            payload.put("refundNo", refundNo);
+            payload.put("productQuantityMap", productQuantityMap);
+
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(MessageConst.PROPERTY_KEYS, refundNo);
+            headers.put(MessageConst.PROPERTY_TAGS, "STOCK_RESTORE");
+
+            Message<Map<String, Object>> message = MessageBuilder
+                    .withPayload(payload)
+                    .copyHeaders(headers)
+                    .build();
+
+            boolean result = streamBridge.send("stockRestoreProducer-out-0", message);
+
+            if (result) {
+                log.info("✅ 库存恢复事件发送成功: orderId={}, refundNo={}, products={}",
+                        orderId, refundNo, productQuantityMap.size());
+            } else {
+                log.error("❌ 库存恢复事件发送失败: orderId={}, refundNo={}",
+                        orderId, refundNo);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("❌ 发送库存恢复事件异常: orderId={}, refundNo={}",
+                    orderId, refundNo, e);
+            return false;
+        }
+    }
 }

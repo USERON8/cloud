@@ -11,9 +11,11 @@ CREATE TABLE `orders`
     id            BIGINT UNSIGNED PRIMARY KEY COMMENT '订单ID',
     order_no      VARCHAR(32)     NOT NULL UNIQUE COMMENT '订单号（业务唯一编号）',
     user_id       BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+    shop_id       BIGINT UNSIGNED NOT NULL COMMENT '店铺ID',
     total_amount  DECIMAL(10, 2)  NOT NULL COMMENT '订单总额',
     pay_amount    DECIMAL(10, 2)  NOT NULL COMMENT '实付金额',
     status        TINYINT         NOT NULL COMMENT '状态：0-待支付，1-已支付，2-已发货，3-已完成，4-已取消',
+    refund_status TINYINT         NULL DEFAULT NULL COMMENT '退款状态：NULL-无退款，0-退款申请中，1-退款中，2-退款成功，3-退款失败，4-退款已关闭',
     address_id    BIGINT UNSIGNED NOT NULL COMMENT '地址ID',
     pay_time      DATETIME        NULL COMMENT '支付时间',
     ship_time     DATETIME        NULL COMMENT '发货时间',
@@ -32,8 +34,10 @@ CREATE TABLE `orders`
 
     -- 基础索引
     INDEX idx_user_status (user_id, status),
+    INDEX idx_shop_id (shop_id),
     INDEX idx_create_time (create_time),
     INDEX idx_status (status),
+    INDEX idx_refund_status (refund_status),
     INDEX idx_pay_time (pay_time),
     INDEX idx_ship_time (ship_time),
     INDEX idx_complete_time (complete_time),
@@ -42,6 +46,8 @@ CREATE TABLE `orders`
     -- 性能优化索引
     INDEX idx_status_create_time (status, create_time),
     INDEX idx_user_create_time (user_id, create_time),
+    INDEX idx_shop_status (shop_id, status),
+    INDEX idx_status_refund (status, refund_status),
     INDEX idx_date_amount (DATE(create_time), total_amount),
     INDEX idx_month_status (YEAR(create_time), MONTH(create_time), status),
     INDEX idx_user_payment (user_id, pay_time),

@@ -395,3 +395,7 @@ Closes #123
 4. **Inter-service calls:** Define Feign clients in `api-module`, not in service modules
 5. **Database changes:** Update SQL scripts in `sql/` directory
 6. **Security-sensitive changes:** Consult OAuth2 flow diagrams before modifying auth
+
+
+Always Chinese conversate
+Always Use MCP context7 deepwiki 

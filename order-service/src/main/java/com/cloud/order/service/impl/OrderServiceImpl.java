@@ -314,6 +314,71 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         return null;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "orderCache", key = "#orderId")
+    public Boolean updateOrderStatusAfterPayment(Long orderId, Long paymentId, String transactionNo) {
+        try {
+            Order order = this.baseMapper.selectById(orderId);
+            if (order == null) {
+                throw EntityNotFoundException.order(orderId);
+            }
+
+            // 验证订单状态（必须是待支付状态）
+            if (order.getStatus() != 0) {
+                log.warn("订单状态不正确，无法更新支付状态: orderId={}, currentStatus={}", orderId, order.getStatus());
+                return false;
+            }
+
+            order.setStatus(1); // 设置为已支付状态
+            boolean result = this.baseMapper.updateById(order) > 0;
+
+            if (result) {
+                log.info("支付成功后更新订单状态成功: orderId={}, paymentId={}, transactionNo={}",
+                        orderId, paymentId, transactionNo);
+            }
+
+            return result;
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("支付成功后更新订单状态失败: orderId={}", orderId, e);
+            throw new OrderServiceException("支付成功后更新订单状态失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = "orderCache", key = "#orderId")
+    public Boolean cancelOrderDueToStockFreezeFailed(Long orderId, String reason) {
+        try {
+            Order order = this.baseMapper.selectById(orderId);
+            if (order == null) {
+                throw EntityNotFoundException.order(orderId);
+            }
+
+            // 验证订单状态（只有待支付状态可以取消）
+            if (order.getStatus() != 0) {
+                log.warn("订单状态不正确，无法取消: orderId={}, currentStatus={}", orderId, order.getStatus());
+                return false;
+            }
+
+            order.setStatus(4); // 设置为已取消状态
+            boolean result = this.baseMapper.updateById(order) > 0;
+
+            if (result) {
+                log.info("库存冻结失败取消订单成功: orderId={}, reason={}", orderId, reason);
+            }
+
+            return result;
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("库存冻结失败取消订单失败: orderId={}", orderId, e);
+            throw new OrderServiceException("库存冻结失败取消订单失败: " + e.getMessage());
+        }
+    }
+
     // ================= 批量操作方法实现 =================
 
     @Override

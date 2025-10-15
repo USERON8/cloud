@@ -26,6 +26,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring Cloud Stream Test Binder -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-test-binder</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -130,6 +138,11 @@
             <artifactId>swagger-annotations-jakarta</artifactId>
         </dependency>
 
+        <!-- Apache POI - Excel导出 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
 
         <!-- 显式添加objenesis依赖，Redisson运行时需要 -->
         <dependency>

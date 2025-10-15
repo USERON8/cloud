@@ -148,13 +148,13 @@ mvn clean install -DskipTests -T 4
 
 按以下顺序启动各服务的主类：
 
-1. `AuthServiceApplication` - 认证服务 (8080)
-2. `GatewayApplication` - 网关服务 (8000)
-3. `UserServiceApplication` - 用户服务 (8081)
-4. `OrderServiceApplication` - 订单服务 (8082)
-5. `ProductServiceApplication` - 商品服务 (8083)
-6. `StockServiceApplication` - 库存服务 (8084)
-7. `PaymentServiceApplication` - 支付服务 (8085)
+1. `AuthServiceApplication` - 认证服务 (8081)
+2. `GatewayApplication` - 网关服务 (80)
+3. `UserServiceApplication` - 用户服务 (8082)
+4. `OrderServiceApplication` - 订单服务 (8083)
+5. `ProductServiceApplication` - 商品服务 (8084)
+6. `StockServiceApplication` - 库存服务 (8085)
+7. `PaymentServiceApplication` - 支付服务 (8086)
 8. `SearchServiceApplication` - 搜索服务 (8087)
 
 #### 方式二：命令行启动
@@ -186,11 +186,11 @@ docker-compose -f docker/docker-compose-services.yml up -d
 
 ```bash
 # 检查服务健康状态
-curl http://localhost:8000/actuator/health
+curl http://localhost:80/actuator/health
 
 # 访问 API 文档
-# 网关文档: http://localhost:8000/doc.html
-# 认证服务: http://localhost:8080/doc.html
+# 网关文档: http://localhost:80/doc.html
+# 认证服务: http://localhost:8081/doc.html
 ```
 
 ---
@@ -201,13 +201,13 @@ curl http://localhost:8000/actuator/health
 
 ```bash
 # 密码模式
-curl -X POST "http://localhost:8080/oauth2/token" \
+curl -X POST "http://localhost:8081/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "username=admin" \
   -d "password=admin123" \
   -d "client_id=web-client" \
-  -d "client_secret=secret" \
+  -d "client_secret=WebClient@2024#Secure" \
   -d "scope=read write"
 ```
 
@@ -215,7 +215,7 @@ curl -X POST "http://localhost:8080/oauth2/token" \
 
 ```bash
 # 调用受保护的API
-curl -X GET "http://localhost:8000/api/user/info" \
+curl -X GET "http://localhost:80/api/user/info" \
   -H "Authorization: Bearer {access_token}"
 ```
 
@@ -225,22 +225,22 @@ curl -X GET "http://localhost:8000/api/user/info" \
 
 ### 访问地址
 
-- **网关聚合文档**: http://localhost:8000/doc.html
-- **认证服务**: http://localhost:8080/doc.html
-- **用户服务**: http://localhost:8081/doc.html
-- **订单服务**: http://localhost:8082/doc.html
+- **网关聚合文档**: http://localhost:80/doc.html
+- **认证服务**: http://localhost:8081/doc.html
+- **用户服务**: http://localhost:8082/doc.html
+- **订单服务**: http://localhost:8083/doc.html
 
 ### API 分类
 
-| 服务      | 端口   | 文档地址      | 说明        |
+| 服务      | 端口 | 文档地址      | 说明        |
 |---------|------|-----------|-----------|
-| Gateway | 8000 | /doc.html | 聚合所有服务API |
-| Auth    | 8080 | /doc.html | 认证授权API   |
-| User    | 8081 | /doc.html | 用户管理API   |
-| Order   | 8082 | /doc.html | 订单管理API   |
-| Product | 8083 | /doc.html | 商品管理API   |
-| Stock   | 8084 | /doc.html | 库存管理API   |
-| Payment | 8085 | /doc.html | 支付管理API   |
+| Gateway | 80   | /doc.html | 聚合所有服务API |
+| Auth    | 8081 | /doc.html | 认证授权API   |
+| User    | 8082 | /doc.html | 用户管理API   |
+| Order   | 8083 | /doc.html | 订单管理API   |
+| Product | 8084 | /doc.html | 商品管理API   |
+| Stock   | 8085 | /doc.html | 库存管理API   |
+| Payment | 8086 | /doc.html | 支付管理API   |
 | Search  | 8087 | /doc.html | 搜索服务API   |
 
 ---

@@ -5,6 +5,7 @@ import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -115,4 +116,82 @@ public interface ProductSearchService {
      * @return 聚合信息
      */
     SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request);
+
+    /**
+     * 基础搜索 - 根据关键字搜索商品
+     *
+     * @param keyword 搜索关键字
+     * @param page    页码
+     * @param size    每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size);
+
+    /**
+     * 筛选搜索 - 支持多条件筛选
+     *
+     * @param request 筛选请求参数
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> filterSearch(ProductSearchRequest request);
+
+    /**
+     * 分类筛选
+     *
+     * @param categoryId 分类ID
+     * @param page       页码
+     * @param size       每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size);
+
+    /**
+     * 品牌筛选
+     *
+     * @param brandId 品牌ID
+     * @param page    页码
+     * @param size    每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size);
+
+    /**
+     * 价格区间筛选
+     *
+     * @param minPrice 最低价格
+     * @param maxPrice 最高价格
+     * @param page     页码
+     * @param size     每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size);
+
+    /**
+     * 店铺筛选
+     *
+     * @param shopId 店铺ID
+     * @param page   页码
+     * @param size   每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> searchByShop(Long shopId, Integer page, Integer size);
+
+    /**
+     * 组合筛选 - 支持关键字+分类+品牌+价格区间等多条件组合
+     *
+     * @param keyword    搜索关键字
+     * @param categoryId 分类ID
+     * @param brandId    品牌ID
+     * @param minPrice   最低价格
+     * @param maxPrice   最高价格
+     * @param shopId     店铺ID
+     * @param sortBy     排序字段
+     * @param sortOrder  排序方式
+     * @param page       页码
+     * @param size       每页大小
+     * @return 搜索结果
+     */
+    SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
+                                                  BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
+                                                  String sortBy, String sortOrder, Integer page, Integer size);
 }

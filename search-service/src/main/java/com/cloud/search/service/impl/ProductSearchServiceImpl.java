@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -412,5 +413,246 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         return Sort.by(direction, request.getSortBy());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'basic:' + #keyword + ':' + #page + ':' + #size",
+            condition = "#keyword != null")
+    public SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size) {
+        try {
+            log.info("执行基础搜索 - 关键字: {}, 页码: {}, 大小: {}", keyword, page, size);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+
+            Page<ProductDocument> pageResult;
+            if (StringUtils.hasText(keyword)) {
+                pageResult = productDocumentRepository.searchByKeyword(keyword, pageable);
+            } else {
+                pageResult = productDocumentRepository.findByStatus(1, pageable);
+            }
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("基础搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("基础搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("基础搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'filter:' + #request.hashCode()",
+            condition = "#request != null")
+    public SearchResult<ProductDocument> filterSearch(ProductSearchRequest request) {
+        try {
+            log.info("执行筛选搜索 - 请求: {}", request);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = request.getPage() != null ? request.getPage() : 0;
+            int pageSize = request.getSize() != null ? request.getSize() : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, buildSort(request));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.filterSearch(
+                    request.getKeyword(),
+                    request.getCategoryId(),
+                    request.getBrandId(),
+                    request.getShopId(),
+                    request.getMinPrice(),
+                    request.getMaxPrice(),
+                    request.getMinSalesCount(),
+                    request.getStatus() != null ? request.getStatus() : 1,
+                    pageable
+            );
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("筛选搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("筛选搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("筛选搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'category:' + #categoryId + ':' + #page + ':' + #size")
+    public SearchResult<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size) {
+        try {
+            log.info("按分类搜索 - 分类ID: {}, 页码: {}, 大小: {}", categoryId, page, size);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.findByCategoryIdAndStatus(categoryId, 1, pageable);
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("按分类搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("按分类搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("按分类搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'brand:' + #brandId + ':' + #page + ':' + #size")
+    public SearchResult<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size) {
+        try {
+            log.info("按品牌搜索 - 品牌ID: {}, 页码: {}, 大小: {}", brandId, page, size);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.findByBrandIdAndStatus(brandId, 1, pageable);
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("按品牌搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("按品牌搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("按品牌搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'price:' + #minPrice + ':' + #maxPrice + ':' + #page + ':' + #size")
+    public SearchResult<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size) {
+        try {
+            log.info("按价格区间搜索 - 价格范围: {}-{}, 页码: {}, 大小: {}", minPrice, maxPrice, page, size);
+            long startTime = System.currentTimeMillis();
+
+            BigDecimal min = minPrice != null ? minPrice : BigDecimal.ZERO;
+            BigDecimal max = maxPrice != null ? maxPrice : new BigDecimal("999999.99");
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.findByPriceBetweenAndStatus(min, max, 1, pageable);
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("按价格区间搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("按价格区间搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("按价格区间搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'shop:' + #shopId + ':' + #page + ':' + #size")
+    public SearchResult<ProductDocument> searchByShop(Long shopId, Integer page, Integer size) {
+        try {
+            log.info("按店铺搜索 - 店铺ID: {}, 页码: {}, 大小: {}", shopId, page, size);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.findByShopIdAndStatus(shopId, 1, pageable);
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("按店铺搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("按店铺搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("按店铺搜索失败", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productSearchCache",
+            key = "'combined:' + #keyword + ':' + #categoryId + ':' + #brandId + ':' + #minPrice + ':' + #maxPrice + ':' + #shopId + ':' + #page + ':' + #size")
+    public SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
+                                                         BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
+                                                         String sortBy, String sortOrder, Integer page, Integer size) {
+        try {
+            log.info("执行组合搜索 - 关键字: {}, 分类: {}, 品牌: {}, 价格: {}-{}, 店铺: {}",
+                    keyword, categoryId, brandId, minPrice, maxPrice, shopId);
+            long startTime = System.currentTimeMillis();
+
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? size : 20;
+
+            Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
+            String sortField = StringUtils.hasText(sortBy) ? sortBy : "hotScore";
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(direction, sortField));
+
+            Page<ProductDocument> pageResult = productDocumentRepository.combinedSearch(
+                    keyword,
+                    categoryId,
+                    brandId,
+                    shopId,
+                    minPrice,
+                    maxPrice,
+                    1,
+                    pageable
+            );
+
+            long took = System.currentTimeMillis() - startTime;
+            SearchResult<ProductDocument> result = convertToSearchResult(pageResult, took);
+
+            log.info("组合搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), took);
+            return result;
+
+        } catch (Exception e) {
+            log.error("组合搜索失败 - 错误: {}", e.getMessage(), e);
+            throw new RuntimeException("组合搜索失败", e);
+        }
+    }
+
+    /**
+     * 转换Page为SearchResult
+     */
+    private SearchResult<ProductDocument> convertToSearchResult(Page<ProductDocument> page, long took) {
+        return SearchResult.<ProductDocument>builder()
+                .list(page.getContent())
+                .total(page.getTotalElements())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalPages(page.getTotalPages())
+                .hasNext(page.hasNext())
+                .hasPrevious(page.hasPrevious())
+                .took(took)
+                .aggregations(null)
+                .highlights(null)
+                .build();
+    }
 
 }

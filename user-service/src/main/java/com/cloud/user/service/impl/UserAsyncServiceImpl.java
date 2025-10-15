@@ -101,9 +101,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
 
         return getUsersByIdsAsync(userIds)
                 .thenApply(userDTOs -> {
-                    List<UserVO> userVOs = userDTOs.stream()
-                            .map(userConverter::toVO)
-                            .collect(Collectors.toList());
+                    List<UserVO> userVOs = userConverter.dtoToVOList(userDTOs);
                     log.debug("异步批量查询用户VO完成，数量: {}", userVOs.size());
                     return userVOs;
                 })

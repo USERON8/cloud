@@ -174,6 +174,7 @@ public class RedisConfig {
         configMap.put("user", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl)));
         configMap.put("userInfo", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl)));
         configMap.put("userProfile", createCacheConfig(jsonSerializer, Duration.ofSeconds(userTtl - 600)));
+        configMap.put("userList", createCacheConfig(jsonSerializer, Duration.ofMinutes(5)));  // 用户列表缓存5分钟
 
         // 商品相关缓存
         configMap.put("product", createCacheConfig(jsonSerializer, Duration.ofSeconds(productTtl)));

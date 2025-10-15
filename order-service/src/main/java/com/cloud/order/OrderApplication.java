@@ -8,6 +8,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.order", "com.cloud.common"}
@@ -15,6 +16,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.cloud.api")
 @EnableAsync
+@EnableScheduling
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @MapperScan("com.cloud.order.mapper")

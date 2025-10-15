@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 库存操作结果
@@ -100,6 +101,21 @@ public class StockOperationResult {
      * 锁等待时间（毫秒）
      */
     private Long lockWaitTime;
+
+    /**
+     * 简化构造函数，用于批量操作结果
+     *
+     * @param successCount 成功数量
+     * @param failureCount 失败数量
+     * @param errors       错误信息列表
+     */
+    public StockOperationResult(int successCount, int failureCount, List<String> errors) {
+        this.success = failureCount == 0;
+        this.quantity = successCount + failureCount;
+        this.errorMessage = errors.isEmpty() ? null : String.join("; ", errors);
+        this.operationTime = LocalDateTime.now();
+        this.usedDistributedLock = true;
+    }
 
     /**
      * 创建成功结果

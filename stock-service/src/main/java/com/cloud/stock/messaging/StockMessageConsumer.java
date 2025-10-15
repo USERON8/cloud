@@ -163,4 +163,76 @@ public class StockMessageConsumer {
             }
         };
     }
+
+    /**
+     * 消费库存恢复事件
+     * 当退款完成时，恢复订单商品的库存
+     */
+    @Bean
+    public Consumer<Message<Map<String, Object>>> stockRestoreConsumer() {
+        return message -> {
+            Map<String, Object> event = message.getPayload();
+
+            Long orderId = ((Number) event.get("orderId")).longValue();
+            String orderNo = (String) event.get("orderNo");
+            Long refundId = ((Number) event.get("refundId")).longValue();
+            String refundNo = (String) event.get("refundNo");
+            @SuppressWarnings("unchecked")
+            Map<Long, Integer> productQuantityMap = (Map<Long, Integer>) event.get("productQuantityMap");
+
+            log.info("📨 接收到库存恢复事件: orderId={}, refundNo={}, products={}",
+                    orderId, refundNo, productQuantityMap != null ? productQuantityMap.size() : 0);
+
+            try {
+                // 幂等性检查
+                String eventId = (String) event.get("eventId");
+                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
+
+                if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    log.warn("⚠️ 没有需要恢复的商品库存: refundNo={}", refundNo);
+                    return;
+                }
+
+                // 遍历商品列表，逐个恢复库存
+                boolean allSuccess = true;
+                StringBuilder failureDetails = new StringBuilder();
+
+                for (Map.Entry<Long, Integer> entry : productQuantityMap.entrySet()) {
+                    Long productId = entry.getKey();
+                    Integer quantity = entry.getValue();
+
+                    log.info("📦 开始恢复库存: refundNo={}, productId={}, quantity={}",
+                            refundNo, productId, quantity);
+
+                    // 释放预留库存（增加可用库存）
+                    boolean success = stockService.releaseReservedStock(productId, quantity);
+
+                    if (!success) {
+                        String error = String.format("商品 %d 库存恢复失败", productId);
+                        log.error("❌ {}", error);
+                        failureDetails.append(error).append("; ");
+                        allSuccess = false;
+                        // 继续处理其他商品
+                    } else {
+                        log.info("✅ 库存恢复成功: productId={}, quantity={}", productId, quantity);
+                    }
+                }
+
+                if (allSuccess) {
+                    log.info("✅ 订单库存全部恢复成功: orderId={}, refundNo={}, 商品数量={}",
+                            orderId, refundNo, productQuantityMap.size());
+                } else {
+                    log.error("⚠️ 订单库存部分恢复失败: orderId={}, refundNo={}, 失败详情: {}",
+                            orderId, refundNo, failureDetails.toString());
+                    // 部分失败不抛异常，避免重复消费已成功的商品
+                }
+
+            } catch (Exception e) {
+                log.error("❌ 处理库存恢复事件失败: orderId={}, refundNo={}",
+                        orderId, refundNo, e);
+                // 抛出异常触发消息重试
+                throw new RuntimeException("处理库存恢复事件失败", e);
+            }
+        };
+    }
 }

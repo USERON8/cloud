@@ -32,6 +32,12 @@ public class PaymentDTO implements Serializable {
     private Long orderId;
 
     /**
+     * 订单号 - 对应数据库字段: order_no
+     */
+    @Size(max = 32, message = "订单号长度不能超过32个字符")
+    private String orderNo;
+
+    /**
      * 用户ID - 对应数据库字段: user_id
      */
     @NotNull(message = "用户ID不能为空")
@@ -61,6 +67,13 @@ public class PaymentDTO implements Serializable {
     @Min(value = 1, message = "支付渠道值不能小于1")
     @Max(value = 3, message = "支付渠道值不能大于3")
     private Integer channel;
+
+    /**
+     * 支付方式 - 扩展字段
+     * ALIPAY-支付宝，WECHAT-微信，BANK_CARD-银行卡
+     */
+    @Size(max = 32, message = "支付方式长度不能超过32个字符")
+    private String paymentMethod;
 
     /**
      * 第三方流水号 - 对应数据库字段: transaction_id

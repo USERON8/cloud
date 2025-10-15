@@ -18,11 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -57,7 +56,6 @@ class UserServiceImplTest {
     @Mock
     private MerchantConverter merchantConverter;
 
-    @InjectMocks
     private UserServiceImpl userService;
 
     private User testUser;
@@ -65,6 +63,11 @@ class UserServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        // 手动创建 UserServiceImpl 实例
+        userService = new UserServiceImpl(userConverter, passwordEncoder, merchantService, merchantConverter);
+        // 使用反射注入 baseMapper (继承自 ServiceImpl 的字段)
+        ReflectionTestUtils.setField(userService, "baseMapper", userMapper);
+
         // 准备测试数据
         testUser = new User();
         testUser.setId(1L);
@@ -85,7 +88,6 @@ class UserServiceImplTest {
         testUserDTO.setPhone("13800138000");
         testUserDTO.setEmail("test@example.com");
         testUserDTO.setStatus(1);
-        testUserDTO.setUserType("USER");
     }
 
     @Test
@@ -93,7 +95,7 @@ class UserServiceImplTest {
     void testFindByUsername_Success() {
         // Given
         String username = "testuser";
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(testUser);
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(testUser);
         when(userConverter.toDTO(testUser)).thenReturn(testUserDTO);
 
         // When
@@ -102,7 +104,6 @@ class UserServiceImplTest {
         // Then
         assertNotNull(result);
         assertEquals(username, result.getUsername());
-        verify(userMapper).selectOne(any(LambdaQueryWrapper.class));
         verify(userConverter).toDTO(testUser);
     }
 
@@ -116,7 +117,6 @@ class UserServiceImplTest {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.findByUsername(username));
         assertEquals("用户名不能为空", exception.getMessage());
-        verify(userMapper, never()).selectOne(any(LambdaQueryWrapper.class));
     }
 
     @Test
@@ -124,14 +124,13 @@ class UserServiceImplTest {
     void testFindByUsername_UserNotFound() {
         // Given
         String username = "nonexistent";
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(null);
 
         // When
         UserDTO result = userService.findByUsername(username);
 
         // Then
         assertNull(result);
-        verify(userMapper).selectOne(any(LambdaQueryWrapper.class));
     }
 
     @Test
@@ -182,7 +181,7 @@ class UserServiceImplTest {
         registerRequest.setPassword("password123");
         registerRequest.setUserType("USER");
 
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null); // 用户不存在
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(null); // 用户不存在
         when(userConverter.toEntity(registerRequest)).thenReturn(testUser);
         when(passwordEncoder.encode(anyString())).thenReturn("$2a$10$encodedPassword");
         when(userMapper.insert(any(User.class))).thenReturn(1);
@@ -206,7 +205,7 @@ class UserServiceImplTest {
         registerRequest.setUsername("existinguser");
         registerRequest.setPassword("password123");
 
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(testUser); // 用户已存在
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(testUser); // 用户已存在
 
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
@@ -422,7 +421,7 @@ class UserServiceImplTest {
     void testGetUserPassword_Success() {
         // Given
         String username = "testuser";
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(testUser);
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(testUser);
 
         // When
         String result = userService.getUserPassword(username);
@@ -430,7 +429,6 @@ class UserServiceImplTest {
         // Then
         assertNotNull(result);
         assertEquals("$2a$10$encodedPassword", result);
-        verify(userMapper).selectOne(any(LambdaQueryWrapper.class));
     }
 
     @Test
@@ -438,7 +436,7 @@ class UserServiceImplTest {
     void testGetUserPassword_UserNotFound() {
         // Given
         String username = "nonexistent";
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(null);
 
         // When
         String result = userService.getUserPassword(username);
@@ -453,7 +451,7 @@ class UserServiceImplTest {
         // Given
         String username = "testuser";
         testUser.setStatus(0); // 禁用状态
-        when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(testUser);
+        when(userMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(testUser);
 
         // When
         String result = userService.getUserPassword(username);

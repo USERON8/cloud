@@ -3,7 +3,7 @@ spring:
     stream:
       # 定义函数绑定
       function:
-        definition: paymentSuccessConsumer;stockFreezeFailedConsumer
+        definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
 
       # RocketMQ Binder配置
       rocketmq:
@@ -22,6 +22,33 @@ spring:
               group: order-producer-group
               sync: false
 
+          # 退款相关生产者
+          refundCreatedProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
+          refundAuditedProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
+          refundProcessProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
+          refundCancelledProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
+          # 库存恢复事件生产者
+          stockRestoreProducer-out-0:
+            producer:
+              group: order-producer-group
+              sync: false
+
           # 支付成功事件消费者
           paymentSuccessConsumer-in-0:
             consumer:
@@ -36,6 +63,33 @@ spring:
               subscription: 'STOCK_FREEZE_FAILED'
               orderly: false
 
+          # 退款完成事件消费者
+          refundCompletedConsumer-in-0:
+            consumer:
+              subscription: 'REFUND_COMPLETED'
+              orderly: false
+
+          # 退款通知消费者（独立消费者组）
+          refundCreatedNotificationConsumer-in-0:
+            consumer:
+              subscription: 'REFUND_CREATED'
+              orderly: false
+
+          refundAuditedNotificationConsumer-in-0:
+            consumer:
+              subscription: 'REFUND_AUDITED'
+              orderly: false
+
+          refundProcessNotificationConsumer-in-0:
+            consumer:
+              subscription: 'REFUND_PROCESS'
+              orderly: false
+
+          refundCancelledNotificationConsumer-in-0:
+            consumer:
+              subscription: 'REFUND_CANCELLED'
+              orderly: false
+
       # Binding配置
       bindings:
         # 订单创建事件 - 输出
@@ -46,6 +100,31 @@ spring:
         # 订单取消事件 - 输出
         orderCancelledProducer-out-0:
           destination: order-cancelled
+          content-type: application/json
+
+        # 退款创建事件 - 输出
+        refundCreatedProducer-out-0:
+          destination: refund-created
+          content-type: application/json
+
+        # 退款审核事件 - 输出
+        refundAuditedProducer-out-0:
+          destination: refund-audited
+          content-type: application/json
+
+        # 退款处理事件 - 输出
+        refundProcessProducer-out-0:
+          destination: refund-process
+          content-type: application/json
+
+        # 退款取消事件 - 输出
+        refundCancelledProducer-out-0:
+          destination: refund-cancelled
+          content-type: application/json
+
+        # 库存恢复事件 - 输出
+        stockRestoreProducer-out-0:
+          destination: stock-restore
           content-type: application/json
 
         # 支付成功事件 - 输入
@@ -59,3 +138,30 @@ spring:
           destination: stock-freeze-failed
           content-type: application/json
           group: order-consumer-group
+
+        # 退款完成事件 - 输入
+        refundCompletedConsumer-in-0:
+          destination: refund-completed
+          content-type: application/json
+          group: order-consumer-group
+
+        # 退款通知消费者 - 输入（独立消费者组，用于通知功能）
+        refundCreatedNotificationConsumer-in-0:
+          destination: refund-created
+          content-type: application/json
+          group: order-notification-group
+
+        refundAuditedNotificationConsumer-in-0:
+          destination: refund-audited
+          content-type: application/json
+          group: order-notification-group
+
+        refundProcessNotificationConsumer-in-0:
+          destination: refund-process
+          content-type: application/json
+          group: order-notification-group
+
+        refundCancelledNotificationConsumer-in-0:
+          destination: refund-cancelled
+          content-type: application/json
+          group: order-notification-group

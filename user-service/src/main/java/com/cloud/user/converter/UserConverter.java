@@ -74,6 +74,22 @@ public interface UserConverter {
     List<UserVO> toVOList(List<User> users);
 
     /**
+     * 转换用户DTO为VO
+     *
+     * @param userDTO 用户DTO
+     * @return 用户VO
+     */
+    UserVO dtoToVO(UserDTO userDTO);
+
+    /**
+     * 转换用户DTO列表为VO列表
+     *
+     * @param userDTOs 用户DTO列表
+     * @return 用户VO列表
+     */
+    List<UserVO> dtoToVOList(List<UserDTO> userDTOs);
+
+    /**
      * 转换GitHub用户DTO为用户实体（OAuth登录专用）
      * 注意：这个方法只做基础映射，业务逻辑在Service层处理
      *

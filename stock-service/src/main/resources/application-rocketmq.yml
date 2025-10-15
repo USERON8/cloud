@@ -3,7 +3,7 @@ spring:
     stream:
       # 定义函数绑定
       function:
-        definition: orderCreatedConsumer;paymentSuccessConsumer
+        definition: orderCreatedConsumer;paymentSuccessConsumer;stockRestoreConsumer
 
       # RocketMQ Binder配置
       rocketmq:
@@ -30,6 +30,12 @@ spring:
               subscription: 'PAYMENT_SUCCESS'
               orderly: false
 
+          # 库存恢复事件消费者
+          stockRestoreConsumer-in-0:
+            consumer:
+              subscription: 'STOCK_RESTORE'
+              orderly: false
+
       # Binding配置
       bindings:
         # 库存冻结失败事件 - 输出
@@ -46,5 +52,11 @@ spring:
         # 支付成功事件 - 输入
         paymentSuccessConsumer-in-0:
           destination: payment-success
+          content-type: application/json
+          group: stock-consumer-group
+
+        # 库存恢复事件 - 输入
+        stockRestoreConsumer-in-0:
+          destination: stock-restore
           content-type: application/json
           group: stock-consumer-group

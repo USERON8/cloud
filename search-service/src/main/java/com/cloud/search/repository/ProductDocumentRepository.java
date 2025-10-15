@@ -221,4 +221,72 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
             }
             """)
     List<ProductDocument> findSuggestions(String prefix);
+
+    /**
+     * 根据分类ID和状态查询商品
+     */
+    Page<ProductDocument> findByCategoryIdAndStatus(Long categoryId, Integer status, Pageable pageable);
+
+    /**
+     * 根据品牌ID和状态查询商品
+     */
+    Page<ProductDocument> findByBrandIdAndStatus(Long brandId, Integer status, Pageable pageable);
+
+    /**
+     * 根据店铺ID和状态查询商品
+     */
+    Page<ProductDocument> findByShopIdAndStatus(Long shopId, Integer status, Pageable pageable);
+
+    /**
+     * 根据价格区间和状态查询商品
+     */
+    Page<ProductDocument> findByPriceBetweenAndStatus(BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
+
+    /**
+     * 多条件筛选搜索
+     */
+    @Query("""
+            {
+              "bool": {
+                "must": [
+                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^3", "description^1", "tags^2"], "type": "best_fields"}}' : '{"match_all": {}}'}
+                ],
+                "filter": [
+                  {"term": {"status": "?7"}},
+                  #{#categoryId != null ? '{"term": {"categoryId": ' + #categoryId + '}}' : ''},
+                  #{#brandId != null ? '{"term": {"brandId": ' + #brandId + '}}' : ''},
+                  #{#shopId != null ? '{"term": {"shopId": ' + #shopId + '}}' : ''},
+                  #{#minPrice != null ? '{"range": {"price": {"gte": ' + #minPrice + '}}}' : ''},
+                  #{#maxPrice != null ? '{"range": {"price": {"lte": ' + #maxPrice + '}}}' : ''},
+                  #{#minSalesCount != null ? '{"range": {"salesCount": {"gte": ' + #minSalesCount + '}}}' : ''}
+                ]
+              }
+            }
+            """)
+    Page<ProductDocument> filterSearch(String keyword, Long categoryId, Long brandId, Long shopId,
+                                        BigDecimal minPrice, BigDecimal maxPrice, Integer minSalesCount,
+                                        Integer status, Pageable pageable);
+
+    /**
+     * 组合搜索 - 支持所有条件的组合查询
+     */
+    @Query("""
+            {
+              "bool": {
+                "must": [
+                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^3", "description^1", "tags^2"], "type": "best_fields", "fuzziness": "AUTO"}}' : '{"match_all": {}}'}
+                ],
+                "filter": [
+                  {"term": {"status": "?6"}},
+                  #{#categoryId != null ? '{"term": {"categoryId": ' + #categoryId + '}}' : ''},
+                  #{#brandId != null ? '{"term": {"brandId": ' + #brandId + '}}' : ''},
+                  #{#shopId != null ? '{"term": {"shopId": ' + #shopId + '}}' : ''},
+                  #{#minPrice != null ? '{"range": {"price": {"gte": ' + #minPrice + '}}}' : ''},
+                  #{#maxPrice != null ? '{"range": {"price": {"lte": ' + #maxPrice + '}}}' : ''}
+                ]
+              }
+            }
+            """)
+    Page<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId, Long shopId,
+                                          BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
 }

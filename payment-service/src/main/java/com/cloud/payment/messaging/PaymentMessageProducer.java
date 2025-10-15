@@ -89,4 +89,65 @@ public class PaymentMessageProducer {
             return false;
         }
     }
+
+    /**
+     * 发送退款完成事件
+     * 通知订单服务退款已完成
+     *
+     * @param refundId             退款ID
+     * @param refundNo             退款单号
+     * @param orderId              订单ID
+     * @param orderNo              订单号
+     * @param userId               用户ID
+     * @param refundAmount         退款金额
+     * @param refundTransactionNo  退款流水号
+     * @return 是否发送成功
+     */
+    public boolean sendRefundCompletedEvent(Long refundId, String refundNo, Long orderId,
+                                           String orderNo, Long userId, BigDecimal refundAmount,
+                                           String refundTransactionNo) {
+        try {
+            // 构建事件载荷
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("eventId", UUID.randomUUID().toString());
+            payload.put("eventType", "REFUND_COMPLETED");
+            payload.put("timestamp", System.currentTimeMillis());
+            payload.put("refundId", refundId);
+            payload.put("refundNo", refundNo);
+            payload.put("orderId", orderId);
+            payload.put("orderNo", orderNo);
+            payload.put("userId", userId);
+            payload.put("refundAmount", refundAmount);
+            payload.put("refundTransactionNo", refundTransactionNo);
+
+            // 构建消息头
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(MessageConst.PROPERTY_KEYS, refundNo);
+            headers.put(MessageConst.PROPERTY_TAGS, "REFUND_COMPLETED");
+
+            // 构建消息
+            Message<Map<String, Object>> message = MessageBuilder
+                    .withPayload(payload)
+                    .copyHeaders(headers)
+                    .build();
+
+            // 发送到refund-completed topic
+            boolean result = streamBridge.send("refundCompletedProducer-out-0", message);
+
+            if (result) {
+                log.info("✅ 退款完成事件发送成功: refundId={}, refundNo={}, orderId={}, amount={}",
+                        refundId, refundNo, orderId, refundAmount);
+            } else {
+                log.error("❌ 退款完成事件发送失败: refundId={}, refundNo={}, orderId={}",
+                        refundId, refundNo, orderId);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("❌ 发送退款完成事件异常: refundId={}, refundNo={}, orderId={}",
+                    refundId, refundNo, orderId, e);
+            return false;
+        }
+    }
 }

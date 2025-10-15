@@ -1,4 +1,5 @@
 package com.cloud.user.controller;
+import com.cloud.common.enums.UserType;
 
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
@@ -49,7 +50,7 @@ class UserQueryControllerTest {
         testUserDTO.setPhone("13800138000");
         testUserDTO.setEmail("test@example.com");
         testUserDTO.setStatus(1);
-        testUserDTO.setUserType("USER");
+        testUserDTO.setUserType(UserType.USER);
 
         testUserVO = new UserVO();
         testUserVO.setId(1L);
@@ -69,7 +70,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("查询成功", result.getMessage());
         assertEquals(testUserDTO, result.getData());
         verify(userService).findByUsername(username);
@@ -91,7 +92,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertNotNull(result.getData());
         assertEquals(1, result.getData().getTotal());
         verify(userService).pageQuery(any(UserPageDTO.class));
@@ -109,7 +110,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("查询成功", result.getMessage());
         assertEquals(testUserDTO, result.getData());
         verify(userService).findByGitHubId(githubId);
@@ -127,7 +128,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         assertEquals(404, result.getCode());
         assertEquals("未找到对应的GitHub用户", result.getMessage());
         verify(userService).findByGitHubId(githubId);
@@ -145,7 +146,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("查询成功", result.getMessage());
         assertEquals(testUserDTO, result.getData());
         verify(userService).findByGitHubUsername(githubUsername);
@@ -163,7 +164,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         assertEquals(404, result.getCode());
         assertEquals("未找到对应的GitHub用户", result.getMessage());
         verify(userService).findByGitHubUsername(githubUsername);
@@ -182,7 +183,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("查询成功", result.getMessage());
         assertEquals(testUserDTO, result.getData());
         verify(userService).findByOAuthProvider(provider, providerId);
@@ -201,7 +202,7 @@ class UserQueryControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         assertEquals(404, result.getCode());
         assertEquals("未找到对应的OAuth用户", result.getMessage());
         verify(userService).findByOAuthProvider(provider, providerId);

@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/category")
+@RequestMapping("/api/category")
 @RequiredArgsConstructor
 @Tag(name = "商品分类服务", description = "商品分类资源的RESTful API接口")
 public class CategoryController {

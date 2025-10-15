@@ -75,6 +75,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @Cacheable(
+            cacheNames = "userList",  // 用户列表缓存
+            key = "'page:' + #pageDTO.current + ':size:' + #pageDTO.size + " +
+                  "':username:' + (#pageDTO.username != null ? #pageDTO.username : '') + " +
+                  "':phone:' + (#pageDTO.phone != null ? #pageDTO.phone : '') + " +
+                  "':nickname:' + (#pageDTO.nickname != null ? #pageDTO.nickname : '') + " +
+                  "':status:' + (#pageDTO.status != null ? #pageDTO.status : '') + " +
+                  "':userType:' + (#pageDTO.userType != null ? #pageDTO.userType : '')",
+            condition = "#pageDTO.current <= 10",  // 只缓存前10页
+            unless = "#result == null || #result.total == 0"
+    )
     public PageResult<UserVO> pageQuery(UserPageDTO pageDTO) {
         try {
             log.info("分页查询用户，查询条件：{}", pageDTO);
@@ -128,9 +139,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
-    @CacheEvict(
-            cacheNames = "user",
-            key = "#id"
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "user", key = "#id"),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
+            }
     )
     public boolean deleteUserById(Long id) {
         if (id == null) {
@@ -170,10 +183,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             failMessage = "批量删除用户操作获取锁失败"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "user",
-            allEntries = true, // 批量删除时清空整个缓存，简单粗暴但有效
-            condition = "#userIds != null && !#userIds.isEmpty()"
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "user", allEntries = true),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
+            }
     )
     public boolean deleteUsersByIds(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -281,7 +295,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Caching(
             evict = {
                     @CacheEvict(cacheNames = "user", key = "#entity.id"),
-                    @CacheEvict(cacheNames = "user", key = "'username:' + #entity.username", condition = "#entity.username != null")
+                    @CacheEvict(cacheNames = "user", key = "'username:' + #entity.username", condition = "#entity.username != null"),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
             },
             put = {
                     @CachePut(cacheNames = "user", key = "#entity.id")
@@ -300,13 +315,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             key = "'user:register:' + #registerRequest.username",
             waitTime = 3,
             leaseTime = 15,
-            failMessage = "用户注册操作获取锁失败，请稍后重试"
+            failMessage = "用户注册操作获取锁失败,请稍后重试"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "user",
-            key = "'username:' + #registerRequest.username",
-            beforeInvocation = true
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "user", key = "'username:' + #registerRequest.username", beforeInvocation = true),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
+            }
     )
     public UserDTO registerUser(RegisterRequestDTO registerRequest) {
         log.info("🚀 开始用户注册流程, username: {}, userType: {}",
@@ -734,7 +750,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
-                    @CacheEvict(cacheNames = "user", allEntries = true)
+                    @CacheEvict(cacheNames = "user", allEntries = true),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
             }
     )
     public Long createUser(UserDTO userDTO) {
@@ -754,7 +771,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Caching(
             evict = {
                     @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
-                    @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username")
+                    @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username"),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
             }
     )
     public Boolean updateUser(UserDTO userDTO) {
@@ -769,7 +787,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Caching(
             evict = {
                     @CacheEvict(cacheNames = "user", key = "#id"),
-                    @CacheEvict(cacheNames = "user", allEntries = true)
+                    @CacheEvict(cacheNames = "user", allEntries = true),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
             }
     )
     public Boolean deleteUser(Long id) {
@@ -779,7 +798,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "user", key = "#id")
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "user", key = "#id"),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
+            }
+    )
     public Boolean updateUserStatus(Long id, Integer status) {
         log.info("更新用户状态, userId: {}, status: {}", id, status);
 
@@ -826,7 +850,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "user", allEntries = true)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = "user", allEntries = true),
+                    @CacheEvict(cacheNames = "userList", allEntries = true)  // 清除用户列表缓存
+            }
+    )
     public Integer batchUpdateUserStatus(Collection<Long> userIds, Integer status) {
         if (userIds == null || userIds.isEmpty()) {
             log.warn("批量更新用户状态失败，用户ID集合为空");

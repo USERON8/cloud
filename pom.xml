@@ -72,6 +72,7 @@
         <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
         <kotlin.version>1.9.24</kotlin.version>
         <alipay-sdk.version>4.40.452.ALL</alipay-sdk.version>
+        <poi.version>5.4.0</poi.version>
 
         <!-- 测试相关版本 -->
         <junit.version>5.10.3</junit.version>
@@ -183,6 +184,11 @@
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${poi.version}</version>
             </dependency>
 
             <!-- API文档版本管理 -->

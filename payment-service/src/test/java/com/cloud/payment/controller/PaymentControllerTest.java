@@ -71,7 +71,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertNotNull(result.getData());
         assertEquals(1, result.getData().getTotal());
         verify(paymentService).getPaymentsPage(1, 10, 200L, 0, 1);
@@ -94,7 +94,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData().getTotal());
     }
 
@@ -110,7 +110,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testPaymentDTO, result.getData());
         verify(paymentService).getPaymentById(paymentId);
     }
@@ -140,7 +140,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(paymentId, result.getData());
         verify(paymentService).createPayment(testPaymentDTO);
     }
@@ -157,7 +157,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         assertEquals(paymentId, testPaymentDTO.getId()); // 验证ID被设置
         verify(paymentService).updatePayment(testPaymentDTO);
@@ -175,7 +175,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(paymentService).deletePayment(paymentId);
     }
@@ -192,7 +192,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(paymentService).processPaymentSuccess(paymentId);
     }
@@ -223,7 +223,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(paymentService).processPaymentFailed(paymentId, failReason);
     }
@@ -257,7 +257,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(paymentService).processRefund(paymentId, refundAmount, refundReason);
     }
@@ -289,7 +289,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testPaymentDTO, result.getData());
         verify(paymentService).getPaymentByOrderId(orderId);
     }
@@ -322,7 +322,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(paymentService).riskCheck(userId, amount, paymentMethod);
     }
@@ -342,7 +342,7 @@ class PaymentControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertFalse(result.getData());
         verify(paymentService).riskCheck(userId, amount, paymentMethod);
     }

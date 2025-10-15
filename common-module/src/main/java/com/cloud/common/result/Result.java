@@ -91,6 +91,29 @@ public class Result<T> implements Serializable {
     }
 
     /**
+     * 失败响应（fail作为error的别名）
+     */
+    public static <T> Result<T> fail() {
+        return error();
+    }
+
+    public static <T> Result<T> fail(String message) {
+        return error(message);
+    }
+
+    public static <T> Result<T> fail(Integer code, String message) {
+        return error(code, message);
+    }
+
+    public static <T> Result<T> fail(ResultCode resultCode) {
+        return error(resultCode);
+    }
+
+    public static <T> Result<T> fail(ResultCode resultCode, String message) {
+        return error(resultCode, message);
+    }
+
+    /**
      * 权限不足响应
      */
     public static <T> Result<T> forbidden() {

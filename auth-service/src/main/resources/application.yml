@@ -71,7 +71,7 @@ spring:
             scope: internal_api,service.read,service.write
         provider:
           custom-authorization-server:
-            token-uri: http://127.0.0.1:80/oauth2/token
+            token-uri: http://127.0.0.1:8081/oauth2/token
       resourceserver:
         jwt:
           jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
@@ -88,7 +88,7 @@ spring:
 # 日志配置
 logging:
   file:
-    path: ./auth-service/logs
+    path: logs
     name: ${logging.file.path}/auth-service.log
   level:
     root: info
@@ -100,7 +100,7 @@ logging:
 app:
   jwt:
     test-mode: true
-    issuer: http://127.0.0.1
+    issuer: http://127.0.0.1:8081
     access-token-validity: PT2H
     test-token-validity: P365D
 

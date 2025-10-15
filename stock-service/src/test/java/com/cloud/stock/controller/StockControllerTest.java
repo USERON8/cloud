@@ -76,7 +76,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData().getTotal());
         verify(stockService).pageQuery(pageDTO);
     }
@@ -93,7 +93,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testStockDTO, result.getData());
         verify(stockService).getStockById(stockId);
     }
@@ -122,7 +122,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testStockDTO, result.getData());
     }
 
@@ -151,7 +151,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData().size());
     }
 
@@ -166,7 +166,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testStockDTO, result.getData());
         verify(stockService).createStock(testStockDTO);
     }
@@ -183,7 +183,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).updateStock(testStockDTO);
     }
@@ -200,7 +200,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).deleteStock(stockId);
     }
@@ -217,7 +217,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).deleteStocksByIds(ids);
     }
@@ -236,7 +236,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).stockIn(productId, quantity, remark);
     }
@@ -258,7 +258,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).stockOut(productId, quantity, orderId, orderNo, remark);
     }
@@ -276,7 +276,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).reserveStock(productId, quantity);
     }
@@ -294,7 +294,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).releaseReservedStock(productId, quantity);
     }
@@ -312,7 +312,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
     }
 
@@ -329,7 +329,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertFalse(result.getData());
     }
 
@@ -349,7 +349,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(stockService).checkStockSufficient(productId, quantity);
         verify(stockService).stockOut(productId, quantity, orderId, orderNo, "秒杀扣减");
@@ -367,7 +367,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData());
         verify(stockService).batchCreateStocks(stockDTOList);
     }
@@ -383,7 +383,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(stockService, never()).batchCreateStocks(any());
     }
 
@@ -399,7 +399,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData());
         verify(stockService).batchUpdateStocks(stockDTOList);
     }
@@ -419,7 +419,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData());
         verify(stockService).batchStockIn(requests);
     }
@@ -441,7 +441,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData());
         verify(stockService).batchStockOut(requests);
     }
@@ -461,7 +461,7 @@ class StockControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData());
         verify(stockService).batchReserveStock(requests);
     }

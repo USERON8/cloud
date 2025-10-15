@@ -71,13 +71,13 @@ class ProductServiceImplTest {
         testProductVO.setId(1L);
         testProductVO.setName("测试商品");
         testProductVO.setPrice(new BigDecimal("99.99"));
-        testProductVO.setStock(100);
+        // testProductVO.setStock(100); // ProductVO doesn't have stock field
         testProductVO.setStatus(1);
 
         testRequestDTO = new ProductRequestDTO();
         testRequestDTO.setName("测试商品");
         testRequestDTO.setPrice(new BigDecimal("99.99"));
-        testRequestDTO.setStock(100);
+        // testRequestDTO.setStock(100); // ProductRequestDTO doesn't have stock field
     }
 
     @Test

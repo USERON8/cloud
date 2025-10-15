@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -116,6 +118,74 @@ public class PaymentMessageConsumer {
                         event.getOrderId(), event.getOrderNo(), e);
                 // 抛出异常触发消息重试
                 throw new RuntimeException("处理订单创建事件失败", e);
+            }
+        };
+    }
+
+    /**
+     * 消费退款处理事件
+     * 处理退款申请，完成退款后发送退款完成事件
+     */
+    @Bean
+    public Consumer<Message<Map<String, Object>>> refundProcessConsumer() {
+        return message -> {
+            Map<String, Object> event = message.getPayload();
+
+            Long refundId = ((Number) event.get("refundId")).longValue();
+            String refundNo = (String) event.get("refundNo");
+            Long orderId = ((Number) event.get("orderId")).longValue();
+            String orderNo = (String) event.get("orderNo");
+            Long userId = ((Number) event.get("userId")).longValue();
+            BigDecimal refundAmount = new BigDecimal(event.get("refundAmount").toString());
+
+            log.info("📨 接收到退款处理事件: refundId={}, refundNo={}, orderId={}, orderNo={}, amount={}",
+                    refundId, refundNo, orderId, orderNo, refundAmount);
+
+            try {
+                // 幂等性检查
+                String eventId = (String) event.get("eventId");
+                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
+
+                // 1. 查询原支付记录
+                log.info("🔍 查询原支付记录: orderId={}, orderNo={}", orderId, orderNo);
+
+                // TODO: 实际场景应查询支付记录
+                // Payment payment = paymentService.getPaymentByOrderId(orderId);
+
+                // 2. 调用支付网关退款接口（简化逻辑，直接成功）
+                log.info("💰 调用支付网关退款: refundNo={}, amount={}", refundNo, refundAmount);
+
+                // TODO: 实际场景应调用支付宝/微信退款API
+                // RefundResult result = alipayService.refund(refundNo, refundAmount);
+
+                // 模拟退款成功
+                String refundTransactionNo = "REFUND_TXN" + System.currentTimeMillis() + refundId;
+
+                log.info("✅ 退款处理成功: refundNo={}, transactionNo={}, amount={}",
+                        refundNo, refundTransactionNo, refundAmount);
+
+                // 3. 发送退款完成事件
+                boolean sent = paymentMessageProducer.sendRefundCompletedEvent(
+                        refundId,
+                        refundNo,
+                        orderId,
+                        orderNo,
+                        userId,
+                        refundAmount,
+                        refundTransactionNo
+                );
+
+                if (sent) {
+                    log.info("✅ 退款完成事件已发送: refundId={}, refundNo={}", refundId, refundNo);
+                } else {
+                    log.error("❌ 退款完成事件发送失败: refundId={}, refundNo={}", refundId, refundNo);
+                }
+
+            } catch (Exception e) {
+                log.error("❌ 处理退款事件失败: refundId={}, refundNo={}, orderId={}",
+                        refundId, refundNo, orderId, e);
+                // 抛出异常触发消息重试
+                throw new RuntimeException("处理退款事件失败", e);
             }
         };
     }
