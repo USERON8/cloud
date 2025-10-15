@@ -3,7 +3,10 @@ package com.cloud.stock.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cloud.common.exception.BusinessException;
+<<<<<<< HEAD
 import com.cloud.stock.mapper.StockMapper;
+=======
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.StockAlertService;
 import com.cloud.stock.service.StockService;
@@ -26,7 +29,10 @@ import java.util.stream.Collectors;
 public class StockAlertServiceImpl implements StockAlertService {
 
     private final StockService stockService;
+<<<<<<< HEAD
     private final StockMapper stockMapper;
+=======
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 
     @Override
     public List<Stock> getLowStockProducts() {
@@ -81,9 +87,13 @@ public class StockAlertServiceImpl implements StockAlertService {
         }
 
         // 检查商品库存是否存在
+<<<<<<< HEAD
         LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Stock::getProductId, productId);
         Stock stock = stockMapper.selectOne(queryWrapper);
+=======
+        Stock stock = stockService.getStockByProductId(productId);
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         if (stock == null) {
             throw new BusinessException("商品库存不存在");
         }

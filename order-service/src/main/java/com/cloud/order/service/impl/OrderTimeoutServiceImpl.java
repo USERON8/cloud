@@ -75,7 +75,11 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
 
         // 查询待支付状态且创建时间早于超时时间点的订单
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+<<<<<<< HEAD
         queryWrapper.eq(Order::getStatus, 0)  // 待支付状态(0=PENDING)
+=======
+        queryWrapper.eq(Order::getOrderStatus, "PENDING")  // 待支付状态
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
                 .lt(Order::getCreatedAt, timeoutTime)      // 创建时间早于超时时间点
                 .orderByAsc(Order::getCreatedAt);
 

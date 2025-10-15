@@ -335,10 +335,17 @@ public class RefundServiceImpl implements RefundService {
                 resultPage.getTotal(), resultPage.getPages(), resultPage.getCurrent());
 
         return new PageResult<>(
+<<<<<<< HEAD
                 resultPage.getCurrent(),
                 resultPage.getSize(),
                 resultPage.getTotal(),
                 voList
+=======
+                voList,
+                resultPage.getTotal(),
+                resultPage.getCurrent(),
+                resultPage.getSize()
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         );
     }
 

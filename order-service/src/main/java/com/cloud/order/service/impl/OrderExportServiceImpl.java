@@ -41,6 +41,7 @@ public class OrderExportServiceImpl implements OrderExportService {
             // 创建表头样式
             CellStyle headerStyle = createHeaderStyle(workbook);
 
+<<<<<<< HEAD
             // 创建表头 - 只使用Order实体中实际存在的字段
             Row headerRow = sheet.createRow(0);
             String[] headers = {
@@ -48,6 +49,15 @@ public class OrderExportServiceImpl implements OrderExportService {
                     "订单状态", "退款状态", "收货地址ID", "支付时间",
                     "发货时间", "完成时间", "取消时间", "取消原因",
                     "备注", "店铺ID", "创建时间", "更新时间"
+=======
+            // 创建表头
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {
+                    "订单ID", "订单号", "用户ID", "用户昵称", "商品名称",
+                    "商品数量", "订单金额", "实付金额", "订单状态",
+                    "支付方式", "支付时间", "发货时间", "完成时间",
+                    "收货人", "收货电话", "收货地址", "创建时间"
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
             };
 
             for (int i = 0; i < headers.length; i++) {
@@ -66,6 +76,7 @@ public class OrderExportServiceImpl implements OrderExportService {
                 row.createCell(colNum++).setCellValue(order.getId());
                 row.createCell(colNum++).setCellValue(order.getOrderNo());
                 row.createCell(colNum++).setCellValue(order.getUserId());
+<<<<<<< HEAD
                 row.createCell(colNum++).setCellValue(order.getTotalAmount() != null ?
                         order.getTotalAmount().doubleValue() : 0.0);
                 row.createCell(colNum++).setCellValue(order.getPayAmount() != null ?
@@ -82,6 +93,24 @@ public class OrderExportServiceImpl implements OrderExportService {
                 row.createCell(colNum++).setCellValue(order.getShopId() != null ? order.getShopId() : 0);
                 row.createCell(colNum++).setCellValue(formatDateTime(order.getCreatedAt()));
                 row.createCell(colNum++).setCellValue(formatDateTime(order.getUpdatedAt()));
+=======
+                row.createCell(colNum++).setCellValue(order.getUserNickname());
+                row.createCell(colNum++).setCellValue(order.getProductName());
+                row.createCell(colNum++).setCellValue(order.getProductQuantity());
+                row.createCell(colNum++).setCellValue(order.getTotalAmount() != null ?
+                        order.getTotalAmount().doubleValue() : 0.0);
+                row.createCell(colNum++).setCellValue(order.getActualAmount() != null ?
+                        order.getActualAmount().doubleValue() : 0.0);
+                row.createCell(colNum++).setCellValue(order.getOrderStatus());
+                row.createCell(colNum++).setCellValue(order.getPaymentMethod());
+                row.createCell(colNum++).setCellValue(formatDateTime(order.getPaymentTime()));
+                row.createCell(colNum++).setCellValue(formatDateTime(order.getShipmentTime()));
+                row.createCell(colNum++).setCellValue(formatDateTime(order.getCompletionTime()));
+                row.createCell(colNum++).setCellValue(order.getReceiverName());
+                row.createCell(colNum++).setCellValue(order.getReceiverPhone());
+                row.createCell(colNum++).setCellValue(order.getReceiverAddress());
+                row.createCell(colNum++).setCellValue(formatDateTime(order.getCreatedAt()));
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
             }
 
             // 写入输出流
@@ -104,12 +133,16 @@ public class OrderExportServiceImpl implements OrderExportService {
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
 
         if (orderStatus != null && !orderStatus.isEmpty()) {
+<<<<<<< HEAD
             try {
                 Integer status = Integer.parseInt(orderStatus);
                 queryWrapper.eq(Order::getStatus, status);
             } catch (NumberFormatException e) {
                 log.warn("订单状态格式错误: {}", orderStatus);
             }
+=======
+            queryWrapper.eq(Order::getOrderStatus, orderStatus);
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         }
 
         if (startTime != null) {
@@ -159,8 +192,14 @@ public class OrderExportServiceImpl implements OrderExportService {
             Row headerRow = sheet.createRow(0);
 
             String[] headers = {
+<<<<<<< HEAD
                     "订单ID", "订单号", "用户ID", "订单金额", "实付金额",
                     "订单状态", "收货地址ID", "备注"
+=======
+                    "订单ID", "订单号", "用户ID", "用户昵称", "商品名称",
+                    "商品数量", "订单金额", "实付金额", "订单状态",
+                    "支付方式", "收货人", "收货电话", "收货地址"
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
             };
 
             for (int i = 0; i < headers.length; i++) {
@@ -172,12 +211,16 @@ public class OrderExportServiceImpl implements OrderExportService {
 
             // 添加一行示例数据
             Row exampleRow = sheet.createRow(1);
+<<<<<<< HEAD
             exampleRow.createCell(0).setCellValue("示例: 1");
             exampleRow.createCell(1).setCellValue("示例: ORD2025011600001");
             exampleRow.createCell(2).setCellValue("示例: 10001");
             exampleRow.createCell(3).setCellValue("示例: 999.00");
             exampleRow.createCell(4).setCellValue("示例: 999.00");
             exampleRow.createCell(5).setCellValue("示例: 待支付");
+=======
+            exampleRow.createCell(0).setCellValue("示例数据");
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 
             workbook.write(outputStream);
             log.info("订单导出模板生成完成");
@@ -230,6 +273,7 @@ public class OrderExportServiceImpl implements OrderExportService {
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTime != null ? dateTime.format(DATE_TIME_FORMATTER) : "";
     }
+<<<<<<< HEAD
 
     /**
      * 获取订单状态名称
@@ -276,4 +320,6 @@ public class OrderExportServiceImpl implements OrderExportService {
                 return "未知(" + refundStatus + ")";
         }
     }
+=======
+>>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 }
