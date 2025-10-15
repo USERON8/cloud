@@ -1,10 +1,6 @@
 package com.cloud.stock.aspect;
 
-<<<<<<< HEAD
 import com.cloud.common.domain.dto.stock.StockDTO;
-=======
-import com.cloud.stock.module.entity.Stock;
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 import com.cloud.stock.service.StockLogService;
 import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +54,7 @@ public class StockOperationLogAspect {
         Integer quantity = args.length > 1 && args[1] instanceof Integer ? (Integer) args[1] : null;
 
         // 获取操作前的库存信息
-<<<<<<< HEAD
         StockDTO stockBefore = null;
-=======
-        Stock stockBefore = null;
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         try {
             stockBefore = stockService.getStockByProductId(productId);
         } catch (Exception e) {
@@ -85,11 +77,7 @@ public class StockOperationLogAspect {
 
         // 获取操作后的库存信息并记录日志
         try {
-<<<<<<< HEAD
             StockDTO stockAfter = stockService.getStockByProductId(productId);
-=======
-            Stock stockAfter = stockService.getStockByProductId(productId);
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
             if (stockBefore != null && stockAfter != null) {
                 logOperation(productId, stockAfter.getProductName(), methodName,
                         stockBefore.getStockQuantity(), stockAfter.getStockQuantity(),

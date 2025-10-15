@@ -132,12 +132,7 @@ public class OrderMessageConsumer {
             try {
                 // 1. 查询订单商品列表
                 LambdaQueryWrapper<OrderItem> wrapper = new LambdaQueryWrapper<>();
-<<<<<<< HEAD
                 wrapper.eq(OrderItem::getOrderId, orderId);
-=======
-                wrapper.eq(OrderItem::getOrderId, orderId)
-                       .eq(OrderItem::getIsDeleted, 0);
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
                 List<OrderItem> orderItems = orderItemService.list(wrapper);
 
                 if (orderItems == null || orderItems.isEmpty()) {

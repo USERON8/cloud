@@ -1,16 +1,10 @@
 package com.cloud.stock.service.impl;
 
-<<<<<<< HEAD
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.stock.mapper.StockCountMapper;
 import com.cloud.stock.mapper.StockMapper;
-=======
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.common.exception.BusinessException;
-import com.cloud.stock.mapper.StockCountMapper;
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.module.entity.StockCount;
 import com.cloud.stock.service.StockCountService;
@@ -40,10 +34,7 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
     private final StockCountMapper stockCountMapper;
     private final StockService stockService;
     private final StockLogService stockLogService;
-<<<<<<< HEAD
     private final StockMapper stockMapper;
-=======
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 
     private static final AtomicLong COUNTER = new AtomicLong(0);
 
@@ -63,13 +54,9 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
         }
 
         // 获取当前库存信息
-<<<<<<< HEAD
         LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Stock::getProductId, productId);
         Stock stock = stockMapper.selectOne(queryWrapper);
-=======
-        Stock stock = stockService.getStockByProductId(productId);
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         if (stock == null) {
             throw new BusinessException("商品库存不存在");
         }
@@ -115,13 +102,9 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
         }
 
         // 获取当前库存
-<<<<<<< HEAD
-        LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Stock::getProductId, stockCount.getProductId());
-        Stock stock = stockMapper.selectOne(queryWrapper);
-=======
-        Stock stock = stockService.getStockByProductId(stockCount.getProductId());
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
+        LambdaQueryWrapper<Stock> queryWrapper2 = new LambdaQueryWrapper<>();
+        queryWrapper2.eq(Stock::getProductId, stockCount.getProductId());
+        Stock stock = stockMapper.selectOne(queryWrapper2);
         if (stock == null) {
             throw new BusinessException("商品库存不存在");
         }

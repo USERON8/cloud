@@ -1,9 +1,6 @@
 package com.cloud.order.controller;
 
-<<<<<<< HEAD
 import com.cloud.common.exception.BusinessException;
-=======
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.order.dto.RefundCreateDTO;
@@ -44,11 +41,7 @@ public class RefundController {
     public Result<Long> createRefund(@Valid @RequestBody RefundCreateDTO dto) {
         Long userId = getCurrentUserId();
         Long refundId = refundService.createRefund(userId, dto);
-<<<<<<< HEAD
         return Result.success("退款申请已提交", refundId);
-=======
-        return Result.success(refundId, "退款申请已提交");
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
     }
 
     @PostMapping("/audit/{refundId}")
@@ -61,11 +54,7 @@ public class RefundController {
 
         Long merchantId = getCurrentUserId();
         Boolean result = refundService.auditRefund(refundId, merchantId, approved, auditRemark);
-<<<<<<< HEAD
         return Result.success(approved ? "审核通过" : "审核拒绝", result);
-=======
-        return Result.success(result, approved ? "审核通过" : "审核拒绝");
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
     }
 
     @PostMapping("/cancel/{refundId}")
@@ -74,11 +63,7 @@ public class RefundController {
     public Result<Boolean> cancelRefund(@Parameter(description = "退款单ID") @PathVariable Long refundId) {
         Long userId = getCurrentUserId();
         Boolean result = refundService.cancelRefund(refundId, userId);
-<<<<<<< HEAD
         return Result.success("退款申请已取消", result);
-=======
-        return Result.success(result, "退款申请已取消");
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
     }
 
     @GetMapping("/{refundId}")
@@ -87,11 +72,7 @@ public class RefundController {
     public Result<Refund> getRefundById(@Parameter(description = "退款单ID") @PathVariable Long refundId) {
         Refund refund = refundService.getRefundById(refundId);
         if (refund == null) {
-<<<<<<< HEAD
             throw new BusinessException("退款单不存在");
-=======
-            return Result.fail("退款单不存在");
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         }
         return Result.success(refund);
     }
@@ -102,11 +83,7 @@ public class RefundController {
     public Result<Refund> getRefundByOrderId(@Parameter(description = "订单ID") @PathVariable Long orderId) {
         Refund refund = refundService.getRefundByOrderId(orderId);
         if (refund == null) {
-<<<<<<< HEAD
             return Result.success("该订单暂无退款记录", null);
-=======
-            return Result.success(null, "该订单暂无退款记录");
->>>>>>> e21a1f7d9b92cc459b064effcfce34c80c2fd3b8
         }
         return Result.success(refund);
     }
