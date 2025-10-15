@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 @Tag(name = "订单服务", description = "订单资源的RESTful API接口")
 public class OrderController {

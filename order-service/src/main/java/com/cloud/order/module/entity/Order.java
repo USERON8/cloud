@@ -53,6 +53,12 @@ public class Order extends BaseEntity<Order> {
     private Integer status;
 
     /**
+     * 退款状态：NULL-无退款，0-退款申请中，1-退款中，2-退款成功，3-退款失败，4-退款已关闭
+     */
+    @TableField(value = "refund_status")
+    private Integer refundStatus;
+
+    /**
      * 地址ID
      */
     @TableField(value = "address_id")

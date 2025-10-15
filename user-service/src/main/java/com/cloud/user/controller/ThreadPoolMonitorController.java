@@ -25,7 +25,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/thread-pool")
+@RequestMapping("/api/thread-pool")
 @Tag(name = "线程池监控")
 @RequiredArgsConstructor
 public class ThreadPoolMonitorController {

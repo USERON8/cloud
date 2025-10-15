@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8084
   tomcat:
     threads:
       max: 200
@@ -75,13 +75,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
+          issuer-uri: http://127.0.0.1:8081
           cache-duration: PT30M
 
 # JWT 发行者配置
 app:
   jwt:
-    issuer: http://localhost:8080
+    issuer: http://127.0.0.1:8081
 
 # 统一权限管理配置
 unified:
@@ -98,7 +99,7 @@ unified:
 # 日志配置
 logging:
   file:
-    path: ./product-service/logs
+    path: logs
     name: ${logging.file.path}/product-service.log
   level:
     root: INFO

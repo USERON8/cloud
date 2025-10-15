@@ -80,7 +80,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertNotNull(result.getData());
         assertEquals(1, result.getData().getTotal());
         verify(orderService).pageQuery(any(OrderPageQueryDTO.class));
@@ -98,7 +98,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testOrderDTO, result.getData());
         verify(orderService).getByOrderEntityId(orderId);
     }
@@ -115,7 +115,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(orderService).updateOrder(any(OrderDTO.class));
     }
@@ -132,7 +132,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(orderService).payOrder(orderId);
     }
@@ -149,7 +149,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(orderService).shipOrder(orderId);
     }
@@ -166,7 +166,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(orderService).completeOrder(orderId);
     }
@@ -183,7 +183,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(orderService).cancelOrder(orderId);
     }
@@ -201,7 +201,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData().size());
         verify(orderService).getOrdersByUserId(userId);
     }
@@ -218,7 +218,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData());
         verify(orderService).batchDeleteOrders(ids);
     }
@@ -234,7 +234,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(orderService, never()).batchDeleteOrders(any());
     }
 
@@ -249,7 +249,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(orderService, never()).batchDeleteOrders(any());
     }
 
@@ -265,7 +265,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData());
         verify(orderService).batchUpdateOrderStatus(ids, 4);
     }
@@ -282,7 +282,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData());
         verify(orderService).batchUpdateOrderStatus(ids, 2);
     }
@@ -299,7 +299,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData());
         verify(orderService).batchUpdateOrderStatus(ids, 3);
     }
@@ -316,7 +316,7 @@ class OrderControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData());
         verify(orderService).batchUpdateOrderStatus(ids, 1);
     }

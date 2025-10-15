@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/product")
+@RequestMapping("/api/product")
 @RequiredArgsConstructor
 @Tag(name = "商品服务", description = "商品资源的RESTful API接口")
 public class ProductController {

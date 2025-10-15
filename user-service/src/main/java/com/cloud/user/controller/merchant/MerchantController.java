@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/merchant")
+@RequestMapping("/api/merchant")
 @RequiredArgsConstructor
 @Tag(name = "商家服务", description = "商家资源的RESTful API接口")
 public class MerchantController {

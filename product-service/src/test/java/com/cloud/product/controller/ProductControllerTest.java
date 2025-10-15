@@ -53,13 +53,13 @@ class ProductControllerTest {
         testProductVO.setId(1L);
         testProductVO.setName("测试商品");
         testProductVO.setPrice(new BigDecimal("99.99"));
-        testProductVO.setStock(100);
+        // testProductVO.setStock(100); // ProductVO doesn't have stock field
         testProductVO.setStatus(1);
 
         testRequestDTO = new ProductRequestDTO();
         testRequestDTO.setName("测试商品");
         testRequestDTO.setPrice(new BigDecimal("99.99"));
-        testRequestDTO.setStock(100);
+        // testRequestDTO.setStock(100); // ProductRequestDTO doesn't have stock field
 
         testPageResult = PageResult.of(1L, 20L, 1L, Arrays.asList(testProductVO));
 
@@ -78,7 +78,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertNotNull(result.getData());
         assertEquals(1, result.getData().getTotal());
         verify(productService).getProductsPage(any(ProductPageDTO.class));
@@ -96,7 +96,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testProductVO, result.getData());
         verify(productService).getProductById(productId);
     }
@@ -114,7 +114,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData().size());
         verify(productService).searchProductsByName(productName, null);
     }
@@ -131,7 +131,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(productId, result.getData());
         verify(productService).createProduct(testRequestDTO);
     }
@@ -148,7 +148,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).updateProduct(productId, testRequestDTO);
     }
@@ -165,7 +165,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).updateProduct(productId, testRequestDTO);
     }
@@ -182,7 +182,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).deleteProduct(productId);
     }
@@ -200,7 +200,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(3, result.getData().size());
         verify(productService).getProductsByIds(ids);
     }
@@ -217,7 +217,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(testProductVO, result.getData());
         verify(productService).getProductById(productId);
     }
@@ -235,7 +235,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).updateProduct(productId, testRequestDTO);
     }
@@ -253,7 +253,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).enableProduct(productId);
         verify(productService, never()).disableProduct(anyLong());
@@ -272,7 +272,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).disableProduct(productId);
         verify(productService, never()).enableProduct(anyLong());
@@ -292,7 +292,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData().size());
         verify(productService).getProductsByCategoryId(categoryId, status);
     }
@@ -311,7 +311,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData().size());
         verify(productService).getProductsByBrandId(brandId, status);
     }
@@ -328,7 +328,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).batchDeleteProducts(ids);
     }
@@ -345,7 +345,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).batchEnableProducts(ids);
     }
@@ -361,7 +361,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(productService, never()).batchEnableProducts(any());
     }
 
@@ -377,7 +377,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getData());
         verify(productService).batchDisableProducts(ids);
     }
@@ -393,7 +393,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(productService, never()).batchDisableProducts(any());
     }
 
@@ -409,7 +409,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData());
         verify(productService, times(2)).createProduct(any(ProductRequestDTO.class));
     }
@@ -429,7 +429,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData()); // 3个中有2个成功
         verify(productService, times(3)).createProduct(any(ProductRequestDTO.class));
     }
@@ -445,7 +445,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(productService, never()).createProduct(any(ProductRequestDTO.class));
     }
 
@@ -469,7 +469,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(2, result.getData());
         verify(productService, times(2)).updateProduct(anyLong(), any(ProductRequestDTO.class));
     }
@@ -496,7 +496,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals(1, result.getData()); // 2个中有1个成功
         verify(productService, times(2)).updateProduct(anyLong(), any(ProductRequestDTO.class));
     }
@@ -513,7 +513,7 @@ class ProductControllerTest {
 
         // Then
         assertNotNull(result);
-        assertFalse(result.getSuccess());
+        assertFalse(result.isSuccess());
         verify(productService, never()).updateProduct(anyLong(), any(ProductRequestDTO.class));
     }
 }

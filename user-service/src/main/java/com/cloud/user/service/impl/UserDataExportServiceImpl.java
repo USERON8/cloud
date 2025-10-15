@@ -231,7 +231,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                         userDTO.setNickname(fields[2]);
                         userDTO.setEmail(fields[3]);
                         userDTO.setPhone(fields[4]);
-                        userDTO.setUserType(fields[5]);
+                        userDTO.setUserType(com.cloud.common.enums.UserType.fromCode(fields[5]));
                         userDTO.setStatus(Integer.parseInt(fields[6]));
 
                         // 保存用户

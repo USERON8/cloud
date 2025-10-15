@@ -202,4 +202,25 @@ public interface OrderService extends IService<Order> {
      * @return 删除成功的数量
      */
     Integer batchDeleteOrders(List<Long> orderIds);
+
+    // ================= 消息处理方法 =================
+
+    /**
+     * 支付成功后更新订单状态
+     *
+     * @param orderId       订单ID
+     * @param paymentId     支付ID
+     * @param transactionNo 交易流水号
+     * @return 是否更新成功
+     */
+    Boolean updateOrderStatusAfterPayment(Long orderId, Long paymentId, String transactionNo);
+
+    /**
+     * 库存冻结失败时取消订单
+     *
+     * @param orderId 订单ID
+     * @param reason  失败原因
+     * @return 是否取消成功
+     */
+    Boolean cancelOrderDueToStockFreezeFailed(Long orderId, String reason);
 }

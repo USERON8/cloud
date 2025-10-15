@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @RestController
-@RequestMapping("/statistics")
+@RequestMapping("/api/statistics")
 @RequiredArgsConstructor
 @Tag(name = "用户统计", description = "用户数据统计相关接口")
 public class UserStatisticsController {

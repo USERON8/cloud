@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @RestController
-@RequestMapping("/merchant/auth")
+@RequestMapping("/api/merchant/auth")
 @RequiredArgsConstructor
 @Tag(name = "商家认证管理", description = "商家认证申请、查询、撤销等相关操作")
 public class MerchantAuthController {

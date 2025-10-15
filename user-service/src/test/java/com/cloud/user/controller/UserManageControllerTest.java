@@ -1,6 +1,7 @@
 package com.cloud.user.controller;
 
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.enums.UserType;
 import com.cloud.common.result.Result;
 import com.cloud.user.controller.user.UserManageController;
 import com.cloud.user.converter.UserConverter;
@@ -52,7 +53,7 @@ class UserManageControllerTest {
         testUserDTO.setPhone("13800138000");
         testUserDTO.setEmail("test@example.com");
         testUserDTO.setStatus(1);
-        testUserDTO.setUserType("USER");
+        testUserDTO.setUserType(UserType.USER);
 
         testUser = new User();
         testUser.setId(1L);
@@ -78,7 +79,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("用户更新成功", result.getMessage());
         assertTrue(result.getData());
         verify(userService).updateById(any(User.class));
@@ -96,7 +97,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertEquals("用户删除成功", result.getMessage());
         assertTrue(result.getData());
         verify(userService).deleteUserById(userId);
@@ -114,7 +115,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("批量删除"));
         assertTrue(result.getData());
         verify(userService).deleteUsersByIds(any(List.class));
@@ -132,7 +133,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("批量更新"));
         assertTrue(result.getData());
         verify(userService).updateBatchById(any(List.class));
@@ -151,7 +152,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("批量更新用户状态成功"));
         assertTrue(result.getData());
         verify(userService).batchUpdateUserStatus(ids, status);
@@ -170,7 +171,7 @@ class UserManageControllerTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSuccess());
+        assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("2/3"));
         verify(userService).batchUpdateUserStatus(ids, status);
     }

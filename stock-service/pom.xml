@@ -147,6 +147,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Cloud Stream Test Binder -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-test-binder</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Cloud Stream RocketMQ -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>

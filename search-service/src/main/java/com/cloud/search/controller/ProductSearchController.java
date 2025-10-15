@@ -3,8 +3,10 @@ package com.cloud.search.controller;
 
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ProductDocument;
+import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
+import com.cloud.search.mapper.SearchRequestMapper;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
@@ -40,6 +42,7 @@ public class ProductSearchController {
     private final ProductSearchService productSearchService;
     private final ProductDocumentRepository productDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
+    private final SearchRequestMapper searchRequestMapper;
 
 
     @Operation(summary = "复杂商品搜索", description = "支持多条件组合的复杂商品搜索，包含聚合、高亮、排序等功能")
@@ -51,9 +54,6 @@ public class ProductSearchController {
                 request.getMinPrice(), request.getMaxPrice());
 
         SearchResult<ProductDocument> result = productSearchService.searchProducts(request);
-
-        // 记录搜索日志
-        recordSearchLog("COMPLEX_SEARCH", request.getKeyword(), result.getTotal());
 
         log.info("✅ 复杂商品搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
         return Result.success("搜索成功", result);
@@ -251,15 +251,122 @@ public class ProductSearchController {
         return Result.success("索引重庺成功", "索引重庺成功");
     }
 
-    /**
-     * 记录搜索日志
-     */
-    private void recordSearchLog(String searchType, String keyword, long resultCount) {
-        try {
-           
-        } catch (Exception e) {
-            log.warn("记录搜索日志失败", e);
-        }
+    // ==================== 新增的基础搜索和筛选接口 ====================
+
+    @Operation(summary = "基础搜索", description = "根据关键字进行简单搜索")
+    @GetMapping("/basic")
+    public Result<SearchResult<ProductDocument>> basicSearch(
+            @Parameter(description = "搜索关键字") @RequestParam(required = false) String keyword,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("基础搜索请求 - 关键字: {}, 页码: {}, 大小: {}", keyword, page, size);
+
+        SearchResult<ProductDocument> result = productSearchService.basicSearch(keyword, page, size);
+
+        log.info("基础搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("搜索成功", result);
+    }
+
+    @Operation(summary = "筛选搜索", description = "支持多条件组合的筛选搜索")
+    @PostMapping("/filter")
+    public Result<SearchResult<ProductDocument>> filterSearch(@Valid @RequestBody ProductFilterRequest request) {
+        log.info("筛选搜索请求 - 关键字: {}, 分类: {}, 品牌: {}, 价格: {}-{}",
+                request.getKeyword(), request.getCategoryId(), request.getBrandId(),
+                request.getMinPrice(), request.getMaxPrice());
+
+        // 使用MapStruct自动转换
+        ProductSearchRequest searchRequest = searchRequestMapper.toSearchRequest(request);
+        SearchResult<ProductDocument> result = productSearchService.filterSearch(searchRequest);
+
+        log.info("筛选搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("搜索成功", result);
+    }
+
+    @Operation(summary = "按分类筛选", description = "根据分类ID筛选商品")
+    @GetMapping("/filter/category/{categoryId}")
+    public Result<SearchResult<ProductDocument>> filterByCategory(
+            @Parameter(description = "分类ID") @PathVariable Long categoryId,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("按分类筛选请求 - 分类ID: {}, 页码: {}, 大小: {}", categoryId, page, size);
+
+        SearchResult<ProductDocument> result = productSearchService.searchByCategory(categoryId, page, size);
+
+        log.info("按分类筛选完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("筛选成功", result);
+    }
+
+    @Operation(summary = "按品牌筛选", description = "根据品牌ID筛选商品")
+    @GetMapping("/filter/brand/{brandId}")
+    public Result<SearchResult<ProductDocument>> filterByBrand(
+            @Parameter(description = "品牌ID") @PathVariable Long brandId,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("按品牌筛选请求 - 品牌ID: {}, 页码: {}, 大小: {}", brandId, page, size);
+
+        SearchResult<ProductDocument> result = productSearchService.searchByBrand(brandId, page, size);
+
+        log.info("按品牌筛选完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("筛选成功", result);
+    }
+
+    @Operation(summary = "按价格区间筛选", description = "根据价格区间筛选商品")
+    @GetMapping("/filter/price")
+    public Result<SearchResult<ProductDocument>> filterByPrice(
+            @Parameter(description = "最低价格") @RequestParam(required = false) BigDecimal minPrice,
+            @Parameter(description = "最高价格") @RequestParam(required = false) BigDecimal maxPrice,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("按价格区间筛选请求 - 价格范围: {}-{}, 页码: {}, 大小: {}", minPrice, maxPrice, page, size);
+
+        SearchResult<ProductDocument> result = productSearchService.searchByPriceRange(minPrice, maxPrice, page, size);
+
+        log.info("按价格区间筛选完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("筛选成功", result);
+    }
+
+    @Operation(summary = "按店铺筛选", description = "根据店铺ID筛选商品")
+    @GetMapping("/filter/shop/{shopId}")
+    public Result<SearchResult<ProductDocument>> filterByShop(
+            @Parameter(description = "店铺ID") @PathVariable Long shopId,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("按店铺筛选请求 - 店铺ID: {}, 页码: {}, 大小: {}", shopId, page, size);
+
+        SearchResult<ProductDocument> result = productSearchService.searchByShop(shopId, page, size);
+
+        log.info("按店铺筛选完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("筛选成功", result);
+    }
+
+    @Operation(summary = "组合筛选", description = "支持关键字、分类、品牌、价格、店铺等多条件组合筛选")
+    @GetMapping("/filter/combined")
+    public Result<SearchResult<ProductDocument>> combinedFilter(
+            @Parameter(description = "搜索关键字") @RequestParam(required = false) String keyword,
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "品牌ID") @RequestParam(required = false) Long brandId,
+            @Parameter(description = "最低价格") @RequestParam(required = false) BigDecimal minPrice,
+            @Parameter(description = "最高价格") @RequestParam(required = false) BigDecimal maxPrice,
+            @Parameter(description = "店铺ID") @RequestParam(required = false) Long shopId,
+            @Parameter(description = "排序字段") @RequestParam(defaultValue = "hotScore") String sortBy,
+            @Parameter(description = "排序方向") @RequestParam(defaultValue = "desc") String sortOrder,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("组合筛选请求 - 关键字: {}, 分类: {}, 品牌: {}, 价格: {}-{}, 店铺: {}",
+                keyword, categoryId, brandId, minPrice, maxPrice, shopId);
+
+        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
+                keyword, categoryId, brandId, minPrice, maxPrice, shopId,
+                sortBy, sortOrder, page, size);
+
+        log.info("组合筛选完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
+        return Result.success("筛选成功", result);
     }
 
 }

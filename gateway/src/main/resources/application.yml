@@ -100,7 +100,7 @@ spring:
 # 日志配置
 logging:
   file:
-    path: ./gateway/logs
+    path: logs
     name: ${logging.file.path}/gateway.log
   level:
     com.cloud: INFO
@@ -186,7 +186,4 @@ knife4j:
           api-docs-path: /v3/api-docs
         search-service:
           group-name: 搜索服务
-          api-docs-path: /v3/api-docs
-        log-service:
-          group-name: 日志服务
           api-docs-path: /v3/api-docs
