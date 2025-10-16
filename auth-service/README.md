@@ -165,6 +165,7 @@ spring:
    - [x] 用户类型验证(USER/ADMIN/MERCHANT)
    - [x] 账户状态检查
    - [x] 密码加密存储(BCrypt)
+   - [x] 自动令牌生成与返回
 
 2. **OAuth2.1 标准实现**
    - [x] Authorization Code Flow (授权码模式)
@@ -174,6 +175,8 @@ spring:
    - [x] Token Rotation (令牌轮转)
    - [x] JWT 令牌签发(RSA256)
    - [x] JWKS 公钥端点
+   - [x] Token Introspection (令牌自省)
+   - [x] Token Revocation (令牌撤销)
 
 3. **令牌管理**
    - [x] Redis Hash存储优化
@@ -182,18 +185,26 @@ spring:
    - [x] 令牌撤销与吊销
    - [x] 多会话管理
    - [x] 批量登出功能
+   - [x] 授权详情查询(/auth/tokens/authorization/{id})
+   - [x] 手动清理过期令牌(/auth/tokens/cleanup)
+   - [x] 黑名单统计与管理
 
 4. **第三方登录**
-   - [x] GitHub OAuth2 集成
-   - [x] 自动用户信息同步
-   - [x] JWT令牌生成
+   - [x] GitHub OAuth2 完整集成
+   - [x] 获取GitHub登录URL (/auth/oauth2/github/login-url)
+   - [x] GitHub回调处理 (/auth/oauth2/github/callback)
+   - [x] GitHub用户信息获取 (/auth/oauth2/github/user-info)
+   - [x] 认证状态检查 (/auth/oauth2/github/status)
+   - [x] 自动用户信息同步到user-service
+   - [x] JWT令牌自动生成
 
 5. **监控与管理**
-   - [x] Token 统计信息
-   - [x] 黑名单管理API
+   - [x] Token 统计信息 (总数、活跃、过期统计)
+   - [x] 黑名单管理API (添加、检查、清理)
    - [x] 授权详情查询
    - [x] Spring Boot Actuator集成
    - [x] 完整的API文档(Knife4j)
+   - [x] RocketMQ认证日志事件发送
 
 ### 🚧 进行中功能
 

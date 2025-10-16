@@ -44,15 +44,28 @@ Product Service 是电商平台的**核心商品管理服务**,负责商品、�
 
 ### 2. 分类管理 (/api/category)
 
-**CategoryController** - 商品分类管理
+**CategoryController** - 完整的商品分类管理(支持多级分类树)
 
-- ✅ POST `/api/category` - 创建分类
-- ✅ PUT `/api/category/{id}` - 更新分类信息
-- ✅ DELETE `/api/category/{id}` - 删除分类
-- ✅ GET `/api/category/{id}` - 查询分类详情
-- ✅ GET `/api/category` - 查询所有分类
-- ✅ GET `/api/category/tree` - 获取分类树(支持多级)
-- ✅ GET `/api/category/parent/{parentId}` - 查询子分类列表
+- ✅ GET `/api/category` - 分页查询商品分类(支持父分类、状态筛选)
+- ✅ GET `/api/category/{id}` - 根据ID获取分类详情
+- ✅ GET `/api/category/tree` - 获取树形分类结构(支持只返回启用的分类)
+- ✅ GET `/api/category/{id}/children` - 获取子分类列表(支持递归获取)
+- ✅ POST `/api/category` - 创建商品分类(需管理员权限)
+- ✅ PUT `/api/category/{id}` - 更新分类信息(需管理员权限)
+- ✅ DELETE `/api/category/{id}` - 删除分类(逻辑删除,支持级联删除子分类)
+- ✅ PATCH `/api/category/{id}/status` - 更新分类状态(启用/禁用)
+- ✅ PATCH `/api/category/{id}/sort` - 更新分类排序值
+- ✅ PATCH `/api/category/{id}/move` - 移动分类到新的父分类下
+- ✅ DELETE `/api/category/batch` - 批量删除分类
+- ✅ PATCH `/api/category/batch/status` - 批量更新分类状态
+- ✅ POST `/api/category/batch` - 批量创建分类
+
+**分类特性**:
+- 支持3级分类树结构
+- 分类排序功能
+- 启用/禁用状态控制
+- 级联删除子分类
+- 分类移动功能
 
 ### 3. 内部服务接口 (/internal/products)
 
@@ -207,11 +220,17 @@ product:
    - [x] 热门商品推荐
    - [x] 软删除支持
 
-2. **分类管理**
+2. **分类管理** ✨ 完整实现
    - [x] 多级分类支持(3级)
-   - [x] 分类树查询
+   - [x] 分类树查询(递归构建)
    - [x] 父子分类关系
-   - [x] 分类排序
+   - [x] 分类排序功能
+   - [x] 分类状态管理(启用/禁用)
+   - [x] 分类移动功能(更改父分类)
+   - [x] 批量删除分类
+   - [x] 批量更新分类状态
+   - [x] 批量创建分类
+   - [x] 级联删除子分类
 
 3. **缓存优化**
    - [x] 两级缓存架构(Caffeine + Redis)

@@ -34,8 +34,26 @@ Payment Service 是电商平台的**支付网关服务**,负责对接第三方�
 - ✅ GET `/api/payments` - 分页查询支付列表
 - ✅ POST `/api/payments/{id}/cancel` - 取消支付
 - ✅ POST `/api/payments/{id}/refund` - 发起退款
-- ✅ POST `/api/payments/alipay/notify` - 支付宝异步通知
-- ✅ GET `/api/payments/alipay/return` - 支付宝同步回调
+- ✅ GET `/api/payments/{id}/status` - 查询支付状态
+
+### 2. 支付宝支付 (/api/payments/alipay)
+
+**AlipayController** - 支付宝支付集成
+
+- ✅ POST `/api/payments/alipay/create` - 创建支付宝支付订单(PC网站/手机网站/APP支付)
+- ✅ POST `/api/payments/alipay/notify` - 支付宝异步通知(支付结果回调)
+- ✅ GET `/api/payments/alipay/return` - 支付宝同步回调(用户支付完成跳转)
+- ✅ POST `/api/payments/alipay/query` - 查询支付宝交易状态
+- ✅ POST `/api/payments/alipay/refund` - 支付宝退款
+- ✅ POST `/api/payments/alipay/close` - 关闭支付宝交易
+
+### 3. 内部服务接口 (/internal/payments)
+
+**PaymentFeignController** - 供其他服务调用
+
+- ✅ POST `/internal/payments/create` - 内部创建支付订单(供order-service调用)
+- ✅ GET `/internal/payments/order/{orderId}` - 查询订单支付信息
+- ✅ POST `/internal/payments/notify` - 内部支付通知处理
 
 ## 数据模型
 
@@ -90,14 +108,36 @@ alipay:
 
 1. **支付核心**
    - [x] 支付订单创建
-   - [x] 支付宝支付集成
-   - [x] 支付回调处理
+   - [x] 支付宝支付完整集成(PC/手机/APP)
+   - [x] 支付回调处理(异步通知+同步返回)
    - [x] 支付状态查询
    - [x] 支付取消
-   - [x] 退款处理
+   - [x] 退款处理(支持部分退款)
+   - [x] 交易关闭
 
-2. **数据转换**
+2. **支付宝集成**
+   - [x] 沙箱环境配置
+   - [x] RSA2签名验证
+   - [x] 支付订单创建
+   - [x] 支付结果查询
+   - [x] 退款申请
+   - [x] 异步通知处理
+   - [x] 同步回调处理
+
+3. **支付流水**
+   - [x] 支付流水记录(PaymentFlowServiceImpl)
+   - [x] 流水状态追踪
+   - [x] 支付锁定机制(PaymentLockServiceImpl)
+   - [x] 防止重复支付
+
+4. **数据转换**
    - [x] PaymentConverter
+   - [x] AlipayConverter
+
+5. **服务集成**
+   - [x] 内部Feign接口(供order-service调用)
+   - [x] RocketMQ支付事件发送
+   - [x] 与order-service异步协作
 
 ### 📋 计划中功能
 

@@ -40,16 +40,20 @@ Order Service 是电商平台的**核心交易服务**,负责订单全生命周�
 - ✅ PUT `/api/orders/{id}/complete` - 完成订单
 - ✅ GET `/api/orders/status/{status}` - 按状态查询订单
 
-### 2. 退款管理 (/api/refunds)
+### 2. 退款管理 (/api/v1/refund)
 
-**RefundController** - 退款申请与处理
+**RefundController** - 完整的退款申请与处理流程
 
-- ✅ POST `/api/refunds` - 创建退款申请
-- ✅ GET `/api/refunds/{id}` - 查询退款详情
-- ✅ GET `/api/refunds/order/{orderId}` - 查询订单退款记录
-- ✅ PUT `/api/refunds/{id}/approve` - 退款审批通过
-- ✅ PUT `/api/refunds/{id}/reject` - 退款审批拒绝
-- ✅ GET `/api/refunds` - 分页查询退款列表
+- ✅ POST `/api/v1/refund/create` - 创建退款申请(用户提交退款/退货申请)
+- ✅ POST `/api/v1/refund/audit/{refundId}` - 审核退款申请(商家审批,支持通过/拒绝)
+- ✅ POST `/api/v1/refund/cancel/{refundId}` - 取消退款申请(用户主动取消)
+- ✅ GET `/api/v1/refund/{refundId}` - 查询退款详情
+- ✅ GET `/api/v1/refund/order/{orderId}` - 查询订单所有退款记录
+- ✅ GET `/api/v1/refund/user/list` - 查询用户的退款申请列表(分页)
+- ✅ GET `/api/v1/refund/merchant/list` - 查询商家的退款申请列表(分页)
+- ✅ POST `/api/v1/refund/process/{refundId}` - 处理退款(实际退款操作)
+
+**退款状态流转**: PENDING(待审核) → APPROVED(审核通过) → PROCESSING(处理中) → COMPLETED(已完成) | REJECTED(已拒绝) | CANCELLED(已取消)
 
 ## 数据模型
 
@@ -132,22 +136,36 @@ CREATE TABLE refunds (
    - [x] 订单支付确认
    - [x] 订单发货/收货
    - [x] 订单完成
+   - [x] 按状态查询订单
+   - [x] 用户订单列表查询
 
-2. **退款流程**
-   - [x] 退款申请创建
-   - [x] 退款审批(通过/拒绝)
-   - [x] 退款状态管理
-   - [x] 退款通知
+2. **退款完整流程** ✨ 新增
+   - [x] 用户提交退款申请(支持退款/退货类型)
+   - [x] 商家审核退款(通过/拒绝+备注)
+   - [x] 用户取消退款申请
+   - [x] 退款详情查询
+   - [x] 订单退款记录查询
+   - [x] 用户退款列表(分页)
+   - [x] 商家退款列表(分页)
+   - [x] 退款处理与状态流转
+   - [x] 退款通知机制
 
 3. **分布式协同**
    - [x] RocketMQ异步消息
    - [x] 订单-支付事件
    - [x] 订单-库存事件
    - [x] 事件消费者
+   - [x] 退款事件发送
 
 4. **数据转换**
    - [x] MapStruct自动转换
    - [x] OrderConverter
+   - [x] RefundConverter
+
+5. **业务增强**
+   - [x] 订单超时处理服务
+   - [x] 订单锁定机制
+   - [x] 订单导出功能
 
 ### 🚧 进行中功能
 

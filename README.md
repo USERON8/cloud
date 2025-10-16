@@ -13,15 +13,16 @@
 
 - ✅ **微服务架构**: 基于 Spring Cloud 2025.0.0 的完整微服务体系
 - ✅ **服务治理**: 集成 Nacos 实现服务注册、发现和配置管理
-- ✅ **认证授权**: OAuth2.1 + JWT 的安全认证体系
-- ✅ **API网关**: Spring Cloud Gateway 实现统一入口和路由
+- ✅ **认证授权**: OAuth2.1 + JWT 的安全认证体系,支持GitHub第三方登录
+- ✅ **API网关**: Spring Cloud Gateway 实现统一入口、JWT验证、限流熔断
 - ✅ **分布式事务**: Seata 支持跨服务事务一致性
-- ✅ **消息队列**: RocketMQ 实现异步消息处理
-- ✅ **搜索服务**: Elasticsearch 提供全文搜索能力
+- ✅ **消息队列**: RocketMQ 实现异步消息处理和事件驱动
+- ✅ **搜索服务**: Elasticsearch 提供全文搜索能力(无SQL依赖架构)
 - ✅ **多级缓存**: Redis + Caffeine 双层缓存,支持本地缓存和分布式缓存
-- ✅ **限流降级**: Sentinel 实现服务保护
-- ✅ **链路追踪**: Sleuth + Zipkin 实现全链路监控
-- ✅ **API文档**: Knife4j 提供交互式API文档
+- ✅ **分布式锁**: Redisson 实现分布式锁(支持注解方式)
+- ✅ **限流降级**: Gateway层限流 + Resilience4j 熔断保护
+- ✅ **链路追踪**: 完整的请求追踪和性能监控
+- ✅ **API文档**: Knife4j 提供交互式API文档(网关聚合)
 
 ### 🏗️ 技术栈
 
@@ -80,15 +81,15 @@ cloud/
 
 #### 💼 业务服务层
 
-- **user-service**: 用户中心，管理用户信息、角色权限
-- **order-service**: 订单中心，处理订单创建、查询、状态流转
-- **product-service**: 商品中心，管理商品信息、分类、属性
-- **stock-service**: 库存中心，管理商品库存、锁定、释放
-- **payment-service**: 支付中心，处理支付请求、回调、对账
+- **user-service** (8082): 用户中心 - 用户/商户/管理员管理、收货地址、统计分析、线程池监控
+- **order-service** (8083): 订单中心 - 订单全生命周期管理、退款申请与审核、订单导出
+- **product-service** (8084): 商品中心 - 商品管理、3级分类树、批量操作、多级缓存
+- **stock-service** (8085): 库存中心 - 库存扣减/回滚、分布式锁、低库存预警
+- **payment-service** (8086): 支付中心 - 支付宝集成、支付流水、退款处理
 
 #### 📊 支撑服务层
 
-- **search-service**: 搜索中心，提供全文搜索能力
+- **search-service** (8087): 搜索中心 - Elasticsearch全文搜索、商品/商家搜索、无SQL依赖架构
 
 ---
 
@@ -144,6 +145,19 @@ mvn clean install -DskipTests -T 4
 
 ### 启动服务
 
+**服务启动顺序** (按依赖关系):
+
+1. ✅ **auth-service** (8081) - 认证服务【必须最先启动】
+2. ✅ **gateway** (80) - 网关服务【依赖auth-service】
+3. ✅ **user-service** (8082) - 用户服务【auth依赖此服务验证用户】
+4. ⚡ **product-service** (8084) - 商品服务【可并行启动】
+5. ⚡ **stock-service** (8085) - 库存服务【可并行启动】
+6. ⚡ **search-service** (8087) - 搜索服务【可并行启动】
+7. ⚡ **order-service** (8083) - 订单服务【依赖product/stock/user】
+8. ⚡ **payment-service** (8086) - 支付服务【依赖order】
+
+**注意**: 标记⚡的服务可以在前置服务启动后并行启动。
+
 #### 方式一：IDE 启动（推荐开发环境）
 
 按以下顺序启动各服务的主类：
@@ -197,10 +211,35 @@ curl http://localhost:80/actuator/health
 
 ## 🔑 OAuth2 认证流程
 
-### 获取访问令牌
+### 1. 用户注册并获取令牌
 
 ```bash
-# 密码模式
+# 注册新用户(自动返回访问令牌)
+curl -X POST "http://localhost:8081/auth/users/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "newuser",
+    "password": "password123",
+    "email": "user@example.com",
+    "phone": "13800138000",
+    "nickname": "新用户",
+    "userType": "USER"
+  }'
+```
+
+### 2. 用户登录获取令牌
+
+```bash
+# 方式1: 简化登录接口(推荐)
+curl -X POST "http://localhost:8081/auth/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "admin123",
+    "userType": "USER"
+  }'
+
+# 方式2: OAuth2标准接口
 curl -X POST "http://localhost:8081/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
@@ -211,11 +250,30 @@ curl -X POST "http://localhost:8081/oauth2/token" \
   -d "scope=read write"
 ```
 
-### 使用访问令牌
+### 3. GitHub OAuth2 登录
 
 ```bash
-# 调用受保护的API
-curl -X GET "http://localhost:80/api/user/info" \
+# 获取GitHub登录URL
+curl -X GET "http://localhost:8081/auth/oauth2/github/login-url"
+
+# 用户访问返回的URL完成GitHub授权
+# GitHub回调后自动创建用户并返回JWT令牌
+```
+
+### 4. 使用访问令牌
+
+```bash
+# 通过网关调用受保护的API
+curl -X GET "http://localhost:80/api/query/users" \
+  -H "Authorization: Bearer {access_token}"
+
+# 刷新令牌
+curl -X POST "http://localhost:8081/auth/tokens/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken": "YOUR_REFRESH_TOKEN"}'
+
+# 用户登出(撤销令牌)
+curl -X DELETE "http://localhost:8081/auth/sessions" \
   -H "Authorization: Bearer {access_token}"
 ```
 
@@ -225,23 +283,29 @@ curl -X GET "http://localhost:80/api/user/info" \
 
 ### 访问地址
 
-- **网关聚合文档**: http://localhost:80/doc.html
+- **网关聚合文档**: http://localhost:80/doc.html (推荐,包含所有服务)
 - **认证服务**: http://localhost:8081/doc.html
 - **用户服务**: http://localhost:8082/doc.html
 - **订单服务**: http://localhost:8083/doc.html
+- **商品服务**: http://localhost:8084/doc.html
+- **库存服务**: http://localhost:8085/doc.html
+- **支付服务**: http://localhost:8086/doc.html
+- **搜索服务**: http://localhost:8087/doc.html
 
-### API 分类
+### 核心API概览
 
-| 服务      | 端口 | 文档地址      | 说明        |
-|---------|------|-----------|-----------|
-| Gateway | 80   | /doc.html | 聚合所有服务API |
-| Auth    | 8081 | /doc.html | 认证授权API   |
-| User    | 8082 | /doc.html | 用户管理API   |
-| Order   | 8083 | /doc.html | 订单管理API   |
-| Product | 8084 | /doc.html | 商品管理API   |
-| Stock   | 8085 | /doc.html | 库存管理API   |
-| Payment | 8086 | /doc.html | 支付管理API   |
-| Search  | 8087 | /doc.html | 搜索服务API   |
+| 服务 | 端口 | 主要功能 | 核心接口数 |
+|---------|------|----------|---------|
+| Gateway | 80   | 路由转发、JWT验证、限流熔断 | N/A |
+| Auth    | 8081 | 用户认证、令牌管理、第三方登录 | 20+ |
+| User    | 8082 | 用户/商户/管理员管理、地址管理、统计分析 | 35+ |
+| Order   | 8083 | 订单管理、退款管理 | 18+ |
+| Product | 8084 | 商品管理、3级分类树、批量操作 | 25+ |
+| Stock   | 8085 | 库存扣减、库存预警 | 12+ |
+| Payment | 8086 | 支付宝支付、支付流水、退款 | 15+ |
+| Search  | 8087 | 商品/商家搜索、索引管理 | 10+ |
+
+**总计API接口**: 135+ 个
 
 ---
 
@@ -508,19 +572,46 @@ public class OrderService {
 
 ## 🔄 版本历史
 
-### v2.0.0 (2025-01-20)
+### v0.1.18 (2025-10-16) 🎉 当前版本
 
-- ✅ 升级到 Spring Boot 3.5.3
-- ✅ 升级到 Spring Cloud 2025.0.0
-- ✅ 新增配置外部化支持
-- ✅ 优化认证授权流程
-- ✅ 增强安全配置
+**✨ 新增功能**:
+- ✅ 完成Gateway网关服务完整功能(JWT验证、限流、API聚合)
+- ✅ 新增完整的退款管理流程(用户申请、商家审核、退款处理)
+- ✅ 新增商品分类完整功能(3级树结构、批量操作、分类移动)
+- ✅ 新增库存预警功能(低库存查询、预警通知)
+- ✅ 新增线程池监控功能(状态查看、动态调整、健康检查)
+- ✅ 支付宝完整集成(PC/手机/APP支付、退款)
+- ✅ GitHub OAuth2第三方登录完整实现
 
-### v1.0.0 (2024-12-01)
+**🔧 优化改进**:
+- ✅ 完善Token管理功能(授权详情、黑名单管理、手动清理)
+- ✅ 优化Search服务架构(无SQL依赖、多级缓存)
+- ✅ 增强并发控制(Redis分布式锁+乐观锁双重保证)
+- ✅ 完善异步处理(RocketMQ事件驱动、线程池监控)
 
-- ✨ 初始版本发布
-- ✨ 完成核心业务功能
-- ✨ 完成基础设施搭建
+**📝 文档更新**:
+- ✅ 更新所有子服务README.md文档
+- ✅ 新建Gateway完整文档
+- ✅ 更新父项目README.md
+- ✅ 新建开发规范RULE.md
+
+**📊 统计数据**:
+- 总服务数: 8个
+- API接口数: 135+
+- Controller数: 27个
+- Service实现: 50+
+- 数据库表: 15+张
+
+### v0.1.17 (2025-01-XX)
+
+- ✅ 完成订单超时处理
+- ✅ 完成订单导出功能
+- ✅ 优化支付流水记录
+
+### v0.1.16 (2025-01-XX)
+
+- ✅ 修复多级缓存bug
+- ✅ 优化Seata分布式事务配置
 
 ---
 

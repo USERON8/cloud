@@ -32,10 +32,20 @@ Stock Service 是电商平台的**库存管理服务**,负责商品库存的扣�
 - ✅ GET `/api/stocks/product/{productId}` - 查询商品库存
 - ✅ GET `/api/stocks` - 分页查询库存列表
 - ✅ PUT `/api/stocks/{id}` - 更新库存数量
-- ✅ POST `/api/stocks/deduct` - 扣减库存(加锁)
+- ✅ POST `/api/stocks/deduct` - 扣减库存(带Redis分布式锁)
 - ✅ POST `/api/stocks/rollback` - 回滚库存
-- ✅ POST `/api/stocks/batch/deduct` - 批量扣减
-- ✅ GET `/api/stocks/low-stock` - 查询低库存商品
+- ✅ POST `/api/stocks/batch/deduct` - 批量扣减库存
+- ✅ GET `/api/stocks/low-stock` - 查询低库存商品(低于阈值)
+- ✅ GET `/api/stocks/alert` - 库存预警列表
+- ✅ POST `/api/stocks/alert/notify` - 发送库存预警通知
+
+### 2. 内部服务接口 (/internal/stocks)
+
+**StockFeignController** - 供其他服务调用
+
+- ✅ POST `/internal/stocks/deduct` - 内部扣减库存(供order-service调用)
+- ✅ POST `/internal/stocks/rollback` - 内部回滚库存
+- ✅ GET `/internal/stocks/product/{productId}` - 查询商品可用库存
 
 ## 数据模型
 
@@ -120,28 +130,36 @@ WHERE product_id = #{productId}
 
 1. **库存核心**
    - [x] 库存CRUD
-   - [x] 库存扣减(加锁)
+   - [x] 库存扣减(Redis分布式锁)
    - [x] 库存回滚
    - [x] 批量扣减
    - [x] 低库存预警查询
+   - [x] 库存预警列表
+   - [x] 预警通知发送(StockAlertServiceImpl)
 
 2. **并发控制**
-   - [x] Redis分布式锁
-   - [x] 数据库乐观锁
-   - [x] 双重锁机制
+   - [x] Redis分布式锁(@RedisLock注解)
+   - [x] 数据库乐观锁(version字段)
+   - [x] 双重锁机制保证一致性
+   - [x] 扣减失败自动重试
 
 3. **消息集成**
-   - [x] RocketMQ消费者
+   - [x] RocketMQ消费者(监听订单事件)
    - [x] 库存变更事件发送
+   - [x] 异步库存同步(StockAsyncServiceImpl)
 
 4. **数据转换**
    - [x] StockConverter
 
+5. **内部服务**
+   - [x] Feign接口(供order-service调用)
+   - [x] 库存注解服务(StockAnnotationServiceImpl)
+
 ### 📋 计划中功能
 
-1. **库存预警**
-   - [ ] 低库存自动通知
-   - [ ] 库存预警规则配置
+1. **库存预警增强**
+   - [ ] 自动化预警规则配置
+   - [ ] 多渠道预警通知(邮件/短信/钉钉)
 
 2. **库存盘点**
    - [ ] 库存盘点功能

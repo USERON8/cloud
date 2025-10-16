@@ -101,23 +101,47 @@ java -jar target/search-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 
 ## 📚 API接口
 
-### 🔍 搜索接口
+### 🔍 商品搜索接口 (/api/search/product)
 
-| 接口                       | 方法   | 描述   |
-|--------------------------|------|------|
-| `/search/product/query`  | POST | 商品搜索 |
-| `/search/shop/query`     | POST | 商家搜索 |
-| `/search/category/query` | POST | 分类搜索 |
-| `/search/suggest`        | GET  | 搜索建议 |
-| `/search/hot`            | GET  | 热门搜索 |
+**ProductSearchController** - 商品搜索功能
+
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/search/product/query` | POST | 商品关键词搜索(分页、排序、过滤) |
+| `/api/search/product/suggest` | GET | 商品搜索建议(自动补全) |
+| `/api/search/product/hot` | GET | 热门搜索词 |
+| `/api/search/product/{id}` | GET | 根据ID查询商品 |
+| `/api/search/product/sync` | POST | 手动同步商品到ES索引 |
+
+### 🏪 商家搜索接口 (/api/search/shop)
+
+**ShopSearchController** - 商家搜索功能
+
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/search/shop/query` | POST | 商家搜索(按名称、位置等) |
+| `/api/search/shop/nearby` | GET | 附近商家搜索(基于地理位置) |
+| `/api/search/shop/{id}` | GET | 根据ID查询商家 |
+| `/api/search/shop/sync` | POST | 手动同步商家到ES索引 |
+
+### 🗂️ 分类搜索接口 (/api/search/category)
+
+**CategorySearchController** - 分类搜索功能(规划中)
+
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/search/category/query` | POST | 分类搜索 |
+| `/api/search/category/tree` | GET | 分类树查询 |
 
 ### 🎛️ 管理接口
 
-| 接口                             | 方法   | 描述   |
-|--------------------------------|------|------|
-| `/search/manage/index/rebuild` | POST | 重建索引 |
-| `/search/manage/cache/clear`   | POST | 清除缓存 |
-| `/search/manage/sync`          | POST | 数据同步 |
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/search/manage/index/rebuild` | POST | 重建所有索引 |
+| `/api/search/manage/index/product` | POST | 重建商品索引 |
+| `/api/search/manage/index/shop` | POST | 重建商家索引 |
+| `/api/search/manage/cache/clear` | POST | 清除搜索缓存 |
+| `/api/search/manage/sync/full` | POST | 全量数据同步 |
 
 ## 🔧 配置说明
 
