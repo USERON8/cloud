@@ -1,5 +1,5 @@
 services:
-  # MySQL 数据库服务 (版本 9.3.0)
+  # ASCII comment sanitized for compatibility.
   mysql:
     image: mysql:9.3.0
     container_name: mysql_db
@@ -32,7 +32,7 @@ services:
       timeout: 10s
       retries: 10
 
-  # Redis 服务 (版本 8.2.1-alpine3.22)
+  # ASCII comment sanitized for compatibility.
   redis:
     image: redis:7.4.5-bookworm
     container_name: redis_cache
@@ -58,7 +58,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Nacos 服务 (版本 v3.0.2)
+  # ASCII comment sanitized for compatibility.
   nacos:
     image: nacos/nacos-server:v3.0.2
     container_name: nacos_server
@@ -78,26 +78,26 @@ services:
       MYSQL_DATABASE_NUM: 1
       MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
 
-      # 路径修复（解决404错误）
-      NACOS_SERVER_CONTEXTPATH: /nacos  # 主服务路径
-      NACOS_CONSOLE_CONTEXTPATH: /nacos  # 控制台路径
-      NACOS_CONSOLE_REMOTE_SERVER_CONTEXT_PATH: /nacos  # 控制台连接服务端路径
+      # ASCII comment sanitized for compatibility.
+      NACOS_SERVER_CONTEXTPATH: /nacos  # ASCII comment sanitized for compatibility.
+      NACOS_CONSOLE_CONTEXTPATH: /nacos  # ASCII comment sanitized for compatibility.
+      NACOS_CONSOLE_REMOTE_SERVER_CONTEXT_PATH: /nacos  # ASCII comment sanitized for compatibility.
 
-      # 鉴权配置
-      NACOS_AUTH_ENABLE: "true"  # 开启鉴权
-      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # 集群通信密钥
+      # ASCII comment sanitized for compatibility.
+      NACOS_AUTH_ENABLE: "true"  # ASCII comment sanitized for compatibility.
+      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # ASCII comment sanitized for compatibility.
       NACOS_AUTH_IDENTITY_VALUE: ServerIdentity_Value_123
-      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # 32位Base64密钥
-      NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # 白名单
+      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # ASCII comment sanitized for compatibility.
+      NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # ASCII comment sanitized for compatibility.
 
-      # 管理员账号
-      NACOS_SECURITY_ADMIN_USER: root  # 自定义管理员
+      # ASCII comment sanitized for compatibility.
+      NACOS_SECURITY_ADMIN_USER: root  # ASCII comment sanitized for compatibility.
       NACOS_SECURITY_ADMIN_PASSWORD: root
 
-      # 命名空间权限
+      # ASCII comment sanitized for compatibility.
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
       NACOS_CORE_AUTH_DEFAULT_RESOURCE: "public:*:*"
-      # JVM配置
+      # ASCII comment sanitized for compatibility.
       JVM_XMS: 512m
       JVM_XMX: 512m
       NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
@@ -124,7 +124,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-  # NameServer 服务 (版本 5.3.3)
+  # ASCII comment sanitized for compatibility.
   namesrv:
     image: apache/rocketmq:5.3.2
     container_name: rmqnamesrv
@@ -132,7 +132,7 @@ services:
       service_net:
         ipv4_address: 172.28.0.40
     ports:
-      - "39876:9876"  # NameServer 端口
+      - "39876:9876"  # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/namesrv/logs
@@ -143,7 +143,7 @@ services:
     environment:
       - NAMESRV_ADDR=172.28.0.40:9876
     command: sh mqnamesrv
-  # Broker 服务 (版本 5.3.2) - 采用 Local 模式，与 Proxy 同进程部署
+  # ASCII comment sanitized for compatibility.
   broker:
     image: apache/rocketmq:5.3.2
     container_name: rmqbroker
@@ -153,11 +153,11 @@ services:
     depends_on:
       - namesrv
     ports:
-      - "30909:10909"  # Broker VIP 端口
-      - "30911:10911"  # Broker 主端口
-      - "30912:10912"  # Broker HA 端口
-      - "38080:8080"   # Proxy 端口1 (现在由 Broker 容器暴露)
-      - "38081:8081"   # Proxy 端口2 (现在由 Broker 容器暴露)
+      - "30909:10909"  # ASCII comment sanitized for compatibility.
+      - "30911:10911"  # ASCII comment sanitized for compatibility.
+      - "30912:10912"  # ASCII comment sanitized for compatibility.
+      - "38080:8080"   # ASCII comment sanitized for compatibility.
+      - "38081:8081"   # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/broker/logs
@@ -170,10 +170,10 @@ services:
         target: /home/rocketmq/conf
     environment:
       - NAMESRV_ADDR=172.28.0.40:9876
-    # 关键：使用 --enable-proxy 参数启动，启用 Local 模式
+    # ASCII comment sanitized for compatibility.
     command: sh mqbroker -n 172.28.0.40:9876 --enable-proxy -c /home/rocketmq/conf/broker.conf
 
-  # RocketMQ 控制台
+  # ASCII comment sanitized for compatibility.
   rmq-console:
     image: apacherocketmq/rocketmq-dashboard:2.1.0
     container_name: rmq-console
@@ -187,7 +187,7 @@ services:
     environment:
       JAVA_OPTS: -Drocketmq.namesrv.addr=172.28.0.40:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
 
-  # Nginx 反向代理 (版本 stable-perl)
+  # ASCII comment sanitized for compatibility.
   nginx:
     image: nginx:stable-perl
     container_name: nginx_gateway
@@ -195,8 +195,8 @@ services:
       service_net:
         ipv4_address: 172.28.0.70
     ports:
-      - "80:80"      # HTTP 服务
-      - "443:443"    # HTTPS 服务
+      - "80:80"      # ASCII comment sanitized for compatibility.
+      - "443:443"    # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/nginx/config
@@ -209,7 +209,7 @@ services:
         target: /usr/share/nginx/html
     depends_on:
       - nacos
-  # MinIO 服务 (版本 RELEASE.2023-05-05T01-05-05Z)
+  # ASCII comment sanitized for compatibility.
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
     container_name: minio
@@ -227,19 +227,19 @@ services:
       - type: bind
         source: ./docker-compose/minio/data
         target: /home/minio/data
-  #  Elasticsearch 服务 (版本 9.1.2)
+  # ASCII comment sanitized for compatibility.
   elasticsearch:
     image: elasticsearch:9.1.2
     container_name: es_search
     networks:
       service_net:
-        ipv4_address: 172.28.0.90  # 分配新 IP
+        ipv4_address: 172.28.0.90  # ASCII comment sanitized for compatibility.
     environment:
-      # 关键配置
-      - discovery.type=single-node  # 单节点模式
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g  # JVM 堆内存
-      - bootstrap.memory_lock=true  # 禁用交换分区
-      - xpack.security.enabled=false  # 关闭安全认证
+      # ASCII comment sanitized for compatibility.
+      - discovery.type=single-node  # ASCII comment sanitized for compatibility.
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g  # ASCII comment sanitized for compatibility.
+      - bootstrap.memory_lock=true  # ASCII comment sanitized for compatibility.
+      - xpack.security.enabled=false  # ASCII comment sanitized for compatibility.
       - http.cors.enabled=true
       - http.cors.allow-origin=" *"
     volumes:
@@ -250,9 +250,9 @@ services:
         source: ./docker-compose/elasticsearch/plugins
         target: /usr/share/elasticsearch/plugins
     ports:
-      - "9200:9200"  # HTTP API 端口
-      - "9300:9300"  # 集群通信端口
-    ulimits: # 解除内存限制
+      - "9200:9200"  # ASCII comment sanitized for compatibility.
+      - "9300:9300"  # ASCII comment sanitized for compatibility.
+    ulimits: # ASCII comment sanitized for compatibility.
       memlock:
         soft: -1
         hard: -1
@@ -273,38 +273,38 @@ services:
     ports:
       - "5601:5601"
     environment:
-      # 核心连接配置
+      # ASCII comment sanitized for compatibility.
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_HOST=0.0.0.0
       - SERVER_NAME=kibana-service
 
-      # 性能调优参数
+      # ASCII comment sanitized for compatibility.
       - NODE_OPTIONS=--max-old-space-size=2048
 
-      # 禁用不需要的功能模块
+      # ASCII comment sanitized for compatibility.
       - XPACK_APM_ENABLED=false
       - XPACK_INFRA_ENABLED=false
       - XPACK_MONITORING_UI_ENABLED=false
       - XPACK_OBSERVABILITY_ENABLED=false
       - TELEMETRY_ENABLED=false
 
-      # 日志配置
+      # ASCII comment sanitized for compatibility.
       - LOGGING_JSON_ENABLED=false
     volumes:
       - type: bind
         source: ./docker-compose/kibana/config
         target: /usr/share/kibana/config
-        # 挂载数据目录 (可选)
+        # ASCII comment sanitized for compatibility.
       - type: bind
         source: ./docker-compose/kibana/data
         target: /usr/share/kibana/data
-    healthcheck: # 增加健康检查
+    healthcheck: # ASCII comment sanitized for compatibility.
       test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
-# 网络配置
+# ASCII comment sanitized for compatibility.
 networks:
   service_net:
     driver: bridge

@@ -1,7 +1,7 @@
-# 库存服务 - 开发环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # 数据源配置
+  # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -14,7 +14,7 @@ spring:
       connection-timeout: 30000
       max-lifetime: 1800000
   
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: localhost
@@ -29,7 +29,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.stock: debug
@@ -38,12 +38,12 @@ logging:
     org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
 
-# MyBatis Plus 开发配置
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# Knife4j 开发配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false

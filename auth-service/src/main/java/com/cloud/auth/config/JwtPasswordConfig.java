@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
@@ -20,200 +23,94 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.token.*;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.util.StringUtils;
 
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-/**
- * JWT和密码编码配置
- * 严格遵循OAuth2.1和JWT安全标准
- * <p>
- * 功能包括:
- * - RSA密钥对生成和管理
- * - JWT编码器和解码器配置
- * - OAuth2.1令牌生成器配置
- * - 密码编码器配置（支持多种算法）
- * - JWT权限转换器配置
- *
- * @author what's up
- */
 @Slf4j
 @Configuration
 public class JwtPasswordConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}}")
-    private String jwkSetUri;
+    @Value("${app.jwt.keys.private-key-base64:}")
+    private String configuredPrivateKey;
 
-    /**
-     * RSA密钥对生成器
-     * OAuth2.1推荐使用RSA256算法
-     */
+    @Value("${app.jwt.keys.public-key-base64:}")
+    private String configuredPublicKey;
+
+    @Value("${app.jwt.keys.key-id:auth-service-key}")
+    private String keyId;
+
+    @Value("${app.jwt.keys.allow-generated-keypair:false}")
+    private boolean allowGeneratedKeypair;
+
     @Bean
     public KeyPair keyPair() {
-        log.info("🔧 生成OAuth2.1 RSA密钥对");
-
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);  // OAuth2.1推荐2048位
-            KeyPair keyPair = keyPairGenerator.generateKeyPair();
-
-            log.info("✅ RSA密钥对生成完成");
-            return keyPair;
-
-        } catch (Exception e) {
-            log.error("🚨 RSA密钥对生成失败", e);
-            throw new RuntimeException("RSA密钥对生成失败", e);
+        if (StringUtils.hasText(configuredPrivateKey)) {
+            return loadKeyPairFromConfig();
         }
+
+        if (!allowGeneratedKeypair) {
+            throw new IllegalStateException("JWT key pair is not configured. Set app.jwt.keys.private-key-base64/public-key-base64");
+        }
+
+        log.warn("JWT key pair is not configured, generating ephemeral key pair for this instance only");
+        return generateEphemeralKeyPair();
     }
 
-    /**
-     * JWK源配置
-     * 提供用于JWT签名的密钥集合
-     */
     @Bean
     public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) {
-        log.info("🔧 配置JWK源");
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
-        try {
-            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .keyID(keyId)
+                .build();
 
-            RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                    .privateKey(privateKey)
-                    .keyID(UUID.randomUUID().toString())
-                    .build();
-
-            JWKSet jwkSet = new JWKSet(rsaKey);
-            JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(jwkSet);
-
-            log.info("✅ JWK源配置完成，密钥ID: {}", rsaKey.getKeyID());
-            return jwkSource;
-
-        } catch (Exception e) {
-            log.error("🚨 JWK源配置失败", e);
-            throw new RuntimeException("JWK源配置失败", e);
-        }
+        return new ImmutableJWKSet<>(new JWKSet(rsaKey));
     }
 
-    /**
-     * JWT编码器配置
-     * 用于生成JWT令牌
-     */
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
-        log.info("🔧 配置JWT编码器");
-
-        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
-
-        log.info("✅ JWT编码器配置完成");
-        return jwtEncoder;
+        return new NimbusJwtEncoder(jwkSource);
     }
 
-    /**
-     * JWT解码器配置
-     * 用于验证和解析JWT令牌
-     * 优先使用远程JWK URI，失败后回退到本地JWK源
-     */
     @Bean
-    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        log.info("🔧 配置JWT解码器");
-
-        // 如果配置了远程JWK URI，尝试使用远程验证
-        if (jwkSetUri != null && !jwkSetUri.trim().isEmpty()) {
-            try {
-                JwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                        .jwsAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-                        .build();
-
-                log.info("✅ JWT解码器配置完成（远程JWK URI）: {}", jwkSetUri);
-                return jwtDecoder;
-
-            } catch (Exception e) {
-                log.warn("⚠️ 远程JWK URI配置失败，回退到本地JWK源: {}", e.getMessage());
-            }
-        }
-
-        // 使用本地JWK源 - 直接创建JwtDecoder实例
-        log.info("🔧 使用本地JWK源创建JWT解码器");
-
-        try {
-            // 创建使用本地JWK源的JWT解码器
-            JwtDecoder localJwtDecoder = createLocalJwtDecoder(jwkSource);
-
-            log.info("✅ JWT解码器配置完成（本地JWK源）");
-            return localJwtDecoder;
-
-        } catch (Exception e) {
-            log.error("🚨 本地JWK源JWT解码器创建失败", e);
-            throw new RuntimeException("无法创建JWT解码器", e);
-        }
+    public JwtDecoder jwtDecoder(KeyPair keyPair) {
+        return NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
     }
 
-    /**
-     * 创建使用本地JWK源的JWT解码器
-     * 由于Spring Security OAuth2版本问题，暂时返回一个简单的解码器
-     */
-    private JwtDecoder createLocalJwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        log.warn("⚠️ 使用简化版JWT解码器，建议配置远程JWK URI");
-
-        // 返回一个简单的解码器，仅用于开发环境
-        // 生产环境建议使用远程JWK URI
-        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                .build();
-    }
-
-    /**
-     * OAuth2.1令牌生成器配置
-     * 支持JWT访问令牌、刷新令牌生成
-     */
     @Bean
     public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator(JwtEncoder jwtEncoder) {
-        log.info("🔧 配置OAuth2.1令牌生成器");
-
-        // JWT生成器（用于访问令牌）
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-
-        // 访问令牌生成器
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
-
-        // 刷新令牌生成器
         OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
-
-        // 委托令牌生成器（支持多种令牌类型）
-        OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator =
-                new DelegatingOAuth2TokenGenerator(
-                        jwtGenerator,
-                        accessTokenGenerator,
-                        refreshTokenGenerator
-                );
-
-        log.info("✅ OAuth2.1令牌生成器配置完成");
-        return tokenGenerator;
+        return new DelegatingOAuth2TokenGenerator(jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
     }
 
-    /**
-     * 密码编码器配置
-     * 支持多种密码编码算法，符合安全最佳实践
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        log.info("🔧 配置密码编码器");
-
-        // 创建密码编码器映射
         Map<String, PasswordEncoder> encoders = new HashMap<>();
-
-        // BCrypt编码器（推荐用于用户密码）
-        encoders.put("bcrypt", new BCryptPasswordEncoder(12));  // 强度12
-
-        // NoOp编码器（用于OAuth2客户端密码）
+        encoders.put("bcrypt", new BCryptPasswordEncoder(12));
         encoders.put("noop", new PasswordEncoder() {
             @Override
             public String encode(CharSequence rawPassword) {
@@ -225,95 +122,113 @@ public class JwtPasswordConfig {
                 return rawPassword.toString().equals(encodedPassword);
             }
         });
-
-        // PBKDF2编码器（备选）
         encoders.put("pbkdf2", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-
-        // SCrypt编码器（备选）  
         encoders.put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
-
-        // Argon2编码器（最新推荐）
         encoders.put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-
-        // 创建委托密码编码器，默认使用BCrypt
-        DelegatingPasswordEncoder passwordEncoder = new DelegatingPasswordEncoder("bcrypt", encoders);
-
-        log.info("✅ 密码编码器配置完成，默认算法: bcrypt，支持算法: {}", encoders.keySet());
-        return passwordEncoder;
+        return new DelegatingPasswordEncoder("bcrypt", encoders);
     }
 
-    /**
-     * JWT权限转换器配置
-     * 将JWT中的权限信息转换为Spring Security权限
-     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        log.info("🔧 配置JWT权限转换器");
-
-        // 权限转换器
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-
-        // OAuth2.1标准：从scope声明中提取权限
         authoritiesConverter.setAuthorityPrefix("SCOPE_");
         authoritiesConverter.setAuthoritiesClaimName("scope");
 
-        // JWT认证转换器
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-
-        // 设置权限转换器
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-
-        // 设置主体名称提取器（使用preferred_username或sub）
-        jwtAuthenticationConverter.setPrincipalClaimName("preferred_username");
-
-        log.info("✅ JWT权限转换器配置完成");
-        return jwtAuthenticationConverter;
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        converter.setPrincipalClaimName("preferred_username");
+        return converter;
     }
 
-    /**
-     * JWT权限转换器（增强版）
-     * 支持同时从scope和authorities中提取权限
-     */
     @Bean("enhancedJwtAuthenticationConverter")
-    @org.springframework.context.annotation.Primary
+    @Primary
     public JwtAuthenticationConverter enhancedJwtAuthenticationConverter() {
-        log.info("🔧 配置增强版JWT权限转换器");
-
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-
-        // 增强的权限转换器
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            // 从scope提取OAuth2权限
             JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
             scopeConverter.setAuthorityPrefix("SCOPE_");
             scopeConverter.setAuthoritiesClaimName("scope");
             var scopeAuthorities = scopeConverter.convert(jwt);
 
-            // 从authorities提取角色权限
             JwtGrantedAuthoritiesConverter roleConverter = new JwtGrantedAuthoritiesConverter();
             roleConverter.setAuthorityPrefix("ROLE_");
             roleConverter.setAuthoritiesClaimName("authorities");
             var roleAuthorities = roleConverter.convert(jwt);
 
-            // 合并权限
-            var allAuthorities = new java.util.ArrayList<org.springframework.security.core.GrantedAuthority>();
-            if (scopeAuthorities != null) allAuthorities.addAll(scopeAuthorities);
-            if (roleAuthorities != null) allAuthorities.addAll(roleAuthorities);
-
-            // 根据user_type添加默认角色
-            Object userType = jwt.getClaim("user_type");
-            if (userType != null) {
-                allAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + userType.toString().toUpperCase()));
+            var allAuthorities = new ArrayList<GrantedAuthority>();
+            if (scopeAuthorities != null) {
+                allAuthorities.addAll(scopeAuthorities);
+            }
+            if (roleAuthorities != null) {
+                allAuthorities.addAll(roleAuthorities);
             }
 
-            log.debug("🔑 JWT权限转换完成，权限数量: {}", allAuthorities.size());
+            Object userType = jwt.getClaim("user_type");
+            if (userType != null) {
+                allAuthorities.add(new SimpleGrantedAuthority("ROLE_" + userType.toString().toUpperCase()));
+            }
+
             return allAuthorities;
         });
 
-        // 优先使用preferred_username，回退到username，最后使用sub
         converter.setPrincipalClaimName("preferred_username");
-
-        log.info("✅ 增强版JWT权限转换器配置完成");
         return converter;
+    }
+
+    private KeyPair loadKeyPairFromConfig() {
+        try {
+            RSAPrivateKey privateKey = parsePrivateKey(configuredPrivateKey);
+            RSAPublicKey publicKey = StringUtils.hasText(configuredPublicKey)
+                    ? parsePublicKey(configuredPublicKey)
+                    : derivePublicKey(privateKey);
+
+            
+            return new KeyPair(publicKey, privateKey);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to parse configured JWT key pair", ex);
+        }
+    }
+
+    private KeyPair generateEphemeralKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            return keyPairGenerator.generateKeyPair();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to generate RSA key pair", ex);
+        }
+    }
+
+    private RSAPrivateKey parsePrivateKey(String privateKeyMaterial) throws Exception {
+        String normalized = normalizeKeyMaterial(privateKeyMaterial);
+        byte[] keyBytes = Base64.getDecoder().decode(normalized);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);
+    }
+
+    private RSAPublicKey parsePublicKey(String publicKeyMaterial) throws Exception {
+        String normalized = normalizeKeyMaterial(publicKeyMaterial);
+        byte[] keyBytes = Base64.getDecoder().decode(normalized);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
+    }
+
+    private RSAPublicKey derivePublicKey(RSAPrivateKey privateKey) throws Exception {
+        if (!(privateKey instanceof RSAPrivateCrtKey crtKey)) {
+            throw new IllegalStateException("Public key is not configured and cannot be derived from private key type");
+        }
+
+        RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(crtKey.getModulus(), crtKey.getPublicExponent());
+        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
+    }
+
+    private String normalizeKeyMaterial(String keyMaterial) {
+        return keyMaterial
+                .replace("\\n", "")
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s+", "");
     }
 }

@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Notification consumer for refund-related events.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class RefundNotificationConsumer {
                             String.format("Order %s has a new refund request. refundNo=%s", orderNo, refundNo)
                     );
                 }
-                log.info("Handled refund-created notification: refundNo={}, orderNo={}, eventId={}", refundNo, orderNo, eventId);
+                
             } catch (Exception ex) {
                 messageIdempotencyService.release(NS_REFUND_CREATED, eventId);
                 log.error("Handle refund-created notification failed: eventId={}", eventId, ex);
@@ -79,8 +79,8 @@ public class RefundNotificationConsumer {
                             : String.format("Your refund request has been rejected. refundNo=%s", refundNo);
                     sendNotification("USER", userId, title, content);
                 }
-                log.info("Handled refund-audited notification: refundNo={}, approved={}, eventId={}",
-                        refundNo, approved, eventId);
+                
+
             } catch (Exception ex) {
                 messageIdempotencyService.release(NS_REFUND_AUDITED, eventId);
                 log.error("Handle refund-audited notification failed: eventId={}", eventId, ex);
@@ -110,7 +110,7 @@ public class RefundNotificationConsumer {
                             String.format("Your refund is in processing. refundNo=%s", refundNo)
                     );
                 }
-                log.info("Handled refund-process notification: refundNo={}, eventId={}", refundNo, eventId);
+                
             } catch (Exception ex) {
                 messageIdempotencyService.release(NS_REFUND_PROCESS, eventId);
                 log.error("Handle refund-process notification failed: eventId={}", eventId, ex);
@@ -140,7 +140,7 @@ public class RefundNotificationConsumer {
                             String.format("User cancelled refund request. refundNo=%s", refundNo)
                     );
                 }
-                log.info("Handled refund-cancelled notification: refundNo={}, eventId={}", refundNo, eventId);
+                
             } catch (Exception ex) {
                 messageIdempotencyService.release(NS_REFUND_CANCELLED, eventId);
                 log.error("Handle refund-cancelled notification failed: eventId={}", eventId, ex);
@@ -182,8 +182,8 @@ public class RefundNotificationConsumer {
     }
 
     private void sendNotification(String receiverType, Long receiverId, String title, String content) {
-        // Placeholder implementation. Hook to notification service later.
-        log.info("Send notification: receiverType={}, receiverId={}, title={}, content={}",
-                receiverType, receiverId, title, content);
+        
+        
+
     }
 }

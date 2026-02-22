@@ -1,61 +1,61 @@
 spring:
   cloud:
     stream:
-      # 定义函数绑定
+      # Comment sanitized for UTF-8 compatibility.
       function:
         definition: orderCreatedConsumer;paymentSuccessConsumer;stockRestoreConsumer
 
-      # RocketMQ Binder配置
+      # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
         bindings:
-          # 库存冻结失败事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           stockFreezeFailedProducer-out-0:
             producer:
               group: stock-producer-group
-              sync: false  # 异步发送
+              sync: false  # Comment sanitized for UTF-8 compatibility.
 
-          # 订单创建事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           orderCreatedConsumer-in-0:
             consumer:
-              # 标签过滤
+              # Comment sanitized for UTF-8 compatibility.
               subscription: 'ORDER_CREATED'
-              # 并发消费
+              # Comment sanitized for UTF-8 compatibility.
               orderly: false
 
-          # 支付成功事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           paymentSuccessConsumer-in-0:
             consumer:
               subscription: 'PAYMENT_SUCCESS'
               orderly: false
 
-          # 库存恢复事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           stockRestoreConsumer-in-0:
             consumer:
               subscription: 'STOCK_RESTORE'
               orderly: false
 
-      # Binding配置
+      # Comment sanitized for UTF-8 compatibility.
       bindings:
-        # 库存冻结失败事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
           content-type: application/json
 
-        # 订单创建事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         orderCreatedConsumer-in-0:
           destination: order-created
           content-type: application/json
           group: stock-consumer-group
 
-        # 支付成功事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
           group: stock-consumer-group
 
-        # 库存恢复事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         stockRestoreConsumer-in-0:
           destination: stock-restore
           content-type: application/json

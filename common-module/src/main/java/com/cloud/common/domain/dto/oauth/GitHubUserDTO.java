@@ -11,83 +11,66 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * GitHub OAuth用户信息DTO
- * 用于存储从GitHub API获取的用户信息
- *
- * @author what's up
- * @since 2025-09-20
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "GitHub OAuth用户信息DTO")
+@Schema(description = "GitHub OAuth user DTO")
 public class GitHubUserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "GitHub用户ID")
-    @NotNull(message = "GitHub用户ID不能为空")
+    @Schema(description = "GitHub user id")
+    @NotNull(message = "githubId cannot be null")
     private Long githubId;
 
-    @Schema(description = "GitHub用户名(login)")
-    @NotBlank(message = "GitHub用户名不能为空")
+    @Schema(description = "GitHub login")
+    @NotBlank(message = "login cannot be blank")
     private String login;
 
-    @Schema(description = "用户显示名称")
+    @Schema(description = "Display name")
     private String name;
 
-    @Schema(description = "邮箱地址")
+    @Schema(description = "Email")
     private String email;
 
-    @Schema(description = "GitHub头像URL")
+    @Schema(description = "Avatar url")
     private String avatarUrl;
 
-    @Schema(description = "GitHub个人页面URL")
+    @Schema(description = "Profile url")
     private String htmlUrl;
 
-    @Schema(description = "个人简介")
+    @Schema(description = "Bio")
     private String bio;
 
-    @Schema(description = "所在位置")
+    @Schema(description = "Location")
     private String location;
 
-    @Schema(description = "博客/个人网站")
+    @Schema(description = "Blog")
     private String blog;
 
-    @Schema(description = "所在公司")
+    @Schema(description = "Company")
     private String company;
 
-    @Schema(description = "公开仓库数量")
+    @Schema(description = "Public repository count")
     private Integer publicRepos;
 
-    @Schema(description = "粉丝数")
+    @Schema(description = "Followers count")
     private Integer followers;
 
-    @Schema(description = "关注数")
+    @Schema(description = "Following count")
     private Integer following;
 
-    @Schema(description = "GitHub账户创建时间")
+    @Schema(description = "Created at")
     private LocalDateTime createdAt;
 
-    @Schema(description = "GitHub账户更新时间")
+    @Schema(description = "Updated at")
     private LocalDateTime updatedAt;
 
-    /**
-     * 构建系统用户名
-     *
-     * @return github_login格式的用户名
-     */
     public String buildSystemUsername() {
         return "github_" + this.login;
     }
 
-    /**
-     * 获取显示名称，优先使用name，其次使用login
-     *
-     * @return 显示名称
-     */
     public String getDisplayName() {
         return (name != null && !name.trim().isEmpty()) ? name : login;
     }

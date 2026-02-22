@@ -10,9 +10,9 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.stereotype.Component;
 
-/**
- * Customize JWT access-token claims consumed by gateway/downstream services.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -49,7 +49,7 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
                             .claim("status", user.getStatus());
                 }
             } catch (Exception ex) {
-                // Keep token issuance available even when user-service is transiently unavailable.
+                
                 log.warn("load user info for jwt claims failed, username={}", username, ex);
             }
         } else {

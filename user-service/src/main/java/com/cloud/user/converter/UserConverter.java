@@ -10,98 +10,98 @@ import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 
-/**
- * 用户转换器
- *
- * @author what's up
- */
+
+
+
+
+
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE, // 忽略未映射目标属性
-        unmappedSourcePolicy = ReportingPolicy.IGNORE  // 忽略未映射源属性
+        unmappedTargetPolicy = ReportingPolicy.IGNORE, 
+        unmappedSourcePolicy = ReportingPolicy.IGNORE  
 )
 public interface UserConverter {
 
     UserConverter INSTANCE = org.mapstruct.factory.Mappers.getMapper(UserConverter.class);
 
-    /**
-     * 转换用户实体为DTO
-     *
-     * @param user 用户实体
-     * @return 用户DTO
-     */
+    
+
+
+
+
+
     UserDTO toDTO(User user);
 
-    /**
-     * 转换用户DTO为实体
-     *
-     * @param userDTO 用户DTO
-     * @return 用户实体
-     */
+    
+
+
+
+
+
     User toEntity(UserDTO userDTO);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-        // 忽略createdAt和updatedAt字段，让MyBatis Plus自动填充
+        
     User toEntity(RegisterRequestDTO registerRequestDTO);
 
-    /**
-     * 转换用户实体列表为DTO列表
-     * 注意：密码字段不会被转换以确保安全
-     *
-     * @param users 用户实体列表
-     * @return 用户DTO列表
-     */
+    
+
+
+
+
+
+
     List<UserDTO> toDTOList(List<User> users);
 
 
-    /**
-     * 转换用户实体为VO
-     *
-     * @param user 用户实体
-     * @return 用户VO
-     */
+    
+
+
+
+
+
     UserVO toVO(User user);
 
-    /**
-     * 转换用户实体列表为VO列表
-     *
-     * @param users 用户实体列表
-     * @return 用户VO列表
-     */
+    
+
+
+
+
+
     List<UserVO> toVOList(List<User> users);
 
-    /**
-     * 转换用户DTO为VO
-     *
-     * @param userDTO 用户DTO
-     * @return 用户VO
-     */
+    
+
+
+
+
+
     UserVO dtoToVO(UserDTO userDTO);
 
-    /**
-     * 转换用户DTO列表为VO列表
-     *
-     * @param userDTOs 用户DTO列表
-     * @return 用户VO列表
-     */
+    
+
+
+
+
+
     List<UserVO> dtoToVOList(List<UserDTO> userDTOs);
 
-    /**
-     * 转换GitHub用户DTO为用户实体（OAuth登录专用）
-     * 注意：这个方法只做基础映射，业务逻辑在Service层处理
-     *
-     * @param githubUserDTO GitHub用户信息
-     * @return 用户实体
-     */
+    
+
+
+
+
+
+
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "username", ignore = true) // 由Service层设置
-    @Mapping(target = "password", ignore = true) // 由Service层设置
-    @Mapping(target = "phone", ignore = true) // 由Service层设置
-    @Mapping(target = "userType", ignore = true) // 由Service层设置
-    @Mapping(target = "status", ignore = true) // 由Service层设置
+    @Mapping(target = "username", ignore = true) 
+    @Mapping(target = "password", ignore = true) 
+    @Mapping(target = "phone", ignore = true) 
+    @Mapping(target = "userType", ignore = true) 
+    @Mapping(target = "status", ignore = true) 
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

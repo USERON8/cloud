@@ -6,48 +6,48 @@ import java.time.LocalDateTime;
 
 @Data
 public class StockDTO {
-    /**
-     * 主键ID
-     */
+    
+
+
     private Long id;
 
-    /**
-     * 商品ID
-     */
+    
+
+
     private Long productId;
 
-    /**
-     * 商品名称
-     */
+    
+
+
     private String productName;
 
-    /**
-     * 总库存量
-     */
+    
+
+
     private Integer stockQuantity;
 
-    /**
-     * 冻结库存量
-     */
+    
+
+
     private Integer frozenQuantity;
 
-    /**
-     * 可用库存量
-     */
+    
+
+
     private Integer availableQuantity;
 
-    /**
-     * 库存状态：1-正常，2-缺货，3-下架
-     */
+    
+
+
     private Integer stockStatus;
 
-    /**
-     * 创建时间
-     */
+    
+
+
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间
-     */
+    
+
+
     private LocalDateTime updatedAt;
 }

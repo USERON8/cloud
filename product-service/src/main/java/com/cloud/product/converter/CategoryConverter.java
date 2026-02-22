@@ -9,12 +9,12 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-/**
- * 分类转换器
- *
- * @author 代码规范团队
- * @since 1.0.0
- */
+
+
+
+
+
+
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
@@ -23,21 +23,21 @@ import java.util.List;
 public interface CategoryConverter {
     CategoryConverter INSTANCE = Mappers.getMapper(CategoryConverter.class);
 
-    /**
-     * 转换分类实体为DTO
-     *
-     * @param category 分类实体
-     * @return 分类DTO
-     */
+    
+
+
+
+
+
     @Mapping(target = "deleted", ignore = true)
     CategoryDTO toDTO(Category category);
 
-    /**
-     * 转换分类DTO为实体
-     *
-     * @param categoryDTO 分类DTO
-     * @return 分类实体
-     */
+    
+
+
+
+
+
     @Mapping(target = "createBy", ignore = true)
     @Mapping(target = "updateBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -45,11 +45,11 @@ public interface CategoryConverter {
     @Mapping(target = "deleted", ignore = true)
     Category toEntity(CategoryDTO categoryDTO);
 
-    /**
-     * 转换分类实体列表为DTO列表
-     *
-     * @param categories 分类实体列表
-     * @return 分类DTO列表
-     */
+    
+
+
+
+
+
     List<CategoryDTO> toDTOList(List<Category> categories);
 }

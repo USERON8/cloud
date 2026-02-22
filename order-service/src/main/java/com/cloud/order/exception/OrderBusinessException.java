@@ -1,22 +1,22 @@
 package com.cloud.order.exception;
 
-/**
- * 订单业务异常
- * 用于订单业务流程中的异常处理
- *
- * @author CloudDevAgent
- * @since 2025-09-26
- */
+
+
+
+
+
+
+
 public class OrderBusinessException extends RuntimeException {
 
-    /**
-     * 订单ID
-     */
+    
+
+
     private final Long orderId;
 
-    /**
-     * 错误代码
-     */
+    
+
+
     private final String errorCode;
 
     public OrderBusinessException(String message) {
@@ -58,7 +58,7 @@ public class OrderBusinessException extends RuntimeException {
     }
 
     public int getCode() {
-        // 将String类型的errorCode转换为int，如果为null则返回500
+        
         if (errorCode != null) {
             try {
                 return Integer.parseInt(errorCode);

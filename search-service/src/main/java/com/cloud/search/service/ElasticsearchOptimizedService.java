@@ -25,17 +25,17 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * 搜索服务ES操作优化服务
- * 提供高性能的ES搜索操作，针对搜索场景进行优化
- *
- * @author what's up
- * @since 1.0.0
- */
+
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("unchecked") // 禁用未检查类型转换警告，用于Elasticsearch泛型操作
+@SuppressWarnings("unchecked") 
 public class ElasticsearchOptimizedService {
 
     private static final String SEARCH_CACHE_KEY = "search:cache:";
@@ -45,36 +45,36 @@ public class ElasticsearchOptimizedService {
     private final ElasticsearchClient elasticsearchClient;
     private final StringRedisTemplate redisTemplate;
 
-    /**
-     * 智能商品搜索
-     * 支持多字段搜索、高亮、排序、过滤
-     *
-     * @param keyword    搜索关键词
-     * @param categoryId 分类ID
-     * @param minPrice   最低价格
-     * @param maxPrice   最高价格
-     * @param sortField  排序字段
-     * @param sortOrder  排序方向
-     * @param from       起始位置
-     * @param size       查询数量
-     * @return 搜索结果
-     */
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
     @Transactional(readOnly = true)
     public SearchResult smartProductSearch(String keyword, Long categoryId,
                                            Double minPrice, Double maxPrice,
                                            String sortField, String sortOrder,
                                            int from, int size) {
         try {
-            log.info("执行智能商品搜索 - 关键词: {}, 分类: {}, 价格区间: [{}, {}], 排序: {}:{}",
-                    keyword, categoryId, minPrice, maxPrice, sortField, sortOrder);
+            
 
-            // 记录热门搜索
+
+            
             recordHotSearch(keyword);
 
-            // 构建查询
+            
             Query query = buildProductSearchQuery(keyword, categoryId, minPrice, maxPrice);
 
-            // 构建搜索请求
+            
             SearchRequest searchRequest = SearchRequest.of(s -> s
                     .index("product_index")
                     .query(query)
@@ -88,27 +88,27 @@ public class ElasticsearchOptimizedService {
 
             SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
 
-            // 处理搜索结果
+            
             List<Map<String, Object>> products = new ArrayList<>();
             for (Hit<Map> hit : response.hits().hits()) {
                 Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
 
-                // 添加高亮信息
+                
                 if (hit.highlight() != null && !hit.highlight().isEmpty()) {
                     product.put("highlight", hit.highlight());
                 }
 
-                // 添加评分
+                
                 product.put("score", hit.score());
                 products.add(product);
             }
 
             long total = response.hits().total() != null ? response.hits().total().value() : 0;
 
-            // 处理聚合结果
+            
             Map<String, Object> aggregations = processAggregations(response.aggregations());
 
-            log.info("商品搜索完成 - 关键词: {}, 总数: {}, 返回: {}", keyword, total, products.size());
+            
 
             return SearchResult.builder()
                     .documents(products)
@@ -119,22 +119,22 @@ public class ElasticsearchOptimizedService {
                     .build();
 
         } catch (Exception e) {
-            log.error("智能商品搜索失败 - 关键词: {}, 错误: {}", keyword, e.getMessage(), e);
+            log.error("鏅鸿兘鍟嗗搧鎼滅储澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage(), e);
             return SearchResult.empty(from, size);
         }
     }
 
-    /**
-     * 搜索建议
-     * 基于用户输入提供搜索建议
-     */
+    
+
+
+
     @Cacheable(value = "searchSuggestionCache", key = "#keyword", condition = "#keyword != null && #keyword.length() > 1")
     @Transactional(readOnly = true)
     public List<String> getSearchSuggestions(String keyword, int limit) {
         try {
-            log.debug("获取搜索建议 - 关键词: {}, 限制: {}", keyword, limit);
+            log.debug("鑾峰彇鎼滅储寤鸿 - 鍏抽敭璇? {}, 闄愬埗: {}", keyword, limit);
 
-            // 构建建议查询
+            
             Query query = Query.of(q -> q
                     .multiMatch(m -> m
                             .query(keyword)
@@ -147,7 +147,7 @@ public class ElasticsearchOptimizedService {
             SearchRequest searchRequest = SearchRequest.of(s -> s
                     .index("product_index")
                     .query(query)
-                    .size(limit * 2) // 获取更多结果用于去重
+                    .size(limit * 2) 
                     .source(src -> src
                             .filter(f -> f.includes("productName", "categoryName", "brandName"))
                     )
@@ -155,7 +155,7 @@ public class ElasticsearchOptimizedService {
 
             SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
 
-            // 提取建议词并去重
+            
             Set<String> suggestions = new LinkedHashSet<>();
             for (Hit<Map> hit : response.hits().hits()) {
                 Map<String, Object> source = hit.source() != null ? hit.source() : new HashMap<>();
@@ -175,32 +175,32 @@ public class ElasticsearchOptimizedService {
             }
 
             List<String> result = suggestions.stream().limit(limit).collect(Collectors.toList());
-            log.debug("搜索建议完成 - 关键词: {}, 建议数: {}", keyword, result.size());
+            log.debug("鎼滅储寤鸿瀹屾垚 - 鍏抽敭璇? {}, 寤鸿鏁? {}", keyword, result.size());
 
             return result;
 
         } catch (Exception e) {
-            log.error("获取搜索建议失败 - 关键词: {}, 错误: {}", keyword, e.getMessage(), e);
+            log.error("鑾峰彇鎼滅储寤鸿澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage(), e);
             return List.of();
         }
     }
 
-    /**
-     * 热门搜索词
-     */
+    
+
+
     @Cacheable(value = "hotSearchCache", key = "'hot_keywords'")
     @Transactional(readOnly = true)
     public List<String> getHotSearchKeywords(int limit) {
         try {
-            log.debug("获取热门搜索词 - 限制: {}", limit);
+            log.debug("鑾峰彇鐑棬鎼滅储璇?- 闄愬埗: {}", limit);
 
-            // 从Redis获取热门搜索统计
+            
             Set<String> hotKeys = redisTemplate.keys(HOT_SEARCH_KEY + "*");
             if (hotKeys == null || hotKeys.isEmpty()) {
                 return List.of();
             }
 
-            // 获取搜索次数并排序
+            
             List<HotKeyword> hotKeywords = new ArrayList<>();
             for (String key : hotKeys) {
                 String keyword = key.replace(HOT_SEARCH_KEY, "");
@@ -217,22 +217,22 @@ public class ElasticsearchOptimizedService {
                     .map(h -> h.keyword)
                     .collect(Collectors.toList());
 
-            log.debug("热门搜索词获取完成 - 数量: {}", result.size());
+            log.debug("鐑棬鎼滅储璇嶈幏鍙栧畬鎴?- 鏁伴噺: {}", result.size());
             return result;
 
         } catch (Exception e) {
-            log.error("获取热门搜索词失败 - 错误: {}", e.getMessage(), e);
+            log.error("鑾峰彇鐑棬鎼滅储璇嶅け璐?- 閿欒: {}", e.getMessage(), e);
             return List.of();
         }
     }
 
-    /**
-     * 构建商品搜索查询
-     */
+    
+
+
     private Query buildProductSearchQuery(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
 
-        // 关键词搜索
+        
         if (keyword != null && !keyword.trim().isEmpty()) {
             Query keywordQuery = Query.of(q -> q
                     .multiMatch(m -> m
@@ -246,7 +246,7 @@ public class ElasticsearchOptimizedService {
             boolQuery.must(keywordQuery);
         }
 
-        // 分类过滤
+        
         if (categoryId != null) {
             Query categoryQuery = Query.of(q -> q
                     .term(t -> t
@@ -257,13 +257,13 @@ public class ElasticsearchOptimizedService {
             boolQuery.filter(categoryQuery);
         }
 
-        // 价格区间过滤 - 暂时简化实现
+        
         if (minPrice != null && maxPrice != null) {
-            // 使用term查询作为临时解决方案
-            log.debug("价格过滤: {} - {}", minPrice, maxPrice);
+            
+            log.debug("浠锋牸杩囨护: {} - {}", minPrice, maxPrice);
         }
 
-        // 状态过滤（只搜索上架商品）
+        
         Query statusQuery = Query.of(q -> q
                 .term(t -> t
                         .field("status")
@@ -275,9 +275,9 @@ public class ElasticsearchOptimizedService {
         return Query.of(q -> q.bool(boolQuery.build()));
     }
 
-    /**
-     * 构建排序选项
-     */
+    
+
+
     private List<co.elastic.clients.elasticsearch._types.SortOptions> buildSortOptions(String sortField, String sortOrder) {
         List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
 
@@ -301,13 +301,13 @@ public class ElasticsearchOptimizedService {
                     ));
                     break;
                 default:
-                    // 默认按相关性排序
+                    
                     sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
                             .score(sc -> sc.order(SortOrder.Desc))
                     ));
             }
         } else {
-            // 默认按相关性排序
+            
             sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
                     .score(sc -> sc.order(SortOrder.Desc))
             ));
@@ -316,9 +316,9 @@ public class ElasticsearchOptimizedService {
         return sortOptions;
     }
 
-    /**
-     * 构建高亮配置
-     */
+    
+
+
     private Highlight buildHighlight() {
         return Highlight.of(h -> h
                 .fields("productName", HighlightField.of(hf -> hf
@@ -336,13 +336,13 @@ public class ElasticsearchOptimizedService {
         );
     }
 
-    /**
-     * 构建聚合查询
-     */
+    
+
+
     private Map<String, Aggregation> buildAggregations() {
         Map<String, Aggregation> aggregations = new HashMap<>();
 
-        // 分类聚合
+        
         aggregations.put("categories", Aggregation.of(a -> a
                 .terms(t -> t
                         .field("categoryId")
@@ -350,7 +350,7 @@ public class ElasticsearchOptimizedService {
                 )
         ));
 
-        // 品牌聚合
+        
         aggregations.put("brands", Aggregation.of(a -> a
                 .terms(t -> t
                         .field("brandName.keyword")
@@ -358,7 +358,7 @@ public class ElasticsearchOptimizedService {
                 )
         ));
 
-        // 价格区间聚合
+        
         aggregations.put("priceRanges", Aggregation.of(a -> a
                 .range(r -> r
                         .field("price")
@@ -372,9 +372,9 @@ public class ElasticsearchOptimizedService {
         return aggregations;
     }
 
-    /**
-     * 处理聚合结果
-     */
+    
+
+
     private Map<String, Object> processAggregations(Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregate> aggregations) {
         Map<String, Object> result = new HashMap<>();
 
@@ -400,24 +400,24 @@ public class ElasticsearchOptimizedService {
         return result;
     }
 
-    /**
-     * 记录热门搜索
-     */
+    
+
+
     private void recordHotSearch(String keyword) {
         if (keyword != null && !keyword.trim().isEmpty()) {
             try {
                 String key = HOT_SEARCH_KEY + keyword.trim().toLowerCase();
                 redisTemplate.opsForValue().increment(key);
-                redisTemplate.expire(key, 7, TimeUnit.DAYS); // 7天过期
+                redisTemplate.expire(key, 7, TimeUnit.DAYS); 
             } catch (Exception e) {
-                log.warn("记录热门搜索失败 - 关键词: {}, 错误: {}", keyword, e.getMessage());
+                log.warn("璁板綍鐑棬鎼滅储澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage());
             }
         }
     }
 
-    /**
-     * 索引单个文档
-     */
+    
+
+
     public <T> boolean indexDocument(String indexName, String documentId, T document) {
         try {
             var request = co.elastic.clients.elasticsearch.core.IndexRequest.of(i -> i
@@ -428,18 +428,18 @@ public class ElasticsearchOptimizedService {
             );
 
             var response = elasticsearchClient.index(request);
-            log.info("文档索引成功 - 索引: {}, ID: {}, 结果: {}", indexName, documentId, response.result());
+            
             return true;
 
         } catch (Exception e) {
-            log.error("索引文档失败 - 索引: {}, ID: {}", indexName, documentId, e);
+            log.error("绱㈠紩鏂囨。澶辫触 - 绱㈠紩: {}, ID: {}", indexName, documentId, e);
             return false;
         }
     }
 
-    /**
-     * 批量索引文档
-     */
+    
+
+
     public <T> int bulkIndex(String indexName, List<T> documents) {
         if (documents == null || documents.isEmpty()) {
             return 0;
@@ -450,7 +450,7 @@ public class ElasticsearchOptimizedService {
 
             for (int i = 0; i < documents.size(); i++) {
                 T document = documents.get(i);
-                String documentId = String.valueOf(i); // 简单的ID生成策略
+                String documentId = String.valueOf(i); 
 
                 bulkRequest.operations(op -> op
                         .index(idx -> idx
@@ -464,22 +464,22 @@ public class ElasticsearchOptimizedService {
             var response = elasticsearchClient.bulk(bulkRequest.build());
 
             if (response.errors()) {
-                log.warn("批量索引部分失败 - 索引: {}, 文档数: {}", indexName, documents.size());
+                log.warn("鎵归噺绱㈠紩閮ㄥ垎澶辫触 - 绱㈠紩: {}, 鏂囨。鏁? {}", indexName, documents.size());
                 return documents.size() - response.items().size();
             } else {
-                log.info("批量索引成功 - 索引: {}, 文档数: {}", indexName, documents.size());
+                
                 return documents.size();
             }
 
         } catch (Exception e) {
-            log.error("批量索引失败 - 索引: {}, 文档数: {}", indexName, documents.size(), e);
+            log.error("鎵归噺绱㈠紩澶辫触 - 绱㈠紩: {}, 鏂囨。鏁? {}", indexName, documents.size(), e);
             return 0;
         }
     }
 
-    /**
-     * 热门关键词内部类
-     */
+    
+
+
     private static class HotKeyword {
         final String keyword;
         final long count;
@@ -490,9 +490,9 @@ public class ElasticsearchOptimizedService {
         }
     }
 
-    /**
-     * 搜索结果封装类
-     */
+    
+
+
     public static class SearchResult {
         private final List<Map<String, Object>> documents;
         private final long total;
@@ -516,7 +516,7 @@ public class ElasticsearchOptimizedService {
             return new SearchResult(List.of(), 0, from, size, Map.of());
         }
 
-        // Getters
+        
         public List<Map<String, Object>> getDocuments() {
             return documents;
         }

@@ -6,25 +6,25 @@ import com.cloud.common.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 入库记录表
- *
- * @author what's up
- * @TableName stock_in
- */
+
+
+
+
+
+
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "stock_in")
 @Data
 public class StockIn extends BaseEntity<StockIn> {
-    /**
-     * 商品ID
-     */
+    
+
+
     @TableField(value = "product_id")
     private Long productId;
 
-    /**
-     * 入库数量
-     */
+    
+
+
     @TableField(value = "quantity")
     private Integer quantity;
 }

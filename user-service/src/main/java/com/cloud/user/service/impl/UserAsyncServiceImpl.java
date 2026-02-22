@@ -8,124 +8,92 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserAsyncService;
 import com.cloud.user.service.UserService;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
-/**
- * 用户异步服务实现类
- * 使用CompletableFuture和@Async注解实现并发优化
- *
- * @author what's up
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserAsyncServiceImpl implements UserAsyncService {
+
+    private static final int BATCH_SIZE = 50;
 
     private final UserService userService;
     private final UserMapper userMapper;
     private final UserConverter userConverter;
     private final CacheManager cacheManager;
     private final RedisTemplate<String, Object> redisTemplate;
+
     @Resource
     @Qualifier("userQueryExecutor")
     private Executor userQueryExecutor;
+
     @Resource
     @Qualifier("userOperationExecutor")
     private Executor userOperationExecutor;
+
     @Resource
     @Qualifier("userNotificationExecutor")
     private Executor userNotificationExecutor;
+
     @Resource
     @Qualifier("userCommonAsyncExecutor")
     private Executor userCommonAsyncExecutor;
+
     @Resource
     @Qualifier("userStatisticsExecutor")
     private Executor userStatisticsExecutor;
 
-    /**
-     * 批量查询的分批大小
-     */
-    private static final int BATCH_SIZE = 50;
-
     @Override
     @Async("userQueryExecutor")
     public CompletableFuture<List<UserDTO>> getUsersByIdsAsync(Collection<Long> userIds) {
-        log.debug("异步批量查询用户信息开始，用户数量: {}", userIds.size());
-        long startTime = System.currentTimeMillis();
-
-        try {
-            if (userIds == null || userIds.isEmpty()) {
-                return CompletableFuture.completedFuture(Collections.emptyList());
-            }
-
-            // 如果数量较少，直接查询
-            if (userIds.size() <= BATCH_SIZE) {
-                List<UserDTO> result = userService.getUsersByIds(userIds);
-                log.debug("异步批量查询用户信息完成，耗时: {}ms", System.currentTimeMillis() - startTime);
-                return CompletableFuture.completedFuture(result);
-            }
-
-            // 大批量数据：分批并发查询
-            List<Long> userIdList = new ArrayList<>(userIds);
-            List<CompletableFuture<List<UserDTO>>> futures = new ArrayList<>();
-
-            // 分批处理
-            for (int i = 0; i < userIdList.size(); i += BATCH_SIZE) {
-                int end = Math.min(i + BATCH_SIZE, userIdList.size());
-                List<Long> batch = userIdList.subList(i, end);
-
-                CompletableFuture<List<UserDTO>> future = CompletableFuture.supplyAsync(
-                        () -> userService.getUsersByIds(batch),
-                        userQueryExecutor
-                );
-                futures.add(future);
-            }
-
-            // 等待所有批次完成并合并结果
-            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenApply(v -> {
-                        List<UserDTO> result = futures.stream()
-                                .map(CompletableFuture::join)
-                                .flatMap(List::stream)
-                                .collect(Collectors.toList());
-
-                        log.info("异步批量查询用户信息完成，总数: {}, 耗时: {}ms",
-                                result.size(), System.currentTimeMillis() - startTime);
-                        return result;
-                    });
-
-        } catch (Exception e) {
-            log.error("异步批量查询用户信息失败", e);
-            return CompletableFuture.failedFuture(e);
+        if (userIds == null || userIds.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
+
+        if (userIds.size() <= BATCH_SIZE) {
+            return CompletableFuture.completedFuture(userService.getUsersByIds(userIds));
+        }
+
+        List<Long> allIds = new ArrayList<>(userIds);
+        List<CompletableFuture<List<UserDTO>>> futures = new ArrayList<>();
+        for (int i = 0; i < allIds.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, allIds.size());
+            List<Long> batch = allIds.subList(i, end);
+            futures.add(CompletableFuture.supplyAsync(() -> userService.getUsersByIds(batch), userQueryExecutor));
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream().map(CompletableFuture::join).flatMap(List::stream).toList());
     }
 
     @Override
     @Async("userQueryExecutor")
     public CompletableFuture<List<UserVO>> getUserVOsByIdsAsync(Collection<Long> userIds) {
-        log.debug("异步批量查询用户VO开始，用户数量: {}", userIds.size());
-
         return getUsersByIdsAsync(userIds)
-                .thenApply(userDTOs -> {
-                    List<UserVO> userVOs = userConverter.dtoToVOList(userDTOs);
-                    log.debug("异步批量查询用户VO完成，数量: {}", userVOs.size());
-                    return userVOs;
-                })
+                .thenApply(userConverter::dtoToVOList)
                 .exceptionally(ex -> {
-                    log.error("异步批量查询用户VO失败", ex);
+                    log.error("Failed to get user VO list asynchronously", ex);
                     return Collections.emptyList();
                 });
     }
@@ -133,67 +101,34 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userQueryExecutor")
     public CompletableFuture<UserDTO> getUserByIdAsync(Long userId) {
-        log.debug("异步查询用户信息: userId={}", userId);
-
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return userService.getUserById(userId);
-            } catch (Exception e) {
-                log.error("异步查询用户信息失败: userId={}", userId, e);
-                throw new RuntimeException("查询用户信息失败", e);
-            }
-        }, userQueryExecutor);
+        return CompletableFuture.supplyAsync(() -> userService.getUserById(userId), userQueryExecutor);
     }
 
     @Override
     @Async("userQueryExecutor")
     public CompletableFuture<Map<String, Boolean>> checkUsernamesExistAsync(List<String> usernames) {
-        log.debug("异步批量检查用户名是否存在，数量: {}", usernames.size());
-        long startTime = System.currentTimeMillis();
-
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                // 并发检查多个用户名
-                List<CompletableFuture<Map.Entry<String, Boolean>>> futures = usernames.stream()
-                        .map(username -> CompletableFuture.supplyAsync(() -> {
-                            UserDTO user = userService.findByUsername(username);
-                            return Map.entry(username, user != null);
-                        }, userQueryExecutor))
-                        .collect(Collectors.toList());
-
-                // 等待所有检查完成
-                Map<String, Boolean> result = futures.stream()
-                        .map(CompletableFuture::join)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                log.info("异步批量检查用户名完成，数量: {}, 耗时: {}ms",
-                        usernames.size(), System.currentTimeMillis() - startTime);
-                return result;
-
-            } catch (Exception e) {
-                log.error("异步批量检查用户名失败", e);
-                throw new RuntimeException("检查用户名失败", e);
+            if (usernames == null || usernames.isEmpty()) {
+                return Collections.emptyMap();
             }
+            Map<String, Boolean> result = new LinkedHashMap<>();
+            for (String username : usernames) {
+                result.put(username, userService.findByUsername(username) != null);
+            }
+            return result;
         }, userQueryExecutor);
     }
 
     @Override
     @Async("userQueryExecutor")
     public CompletableFuture<Map<Long, Boolean>> checkUsersActiveAsync(Collection<Long> userIds) {
-        log.debug("异步批量校验用户状态，数量: {}", userIds.size());
-
         return getUsersByIdsAsync(userIds)
-                .thenApply(userDTOs -> {
-                    Map<Long, Boolean> result = userDTOs.stream()
-                            .collect(Collectors.toMap(
-                                    UserDTO::getId,
-                                    user -> user.getStatus() != null && user.getStatus() == 1
-                            ));
-                    log.debug("异步批量校验用户状态完成，数量: {}", result.size());
-                    return result;
-                })
+                .thenApply(users -> users.stream().collect(Collectors.toMap(
+                        UserDTO::getId,
+                        u -> u.getStatus() != null && u.getStatus() == 1
+                )))
                 .exceptionally(ex -> {
-                    log.error("异步批量校验用户状态失败", ex);
+                    log.error("Failed to check user active status asynchronously", ex);
                     return Collections.emptyMap();
                 });
     }
@@ -201,28 +136,18 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userOperationExecutor")
     public CompletableFuture<Boolean> updateLastLoginTimeAsync(Collection<Long> userIds) {
-        log.debug("异步批量更新最后登录时间，数量: {}", userIds.size());
-        long startTime = System.currentTimeMillis();
-
         return CompletableFuture.supplyAsync(() -> {
             try {
-                LocalDateTime now = LocalDateTime.now();
-
-                // 批量更新
-                for (Long userId : userIds) {
-                    User user = new User();
-                    user.setId(userId);
-                    // 这里应该有一个lastLoginTime字段，如果没有可以记录到Redis
-                    String key = "user:last_login:" + userId;
-                    redisTemplate.opsForValue().set(key, now);
+                if (userIds == null || userIds.isEmpty()) {
+                    return true;
                 }
-
-                log.info("异步批量更新最后登录时间完成，数量: {}, 耗时: {}ms",
-                        userIds.size(), System.currentTimeMillis() - startTime);
+                LocalDateTime now = LocalDateTime.now();
+                for (Long userId : userIds) {
+                    redisTemplate.opsForValue().set("user:last_login:" + userId, now);
+                }
                 return true;
-
             } catch (Exception e) {
-                log.error("异步批量更新最后登录时间失败", e);
+                log.error("Failed to update last login time asynchronously", e);
                 return false;
             }
         }, userOperationExecutor);
@@ -231,22 +156,16 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
-        log.info("异步发送欢迎邮件，userId: {}", userId);
-
         return CompletableFuture.supplyAsync(() -> {
             try {
                 UserDTO user = userService.getUserById(userId);
                 if (user == null || user.getEmail() == null) {
-                    log.warn("用户不存在或没有邮箱地址，无法发送欢迎邮件: userId={}", userId);
                     return false;
                 }
-
-                // TODO: 集成邮件服务
-                log.info("发送欢迎邮件成功: userId={}, email={}", userId, user.getEmail());
+                redisTemplate.opsForValue().set("notification:welcome:" + userId, System.currentTimeMillis());
                 return true;
-
             } catch (Exception e) {
-                log.error("发送欢迎邮件失败: userId={}", userId, e);
+                log.error("Failed to send welcome email asynchronously", e);
                 return false;
             }
         }, userNotificationExecutor);
@@ -255,22 +174,19 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Void> refreshUserCacheAsync(Long userId) {
-        log.debug("异步刷新用户缓存: userId={}", userId);
-
         return CompletableFuture.runAsync(() -> {
             try {
-                if (cacheManager != null) {
-                    // 清除旧缓存
-                    Objects.requireNonNull(cacheManager.getCache("user")).evict(userId);
-                    Objects.requireNonNull(cacheManager.getCache("userInfo")).evict(userId);
-
-                    // 预加载新数据
-                    userService.getUserById(userId);
-
-                    log.debug("刷新用户缓存成功: userId={}", userId);
+                Cache userCache = cacheManager.getCache("user");
+                Cache userInfoCache = cacheManager.getCache("userInfo");
+                if (userCache != null) {
+                    userCache.evict(userId);
                 }
+                if (userInfoCache != null) {
+                    userInfoCache.evict(userId);
+                }
+                userService.getUserById(userId);
             } catch (Exception e) {
-                log.error("刷新用户缓存失败: userId={}", userId, e);
+                log.error("Failed to refresh user cache asynchronously, userId={}", userId, e);
             }
         }, userCommonAsyncExecutor);
     }
@@ -278,56 +194,32 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Void> refreshUserCacheAsync(Collection<Long> userIds) {
-        log.info("异步批量刷新用户缓存，数量: {}", userIds.size());
-
-        return CompletableFuture.runAsync(() -> {
-            try {
-                // 并发刷新多个用户缓存
-                List<CompletableFuture<Void>> futures = userIds.stream()
-                        .map(this::refreshUserCacheAsync)
-                        .collect(Collectors.toList());
-
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-                log.info("批量刷新用户缓存完成，数量: {}", userIds.size());
-
-            } catch (Exception e) {
-                log.error("批量刷新用户缓存失败", e);
-            }
-        }, userCommonAsyncExecutor);
+        if (userIds == null || userIds.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        List<CompletableFuture<Void>> futures = userIds.stream().map(this::refreshUserCacheAsync).toList();
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Integer> preloadPopularUsersAsync(Integer limit) {
-        log.info("异步预加载热门用户数据，数量: {}", limit);
-        long startTime = System.currentTimeMillis();
-
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 查询最近活跃的用户
+                int safeLimit = limit == null || limit <= 0 ? 100 : limit;
                 LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-                wrapper.eq(User::getStatus, 1)
-                        .orderByDesc(User::getCreatedAt)
-                        .last("LIMIT " + limit);
-
+                wrapper.eq(User::getStatus, 1).orderByDesc(User::getCreatedAt).last("LIMIT " + safeLimit);
                 List<User> users = userMapper.selectList(wrapper);
-
-                // 预加载到缓存
-                users.forEach(user -> {
+                for (User user : users) {
                     try {
                         userService.getUserById(user.getId());
                     } catch (Exception e) {
-                        log.warn("预加载用户缓存失败: userId={}", user.getId(), e);
+                        log.warn("Failed to preload user cache, userId={}", user.getId(), e);
                     }
-                });
-
-                log.info("预加载热门用户数据完成，数量: {}, 耗时: {}ms",
-                        users.size(), System.currentTimeMillis() - startTime);
+                }
                 return users.size();
-
             } catch (Exception e) {
-                log.error("预加载热门用户数据失败", e);
+                log.error("Failed to preload popular users", e);
                 return 0;
             }
         }, userCommonAsyncExecutor);
@@ -336,13 +228,11 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Long> countUsersAsync() {
-        log.debug("异步统计用户总数");
-
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return userService.count();
             } catch (Exception e) {
-                log.error("异步统计用户总数失败", e);
+                log.error("Failed to count users asynchronously", e);
                 return 0L;
             }
         }, userStatisticsExecutor);
@@ -351,31 +241,21 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Long> countActiveUsersAsync(Integer days) {
-        log.debug("异步统计活跃用户数，最近{}天", days);
-
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 这里可以根据lastLoginTime统计
-                // 目前先使用Redis记录的登录时间
-                String pattern = "user:last_login:*";
-                Set<String> keys = redisTemplate.keys(pattern);
-
+                int safeDays = days == null || days <= 0 ? 7 : days;
+                Set<String> keys = redisTemplate.keys("user:last_login:*");
                 if (keys == null || keys.isEmpty()) {
                     return 0L;
                 }
-
-                LocalDateTime threshold = LocalDateTime.now().minusDays(days);
-                long count = keys.stream()
+                LocalDateTime threshold = LocalDateTime.now().minusDays(safeDays);
+                return keys.stream()
                         .map(key -> (LocalDateTime) redisTemplate.opsForValue().get(key))
                         .filter(Objects::nonNull)
-                        .filter(loginTime -> loginTime.isAfter(threshold))
+                        .filter(time -> time.isAfter(threshold))
                         .count();
-
-                log.debug("活跃用户数统计完成: {}", count);
-                return count;
-
             } catch (Exception e) {
-                log.error("异步统计活跃用户数失败", e);
+                log.error("Failed to count active users asynchronously", e);
                 return 0L;
             }
         }, userStatisticsExecutor);
@@ -384,31 +264,22 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<String, Long>> getUserGrowthTrendAsync(Integer days) {
-        log.info("异步获取用户增长趋势，最近{}天", days);
-
         return CompletableFuture.supplyAsync(() -> {
             try {
+                int safeDays = days == null || days <= 0 ? 7 : days;
                 Map<String, Long> trend = new LinkedHashMap<>();
-                LocalDateTime endDate = LocalDateTime.now();
-
-                for (int i = days - 1; i >= 0; i--) {
-                    LocalDateTime date = endDate.minusDays(i);
-                    String dateStr = date.toLocalDate().toString();
-
-                    // 统计该日注册的用户数
+                LocalDateTime now = LocalDateTime.now();
+                for (int i = safeDays - 1; i >= 0; i--) {
+                    LocalDateTime date = now.minusDays(i);
                     LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
                     wrapper.ge(User::getCreatedAt, date.toLocalDate().atStartOfDay())
                             .lt(User::getCreatedAt, date.toLocalDate().plusDays(1).atStartOfDay());
-
                     long count = userMapper.selectCount(wrapper);
-                    trend.put(dateStr, count);
+                    trend.put(date.toLocalDate().toString(), count);
                 }
-
-                log.info("用户增长趋势获取完成，天数: {}", days);
                 return trend;
-
             } catch (Exception e) {
-                log.error("异步获取用户增长趋势失败", e);
+                log.error("Failed to get user growth trend asynchronously", e);
                 return Collections.emptyMap();
             }
         }, userStatisticsExecutor);

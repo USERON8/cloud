@@ -1,40 +1,40 @@
-# 全局配置
+# ASCII comment sanitized for compatibility.
 global:
-  scrape_interval: 15s # 默认抓取间隔
-  evaluation_interval: 15s # 规则评估间隔
+  scrape_interval: 15s # ASCII comment sanitized for compatibility.
+  evaluation_interval: 15s # ASCII comment sanitized for compatibility.
 
-# Alertmanager配置
+# ASCII comment sanitized for compatibility.
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
           # - alertmanager:9093
 
-# 规则文件
+# ASCII comment sanitized for compatibility.
 rule_files:
 # - "first_rules.yml"
 # - "second_rules.yml"
 
-# 抓取配置
+# ASCII comment sanitized for compatibility.
 scrape_configs:
-  # Prometheus自身监控
+  # ASCII comment sanitized for compatibility.
   - job_name: 'prometheus'
     static_configs:
       - targets: [ 'localhost:9090' ]
 
-  # Spring Boot Actuator监控
+  # ASCII comment sanitized for compatibility.
   - job_name: 'spring-boot'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets:
-          - 'host.docker.internal:8080' # 用户服务
-          - 'host.docker.internal:8081' # 库存服务
-          - 'host.docker.internal:8082' # 订单服务
-          - 'host.docker.internal:8083' # 支付服务
-          - 'host.docker.internal:8084' # 商品服务
-          - 'host.docker.internal:8085' # 商家服务
-          - 'host.docker.internal:8086' # 管理员服务
-          - 'host.docker.internal:8087' # 搜索服务
-          - 'host.docker.internal:8088' # 认证服务
-          - 'host.docker.internal:8089' # 网关服务
+          - 'host.docker.internal:8080' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8081' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8082' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8083' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8084' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8085' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8086' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8087' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8088' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:8089' # ASCII comment sanitized for compatibility.
     scrape_interval: 10s

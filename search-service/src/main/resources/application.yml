@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8087}
   tomcat:
     threads:
@@ -13,7 +13,7 @@ spring:
   profiles:
     active: dev
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # OpenFeign 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     openfeign:
       client:
         config:
@@ -53,7 +53,7 @@ spring:
         response:
           enabled: true
 
-    # RocketMQ Stream 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     stream:
       rocketmq:
         binder:
@@ -72,11 +72,11 @@ spring:
             maxRedeliveryTimes: 3
             delayLevelWhenNextConsume: 1
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       resourceserver:
@@ -85,24 +85,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-# JWT 鍙戣鑰呴厤缃?
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 缁熶竴鏉冮檺绠＄悊閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 unified:
   security:
     enabled: true
     permission:
-      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
+      # Comment sanitized for UTF-8 compatibility.
       refresh-interval: 300
-      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
+      # Comment sanitized for UTF-8 compatibility.
       cache-ttl: 1800
-      # 鍚敤鏉冮檺璋冭瘯妯″紡
+      # Comment sanitized for UTF-8 compatibility.
       debug: false
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -112,7 +112,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# 鎼滅储鏈嶅姟涓撶敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 search:
   async:
     enabled: true
@@ -121,7 +121,7 @@ search:
   statistics:
     enabled: true
 
-# SpringDoc 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -130,7 +130,7 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# Knife4j 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -138,7 +138,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Spring Boot Actuator閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:

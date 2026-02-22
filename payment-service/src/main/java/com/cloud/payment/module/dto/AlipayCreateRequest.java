@@ -8,60 +8,60 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/**
- * 支付宝支付创建请求
- *
- * @author what's up
- * @since 1.0.0
- */
+
+
+
+
+
+
 @Data
-@Schema(description = "支付宝支付创建请求")
+@Schema(description = "鏀粯瀹濇敮浠樺垱寤鸿姹?)
 public class AlipayCreateRequest {
 
-    /**
-     * 订单ID
-     */
-    @NotNull(message = "订单ID不能为空")
-    @Schema(description = "订单ID", example = "1234567890")
+    
+
+
+    @NotNull(message = "璁㈠崟ID涓嶈兘涓虹┖")
+    @Schema(description = "璁㈠崟ID", example = "1234567890")
     private Long orderId;
 
-    /**
-     * 支付金额
-     */
-    @NotNull(message = "支付金额不能为空")
-    @DecimalMin(value = "0.01", message = "支付金额必须大于0.01")
-    @Schema(description = "支付金额", example = "99.99")
+    
+
+
+    @NotNull(message = "鏀粯閲戦涓嶈兘涓虹┖")
+    @DecimalMin(value = "0.01", message = "鏀粯閲戦蹇呴』澶т簬0.01")
+    @Schema(description = "鏀粯閲戦", example = "99.99")
     private BigDecimal amount;
 
-    /**
-     * 商品标题
-     */
-    @NotBlank(message = "商品标题不能为空")
-    @Schema(description = "商品标题", example = "iPhone 15 Pro Max")
+    
+
+
+    @NotBlank(message = "鍟嗗搧鏍囬涓嶈兘涓虹┖")
+    @Schema(description = "鍟嗗搧鏍囬", example = "iPhone 15 Pro Max")
     private String subject;
 
-    /**
-     * 商品描述
-     */
-    @Schema(description = "商品描述", example = "苹果iPhone 15 Pro Max 256GB 深空黑色")
+    
+
+
+    @Schema(description = "鍟嗗搧鎻忚堪", example = "鑻规灉iPhone 15 Pro Max 256GB 娣辩┖榛戣壊")
     private String body;
 
-    /**
-     * 用户ID
-     */
-    @NotNull(message = "用户ID不能为空")
-    @Schema(description = "用户ID", example = "1001")
+    
+
+
+    @NotNull(message = "鐢ㄦ埛ID涓嶈兘涓虹┖")
+    @Schema(description = "鐢ㄦ埛ID", example = "1001")
     private Long userId;
 
-    /**
-     * 支付超时时间（分钟）
-     */
-    @Schema(description = "支付超时时间（分钟）", example = "30")
+    
+
+
+    @Schema(description = "鏀粯瓒呮椂鏃堕棿锛堝垎閽燂級", example = "30")
     private Integer timeoutMinutes = 30;
 
-    /**
-     * 商品类型
-     */
-    @Schema(description = "商品类型", example = "FAST_INSTANT_TRADE_PAY")
+    
+
+
+    @Schema(description = "鍟嗗搧绫诲瀷", example = "FAST_INSTANT_TRADE_PAY")
     private String productCode = "FAST_INSTANT_TRADE_PAY";
 }

@@ -7,9 +7,9 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-/**
- * Shared JWT blacklist validator for resource services.
- */
+
+
+
 @Slf4j
 public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
 
@@ -39,7 +39,7 @@ public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
             }
             return OAuth2TokenValidatorResult.success();
         } catch (Exception ex) {
-            // fail-open to avoid availability impact when Redis is transiently unavailable
+            
             log.error("JWT blacklist validation failed", ex);
             return OAuth2TokenValidatorResult.success();
         }

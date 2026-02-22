@@ -1,28 +1,28 @@
 spring:
   cloud:
     stream:
-      # 定义函数绑定
+      # Comment sanitized for UTF-8 compatibility.
       function:
         definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
 
-      # RocketMQ Binder配置
+      # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
         bindings:
-          # 订单创建事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           orderCreatedProducer-out-0:
             producer:
               group: order-producer-group
-              sync: false  # 异步发送
+              sync: false  # Comment sanitized for UTF-8 compatibility.
 
-          # 订单取消事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           orderCancelledProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
 
-          # 退款相关生产者
+          # Comment sanitized for UTF-8 compatibility.
           refundCreatedProducer-out-0:
             producer:
               group: order-producer-group
@@ -43,33 +43,33 @@ spring:
               group: order-producer-group
               sync: false
 
-          # 库存恢复事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           stockRestoreProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
 
-          # 支付成功事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           paymentSuccessConsumer-in-0:
             consumer:
-              # 标签过滤
+              # Comment sanitized for UTF-8 compatibility.
               subscription: 'PAYMENT_SUCCESS'
-              # 并发消费
+              # Comment sanitized for UTF-8 compatibility.
               orderly: false
 
-          # 库存冻结失败事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           stockFreezeFailedConsumer-in-0:
             consumer:
               subscription: 'STOCK_FREEZE_FAILED'
               orderly: false
 
-          # 退款完成事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           refundCompletedConsumer-in-0:
             consumer:
               subscription: 'REFUND_COMPLETED'
               orderly: false
 
-          # 退款通知消费者（独立消费者组）
+          # Comment sanitized for UTF-8 compatibility.
           refundCreatedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CREATED'
@@ -90,62 +90,62 @@ spring:
               subscription: 'REFUND_CANCELLED'
               orderly: false
 
-      # Binding配置
+      # Comment sanitized for UTF-8 compatibility.
       bindings:
-        # 订单创建事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         orderCreatedProducer-out-0:
           destination: order-created
           content-type: application/json
 
-        # 订单取消事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         orderCancelledProducer-out-0:
           destination: order-cancelled
           content-type: application/json
 
-        # 退款创建事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         refundCreatedProducer-out-0:
           destination: refund-created
           content-type: application/json
 
-        # 退款审核事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         refundAuditedProducer-out-0:
           destination: refund-audited
           content-type: application/json
 
-        # 退款处理事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         refundProcessProducer-out-0:
           destination: refund-process
           content-type: application/json
 
-        # 退款取消事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         refundCancelledProducer-out-0:
           destination: refund-cancelled
           content-type: application/json
 
-        # 库存恢复事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         stockRestoreProducer-out-0:
           destination: stock-restore
           content-type: application/json
 
-        # 支付成功事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
           group: order-consumer-group
 
-        # 库存冻结失败事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         stockFreezeFailedConsumer-in-0:
           destination: stock-freeze-failed
           content-type: application/json
           group: order-consumer-group
 
-        # 退款完成事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         refundCompletedConsumer-in-0:
           destination: refund-completed
           content-type: application/json
           group: order-consumer-group
 
-        # 退款通知消费者 - 输入（独立消费者组，用于通知功能）
+        # Comment sanitized for UTF-8 compatibility.
         refundCreatedNotificationConsumer-in-0:
           destination: refund-created
           content-type: application/json

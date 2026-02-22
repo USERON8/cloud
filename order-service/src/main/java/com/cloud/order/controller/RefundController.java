@@ -13,113 +13,114 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 退款控制器
- *
- * @author CloudDevAgent
- * @since 2025-01-15
- */
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/refund")
 @RequiredArgsConstructor
-@Tag(name = "退款管理", description = "退款申请、审核、处理相关接口")
+@Tag(name = "Refund Management", description = "Refund APIs")
 public class RefundController {
 
     private final RefundService refundService;
 
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('SCOPE_read')")
-    @Operation(summary = "创建退款申请", description = "用户提交退款/退货申请")
+    @Operation(summary = "Create refund", description = "Create a refund request")
     public Result<Long> createRefund(@Valid @RequestBody RefundCreateDTO dto) {
         Long userId = getCurrentUserId();
         Long refundId = refundService.createRefund(userId, dto);
-        return Result.success("退款申请已提交", refundId);
+        return Result.success("refund created", refundId);
     }
 
     @PostMapping("/audit/{refundId}")
     @PreAuthorize("hasAuthority('ROLE_MERCHANT')")
-    @Operation(summary = "审核退款申请", description = "商家审核用户的退款申请")
+    @Operation(summary = "Audit refund", description = "Merchant audits a refund request")
     public Result<Boolean> auditRefund(
-            @Parameter(description = "退款单ID") @PathVariable Long refundId,
-            @Parameter(description = "是否通过") @RequestParam Boolean approved,
-            @Parameter(description = "审核备注") @RequestParam(required = false) String auditRemark) {
+            @Parameter(description = "Refund ID") @PathVariable Long refundId,
+            @Parameter(description = "Audit decision") @RequestParam Boolean approved,
+            @Parameter(description = "Audit remark") @RequestParam(required = false) String auditRemark) {
 
         Long merchantId = getCurrentUserId();
         Boolean result = refundService.auditRefund(refundId, merchantId, approved, auditRemark);
-        return Result.success(approved ? "审核通过" : "审核拒绝", result);
+        return Result.success(approved ? "refund approved" : "refund rejected", result);
     }
 
     @PostMapping("/cancel/{refundId}")
     @PreAuthorize("hasAuthority('SCOPE_read')")
-    @Operation(summary = "取消退款申请", description = "用户取消自己的退款申请")
-    public Result<Boolean> cancelRefund(@Parameter(description = "退款单ID") @PathVariable Long refundId) {
+    @Operation(summary = "Cancel refund", description = "Cancel refund by user")
+    public Result<Boolean> cancelRefund(@Parameter(description = "Refund ID") @PathVariable Long refundId) {
         Long userId = getCurrentUserId();
         Boolean result = refundService.cancelRefund(refundId, userId);
-        return Result.success("退款申请已取消", result);
+        return Result.success("refund cancelled", result);
     }
 
     @GetMapping("/{refundId}")
     @PreAuthorize("hasAuthority('SCOPE_read')")
-    @Operation(summary = "查询退款详情", description = "根据退款单ID查询退款详情")
-    public Result<Refund> getRefundById(@Parameter(description = "退款单ID") @PathVariable Long refundId) {
+    @Operation(summary = "Get refund", description = "Get refund detail by ID")
+    public Result<Refund> getRefundById(@Parameter(description = "Refund ID") @PathVariable Long refundId) {
         Refund refund = refundService.getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("退款单不存在");
+            throw new BusinessException("refund not found");
         }
         return Result.success(refund);
     }
 
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasAuthority('SCOPE_read')")
-    @Operation(summary = "根据订单查询退款", description = "根据订单ID查询退款信息")
-    public Result<Refund> getRefundByOrderId(@Parameter(description = "订单ID") @PathVariable Long orderId) {
+    @Operation(summary = "Get order refund", description = "Get refund by order ID")
+    public Result<Refund> getRefundByOrderId(@Parameter(description = "Order ID") @PathVariable Long orderId) {
         Refund refund = refundService.getRefundByOrderId(orderId);
         if (refund == null) {
-            return Result.success("该订单暂无退款记录", null);
+            return Result.success("refund not found for current order", null);
         }
         return Result.success(refund);
     }
 
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('SCOPE_read')")
-    @Operation(summary = "查询退款列表（用户）", description = "用户查询自己的退款列表")
+    @Operation(summary = "List user refunds", description = "Get current user refunds with pagination")
     public Result<PageResult<RefundVO>> listUserRefunds(RefundPageDTO pageDTO) {
         Long userId = getCurrentUserId();
-        pageDTO.setUserId(userId); // 自动填充当前用户ID
+        pageDTO.setUserId(userId);
         PageResult<RefundVO> result = refundService.pageQuery(pageDTO);
         return Result.success(result);
     }
 
     @GetMapping("/merchant/list")
     @PreAuthorize("hasAuthority('ROLE_MERCHANT')")
-    @Operation(summary = "查询退款列表（商家）", description = "商家查询待处理的退款列表")
+    @Operation(summary = "List merchant refunds", description = "Get current merchant refunds with pagination")
     public Result<PageResult<RefundVO>> listMerchantRefunds(RefundPageDTO pageDTO) {
         Long merchantId = getCurrentUserId();
-        pageDTO.setMerchantId(merchantId); // 自动填充当前商家ID
+        pageDTO.setMerchantId(merchantId);
         PageResult<RefundVO> result = refundService.pageQuery(pageDTO);
         return Result.success(result);
     }
 
-    /**
-     * 获取当前登录用户ID
-     */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String userId = jwt.getClaim("user_id");
-            if (userId != null) {
-                return Long.parseLong(userId);
+            Object claimValue = jwt.getClaims().get("user_id");
+            if (claimValue instanceof Number number) {
+                return number.longValue();
+            }
+            if (claimValue instanceof String value && !value.isBlank()) {
+                try {
+                    return Long.parseLong(value);
+                } catch (NumberFormatException ignored) {
+                    throw new BusinessException("invalid user_id in token");
+                }
             }
         }
-        // 默认返回测试用户ID
-        return 1L;
+        throw new BusinessException("current user not found in token");
     }
 }

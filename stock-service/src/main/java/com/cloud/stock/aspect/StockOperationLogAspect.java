@@ -11,12 +11,12 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
-/**
- * 库存操作日志AOP切面
- * 自动记录所有库存变更操作
- *
- * @author what's up
- */
+
+
+
+
+
+
 @Slf4j
 @Aspect
 @Component
@@ -26,9 +26,9 @@ public class StockOperationLogAspect {
     private final StockLogService stockLogService;
     private final StockService stockService;
 
-    /**
-     * 切入点: 库存入库、出库、预留、释放等操作
-     */
+    
+
+
     @Pointcut("execution(* com.cloud.stock.service.StockService.stockIn(..)) || " +
             "execution(* com.cloud.stock.service.StockService.stockOut(..)) || " +
             "execution(* com.cloud.stock.service.StockService.reserveStock(..)) || " +
@@ -37,15 +37,15 @@ public class StockOperationLogAspect {
     public void stockOperationPointcut() {
     }
 
-    /**
-     * 环绕通知: 记录库存操作前后的数量变化
-     */
+    
+
+
     @Around("stockOperationPointcut()")
     public Object logStockOperation(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().getName();
         Object[] args = joinPoint.getArgs();
 
-        // 获取商品ID (第一个参数)
+        
         if (args.length == 0 || !(args[0] instanceof Long)) {
             return joinPoint.proceed();
         }
@@ -53,63 +53,63 @@ public class StockOperationLogAspect {
         Long productId = (Long) args[0];
         Integer quantity = args.length > 1 && args[1] instanceof Integer ? (Integer) args[1] : null;
 
-        // 获取操作前的库存信息
+        
         StockDTO stockBefore = null;
         try {
             stockBefore = stockService.getStockByProductId(productId);
         } catch (Exception e) {
-            log.warn("获取操作前库存信息失败, productId: {}", productId, e);
+            log.warn("鑾峰彇鎿嶄綔鍓嶅簱瀛樹俊鎭け璐? productId: {}", productId, e);
         }
 
-        // 执行实际的库存操作
+        
         Object result;
         try {
             result = joinPoint.proceed();
         } catch (Exception e) {
-            // 操作失败也记录日志
+            
             if (stockBefore != null) {
                 logOperation(productId, stockBefore.getProductName(), methodName,
                         stockBefore.getStockQuantity(), stockBefore.getStockQuantity(),
-                        null, null, "操作失败: " + e.getMessage());
+                        null, null, "鎿嶄綔澶辫触: " + e.getMessage());
             }
             throw e;
         }
 
-        // 获取操作后的库存信息并记录日志
+        
         try {
             StockDTO stockAfter = stockService.getStockByProductId(productId);
             if (stockBefore != null && stockAfter != null) {
                 logOperation(productId, stockAfter.getProductName(), methodName,
                         stockBefore.getStockQuantity(), stockAfter.getStockQuantity(),
-                        null, null, String.format("数量: %d", quantity != null ? quantity : 0));
+                        null, null, String.format("鏁伴噺: %d", quantity != null ? quantity : 0));
             }
         } catch (Exception e) {
-            log.warn("记录库存操作日志失败, productId: {}, method: {}", productId, methodName, e);
+            log.warn("璁板綍搴撳瓨鎿嶄綔鏃ュ織澶辫触, productId: {}, method: {}", productId, methodName, e);
         }
 
         return result;
     }
 
-    /**
-     * 记录操作日志
-     */
+    
+
+
     private void logOperation(Long productId, String productName, String methodName,
                               Integer quantityBefore, Integer quantityAfter,
                               Long orderId, String orderNo, String remark) {
-        // 将方法名转换为操作类型
+        
         String operationType = convertMethodToOperationType(methodName);
 
         try {
             stockLogService.logStockChange(productId, productName, operationType,
                     quantityBefore, quantityAfter, orderId, orderNo, remark);
         } catch (Exception e) {
-            log.error("记录库存操作日志失败", e);
+            log.error("璁板綍搴撳瓨鎿嶄綔鏃ュ織澶辫触", e);
         }
     }
 
-    /**
-     * 将方法名转换为操作类型
-     */
+    
+
+
     private String convertMethodToOperationType(String methodName) {
         switch (methodName) {
             case "stockIn":

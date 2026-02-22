@@ -7,38 +7,20 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-/**
- * 订单分页查询DTO
- *
- * @author cloud
- * @since 1.0.0
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Schema(description = "订单分页查询DTO")
+@Schema(description = "Order page query")
 public class OrderPageQueryDTO extends PageQuery {
 
-    /**
-     * 用户ID
-     */
-    @Schema(description = "用户ID")
+    @Schema(description = "User ID")
     private Long userId;
 
-    /**
-     * 订单状态
-     */
-    @Schema(description = "订单状态：0-待支付，1-已支付，2-已发货，3-已完成，4-已取消")
+    @Schema(description = "Order status: 0 pending payment, 1 paid, 2 shipped, 3 completed, 4 cancelled")
     private Integer status;
 
-    /**
-     * 最小订单金额
-     */
-    @Schema(description = "最小订单金额")
+    @Schema(description = "Minimum order amount")
     private BigDecimal minAmount;
 
-    /**
-     * 最大订单金额
-     */
-    @Schema(description = "最大订单金额")
+    @Schema(description = "Maximum order amount")
     private BigDecimal maxAmount;
 }

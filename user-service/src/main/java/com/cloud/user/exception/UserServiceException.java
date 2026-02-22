@@ -3,10 +3,6 @@ package com.cloud.user.exception;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 
-/**
- * 用户服务业务异常基类
- * 所有用户服务特定的业务异常都应该继承此类
- */
 public class UserServiceException extends BusinessException {
 
     public UserServiceException(int code, String message) {
@@ -37,19 +33,17 @@ public class UserServiceException extends BusinessException {
         super(code, message, cause);
     }
 
-    // 用户相关特定异常
-
     public static class UserNotFoundException extends UserServiceException {
         public UserNotFoundException(String message) {
             super(ResultCode.USER_NOT_FOUND, message);
         }
 
         public UserNotFoundException(Long userId) {
-            super(ResultCode.USER_NOT_FOUND, String.format("用户不存在，用户ID: %d", userId));
+            super(ResultCode.USER_NOT_FOUND, String.format("User not found, userId=%d", userId));
         }
 
-        public UserNotFoundException(String username, boolean isEmail) {
-            super(ResultCode.USER_NOT_FOUND, String.format("用户不存在，%s: %s", isEmail ? "邮箱" : "用户名", username));
+        public UserNotFoundException(String value, boolean isEmail) {
+            super(ResultCode.USER_NOT_FOUND, String.format("User not found by %s: %s", isEmail ? "email" : "username", value));
         }
     }
 
@@ -59,7 +53,7 @@ public class UserServiceException extends BusinessException {
         }
 
         public UserAlreadyExistsException(String username, String email) {
-            super(ResultCode.USER_ALREADY_EXISTS, String.format("用户已存在，用户名: %s，邮箱: %s", username, email));
+            super(ResultCode.USER_ALREADY_EXISTS, String.format("User already exists, username=%s, email=%s", username, email));
         }
     }
 
@@ -69,7 +63,7 @@ public class UserServiceException extends BusinessException {
         }
 
         public AddressPermissionException(Long userId, Long addressId) {
-            super(ResultCode.FORBIDDEN.getCode(), String.format("用户 %d 无权访问地址 %d", userId, addressId));
+            super(ResultCode.FORBIDDEN.getCode(), String.format("User %d has no permission for address %d", userId, addressId));
         }
     }
 

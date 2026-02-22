@@ -11,49 +11,38 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * OAuth2客户端凭证服务
- * 用于获取服务间调用的访问令牌
- *
- * @author what's up
- */
 @Slf4j
 @Service
 public class OAuth2ClientCredentialsService {
 
+    private static final ThreadLocal<Boolean> GETTING_TOKEN = ThreadLocal.withInitial(() -> false);
+
     private final AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager;
-    // 用于防止循环调用的标记
-    private final ThreadLocal<Boolean> gettingToken = new ThreadLocal<>();
+
     @Value("${spring.security.oauth2.client.registration.client-service.client-id:client-service}")
     private String clientId;
 
-    public OAuth2ClientCredentialsService(AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager) {
+    public OAuth2ClientCredentialsService(
+            AuthorizedClientServiceOAuth2AuthorizedClientManager authorizedClientServiceManager) {
         this.authorizedClientServiceManager = authorizedClientServiceManager;
     }
 
-    /**
-     * 获取内部API访问令牌
-     * 使用分布式锁防止并发获取令牌
-     *
-     * @return JWT访问令牌
-     */
     @DistributedLock(
             key = "'oauth2:token:' + #clientId",
             waitTime = 3,
             leaseTime = 10,
             timeUnit = TimeUnit.SECONDS,
             failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL,
-            failMessage = "获取OAuth2令牌锁失败"
+            failMessage = "Failed to acquire OAuth2 token lock"
     )
     public String getInternalApiToken() {
-        // 检查是否正在获取令牌，防止循环调用
-        if (Boolean.TRUE.equals(gettingToken.get())) {
-            log.debug("检测到循环调用，跳过获取内部API令牌");
+        if (Boolean.TRUE.equals(GETTING_TOKEN.get())) {
+            log.debug("Detected recursive token acquisition, skip current request");
             return null;
         }
 
         try {
-            gettingToken.set(true);
+            GETTING_TOKEN.set(true);
 
             OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
                     .withClientRegistrationId("client-service")
@@ -61,20 +50,23 @@ public class OAuth2ClientCredentialsService {
                     .build();
 
             OAuth2AuthorizedClient authorizedClient = authorizedClientServiceManager.authorize(authorizeRequest);
-
-            if (authorizedClient != null) {
-                OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
-                log.debug("✅ 成功获取内部API访问令牌");
-                return accessToken.getTokenValue();
-            } else {
-                log.error("❌ 无法获取OAuth2授权客户端");
+            if (authorizedClient == null) {
+                log.error("Failed to get OAuth2 authorized client");
                 return null;
             }
+
+            OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+            if (accessToken == null) {
+                log.error("Authorized client returned null access token");
+                return null;
+            }
+
+            return accessToken.getTokenValue();
         } catch (Exception e) {
-            log.error("❌ 获取内部API访问令牌失败", e);
+            log.error("Failed to get internal API token", e);
             return null;
         } finally {
-            gettingToken.remove();
+            GETTING_TOKEN.remove();
         }
     }
 }

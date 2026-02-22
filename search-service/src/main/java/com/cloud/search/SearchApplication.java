@@ -36,8 +36,8 @@ public class SearchApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        log.info("正在启动搜索服务...");
+        
         SpringApplication.run(SearchApplication.class, args);
-        log.info("搜索服务启动完成！");
+        
     }
 }

@@ -17,231 +17,164 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/merchant/auth")
 @RequiredArgsConstructor
-@Tag(name = "商家认证管理", description = "商家认证申请、查询、撤销等相关操作")
+@Tag(name = "Merchant Auth", description = "Merchant authentication APIs")
 public class MerchantAuthController {
+
+    private static final int STATUS_PENDING = 0;
+    private static final int STATUS_APPROVED = 1;
+
     private final MerchantAuthService merchantAuthService;
     private final MerchantAuthConverter merchantAuthConverter;
 
-    /**
-     * 商家申请认证
-     *
-     * @param merchantId             商家ID
-     * @param merchantAuthRequestDTO 认证申请信息
-     * @return 认证信息
-     */
     @PostMapping("/apply/{merchantId}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "商家申请认证", description = "商家提交认证申请")
+    @Operation(summary = "Apply merchant auth", description = "Create or update merchant auth application")
     public Result<MerchantAuthDTO> applyForAuth(
             @PathVariable("merchantId")
-            @Parameter(description = "商家ID")
-            @NotNull(message = "商家ID不能为空") Long merchantId,
+            @Parameter(description = "Merchant ID")
+            @NotNull(message = "merchant id is required") Long merchantId,
             @RequestBody
-            @Parameter(description = "认证申请信息")
-            @Valid @NotNull(message = "认证申请信息不能为空") MerchantAuthRequestDTO merchantAuthRequestDTO) {
-
-        // 权限检查：只有商家自己或管理员可以申请认证
-        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
-            return Result.forbidden("无权限申请认证");
+            @Parameter(description = "Merchant auth request body")
+            @Valid @NotNull(message = "merchant auth request is required") MerchantAuthRequestDTO merchantAuthRequestDTO) {
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
+            return Result.forbidden("no permission to apply merchant auth");
         }
 
-        log.info("商家申请认证, merchantId: {}", merchantId);
-
-        // 检查是否已存在认证申请
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
         MerchantAuth existingAuth = merchantAuthService.getOne(queryWrapper);
 
-        MerchantAuth merchantAuth;
+        MerchantAuth merchantAuth = merchantAuthConverter.toEntity(merchantAuthRequestDTO);
+        merchantAuth.setMerchantId(merchantId);
+        merchantAuth.setAuthStatus(STATUS_PENDING);
+
         if (existingAuth != null) {
-            // 更新已有的认证申请
-            merchantAuth = merchantAuthConverter.toEntity(merchantAuthRequestDTO);
             merchantAuth.setId(existingAuth.getId());
-            merchantAuth.setMerchantId(merchantId);
-            merchantAuth.setAuthStatus(0); // 重置为待审核状态
+            merchantAuth.setCreatedAt(existingAuth.getCreatedAt());
             merchantAuth.setUpdatedAt(LocalDateTime.now());
             merchantAuthService.updateById(merchantAuth);
         } else {
-            // 创建新的认证申请
-            merchantAuth = merchantAuthConverter.toEntity(merchantAuthRequestDTO);
-            merchantAuth.setMerchantId(merchantId);
-            merchantAuth.setAuthStatus(0); // 待审核状态
-            merchantAuth.setCreatedAt(LocalDateTime.now());
-            merchantAuth.setUpdatedAt(LocalDateTime.now());
             merchantAuthService.save(merchantAuth);
         }
 
-        MerchantAuthDTO result = merchantAuthConverter.toDTO(merchantAuth);
-        return Result.success("认证申请已提交", result);
+        return Result.success("merchant auth application submitted", merchantAuthConverter.toDTO(merchantAuth));
     }
 
-    /**
-     * 获取商家认证信息
-     *
-     * @param merchantId 商家ID
-     * @return 认证信息
-     */
     @GetMapping("/get/{merchantId}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "获取商家认证信息", description = "根据商家ID获取认证信息")
-    public Result<MerchantAuthDTO> getAuthInfo(@PathVariable("merchantId")
-                                               @Parameter(description = "商家ID")
-                                               @NotNull(message = "商家ID不能为空") Long merchantId) {
-
-        // 权限检查：只有商家自己或管理员可以查看认证信息
-        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
-            return Result.forbidden("无权限查看认证信息");
+    @Operation(summary = "Get merchant auth", description = "Get merchant auth information by merchant ID")
+    public Result<MerchantAuthDTO> getAuthInfo(
+            @PathVariable("merchantId")
+            @Parameter(description = "Merchant ID")
+            @NotNull(message = "merchant id is required") Long merchantId) {
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
+            return Result.forbidden("no permission to query merchant auth");
         }
-
-        log.info("获取商家认证信息, merchantId: {}", merchantId);
 
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
         MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
-
         if (merchantAuth == null) {
-            return Result.success("暂无认证信息", null);
+            return Result.success("merchant auth not found", null);
         }
-
-        MerchantAuthDTO result = merchantAuthConverter.toDTO(merchantAuth);
-        return Result.success(result);
+        return Result.success(merchantAuthConverter.toDTO(merchantAuth));
     }
 
-    /**
-     * 撤销认证申请
-     *
-     * @param merchantId 商家ID
-     * @return 操作结果
-     */
     @DeleteMapping("/revoke/{merchantId}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "撤销认证申请", description = "撤销商家的认证申请")
-    public Result<Boolean> revokeAuth(@PathVariable("merchantId")
-                                      @Parameter(description = "商家ID")
-                                      @NotNull(message = "商家ID不能为空") Long merchantId) {
-
-        // 权限检查：只有商家自己或管理员可以撤销认证申请
-        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(null, merchantId)) {
-            return Result.forbidden("无权限撤销认证申请");
+    @Operation(summary = "Revoke merchant auth", description = "Delete merchant auth application by merchant ID")
+    public Result<Boolean> revokeAuth(
+            @PathVariable("merchantId")
+            @Parameter(description = "Merchant ID")
+            @NotNull(message = "merchant id is required") Long merchantId) {
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
+            return Result.forbidden("no permission to revoke merchant auth");
         }
-
-        log.info("撤销认证申请, merchantId: {}", merchantId);
 
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        boolean result = merchantAuthService.remove(queryWrapper);
-
-        if (result) {
-            return Result.success("认证申请已撤销", true);
-        } else {
-            return Result.success("无认证申请可撤销", false);
+        boolean removed = merchantAuthService.remove(queryWrapper);
+        if (!removed) {
+            return Result.success("merchant auth not found", false);
         }
+        return Result.success("merchant auth revoked", true);
     }
 
-    /**
-     * 管理员审核商家认证申请
-     *
-     * @param merchantId 商家ID
-     * @param authStatus 审核状态（1: 通过，2: 拒绝）
-     * @return 操作结果
-     */
     @PostMapping("/review/{merchantId}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "管理员审核商家认证", description = "管理员审核商家认证申请")
+    @Operation(summary = "Review merchant auth", description = "Review merchant auth application by merchant ID")
     public Result<Boolean> reviewAuth(
             @PathVariable("merchantId")
-            @Parameter(description = "商家ID")
-            @NotNull(message = "商家ID不能为空") Long merchantId,
+            @Parameter(description = "Merchant ID")
+            @NotNull(message = "merchant id is required") Long merchantId,
             @RequestParam("authStatus")
-            @Parameter(description = "审核状态")
-            @NotNull(message = "审核状态不能为空") Integer authStatus) {
-
-
-        log.info("管理员审核商家认证, merchantId: {}, authStatus: {}", merchantId, authStatus);
-
+            @Parameter(description = "Auth status")
+            @NotNull(message = "auth status is required") Integer authStatus) {
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
         MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
-
         if (merchantAuth == null) {
-            return Result.error("未找到商家认证信息");
+            return Result.error("merchant auth record not found");
         }
 
         merchantAuth.setAuthStatus(authStatus);
         merchantAuth.setUpdatedAt(LocalDateTime.now());
-        boolean result = merchantAuthService.updateById(merchantAuth);
-
-        if (result) {
-            String statusDesc = authStatus == 1 ? "审核通过" : "审核拒绝";
-            return Result.success("商家认证已" + statusDesc, true);
-        } else {
-            return Result.error("审核失败");
+        boolean updated = merchantAuthService.updateById(merchantAuth);
+        if (!updated) {
+            return Result.error("failed to update merchant auth status");
         }
+
+        String action = authStatus == STATUS_APPROVED ? "approved" : "updated";
+        return Result.success("merchant auth " + action, true);
     }
 
-    /**
-     * 根据认证状态查询商家认证信息
-     *
-     * @param authStatus 认证状态
-     * @return 商家认证信息列表
-     */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "根据状态查询商家认证", description = "根据认证状态查询所有商家认证信息")
-    public Result<java.util.List<MerchantAuthDTO>> listAuthByStatus(
+    @Operation(summary = "List merchant auth by status", description = "List merchant auth records by auth status")
+    public Result<List<MerchantAuthDTO>> listAuthByStatus(
             @RequestParam("authStatus")
-            @Parameter(description = "认证状态")
-            @NotNull(message = "认证状态不能为空") Integer authStatus) {
-
-
-        log.info("根据认证状态查询商家信息, authStatus: {}", authStatus);
-
+            @Parameter(description = "Auth status")
+            @NotNull(message = "auth status is required") Integer authStatus) {
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getAuthStatus, authStatus);
-        java.util.List<MerchantAuth> merchantAuthList = merchantAuthService.list(queryWrapper);
-
-        java.util.List<MerchantAuthDTO> result = merchantAuthList.stream()
+        List<MerchantAuthDTO> result = merchantAuthService.list(queryWrapper).stream()
                 .map(merchantAuthConverter::toDTO)
                 .toList();
-
         return Result.success(result);
     }
 
-    /**
-     * 批量审核商家认证申请
-     *
-     * @param merchantIds 商家ID列表
-     * @param authStatus  审核状态（1: 通过，2: 拒绝）
-     * @return 操作结果
-     */
     @PostMapping("/review/batch")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "批量审核商家认证", description = "批量审核商家认证申请")
+    @Operation(summary = "Batch review merchant auth", description = "Batch review merchant auth records")
     public Result<Boolean> reviewAuthBatch(
             @RequestBody
-            @Parameter(description = "商家ID列表")
-            @NotNull(message = "商家ID列表不能为空") java.util.List<Long> merchantIds,
+            @Parameter(description = "Merchant IDs")
+            @NotNull(message = "merchant ids are required") List<Long> merchantIds,
             @RequestParam("authStatus")
-            @Parameter(description = "审核状态")
-            @NotNull(message = "审核状态不能为空") Integer authStatus) {
-
-        if (merchantIds == null || merchantIds.isEmpty()) {
-            return Result.badRequest("商家ID列表不能为空");
+            @Parameter(description = "Auth status")
+            @NotNull(message = "auth status is required") Integer authStatus) {
+        if (merchantIds.isEmpty()) {
+            return Result.badRequest("merchant ids cannot be empty");
         }
-
         if (merchantIds.size() > 100) {
-            return Result.badRequest("批量审核数量不能超过100个");
+            return Result.badRequest("batch size cannot exceed 100");
         }
-
-        log.info("批量审核商家认证, merchantIds: {}, authStatus: {}", merchantIds, authStatus);
 
         int successCount = 0;
         for (Long merchantId : merchantIds) {
@@ -249,22 +182,20 @@ public class MerchantAuthController {
                 LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
                 queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
                 MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
-
-                if (merchantAuth != null) {
-                    merchantAuth.setAuthStatus(authStatus);
-                    merchantAuth.setUpdatedAt(LocalDateTime.now());
-                    if (merchantAuthService.updateById(merchantAuth)) {
-                        successCount++;
-                    }
+                if (merchantAuth == null) {
+                    continue;
+                }
+                merchantAuth.setAuthStatus(authStatus);
+                merchantAuth.setUpdatedAt(LocalDateTime.now());
+                if (merchantAuthService.updateById(merchantAuth)) {
+                    successCount++;
                 }
             } catch (Exception e) {
-                log.error("审核商家认证失败, merchantId: {}", merchantId, e);
+                log.error("Failed to review merchant auth, merchantId={}", merchantId, e);
             }
         }
 
-        String statusDesc = authStatus == 1 ? "审核通过" : "审核拒绝";
-        log.info("批量审核商家认证完成, 成功: {}/{}", successCount, merchantIds.size());
-        return Result.success(String.format("批量%s成功: %d/%d", statusDesc, successCount, merchantIds.size()), true);
+        String message = String.format("batch review completed: %d/%d", successCount, merchantIds.size());
+        return Result.success(message, true);
     }
-
 }

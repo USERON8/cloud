@@ -1,7 +1,7 @@
-# 搜索服务 - 生产环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # Elasticsearch 配置
+  # Comment sanitized for UTF-8 compatibility.
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://prod-elasticsearch:9200}
     username: ${ELASTICSEARCH_USERNAME:}
@@ -9,7 +9,7 @@ spring:
     connection-timeout: 10s
     socket-timeout: 30s
   
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -24,7 +24,7 @@ spring:
           max-idle: 20
           min-idle: 10
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.search: info
@@ -35,7 +35,7 @@ logging:
     com.alibaba.nacos: warn
     root: warn
 
-# Knife4j 生产配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: false
   production: true

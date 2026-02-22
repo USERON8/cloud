@@ -23,81 +23,81 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/query/users")
 @RequiredArgsConstructor
-@Tag(name = "用户查询", description = "用户信息查询相关操作")
+@Tag(name = "User Query", description = "User query APIs")
 public class UserQueryController {
+
     private final UserService userService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "根据用户名查询用户", description = "根据用户名查询用户信息")
-    public Result<UserDTO> findByUsername(@RequestParam
-                                          @Parameter(description = "用户名")
-                                          @NotBlank(message = "用户名不能为空") String username) {
-        return Result.success("查询成功", userService.findByUsername(username));
+    @Operation(summary = "Find user by username", description = "Get one user by username")
+    public Result<UserDTO> findByUsername(
+            @RequestParam
+            @Parameter(description = "Username")
+            @NotBlank(message = "username is required") String username) {
+        return Result.success("query successful", userService.findByUsername(username));
     }
 
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "分页查询用户", description = "分页查询用户信息")
-    public Result<PageResult<UserVO>> search(@RequestParam(defaultValue = "1") Integer page,
-                                             @RequestParam(defaultValue = "20") Integer size,
-                                             @RequestParam(required = false) String username,
-                                             @RequestParam(required = false) String email,
-                                             @RequestParam(required = false) String userType) {
+    @Operation(summary = "Search users", description = "Search users with paging")
+    public Result<PageResult<UserVO>> search(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String userType) {
         UserPageDTO userPageDTO = new UserPageDTO();
         userPageDTO.setCurrent(page.longValue());
         userPageDTO.setSize(size.longValue());
         userPageDTO.setUsername(username);
-        userPageDTO.setPhone(email); // UserPageDTO没有email字段，使用phone字段
+        userPageDTO.setPhone(email);
         userPageDTO.setUserType(userType);
         return Result.success(userService.pageQuery(userPageDTO));
     }
 
     @RequestMapping("/findByGitHubId")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "根据GitHub ID查询用户", description = "根据GitHub用户ID查询用户信息（OAuth专用）")
-    public Result<UserDTO> findByGitHubId(@RequestParam
-                                          @Parameter(description = "GitHub用户ID")
-                                          @NotNull(message = "GitHub用户ID不能为空") Long githubId) {
-        log.info("根据GitHub ID查询用户: {}", githubId);
+    @Operation(summary = "Find user by GitHub ID", description = "Get one user by GitHub ID")
+    public Result<UserDTO> findByGitHubId(
+            @RequestParam
+            @Parameter(description = "GitHub ID")
+            @NotNull(message = "github id is required") Long githubId) {
         UserDTO userDTO = userService.findByGitHubId(githubId);
         if (userDTO != null) {
-            return Result.success("查询成功", userDTO);
-        } else {
-            return Result.error(404, "未找到对应的GitHub用户");
+            return Result.success("query successful", userDTO);
         }
+        return Result.notFound("user not found by github id");
     }
 
     @RequestMapping("/findByGitHubUsername")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "根据GitHub用户名查询用户", description = "根据GitHub用户名查询用户信息（OAuth专用）")
-    public Result<UserDTO> findByGitHubUsername(@RequestParam
-                                                @Parameter(description = "GitHub用户名")
-                                                @NotBlank(message = "GitHub用户名不能为空") String githubUsername) {
-        log.info("根据GitHub用户名查询用户: {}", githubUsername);
+    @Operation(summary = "Find user by GitHub username", description = "Get one user by GitHub username")
+    public Result<UserDTO> findByGitHubUsername(
+            @RequestParam
+            @Parameter(description = "GitHub username")
+            @NotBlank(message = "github username is required") String githubUsername) {
         UserDTO userDTO = userService.findByGitHubUsername(githubUsername);
         if (userDTO != null) {
-            return Result.success("查询成功", userDTO);
-        } else {
-            return Result.error(404, "未找到对应的GitHub用户");
+            return Result.success("query successful", userDTO);
         }
+        return Result.notFound("user not found by github username");
     }
 
     @RequestMapping("/findByOAuthProvider")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "根据OAuth提供商查询用户", description = "根据OAuth提供商和提供商ID查询用户信息")
-    public Result<UserDTO> findByOAuthProvider(@RequestParam
-                                               @Parameter(description = "OAuth提供商")
-                                               @NotBlank(message = "OAuth提供商不能为空") String oauthProvider,
-                                               @RequestParam
-                                               @Parameter(description = "OAuth提供商用户ID")
-                                               @NotBlank(message = "OAuth提供商用户ID不能为空") String oauthProviderId) {
-        log.info("根据OAuth提供商查询用户: provider={}, providerId={}", oauthProvider, oauthProviderId);
+    @Operation(summary = "Find user by OAuth provider", description = "Get one user by OAuth provider and provider ID")
+    public Result<UserDTO> findByOAuthProvider(
+            @RequestParam
+            @Parameter(description = "OAuth provider")
+            @NotBlank(message = "oauth provider is required") String oauthProvider,
+            @RequestParam
+            @Parameter(description = "OAuth provider ID")
+            @NotBlank(message = "oauth provider id is required") String oauthProviderId) {
         UserDTO userDTO = userService.findByOAuthProvider(oauthProvider, oauthProviderId);
         if (userDTO != null) {
-            return Result.success("查询成功", userDTO);
-        } else {
-            return Result.error(404, "未找到对应的OAuth用户");
+            return Result.success("query successful", userDTO);
         }
+        return Result.notFound("user not found by oauth provider");
     }
 }

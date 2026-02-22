@@ -20,11 +20,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * 库存盘点服务实现
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,26 +41,26 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
     @Transactional(rollbackFor = Exception.class)
     public Long createStockCount(Long productId, Integer actualQuantity,
                                  Long operatorId, String operatorName, String remark) {
-        log.info("创建库存盘点记录, productId: {}, actualQuantity: {}, operatorId: {}",
-                productId, actualQuantity, operatorId);
+        
 
-        // 参数校验
+
+        
         if (productId == null) {
-            throw new BusinessException("商品ID不能为空");
+            throw new BusinessException("鍟嗗搧ID涓嶈兘涓虹┖");
         }
         if (actualQuantity == null || actualQuantity < 0) {
-            throw new BusinessException("盘点数量无效");
+            throw new BusinessException("鐩樼偣鏁伴噺鏃犳晥");
         }
 
-        // 获取当前库存信息
+        
         LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Stock::getProductId, productId);
         Stock stock = stockMapper.selectOne(queryWrapper);
         if (stock == null) {
-            throw new BusinessException("商品库存不存在");
+            throw new BusinessException("鍟嗗搧搴撳瓨涓嶅瓨鍦?);
         }
 
-        // 创建盘点记录
+        
         StockCount stockCount = new StockCount();
         stockCount.setCountNo(generateCountNo());
         stockCount.setProductId(productId);
@@ -76,10 +76,8 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
 
         save(stockCount);
 
-        log.info("库存盘点记录创建成功, countId: {}, countNo: {}, 预期: {}, 实际: {}, 差异: {}",
-                stockCount.getId(), stockCount.getCountNo(),
-                stockCount.getExpectedQuantity(), stockCount.getActualQuantity(),
-                stockCount.getDifference());
+        
+
 
         return stockCount.getId();
     }
@@ -87,43 +85,43 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean confirmStockCount(Long countId, Long confirmUserId, String confirmUserName) {
-        log.info("确认库存盘点, countId: {}, confirmUserId: {}", countId, confirmUserId);
+        
 
-        // 查询盘点记录
+        
         StockCount stockCount = getById(countId);
         if (stockCount == null) {
-            throw new BusinessException("盘点记录不存在");
+            throw new BusinessException("鐩樼偣璁板綍涓嶅瓨鍦?);
         }
 
-        // 检查状态
+        
         if (!"PENDING".equals(stockCount.getStatus())) {
-            throw new BusinessException("盘点记录状态不是待确认，无法确认");
+            throw new BusinessException("鐩樼偣璁板綍鐘舵€佷笉鏄緟纭锛屾棤娉曠‘璁?);
         }
 
-        // 获取当前库存
+        
         LambdaQueryWrapper<Stock> queryWrapper2 = new LambdaQueryWrapper<>();
         queryWrapper2.eq(Stock::getProductId, stockCount.getProductId());
         Stock stock = stockMapper.selectOne(queryWrapper2);
         if (stock == null) {
-            throw new BusinessException("商品库存不存在");
+            throw new BusinessException("鍟嗗搧搴撳瓨涓嶅瓨鍦?);
         }
 
         Integer quantityBefore = stock.getStockQuantity();
 
-        // 如果有差异，调整库存
+        
         if (stockCount.getDifference() != 0) {
-            log.info("盘点发现差异 {}, 调整库存: {} -> {}",
-                    stockCount.getDifference(), quantityBefore, stockCount.getActualQuantity());
+            
 
-            // 直接设置为实际盘点数量
+
+            
             stock.setStockQuantity(stockCount.getActualQuantity());
             boolean updateSuccess = stockService.updateById(stock);
 
             if (!updateSuccess) {
-                throw new BusinessException("调整库存失败");
+                throw new BusinessException("璋冩暣搴撳瓨澶辫触");
             }
 
-            // 记录库存调整日志
+            
             stockLogService.logStockChange(
                     stock.getProductId(),
                     stock.getProductName(),
@@ -132,13 +130,13 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
                     stockCount.getActualQuantity(),
                     null,
                     null,
-                    String.format("盘点调整, 盘点单号: %s, %s",
+                    String.format("鐩樼偣璋冩暣, 鐩樼偣鍗曞彿: %s, %s",
                             stockCount.getCountNo(),
                             stockCount.getCountType())
             );
         }
 
-        // 更新盘点记录状态
+        
         stockCount.setStatus("CONFIRMED");
         stockCount.setConfirmUserId(confirmUserId);
         stockCount.setConfirmUserName(confirmUserName);
@@ -146,7 +144,7 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
 
         boolean success = updateById(stockCount);
 
-        log.info("库存盘点确认完成, countId: {}, 类型: {}", countId, stockCount.getCountType());
+        
 
         return success;
     }
@@ -154,24 +152,24 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelStockCount(Long countId) {
-        log.info("取消库存盘点, countId: {}", countId);
+        
 
-        // 查询盘点记录
+        
         StockCount stockCount = getById(countId);
         if (stockCount == null) {
-            throw new BusinessException("盘点记录不存在");
+            throw new BusinessException("鐩樼偣璁板綍涓嶅瓨鍦?);
         }
 
-        // 检查状态
+        
         if (!"PENDING".equals(stockCount.getStatus())) {
-            throw new BusinessException("只能取消待确认的盘点记录");
+            throw new BusinessException("鍙兘鍙栨秷寰呯‘璁ょ殑鐩樼偣璁板綍");
         }
 
-        // 更新状态为已取消
+        
         stockCount.setStatus("CANCELLED");
         boolean success = updateById(stockCount);
 
-        log.info("库存盘点已取消, countId: {}", countId);
+        
 
         return success;
     }
@@ -188,13 +186,13 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
 
     @Override
     public List<StockCount> getStockCountsByProductId(Long productId, LocalDateTime startTime, LocalDateTime endTime) {
-        log.info("根据商品ID查询盘点记录, productId: {}, 时间范围: {} ~ {}", productId, startTime, endTime);
+        
         return stockCountMapper.selectByProductId(productId, startTime, endTime);
     }
 
     @Override
     public List<StockCount> getStockCountsByStatus(String status, LocalDateTime startTime, LocalDateTime endTime) {
-        log.info("根据状态查询盘点记录, status: {}, 时间范围: {} ~ {}", status, startTime, endTime);
+        
         return stockCountMapper.selectByStatus(status, startTime, endTime);
     }
 
@@ -205,7 +203,7 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
 
     @Override
     public String generateCountNo() {
-        // 格式: COUNT + 日期(yyyyMMdd) + 6位递增序号
+        
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long sequence = COUNTER.incrementAndGet() % 1000000;
         return String.format("COUNT%s%06d", datePart, sequence);

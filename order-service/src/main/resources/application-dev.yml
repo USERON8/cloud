@@ -1,7 +1,7 @@
-# 订单服务 - 开发环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # 数据源配置
+  # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
@@ -14,7 +14,7 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: localhost
@@ -29,7 +29,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.order: debug
@@ -38,12 +38,12 @@ logging:
     org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
 
-# MyBatis Plus 开发配置
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# Knife4j 开发配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -53,5 +53,5 @@ knife4j:
     oauth2:
       resourceserver:
         jwt:
-          # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
+          # Comment sanitized for UTF-8 compatibility.
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}

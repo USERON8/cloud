@@ -14,7 +14,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,99 +29,110 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/manage/users")
 @RequiredArgsConstructor
-@Tag(name = "用户管理", description = "用户信息更新、删除等相关操作")
+@Tag(name = "User Management", description = "User management APIs")
 public class UserManageController {
+
     private final UserService userService;
     private final UserConverter userConverter = UserConverter.INSTANCE;
 
     @PutMapping("/{id}")
-    @Operation(summary = "更新用户信息", description = "更新用户信息")
-    @PreAuthorize("hasRole('ADMIN') or @securityPermissionUtils.isAdminOrOwner(authentication, #id)")
-    public Result<Boolean> update(@PathVariable
-                                  @Parameter(description = "用户ID") Long id,
-                                  @RequestBody
-                                  @Parameter(description = "用户信息")
-                                  @Valid @NotNull(message = "用户信息不能为空") UserDTO userDTO,
-                                  Authentication authentication) {
-
-        // 确保路径参数与请求体中的ID一致
-        userDTO.setId(id);
-
-        // Service层会抛出特定异常，由全局异常处理器统一处理
-        boolean result = userService.updateById(userConverter.toEntity(userDTO));
-        log.info("用户更新成功，用户ID: {}, 操作人: {}", userDTO.getId(), authentication.getName());
-        return Result.success("用户更新成功", result);
+    @Operation(summary = "Update user", description = "Update user by user ID")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Boolean> update(
+            @PathVariable
+            @Parameter(description = "User ID") Long id,
+            @RequestBody
+            @Parameter(description = "User payload")
+            @Valid @NotNull(message = "user payload is required") UserDTO userDTO,
+            Authentication authentication) {
+        try {
+            userDTO.setId(id);
+            Boolean result = userService.updateUser(userDTO);
+            return Result.success("user updated", Boolean.TRUE.equals(result));
+        } catch (Exception e) {
+            log.error("Failed to update user, id={}", id, e);
+            return Result.error("failed to update user: " + e.getMessage());
+        }
     }
 
     @PostMapping("/delete")
-    @Operation(summary = "删除用户", description = "逻辑删除指定用户")
+    @Operation(summary = "Delete user", description = "Delete user by user ID")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> delete(@RequestBody
-                                  @Parameter(description = "用户ID")
-                                  @NotNull(message = "用户ID不能为空") Long id,
-                                  Authentication authentication) {
-
-        // Service层会抛出特定异常，由全局异常处理器统一处理
-        boolean result = userService.deleteUserById(id);
-        log.info("用户删除成功，用户ID: {}, 操作人: {}", id, authentication.getName());
-        return Result.success("用户删除成功", result);
+    public Result<Boolean> delete(
+            @RequestBody
+            @Parameter(description = "User ID")
+            @NotNull(message = "user id is required") Long id,
+            Authentication authentication) {
+        try {
+            boolean result = userService.deleteUserById(id);
+            return Result.success("user deleted", result);
+        } catch (Exception e) {
+            log.error("Failed to delete user, id={}", id, e);
+            return Result.error("failed to delete user: " + e.getMessage());
+        }
     }
 
     @PostMapping("/deleteBatch")
-    @Operation(summary = "批量删除用户", description = "批量逻辑删除用户")
+    @Operation(summary = "Batch delete users", description = "Batch delete users by user IDs")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> deleteBatch(@RequestBody
-                                       @Parameter(description = "用户ID数组")
-                                       @NotNull(message = "用户ID数组不能为空") Long[] ids,
-                                       Authentication authentication) {
-
-        BatchValidationUtils.validateIdArray(ids, "删除用户");
-        List<Long> userIds = Arrays.asList(ids);
-        boolean result = userService.deleteUsersByIds(userIds);
-
-        log.info("批量删除用户完成，数量: {}, 成功数量: {}", userIds.size(), userIds.size());
-        return Result.success(String.format("批量删除%d个用户成功", userIds.size()), result);
+    public Result<Boolean> deleteBatch(
+            @RequestBody
+            @Parameter(description = "User ID array")
+            @NotNull(message = "user ids are required") Long[] ids,
+            Authentication authentication) {
+        try {
+            BatchValidationUtils.validateIdArray(ids, "Batch delete users");
+            List<Long> userIds = Arrays.asList(ids);
+            boolean result = userService.deleteUsersByIds(userIds);
+            return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
+        } catch (Exception e) {
+            log.error("Failed to batch delete users", e);
+            return Result.error("failed to batch delete users: " + e.getMessage());
+        }
     }
 
     @PostMapping("/updateBatch")
-    @Operation(summary = "批量更新用户信息", description = "批量更新多个用户的信息")
+    @Operation(summary = "Batch update users", description = "Batch update users by payload list")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> updateBatch(@RequestBody
-                                       @Parameter(description = "用户信息列表")
-                                       @Valid @NotNull(message = "用户信息列表不能为空") List<UserDTO> userDTOList,
-                                       Authentication authentication) {
-
-        BatchValidationUtils.validateBatchSize(userDTOList, "批量更新用户");
-        log.info("开始批量更新用户，数量: {}", userDTOList.size());
-        boolean result = userService.updateBatchById(
-                userDTOList.stream()
-                        .map(userConverter::toEntity)
-                        .collect(java.util.stream.Collectors.toList())
-        );
-
-        log.info("批量更新用户完成，数量: {}, 成功数量: {}", userDTOList.size(), userDTOList.size());
-        return Result.success(String.format("批量更新%d个用户成功", userDTOList.size()), result);
+    public Result<Boolean> updateBatch(
+            @RequestBody
+            @Parameter(description = "User payload list")
+            @Valid @NotNull(message = "user payload list is required") List<UserDTO> userDTOList,
+            Authentication authentication) {
+        try {
+            BatchValidationUtils.validateBatchSize(userDTOList, "Batch update users");
+            boolean result = userService.updateBatchById(
+                    userDTOList.stream().map(userConverter::toEntity).toList()
+            );
+            return Result.success(String.format("batch update completed: %d", userDTOList.size()), result);
+        } catch (Exception e) {
+            log.error("Failed to batch update users", e);
+            return Result.error("failed to batch update users: " + e.getMessage());
+        }
     }
 
     @PostMapping("/updateStatusBatch")
-    @Operation(summary = "批量更新用户状态", description = "批量启用或禁用用户")
+    @Operation(summary = "Batch update user status", description = "Batch update user status by IDs")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Boolean> updateStatusBatch(@RequestParam
-                                             @Parameter(description = "用户ID列表")
-                                             @NotNull(message = "用户ID列表不能为空") List<Long> ids,
-                                             @RequestParam
-                                             @Parameter(description = "用户状态")
-                                             @NotNull(message = "用户状态不能为空") Integer status,
-                                             Authentication authentication) {
-
-        BatchValidationUtils.validateIdList(ids, "批量更新用户状态");
-        log.info("开始批量更新用户状态，数量: {}, 操作人: {}", ids.size(), authentication.getName());
-
-        // 使用批量更新方法，替代循环单个更新
-        Integer successCount = userService.batchUpdateUserStatus(ids, status);
-
-        log.info("批量更新用户状态完成，总数: {}, 成功: {}, 操作人: {}",
-                ids.size(), successCount, authentication.getName());
-        return Result.success(String.format("批量更新用户状态成功: %d/%d", successCount, ids.size()), true);
+    public Result<Boolean> updateStatusBatch(
+            @RequestParam
+            @Parameter(description = "User IDs")
+            @NotNull(message = "user ids are required") List<Long> ids,
+            @RequestParam
+            @Parameter(description = "User status")
+            @NotNull(message = "status is required") Integer status,
+            Authentication authentication) {
+        try {
+            BatchValidationUtils.validateIdList(ids, "Batch update user status");
+            Integer successCount = userService.batchUpdateUserStatus(ids, status);
+            if (successCount == null) {
+                successCount = 0;
+            }
+            String message = String.format("batch status update completed: %d/%d", successCount, ids.size());
+            return Result.success(message, true);
+        } catch (Exception e) {
+            log.error("Failed to batch update user status, status={}", status, e);
+            return Result.error("failed to batch update user status: " + e.getMessage());
+        }
     }
 }

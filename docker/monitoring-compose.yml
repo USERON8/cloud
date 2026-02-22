@@ -38,7 +38,7 @@ services:
     depends_on:
       - elasticsearch
     ports:
-      - "5044:5044" # Beats 输出
+      - "5044:5044" # ASCII comment sanitized for compatibility.
       - "9600:9600" # Logstash API
     volumes:
       - type: bind

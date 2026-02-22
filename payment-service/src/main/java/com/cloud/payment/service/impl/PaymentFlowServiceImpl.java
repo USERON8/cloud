@@ -6,11 +6,11 @@ import com.cloud.payment.module.entity.PaymentFlow;
 import com.cloud.payment.service.PaymentFlowService;
 import org.springframework.stereotype.Service;
 
-/**
- * @author what's up
- * @description 针对表【payment_flow(支付流水表)】的数据库操作Service实现
- * @createDate 2025-08-17 20:53:31
- */
+
+
+
+
+
 @Service
 public class PaymentFlowServiceImpl extends ServiceImpl<PaymentFlowMapper, PaymentFlow>
         implements PaymentFlowService {

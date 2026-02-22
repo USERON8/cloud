@@ -9,14 +9,14 @@ import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.LocalDateTime;
 
-/**
- * 店铺搜索文档
- * 对应Elasticsearch中的店铺索引
- *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
- */
+
+
+
+
+
+
+
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,117 +26,117 @@ import java.time.LocalDateTime;
 @Mapping(mappingPath = "elasticsearch/shop-mapping.json")
 public class ShopDocument {
 
-    /**
-     * 店铺ID（作为ES文档ID）
-     */
+    
+
+
     @Id
     private String id;
 
-    /**
-     * 店铺ID（与数据库merchant_shop.id对应）
-     */
+    
+
+
     @Field(type = FieldType.Long)
     private Long shopId;
 
-    /**
-     * 商家ID（与数据库merchant_shop.merchant_id对应）
-     */
+    
+
+
     @Field(type = FieldType.Long)
     private Long merchantId;
 
-    /**
-     * 店铺名称（与数据库merchant_shop.shop_name对应）
-     */
+    
+
+
     @Field(type = FieldType.Text, analyzer = "standard")
     private String shopName;
 
-    /**
-     * 店铺名称（用于精确匹配）
-     */
+    
+
+
     @Field(type = FieldType.Keyword)
     private String shopNameKeyword;
 
-    /**
-     * 店铺头像URL（与数据库merchant_shop.avatar_url对应）
-     */
+    
+
+
     @Field(type = FieldType.Keyword)
     private String avatarUrl;
 
-    /**
-     * 店铺描述（与数据库merchant_shop.description对应）
-     */
+    
+
+
     @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
-    /**
-     * 客服电话（与数据库merchant_shop.contact_phone对应）
-     */
+    
+
+
     @Field(type = FieldType.Keyword)
     private String contactPhone;
 
-    /**
-     * 详细地址（与数据库merchant_shop.address对应）
-     */
+    
+
+
     @Field(type = FieldType.Text, analyzer = "standard")
     private String address;
 
-    /**
-     * 状态：0-关闭，1-营业（与数据库merchant_shop.status对应）
-     */
+    
+
+
     @Field(type = FieldType.Integer)
     private Integer status;
 
-    /**
-     * 商品数量
-     */
+    
+
+
     @Field(type = FieldType.Integer)
     private Integer productCount;
 
-    /**
-     * 店铺评分
-     */
+    
+
+
     @Field(type = FieldType.Double)
     private Double rating;
 
-    /**
-     * 评价数量
-     */
+    
+
+
     @Field(type = FieldType.Integer)
     private Integer reviewCount;
 
-    /**
-     * 关注数量
-     */
+    
+
+
     @Field(type = FieldType.Integer)
     private Integer followCount;
 
-    /**
-     * 创建时间（与数据库merchant_shop.created_at对应）
-     */
+    
+
+
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间（与数据库merchant_shop.updated_at对应）
-     */
+    
+
+
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime updatedAt;
 
-    /**
-     * 搜索权重
-     */
+    
+
+
     @Field(type = FieldType.Double)
     private Double searchWeight;
 
-    /**
-     * 热度分数
-     */
+    
+
+
     @Field(type = FieldType.Double)
     private Double hotScore;
 
-    /**
-     * 是否推荐店铺
-     */
+    
+
+
     @Field(type = FieldType.Boolean)
     private Boolean recommended;
 }

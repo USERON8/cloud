@@ -19,90 +19,53 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 线程池监控控制器
- * 提供线程池状态监控接口
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/thread-pool")
-@Tag(name = "线程池监控")
+@Tag(name = "Thread Pool Monitor", description = "Thread pool monitoring APIs")
 @RequiredArgsConstructor
 public class ThreadPoolMonitorController {
 
-
     private final ApplicationContext applicationContext;
 
-    /**
-     * 获取所有线程池信息
-     *
-     * @return 线程池信息列表
-     */
     @GetMapping("/info")
-    @Operation(summary = "获取所有线程池信息")
+    @Operation(summary = "Get all thread pool metrics")
     public Result<List<Map<String, Object>>> getAllThreadPoolInfo() {
-        log.info("获取所有线程池信息");
-
         List<Map<String, Object>> threadPoolInfoList = new ArrayList<>();
-
         try {
-            // 获取所有ThreadPoolTaskExecutor类型的Bean
             Map<String, ThreadPoolTaskExecutor> threadPoolBeans =
                     applicationContext.getBeansOfType(ThreadPoolTaskExecutor.class);
 
             for (Map.Entry<String, ThreadPoolTaskExecutor> entry : threadPoolBeans.entrySet()) {
-                String beanName = entry.getKey();
-                ThreadPoolTaskExecutor executor = entry.getValue();
-
-                Map<String, Object> info = buildThreadPoolInfo(beanName, executor);
+                Map<String, Object> info = buildThreadPoolInfo(entry.getKey(), entry.getValue());
                 threadPoolInfoList.add(info);
             }
+            return Result.success(threadPoolInfoList);
         } catch (Exception e) {
-            log.error("获取线程池信息时发生异常", e);
-            return Result.error("获取线程池信息失败: " + e.getMessage());
+            log.error("Failed to get thread pool info", e);
+            return Result.error("Failed to get thread pool info: " + e.getMessage());
         }
-
-        log.info("成功获取{}个线程池信息", threadPoolInfoList.size());
-        return Result.success(threadPoolInfoList);
     }
 
-    /**
-     * 根据名称获取特定线程池信息
-     *
-     * @param name 线程池名称
-     * @return 线程池信息
-     */
     @GetMapping("/info/detail")
-    @Operation(summary = "根据名称获取特定线程池信息")
+    @Operation(summary = "Get thread pool metrics by bean name")
     public Result<Map<String, Object>> getThreadPoolInfoByName(
-            @Parameter(description = "线程池名称") @RequestParam String name) {
-        log.info("获取线程池信息，名称: {}", name);
-
+            @Parameter(description = "Thread pool bean name")
+            @RequestParam String name) {
         try {
             ThreadPoolTaskExecutor executor = applicationContext.getBean(name, ThreadPoolTaskExecutor.class);
-            Map<String, Object> info = buildThreadPoolInfo(name, executor);
-
-            log.info("成功获取线程池{}的信息", name);
-            return Result.success(info);
+            return Result.success(buildThreadPoolInfo(name, executor));
         } catch (NoSuchBeanDefinitionException e) {
-            log.warn("未找到名称为{}的线程池", name);
-            return Result.error("未找到名称为" + name + "的线程池");
+            log.warn("Thread pool bean not found: {}", name);
+            return Result.error("Thread pool bean not found: " + name);
         } catch (Exception e) {
-            log.error("获取线程池信息时发生异常", e);
-            return Result.error("获取线程池信息失败: " + e.getMessage());
+            log.error("Failed to get thread pool info by name: {}", name, e);
+            return Result.error("Failed to get thread pool info: " + e.getMessage());
         }
     }
 
-    /**
-     * 构建线程池信息Map
-     *
-     * @param name     线程池名称
-     * @param executor 线程池执行器
-     * @return 线程池信息Map
-     */
     private Map<String, Object> buildThreadPoolInfo(String name, ThreadPoolTaskExecutor executor) {
         Map<String, Object> info = new HashMap<>();
-
         info.put("name", name);
         info.put("corePoolSize", executor.getCorePoolSize());
         info.put("maxPoolSize", executor.getMaxPoolSize());
@@ -112,7 +75,6 @@ public class ThreadPoolMonitorController {
         info.put("completedTaskCount", executor.getThreadPoolExecutor().getCompletedTaskCount());
         info.put("taskCount", executor.getThreadPoolExecutor().getTaskCount());
         info.put("queueRemainingCapacity", executor.getThreadPoolExecutor().getQueue().remainingCapacity());
-
         return info;
     }
 }

@@ -1,5 +1,5 @@
-﻿# 閫氱敤閰嶇疆妯℃澘
-# 鎵€鏈夊井鏈嶅姟閮藉彲浠ョ户鎵跨殑鍩虹閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
+# Comment sanitized for UTF-8 compatibility.
 
 server:
   shutdown: graceful
@@ -11,11 +11,11 @@ server:
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
-  # 閫氱敤Spring閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   main:
     allow-bean-definition-overriding: true
   
-  # Nacos閰嶇疆 - 鎵€鏈夋湇鍔＄粺涓€
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -41,7 +41,7 @@ spring:
         file-extension: yaml
         group: ${NACOS_GROUP:DEFAULT_GROUP}
     
-    # OpenFeign閫氱敤閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     openfeign:
       client:
         config:
@@ -55,17 +55,17 @@ spring:
         response:
           enabled: true
     
-    # RocketMQ閫氱敤閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     stream:
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
 
-  # 閰嶇疆瀵煎叆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # 鏁版嵁搴撻€氱敤閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${DB_USERNAME:root}
@@ -77,7 +77,7 @@ spring:
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
 
-  # Redis閫氱敤閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -86,14 +86,14 @@ spring:
       timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
-          max-active: ${REDIS_MAX_ACTIVE:50}      # 鏈€澶ц繛鎺ユ暟(浼樺寲鍚?
-          max-wait: ${REDIS_MAX_WAIT:3000ms}      # 鏈€澶х瓑寰呮椂闂?閬垮厤鏃犻檺绛夊緟)
-          max-idle: ${REDIS_MAX_IDLE:20}          # 鏈€澶х┖闂茶繛鎺?
-          min-idle: ${REDIS_MIN_IDLE:5}           # 鏈€灏忕┖闂茶繛鎺?
-          time-between-eviction-runs: 60000       # 绌洪棽杩炴帴妫€娴嬪懆鏈?姣)
+          max-active: ${REDIS_MAX_ACTIVE:50}      # Comment sanitized for UTF-8 compatibility.
+          max-wait: ${REDIS_MAX_WAIT:3000ms}      # Comment sanitized for UTF-8 compatibility.
+          max-idle: ${REDIS_MAX_IDLE:20}          # Comment sanitized for UTF-8 compatibility.
+          min-idle: ${REDIS_MIN_IDLE:5}           # Comment sanitized for UTF-8 compatibility.
+          time-between-eviction-runs: 60000       # Comment sanitized for UTF-8 compatibility.
         shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
 
-# 鏃ュ織閫氱敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: ${LOG_PATH:D:/logs}/${spring.application.name}
@@ -104,7 +104,7 @@ logging:
     org.springframework.web: ${LOG_LEVEL_WEB:warn}
     org.springframework.cloud: ${LOG_LEVEL_CLOUD_FRAMEWORK:warn}
 
-# MyBatis-Plus鍩虹閰嶇疆锛堝悇鏈嶅姟鍙互瑕嗙洊锛?
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   configuration:
@@ -118,12 +118,12 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
-      # 瀛楁绛栫暐閰嶇疆
+      # Comment sanitized for UTF-8 compatibility.
       insert-strategy: not_null
       update-strategy: not_null
       select-strategy: not_empty
 
-# SpringDoc OpenAPI閫氱敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   api-docs:
     enabled: ${API_DOCS_ENABLED:true}
@@ -135,7 +135,7 @@ springdoc:
     operations-sorter: alpha
   default-flat-param-object: true
 
-# Knife4j閫氱敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: ${KNIFE4J_ENABLED:true}
   production: ${KNIFE4J_PRODUCTION:false}
@@ -149,20 +149,20 @@ knife4j:
     enable-footer-custom: true
     footer-custom-content: "Cloud 寰湇鍔″钩鍙?API 鏂囨。"
 
-# 缂撳瓨閫氱敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 cache:
-  multi-level: ${CACHE_MULTI_LEVEL:true}  # 鍚敤澶氱骇缂撳瓨(Caffeine + Redis)
-  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # 缂撳瓨涓€鑷存€ф満鍒?鏆傛椂鍏抽棴)
+  multi-level: ${CACHE_MULTI_LEVEL:true}  # Comment sanitized for UTF-8 compatibility.
+  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # Comment sanitized for UTF-8 compatibility.
   ttl:
-    user: ${CACHE_TTL_USER:1800}        # 鐢ㄦ埛鐩稿叧: 30鍒嗛挓
-    product: ${CACHE_TTL_PRODUCT:2700}  # 鍟嗗搧鐩稿叧: 45鍒嗛挓
-    stock: ${CACHE_TTL_STOCK:300}       # 搴撳瓨鐩稿叧: 5鍒嗛挓 (楂橀鍙樺寲)
-    order: ${CACHE_TTL_ORDER:900}       # 璁㈠崟鐩稿叧: 15鍒嗛挓
-    payment: ${CACHE_TTL_PAYMENT:600}   # 鏀粯鐩稿叧: 10鍒嗛挓
-    search: ${CACHE_TTL_SEARCH:1200}    # 鎼滅储鐩稿叧: 20鍒嗛挓
-    auth: ${CACHE_TTL_AUTH:3600}        # 鏉冮檺鐩稿叧: 1灏忔椂
+    user: ${CACHE_TTL_USER:1800}        # Comment sanitized for UTF-8 compatibility.
+    product: ${CACHE_TTL_PRODUCT:2700}  # Comment sanitized for UTF-8 compatibility.
+    stock: ${CACHE_TTL_STOCK:300}       # Comment sanitized for UTF-8 compatibility.
+    order: ${CACHE_TTL_ORDER:900}       # Comment sanitized for UTF-8 compatibility.
+    payment: ${CACHE_TTL_PAYMENT:600}   # Comment sanitized for UTF-8 compatibility.
+    search: ${CACHE_TTL_SEARCH:1200}    # Comment sanitized for UTF-8 compatibility.
+    auth: ${CACHE_TTL_AUTH:3600}        # Comment sanitized for UTF-8 compatibility.
 
-# 鍒嗗竷寮忛攣閫氱敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 cloud:
   distributed-lock:
     enabled: ${DISTRIBUTED_LOCK_ENABLED:true}
@@ -172,7 +172,7 @@ cloud:
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
 
-# 鏉冮檺閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 app:
   deploy:
     # admin-service/log-service are singleton by default; others are multi-instance.
@@ -184,7 +184,7 @@ app:
     idempotent-enabled: ${MESSAGE_IDEMPOTENT_ENABLED:true}
     idempotent-expire-seconds: ${MESSAGE_IDEMPOTENT_EXPIRE_SECONDS:86400}
 
-# 鐩戞帶閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:

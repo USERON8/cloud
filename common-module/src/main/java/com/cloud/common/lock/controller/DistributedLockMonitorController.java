@@ -9,46 +9,36 @@ import org.redisson.api.RKeys;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 分布式锁监控控制器
- * <p>
- * 提供分布式锁的监控和管理接口:
- * - 查看当前所有锁
- * - 查看锁详情
- * - 强制释放锁
- * - 锁统计信息
- *
- * @author CloudDevAgent
- * @since 2025-10-12
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/lock/monitor")
-@Tag(name = "分布式锁监控", description = "分布式锁监控和管理接口")
+@Tag(name = "Distributed Lock Monitor", description = "Distributed lock monitoring and management APIs")
 @RequiredArgsConstructor
 @ConditionalOnBean(RedissonClient.class)
 public class DistributedLockMonitorController {
 
-    private static final String LOCK_PREFIX_PATTERN = "distributed:lock:*";
+    private static final String LOCK_PREFIX = "distributed:lock:";
+    private static final String LOCK_PREFIX_PATTERN = LOCK_PREFIX + "*";
+
     private final RedissonClient redissonClient;
 
-    /**
-     * 获取所有锁信息
-     */
     @GetMapping("/locks")
-    @Operation(summary = "获取所有分布式锁")
+    @Operation(summary = "Get all distributed locks")
     public Result<List<Map<String, Object>>> getAllLocks() {
         try {
             RKeys keys = redissonClient.getKeys();
             Iterable<String> lockKeys = keys.getKeysByPattern(LOCK_PREFIX_PATTERN);
-
             List<Map<String, Object>> locks = new ArrayList<>();
 
             for (String lockKey : lockKeys) {
@@ -57,74 +47,50 @@ public class DistributedLockMonitorController {
                     locks.add(lockInfo);
                 }
             }
-
             return Result.success(locks);
-
         } catch (Exception e) {
-            log.error("获取所有锁信息失败", e);
-            return Result.error("获取所有锁信息失败: " + e.getMessage());
+            log.error("Failed to load lock list", e);
+            return Result.error("Failed to load lock list: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取指定锁的详细信息
-     */
     @GetMapping("/lock/{lockKey}")
-    @Operation(summary = "获取指定锁的详细信息")
+    @Operation(summary = "Get lock details")
     public Result<Map<String, Object>> getLockDetails(@PathVariable String lockKey) {
         try {
-            String fullKey = lockKey.startsWith("distributed:lock:")
-                    ? lockKey
-                    : "distributed:lock:" + lockKey;
-
+            String fullKey = normalizeLockKey(lockKey);
             Map<String, Object> lockInfo = getLockInfo(fullKey);
-
             if (lockInfo == null) {
-                return Result.error("锁不存在: " + lockKey);
+                return Result.error("Lock not found: " + lockKey);
             }
-
             return Result.success(lockInfo);
-
         } catch (Exception e) {
-            log.error("获取锁详情失败: {}", lockKey, e);
-            return Result.error("获取锁详情失败: " + e.getMessage());
+            log.error("Failed to load lock details: {}", lockKey, e);
+            return Result.error("Failed to load lock details: " + e.getMessage());
         }
     }
 
-    /**
-     * 强制释放锁 (危险操作,仅用于异常情况)
-     */
     @DeleteMapping("/lock/{lockKey}")
-    @Operation(summary = "强制释放指定锁")
+    @Operation(summary = "Force unlock a lock")
     public Result<String> forceUnlock(@PathVariable String lockKey) {
         try {
-            String fullKey = lockKey.startsWith("distributed:lock:")
-                    ? lockKey
-                    : "distributed:lock:" + lockKey;
-
+            String fullKey = normalizeLockKey(lockKey);
             RLock lock = redissonClient.getLock(fullKey);
-
             if (!lock.isLocked()) {
-                return Result.error("锁不存在或已释放: " + lockKey);
+                return Result.error("Lock does not exist or is already unlocked: " + lockKey);
             }
 
-            // 强制解锁
             lock.forceUnlock();
-
-            log.warn("⚠️ 强制释放分布式锁: {}", lockKey);
-            return Result.success("锁已强制释放: " + lockKey);
-
+            log.warn("Force unlocked distributed lock: {}", fullKey);
+            return Result.success("Force unlocked: " + lockKey);
         } catch (Exception e) {
-            log.error("强制释放锁失败: {}", lockKey, e);
-            return Result.error("强制释放锁失败: " + e.getMessage());
+            log.error("Failed to force unlock: {}", lockKey, e);
+            return Result.error("Failed to force unlock: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取锁统计信息
-     */
     @GetMapping("/stats")
-    @Operation(summary = "获取锁统计信息")
+    @Operation(summary = "Get lock statistics")
     public Result<Map<String, Object>> getLockStats() {
         try {
             RKeys keys = redissonClient.getKeys();
@@ -135,18 +101,18 @@ public class DistributedLockMonitorController {
             long totalTtl = 0;
             long minTtl = Long.MAX_VALUE;
             long maxTtl = 0;
+            long ttlCount = 0;
 
             for (String lockKey : lockKeys) {
                 totalLocks++;
-
                 RLock lock = redissonClient.getLock(lockKey);
-
                 if (lock.isLocked()) {
                     activeLocks++;
                 }
 
                 long ttl = lock.remainTimeToLive();
                 if (ttl > 0) {
+                    ttlCount++;
                     totalTtl += ttl;
                     minTtl = Math.min(minTtl, ttl);
                     maxTtl = Math.max(maxTtl, ttl);
@@ -157,56 +123,50 @@ public class DistributedLockMonitorController {
             stats.put("totalLocks", totalLocks);
             stats.put("activeLocks", activeLocks);
             stats.put("inactiveLocks", totalLocks - activeLocks);
-            stats.put("averageTtl", totalLocks > 0 ? totalTtl / totalLocks + "ms" : "N/A");
-            stats.put("minTtl", minTtl != Long.MAX_VALUE ? minTtl + "ms" : "N/A");
-            stats.put("maxTtl", maxTtl > 0 ? maxTtl + "ms" : "N/A");
+            stats.put("averageTtl", ttlCount > 0 ? (totalTtl / ttlCount) + "ms" : "N/A");
+            stats.put("minTtl", ttlCount > 0 ? minTtl + "ms" : "N/A");
+            stats.put("maxTtl", ttlCount > 0 ? maxTtl + "ms" : "N/A");
 
             return Result.success(stats);
-
         } catch (Exception e) {
-            log.error("获取锁统计信息失败", e);
-            return Result.error("获取锁统计信息失败: " + e.getMessage());
+            log.error("Failed to load lock statistics", e);
+            return Result.error("Failed to load lock statistics: " + e.getMessage());
         }
     }
 
-    /**
-     * 清除所有过期锁
-     */
     @DeleteMapping("/clear-expired")
-    @Operation(summary = "清除所有过期锁")
+    @Operation(summary = "Clear expired lock keys")
     public Result<String> clearExpiredLocks() {
         try {
             RKeys keys = redissonClient.getKeys();
             Iterable<String> lockKeys = keys.getKeysByPattern(LOCK_PREFIX_PATTERN);
-
             int clearedCount = 0;
 
             for (String lockKey : lockKeys) {
                 RLock lock = redissonClient.getLock(lockKey);
-
-                // 如果锁未被持有,则删除
                 if (!lock.isLocked()) {
                     keys.delete(lockKey);
                     clearedCount++;
                 }
             }
 
-            log.info("✅ 清除过期锁完成, 共清除 {} 个", clearedCount);
-            return Result.success("清除完成, 共清除 " + clearedCount + " 个过期锁");
-
+            return Result.success("Cleared expired lock keys: " + clearedCount);
         } catch (Exception e) {
-            log.error("清除过期锁失败", e);
-            return Result.error("清除过期锁失败: " + e.getMessage());
+            log.error("Failed to clear expired lock keys", e);
+            return Result.error("Failed to clear expired lock keys: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取锁信息
-     */
+    private String normalizeLockKey(String lockKey) {
+        if (lockKey.startsWith(LOCK_PREFIX)) {
+            return lockKey;
+        }
+        return LOCK_PREFIX + lockKey;
+    }
+
     private Map<String, Object> getLockInfo(String lockKey) {
         try {
             RLock lock = redissonClient.getLock(lockKey);
-
             Map<String, Object> info = new HashMap<>();
             info.put("lockKey", lockKey);
             info.put("isLocked", lock.isLocked());
@@ -214,17 +174,21 @@ public class DistributedLockMonitorController {
             info.put("holdCount", lock.getHoldCount());
 
             long ttl = lock.remainTimeToLive();
-            info.put("remainTimeToLive", ttl > 0 ? ttl + "ms" : "已过期");
+            info.put("remainTimeToLive", ttl > 0 ? ttl + "ms" : "expired");
 
-            // 获取锁的实际值
             RKeys keys = redissonClient.getKeys();
             long keyTtl = keys.remainTimeToLive(lockKey);
-            info.put("keyTtl", keyTtl > 0 ? keyTtl + "ms" : (keyTtl == -1 ? "永久" : "不存在"));
+            if (keyTtl > 0) {
+                info.put("keyTtl", keyTtl + "ms");
+            } else if (keyTtl == -1) {
+                info.put("keyTtl", "persistent");
+            } else {
+                info.put("keyTtl", "not_exists");
+            }
 
             return info;
-
         } catch (Exception e) {
-            log.warn("获取锁信息失败: {}", lockKey, e);
+            log.warn("Failed to get lock info: {}", lockKey, e);
             return null;
         }
     }

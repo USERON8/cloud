@@ -16,20 +16,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 用户行为日志服务实现类
- * 使用Redis存储用户行为日志，支持高并发写入
- *
- * @author what's up
- */
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserActivityLogServiceImpl implements UserActivityLogService {
 
-    /**
-     * 日志保留天数
-     */
+    
+
+
     private static final int LOG_RETENTION_DAYS = 90;
     private final RedisTemplate<String, Object> redisTemplate;
     @Resource
@@ -42,7 +42,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logLoginActivityAsync(Long userId, String ip, String device) {
-        log.debug("记录用户登录行为，userId: {}, ip: {}", userId, ip);
+        log.debug("璁板綍鐢ㄦ埛鐧诲綍琛屼负锛寀serId: {}, ip: {}", userId, ip);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -53,23 +53,23 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 logData.put("device", device);
                 logData.put("timestamp", LocalDateTime.now().toString());
 
-                // 存储到Redis List（最近100条）
+                
                 String key = "user:activity:login:" + userId;
                 redisTemplate.opsForList().leftPush(key, logData);
                 redisTemplate.opsForList().trim(key, 0, 99);
                 redisTemplate.expire(key, LOG_RETENTION_DAYS, TimeUnit.DAYS);
 
-                // 更新最后登录时间
+                
                 String lastLoginKey = "user:last_login:" + userId;
                 redisTemplate.opsForValue().set(lastLoginKey, LocalDateTime.now());
 
-                // 增加活跃度分数
+                
                 incrementActivityScore(userId);
 
                 return true;
 
             } catch (Exception e) {
-                log.error("记录用户登录行为失败: userId={}", userId, e);
+                log.error("璁板綍鐢ㄦ埛鐧诲綍琛屼负澶辫触: userId={}", userId, e);
                 return false;
             }
         }, userLogExecutor);
@@ -78,46 +78,46 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logLogoutActivityAsync(Long userId) {
-        log.debug("记录用户登出行为，userId: {}", userId);
+        log.debug("璁板綍鐢ㄦ埛鐧诲嚭琛屼负锛寀serId: {}", userId);
 
-        return logActivityAsync(userId, UserActivityType.LOGOUT, "用户登出", null);
+        return logActivityAsync(userId, UserActivityType.LOGOUT, "鐢ㄦ埛鐧诲嚭", null);
     }
 
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logRegistrationActivityAsync(Long userId, String registrationType) {
-        log.debug("记录用户注册行为，userId: {}, type: {}", userId, registrationType);
+        log.debug("璁板綍鐢ㄦ埛娉ㄥ唽琛屼负锛寀serId: {}, type: {}", userId, registrationType);
 
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("registrationType", registrationType);
 
-        return logActivityAsync(userId, UserActivityType.REGISTRATION, "用户注册", metadata);
+        return logActivityAsync(userId, UserActivityType.REGISTRATION, "鐢ㄦ埛娉ㄥ唽", metadata);
     }
 
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logProfileUpdateActivityAsync(Long userId, List<String> modifiedFields) {
-        log.debug("记录用户信息修改行为，userId: {}, fields: {}", userId, modifiedFields);
+        log.debug("璁板綍鐢ㄦ埛淇℃伅淇敼琛屼负锛寀serId: {}, fields: {}", userId, modifiedFields);
 
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("modifiedFields", modifiedFields);
 
-        return logActivityAsync(userId, UserActivityType.PROFILE_UPDATE, "修改个人信息", metadata);
+        return logActivityAsync(userId, UserActivityType.PROFILE_UPDATE, "淇敼涓汉淇℃伅", metadata);
     }
 
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logPasswordChangeActivityAsync(Long userId) {
-        log.debug("记录密码修改行为，userId: {}", userId);
+        log.debug("璁板綍瀵嗙爜淇敼琛屼负锛寀serId: {}", userId);
 
-        return logActivityAsync(userId, UserActivityType.PASSWORD_CHANGE, "修改密码", null);
+        return logActivityAsync(userId, UserActivityType.PASSWORD_CHANGE, "淇敼瀵嗙爜", null);
     }
 
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logActivityAsync(Long userId, UserActivityType activityType,
                                                        String description, Map<String, Object> metadata) {
-        log.debug("记录用户行为，userId: {}, type: {}", userId, activityType);
+        log.debug("璁板綍鐢ㄦ埛琛屼负锛寀serId: {}, type: {}", userId, activityType);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -128,25 +128,25 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 logData.put("metadata", metadata);
                 logData.put("timestamp", LocalDateTime.now().toString());
 
-                // 存储到用户活动列表
+                
                 String userActivityKey = "user:activity:all:" + userId;
                 redisTemplate.opsForList().leftPush(userActivityKey, logData);
-                redisTemplate.opsForList().trim(userActivityKey, 0, 999); // 保留最近1000条
+                redisTemplate.opsForList().trim(userActivityKey, 0, 999); 
                 redisTemplate.expire(userActivityKey, LOG_RETENTION_DAYS, TimeUnit.DAYS);
 
-                // 存储到活动类型列表
+                
                 String typeKey = "activity:type:" + activityType.name() + ":" + userId;
                 redisTemplate.opsForList().leftPush(typeKey, logData);
                 redisTemplate.expire(typeKey, LOG_RETENTION_DAYS, TimeUnit.DAYS);
 
-                // 增加活跃度分数
+                
                 incrementActivityScore(userId);
 
-                log.debug("用户行为记录成功: userId={}, type={}", userId, activityType);
+                log.debug("鐢ㄦ埛琛屼负璁板綍鎴愬姛: userId={}, type={}", userId, activityType);
                 return true;
 
             } catch (Exception e) {
-                log.error("记录用户行为失败: userId={}, type={}", userId, activityType, e);
+                log.error("璁板綍鐢ㄦ埛琛屼负澶辫触: userId={}, type={}", userId, activityType, e);
                 return false;
             }
         }, userLogExecutor);
@@ -155,7 +155,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<List<Map<String, Object>>> getRecentActivitiesAsync(Long userId, Integer limit) {
-        log.debug("获取用户最近活动，userId: {}, limit: {}", userId, limit);
+        log.debug("鑾峰彇鐢ㄦ埛鏈€杩戞椿鍔紝userId: {}, limit: {}", userId, limit);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -178,7 +178,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 return result;
 
             } catch (Exception e) {
-                log.error("获取用户最近活动失败: userId={}", userId, e);
+                log.error("鑾峰彇鐢ㄦ埛鏈€杩戞椿鍔ㄥけ璐? userId={}", userId, e);
                 return Collections.emptyList();
             }
         }, userLogExecutor);
@@ -187,7 +187,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Long> calculateUserActivityScoreAsync(Long userId, Integer days) {
-        log.debug("计算用户活跃度，userId: {}, days: {}", userId, days);
+        log.debug("璁＄畻鐢ㄦ埛娲昏穬搴︼紝userId: {}, days: {}", userId, days);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -197,7 +197,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 return score != null ? Long.parseLong(score.toString()) : 0L;
 
             } catch (Exception e) {
-                log.error("计算用户活跃度失败: userId={}", userId, e);
+                log.error("璁＄畻鐢ㄦ埛娲昏穬搴﹀け璐? userId={}", userId, e);
                 return 0L;
             }
         }, userStatisticsExecutor);
@@ -206,7 +206,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logBatchActivitiesAsync(List<Map<String, Object>> activities) {
-        log.info("批量记录用户活动，数量: {}", activities.size());
+        
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -225,30 +225,30 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                         successCount++;
 
                     } catch (Exception e) {
-                        log.warn("批量记录单条活动失败", e);
+                        log.warn("鎵归噺璁板綍鍗曟潯娲诲姩澶辫触", e);
                     }
                 }
 
-                log.info("批量记录用户活动完成，总数: {}, 成功: {}", activities.size(), successCount);
+                
                 return successCount > 0;
 
             } catch (Exception e) {
-                log.error("批量记录用户活动失败", e);
+                log.error("鎵归噺璁板綍鐢ㄦ埛娲诲姩澶辫触", e);
                 return false;
             }
         }, userLogExecutor);
     }
 
-    /**
-     * 增加用户活跃度分数
-     */
+    
+
+
     private void incrementActivityScore(Long userId) {
         try {
             String key = "user:activity:score:" + userId;
             redisTemplate.opsForValue().increment(key);
             redisTemplate.expire(key, 30, TimeUnit.DAYS);
         } catch (Exception e) {
-            log.warn("增加用户活跃度分数失败: userId={}", userId);
+            log.warn("澧炲姞鐢ㄦ埛娲昏穬搴﹀垎鏁板け璐? userId={}", userId);
         }
     }
 }

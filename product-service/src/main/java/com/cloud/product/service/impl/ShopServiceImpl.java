@@ -26,14 +26,14 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 店铺服务实现类
- * 针对表【merchant_shop(商家店铺表)】的数据库操作Service实现
- * 使用多级缓存提升性能，遵循事务管理规范
- *
- * @author what's up
- * @since 1.0.0
- */
+
+
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,24 +42,24 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     private final ShopConverter shopConverter;
 
-    // ================= 基础CRUD操作 =================
+    
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CachePut(cacheNames = "shopCache", key = "#result",
             condition = "#result != null")
     public Long createShop(ShopRequestDTO requestDTO) {
-        log.info("创建店铺: {}", requestDTO.getName());
+        
 
-        // 使用ShopConverter转换DTO为实体
+        
         Shop shop = shopConverter.requestDTOToEntity(requestDTO);
 
         boolean saved = save(shop);
         if (!saved) {
-            throw new RuntimeException("创建店铺失败");
+            throw new RuntimeException("鍒涘缓搴楅摵澶辫触");
         }
 
-        log.info("店铺创建成功, ID: {}", shop.getId());
+        
         return shop.getId();
     }
 
@@ -73,23 +73,23 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
             }
     )
     public Boolean updateShop(Long id, ShopRequestDTO requestDTO) {
-        log.info("更新店铺: ID={}, Name={}", id, requestDTO.getName());
+        
 
         Shop existingShop = getById(id);
         if (existingShop == null) {
-            throw new RuntimeException("店铺不存在: " + id);
+            throw new RuntimeException("搴楅摵涓嶅瓨鍦? " + id);
         }
 
-        // 使用转换器更新实体字段
+        
         Shop updateShop = shopConverter.requestDTOToEntity(requestDTO);
         updateShop.setId(id);
 
         boolean updated = updateById(updateShop);
         if (!updated) {
-            throw new RuntimeException("更新店铺失败");
+            throw new RuntimeException("鏇存柊搴楅摵澶辫触");
         }
 
-        log.info("店铺更新成功: {}", id);
+        
         return true;
     }
 
@@ -102,19 +102,19 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
             }
     )
     public Boolean deleteShop(Long id) {
-        log.info("删除店铺: {}", id);
+        
 
         Shop shop = getById(id);
         if (shop == null) {
-            throw new RuntimeException("店铺不存在: " + id);
+            throw new RuntimeException("搴楅摵涓嶅瓨鍦? " + id);
         }
 
         boolean deleted = removeById(id);
         if (!deleted) {
-            throw new RuntimeException("删除店铺失败");
+            throw new RuntimeException("鍒犻櫎搴楅摵澶辫触");
         }
 
-        log.info("店铺删除成功: {}", id);
+        
         return true;
     }
 
@@ -122,7 +122,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchDeleteShops(List<Long> ids) {
-        log.info("批量删除店铺: {}", ids);
+        
 
         if (CollectionUtils.isEmpty(ids)) {
             return true;
@@ -130,25 +130,25 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
         boolean deleted = removeBatchByIds(ids);
         if (!deleted) {
-            throw new RuntimeException("批量删除店铺失败");
+            throw new RuntimeException("鎵归噺鍒犻櫎搴楅摵澶辫触");
         }
 
-        log.info("批量删除店铺成功, 数量: {}", ids.size());
+        
         return true;
     }
 
-    // ================= 查询操作 =================
+    
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "shopCache", key = "#id",
             condition = "#id != null")
     public ShopVO getShopById(Long id) {
-        log.debug("获取店铺详情: {}", id);
+        log.debug("鑾峰彇搴楅摵璇︽儏: {}", id);
 
         Shop shop = getById(id);
         if (shop == null) {
-            throw new RuntimeException("店铺不存在: " + id);
+            throw new RuntimeException("搴楅摵涓嶅瓨鍦? " + id);
         }
 
         return shopConverter.toVO(shop);
@@ -157,7 +157,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Override
     @Transactional(readOnly = true)
     public List<ShopVO> getShopsByIds(List<Long> ids) {
-        log.debug("批量获取店铺: {}", ids);
+        log.debug("鎵归噺鑾峰彇搴楅摵: {}", ids);
         if (CollectionUtils.isEmpty(ids)) {
             return new ArrayList<>();
         }
@@ -171,7 +171,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Cacheable(cacheNames = "shopListCache",
             key = "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.shopNameKeyword ?: 'null') + ':' + (#pageDTO.status ?: 'null')")
     public PageResult<ShopVO> getShopsPage(ShopPageDTO pageDTO) {
-        log.debug("分页查询店铺: {}", pageDTO);
+        log.debug("鍒嗛〉鏌ヨ搴楅摵: {}", pageDTO);
 
         Page<Shop> page = new Page<>(pageDTO.getCurrent(), pageDTO.getSize());
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
@@ -197,7 +197,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Cacheable(cacheNames = "shopListCache",
             key = "'merchant:' + #merchantId + ':' + (#status ?: 'null')")
     public List<ShopVO> getShopsByMerchantId(Long merchantId, Integer status) {
-        log.debug("根据商户ID查询店铺: merchantId={}, status={}", merchantId, status);
+        log.debug("鏍规嵁鍟嗘埛ID鏌ヨ搴楅摵: merchantId={}, status={}", merchantId, status);
 
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Shop::getMerchantId, merchantId);
@@ -215,7 +215,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Cacheable(cacheNames = "shopListCache",
             key = "'search:' + #shopName + ':' + (#status ?: 'null')")
     public List<ShopVO> searchShopsByName(String shopName, Integer status) {
-        log.debug("搜索店铺: shopName={}, status={}", shopName, status);
+        log.debug("鎼滅储搴楅摵: shopName={}, status={}", shopName, status);
 
         if (!StringUtils.hasText(shopName)) {
             return new ArrayList<>();
@@ -232,7 +232,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
         return shopConverter.toVOList(shops);
     }
 
-    // ================= 状态管理 =================
+    
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -241,8 +241,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
             evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
     )
     public Boolean enableShop(Long id) {
-        log.info("启用店铺: {}", id);
-        return updateShopStatus(id, 1, "启用");
+        
+        return updateShopStatus(id, 1, "鍚敤");
     }
 
     @Override
@@ -252,27 +252,27 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
             evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
     )
     public Boolean disableShop(Long id) {
-        log.info("禁用店铺: {}", id);
-        return updateShopStatus(id, 0, "禁用");
+        
+        return updateShopStatus(id, 0, "绂佺敤");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchEnableShops(List<Long> ids) {
-        log.info("批量启用店铺: {}", ids);
-        return batchUpdateShopStatus(ids, 1, "批量启用");
+        
+        return batchUpdateShopStatus(ids, 1, "鎵归噺鍚敤");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Boolean batchDisableShops(List<Long> ids) {
-        log.info("批量禁用店铺: {}", ids);
-        return batchUpdateShopStatus(ids, 0, "批量禁用");
+        
+        return batchUpdateShopStatus(ids, 0, "鎵归噺绂佺敤");
     }
 
-    // ================= 统计分析 =================
+    
 
     @Override
     @Transactional(readOnly = true)
@@ -318,43 +318,42 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
         return count(queryWrapper) > 0;
     }
 
-    // ================= 缓存管理 =================
+    
 
     @Override
     @CacheEvict(cacheNames = "shopCache", key = "#id")
     public void evictShopCache(Long id) {
-        log.info("清除店铺缓存: {}", id);
+        
     }
 
     @Override
     @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public void evictAllShopCache() {
-        log.info("清除所有店铺缓存");
     }
 
     @Override
     public void warmupShopCache(List<Long> ids) {
-        log.info("预热店铺缓存: {}", ids);
+        
 
         if (CollectionUtils.isEmpty(ids)) {
             return;
         }
 
-        // 预热店铺缓存
+        
         ids.forEach(this::getShopById);
 
-        log.info("店铺缓存预热完成, 数量: {}", ids.size());
+        
     }
 
-    // ================= 私有辅助方法 =================
+    
 
-    /**
-     * 更新店铺状态
-     */
+    
+
+
     private Boolean updateShopStatus(Long id, Integer status, String operation) {
         Shop shop = getById(id);
         if (shop == null) {
-            throw new RuntimeException("店铺不存在: " + id);
+            throw new RuntimeException("搴楅摵涓嶅瓨鍦? " + id);
         }
 
         LambdaUpdateWrapper<Shop> updateWrapper = new LambdaUpdateWrapper<>();
@@ -363,16 +362,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new RuntimeException(operation + "店铺失败");
+            throw new RuntimeException(operation + "搴楅摵澶辫触");
         }
 
-        log.info("{}店铺成功: {}", operation, id);
+        
         return true;
     }
 
-    /**
-     * 批量更新店铺状态
-     */
+    
+
+
     private Boolean batchUpdateShopStatus(List<Long> ids, Integer status, String operation) {
         if (CollectionUtils.isEmpty(ids)) {
             return true;
@@ -384,10 +383,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new RuntimeException(operation + "店铺失败");
+            throw new RuntimeException(operation + "搴楅摵澶辫触");
         }
 
-        log.info("{}店铺成功, 数量: {}", operation, ids.size());
+        
         return true;
     }
 }

@@ -10,24 +10,24 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
-/**
- * 订单服务异步配置类
- * 提供订单服务专用的线程池配置
- *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
- */
+
+
+
+
+
+
+
+
 @Slf4j
 @Configuration
 @EnableAsync
 @ConditionalOnProperty(name = "order.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
-    /**
-     * 订单业务异步线程池
-     * 专门用于订单相关的异步业务处理
-     */
+    
+
+
+
     @Bean("orderAsyncExecutor")
     public Executor orderAsyncExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
@@ -38,16 +38,15 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ [ORDER-SERVICE-ASYNC] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
-                executor.getKeepAliveSeconds());
+        
+
         return executor;
     }
 
-    /**
-     * 订单日志异步线程池
-     * 专门用于订单日志处理
-     */
+    
+
+
+
     @Bean("orderLogExecutor")
     public Executor orderLogExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
@@ -58,16 +57,15 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ [ORDER-SERVICE-LOG] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
-                executor.getKeepAliveSeconds());
+        
+
         return executor;
     }
 
-    /**
-     * 订单通知异步线程池
-     * 专门用于订单通知发送
-     */
+    
+
+
+
     @Bean("orderNotificationExecutor")
     public Executor orderNotificationExecutor() {
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
@@ -78,16 +76,15 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ [ORDER-SERVICE-NOTIFICATION] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
-                executor.getKeepAliveSeconds());
+        
+
         return executor;
     }
 
-    /**
-     * 订单统计异步线程池
-     * 专门用于订单统计数据处理
-     */
+    
+
+
+
     @Bean("orderStatisticsExecutor")
     @ConditionalOnProperty(name = "order.statistics.enabled", havingValue = "true", matchIfMissing = true)
     public Executor orderStatisticsExecutor() {
@@ -99,24 +96,22 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        log.info("✅ [ORDER-SERVICE-STATISTICS] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
-                executor.getKeepAliveSeconds());
+        
+
         return executor;
     }
 
-    /**
-     * 订单支付异步线程池
-     * 专门用于订单支付相关的异步处理
-     */
+    
+
+
+
     @Bean("orderPaymentExecutor")
     public Executor orderPaymentExecutor() {
         ThreadPoolTaskExecutor executor = createWriteExecutor("order-payment-");
         executor.initialize();
 
-        log.info("✅ [ORDER-SERVICE-PAYMENT] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",
-                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity(),
-                executor.getKeepAliveSeconds());
+        
+
         return executor;
     }
 

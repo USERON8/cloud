@@ -6,52 +6,52 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * 支付宝支付创建响应
- *
- * @author what's up
- * @since 1.0.0
- */
+
+
+
+
+
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "支付宝支付创建响应")
+@Schema(description = "鏀粯瀹濇敮浠樺垱寤哄搷搴?)
 public class AlipayCreateResponse {
 
-    /**
-     * 支付表单HTML
-     */
-    @Schema(description = "支付表单HTML，前端需要将此HTML插入页面并自动提交")
+    
+
+
+    @Schema(description = "鏀粯琛ㄥ崟HTML锛屽墠绔渶瑕佸皢姝TML鎻掑叆椤甸潰骞惰嚜鍔ㄦ彁浜?)
     private String paymentForm;
 
-    /**
-     * 支付ID
-     */
-    @Schema(description = "支付ID")
+    
+
+
+    @Schema(description = "鏀粯ID")
     private Long paymentId;
 
-    /**
-     * 订单号
-     */
-    @Schema(description = "订单号")
+    
+
+
+    @Schema(description = "璁㈠崟鍙?)
     private String outTradeNo;
 
-    /**
-     * 支付状态
-     */
-    @Schema(description = "支付状态：0-待支付，1-成功，2-失败，3-已退款")
+    
+
+
+    @Schema(description = "鏀粯鐘舵€侊細0-寰呮敮浠橈紝1-鎴愬姛锛?-澶辫触锛?-宸查€€娆?)
     private Integer status;
 
-    /**
-     * 创建时间戳
-     */
-    @Schema(description = "创建时间戳")
+    
+
+
+    @Schema(description = "鍒涘缓鏃堕棿鎴?)
     private Long timestamp;
 
-    /**
-     * 跟踪ID
-     */
-    @Schema(description = "跟踪ID，用于幂等性处理")
+    
+
+
+    @Schema(description = "璺熻釜ID锛岀敤浜庡箓绛夋€у鐞?)
     private String traceId;
 }

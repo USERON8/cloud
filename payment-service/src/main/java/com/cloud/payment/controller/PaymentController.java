@@ -25,45 +25,44 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 支付RESTful API控制器
- * 提供支付资源的CRUD操作，参考User服务标准架构
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@Tag(name = "支付服务", description = "支付资源的RESTful API接口")
+@Tag(name = "鏀粯鏈嶅姟", description = "鏀粯璧勬簮鐨凴ESTful API鎺ュ彛")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    /**
-     * 获取支付列表（支持查询参数）
-     */
+    
+
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "获取支付列表", description = "获取支付列表，支持分页和查询参数")
+    @Operation(summary = "鑾峰彇鏀粯鍒楄〃", description = "鑾峰彇鏀粯鍒楄〃锛屾敮鎸佸垎椤靛拰鏌ヨ鍙傛暟")
     public Result<PageResult<PaymentDTO>> getPayments(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1")
-            @Min(value = 1, message = "页码必须大于0") Integer page,
+            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "椤电爜蹇呴』澶т簬0") Integer page,
 
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10")
-            @Min(value = 1, message = "每页数量必须大于0")
-            @Max(value = 100, message = "每页数量不能超过100") Integer size,
+            @Parameter(description = "姣忛〉鏁伴噺") @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "姣忛〉鏁伴噺蹇呴』澶т簬0")
+            @Max(value = 100, message = "姣忛〉鏁伴噺涓嶈兘瓒呰繃100") Integer size,
 
-            @Parameter(description = "用户ID") @RequestParam(required = false)
-            @Positive(message = "用户ID必须为正整数") Long userId,
+            @Parameter(description = "鐢ㄦ埛ID") @RequestParam(required = false)
+            @Positive(message = "鐢ㄦ埛ID蹇呴』涓烘鏁存暟") Long userId,
 
-            @Parameter(description = "支付状态") @RequestParam(required = false)
-            @Min(value = 0, message = "支付状态值错误")
-            @Max(value = 9, message = "支付状态值错误") Integer status,
+            @Parameter(description = "鏀粯鐘舵€?) @RequestParam(required = false)
+            @Min(value = 0, message = "鏀粯鐘舵€佸€奸敊璇?)
+            @Max(value = 9, message = "鏀粯鐘舵€佸€奸敊璇?) Integer status,
 
-            @Parameter(description = "支付渠道") @RequestParam(required = false)
-            @Min(value = 0, message = "支付渠道值错误")
-            @Max(value = 9, message = "支付渠道值错误") Integer channel,
+            @Parameter(description = "鏀粯娓犻亾") @RequestParam(required = false)
+            @Min(value = 0, message = "鏀粯娓犻亾鍊奸敊璇?)
+            @Max(value = 9, message = "鏀粯娓犻亾鍊奸敊璇?) Integer channel,
 
             Authentication authentication) {
 
@@ -76,84 +75,83 @@ public class PaymentController {
                 pageResult.getRecords()
         );
 
-        log.info("查询支付列表 - 页码: {}, 每页数量: {}, 总数: {}", page, size, pageResult.getTotal());
+        
         return Result.success(result);
     }
 
-    /**
-     * 根据ID获取支付详情
-     */
+    
+
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "获取支付详情", description = "根据支付ID获取支付详细信息")
+    @Operation(summary = "鑾峰彇鏀粯璇︽儏", description = "鏍规嵁鏀粯ID鑾峰彇鏀粯璇︾粏淇℃伅")
     public Result<PaymentDTO> getPaymentById(
-            @Parameter(description = "支付ID") @PathVariable
-            @NotNull(message = "支付ID不能为空")
-            @Positive(message = "支付ID必须为正整数") Long id,
+            @Parameter(description = "鏀粯ID") @PathVariable
+            @NotNull(message = "鏀粯ID涓嶈兘涓虹┖")
+            @Positive(message = "鏀粯ID蹇呴』涓烘鏁存暟") Long id,
             Authentication authentication) {
 
         PaymentDTO payment = paymentService.getPaymentById(id);
         if (payment == null) {
-            log.warn("支付记录不存在: id={}", id);
+            log.warn("鏀粯璁板綍涓嶅瓨鍦? id={}", id);
             throw new ResourceNotFoundException("Payment", String.valueOf(id));
         }
-        log.info("查询支付成功: paymentId={}", id);
-        return Result.success("查询成功", payment);
+        
+        return Result.success("鏌ヨ鎴愬姛", payment);
     }
 
-    /**
-     * 创建支付记录
-     */
+    
+
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "创建支付记录", description = "创建新的支付记录")
+    @Operation(summary = "鍒涘缓鏀粯璁板綍", description = "鍒涘缓鏂扮殑鏀粯璁板綍")
     public Result<Long> createPayment(
-            @Parameter(description = "支付信息") @RequestBody
-            @Valid @NotNull(message = "支付信息不能为空") PaymentDTO paymentDTO) {
+            @Parameter(description = "鏀粯淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鏀粯淇℃伅涓嶈兘涓虹┖") PaymentDTO paymentDTO) {
 
         Long paymentId = paymentService.createPayment(paymentDTO);
-        log.info("支付记录创建成功: paymentId={}, orderId={}", paymentId, paymentDTO.getOrderId());
-        return Result.success("支付记录创建成功", paymentId);
+        
+        return Result.success("鏀粯璁板綍鍒涘缓鎴愬姛", paymentId);
     }
 
-    /**
-     * 更新支付记录
-     */
+    
+
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "更新支付记录", description = "更新支付记录信息")
+    @Operation(summary = "鏇存柊鏀粯璁板綍", description = "鏇存柊鏀粯璁板綍淇℃伅")
     public Result<Boolean> updatePayment(
-            @Parameter(description = "支付ID") @PathVariable Long id,
-            @Parameter(description = "支付信息") @RequestBody
-            @Valid @NotNull(message = "支付信息不能为空") PaymentDTO paymentDTO,
+            @Parameter(description = "鏀粯ID") @PathVariable Long id,
+            @Parameter(description = "鏀粯淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鏀粯淇℃伅涓嶈兘涓虹┖") PaymentDTO paymentDTO,
             Authentication authentication) {
 
-        // 确保路径参数与请求体中的ID一致
-        paymentDTO.setId(id);
+        
         Boolean result = paymentService.updatePayment(paymentDTO);
-        log.info("支付记录更新成功: paymentId={}", id);
-        return Result.success("支付记录更新成功", result);
+        
+        return Result.success("鏀粯璁板綍鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 删除支付记录
-     */
+    
+
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "删除支付记录", description = "删除支付记录")
+    @Operation(summary = "鍒犻櫎鏀粯璁板綍", description = "鍒犻櫎鏀粯璁板綍")
     public Result<Boolean> deletePayment(
-            @Parameter(description = "支付ID") @PathVariable
-            @NotNull(message = "支付ID不能为空")
-            @Positive(message = "支付ID必须为正整数") Long id) {
+            @Parameter(description = "鏀粯ID") @PathVariable
+            @NotNull(message = "鏀粯ID涓嶈兘涓虹┖")
+            @Positive(message = "鏀粯ID蹇呴』涓烘鏁存暟") Long id) {
 
         Boolean result = paymentService.deletePayment(id);
-        log.info("支付记录删除成功: paymentId={}", id);
-        return Result.success("支付记录删除成功", result);
+        
+        return Result.success("鏀粯璁板綍鍒犻櫎鎴愬姛", result);
     }
 
-    /**
-     * 处理支付成功
-     */
+    
+
+
     @PostMapping("/{id}/success")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
     @DistributedLock(
@@ -161,28 +159,28 @@ public class PaymentController {
             waitTime = 5,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "支付处理中，请勿重复提交"
+            failMessage = "鏀粯澶勭悊涓紝璇峰嬁閲嶅鎻愪氦"
     )
-    @Operation(summary = "支付成功", description = "处理支付成功状态变更")
+    @Operation(summary = "鏀粯鎴愬姛", description = "澶勭悊鏀粯鎴愬姛鐘舵€佸彉鏇?)
     public Result<Boolean> paymentSuccess(
-            @Parameter(description = "支付ID") @PathVariable Long id,
+            @Parameter(description = "鏀粯ID") @PathVariable Long id,
             Authentication authentication) {
 
-        log.info("💳 处理支付成功 - 支付ID: {}", id);
+        
         Boolean result = paymentService.processPaymentSuccess(id);
 
         if (!result) {
-            log.warn("⚠️ 支付成功处理失败 - 支付ID: {}", id);
-            throw new BusinessException("支付成功处理失败，请检查支付状态");
+            log.warn("鈿狅笍 鏀粯鎴愬姛澶勭悊澶辫触 - 鏀粯ID: {}", id);
+            throw new BusinessException("鏀粯鎴愬姛澶勭悊澶辫触锛岃妫€鏌ユ敮浠樼姸鎬?);
         }
-        log.info("✅ 支付成功处理完成 - 支付ID: {}", id);
-        return Result.success("支付成功处理完成", result);
+        
+        return Result.success("鏀粯鎴愬姛澶勭悊瀹屾垚", result);
     }
 
 
-    /**
-     * 处理支付失败
-     */
+    
+
+
     @PostMapping("/{id}/fail")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
     @DistributedLock(
@@ -190,28 +188,27 @@ public class PaymentController {
             waitTime = 5,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "支付处理中，请勿重复提交"
+            failMessage = "鏀粯澶勭悊涓紝璇峰嬁閲嶅鎻愪氦"
     )
-    @Operation(summary = "支付失败", description = "处理支付失败状态变更")
+    @Operation(summary = "鏀粯澶辫触", description = "澶勭悊鏀粯澶辫触鐘舵€佸彉鏇?)
     public Result<Boolean> paymentFail(
-            @Parameter(description = "支付ID") @PathVariable Long id,
-            @Parameter(description = "失败原因") @RequestParam(required = false) String failReason,
+            @Parameter(description = "鏀粯ID") @PathVariable Long id,
+            @Parameter(description = "澶辫触鍘熷洜") @RequestParam(required = false) String failReason,
             Authentication authentication) {
 
-        log.info("💳 处理支付失败 - 支付ID: {}, 失败原因: {}", id, failReason);
+        
         Boolean result = paymentService.processPaymentFailed(id, failReason);
 
         if (!result) {
-            log.warn("⚠️ 支付失败处理失败 - 支付ID: {}", id);
-            throw new BusinessException("支付失败处理失败，请检查支付状态");
+            log.warn("鈿狅笍 鏀粯澶辫触澶勭悊澶辫触 - 鏀粯ID: {}", id);
+            throw new BusinessException("鏀粯澶辫触澶勭悊澶辫触锛岃妫€鏌ユ敮浠樼姸鎬?);
         }
-        log.info("✅ 支付失败处理完成 - 支付ID: {}", id);
-        return Result.success("支付失败处理完成", result);
+        
+        return Result.success("鏀粯澶辫触澶勭悊瀹屾垚", result);
     }
 
-    /**
-     * 支付退款
-     */
+    
+
     @PostMapping("/{id}/refund")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
     @DistributedLock(
@@ -219,48 +216,47 @@ public class PaymentController {
             waitTime = 3,
             leaseTime = 20,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "退款处理中，请勿重复提交"
+            failMessage = "閫€娆惧鐞嗕腑锛岃鍕块噸澶嶆彁浜?
     )
-    @Operation(summary = "支付退款", description = "处理支付退款")
+    @Operation(summary = "鏀粯閫€娆?, description = "澶勭悊鏀粯閫€娆?)
     public Result<Boolean> refundPayment(
-            @Parameter(description = "支付ID") @PathVariable Long id,
-            @Parameter(description = "退款金额") @RequestParam BigDecimal refundAmount,
-            @Parameter(description = "退款原因") @RequestParam(required = false) String refundReason,
+            @Parameter(description = "鏀粯ID") @PathVariable Long id,
+            @Parameter(description = "閫€娆鹃噾棰?) @RequestParam BigDecimal refundAmount,
+            @Parameter(description = "閫€娆惧師鍥?) @RequestParam(required = false) String refundReason,
             Authentication authentication) {
 
-        log.info("💰 处理退款请求 - 支付ID: {}, 退款金额: {}, 原因: {}", id, refundAmount, refundReason);
+        
         Boolean result = paymentService.processRefund(id, refundAmount, refundReason);
 
         if (!result) {
-            log.warn("⚠️ 退款处理失败 - 支付ID: {}", id);
-            throw new BusinessException("退款处理失败，请检查支付状态");
+            log.warn("鈿狅笍 閫€娆惧鐞嗗け璐?- 鏀粯ID: {}", id);
+            throw new BusinessException("閫€娆惧鐞嗗け璐ワ紝璇锋鏌ユ敮浠樼姸鎬?);
         }
-        log.info("✅ 退款处理完成 - 支付ID: {}", id);
-        return Result.success("退款处理完成", result);
+        
+        return Result.success("閫€娆惧鐞嗗畬鎴?, result);
     }
 
-    /**
-     * 根据订单ID查询支付信息
-     */
+    
+
+
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "根据订单ID查询支付信息", description = "根据订单ID获取支付信息")
+    @Operation(summary = "鏍规嵁璁㈠崟ID鏌ヨ鏀粯淇℃伅", description = "鏍规嵁璁㈠崟ID鑾峰彇鏀粯淇℃伅")
     public Result<PaymentDTO> getPaymentByOrderId(
-            @Parameter(description = "订单ID") @PathVariable Long orderId,
+            @Parameter(description = "璁㈠崟ID") @PathVariable Long orderId,
             Authentication authentication) {
 
         PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
         if (payment == null) {
-            log.warn("⚠️ 未找到该订单的支付记录 - 订单ID: {}", orderId);
+            log.warn("鈿狅笍 鏈壘鍒拌璁㈠崟鐨勬敮浠樿褰?- 璁㈠崟ID: {}", orderId);
             throw new ResourceNotFoundException("Payment for Order", String.valueOf(orderId));
         }
-        log.info("查询支付信息成功 - 订单ID: {}, 支付ID: {}", orderId, payment.getId());
-        return Result.success("查询成功", payment);
+        
+        return Result.success("鏌ヨ鎴愬姛", payment);
     }
 
-    /**
-     * 支付风控检查
-     */
+    
+
     @PostMapping("/risk-check")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
     @DistributedLock(
@@ -268,23 +264,23 @@ public class PaymentController {
             waitTime = 0,
             leaseTime = 3,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "风控检查系统繁忙，请稍后再试"
+            failMessage = "椋庢帶妫€鏌ョ郴缁熺箒蹇欙紝璇风◢鍚庡啀璇?
     )
-    @Operation(summary = "支付风控检查", description = "执行支付风控检查")
+    @Operation(summary = "鏀粯椋庢帶妫€鏌?, description = "鎵ц鏀粯椋庢帶妫€鏌?)
     public Result<Boolean> riskCheck(
-            @Parameter(description = "用户ID") @RequestParam Long userId,
-            @Parameter(description = "支付金额") @RequestParam BigDecimal amount,
-            @Parameter(description = "支付方式") @RequestParam String paymentMethod,
+            @Parameter(description = "鐢ㄦ埛ID") @RequestParam Long userId,
+            @Parameter(description = "鏀粯閲戦") @RequestParam BigDecimal amount,
+            @Parameter(description = "鏀粯鏂瑰紡") @RequestParam String paymentMethod,
             Authentication authentication) {
 
-        log.info("🛡️ 支付风控检查 - 用户ID: {}, 金额: {}, 方式: {}", userId, amount, paymentMethod);
+        
         Boolean riskPassed = paymentService.riskCheck(userId, amount, paymentMethod);
 
         if (riskPassed) {
-            log.info("✅ 风控检查通过 - 用户ID: {}, 金额: {}", userId, amount);
+            
         } else {
-            log.warn("⚠️ 风控检查不通过 - 用户ID: {}, 金额: {}", userId, amount);
+            log.warn("鈿狅笍 椋庢帶妫€鏌ヤ笉閫氳繃 - 鐢ㄦ埛ID: {}, 閲戦: {}", userId, amount);
         }
-        return Result.success(riskPassed ? "风控检查通过" : "风控检查不通过", riskPassed);
+        return Result.success(riskPassed ? "椋庢帶妫€鏌ラ€氳繃" : "椋庢帶妫€鏌ヤ笉閫氳繃", riskPassed);
     }
 }

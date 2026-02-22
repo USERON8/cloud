@@ -29,20 +29,20 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * 店铺搜索服务实现
- *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
- */
+
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShopSearchServiceImpl implements ShopSearchService {
 
     private static final String PROCESSED_EVENT_KEY_PREFIX = "search:shop:processed:";
-    private static final long PROCESSED_EVENT_TTL = 24 * 60 * 60; // 24小时
+    private static final long PROCESSED_EVENT_TTL = 24 * 60 * 60; 
 
     private final ShopDocumentRepository shopDocumentRepository;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
@@ -61,23 +61,23 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     )
     public void deleteShop(Long shopId) {
         try {
-            log.info("从ES删除店铺 - 店铺ID: {}", shopId);
+            
 
             shopDocumentRepository.deleteById(String.valueOf(shopId));
 
-            log.info("✅ 店铺从ES删除成功 - 店铺ID: {}", shopId);
+            
 
         } catch (Exception e) {
-            log.error("❌ 从ES删除店铺失败 - 店铺ID: {}, 错误: {}",
+            log.error("鉂?浠嶦S鍒犻櫎搴楅摵澶辫触 - 搴楅摵ID: {}, 閿欒: {}",
                     shopId, e.getMessage(), e);
-            throw new RuntimeException("从ES删除店铺失败", e);
+            throw new RuntimeException("浠嶦S鍒犻櫎搴楅摵澶辫触", e);
         }
     }
 
     @Override
     public void updateShopStatus(Long shopId, Integer status) {
         try {
-            log.info("更新店铺状态 - 店铺ID: {}, 状态: {}", shopId, status);
+            
 
             Optional<ShopDocument> optionalDoc = shopDocumentRepository.findById(String.valueOf(shopId));
             if (optionalDoc.isPresent()) {
@@ -86,15 +86,15 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                 document.setUpdatedAt(LocalDateTime.now());
                 shopDocumentRepository.save(document);
 
-                log.info("✅ 店铺状态更新成功 - 店铺ID: {}, 状态: {}", shopId, status);
+                
             } else {
-                log.warn("⚠️ 店铺不存在，无法更新状态 - 店铺ID: {}", shopId);
+                log.warn("鈿狅笍 搴楅摵涓嶅瓨鍦紝鏃犳硶鏇存柊鐘舵€?- 搴楅摵ID: {}", shopId);
             }
 
         } catch (Exception e) {
-            log.error("❌ 更新店铺状态失败 - 店铺ID: {}, 错误: {}",
+            log.error("鉂?鏇存柊搴楅摵鐘舵€佸け璐?- 搴楅摵ID: {}, 閿欒: {}",
                     shopId, e.getMessage(), e);
-            throw new RuntimeException("更新店铺状态失败", e);
+            throw new RuntimeException("鏇存柊搴楅摵鐘舵€佸け璐?, e);
         }
     }
 
@@ -111,7 +111,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     public void batchDeleteShops(List<Long> shopIds) {
         try {
-            log.info("批量删除店铺从ES - 数量: {}", shopIds.size());
+            
 
             List<String> ids = shopIds.stream()
                     .map(String::valueOf)
@@ -119,11 +119,11 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
             shopDocumentRepository.deleteAllById(ids);
 
-            log.info("✅ 批量删除店铺从ES成功 - 数量: {}", shopIds.size());
+            
 
         } catch (Exception e) {
-            log.error("❌ 批量删除店铺从ES失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("批量删除店铺从ES失败", e);
+            log.error("鉂?鎵归噺鍒犻櫎搴楅摵浠嶦S澶辫触 - 閿欒: {}", e.getMessage(), e);
+            throw new RuntimeException("鎵归噺鍒犻櫎搴楅摵浠嶦S澶辫触", e);
         }
     }
 
@@ -133,7 +133,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             String key = PROCESSED_EVENT_KEY_PREFIX + traceId;
             return redisTemplate.hasKey(key);
         } catch (Exception e) {
-            log.warn("检查店铺事件处理状态失败 - TraceId: {}, 错误: {}", traceId, e.getMessage());
+            log.warn("妫€鏌ュ簵閾轰簨浠跺鐞嗙姸鎬佸け璐?- TraceId: {}, 閿欒: {}", traceId, e.getMessage());
             return false;
         }
     }
@@ -144,38 +144,37 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             String key = PROCESSED_EVENT_KEY_PREFIX + traceId;
             redisTemplate.opsForValue().set(key, "1", PROCESSED_EVENT_TTL, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("标记店铺事件已处理失败 - TraceId: {}, 错误: {}", traceId, e.getMessage());
+            log.warn("鏍囪搴楅摵浜嬩欢宸插鐞嗗け璐?- TraceId: {}, 閿欒: {}", traceId, e.getMessage());
         }
     }
 
     @Override
     public void rebuildShopIndex() {
         try {
-            log.info("开始重建店铺索引");
 
-            // 删除现有索引
+            
             if (indexExists()) {
                 deleteShopIndex();
             }
 
-            // 创建新索引
+            
             createShopIndex();
 
-            log.info("✅ 店铺索引重建完成");
+            
 
         } catch (Exception e) {
-            log.error("❌ 重建店铺索引失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("重建店铺索引失败", e);
+            log.error("鉂?閲嶅缓搴楅摵绱㈠紩澶辫触 - 閿欒: {}", e.getMessage(), e);
+            throw new RuntimeException("閲嶅缓搴楅摵绱㈠紩澶辫触", e);
         }
     }
 
     @Override
     public boolean indexExists() {
         try {
-            // 简化实现：假设索引总是存在
+            
             return true;
         } catch (Exception e) {
-            log.error("检查店铺索引是否存在失败 - 错误: {}", e.getMessage(), e);
+            log.error("妫€鏌ュ簵閾虹储寮曟槸鍚﹀瓨鍦ㄥけ璐?- 閿欒: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -183,27 +182,27 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     public void createShopIndex() {
         try {
-            log.info("创建店铺索引");
-            // 简化实现：使用Repository自动创建索引
-            log.info("✅ 店铺索引创建成功");
+            
+            
+            
         } catch (Exception e) {
-            log.error("❌ 创建店铺索引失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("创建店铺索引失败", e);
+            log.error("鉂?鍒涘缓搴楅摵绱㈠紩澶辫触 - 閿欒: {}", e.getMessage(), e);
+            throw new RuntimeException("鍒涘缓搴楅摵绱㈠紩澶辫触", e);
         }
     }
 
-    /**
-     * 删除店铺索引
-     */
+    
+
+
     public void deleteShopIndex() {
         try {
-            log.info("删除店铺索引");
-            // 简化实现：删除所有文档
+            
+            
             shopDocumentRepository.deleteAll();
-            log.info("✅ 店铺索引删除成功");
+            
         } catch (Exception e) {
-            log.error("❌ 删除店铺索引失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("删除店铺索引失败", e);
+            log.error("鉂?鍒犻櫎搴楅摵绱㈠紩澶辫触 - 閿欒: {}", e.getMessage(), e);
+            throw new RuntimeException("鍒犻櫎搴楅摵绱㈠紩澶辫触", e);
         }
     }
 
@@ -215,19 +214,19 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             condition = "#request != null")
     public SearchResult<ShopDocument> searchShops(ShopSearchRequest request) {
         try {
-            log.info("执行店铺复杂搜索 - 关键字: {}, 商家ID: {}, 状态: {}",
-                    request.getKeyword(), request.getMerchantId(), request.getStatus());
+            
+
 
             long startTime = System.currentTimeMillis();
 
-            // 构建分页参数
+            
             Pageable pageable = PageRequest.of(
                     request.getPage() != null ? request.getPage() : 0,
                     request.getSize() != null ? request.getSize() : 20,
                     buildShopSort(request)
             );
 
-            // 使用Repository进行简单搜索
+            
             Page<ShopDocument> page;
             if (StringUtils.hasText(request.getKeyword())) {
                 page = shopDocumentRepository.findByShopNameContaining(request.getKeyword(), pageable);
@@ -243,16 +242,16 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                     page.getNumber(),
                     page.getSize(),
                     took,
-                    null, // 暂时不支持聚合
-                    null  // 暂时不支持高亮
+                    null, 
+                    null  
             );
 
-            log.info("✅ 店铺搜索完成 - 总数: {}, 耗时: {}ms", page.getTotalElements(), took);
+            
             return result;
 
         } catch (Exception e) {
-            log.error("❌ 店铺搜索失败 - 错误: {}", e.getMessage(), e);
-            throw new RuntimeException("店铺搜索失败", e);
+            log.error("鉂?搴楅摵鎼滅储澶辫触 - 閿欒: {}", e.getMessage(), e);
+            throw new RuntimeException("搴楅摵鎼滅储澶辫触", e);
         }
     }
 
@@ -267,9 +266,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                 return Collections.emptyList();
             }
 
-            log.info("获取店铺搜索建议 - 关键字: {}, 数量: {}", keyword, size);
+            
 
-            // 使用Repository进行简单搜索
+            
             Pageable pageable = PageRequest.of(0, size != null ? size : 10);
             Page<ShopDocument> page = shopDocumentRepository.findByShopNameContaining(keyword, pageable);
 
@@ -280,11 +279,11 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                     .limit(size != null ? size : 10)
                     .collect(Collectors.toList());
 
-            log.info("✅ 获取店铺搜索建议完成 - 数量: {}", suggestions.size());
+            
             return suggestions;
 
         } catch (Exception e) {
-            log.error("❌ 获取店铺搜索建议失败 - 错误: {}", e.getMessage(), e);
+            log.error("鉂?鑾峰彇搴楅摵鎼滅储寤鸿澶辫触 - 閿欒: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -295,20 +294,20 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             key = "'hot:' + #size")
     public List<ShopDocument> getHotShops(Integer size) {
         try {
-            log.info("获取热门店铺 - 数量: {}", size);
+            
 
-            // 使用Repository查询热门店铺
+            
             Pageable pageable = PageRequest.of(0, size != null ? size : 10,
                     Sort.by(Sort.Direction.DESC, "hotScore"));
             Page<ShopDocument> page = shopDocumentRepository.findByStatus(1, pageable);
 
             List<ShopDocument> hotShops = page.getContent();
 
-            log.info("✅ 获取热门店铺完成 - 数量: {}", hotShops.size());
+            
             return hotShops;
 
         } catch (Exception e) {
-            log.error("❌ 获取热门店铺失败 - 错误: {}", e.getMessage(), e);
+            log.error("鉂?鑾峰彇鐑棬搴楅摵澶辫触 - 閿欒: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -320,26 +319,12 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             condition = "#request != null")
     public SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request) {
         try {
-            log.info("获取店铺筛选聚合信息");
+            
 
-            // 简化实现：返回空的聚合信息
-            SearchResult<ShopDocument> result = SearchResult.<ShopDocument>builder()
-                    .list(Collections.emptyList())
-                    .total(0L)
-                    .page(0)
-                    .size(0)
-                    .totalPages(0)
-                    .hasNext(false)
-                    .hasPrevious(false)
-                    .took(0L)
-                    .aggregations(Collections.emptyMap())
-                    .build();
-
-            log.info("✅ 获取店铺筛选聚合信息完成");
             return result;
 
         } catch (Exception e) {
-            log.error("❌ 获取店铺筛选聚合信息失败 - 错误: {}", e.getMessage(), e);
+            log.error("鉂?鑾峰彇搴楅摵绛涢€夎仛鍚堜俊鎭け璐?- 閿欒: {}", e.getMessage(), e);
             return SearchResult.<ShopDocument>builder()
                     .list(Collections.emptyList())
                     .total(0L)
@@ -354,9 +339,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
         }
     }
 
-    /**
-     * 构建店铺排序
-     */
+    
+
+
     private Sort buildShopSort(ShopSearchRequest request) {
         if (request.getSortBy() == null) {
             return Sort.by(Sort.Direction.DESC, "createdAt");

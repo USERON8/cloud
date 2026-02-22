@@ -18,18 +18,18 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 基于Redis的OAuth2授权服务实现
- * 用于在Redis中存储和检索OAuth2授权信息
- *
- * @author what's up
- */
+
+
+
+
+
+
 @Slf4j
 public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationService {
 
-    // Redis中存储OAuth2Authorization对象的key前缀
+    
     private static final String AUTHORIZATION_PREFIX = "oauth2:authorization:";
-    // Redis中存储token到authorizationId映射的key前缀
+    
     private static final String TOKEN_PREFIX = "oauth2:token:";
     private final RedisTemplate<String, Object> redisTemplate;
     private final RegisteredClientRepository registeredClientRepository;
@@ -50,12 +50,12 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public void save(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
 
-        // 保存完整的OAuth2Authorization对象
+        
         String authorizationKey = AUTHORIZATION_PREFIX + authorization.getId();
         redisTemplate.opsForValue().set(authorizationKey, authorization);
 
-        // 为不同类型的token建立索引，便于通过token值查找authorization
-        // 授权码
+        
+        
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
@@ -64,7 +64,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
                     getExpireSeconds(authorizationCode.getToken()), TimeUnit.SECONDS);
         }
 
-        // 访问令牌
+        
         OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
                 authorization.getAccessToken();
         if (accessToken != null) {
@@ -73,7 +73,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
                     getExpireSeconds(accessToken.getToken()), TimeUnit.SECONDS);
         }
 
-        // 刷新令牌
+        
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
@@ -82,7 +82,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
                     getExpireSeconds(refreshToken.getToken()), TimeUnit.SECONDS);
         }
 
-        // OIDC ID令牌 (修复版本)
+        
         OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
                 authorization.getToken(OidcIdToken.class);
         if (oidcIdToken != null) {
@@ -98,12 +98,12 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public void remove(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
 
-        // 删除完整的OAuth2Authorization对象
+        
         String authorizationKey = AUTHORIZATION_PREFIX + authorization.getId();
         redisTemplate.delete(authorizationKey);
 
-        // 删除各种token的索引
-        // 授权码索引
+        
+        
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
@@ -111,7 +111,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             redisTemplate.delete(codeKey);
         }
 
-        // 访问令牌索引
+        
         OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
                 authorization.getAccessToken();
         if (accessToken != null) {
@@ -119,7 +119,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             redisTemplate.delete(accessTokenKey);
         }
 
-        // 刷新令牌索引
+        
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
@@ -127,7 +127,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             redisTemplate.delete(refreshTokenKey);
         }
 
-        // OIDC ID令牌索引 (修复版本)
+        
         OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
                 authorization.getToken(OidcIdToken.class);
         if (oidcIdToken != null) {
@@ -150,32 +150,32 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public OAuth2Authorization findByToken(String token, OAuth2TokenType tokenType) {
         Assert.hasText(token, "token cannot be empty");
 
-        // 根据token类型查找对应的索引
+        
         String tokenKey = TOKEN_PREFIX + token;
 
-        // 通过索引获取authorizationId
+        
         Object obj = redisTemplate.opsForValue().get(tokenKey);
         String authorizationId = obj instanceof String ? (String) obj : null;
         if (authorizationId == null) {
             return null;
         }
 
-        // 根据authorizationId获取完整授权信息
+        
         return findById(authorizationId);
     }
 
-    /**
-     * 计算token的过期秒数
-     *
-     * @param token OAuth2Token
-     * @return 过期秒数
-     */
+    
+
+
+
+
+
     private long getExpireSeconds(OAuth2Token token) {
         Instant expiresAt = token.getExpiresAt();
         if (expiresAt != null) {
             return ChronoUnit.SECONDS.between(Instant.now(), expiresAt);
         }
-        // 默认2小时
+        
         return 7200L;
     }
 }

@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
@@ -15,13 +15,13 @@ spring:
   main:
     allow-circular-references: true
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-        username: nacos
-        password: nacos
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
         namespace: public
         group: DEFAULT_GROUP
         prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
@@ -35,13 +35,13 @@ spring:
           singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-        username: nacos
-        password: nacos
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # RocketMQ Stream 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     stream:
       rocketmq:
         binder:
@@ -52,30 +52,30 @@ spring:
           content-type: application/json
           group: auth-log-group
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # OAuth2 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       client:
         registration:
           web-client:
             client-id: web-client
-            client-secret: WebClient@2024#Secure
+            client-secret: ${WEB_CLIENT_SECRET:}
             client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
             redirect-uri: http://127.0.0.1:80/authorized
             scope: openid,profile,read,write,user.read,user.write,order.read,order.write
             client-name: Web Client
           github:
-            client-id: Ov23li4lW4aaO4mlFGRf
-            client-secret: 6afee51f8c5b77a7b3a20dc6b8e41d9b4c60e55d
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
           client-service:
             provider: custom-authorization-server
             client-id: client-service
-            client-secret: ClientService@2024#Secure
+            client-secret: ${CLIENT_SERVICE_SECRET:}
             authorization-grant-type: client_credentials
             scope: internal_api,service.read,service.write
         provider:
@@ -85,7 +85,7 @@ spring:
         jwt:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
 
-  # 鑷姩閰嶇疆鎺掗櫎
+  # Comment sanitized for UTF-8 compatibility.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -94,7 +94,7 @@ spring:
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -105,15 +105,33 @@ logging:
     org.springframework.security: debug
     org.springframework.web: warn
 
-# 搴旂敤鑷畾涔夐厤缃?
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
     access-token-validity: PT2H
     test-token-validity: P365D
+    keys:
+      private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
+      public-key-base64: ${APP_JWT_PUBLIC_KEY_BASE64:}
+      key-id: ${APP_JWT_KEY_ID:auth-service-key}
+      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:false}
+  oauth2:
+    clients:
+      web:
+        id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:}
+      mobile:
+        id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
+      service:
+        id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}
+        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:}
+      internal:
+        id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
+        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:}
 
-# SpringDoc 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   api-docs:
     enabled: true
@@ -130,7 +148,7 @@ springdoc:
       paths-to-match: '/oauth2/**'
   default-flat-param-object: true
 
-# Knife4j 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -141,7 +159,7 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-# Spring Boot Actuator閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:

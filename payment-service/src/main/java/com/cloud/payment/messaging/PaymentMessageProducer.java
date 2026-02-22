@@ -1,4 +1,4 @@
-﻿package com.cloud.payment.messaging;
+package com.cloud.payment.messaging;
 
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +14,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Payment message producer.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,9 +24,9 @@ public class PaymentMessageProducer {
 
     private final StreamBridge streamBridge;
 
-    /**
-     * Send payment-success event.
-     */
+    
+
+
     public boolean sendPaymentSuccessEvent(Long paymentId, Long orderId, String orderNo,
                                            Long userId, BigDecimal amount, String paymentMethod,
                                            String transactionNo, Map<Long, Integer> productQuantityMap) {
@@ -57,8 +57,8 @@ public class PaymentMessageProducer {
 
             boolean result = streamBridge.send("paymentSuccessProducer-out-0", message);
             if (result) {
-                log.info("Payment-success event sent: paymentId={}, orderId={}, orderNo={}, eventId={}",
-                        paymentId, orderId, orderNo, event.getEventId());
+                
+
             } else {
                 log.error("Payment-success event send failed: paymentId={}, orderId={}, orderNo={}",
                         paymentId, orderId, orderNo);
@@ -71,9 +71,9 @@ public class PaymentMessageProducer {
         }
     }
 
-    /**
-     * Send refund-completed event.
-     */
+    
+
+
     public boolean sendRefundCompletedEvent(Long refundId, String refundNo, Long orderId,
                                             String orderNo, Long userId, BigDecimal refundAmount,
                                             String refundTransactionNo) {
@@ -101,8 +101,8 @@ public class PaymentMessageProducer {
 
             boolean result = streamBridge.send("refundCompletedProducer-out-0", message);
             if (result) {
-                log.info("Refund-completed event sent: refundId={}, refundNo={}, orderId={}",
-                        refundId, refundNo, orderId);
+                
+
             } else {
                 log.error("Refund-completed event send failed: refundId={}, refundNo={}, orderId={}",
                         refundId, refundNo, orderId);

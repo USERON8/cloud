@@ -17,37 +17,38 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 管理员RESTful API控制器
- * 提供管理员资源的CRUD操作
- *
- * @author what's up
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Tag(name = "管理员服务", description = "管理员资源的RESTful API接口")
+@Tag(name = "Admin Management", description = "Admin resource REST APIs")
 public class AdminController {
 
     private final AdminService adminService;
 
-    /**
-     * 分页查询管理员
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "分页查询管理员", description = "获取管理员列表，支持分页")
+    @Operation(summary = "Get admins with pagination", description = "Get paged admin list")
     public Result<PageResult<AdminDTO>> getAdmins(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1")
-            @Min(value = 1, message = "页码必须大于0") Integer page,
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10")
-            @Min(value = 1, message = "每页数量必须大于0")
-            @Max(value = 100, message = "每页数量不能超过100") Integer size,
+            @Parameter(description = "Page number")
+            @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "page must be greater than 0") Integer page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "size must be greater than 0")
+            @Max(value = 100, message = "size must be less than or equal to 100") Integer size,
             Authentication authentication) {
-
         try {
             Page<AdminDTO> pageResult = adminService.getAdminsPage(page, size);
             PageResult<AdminDTO> result = PageResult.of(
@@ -58,131 +59,111 @@ public class AdminController {
             );
             return Result.success(result);
         } catch (Exception e) {
-            log.error("分页查询管理员失败", e);
-            return Result.error("分页查询管理员失败: " + e.getMessage());
+            log.error("Failed to query admin page", e);
+            return Result.error("Failed to query admin page: " + e.getMessage());
         }
     }
 
-    /**
-     * 根据ID获取管理员详情
-     */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "获取管理员详情", description = "根据管理员ID获取详细信息")
+    @Operation(summary = "Get admin details", description = "Get admin details by ID")
     public Result<AdminDTO> getAdminById(
-            @Parameter(description = "管理员ID") @PathVariable
-            @NotNull(message = "管理员ID不能为空")
-            @Positive(message = "管理员ID必须为正整数") Long id,
+            @Parameter(description = "Admin ID")
+            @PathVariable
+            @NotNull(message = "admin id cannot be null")
+            @Positive(message = "admin id must be positive") Long id,
             Authentication authentication) {
-
         try {
             AdminDTO admin = adminService.getAdminById(id);
             if (admin == null) {
-                return Result.error("管理员不存在");
+                return Result.error("Admin not found");
             }
-            return Result.success("查询成功", admin);
+            return Result.success("Query successful", admin);
         } catch (Exception e) {
-            log.error("获取管理员详情失败，管理员ID: {}", id, e);
-            return Result.error("获取管理员详情失败: " + e.getMessage());
+            log.error("Failed to get admin details: {}", id, e);
+            return Result.error("Failed to get admin details: " + e.getMessage());
         }
     }
 
-    /**
-     * 创建管理员
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "创建管理员", description = "创建新的管理员")
+    @Operation(summary = "Create admin", description = "Create a new admin")
     public Result<AdminDTO> createAdmin(
-            @Parameter(description = "管理员信息") @RequestBody
-            @Valid @NotNull(message = "管理员信息不能为空") AdminDTO adminDTO) {
-
+            @Parameter(description = "Admin payload")
+            @RequestBody
+            @Valid
+            @NotNull(message = "admin payload cannot be null") AdminDTO adminDTO) {
         try {
             AdminDTO created = adminService.createAdmin(adminDTO);
-            return Result.success("管理员创建成功", created);
+            return Result.success("Admin created", created);
         } catch (Exception e) {
-            log.error("创建管理员失败", e);
-            return Result.error("创建管理员失败: " + e.getMessage());
+            log.error("Failed to create admin", e);
+            return Result.error("Failed to create admin: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新管理员信息
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "更新管理员信息", description = "更新管理员信息")
+    @Operation(summary = "Update admin", description = "Update admin details")
     public Result<Boolean> updateAdmin(
-            @Parameter(description = "管理员ID") @PathVariable Long id,
-            @Parameter(description = "管理员信息") @RequestBody
-            @Valid @NotNull(message = "管理员信息不能为空") AdminDTO adminDTO,
+            @Parameter(description = "Admin ID") @PathVariable Long id,
+            @Parameter(description = "Admin payload")
+            @RequestBody
+            @Valid
+            @NotNull(message = "admin payload cannot be null") AdminDTO adminDTO,
             Authentication authentication) {
-
         adminDTO.setId(id);
-
         try {
             boolean result = adminService.updateAdmin(adminDTO);
-            return Result.success("管理员更新成功", result);
+            return Result.success("Admin updated", result);
         } catch (Exception e) {
-            log.error("更新管理员失败，管理员ID: {}", id, e);
-            return Result.error("更新管理员失败: " + e.getMessage());
+            log.error("Failed to update admin: {}", id, e);
+            return Result.error("Failed to update admin: " + e.getMessage());
         }
     }
 
-    /**
-     * 删除管理员
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "删除管理员", description = "删除管理员")
+    @Operation(summary = "Delete admin", description = "Delete admin by ID")
     public Result<Boolean> deleteAdmin(
-            @Parameter(description = "管理员ID") @PathVariable
-            @NotNull(message = "管理员ID不能为空") Long id) {
-
+            @Parameter(description = "Admin ID")
+            @PathVariable
+            @NotNull(message = "admin id cannot be null") Long id) {
         try {
             boolean result = adminService.deleteAdmin(id);
-            return Result.success("删除成功", result);
+            return Result.success("Deleted successfully", result);
         } catch (Exception e) {
-            log.error("删除管理员失败，管理员ID: {}", id, e);
-            return Result.error("删除失败: " + e.getMessage());
+            log.error("Failed to delete admin: {}", id, e);
+            return Result.error("Failed to delete admin: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新管理员状态
-     */
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "更新管理员状态", description = "启用或禁用管理员")
+    @Operation(summary = "Update admin status", description = "Enable or disable admin")
     public Result<Boolean> updateAdminStatus(
-            @Parameter(description = "管理员ID") @PathVariable Long id,
-            @Parameter(description = "管理员状态") @RequestParam Integer status) {
-
+            @Parameter(description = "Admin ID") @PathVariable Long id,
+            @Parameter(description = "Admin status") @RequestParam Integer status) {
         try {
             boolean result = adminService.updateAdminStatus(id, status);
-            return Result.success("状态更新成功", result);
+            return Result.success("Status updated", result);
         } catch (Exception e) {
-            log.error("更新管理员状态失败，管理员ID: {}, 状态: {}", id, status, e);
-            return Result.error("更新状态失败: " + e.getMessage());
+            log.error("Failed to update admin status: {}, status={}", id, status, e);
+            return Result.error("Failed to update admin status: " + e.getMessage());
         }
     }
 
-    /**
-     * 重置管理员密码
-     */
     @PostMapping("/{id}/reset-password")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "重置管理员密码", description = "重置管理员密码为默认密码")
+    @Operation(summary = "Reset admin password", description = "Reset admin password to default")
     public Result<Boolean> resetPassword(
-            @Parameter(description = "管理员ID") @PathVariable Long id) {
-
+            @Parameter(description = "Admin ID") @PathVariable Long id) {
         try {
-            // 重置为默认密码
             boolean result = adminService.resetPassword(id, "123456");
-            return Result.success("密码重置成功", result);
+            return Result.success("Password reset successful", result);
         } catch (Exception e) {
-            log.error("重置密码失败，管理员ID: {}", id, e);
-            return Result.error("密码重置失败: " + e.getMessage());
+            log.error("Failed to reset admin password: {}", id, e);
+            return Result.error("Failed to reset password: " + e.getMessage());
         }
     }
 }

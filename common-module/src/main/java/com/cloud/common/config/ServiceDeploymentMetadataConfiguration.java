@@ -18,9 +18,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Initialize nacos instance metadata for deployment mode.
- */
+
+
+
 @Slf4j
 @Configuration
 @ConditionalOnClass(NacosDiscoveryProperties.class)
@@ -66,8 +66,8 @@ public class ServiceDeploymentMetadataConfiguration {
             metadata.put("traffic-role", trafficRole);
             metadata.putIfAbsent("instance-id", applicationName + ":" + UUID.randomUUID());
 
-            log.info("Deployment metadata initialized: service={}, singleton={}, deployMode={}, trafficRole={}",
-                    applicationName, singleton, deployMode, trafficRole);
+            
+
         };
     }
 }

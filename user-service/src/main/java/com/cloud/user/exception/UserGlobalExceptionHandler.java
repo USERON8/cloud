@@ -12,67 +12,67 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-/**
- * 用户服务全局异常处理器
- * 继承公共异常处理器，只处理用户服务特有的异常
- * 其他常见异常由父类 GlobalExceptionHandler 统一处理
- * <p>
- * 核心原则：
- * 1. Controller层不允许抛异常，所有异常由全局异常处理器统一处理
- * 2. Service层抛出特定异常，由全局异常处理器转换为标准Result格式
- * 3. 所有异常响应统一使用Result包装，不使用ResponseEntity
- *
- * @author cloud
- */
+
+
+
+
+
+
+
+
+
+
+
+
 @Slf4j
 @Hidden
 @RestControllerAdvice
 public class UserGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
-    /**
-     * 处理权限拒绝异常 - Spring Security访问控制
-     */
+    
+
+
     @ExceptionHandler(AccessDeniedException.class)
     public Result<String> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("权限拒绝 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
-        return Result.forbidden("您没有权限执行此操作");
+        log.warn("鏉冮檺鎷掔粷 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        return Result.forbidden("鎮ㄦ病鏈夋潈闄愭墽琛屾鎿嶄綔");
     }
 
-    /**
-     * 处理唯一约束冲突异常 - 数据库唯一键冲突
-     */
+    
+
+
     @ExceptionHandler(DuplicateKeyException.class)
     public Result<String> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
-        log.warn("数据重复冲突 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("鏁版嵁閲嶅鍐茬獊 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.DB_DUPLICATE_KEY);
     }
 
-    /**
-     * 处理数据库完整性违反异常 - 外键约束等
-     */
+    
+
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public Result<String> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn("数据完整性违反 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("鏁版嵁瀹屾暣鎬ц繚鍙?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.DB_CONSTRAINT_VIOLATION);
     }
 
-    /**
-     * 处理文件上传大小超限异常
-     */
+    
+
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Result<String> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
-        log.warn("文件上传大小超限 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("鏂囦欢涓婁紶澶у皬瓒呴檺 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.FILE_SIZE_EXCEEDED);
     }
 
-    /**
-     * 处理用户服务特定异常 - UserServiceException及其子类
-     */
+    
+
+
     @ExceptionHandler(UserServiceException.class)
     public Result<String> handleUserServiceException(UserServiceException e, HttpServletRequest request) {
-        log.warn("用户服务异常 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("鐢ㄦ埛鏈嶅姟寮傚父 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
-        // 根据具体的异常类型返回对应的错误码
+        
         if (e instanceof UserServiceException.UserNotFoundException) {
             return Result.error(ResultCode.USER_NOT_FOUND, e.getMessage());
         } else if (e instanceof UserServiceException.UserAlreadyExistsException) {
@@ -101,16 +101,16 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
             return Result.error(ResultCode.FILE_SIZE_EXCEEDED, e.getMessage());
         }
 
-        // 默认处理
+        
         return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
     }
 
-    /**
-     * 处理管理员服务异常 - AdminException及其子类
-     */
+    
+
+
     @ExceptionHandler(AdminException.class)
     public Result<String> handleAdminException(AdminException e, HttpServletRequest request) {
-        log.warn("管理员服务异常 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("绠＄悊鍛樻湇鍔″紓甯?- uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof AdminException.AdminNotFoundException) {
             return Result.error(ResultCode.ADMIN_NOT_FOUND, e.getMessage());
@@ -129,12 +129,12 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
     }
 
-    /**
-     * 处理商家服务异常 - MerchantException及其子类
-     */
+    
+
+
     @ExceptionHandler(MerchantException.class)
     public Result<String> handleMerchantException(MerchantException e, HttpServletRequest request) {
-        log.warn("商家服务异常 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("鍟嗗鏈嶅姟寮傚父 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof MerchantException.MerchantNotFoundException) {
             return Result.error(ResultCode.MERCHANT_NOT_FOUND, e.getMessage());

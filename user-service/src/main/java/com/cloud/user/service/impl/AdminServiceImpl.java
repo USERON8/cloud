@@ -24,23 +24,12 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 管理员服务实现类
- * 提供管理员相关的业务操作实现，包含分布式锁、缓存、事务等处理
- *
- * @author what's up
- * @since 1.0.0
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements AdminService {
 
-    // 缓存名称
     private static final String ADMIN_CACHE = "admin";
-    private static final String ADMIN_LIST_CACHE = "admin:list";
-
-    // 管理员状态
     private static final Integer STATUS_ENABLED = 1;
     private static final Integer STATUS_DISABLED = 0;
 
@@ -48,20 +37,15 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private final AdminConverter adminConverter;
     private final PasswordEncoder passwordEncoder;
 
-    // ================= 查询操作 =================
-
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = ADMIN_CACHE, key = "#id", unless = "#result == null")
     public AdminDTO getAdminById(Long id) throws AdminException.AdminNotFoundException {
-        log.info("查询管理员信息, adminId: {}", id);
-
         Admin admin = getById(id);
         if (admin == null) {
-            log.warn("管理员不存在, adminId: {}", id);
+            log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
-
         return adminConverter.toDTO(admin);
     }
 
@@ -69,44 +53,32 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = ADMIN_CACHE, key = "'username:' + #username", unless = "#result == null")
     public AdminDTO getAdminByUsername(String username) throws AdminException.AdminNotFoundException {
-        log.info("根据用户名查询管理员, username: {}", username);
-
         if (!StringUtils.hasText(username)) {
-            throw new IllegalArgumentException("用户名不能为空");
+            throw new IllegalArgumentException("username is required");
         }
 
-        Admin admin = lambdaQuery()
-                .eq(Admin::getUsername, username)
-                .one();
-
+        Admin admin = lambdaQuery().eq(Admin::getUsername, username).one();
         if (admin == null) {
-            log.warn("管理员不存在, username: {}", username);
+            log.warn("Admin not found, username={}", username);
             throw new AdminException.AdminNotFoundException(username);
         }
-
         return adminConverter.toDTO(admin);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AdminDTO> getAdminsByIds(List<Long> ids) {
-        log.info("批量查询管理员, ids: {}", ids);
-
         if (CollectionUtils.isEmpty(ids)) {
             return List.of();
         }
 
         List<Admin> admins = listByIds(ids);
-        return admins.stream()
-                .map(adminConverter::toDTO)
-                .collect(Collectors.toList());
+        return admins.stream().map(adminConverter::toDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AdminDTO> getMerchantsPage(Integer page, Integer size, Integer status) {
-        log.info("分页查询管理员, page: {}, size: {}, status: {}", page, size, status);
-
         Page<Admin> pageParam = new Page<>(page, size);
         Page<Admin> adminPage = lambdaQuery()
                 .eq(status != null, Admin::getStatus, status)
@@ -114,34 +86,20 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                 .page(pageParam);
 
         Page<AdminDTO> dtoPage = new Page<>(adminPage.getCurrent(), adminPage.getSize(), adminPage.getTotal());
-        List<AdminDTO> dtoList = adminPage.getRecords().stream()
-                .map(adminConverter::toDTO)
-                .collect(Collectors.toList());
-        dtoPage.setRecords(dtoList);
-
+        dtoPage.setRecords(adminPage.getRecords().stream().map(adminConverter::toDTO).collect(Collectors.toList()));
         return dtoPage;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AdminDTO> getAdminsPage(Integer page, Integer size) {
-        log.info("分页获取管理员列表, page: {}, size: {}", page, size);
-
         Page<Admin> pageParam = new Page<>(page, size);
-        Page<Admin> adminPage = lambdaQuery()
-                .orderByDesc(Admin::getId)
-                .page(pageParam);
+        Page<Admin> adminPage = lambdaQuery().orderByDesc(Admin::getId).page(pageParam);
 
         Page<AdminDTO> dtoPage = new Page<>(adminPage.getCurrent(), adminPage.getSize(), adminPage.getTotal());
-        List<AdminDTO> dtoList = adminPage.getRecords().stream()
-                .map(adminConverter::toDTO)
-                .collect(Collectors.toList());
-        dtoPage.setRecords(dtoList);
-
+        dtoPage.setRecords(adminPage.getRecords().stream().map(adminConverter::toDTO).collect(Collectors.toList()));
         return dtoPage;
     }
-
-    // ================= 创建和更新操作 =================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,39 +109,26 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             prefix = "admin",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "创建管理员失败，请稍后重试"
+            failMessage = "failed to acquire create admin lock"
     )
     public AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException {
-        log.info("创建管理员, username: {}", adminDTO.getUsername());
-
-        // 检查用户名是否已存在
-        long count = lambdaQuery()
-                .eq(Admin::getUsername, adminDTO.getUsername())
-                .count();
-
+        long count = lambdaQuery().eq(Admin::getUsername, adminDTO.getUsername()).count();
         if (count > 0) {
-            log.warn("管理员已存在, username: {}", adminDTO.getUsername());
+            log.warn("Admin already exists, username={}", adminDTO.getUsername());
             throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
         }
 
-        // 转换并保存
         Admin admin = adminConverter.toEntity(adminDTO);
-
-        // 加密密码
         if (StringUtils.hasText(admin.getPassword())) {
             admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         }
-
-        // 设置默认状态
         if (admin.getStatus() == null) {
             admin.setStatus(STATUS_ENABLED);
         }
 
         if (!save(admin)) {
-            throw new AdminException("创建管理员失败");
+            throw new AdminException("failed to create admin");
         }
-
-        log.info("创建管理员成功, adminId: {}", admin.getId());
         return adminConverter.toDTO(admin);
     }
 
@@ -198,46 +143,36 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             prefix = "admin",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "更新管理员失败，请稍后重试"
+            failMessage = "failed to acquire update admin lock"
     )
     public boolean updateAdmin(AdminDTO adminDTO) throws AdminException.AdminNotFoundException {
-        log.info("更新管理员信息, adminId: {}", adminDTO.getId());
-
-        // 检查管理员是否存在
         Admin existingAdmin = getById(adminDTO.getId());
         if (existingAdmin == null) {
-            log.warn("管理员不存在, adminId: {}", adminDTO.getId());
+            log.warn("Admin not found, adminId={}", adminDTO.getId());
             throw new AdminException.AdminNotFoundException(adminDTO.getId());
         }
 
-        // 如果更新用户名，检查新用户名是否被占用
-        if (StringUtils.hasText(adminDTO.getUsername()) &&
-                !adminDTO.getUsername().equals(existingAdmin.getUsername())) {
-
+        if (StringUtils.hasText(adminDTO.getUsername())
+                && !adminDTO.getUsername().equals(existingAdmin.getUsername())) {
             long count = lambdaQuery()
                     .eq(Admin::getUsername, adminDTO.getUsername())
                     .ne(Admin::getId, adminDTO.getId())
                     .count();
-
             if (count > 0) {
                 throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
             }
         }
 
-        // 转换并更新
         Admin admin = adminConverter.toEntity(adminDTO);
         admin.setId(adminDTO.getId());
 
-        // 如果包含密码，则加密
         if (StringUtils.hasText(admin.getPassword())) {
             admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         } else {
-            admin.setPassword(null); // 不更新密码
+            admin.setPassword(null);
         }
 
-        boolean result = updateById(admin);
-        log.info("更新管理员成功, adminId: {}", adminDTO.getId());
-        return result;
+        return updateById(admin);
     }
 
     @Override
@@ -248,63 +183,44 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             prefix = "admin",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "删除管理员失败，请稍后重试"
+            failMessage = "failed to acquire delete admin lock"
     )
     public boolean deleteAdmin(Long id) throws AdminException.AdminNotFoundException {
-        log.info("删除管理员, adminId: {}", id);
-
-        // 检查管理员是否存在
         Admin admin = getById(id);
         if (admin == null) {
-            log.warn("管理员不存在, adminId: {}", id);
+            log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
-
-        boolean result = removeById(id);
-        log.info("删除管理员成功, adminId: {}", id);
-        return result;
+        return removeById(id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, allEntries = true)
     public boolean batchDeleteAdmins(List<Long> ids) {
-        log.info("批量删除管理员, ids: {}", ids);
-
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
-
-        boolean result = removeByIds(ids);
-        log.info("批量删除管理员成功, count: {}", ids.size());
-        return result;
+        return removeByIds(ids);
     }
-
-    // ================= 状态管理 =================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean updateAdminStatus(Long id, Integer status) throws AdminException.AdminNotFoundException {
-        log.info("更新管理员状态, adminId: {}, status: {}", id, status);
-
         Admin admin = getById(id);
         if (admin == null) {
-            log.warn("管理员不存在, adminId: {}", id);
+            log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
-
         admin.setStatus(status);
-        boolean result = updateById(admin);
-        log.info("更新管理员状态成功, adminId: {}, status: {}", id, status);
-        return result;
+        return updateById(admin);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean enableAdmin(Long id) throws AdminException.AdminNotFoundException {
-        log.info("启用管理员, adminId: {}", id);
         return updateAdminStatus(id, STATUS_ENABLED);
     }
 
@@ -312,32 +228,25 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean disableAdmin(Long id) throws AdminException.AdminNotFoundException {
-        log.info("禁用管理员, adminId: {}", id);
         return updateAdminStatus(id, STATUS_DISABLED);
     }
-
-    // ================= 密码管理 =================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean resetPassword(Long id, String newPassword) throws AdminException.AdminNotFoundException {
-        log.info("重置管理员密码, adminId: {}", id);
-
         if (!StringUtils.hasText(newPassword)) {
-            throw new IllegalArgumentException("新密码不能为空");
+            throw new IllegalArgumentException("new password is required");
         }
 
         Admin admin = getById(id);
         if (admin == null) {
-            log.warn("管理员不存在, adminId: {}", id);
+            log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
 
         admin.setPassword(passwordEncoder.encode(newPassword));
-        boolean result = updateById(admin);
-        log.info("重置管理员密码成功, adminId: {}", id);
-        return result;
+        return updateById(admin);
     }
 
     @Override
@@ -345,41 +254,32 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean changePassword(Long id, String oldPassword, String newPassword)
             throws AdminException.AdminNotFoundException, AdminException.AdminPasswordException {
-        log.info("修改管理员密码, adminId: {}", id);
-
         if (!StringUtils.hasText(oldPassword) || !StringUtils.hasText(newPassword)) {
-            throw new IllegalArgumentException("密码不能为空");
+            throw new IllegalArgumentException("old password and new password are required");
         }
 
         Admin admin = getById(id);
         if (admin == null) {
-            log.warn("管理员不存在, adminId: {}", id);
+            log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
 
-        // 验证旧密码
         if (!passwordEncoder.matches(oldPassword, admin.getPassword())) {
-            log.warn("旧密码错误, adminId: {}", id);
-            throw new AdminException.AdminPasswordException("旧密码错误");
+            log.warn("Old password mismatch, adminId={}", id);
+            throw new AdminException.AdminPasswordException("old password mismatch");
         }
 
         admin.setPassword(passwordEncoder.encode(newPassword));
-        boolean result = updateById(admin);
-        log.info("修改管理员密码成功, adminId: {}", id);
-        return result;
+        return updateById(admin);
     }
-
-    // ================= 缓存管理 =================
 
     @Override
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public void evictAdminCache(Long id) {
-        log.info("清除管理员缓存, adminId: {}", id);
     }
 
     @Override
     @CacheEvict(cacheNames = ADMIN_CACHE, allEntries = true)
     public void evictAllAdminCache() {
-        log.info("清除所有管理员缓存");
     }
 }

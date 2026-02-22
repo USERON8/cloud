@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 库存操作日志服务实现
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,14 +32,14 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
             stockLog.setOperateTime(LocalDateTime.now());
         }
 
-        // 计算数量变化
+        
         if (stockLog.getQuantityBefore() != null && stockLog.getQuantityAfter() != null) {
             stockLog.setQuantityChange(stockLog.getQuantityAfter() - stockLog.getQuantityBefore());
         }
 
         save(stockLog);
-        log.info("创建库存操作日志成功, productId: {}, operationType: {}, logId: {}",
-                stockLog.getProductId(), stockLog.getOperationType(), stockLog.getId());
+        
+
         return stockLog.getId();
     }
 
@@ -55,32 +55,32 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
             if (log.getOperateTime() == null) {
                 log.setOperateTime(now);
             }
-            // 计算数量变化
+            
             if (log.getQuantityBefore() != null && log.getQuantityAfter() != null) {
                 log.setQuantityChange(log.getQuantityAfter() - log.getQuantityBefore());
             }
         });
 
         boolean success = saveBatch(stockLogs);
-        log.info("批量创建库存操作日志, 数量: {}, 结果: {}", stockLogs.size(), success);
+        
         return success ? stockLogs.size() : 0;
     }
 
     @Override
     public List<StockLog> getLogsByProductId(Long productId, LocalDateTime startTime, LocalDateTime endTime) {
-        log.info("根据商品ID查询库存日志, productId: {}, 时间范围: {} ~ {}", productId, startTime, endTime);
+        
         return stockLogMapper.selectByProductId(productId, startTime, endTime);
     }
 
     @Override
     public List<StockLog> getLogsByOrderId(Long orderId) {
-        log.info("根据订单ID查询库存日志, orderId: {}", orderId);
+        
         return stockLogMapper.selectByOrderId(orderId);
     }
 
     @Override
     public List<StockLog> getLogsByOperationType(String operationType, LocalDateTime startTime, LocalDateTime endTime) {
-        log.info("根据操作类型查询库存日志, operationType: {}, 时间范围: {} ~ {}", operationType, startTime, endTime);
+        
         return stockLogMapper.selectByOperationType(operationType, startTime, endTime);
     }
 
@@ -102,7 +102,7 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
         stockLog.setOperateTime(LocalDateTime.now());
 
         save(stockLog);
-        log.debug("记录库存变更: productId={}, type={}, {}→{}",
+        log.debug("璁板綍搴撳瓨鍙樻洿: productId={}, type={}, {}鈫抺}",
                 productId, operationType, quantityBefore, quantityAfter);
     }
 }

@@ -13,42 +13,42 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * 多级缓存管理器
- * <p>
- * 实现Spring CacheManager接口，管理多个MultiLevelCache实例。
- * 支持动态创建缓存、配置化管理和缓存统计功能。
- *
- * @author CloudDevAgent
- * @version 2.0
- * @since 2025-09-26
- */
+
+
+
+
+
+
+
+
+
+
 @Slf4j
 public class MultiLevelCacheManager implements CacheManager {
 
-    /**
-     * 缓存实例存储
-     */
+    
+
+
     private final ConcurrentMap<String, MultiLevelCache> cacheMap = new ConcurrentHashMap<>();
 
-    /**
-     * Redis操作模板
-     */
+    
+
+
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /**
-     * 缓存配置
-     */
+    
+
+
     private final MultiLevelCacheConfig cacheConfig;
 
-    /**
-     * 当前节点ID
-     */
+    
+
+
     private final String nodeId;
 
-    /**
-     * 缓存指标收集器（可选）
-     */
+    
+
+
     private CacheMetricsCollector metricsCollector;
 
     public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
@@ -60,31 +60,31 @@ public class MultiLevelCacheManager implements CacheManager {
         this.nodeId = nodeId;
         this.metricsCollector = metricsCollector;
 
-        log.info("多级缓存管理器初始化完成: nodeId={}, keyPrefix={}, messageTopic={}, metricsEnabled={}",
-                nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic(), (metricsCollector != null));
+        
+
     }
 
-    /**
-     * 重载构造函数，支持延迟设置缓存指标收集器
-     */
+    
+
+
     public MultiLevelCacheManager(RedisTemplate<String, Object> redisTemplate,
                                   MultiLevelCacheConfig cacheConfig,
                                   String nodeId) {
         this.redisTemplate = redisTemplate;
         this.cacheConfig = cacheConfig;
         this.nodeId = nodeId;
-        this.metricsCollector = null; // 延迟设置
+        this.metricsCollector = null; 
 
-        log.info("多级缓存管理器初始化完成（延迟设置指标收集器）: nodeId={}, keyPrefix={}, messageTopic={}",
-                nodeId, cacheConfig.getKeyPrefix(), cacheConfig.getMessageTopic());
+        
+
     }
 
-    /**
-     * 设置缓存指标收集器（用于解决循环依赖）
-     */
+    
+
+
     public void setMetricsCollector(CacheMetricsCollector metricsCollector) {
         this.metricsCollector = metricsCollector;
-        log.info("缓存指标收集器已设置: metricsEnabled={}", (metricsCollector != null));
+        
     }
 
     @Override
@@ -97,17 +97,17 @@ public class MultiLevelCacheManager implements CacheManager {
         return cacheMap.keySet();
     }
 
-    /**
-     * 创建新的多级缓存实例
-     *
-     * @param name 缓存名称
-     * @return MultiLevelCache实例
-     */
+    
+
+
+
+
+
     private MultiLevelCache createCache(String name) {
-        // 创建本地缓存(Caffeine)
+        
         Cache<Object, CacheObject> localCache = createCaffeineCache();
 
-        // 创建多级缓存实例
+        
         MultiLevelCache cache = new MultiLevelCache(
                 name,
                 localCache,
@@ -117,20 +117,20 @@ public class MultiLevelCacheManager implements CacheManager {
                 nodeId,
                 cacheConfig.getMessageTopic(),
                 cacheConfig.isAllowNullValues(),
-                metricsCollector  // 传递指标收集器
+                metricsCollector  
         );
 
-        log.info("创建多级缓存: name={}, expireSeconds={}, allowNullValues={}, metricsEnabled={}",
-                name, cacheConfig.getDefaultExpireSeconds(), cacheConfig.isAllowNullValues(), (metricsCollector != null));
+        
+
 
         return cache;
     }
 
-    /**
-     * 创建Caffeine本地缓存
-     *
-     * @return Caffeine缓存实例
-     */
+    
+
+
+
+
     private Cache<Object, CacheObject> createCaffeineCache() {
         CaffeineConfig config = cacheConfig.getCaffeineConfig();
 
@@ -146,86 +146,86 @@ public class MultiLevelCacheManager implements CacheManager {
         return builder.build();
     }
 
-    /**
-     * 获取指定缓存的统计信息
-     *
-     * @param cacheName 缓存名称
-     * @return 统计信息，如果缓存不存在返回null
-     */
+    
+
+
+
+
+
     public String getCacheStats(String cacheName) {
         MultiLevelCache cache = cacheMap.get(cacheName);
         return cache != null ? cache.getStats() : null;
     }
 
-    /**
-     * 获取所有缓存的统计信息
-     *
-     * @return 统计信息映射
-     */
+    
+
+
+
+
     public ConcurrentMap<String, String> getAllCacheStats() {
         ConcurrentMap<String, String> stats = new ConcurrentHashMap<>();
         cacheMap.forEach((name, cache) -> stats.put(name, cache.getStats()));
         return stats;
     }
 
-    /**
-     * 清空指定缓存
-     *
-     * @param cacheName 缓存名称
-     */
+    
+
+
+
+
     public void clearCache(String cacheName) {
         MultiLevelCache cache = cacheMap.get(cacheName);
         if (cache != null) {
             cache.clear();
-            log.info("清空缓存: cacheName={}", cacheName);
+            
         }
     }
 
-    /**
-     * 清空所有缓存
-     */
+    
+
+
     public void clearAllCaches() {
         cacheMap.values().forEach(MultiLevelCache::clear);
-        log.info("清空所有缓存: count={}", cacheMap.size());
+        
     }
 
-    /**
-     * 移除指定缓存实例
-     *
-     * @param cacheName 缓存名称
-     */
+    
+
+
+
+
     public void removeCache(String cacheName) {
         MultiLevelCache cache = cacheMap.remove(cacheName);
         if (cache != null) {
             cache.clear();
-            log.info("移除缓存实例: cacheName={}", cacheName);
+            
         }
     }
 
-    /**
-     * 获取缓存管理器配置
-     *
-     * @return 配置对象
-     */
+    
+
+
+
+
     public MultiLevelCacheConfig getCacheConfig() {
         return cacheConfig;
     }
 
-    /**
-     * 获取当前节点ID
-     *
-     * @return 节点ID
-     */
+    
+
+
+
+
     public String getNodeId() {
         return nodeId;
     }
 
-    /**
-     * 处理缓存一致性消息（由消息监听器调用）
-     *
-     * @param cacheName 缓存名称
-     * @param message   缓存消息
-     */
+    
+
+
+
+
+
     public void handleCacheMessage(String cacheName, com.cloud.common.cache.message.CacheMessage message) {
         MultiLevelCache cache = cacheMap.get(cacheName);
         if (cache != null) {
@@ -233,45 +233,45 @@ public class MultiLevelCacheManager implements CacheManager {
         }
     }
 
-    /**
-     * 获取缓存实例映射（仅用于调试和监控）
-     *
-     * @return 只读的缓存映射
-     */
+    
+
+
+
+
     public ConcurrentMap<String, MultiLevelCache> getCacheMap() {
         return new ConcurrentHashMap<>(cacheMap);
     }
 
-    /**
-     * 多级缓存配置类
-     */
-    public static class MultiLevelCacheConfig {
-        /**
-         * 默认过期时间（秒）
-         */
-        private long defaultExpireSeconds = 1800; // 30分钟
+    
 
-        /**
-         * Redis键前缀
-         */
+
+    public static class MultiLevelCacheConfig {
+        
+
+
+        private long defaultExpireSeconds = 1800; 
+
+        
+
+
         private String keyPrefix = "cache:";
 
-        /**
-         * 缓存一致性消息主题
-         */
+        
+
+
         private String messageTopic = "cache:message";
 
-        /**
-         * 是否允许空值缓存
-         */
+        
+
+
         private boolean allowNullValues = true;
 
-        /**
-         * Caffeine本地缓存配置
-         */
+        
+
+
         private CaffeineConfig caffeineConfig = new CaffeineConfig();
 
-        // Getters and Setters
+        
         public long getDefaultExpireSeconds() {
             return defaultExpireSeconds;
         }
@@ -313,31 +313,31 @@ public class MultiLevelCacheManager implements CacheManager {
         }
     }
 
-    /**
-     * Caffeine缓存配置类
-     */
+    
+
+
     public static class CaffeineConfig {
-        /**
-         * 最大缓存条目数
-         */
+        
+
+
         private long maximumSize = 1000L;
 
-        /**
-         * 写入后过期时间（分钟）
-         */
+        
+
+
         private int expireAfterWriteMinutes = 30;
 
-        /**
-         * 访问后过期时间（分钟）
-         */
+        
+
+
         private int expireAfterAccessMinutes = 10;
 
-        /**
-         * 是否启用统计
-         */
+        
+
+
         private boolean recordStats = true;
 
-        // Getters and Setters
+        
         public long getMaximumSize() {
             return maximumSize;
         }

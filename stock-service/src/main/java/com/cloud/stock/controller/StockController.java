@@ -33,17 +33,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 库存RESTful API控制器
- * 提供库存资源的CRUD操作，参考User服务标准架构
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/stocks")
 @RequiredArgsConstructor
-@Tag(name = "库存服务", description = "库存资源的RESTful API接口")
+@Tag(name = "搴撳瓨鏈嶅姟", description = "搴撳瓨璧勬簮鐨凴ESTful API鎺ュ彛")
 public class StockController {
 
     private final StockService stockService;
@@ -51,161 +50,160 @@ public class StockController {
     private final StockCountService stockCountService;
     private final StockLogService stockLogService;
 
-    /**
-     * 分页查询库存
-     */
+    
+
+
     @PostMapping("/page")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "分页查询库存", description = "根据条件分页查询库存信息")
+    @Operation(summary = "鍒嗛〉鏌ヨ搴撳瓨", description = "鏍规嵁鏉′欢鍒嗛〉鏌ヨ搴撳瓨淇℃伅")
     public Result<PageResult<StockVO>> getStocksPage(
-            @Parameter(description = "分页查询条件") @RequestBody
-            @Valid @NotNull(message = "分页查询条件不能为空") StockPageDTO pageDTO,
+            @Parameter(description = "鍒嗛〉鏌ヨ鏉′欢") @RequestBody
+            @Valid @NotNull(message = "鍒嗛〉鏌ヨ鏉′欢涓嶈兘涓虹┖") StockPageDTO pageDTO,
             Authentication authentication) {
 
         PageResult<StockVO> pageResult = stockService.pageQuery(pageDTO);
-        log.info("分页查询库存成功: page={}, size={}, total={}",
-                pageDTO.getCurrent(), pageDTO.getSize(), pageResult.getTotal());
+        
+
         return Result.success(pageResult);
     }
 
-    /**
-     * 根据ID获取库存详情
-     */
+    
+
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "获取库存详情", description = "根据库存ID获取详细信息")
+    @Operation(summary = "鑾峰彇搴撳瓨璇︽儏", description = "鏍规嵁搴撳瓨ID鑾峰彇璇︾粏淇℃伅")
     public Result<StockDTO> getStockById(
-            @Parameter(description = "库存ID") @PathVariable
-            @NotNull(message = "库存ID不能为空")
-            @Positive(message = "库存ID必须为正整数") Long id,
+            @Parameter(description = "搴撳瓨ID") @PathVariable
+            @NotNull(message = "搴撳瓨ID涓嶈兘涓虹┖")
+            @Positive(message = "搴撳瓨ID蹇呴』涓烘鏁存暟") Long id,
             Authentication authentication) {
 
         StockDTO stock = stockService.getStockById(id);
         if (stock == null) {
-            log.warn("库存记录不存在: id={}", id);
+            log.warn("搴撳瓨璁板綍涓嶅瓨鍦? id={}", id);
             throw new ResourceNotFoundException("Stock", String.valueOf(id));
         }
-        log.info("查询库存成功: stockId={}", id);
-        return Result.success("查询成功", stock);
+        
+        return Result.success("鏌ヨ鎴愬姛", stock);
     }
 
-    /**
-     * 根据商品ID获取库存信息
-     */
+    
+
+
     @GetMapping("/product/{productId}")
-    @Operation(summary = "根据商品ID获取库存信息", description = "根据商品ID获取库存详细信息")
+    @Operation(summary = "鏍规嵁鍟嗗搧ID鑾峰彇搴撳瓨淇℃伅", description = "鏍规嵁鍟嗗搧ID鑾峰彇搴撳瓨璇︾粏淇℃伅")
     public Result<StockDTO> getByProductId(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空")
-            @Positive(message = "商品ID必须为正整数") Long productId,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖")
+            @Positive(message = "鍟嗗搧ID蹇呴』涓烘鏁存暟") Long productId,
             Authentication authentication) {
 
         StockDTO stock = stockService.getStockByProductId(productId);
         if (stock == null) {
-            log.warn("商品暂无库存信息: productId={}", productId);
+            log.warn("鍟嗗搧鏆傛棤搴撳瓨淇℃伅: productId={}", productId);
             throw new ResourceNotFoundException("Stock for Product", String.valueOf(productId));
         }
-        log.info("根据商品ID查询库存成功: productId={}", productId);
-        return Result.success("查询成功", stock);
+        
+        return Result.success("鏌ヨ鎴愬姛", stock);
     }
 
-    /**
-     * 批量获取库存信息
-     */
+    
+
+
     @PostMapping("/batch/query")
-    @Operation(summary = "批量获取库存信息", description = "根据商品ID列表批量获取库存信息")
+    @Operation(summary = "鎵归噺鑾峰彇搴撳瓨淇℃伅", description = "鏍规嵁鍟嗗搧ID鍒楄〃鎵归噺鑾峰彇搴撳瓨淇℃伅")
     public Result<List<StockDTO>> getByProductIds(
-            @Parameter(description = "商品ID列表") @RequestBody
-            @NotNull(message = "商品ID列表不能为空")
-            @NotEmpty(message = "商品ID列表不能为空") List<Long> productIds) {
+            @Parameter(description = "鍟嗗搧ID鍒楄〃") @RequestBody
+            @NotNull(message = "鍟嗗搧ID鍒楄〃涓嶈兘涓虹┖")
+            @NotEmpty(message = "鍟嗗搧ID鍒楄〃涓嶈兘涓虹┖") List<Long> productIds) {
 
         List<StockDTO> stocks = stockService.getStocksByProductIds(productIds);
-        log.info("批量获取库存信息成功: count={}", stocks.size());
-        return Result.success("查询成功", stocks);
+        
+        return Result.success("鏌ヨ鎴愬姛", stocks);
     }
 
-    /**
-     * 创建库存记录
-     */
+    
+
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "创建库存记录", description = "创建新的库存记录")
+    @Operation(summary = "鍒涘缓搴撳瓨璁板綍", description = "鍒涘缓鏂扮殑搴撳瓨璁板綍")
     public Result<StockDTO> createStock(
-            @Parameter(description = "库存信息") @RequestBody
-            @Valid @NotNull(message = "库存信息不能为空") StockDTO stockDTO) {
+            @Parameter(description = "搴撳瓨淇℃伅") @RequestBody
+            @Valid @NotNull(message = "搴撳瓨淇℃伅涓嶈兘涓虹┖") StockDTO stockDTO) {
 
         StockDTO createdStock = stockService.createStock(stockDTO);
-        log.info("库存创建成功: stockId={}, productId={}", createdStock.getId(), createdStock.getProductId());
-        return Result.success("库存创建成功", createdStock);
+        
+        return Result.success("搴撳瓨鍒涘缓鎴愬姛", createdStock);
     }
 
-    /**
-     * 更新库存信息
-     */
+    
+
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "更新库存信息", description = "更新库存信息")
+    @Operation(summary = "鏇存柊搴撳瓨淇℃伅", description = "鏇存柊搴撳瓨淇℃伅")
     public Result<Boolean> updateStock(
-            @Parameter(description = "库存ID") @PathVariable Long id,
-            @Parameter(description = "库存信息") @RequestBody
-            @Valid @NotNull(message = "库存信息不能为空") StockDTO stockDTO,
+            @Parameter(description = "搴撳瓨ID") @PathVariable Long id,
+            @Parameter(description = "搴撳瓨淇℃伅") @RequestBody
+            @Valid @NotNull(message = "搴撳瓨淇℃伅涓嶈兘涓虹┖") StockDTO stockDTO,
             Authentication authentication) {
 
-        // 确保路径参数与请求体中的ID一致
-        stockDTO.setId(id);
+        
 
         boolean result = stockService.updateStock(stockDTO);
         if (!result) {
-            log.warn("库存更新失败: stockId={}", id);
-            throw new BusinessException("库存更新失败");
+            log.warn("搴撳瓨鏇存柊澶辫触: stockId={}", id);
+            throw new BusinessException("搴撳瓨鏇存柊澶辫触");
         }
-        log.info("库存更新成功: stockId={}", id);
-        return Result.success("库存更新成功", result);
+        
+        return Result.success("搴撳瓨鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 删除库存信息
-     */
+    
+
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "删除库存信息", description = "根据ID删除库存信息")
+    @Operation(summary = "鍒犻櫎搴撳瓨淇℃伅", description = "鏍规嵁ID鍒犻櫎搴撳瓨淇℃伅")
     public Result<Boolean> deleteStock(
-            @Parameter(description = "库存ID") @PathVariable
-            @NotNull(message = "库存ID不能为空") Long id) {
+            @Parameter(description = "搴撳瓨ID") @PathVariable
+            @NotNull(message = "搴撳瓨ID涓嶈兘涓虹┖") Long id) {
 
         boolean result = stockService.deleteStock(id);
         if (!result) {
-            log.warn("删除库存失败: stockId={}", id);
-            throw new BusinessException("删除库存失败");
+            log.warn("鍒犻櫎搴撳瓨澶辫触: stockId={}", id);
+            throw new BusinessException("鍒犻櫎搴撳瓨澶辫触");
         }
-        log.info("删除库存成功: stockId={}", id);
-        return Result.success("删除成功", result);
+        
+        return Result.success("鍒犻櫎鎴愬姛", result);
     }
 
-    /**
-     * 批量删除库存信息
-     */
+    
+
+
     @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "批量删除库存信息", description = "根据ID列表批量删除库存信息")
+    @Operation(summary = "鎵归噺鍒犻櫎搴撳瓨淇℃伅", description = "鏍规嵁ID鍒楄〃鎵归噺鍒犻櫎搴撳瓨淇℃伅")
     public Result<Boolean> deleteBatch(
-            @Parameter(description = "库存ID列表") @RequestParam("ids")
-            @Valid @NotNull(message = "库存ID列表不能为空") Collection<Long> ids) {
+            @Parameter(description = "搴撳瓨ID鍒楄〃") @RequestParam("ids")
+            @Valid @NotNull(message = "搴撳瓨ID鍒楄〃涓嶈兘涓虹┖") Collection<Long> ids) {
 
         boolean result = stockService.deleteStocksByIds(ids);
         if (!result) {
-            log.warn("批量删除库存失败: count={}", ids.size());
-            throw new BusinessException("批量删除库存失败");
+            log.warn("鎵归噺鍒犻櫎搴撳瓨澶辫触: count={}", ids.size());
+            throw new BusinessException("鎵归噺鍒犻櫎搴撳瓨澶辫触");
         }
-        log.info("批量删除库存成功: count={}", ids.size());
-        return Result.success("批量删除成功", result);
+        
+        return Result.success("鎵归噺鍒犻櫎鎴愬姛", result);
     }
 
-    // ==================== 业务操作接口 ====================
+    
 
-    /**
-     * 库存入库
-     */
+    
+
+
     @PostMapping("/stock-in")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @DistributedLock(
@@ -213,32 +211,32 @@ public class StockController {
             waitTime = 5,
             leaseTime = 15,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "库存入库操作获取锁失败"
+            failMessage = "搴撳瓨鍏ュ簱鎿嶄綔鑾峰彇閿佸け璐?
     )
-    @Operation(summary = "库存入库", description = "对指定商品进行入库操作")
+    @Operation(summary = "搴撳瓨鍏ュ簱", description = "瀵规寚瀹氬晢鍝佽繘琛屽叆搴撴搷浣?)
     public Result<Boolean> stockIn(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "入库数量") @RequestParam("quantity")
-            @NotNull(message = "入库数量不能为空")
-            @Min(value = 1, message = "入库数量必须大于0") Integer quantity,
-            @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
+            @Parameter(description = "鍟嗗搧ID") @RequestParam("productId")
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "鍏ュ簱鏁伴噺") @RequestParam("quantity")
+            @NotNull(message = "鍏ュ簱鏁伴噺涓嶈兘涓虹┖")
+            @Min(value = 1, message = "鍏ュ簱鏁伴噺蹇呴』澶т簬0") Integer quantity,
+            @Parameter(description = "澶囨敞") @RequestParam(value = "remark", required = false) String remark,
             Authentication authentication) {
 
-        log.info("📦 库存入库 - 商品ID: {}, 数量: {}, 备注: {}", productId, quantity, remark);
+        
         boolean result = stockService.stockIn(productId, quantity, remark);
 
         if (!result) {
-            log.warn("⚠️ 库存入库失败 - 商品ID: {}", productId);
-            throw new BusinessException("入库失败，请检查库存信息");
+            log.warn("鈿狅笍 搴撳瓨鍏ュ簱澶辫触 - 鍟嗗搧ID: {}", productId);
+            throw new BusinessException("鍏ュ簱澶辫触锛岃妫€鏌ュ簱瀛樹俊鎭?);
         }
-        log.info("✅ 库存入库成功 - 商品ID: {}, 数量: {}", productId, quantity);
-        return Result.success("入库成功", result);
+        
+        return Result.success("鍏ュ簱鎴愬姛", result);
     }
 
-    /**
-     * 库存出库
-     */
+    
+
+
     @PostMapping("/stock-out")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @DistributedLock(
@@ -246,35 +244,35 @@ public class StockController {
             waitTime = 5,
             leaseTime = 15,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "库存出库操作获取锁失败"
+            failMessage = "搴撳瓨鍑哄簱鎿嶄綔鑾峰彇閿佸け璐?
     )
-    @Operation(summary = "库存出库", description = "对指定商品进行出库操作")
+    @Operation(summary = "搴撳瓨鍑哄簱", description = "瀵规寚瀹氬晢鍝佽繘琛屽嚭搴撴搷浣?)
     public Result<Boolean> stockOut(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "出库数量") @RequestParam("quantity")
-            @NotNull(message = "出库数量不能为空")
-            @Min(value = 1, message = "出库数量必须大于0") Integer quantity,
-            @Parameter(description = "订单ID") @RequestParam(value = "orderId", required = false) Long orderId,
-            @Parameter(description = "订单号") @RequestParam(value = "orderNo", required = false) String orderNo,
-            @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
+            @Parameter(description = "鍟嗗搧ID") @RequestParam("productId")
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "鍑哄簱鏁伴噺") @RequestParam("quantity")
+            @NotNull(message = "鍑哄簱鏁伴噺涓嶈兘涓虹┖")
+            @Min(value = 1, message = "鍑哄簱鏁伴噺蹇呴』澶т簬0") Integer quantity,
+            @Parameter(description = "璁㈠崟ID") @RequestParam(value = "orderId", required = false) Long orderId,
+            @Parameter(description = "璁㈠崟鍙?) @RequestParam(value = "orderNo", required = false) String orderNo,
+            @Parameter(description = "澶囨敞") @RequestParam(value = "remark", required = false) String remark,
             Authentication authentication) {
 
-        log.info("📤 库存出库 - 商品ID: {}, 数量: {}, 订单: {}/{}, 备注: {}",
-                productId, quantity, orderId, orderNo, remark);
+        
+
         boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, remark);
 
         if (!result) {
-            log.warn("⚠️ 库存出库失败 - 商品ID: {}, 可能库存不足", productId);
-            throw new BusinessException("出库失败，库存可能不足");
+            log.warn("鈿狅笍 搴撳瓨鍑哄簱澶辫触 - 鍟嗗搧ID: {}, 鍙兘搴撳瓨涓嶈冻", productId);
+            throw new BusinessException("鍑哄簱澶辫触锛屽簱瀛樺彲鑳戒笉瓒?);
         }
-        log.info("✅ 库存出库成功 - 商品ID: {}, 数量: {}", productId, quantity);
-        return Result.success("出库成功", result);
+        
+        return Result.success("鍑哄簱鎴愬姛", result);
     }
 
-    /**
-     * 预留库存
-     */
+    
+
+
     @PostMapping("/reserve")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @DistributedLock(
@@ -282,31 +280,31 @@ public class StockController {
             waitTime = 3,
             leaseTime = 10,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "库存预留操作获取锁失败"
+            failMessage = "搴撳瓨棰勭暀鎿嶄綔鑾峰彇閿佸け璐?
     )
-    @Operation(summary = "预留库存", description = "对指定商品进行库存预留")
+    @Operation(summary = "棰勭暀搴撳瓨", description = "瀵规寚瀹氬晢鍝佽繘琛屽簱瀛橀鐣?)
     public Result<Boolean> reserveStock(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "预留数量") @RequestParam("quantity")
-            @NotNull(message = "预留数量不能为空")
-            @Min(value = 1, message = "预留数量必须大于0") Integer quantity,
+            @Parameter(description = "鍟嗗搧ID") @RequestParam("productId")
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "棰勭暀鏁伴噺") @RequestParam("quantity")
+            @NotNull(message = "棰勭暀鏁伴噺涓嶈兘涓虹┖")
+            @Min(value = 1, message = "棰勭暀鏁伴噺蹇呴』澶т簬0") Integer quantity,
             Authentication authentication) {
 
-        log.info("🔒 库存预留 - 商品ID: {}, 数量: {}", productId, quantity);
+        
         boolean result = stockService.reserveStock(productId, quantity);
 
         if (!result) {
-            log.warn("⚠️ 库存预留失败 - 商品ID: {}, 可能库存不足", productId);
-            throw new BusinessException("预留失败，库存可能不足");
+            log.warn("鈿狅笍 搴撳瓨棰勭暀澶辫触 - 鍟嗗搧ID: {}, 鍙兘搴撳瓨涓嶈冻", productId);
+            throw new BusinessException("棰勭暀澶辫触锛屽簱瀛樺彲鑳戒笉瓒?);
         }
-        log.info("✅ 库存预留成功 - 商品ID: {}, 数量: {}", productId, quantity);
-        return Result.success("预留成功", result);
+        
+        return Result.success("棰勭暀鎴愬姛", result);
     }
 
-    /**
-     * 释放预留库存
-     */
+    
+
+
     @PostMapping("/release")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @DistributedLock(
@@ -314,53 +312,51 @@ public class StockController {
             waitTime = 3,
             leaseTime = 10,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "库存释放操作获取锁失败"
+            failMessage = "搴撳瓨閲婃斁鎿嶄綔鑾峰彇閿佸け璐?
     )
-    @Operation(summary = "释放预留库存", description = "释放指定商品的预留库存")
+    @Operation(summary = "閲婃斁棰勭暀搴撳瓨", description = "閲婃斁鎸囧畾鍟嗗搧鐨勯鐣欏簱瀛?)
     public Result<Boolean> releaseReservedStock(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "释放数量") @RequestParam("quantity")
-            @NotNull(message = "释放数量不能为空")
-            @Min(value = 1, message = "释放数量必须大于0") Integer quantity,
+            @Parameter(description = "鍟嗗搧ID") @RequestParam("productId")
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "閲婃斁鏁伴噺") @RequestParam("quantity")
+            @NotNull(message = "閲婃斁鏁伴噺涓嶈兘涓虹┖")
+            @Min(value = 1, message = "閲婃斁鏁伴噺蹇呴』澶т簬0") Integer quantity,
             Authentication authentication) {
 
-        log.info("🔓 库存释放 - 商品ID: {}, 数量: {}", productId, quantity);
+        
         boolean result = stockService.releaseReservedStock(productId, quantity);
 
         if (!result) {
-            log.warn("⚠️ 库存释放失败 - 商品ID: {}", productId);
-            throw new BusinessException("释放失败，请检查预留库存");
+            log.warn("鈿狅笍 搴撳瓨閲婃斁澶辫触 - 鍟嗗搧ID: {}", productId);
+            throw new BusinessException("閲婃斁澶辫触锛岃妫€鏌ラ鐣欏簱瀛?);
         }
-        log.info("✅ 库存释放成功 - 商品ID: {}, 数量: {}", productId, quantity);
-        return Result.success("释放成功", result);
+        
+        return Result.success("閲婃斁鎴愬姛", result);
     }
 
-    /**
-     * 检查库存是否充足
-     */
+    
+
     @GetMapping("/check/{productId}/{quantity}")
-    @Operation(summary = "检查库存是否充足", description = "检查指定商品的库存是否充足")
+    @Operation(summary = "妫€鏌ュ簱瀛樻槸鍚﹀厖瓒?, description = "妫€鏌ユ寚瀹氬晢鍝佺殑搴撳瓨鏄惁鍏呰冻")
     public Result<Boolean> checkStockSufficient(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空")
-            @Positive(message = "商品ID必须为正整数") Long productId,
-            @Parameter(description = "所需数量") @PathVariable
-            @NotNull(message = "所需数量不能为空")
-            @Positive(message = "所需数量必须为正整数") Integer quantity) {
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖")
+            @Positive(message = "鍟嗗搧ID蹇呴』涓烘鏁存暟") Long productId,
+            @Parameter(description = "鎵€闇€鏁伴噺") @PathVariable
+            @NotNull(message = "鎵€闇€鏁伴噺涓嶈兘涓虹┖")
+            @Positive(message = "鎵€闇€鏁伴噺蹇呴』涓烘鏁存暟") Integer quantity) {
 
         boolean sufficient = stockService.checkStockSufficient(productId, quantity);
-        log.info("检查库存是否充足: productId={}, quantity={}, sufficient={}", productId, quantity, sufficient);
-        return Result.success("检查完成", sufficient);
+        
+        return Result.success("妫€鏌ュ畬鎴?, sufficient);
     }
 
-    // ==================== 高级业务功能 ====================
+    
 
-    /**
-     * 秒杀商品库存扣减 - 使用公平锁确保公平性
-     */
+    
+
     @PostMapping("/seckill/{productId}")
-    @Operation(summary = "秒杀库存扣减", description = "秒杀场景下的库存扣减，使用公平锁确保公平性")
+    @Operation(summary = "绉掓潃搴撳瓨鎵ｅ噺", description = "绉掓潃鍦烘櫙涓嬬殑搴撳瓨鎵ｅ噺锛屼娇鐢ㄥ叕骞抽攣纭繚鍏钩鎬?)
     @DistributedLock(
             key = "'seckill:stock:' + #productId",
             lockType = DistributedLock.LockType.FAIR,
@@ -368,440 +364,432 @@ public class StockController {
             leaseTime = 3,
             timeUnit = TimeUnit.SECONDS,
             failStrategy = DistributedLock.LockFailStrategy.FAIL_FAST,
-            failMessage = "秒杀商品库存不足或系统繁忙"
+            failMessage = "绉掓潃鍟嗗搧搴撳瓨涓嶈冻鎴栫郴缁熺箒蹇?
     )
     public Result<Boolean> seckillStockOut(
-            @Parameter(description = "商品ID") @PathVariable Long productId,
-            @Parameter(description = "扣减数量") @RequestParam(defaultValue = "1") Integer quantity,
-            @Parameter(description = "订单ID") @RequestParam Long orderId,
-            @Parameter(description = "订单号") @RequestParam String orderNo) {
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long productId,
+            @Parameter(description = "鎵ｅ噺鏁伴噺") @RequestParam(defaultValue = "1") Integer quantity,
+            @Parameter(description = "璁㈠崟ID") @RequestParam Long orderId,
+            @Parameter(description = "璁㈠崟鍙?) @RequestParam String orderNo) {
 
-        log.info("⚡ 秒杀库存扣减 - 商品ID: {}, 数量: {}, 订单: {}", productId, quantity, orderNo);
+        
 
-        // 检查库存是否充足
-        boolean sufficient = stockService.checkStockSufficient(productId, quantity);
+        
         if (!sufficient) {
-            log.warn("❌ 秒杀商品库存不足 - 商品ID: {}, 需要数量: {}", productId, quantity);
-            throw new BusinessException("商品库存不足");
+            log.warn("鉂?绉掓潃鍟嗗搧搴撳瓨涓嶈冻 - 鍟嗗搧ID: {}, 闇€瑕佹暟閲? {}", productId, quantity);
+            throw new BusinessException("鍟嗗搧搴撳瓨涓嶈冻");
         }
 
-        // 执行库存扣减
-        boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "秒杀扣减");
+        
+        boolean result = stockService.stockOut(productId, quantity, orderId, orderNo, "绉掓潃鎵ｅ噺");
 
         if (!result) {
-            log.warn("❌ 秒杀库存扣减失败 - 商品ID: {}, 订单: {}", productId, orderNo);
-            throw new BusinessException("秒杀失败，库存不足");
+            log.warn("鉂?绉掓潃搴撳瓨鎵ｅ噺澶辫触 - 鍟嗗搧ID: {}, 璁㈠崟: {}", productId, orderNo);
+            throw new BusinessException("绉掓潃澶辫触锛屽簱瀛樹笉瓒?);
         }
-        log.info("✅ 秒杀库存扣减成功 - 商品ID: {}, 订单: {}", productId, orderNo);
-        return Result.success("秒杀成功", true);
+        
+        return Result.success("绉掓潃鎴愬姛", true);
     }
 
-    // ==================== 批量管理接口 ====================
+    
 
-    /**
-     * 批量创建库存记录
-     */
+    
+
+
     @PostMapping("/batch")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "批量创建库存记录", description = "批量创建新的库存记录")
+    @Operation(summary = "鎵归噺鍒涘缓搴撳瓨璁板綍", description = "鎵归噺鍒涘缓鏂扮殑搴撳瓨璁板綍")
     public Result<Integer> createStockBatch(
-            @Parameter(description = "库存信息列表") @RequestBody
-            @Valid @NotNull(message = "库存信息列表不能为空") List<StockDTO> stockDTOList) {
+            @Parameter(description = "搴撳瓨淇℃伅鍒楄〃") @RequestBody
+            @Valid @NotNull(message = "搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖") List<StockDTO> stockDTOList) {
 
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            return Result.badRequest("库存信息列表不能为空");
+            return Result.badRequest("搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (stockDTOList.size() > 100) {
-            return Result.badRequest("批量创建数量不能超过100个");
+            return Result.badRequest("鎵归噺鍒涘缓鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("批量创建库存记录, count: {}", stockDTOList.size());
+        
 
-        // 使用批量创建方法
+        
         Integer successCount = stockService.batchCreateStocks(stockDTOList);
 
-        log.info("批量创建库存记录完成, 成功: {}/{}", successCount, stockDTOList.size());
-        return Result.success(String.format("批量创建库存记录成功: %d/%d", successCount, stockDTOList.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鍒涘缓搴撳瓨璁板綍鎴愬姛: %d/%d", successCount, stockDTOList.size()), successCount);
     }
 
-    /**
-     * 批量更新库存信息
-     */
+    
+
+
     @PutMapping("/batch")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "批量更新库存信息", description = "批量更新库存信息")
+    @Operation(summary = "鎵归噺鏇存柊搴撳瓨淇℃伅", description = "鎵归噺鏇存柊搴撳瓨淇℃伅")
     public Result<Integer> updateStockBatch(
-            @Parameter(description = "库存信息列表") @RequestBody
-            @Valid @NotNull(message = "库存信息列表不能为空") List<StockDTO> stockDTOList,
+            @Parameter(description = "搴撳瓨淇℃伅鍒楄〃") @RequestBody
+            @Valid @NotNull(message = "搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖") List<StockDTO> stockDTOList,
             Authentication authentication) {
 
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            return Result.badRequest("库存信息列表不能为空");
+            return Result.badRequest("搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (stockDTOList.size() > 100) {
-            return Result.badRequest("批量更新数量不能超过100个");
+            return Result.badRequest("鎵归噺鏇存柊鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("批量更新库存信息, count: {}", stockDTOList.size());
+        
 
-        // 使用批量更新方法
+        
         Integer successCount = stockService.batchUpdateStocks(stockDTOList);
 
-        log.info("批量更新库存信息完成, 成功: {}/{}", successCount, stockDTOList.size());
-        return Result.success(String.format("批量更新库存信息成功: %d/%d", successCount, stockDTOList.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鏇存柊搴撳瓨淇℃伅鎴愬姛: %d/%d", successCount, stockDTOList.size()), successCount);
     }
 
-    /**
-     * 批量库存入库
-     */
+    
+
+
     @PostMapping("/stock-in/batch")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "批量库存入库", description = "批量对多个商品进行入库操作")
+    @Operation(summary = "鎵归噺搴撳瓨鍏ュ簱", description = "鎵归噺瀵瑰涓晢鍝佽繘琛屽叆搴撴搷浣?)
     public Result<Integer> stockInBatch(
-            @Parameter(description = "入库请求列表") @RequestBody
-            @NotNull(message = "入库请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
+            @Parameter(description = "鍏ュ簱璇锋眰鍒楄〃") @RequestBody
+            @NotNull(message = "鍏ュ簱璇锋眰鍒楄〃涓嶈兘涓虹┖") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
-            return Result.badRequest("入库请求列表不能为空");
+            return Result.badRequest("鍏ュ簱璇锋眰鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (requests.size() > 100) {
-            return Result.badRequest("批量入库数量不能超过100个");
+            return Result.badRequest("鎵归噺鍏ュ簱鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("📦 批量库存入库 - 数量: {}", requests.size());
+        
 
-        // 使用批量入库方法
+        
         Integer successCount = stockService.batchStockIn(requests);
 
-        log.info("✅ 批量库存入库完成, 成功: {}/{}", successCount, requests.size());
-        return Result.success(String.format("批量入库成功: %d/%d", successCount, requests.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鍏ュ簱鎴愬姛: %d/%d", successCount, requests.size()), successCount);
     }
 
-    /**
-     * 批量库存出库
-     */
+    
+
+
     @PostMapping("/stock-out/batch")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "批量库存出库", description = "批量对多个商品进行出库操作")
+    @Operation(summary = "鎵归噺搴撳瓨鍑哄簱", description = "鎵归噺瀵瑰涓晢鍝佽繘琛屽嚭搴撴搷浣?)
     public Result<Integer> stockOutBatch(
-            @Parameter(description = "出库请求列表") @RequestBody
-            @NotNull(message = "出库请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
+            @Parameter(description = "鍑哄簱璇锋眰鍒楄〃") @RequestBody
+            @NotNull(message = "鍑哄簱璇锋眰鍒楄〃涓嶈兘涓虹┖") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
-            return Result.badRequest("出库请求列表不能为空");
+            return Result.badRequest("鍑哄簱璇锋眰鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (requests.size() > 100) {
-            return Result.badRequest("批量出库数量不能超过100个");
+            return Result.badRequest("鎵归噺鍑哄簱鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("📤 批量库存出库 - 数量: {}", requests.size());
+        
 
-        // 使用批量出库方法
+        
         Integer successCount = stockService.batchStockOut(requests);
 
-        log.info("✅ 批量库存出库完成, 成功: {}/{}", successCount, requests.size());
-        return Result.success(String.format("批量出库成功: %d/%d", successCount, requests.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鍑哄簱鎴愬姛: %d/%d", successCount, requests.size()), successCount);
     }
 
-    /**
-     * 批量预留库存
-     */
+    
+
+
     @PostMapping("/reserve/batch")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "批量预留库存", description = "批量预留多个商品的库存")
+    @Operation(summary = "鎵归噺棰勭暀搴撳瓨", description = "鎵归噺棰勭暀澶氫釜鍟嗗搧鐨勫簱瀛?)
     public Result<Integer> reserveStockBatch(
-            @Parameter(description = "预留请求列表") @RequestBody
-            @NotNull(message = "预留请求列表不能为空") List<StockService.StockAdjustmentRequest> requests,
+            @Parameter(description = "棰勭暀璇锋眰鍒楄〃") @RequestBody
+            @NotNull(message = "棰勭暀璇锋眰鍒楄〃涓嶈兘涓虹┖") List<StockService.StockAdjustmentRequest> requests,
             Authentication authentication) {
 
         if (requests == null || requests.isEmpty()) {
-            return Result.badRequest("预留请求列表不能为空");
+            return Result.badRequest("棰勭暀璇锋眰鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (requests.size() > 100) {
-            return Result.badRequest("批量预留数量不能超过100个");
+            return Result.badRequest("鎵归噺棰勭暀鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("🔒 批量库存预留 - 数量: {}", requests.size());
+        
 
-        // 使用批量预留方法
+        
         Integer successCount = stockService.batchReserveStock(requests);
 
-        log.info("✅ 批量库存预留完成, 成功: {}/{}", successCount, requests.size());
-        return Result.success(String.format("批量预留成功: %d/%d", successCount, requests.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺棰勭暀鎴愬姛: %d/%d", successCount, requests.size()), successCount);
     }
 
-    // ==================== 内部类 ====================
+    
 
-    /**
-     * 获取低库存商品列表
-     */
+    
+
     @GetMapping("/alerts")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "获取低库存商品列表", description = "查询所有低于预警阈值的商品")
+    @Operation(summary = "鑾峰彇浣庡簱瀛樺晢鍝佸垪琛?, description = "鏌ヨ鎵€鏈変綆浜庨璀﹂槇鍊肩殑鍟嗗搧")
     public Result<List<Stock>> getLowStockAlerts(Authentication authentication) {
-        log.info("查询低库存商品列表");
         List<Stock> lowStockProducts = stockAlertService.getLowStockProducts();
-        return Result.success("查询成功", lowStockProducts);
+        return Result.success("鏌ヨ鎴愬姛", lowStockProducts);
     }
 
-    /**
-     * 根据阈值查询低库存商品
-     */
+    
+
+
     @GetMapping("/alerts/threshold/{threshold}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据阈值查询低库存商品", description = "查询库存低于指定阈值的商品")
+    @Operation(summary = "鏍规嵁闃堝€兼煡璇綆搴撳瓨鍟嗗搧", description = "鏌ヨ搴撳瓨浣庝簬鎸囧畾闃堝€肩殑鍟嗗搧")
     public Result<List<Stock>> getLowStockByThreshold(
-            @Parameter(description = "库存阈值") @PathVariable
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
+            @Parameter(description = "搴撳瓨闃堝€?) @PathVariable
+            @NotNull(message = "闃堝€间笉鑳戒负绌?)
+            @Min(value = 0, message = "闃堝€煎繀椤诲ぇ浜庣瓑浜?") Integer threshold,
             Authentication authentication) {
-        log.info("查询库存低于 {} 的商品", threshold);
         List<Stock> lowStockProducts = stockAlertService.getLowStockProductsByThreshold(threshold);
-        return Result.success("查询成功", lowStockProducts);
+        return Result.success("鏌ヨ鎴愬姛", lowStockProducts);
     }
 
-    // ==================== 库存预警接口 ====================
+    
 
-    /**
-     * 更新商品库存预警阈值
-     */
+    
+
     @PutMapping("/{productId}/threshold")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "更新库存预警阈值", description = "设置商品的低库存预警阈值")
+    @Operation(summary = "鏇存柊搴撳瓨棰勮闃堝€?, description = "璁剧疆鍟嗗搧鐨勪綆搴撳瓨棰勮闃堝€?)
     public Result<Boolean> updateLowStockThreshold(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "预警阈值") @RequestParam("threshold")
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "棰勮闃堝€?) @RequestParam("threshold")
+            @NotNull(message = "闃堝€间笉鑳戒负绌?)
+            @Min(value = 0, message = "闃堝€煎繀椤诲ぇ浜庣瓑浜?") Integer threshold,
             Authentication authentication) {
-        log.info("更新库存预警阈值, productId: {}, threshold: {}", productId, threshold);
+        
         boolean result = stockAlertService.updateLowStockThreshold(productId, threshold);
-        return Result.success("更新成功", result);
+        return Result.success("鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 批量更新库存预警阈值
-     */
+    
+
     @PutMapping("/threshold/batch")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "批量更新库存预警阈值", description = "批量设置商品的低库存预警阈值")
+    @Operation(summary = "鎵归噺鏇存柊搴撳瓨棰勮闃堝€?, description = "鎵归噺璁剧疆鍟嗗搧鐨勪綆搴撳瓨棰勮闃堝€?)
     public Result<Integer> batchUpdateLowStockThreshold(
-            @Parameter(description = "商品ID列表") @RequestParam("productIds")
-            @NotNull(message = "商品ID列表不能为空") List<Long> productIds,
-            @Parameter(description = "预警阈值") @RequestParam("threshold")
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold) {
-        log.info("批量更新库存预警阈值, 数量: {}, threshold: {}", productIds.size(), threshold);
+            @Parameter(description = "鍟嗗搧ID鍒楄〃") @RequestParam("productIds")
+            @NotNull(message = "鍟嗗搧ID鍒楄〃涓嶈兘涓虹┖") List<Long> productIds,
+            @Parameter(description = "棰勮闃堝€?) @RequestParam("threshold")
+            @NotNull(message = "闃堝€间笉鑳戒负绌?)
+            @Min(value = 0, message = "闃堝€煎繀椤诲ぇ浜庣瓑浜?") Integer threshold) {
+        
         int count = stockAlertService.batchUpdateLowStockThreshold(productIds, threshold);
-        return Result.success("批量更新成功", count);
+        return Result.success("鎵归噺鏇存柊鎴愬姛", count);
     }
 
-    /**
-     * 创建库存盘点记录
-     */
+    
+
+
     @PostMapping("/count")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "创建库存盘点记录", description = "对指定商品进行库存盘点")
+    @Operation(summary = "鍒涘缓搴撳瓨鐩樼偣璁板綍", description = "瀵规寚瀹氬晢鍝佽繘琛屽簱瀛樼洏鐐?)
     public Result<Long> createStockCount(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "实际盘点数量") @RequestParam("actualQuantity")
-            @NotNull(message = "实际数量不能为空")
-            @Min(value = 0, message = "实际数量必须大于等于0") Integer actualQuantity,
-            @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
+            @Parameter(description = "鍟嗗搧ID") @RequestParam("productId")
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "瀹為檯鐩樼偣鏁伴噺") @RequestParam("actualQuantity")
+            @NotNull(message = "瀹為檯鏁伴噺涓嶈兘涓虹┖")
+            @Min(value = 0, message = "瀹為檯鏁伴噺蹇呴』澶т簬绛変簬0") Integer actualQuantity,
+            @Parameter(description = "澶囨敞") @RequestParam(value = "remark", required = false) String remark,
             Authentication authentication) {
-        log.info("创建库存盘点记录, productId: {}, actualQuantity: {}", productId, actualQuantity);
+        
 
-        // 从认证信息获取操作人信息
-        Long operatorId = 1L; // TODO: 从authentication获取实际用户ID
+        
+        Long operatorId = 1L; 
         String operatorName = authentication.getName();
 
         Long countId = stockCountService.createStockCount(productId, actualQuantity,
                 operatorId, operatorName, remark);
-        return Result.success("盘点记录创建成功", countId);
+        return Result.success("鐩樼偣璁板綍鍒涘缓鎴愬姛", countId);
     }
 
-    /**
-     * 确认库存盘点并调整库存
-     */
+    
+
     @PutMapping("/count/{countId}/confirm")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "确认库存盘点", description = "确认盘点记录并调整库存")
+    @Operation(summary = "纭搴撳瓨鐩樼偣", description = "纭鐩樼偣璁板綍骞惰皟鏁村簱瀛?)
     public Result<Boolean> confirmStockCount(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            @Parameter(description = "鐩樼偣璁板綍ID") @PathVariable
+            @NotNull(message = "鐩樼偣璁板綍ID涓嶈兘涓虹┖") Long countId,
             Authentication authentication) {
-        log.info("确认库存盘点, countId: {}", countId);
+        
 
-        // 从认证信息获取确认人信息
-        Long confirmUserId = 1L; // TODO: 从authentication获取实际用户ID
+        
+        Long confirmUserId = 1L; 
         String confirmUserName = authentication.getName();
 
         boolean result = stockCountService.confirmStockCount(countId, confirmUserId, confirmUserName);
-        return Result.success("盘点确认成功", result);
+        return Result.success("鐩樼偣纭鎴愬姛", result);
     }
 
-    // ==================== 库存盘点接口 ====================
+    
 
-    /**
-     * 取消库存盘点
-     */
+    
+
+
     @DeleteMapping("/count/{countId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "取消库存盘点", description = "取消待确认的盘点记录")
+    @Operation(summary = "鍙栨秷搴撳瓨鐩樼偣", description = "鍙栨秷寰呯‘璁ょ殑鐩樼偣璁板綍")
     public Result<Boolean> cancelStockCount(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            @Parameter(description = "鐩樼偣璁板綍ID") @PathVariable
+            @NotNull(message = "鐩樼偣璁板綍ID涓嶈兘涓虹┖") Long countId,
             Authentication authentication) {
-        log.info("取消库存盘点, countId: {}", countId);
+        
         boolean result = stockCountService.cancelStockCount(countId);
-        return Result.success("盘点记录已取消", result);
+        return Result.success("鐩樼偣璁板綍宸插彇娑?, result);
     }
 
-    /**
-     * 根据ID查询盘点记录
-     */
+    
+
+
     @GetMapping("/count/{countId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "查询盘点记录", description = "根据ID查询盘点记录详情")
+    @Operation(summary = "鏌ヨ鐩樼偣璁板綍", description = "鏍规嵁ID鏌ヨ鐩樼偣璁板綍璇︽儏")
     public Result<StockCount> getStockCountById(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            @Parameter(description = "鐩樼偣璁板綍ID") @PathVariable
+            @NotNull(message = "鐩樼偣璁板綍ID涓嶈兘涓虹┖") Long countId,
             Authentication authentication) {
-        log.info("查询盘点记录, countId: {}", countId);
+        
         StockCount stockCount = stockCountService.getStockCountById(countId);
         if (stockCount == null) {
             throw new ResourceNotFoundException("StockCount", String.valueOf(countId));
         }
-        return Result.success("查询成功", stockCount);
+        return Result.success("鏌ヨ鎴愬姛", stockCount);
     }
 
-    /**
-     * 根据商品ID查询盘点记录
-     */
+    
+
+
     @GetMapping("/count/product/{productId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据商品查询盘点记录", description = "查询指定商品的盘点记录列表")
+    @Operation(summary = "鏍规嵁鍟嗗搧鏌ヨ鐩樼偣璁板綍", description = "鏌ヨ鎸囧畾鍟嗗搧鐨勭洏鐐硅褰曞垪琛?)
     public Result<List<StockCount>> getStockCountsByProductId(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "寮€濮嬫椂闂?) @RequestParam(value = "startTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @Parameter(description = "缁撴潫鏃堕棿") @RequestParam(value = "endTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime endTime,
             Authentication authentication) {
-        log.info("根据商品ID查询盘点记录, productId: {}", productId);
+        
         List<StockCount> counts = stockCountService.getStockCountsByProductId(productId, startTime, endTime);
-        return Result.success("查询成功", counts);
+        return Result.success("鏌ヨ鎴愬姛", counts);
     }
 
-    /**
-     * 根据状态查询盘点记录
-     */
+    
+
     @GetMapping("/count/status/{status}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "根据状态查询盘点记录", description = "查询指定状态的盘点记录")
+    @Operation(summary = "鏍规嵁鐘舵€佹煡璇㈢洏鐐硅褰?, description = "鏌ヨ鎸囧畾鐘舵€佺殑鐩樼偣璁板綍")
     public Result<List<StockCount>> getStockCountsByStatus(
-            @Parameter(description = "盘点状态") @PathVariable String status,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @Parameter(description = "鐩樼偣鐘舵€?) @PathVariable String status,
+            @Parameter(description = "寮€濮嬫椂闂?) @RequestParam(value = "startTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @Parameter(description = "缁撴潫鏃堕棿") @RequestParam(value = "endTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime endTime) {
-        log.info("根据状态查询盘点记录, status: {}", status);
+        
         List<StockCount> counts = stockCountService.getStockCountsByStatus(status, startTime, endTime);
-        return Result.success("查询成功", counts);
+        return Result.success("鏌ヨ鎴愬姛", counts);
     }
 
-    /**
-     * 查询待确认的盘点记录数量
-     */
+    
+
+
     @GetMapping("/count/pending/count")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "查询待确认盘点数量", description = "查询待确认的盘点记录数量")
+    @Operation(summary = "鏌ヨ寰呯‘璁ょ洏鐐规暟閲?, description = "鏌ヨ寰呯‘璁ょ殑鐩樼偣璁板綍鏁伴噺")
     public Result<Integer> countPendingRecords() {
         int count = stockCountService.countPendingRecords();
-        return Result.success("查询成功", count);
+        return Result.success("鏌ヨ鎴愬姛", count);
     }
 
-    /**
-     * 根据商品ID查询库存日志
-     */
+    
+
+
     @GetMapping("/logs/product/{productId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据商品查询库存日志", description = "查询指定商品的库存操作日志")
+    @Operation(summary = "鏍规嵁鍟嗗搧鏌ヨ搴撳瓨鏃ュ織", description = "鏌ヨ鎸囧畾鍟嗗搧鐨勫簱瀛樻搷浣滄棩蹇?)
     public Result<List<StockLog>> getLogsByProductId(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @NotNull(message = "鍟嗗搧ID涓嶈兘涓虹┖") Long productId,
+            @Parameter(description = "寮€濮嬫椂闂?) @RequestParam(value = "startTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @Parameter(description = "缁撴潫鏃堕棿") @RequestParam(value = "endTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime endTime,
             Authentication authentication) {
-        log.info("根据商品ID查询库存日志, productId: {}", productId);
+        
         List<StockLog> logs = stockLogService.getLogsByProductId(productId, startTime, endTime);
-        return Result.success("查询成功", logs);
+        return Result.success("鏌ヨ鎴愬姛", logs);
     }
 
-    /**
-     * 根据订单ID查询库存日志
-     */
+    
+
+
     @GetMapping("/logs/order/{orderId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据订单查询库存日志", description = "查询指定订单的库存操作日志")
+    @Operation(summary = "鏍规嵁璁㈠崟鏌ヨ搴撳瓨鏃ュ織", description = "鏌ヨ鎸囧畾璁㈠崟鐨勫簱瀛樻搷浣滄棩蹇?)
     public Result<List<StockLog>> getLogsByOrderId(
-            @Parameter(description = "订单ID") @PathVariable
-            @NotNull(message = "订单ID不能为空") Long orderId,
+            @Parameter(description = "璁㈠崟ID") @PathVariable
+            @NotNull(message = "璁㈠崟ID涓嶈兘涓虹┖") Long orderId,
             Authentication authentication) {
-        log.info("根据订单ID查询库存日志, orderId: {}", orderId);
+        
         List<StockLog> logs = stockLogService.getLogsByOrderId(orderId);
-        return Result.success("查询成功", logs);
+        return Result.success("鏌ヨ鎴愬姛", logs);
     }
 
-    // ==================== 库存日志接口 ====================
+    
 
-    /**
-     * 根据操作类型查询库存日志
-     */
+    
+
+
     @GetMapping("/logs/type/{operationType}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "根据操作类型查询库存日志", description = "查询指定操作类型的库存日志")
+    @Operation(summary = "鏍规嵁鎿嶄綔绫诲瀷鏌ヨ搴撳瓨鏃ュ織", description = "鏌ヨ鎸囧畾鎿嶄綔绫诲瀷鐨勫簱瀛樻棩蹇?)
     public Result<List<StockLog>> getLogsByOperationType(
-            @Parameter(description = "操作类型") @PathVariable String operationType,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @Parameter(description = "鎿嶄綔绫诲瀷") @PathVariable String operationType,
+            @Parameter(description = "寮€濮嬫椂闂?) @RequestParam(value = "startTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @Parameter(description = "缁撴潫鏃堕棿") @RequestParam(value = "endTime", required = false)
             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             java.time.LocalDateTime endTime) {
-        log.info("根据操作类型查询库存日志, operationType: {}", operationType);
+        
         List<StockLog> logs = stockLogService.getLogsByOperationType(operationType, startTime, endTime);
-        return Result.success("查询成功", logs);
+        return Result.success("鏌ヨ鎴愬姛", logs);
     }
 
-    /**
-     * 库存调整请求DTO
-     */
+    
+
+
     public static class StockAdjustment {
         private Long productId;
-        private String type; // IN, OUT, RESERVE, RELEASE
+        private String type; 
         private Integer quantity;
         private String remark;
 
-        // Getters and Setters
+        
         public Long getProductId() {
             return productId;
         }
@@ -835,9 +823,9 @@ public class StockController {
         }
     }
 
-    /**
-     * 批量调整请求
-     */
+    
+
+
     public static class StockAdjustmentRequest {
         private Long productId;
         private Integer quantity;
@@ -845,7 +833,7 @@ public class StockController {
         private String orderNo;
         private String remark;
 
-        // Getters and Setters
+        
         public Long getProductId() {
             return productId;
         }

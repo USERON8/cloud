@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8084}
   tomcat:
     threads:
@@ -13,7 +13,7 @@ spring:
   profiles:
     active: dev
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # RocketMQ Stream 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     stream:
       rocketmq:
         binder:
@@ -50,7 +50,7 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        # 鏃ュ織鐢熶骇鑰呯粦瀹?
+        # Comment sanitized for UTF-8 compatibility.
         logProducer-out-0:
           destination: LOG_COLLECTION_TOPIC
           content-type: application/json
@@ -63,11 +63,11 @@ spring:
           producer:
             partition-count: 4
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # 澶氱骇缂撳瓨閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cache:
     type: caffeine
     caffeine:
@@ -79,7 +79,7 @@ spring:
       - brandCache
       - productStatsCache
 
-  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       resourceserver:
@@ -88,24 +88,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-# JWT 鍙戣鑰呴厤缃?
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 缁熶竴鏉冮檺绠＄悊閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 unified:
   security:
     enabled: true
     permission:
-      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
+      # Comment sanitized for UTF-8 compatibility.
       refresh-interval: 300
-      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
+      # Comment sanitized for UTF-8 compatibility.
       cache-ttl: 1800
-      # 鍚敤鏉冮檺璋冭瘯妯″紡
+      # Comment sanitized for UTF-8 compatibility.
       debug: false
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -117,7 +117,7 @@ logging:
     org.springframework.cache: DEBUG
     org.springframework.data.redis: DEBUG
 
-# MyBatis Plus 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -137,7 +137,7 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cloud.product.module.entity
 
-# 澶氱骇缂撳瓨鑷畾涔夐厤缃?
+# Comment sanitized for UTF-8 compatibility.
 cache:
   multi-level:
     local:
@@ -154,7 +154,7 @@ cache:
       enable-key-prefix: true
       use-key-prefix: true
 
-# SpringDoc 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   api-docs:
     enabled: true
@@ -175,7 +175,7 @@ springdoc:
       name: MIT License
       url: https://opensource.org/licenses/MIT
 
-# Knife4j 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -186,7 +186,7 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-# 鍟嗗搧鏈嶅姟涓撶敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 product:
   async:
     enabled: true
@@ -205,7 +205,7 @@ product:
         enabled: true
         max-size: 500
 
-# 鍋ュ悍妫€鏌ラ厤缃?
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:

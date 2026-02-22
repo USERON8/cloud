@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8086}
   tomcat:
     threads:
@@ -12,9 +12,9 @@ spring:
     name: payment-service
   profiles:
     active: dev
-    include: rocketmq  # 寮曞叆RocketMQ閰嶇疆
+    include: rocketmq  # Comment sanitized for UTF-8 compatibility.
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-    # OpenFeign 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     openfeign:
       client:
         config:
@@ -53,11 +53,11 @@ spring:
         response:
           enabled: true
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       resourceserver:
@@ -66,24 +66,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-# JWT 鍙戣鑰呴厤缃?
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 缁熶竴鏉冮檺绠＄悊閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 unified:
   security:
     enabled: true
     permission:
-      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
+      # Comment sanitized for UTF-8 compatibility.
       refresh-interval: 300
-      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
+      # Comment sanitized for UTF-8 compatibility.
       cache-ttl: 1800
-      # 鍚敤鏉冮檺璋冭瘯妯″紡
+      # Comment sanitized for UTF-8 compatibility.
       debug: false
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -93,7 +93,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# MyBatis Plus 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.payment.module.entity
@@ -109,7 +109,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# 鏀粯鏈嶅姟涓撶敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 payment:
   async:
     enabled: true
@@ -118,7 +118,7 @@ payment:
   statistics:
     enabled: true
 
-# Redis 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 redis:
   host: ${REDIS_HOST:127.0.0.1}
   port: ${REDIS_PORT:6379}
@@ -132,7 +132,7 @@ redis:
       max-idle: 10
       min-idle: 2
 
-# Redisson 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 redisson:
   address: redis://${redis.host}:${redis.port}
   password: ${redis.password}
@@ -147,20 +147,20 @@ redisson:
   subscriptions-per-connection: 5
   client-name: payment-service
 
-# 鏀粯瀹濋厤缃?
+# Comment sanitized for UTF-8 compatibility.
 alipay:
-  app-id: ${ALIPAY_APP_ID:2021000122671234}  # 鏀粯瀹濆簲鐢↖D锛岀敓浜х幆澧冧娇鐢ㄧ幆澧冨彉閲?
-  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # 搴旂敤绉侀挜
-  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # 鏀粯瀹濆叕閽?
-  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # 娌欑鐜缃戝叧
-  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # 寮傛閫氱煡鍦板潃
-  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # 鍚屾璺宠浆鍦板潃
+  app-id: ${ALIPAY_APP_ID:2021000122671234}  # Comment sanitized for UTF-8 compatibility.
+  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # Comment sanitized for UTF-8 compatibility.
+  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # Comment sanitized for UTF-8 compatibility.
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # Comment sanitized for UTF-8 compatibility.
+  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # Comment sanitized for UTF-8 compatibility.
+  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # Comment sanitized for UTF-8 compatibility.
   sign-type: RSA2
   charset: UTF-8
   format: json
-  timeout: 30m  # 鏀粯瓒呮椂鏃堕棿
+  timeout: 30m  # Comment sanitized for UTF-8 compatibility.
 
-# SpringDoc 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -176,7 +176,7 @@ springdoc:
     - group: 'payment-operation'
       paths-to-match: '/api/v1/payment/operation/**'
 
-# Knife4j 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -184,7 +184,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Spring Boot Actuator閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:

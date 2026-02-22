@@ -22,7 +22,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,176 +38,121 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user/address")
 @RequiredArgsConstructor
-@Tag(name = "用户地址管理", description = "用户地址添加、更新、删除、查询等相关操作")
+@Tag(name = "User Address", description = "User address APIs")
 public class UserAddressController {
+
     private final UserAddressService userAddressService;
     private final UserAddressConverter userAddressConverter = UserAddressConverter.INSTANCE;
 
-    /**
-     * 添加用户地址
-     *
-     * @param userId                用户ID
-     * @param userAddressRequestDTO 地址信息
-     * @return 地址信息
-     */
     @PostMapping("/add/{userId}")
-    @Operation(summary = "添加用户地址", description = "为指定用户添加新的地址信息")
+    @Operation(summary = "Add user address", description = "Add a new address for user")
     public Result<UserAddressDTO> addAddress(
             @PathVariable("userId")
-            @Parameter(description = "用户ID")
-            @NotNull(message = "用户ID不能为空") Long userId,
+            @Parameter(description = "User ID")
+            @NotNull(message = "user id is required") Long userId,
             @RequestBody
-            @Parameter(description = "地址信息")
-            @Valid @NotNull(message = "地址信息不能为空") UserAddressRequestDTO userAddressRequestDTO,
+            @Parameter(description = "Address payload")
+            @Valid @NotNull(message = "address payload is required") UserAddressRequestDTO userAddressRequestDTO,
             Authentication authentication) {
-
-        // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-            return Result.forbidden("无权限操作此用户地址");
+            return Result.forbidden("no permission to add address");
         }
-
-        log.info("添加用户地址, userId: {}", userId);
 
         UserAddress userAddress = userAddressConverter.toEntity(userAddressRequestDTO);
         userAddress.setUserId(userId);
         userAddress.setCreatedAt(LocalDateTime.now());
         userAddress.setUpdatedAt(LocalDateTime.now());
 
-        // 如果设置为默认地址，需要将其他地址设为非默认
-        if (userAddress.getIsDefault() != null && userAddress.getIsDefault() == 1) {
+        if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
             setUserAddressNotDefault(userId);
         }
 
         userAddressService.save(userAddress);
-
-        UserAddressDTO result = userAddressConverter.toDTO(userAddress);
-        return Result.success("地址添加成功", result);
+        return Result.success("address created", userAddressConverter.toDTO(userAddress));
     }
 
-    /**
-     * 更新用户地址
-     *
-     * @param addressId             地址ID
-     * @param userAddressRequestDTO 地址信息
-     * @return 地址信息
-     */
     @PutMapping("/update/{addressId}")
-    @Operation(summary = "更新用户地址", description = "更新指定地址的信息")
+    @Operation(summary = "Update user address", description = "Update address by address ID")
     public Result<UserAddressDTO> updateAddress(
             @PathVariable("addressId")
-            @Parameter(description = "地址ID")
-            @NotNull(message = "地址ID不能为空") Long addressId,
+            @Parameter(description = "Address ID")
+            @NotNull(message = "address id is required") Long addressId,
             @RequestBody
-            @Parameter(description = "地址信息")
-            @Valid @NotNull(message = "地址信息不能为空") UserAddressRequestDTO userAddressRequestDTO,
+            @Parameter(description = "Address payload")
+            @Valid @NotNull(message = "address payload is required") UserAddressRequestDTO userAddressRequestDTO,
             Authentication authentication) {
-
-        // 检查地址是否存在以及权限
         UserAddress existingAddress = userAddressService.getById(addressId);
         if (existingAddress == null) {
-            return Result.error("地址不存在");
+            return Result.notFound("address not found");
         }
 
-        // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-            return Result.forbidden("无权限更新此地址");
+            return Result.forbidden("no permission to update address");
         }
-
-        log.info("更新用户地址, addressId: {}", addressId);
 
         UserAddress userAddress = userAddressConverter.toEntity(userAddressRequestDTO);
         userAddress.setId(addressId);
+        userAddress.setUserId(existingAddress.getUserId());
         userAddress.setUpdatedAt(LocalDateTime.now());
 
-        // 如果设置为默认地址，需要将其他地址设为非默认
-        if (userAddress.getIsDefault() != null && userAddress.getIsDefault() == 1) {
+        if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
             setUserAddressNotDefault(existingAddress.getUserId());
         }
 
         userAddressService.updateById(userAddress);
-
-        UserAddressDTO result = userAddressConverter.toDTO(userAddress);
-        return Result.success("地址更新成功", result);
+        return Result.success("address updated", userAddressConverter.toDTO(userAddress));
     }
 
-    /**
-     * 删除用户地址
-     *
-     * @param addressId 地址ID
-     * @return 操作结果
-     */
     @DeleteMapping("/delete/{addressId}")
-    @Operation(summary = "删除用户地址", description = "删除指定的用户地址")
-    public Result<Boolean> deleteAddress(@PathVariable("addressId")
-                                         @Parameter(description = "地址ID")
-                                         @NotNull(message = "地址ID不能为空") Long addressId,
-                                         Authentication authentication) {
-
-        // 检查地址是否存在以及权限
+    @Operation(summary = "Delete user address", description = "Delete address by address ID")
+    public Result<Boolean> deleteAddress(
+            @PathVariable("addressId")
+            @Parameter(description = "Address ID")
+            @NotNull(message = "address id is required") Long addressId,
+            Authentication authentication) {
         UserAddress existingAddress = userAddressService.getById(addressId);
         if (existingAddress == null) {
-            return Result.error("地址不存在");
+            return Result.notFound("address not found");
         }
 
-        // 使用统一的权限检查工具
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-            return Result.forbidden("无权限删除此地址");
+            return Result.forbidden("no permission to delete address");
         }
 
-        log.info("删除用户地址, addressId: {}", addressId);
         boolean result = userAddressService.removeById(addressId);
-        return Result.success("地址删除成功", result);
+        return Result.success("address deleted", result);
     }
 
-    /**
-     * 获取用户地址列表
-     *
-     * @param userId 用户ID
-     * @return 地址列表
-     */
     @GetMapping("/list/{userId}")
-    @Operation(summary = "获取用户地址列表", description = "获取指定用户的所有地址信息")
-    public Result<List<UserAddressVO>> getAddressList(@PathVariable("userId")
-                                                      @Parameter(description = "用户ID")
-                                                      @NotNull(message = "用户ID不能为空") Long userId,
-                                                      Authentication authentication) {
-
-        // 使用统一的权限检查工具
+    @Operation(summary = "List user addresses", description = "List all addresses for one user")
+    public Result<List<UserAddressVO>> getAddressList(
+            @PathVariable("userId")
+            @Parameter(description = "User ID")
+            @NotNull(message = "user id is required") Long userId,
+            Authentication authentication) {
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-            return Result.forbidden("无权限查看此用户地址列表");
+            return Result.forbidden("no permission to query addresses");
         }
-
-        log.info("获取用户地址列表, userId: {}", userId);
 
         LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(UserAddress::getUserId, userId);
         queryWrapper.orderByDesc(UserAddress::getIsDefault);
         queryWrapper.orderByDesc(UserAddress::getUpdatedAt);
 
-        List<UserAddress> userAddresses = userAddressService.list(queryWrapper);
-        List<UserAddressVO> result = userAddressConverter.toVOList(userAddresses);
+        List<UserAddressVO> result = userAddressConverter.toVOList(userAddressService.list(queryWrapper));
         return Result.success(result);
     }
 
-    /**
-     * 获取用户默认地址
-     *
-     * @param userId 用户ID
-     * @return 默认地址
-     */
     @GetMapping("/default/{userId}")
-    @Operation(summary = "获取用户默认地址", description = "获取指定用户的默认地址")
-    public Result<UserAddressVO> getDefaultAddress(@PathVariable("userId")
-                                                   @Parameter(description = "用户ID")
-                                                   @NotNull(message = "用户ID不能为空") Long userId,
-                                                   Authentication authentication) {
-
-        // 使用统一的权限检查工具
+    @Operation(summary = "Get default address", description = "Get default address for one user")
+    public Result<UserAddressVO> getDefaultAddress(
+            @PathVariable("userId")
+            @Parameter(description = "User ID")
+            @NotNull(message = "user id is required") Long userId,
+            Authentication authentication) {
         if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-            return Result.forbidden("无权限获取此用户默认地址");
+            return Result.forbidden("no permission to query default address");
         }
-
-        log.info("获取用户默认地址, userId: {}", userId);
 
         LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(UserAddress::getUserId, userId);
@@ -208,34 +160,30 @@ public class UserAddressController {
 
         UserAddress userAddress = userAddressService.getOne(queryWrapper);
         if (userAddress == null) {
-            return Result.success("暂无默认地址", null);
+            return Result.success("default address not found", null);
         }
 
-        UserAddressVO result = userAddressConverter.toVO(userAddress);
-        return Result.success(result);
+        return Result.success(userAddressConverter.toVO(userAddress));
     }
 
-    // 新增用户地址信息分页查询
     @PostMapping("/page")
-    @Operation(summary = "分页查询用户地址信息", description = "分页查询用户地址信息")
-    public Result<PageResult<UserAddressVO>> pageUserAddress(@RequestBody
-                                                             @Parameter(description = "分页查询条件")
-                                                             @Valid @NotNull(message = "分页查询条件不能为空") UserAddressPageDTO pageDTO,
-                                                             Authentication authentication) {
+    @Operation(summary = "Page user addresses", description = "Page query user addresses")
+    public Result<PageResult<UserAddressVO>> pageUserAddress(
+            @RequestBody
+            @Parameter(description = "Page query payload")
+            @Valid @NotNull(message = "page query payload is required") UserAddressPageDTO pageDTO,
+            Authentication authentication) {
         try {
-            // 使用统一的权限检查工具
-            if (!SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
-                return Result.forbidden("无权限查询此用户地址信息");
+            if (pageDTO.getUserId() != null && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
+                return Result.forbidden("no permission to query this user's addresses");
+            }
+            if (pageDTO.getUserId() == null && !SecurityPermissionUtils.isAdmin(authentication)) {
+                return Result.forbidden("no permission to query all addresses");
             }
 
-            log.info("分页查询用户地址信息, page: {}, size: {}, userId: {}, consignee: {}",
-                    pageDTO.getCurrent(), pageDTO.getSize(), pageDTO.getUserId(), pageDTO.getConsignee());
-
-            // 构造分页对象
             Page<UserAddress> page = PageUtils.buildPage(pageDTO);
-
-            // 构造查询条件
             LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
+
             if (pageDTO.getUserId() != null) {
                 queryWrapper.eq(UserAddress::getUserId, pageDTO.getUserId());
             }
@@ -244,89 +192,69 @@ public class UserAddressController {
             }
             queryWrapper.orderByDesc(UserAddress::getCreatedAt);
 
-            // 执行分页查询
             Page<UserAddress> resultPage = userAddressService.page(page, queryWrapper);
-
-            // 转换为VO列表
             List<UserAddressVO> userAddressVOList = userAddressConverter.toVOList(resultPage.getRecords());
 
-            // 封装分页结果
             PageResult<UserAddressVO> pageResult = PageResult.of(
                     resultPage.getCurrent(),
                     resultPage.getSize(),
                     resultPage.getTotal(),
                     userAddressVOList
             );
-
             return Result.success(pageResult);
         } catch (Exception e) {
-            log.error("分页查询用户地址信息异常", e);
-            return Result.error("查询失败");
+            log.error("Failed to page user addresses", e);
+            return Result.error("failed to page user addresses");
         }
     }
 
-    /**
-     * 批量删除用户地址
-     */
     @DeleteMapping("/deleteBatch")
-    @Operation(summary = "批量删除用户地址", description = "批量删除指定的用户地址")
+    @Operation(summary = "Batch delete addresses", description = "Batch delete addresses by address IDs")
     public Result<Boolean> deleteAddressBatch(
             @RequestBody
-            @Parameter(description = "地址ID列表")
-            @NotNull(message = "地址ID列表不能为空") List<Long> addressIds,
+            @Parameter(description = "Address IDs")
+            @NotNull(message = "address ids are required") List<Long> addressIds,
             Authentication authentication) {
-
-        if (addressIds == null || addressIds.isEmpty()) {
-            return Result.badRequest("地址ID列表不能为空");
+        if (addressIds.isEmpty()) {
+            return Result.badRequest("address ids cannot be empty");
         }
-
         if (addressIds.size() > 100) {
-            return Result.badRequest("批量删除数量不能超过100个");
+            return Result.badRequest("batch size cannot exceed 100");
         }
 
-        log.info("批量删除用户地址, addressIds: {}", addressIds);
-
-        // 权限检查：需要检查每个地址是否属于当前用户或者是管理员
         int successCount = 0;
         for (Long addressId : addressIds) {
             try {
                 UserAddress existingAddress = userAddressService.getById(addressId);
-                if (existingAddress != null) {
-                    if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-                        if (userAddressService.removeById(addressId)) {
-                            successCount++;
-                        }
-                    }
+                if (existingAddress == null) {
+                    continue;
+                }
+                if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())
+                        && userAddressService.removeById(addressId)) {
+                    successCount++;
                 }
             } catch (Exception e) {
-                log.error("删除地址失败, addressId: {}", addressId, e);
+                log.error("Failed to delete address, addressId={}", addressId, e);
             }
         }
 
-        log.info("批量删除地址完成, 成功: {}/{}", successCount, addressIds.size());
-        return Result.success(String.format("批量删除地址成功: %d/%d", successCount, addressIds.size()), true);
+        String message = String.format("batch delete completed: %d/%d", successCount, addressIds.size());
+        return Result.success(message, true);
     }
 
-    /**
-     * 批量更新用户地址
-     */
     @PutMapping("/updateBatch")
-    @Operation(summary = "批量更新用户地址", description = "批量更新多个用户地址信息")
+    @Operation(summary = "Batch update addresses", description = "Batch update addresses by address payload list")
     public Result<Boolean> updateAddressBatch(
             @RequestBody
-            @Parameter(description = "地址信息列表")
-            @Valid @NotNull(message = "地址信息列表不能为空") List<UserAddressRequestDTO> addressList,
+            @Parameter(description = "Address payload list")
+            @Valid @NotNull(message = "address payload list is required") List<UserAddressRequestDTO> addressList,
             Authentication authentication) {
-
-        if (addressList == null || addressList.isEmpty()) {
-            return Result.badRequest("地址信息列表不能为空");
+        if (addressList.isEmpty()) {
+            return Result.badRequest("address payload list cannot be empty");
         }
-
         if (addressList.size() > 100) {
-            return Result.badRequest("批量更新数量不能超过100个");
+            return Result.badRequest("batch size cannot exceed 100");
         }
-
-        log.info("批量更新用户地址, count: {}", addressList.size());
 
         int successCount = 0;
         for (UserAddressRequestDTO addressDTO : addressList) {
@@ -336,31 +264,34 @@ public class UserAddressController {
                 }
 
                 UserAddress existingAddress = userAddressService.getById(addressDTO.getId());
-                if (existingAddress != null) {
-                    if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-                        UserAddress userAddress = userAddressConverter.toEntity(addressDTO);
-                        userAddress.setId(addressDTO.getId());
-                        userAddress.setUpdatedAt(LocalDateTime.now());
+                if (existingAddress == null) {
+                    continue;
+                }
+                if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+                    continue;
+                }
 
-                        if (userAddressService.updateById(userAddress)) {
-                            successCount++;
-                        }
-                    }
+                UserAddress userAddress = userAddressConverter.toEntity(addressDTO);
+                userAddress.setId(addressDTO.getId());
+                userAddress.setUserId(existingAddress.getUserId());
+                userAddress.setUpdatedAt(LocalDateTime.now());
+
+                if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
+                    setUserAddressNotDefault(existingAddress.getUserId());
+                }
+
+                if (userAddressService.updateById(userAddress)) {
+                    successCount++;
                 }
             } catch (Exception e) {
-                log.error("更新地址失败, addressId: {}", addressDTO.getId(), e);
+                log.error("Failed to update address, addressId={}", addressDTO.getId(), e);
             }
         }
 
-        log.info("批量更新地址完成, 成功: {}/{}", successCount, addressList.size());
-        return Result.success(String.format("批量更新地址成功: %d/%d", successCount, addressList.size()), true);
+        String message = String.format("batch update completed: %d/%d", successCount, addressList.size());
+        return Result.success(message, true);
     }
 
-    /**
-     * 将用户其他地址设为非默认
-     *
-     * @param userId 用户ID
-     */
     private void setUserAddressNotDefault(Long userId) {
         LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(UserAddress::getUserId, userId);

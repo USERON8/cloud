@@ -1,4 +1,4 @@
-﻿package com.cloud.order.messaging;
+package com.cloud.order.messaging;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.messaging.MessageIdempotencyService;
@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Order message consumer.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -38,16 +38,16 @@ public class OrderMessageConsumer {
     private final OrderMessageProducer orderMessageProducer;
     private final MessageIdempotencyService messageIdempotencyService;
 
-    /**
-     * Consume payment-success events.
-     */
+    
+
+
     @Bean
     public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
         return message -> {
             PaymentSuccessEvent event = message.getPayload();
 
-            log.info("Receive payment-success event: orderId={}, orderNo={}, paymentId={}, amount={}",
-                    event.getOrderId(), event.getOrderNo(), event.getPaymentId(), event.getAmount());
+            
+
 
             try {
                 String eventId = event.getEventId();
@@ -64,7 +64,7 @@ public class OrderMessageConsumer {
                 );
 
                 if (success) {
-                    log.info("Order payment status updated: orderId={}, orderNo={}", event.getOrderId(), event.getOrderNo());
+                    
                 } else {
                     log.error("Order payment status update failed: orderId={}, orderNo={}", event.getOrderId(), event.getOrderNo());
                 }
@@ -77,9 +77,9 @@ public class OrderMessageConsumer {
         };
     }
 
-    /**
-     * Consume stock-freeze-failed events.
-     */
+    
+
+
     @Bean
     public Consumer<Message<StockFreezeFailedEvent>> stockFreezeFailedConsumer() {
         return message -> {
@@ -102,8 +102,8 @@ public class OrderMessageConsumer {
                 );
 
                 if (success) {
-                    log.info("Order cancelled due to stock-freeze-failed: orderId={}, orderNo={}",
-                            event.getOrderId(), event.getOrderNo());
+                    
+
                 } else {
                     log.error("Order cancel failed after stock-freeze-failed: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
@@ -117,9 +117,9 @@ public class OrderMessageConsumer {
         };
     }
 
-    /**
-     * Consume refund-completed events.
-     */
+    
+
+
     @Bean
     public Consumer<Message<Map<String, Object>>> refundCompletedConsumer() {
         return message -> {
@@ -130,8 +130,8 @@ public class OrderMessageConsumer {
             Long refundId = ((Number) event.get("refundId")).longValue();
             String refundNo = (String) event.get("refundNo");
 
-            log.info("Receive refund-completed event: orderId={}, orderNo={}, refundId={}, refundNo={}",
-                    orderId, orderNo, refundId, refundNo);
+            
+
 
             try {
                 String eventId = (String) event.get("eventId");
@@ -164,7 +164,7 @@ public class OrderMessageConsumer {
                 );
 
                 if (sent) {
-                    log.info("Stock-restore event sent: orderId={}, refundNo={}", orderId, refundNo);
+                    
                 } else {
                     log.error("Stock-restore event send failed: orderId={}, refundNo={}", orderId, refundNo);
                 }
@@ -174,7 +174,7 @@ public class OrderMessageConsumer {
                     order.setRefundStatus(OrderRefundStatusEnum.REFUND_SUCCESS.getCode());
                     order.setUpdatedAt(LocalDateTime.now());
                     orderService.updateById(order);
-                    log.info("Order refund status updated to success: orderId={}", orderId);
+                    
                 } else {
                     log.warn("Order not found when update refund status: orderId={}", orderId);
                 }

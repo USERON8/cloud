@@ -13,12 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * 订单消息生产者
- * 发送订单相关的事件消息
- *
- * @author what's up
- */
+
+
+
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,16 +26,16 @@ public class OrderMessageProducer {
 
     private final StreamBridge streamBridge;
 
-    /**
-     * 发送订单创建事件
-     * 通知库存服务冻结库存、支付服务创建支付
-     *
-     * @param event 订单创建事件
-     * @return 是否发送成功
-     */
+    
+
+
+
+
+
+
     public boolean sendOrderCreatedEvent(OrderCreatedEvent event) {
         try {
-            // 设置事件ID和时间戳
+            
             if (event.getEventId() == null) {
                 event.setEventId(UUID.randomUUID().toString());
             }
@@ -43,47 +43,47 @@ public class OrderMessageProducer {
                 event.setTimestamp(System.currentTimeMillis());
             }
 
-            // 构建消息头
+            
             Map<String, Object> headers = new HashMap<>();
             headers.put(MessageConst.PROPERTY_KEYS, event.getOrderNo());
             headers.put(MessageConst.PROPERTY_TAGS, "ORDER_CREATED");
             headers.put("eventId", event.getEventId());
             headers.put("eventType", "ORDER_CREATED");
 
-            // 构建消息
+            
             Message<OrderCreatedEvent> message = MessageBuilder
                     .withPayload(event)
                     .copyHeaders(headers)
                     .build();
 
-            // 发送到order-created topic
+            
             boolean result = streamBridge.send("orderCreatedProducer-out-0", message);
 
             if (result) {
-                log.info("✅ 订单创建事件发送成功: orderId={}, orderNo={}, eventId={}",
-                        event.getOrderId(), event.getOrderNo(), event.getEventId());
+                
+
             } else {
-                log.error("❌ 订单创建事件发送失败: orderId={}, orderNo={}",
+                log.error("鉂?璁㈠崟鍒涘缓浜嬩欢鍙戦€佸け璐? orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo());
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("❌ 发送订单创建事件异常: orderId={}, orderNo={}",
+            log.error("鉂?鍙戦€佽鍗曞垱寤轰簨浠跺紓甯? orderId={}, orderNo={}",
                     event.getOrderId(), event.getOrderNo(), e);
             return false;
         }
     }
 
-    /**
-     * 发送订单取消事件
-     *
-     * @param orderId 订单ID
-     * @param orderNo 订单号
-     * @param reason  取消原因
-     * @return 是否发送成功
-     */
+    
+
+
+
+
+
+
+
     public boolean sendOrderCancelledEvent(Long orderId, String orderNo, String reason) {
         try {
             Map<String, Object> payload = new HashMap<>();
@@ -105,33 +105,33 @@ public class OrderMessageProducer {
             boolean result = streamBridge.send("orderCancelledProducer-out-0", message);
 
             if (result) {
-                log.info("✅ 订单取消事件发送成功: orderId={}, orderNo={}, reason={}",
-                        orderId, orderNo, reason);
+                
+
             } else {
-                log.error("❌ 订单取消事件发送失败: orderId={}, orderNo={}",
+                log.error("鉂?璁㈠崟鍙栨秷浜嬩欢鍙戦€佸け璐? orderId={}, orderNo={}",
                         orderId, orderNo);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("❌ 发送订单取消事件异常: orderId={}, orderNo={}",
+            log.error("鉂?鍙戦€佽鍗曞彇娑堜簨浠跺紓甯? orderId={}, orderNo={}",
                     orderId, orderNo, e);
             return false;
         }
     }
 
-    /**
-     * 发送库存恢复事件
-     * 通知库存服务恢复退款订单的库存
-     *
-     * @param orderId            订单ID
-     * @param orderNo            订单号
-     * @param refundId           退款ID
-     * @param refundNo           退款单号
-     * @param productQuantityMap 商品数量映射
-     * @return 是否发送成功
-     */
+    
+
+
+
+
+
+
+
+
+
+
     public boolean sendStockRestoreEvent(Long orderId, String orderNo, Long refundId,
                                          String refundNo, Map<Long, Integer> productQuantityMap) {
         try {
@@ -157,17 +157,17 @@ public class OrderMessageProducer {
             boolean result = streamBridge.send("stockRestoreProducer-out-0", message);
 
             if (result) {
-                log.info("✅ 库存恢复事件发送成功: orderId={}, refundNo={}, products={}",
-                        orderId, refundNo, productQuantityMap.size());
+                
+
             } else {
-                log.error("❌ 库存恢复事件发送失败: orderId={}, refundNo={}",
+                log.error("鉂?搴撳瓨鎭㈠浜嬩欢鍙戦€佸け璐? orderId={}, refundNo={}",
                         orderId, refundNo);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("❌ 发送库存恢复事件异常: orderId={}, refundNo={}",
+            log.error("鉂?鍙戦€佸簱瀛樻仮澶嶄簨浠跺紓甯? orderId={}, refundNo={}",
                     orderId, refundNo, e);
             return false;
         }

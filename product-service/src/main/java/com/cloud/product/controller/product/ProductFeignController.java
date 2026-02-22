@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Internal product endpoints for service-to-service calls.
- */
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/internal/product")

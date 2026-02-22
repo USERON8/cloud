@@ -3,10 +3,10 @@ package com.cloud.common.exception;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 并发异常类
- * 用于处理并发操作导致的数据不一致情况
- */
+
+
+
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ConcurrencyException extends BusinessException {

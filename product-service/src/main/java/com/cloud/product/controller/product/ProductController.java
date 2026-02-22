@@ -23,34 +23,33 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 商品RESTful API控制器
- * 提供商品资源的CRUD操作，参考User服务标准架构
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
-@Tag(name = "商品服务", description = "商品资源的RESTful API接口")
+@Tag(name = "鍟嗗搧鏈嶅姟", description = "鍟嗗搧璧勬簮鐨凴ESTful API鎺ュ彛")
 public class ProductController {
 
     private final ProductService productService;
 
-    /**
-     * 获取商品列表（支持查询参数）
-     */
+    
+
+
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
-    @Operation(summary = "获取商品列表", description = "获取商品列表，支持分页和查询参数")
+    @Operation(summary = "鑾峰彇鍟嗗搧鍒楄〃", description = "鑾峰彇鍟嗗搧鍒楄〃锛屾敮鎸佸垎椤靛拰鏌ヨ鍙傛暟")
     public Result<PageResult<ProductVO>> getProducts(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") Integer size,
-            @Parameter(description = "商品名称") @RequestParam(required = false) String name,
-            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
-            @Parameter(description = "品牌ID") @RequestParam(required = false) Long brandId,
-            @Parameter(description = "商品状态") @RequestParam(required = false) Integer status) {
+            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "姣忛〉鏁伴噺") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "鍟嗗搧鍚嶇О") @RequestParam(required = false) String name,
+            @Parameter(description = "鍒嗙被ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "鍝佺墝ID") @RequestParam(required = false) Long brandId,
+            @Parameter(description = "鍟嗗搧鐘舵€?) @RequestParam(required = false) Integer status) {
 
         ProductPageDTO productPageDTO = new ProductPageDTO();
         productPageDTO.setCurrent(page.longValue());
@@ -63,307 +62,306 @@ public class ProductController {
         return Result.success(productService.getProductsPage(productPageDTO));
     }
 
-    /**
-     * 根据商品名称查询商品
-     */
+    
+
+
     @GetMapping("/search")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
-    @Operation(summary = "根据商品名称查询商品", description = "根据商品名称查询商品信息")
+    @Operation(summary = "鏍规嵁鍟嗗搧鍚嶇О鏌ヨ鍟嗗搧", description = "鏍规嵁鍟嗗搧鍚嶇О鏌ヨ鍟嗗搧淇℃伅")
     public Result<List<ProductVO>> findByName(
-            @Parameter(description = "商品名称") @RequestParam
-            @NotNull(message = "商品名称不能为空") String name) {
+            @Parameter(description = "鍟嗗搧鍚嶇О") @RequestParam
+            @NotNull(message = "鍟嗗搧鍚嶇О涓嶈兘涓虹┖") String name) {
         List<ProductVO> products = productService.searchProductsByName(name, null);
-        return Result.success("查询成功", products);
+        return Result.success("鏌ヨ鎴愬姛", products);
     }
 
-    /**
-     * 根据ID获取商品详情
-     */
+    
+
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
-    @Operation(summary = "获取商品详情", description = "根据商品ID获取商品详细信息")
+    @Operation(summary = "鑾峰彇鍟嗗搧璇︽儏", description = "鏍规嵁鍟嗗搧ID鑾峰彇鍟嗗搧璇︾粏淇℃伅")
     public Result<ProductVO> getProductById(
-            @Parameter(description = "商品ID") @PathVariable
-            @Positive(message = "商品ID必须为正整数") Long id) {
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @Positive(message = "鍟嗗搧ID蹇呴』涓烘鏁存暟") Long id) {
 
         ProductVO product = productService.getProductById(id);
         if (product == null) {
-            log.warn("商品不存在，商品ID: {}", id);
+            log.warn("鍟嗗搧涓嶅瓨鍦紝鍟嗗搧ID: {}", id);
             throw new ResourceNotFoundException("Product", String.valueOf(id));
         }
-        log.info("查询商品成功，商品ID: {}", id);
-        return Result.success("查询成功", product);
+        
+        return Result.success("鏌ヨ鎴愬姛", product);
     }
 
-    /**
-     * 创建商品
-     */
+    
+
+
     @PostMapping
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:create')")
-    @Operation(summary = "创建商品", description = "创建新商品")
+    @Operation(summary = "鍒涘缓鍟嗗搧", description = "鍒涘缓鏂板晢鍝?)
     public Result<Long> createProduct(
-            @Parameter(description = "商品信息") @RequestBody
-            @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO) {
+            @Parameter(description = "鍟嗗搧淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鍟嗗搧淇℃伅涓嶈兘涓虹┖") ProductRequestDTO requestDTO) {
 
         Long productId = productService.createProduct(requestDTO);
-        log.info("商品创建成功，商品ID: {}, 商品名称: {}", productId, requestDTO.getName());
-        return Result.success("商品创建成功", productId);
+        
+        return Result.success("鍟嗗搧鍒涘缓鎴愬姛", productId);
     }
 
-    /**
-     * 更新商品信息
-     */
+    
+
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "更新商品信息", description = "更新商品信息")
+    @Operation(summary = "鏇存柊鍟嗗搧淇℃伅", description = "鏇存柊鍟嗗搧淇℃伅")
     public Result<Boolean> updateProduct(
-            @Parameter(description = "商品ID") @PathVariable Long id,
-            @Parameter(description = "商品信息") @RequestBody
-            @Valid @NotNull(message = "商品信息不能为空") ProductRequestDTO requestDTO,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long id,
+            @Parameter(description = "鍟嗗搧淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鍟嗗搧淇℃伅涓嶈兘涓虹┖") ProductRequestDTO requestDTO,
             Authentication authentication) {
 
         boolean result = productService.updateProduct(id, requestDTO);
-        log.info("商品更新成功 - 商品ID: {}, 操作人: {}", id, authentication.getName());
-        return Result.success("商品更新成功", result);
+        
+        return Result.success("鍟嗗搧鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 部分更新商品信息
-     */
+    
+
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "部分更新商品信息", description = "部分更新商品信息")
+    @Operation(summary = "閮ㄥ垎鏇存柊鍟嗗搧淇℃伅", description = "閮ㄥ垎鏇存柊鍟嗗搧淇℃伅")
     public Result<Boolean> patchProduct(
-            @Parameter(description = "商品ID") @PathVariable Long id,
-            @Parameter(description = "商品信息") @RequestBody ProductRequestDTO requestDTO,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long id,
+            @Parameter(description = "鍟嗗搧淇℃伅") @RequestBody ProductRequestDTO requestDTO,
             Authentication authentication) {
 
         boolean result = productService.updateProduct(id, requestDTO);
-        log.info("商品部分更新成功 - 商品ID: {}, 操作人: {}", id, authentication.getName());
-        return Result.success("商品更新成功", result);
+        
+        return Result.success("鍟嗗搧鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 删除商品
-     */
+    
+
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "删除商品", description = "删除商品")
+    @Operation(summary = "鍒犻櫎鍟嗗搧", description = "鍒犻櫎鍟嗗搧")
     public Result<Boolean> deleteProduct(
-            @Parameter(description = "商品ID") @PathVariable
-            @Positive(message = "商品ID必须为正整数") Long id) {
+            @Parameter(description = "鍟嗗搧ID") @PathVariable
+            @Positive(message = "鍟嗗搧ID蹇呴』涓烘鏁存暟") Long id) {
 
         boolean result = productService.deleteProduct(id);
-        log.info("商品删除成功 - 商品ID: {}", id);
-        return Result.success("商品删除成功", result);
+        
+        return Result.success("鍟嗗搧鍒犻櫎鎴愬姛", result);
     }
 
-    /**
-     * 批量获取商品
-     */
+    
+
+
     @GetMapping("/batch")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
-    @Operation(summary = "批量获取商品", description = "根据ID列表批量获取商品信息")
+    @Operation(summary = "鎵归噺鑾峰彇鍟嗗搧", description = "鏍规嵁ID鍒楄〃鎵归噺鑾峰彇鍟嗗搧淇℃伅")
     public Result<List<ProductVO>> getProductsByIds(
-            @Parameter(description = "商品ID列表") @RequestParam
-            @NotNull(message = "商品ID列表不能为空") List<Long> ids) {
+            @Parameter(description = "鍟嗗搧ID鍒楄〃") @RequestParam
+            @NotNull(message = "鍟嗗搧ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids) {
 
-        BatchValidationUtils.validateIdList(ids, "批量查询商品");
+        BatchValidationUtils.validateIdList(ids, "鎵归噺鏌ヨ鍟嗗搧");
         List<ProductVO> products = productService.getProductsByIds(ids);
-        log.info("批量查询商品成功 - 数量: {}", products.size());
-        return Result.success("查询成功", products);
+        
+        return Result.success("鏌ヨ鎴愬姛", products);
     }
 
-    /**
-     * 获取商品档案
-     */
+    
+
+
     @GetMapping("/{id}/profile")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
-    @Operation(summary = "获取商品档案", description = "获取商品详细档案信息")
+    @Operation(summary = "鑾峰彇鍟嗗搧妗ｆ", description = "鑾峰彇鍟嗗搧璇︾粏妗ｆ淇℃伅")
     public Result<ProductVO> getProductProfile(
-            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long id,
             Authentication authentication) {
 
         ProductVO productProfile = productService.getProductById(id);
-        log.info("查询商品档案成功 - 商品ID: {}", id);
-        return Result.success("查询成功", productProfile);
+        
+        return Result.success("鏌ヨ鎴愬姛", productProfile);
     }
 
-    /**
-     * 更新商品档案
-     */
+    
+
+
     @PutMapping("/{id}/profile")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "更新商品档案", description = "更新商品详细档案信息")
+    @Operation(summary = "鏇存柊鍟嗗搧妗ｆ", description = "鏇存柊鍟嗗搧璇︾粏妗ｆ淇℃伅")
     public Result<Boolean> updateProductProfile(
-            @Parameter(description = "商品ID") @PathVariable Long id,
-            @Parameter(description = "商品档案信息") @RequestBody
-            @Valid @NotNull(message = "商品档案信息不能为空") ProductRequestDTO profileDTO,
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long id,
+            @Parameter(description = "鍟嗗搧妗ｆ淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鍟嗗搧妗ｆ淇℃伅涓嶈兘涓虹┖") ProductRequestDTO profileDTO,
             Authentication authentication) {
 
         boolean result = productService.updateProduct(id, profileDTO);
-        log.info("商品档案更新成功 - 商品ID: {}, 操作人: {}", id, authentication.getName());
-        return Result.success("商品档案更新成功", result);
+        
+        return Result.success("鍟嗗搧妗ｆ鏇存柊鎴愬姛", result);
     }
 
-    /**
-     * 更新商品状态
-     */
+    
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "更新商品状态", description = "启用或禁用商品")
+    @Operation(summary = "鏇存柊鍟嗗搧鐘舵€?, description = "鍚敤鎴栫鐢ㄥ晢鍝?)
     public Result<Boolean> updateProductStatus(
-            @Parameter(description = "商品ID") @PathVariable Long id,
-            @Parameter(description = "商品状态") @RequestParam Integer status) {
+            @Parameter(description = "鍟嗗搧ID") @PathVariable Long id,
+            @Parameter(description = "鍟嗗搧鐘舵€?) @RequestParam Integer status) {
 
         boolean result;
         if (status == 1) {
             result = productService.enableProduct(id);
-            log.info("商品上架成功 - 商品ID: {}", id);
+            
         } else {
             result = productService.disableProduct(id);
-            log.info("商品下架成功 - 商品ID: {}", id);
+            
         }
-        return Result.success("商品状态更新成功", result);
+        return Result.success("鍟嗗搧鐘舵€佹洿鏂版垚鍔?, result);
     }
 
-    /**
-     * 根据分类查询商品
-     */
+    
+
+
     @GetMapping("/category/{categoryId}")
-    @Operation(summary = "根据分类查询商品", description = "获取指定分类下的商品列表")
+    @Operation(summary = "鏍规嵁鍒嗙被鏌ヨ鍟嗗搧", description = "鑾峰彇鎸囧畾鍒嗙被涓嬬殑鍟嗗搧鍒楄〃")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> getProductsByCategoryId(
-            @Parameter(description = "分类ID", required = true) @PathVariable
-            @NotNull(message = "分类ID不能为空")
-            @Positive(message = "分类ID必须为正整数") Long categoryId,
+            @Parameter(description = "鍒嗙被ID", required = true) @PathVariable
+            @NotNull(message = "鍒嗙被ID涓嶈兘涓虹┖")
+            @Positive(message = "鍒嗙被ID蹇呴』涓烘鏁存暟") Long categoryId,
 
-            @Parameter(description = "商品状态：1-上架，0-下架") @RequestParam(value = "status", required = false) Integer status) {
+            @Parameter(description = "鍟嗗搧鐘舵€侊細1-涓婃灦锛?-涓嬫灦") @RequestParam(value = "status", required = false) Integer status) {
 
-        log.info("查询分类商品 - 分类ID: {}, 状态: {}", categoryId, status);
+        
         List<ProductVO> products = productService.getProductsByCategoryId(categoryId, status);
         return Result.success(products);
     }
 
-    /**
-     * 根据品牌查询商品
-     */
+    
+
+
     @GetMapping("/brand/{brandId}")
-    @Operation(summary = "根据品牌查询商品", description = "获取指定品牌下的商品列表")
+    @Operation(summary = "鏍规嵁鍝佺墝鏌ヨ鍟嗗搧", description = "鑾峰彇鎸囧畾鍝佺墝涓嬬殑鍟嗗搧鍒楄〃")
     @PreAuthorize("hasAuthority('SCOPE_product:read')")
     public Result<List<ProductVO>> getProductsByBrandId(
-            @Parameter(description = "品牌ID", required = true) @PathVariable
-            @NotNull(message = "品牌ID不能为空")
-            @Positive(message = "品牌ID必须为正整数") Long brandId,
+            @Parameter(description = "鍝佺墝ID", required = true) @PathVariable
+            @NotNull(message = "鍝佺墝ID涓嶈兘涓虹┖")
+            @Positive(message = "鍝佺墝ID蹇呴』涓烘鏁存暟") Long brandId,
 
-            @Parameter(description = "商品状态：1-上架，0-下架") @RequestParam(value = "status", required = false) Integer status) {
+            @Parameter(description = "鍟嗗搧鐘舵€侊細1-涓婃灦锛?-涓嬫灦") @RequestParam(value = "status", required = false) Integer status) {
 
-        log.info("查询品牌商品 - 品牌ID: {}, 状态: {}", brandId, status);
+        
         List<ProductVO> products = productService.getProductsByBrandId(brandId, status);
         return Result.success(products);
     }
 
-    /**
-     * 批量删除商品
-     */
+    
+
+
     @DeleteMapping("/batch")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "批量删除商品", description = "根据ID列表批量删除商品")
+    @Operation(summary = "鎵归噺鍒犻櫎鍟嗗搧", description = "鏍规嵁ID鍒楄〃鎵归噺鍒犻櫎鍟嗗搧")
     public Result<Boolean> batchDeleteProducts(
-            @Parameter(description = "商品ID列表", required = true) @RequestBody
-            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+            @Parameter(description = "鍟嗗搧ID鍒楄〃", required = true) @RequestBody
+            @NotEmpty(message = "ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids) {
 
-        BatchValidationUtils.validateIdList(ids, "批量删除商品");
-        log.info("开始批量删除商品 - 数量: {}", ids.size());
+        BatchValidationUtils.validateIdList(ids, "鎵归噺鍒犻櫎鍟嗗搧");
+        
         Boolean success = productService.batchDeleteProducts(ids);
-        log.info("批量删除商品完成 - 成功: {}/{}", ids.size(), ids.size());
-        return Result.success("批量删除商品成功", success);
+        
+        return Result.success("鎵归噺鍒犻櫎鍟嗗搧鎴愬姛", success);
     }
 
-    /**
-     * 批量上架商品
-     */
+    
+
+
     @PutMapping("/batch/enable")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "批量上架商品", description = "批量将商品设为上架状态")
+    @Operation(summary = "鎵归噺涓婃灦鍟嗗搧", description = "鎵归噺灏嗗晢鍝佽涓轰笂鏋剁姸鎬?)
     public Result<Boolean> batchEnableProducts(
-            @Parameter(description = "商品ID列表", required = true) @RequestBody
-            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+            @Parameter(description = "鍟嗗搧ID鍒楄〃", required = true) @RequestBody
+            @NotEmpty(message = "ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids) {
 
         if (ids.size() > 100) {
-            return Result.error("批量操作数量不能超过100个");
+            return Result.error("鎵归噺鎿嶄綔鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("开始批量上架商品 - 数量: {}", ids.size());
+        
         Boolean success = productService.batchEnableProducts(ids);
-        log.info("批量上架商品完成 - 成功: {}/{}", ids.size(), ids.size());
-        return Result.success("批量上架商品成功", success);
+        
+        return Result.success("鎵归噺涓婃灦鍟嗗搧鎴愬姛", success);
     }
 
-    /**
-     * 批量下架商品
-     */
+    
+
+
     @PutMapping("/batch/disable")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "批量下架商品", description = "批量将商品设为下架状态")
+    @Operation(summary = "鎵归噺涓嬫灦鍟嗗搧", description = "鎵归噺灏嗗晢鍝佽涓轰笅鏋剁姸鎬?)
     public Result<Boolean> batchDisableProducts(
-            @Parameter(description = "商品ID列表", required = true) @RequestBody
-            @NotEmpty(message = "ID列表不能为空") List<Long> ids) {
+            @Parameter(description = "鍟嗗搧ID鍒楄〃", required = true) @RequestBody
+            @NotEmpty(message = "ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids) {
 
         if (ids.size() > 100) {
-            return Result.error("批量操作数量不能超过100个");
+            return Result.error("鎵归噺鎿嶄綔鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("开始批量下架商品 - 数量: {}", ids.size());
+        
         Boolean success = productService.batchDisableProducts(ids);
-        log.info("批量下架商品完成 - 成功: {}/{}", ids.size(), ids.size());
-        return Result.success("批量下架商品成功", success);
+        
+        return Result.success("鎵归噺涓嬫灦鍟嗗搧鎴愬姛", success);
     }
 
-    /**
-     * 批量创建商品
-     */
+    
+
+
     @PostMapping("/batch")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:create')")
-    @Operation(summary = "批量创建商品", description = "批量创建多个商品")
+    @Operation(summary = "鎵归噺鍒涘缓鍟嗗搧", description = "鎵归噺鍒涘缓澶氫釜鍟嗗搧")
     public Result<Integer> batchCreateProducts(
-            @Parameter(description = "商品信息列表", required = true) @RequestBody
-            @Valid @NotEmpty(message = "商品信息列表不能为空") List<ProductRequestDTO> productList) {
+            @Parameter(description = "鍟嗗搧淇℃伅鍒楄〃", required = true) @RequestBody
+            @Valid @NotEmpty(message = "鍟嗗搧淇℃伅鍒楄〃涓嶈兘涓虹┖") List<ProductRequestDTO> productList) {
 
         if (productList.size() > 100) {
-            return Result.error("批量创建数量不能超过100个");
+            return Result.error("鎵归噺鍒涘缓鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("开始批量创建商品 - 数量: {}", productList.size());
+        
         int successCount = 0;
         for (ProductRequestDTO requestDTO : productList) {
             try {
                 productService.createProduct(requestDTO);
                 successCount++;
             } catch (Exception e) {
-                log.error("创建商品失败 - 商品名称: {}", requestDTO.getName(), e);
+                log.error("鍒涘缓鍟嗗搧澶辫触 - 鍟嗗搧鍚嶇О: {}", requestDTO.getName(), e);
             }
         }
 
-        log.info("批量创建商品完成 - 成功: {}/{}", successCount, productList.size());
-        return Result.success(String.format("批量创建商品成功: %d/%d", successCount, productList.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鍒涘缓鍟嗗搧鎴愬姛: %d/%d", successCount, productList.size()), successCount);
     }
 
-    /**
-     * 批量更新商品
-     */
+    
+
+
     @PutMapping("/batch")
     @PreAuthorize("hasRole('MERCHANT') or hasRole('ADMIN') and hasAuthority('SCOPE_product:write')")
-    @Operation(summary = "批量更新商品", description = "批量更新多个商品信息")
+    @Operation(summary = "鎵归噺鏇存柊鍟嗗搧", description = "鎵归噺鏇存柊澶氫釜鍟嗗搧淇℃伅")
     public Result<Integer> batchUpdateProducts(
-            @Parameter(description = "商品更新信息列表", required = true) @RequestBody
-            @Valid @NotEmpty(message = "商品信息列表不能为空") List<ProductUpdateRequest> productList) {
+            @Parameter(description = "鍟嗗搧鏇存柊淇℃伅鍒楄〃", required = true) @RequestBody
+            @Valid @NotEmpty(message = "鍟嗗搧淇℃伅鍒楄〃涓嶈兘涓虹┖") List<ProductUpdateRequest> productList) {
 
         if (productList.size() > 100) {
-            return Result.error("批量更新数量不能超过100个");
+            return Result.error("鎵归噺鏇存柊鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
-        log.info("开始批量更新商品 - 数量: {}", productList.size());
+        
         int successCount = 0;
         for (ProductUpdateRequest request : productList) {
             try {
@@ -372,17 +370,17 @@ public class ProductController {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.error("更新商品失败 - 商品ID: {}", request.getId(), e);
+                log.error("鏇存柊鍟嗗搧澶辫触 - 鍟嗗搧ID: {}", request.getId(), e);
             }
         }
 
-        log.info("批量更新商品完成 - 成功: {}/{}", successCount, productList.size());
-        return Result.success(String.format("批量更新商品成功: %d/%d", successCount, productList.size()), successCount);
+        
+        return Result.success(String.format("鎵归噺鏇存柊鍟嗗搧鎴愬姛: %d/%d", successCount, productList.size()), successCount);
     }
 
-    /**
-     * 商品批量更新请求
-     */
+    
+
+
     public static class ProductUpdateRequest {
         private Long id;
         private ProductRequestDTO requestDTO;

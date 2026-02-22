@@ -17,34 +17,33 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 商品分类RESTful API控制器
- * 提供商品分类资源的CRUD操作
- *
- * @author what's up
- */
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/category")
 @RequiredArgsConstructor
-@Tag(name = "商品分类服务", description = "商品分类资源的RESTful API接口")
+@Tag(name = "鍟嗗搧鍒嗙被鏈嶅姟", description = "鍟嗗搧鍒嗙被璧勬簮鐨凴ESTful API鎺ュ彛")
 public class CategoryController {
 
     private final CategoryService categoryService;
 
-    /**
-     * 分页查询商品分类
-     */
+    
+
+
     @GetMapping
-    @Operation(summary = "分页查询商品分类", description = "获取商品分类列表，支持分页")
+    @Operation(summary = "鍒嗛〉鏌ヨ鍟嗗搧鍒嗙被", description = "鑾峰彇鍟嗗搧鍒嗙被鍒楄〃锛屾敮鎸佸垎椤?)
     public Result<PageResult<CategoryDTO>> getCategories(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1")
-            @Min(value = 1, message = "页码必须大于0") Integer page,
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10")
-            @Min(value = 1, message = "每页数量必须大于0")
-            @Max(value = 100, message = "每页数量不能超过100") Integer size,
-            @Parameter(description = "父分类ID") @RequestParam(required = false) Long parentId,
-            @Parameter(description = "分类状态") @RequestParam(required = false) Integer status) {
+            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "椤电爜蹇呴』澶т簬0") Integer page,
+            @Parameter(description = "姣忛〉鏁伴噺") @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "姣忛〉鏁伴噺蹇呴』澶т簬0")
+            @Max(value = 100, message = "姣忛〉鏁伴噺涓嶈兘瓒呰繃100") Integer size,
+            @Parameter(description = "鐖跺垎绫籌D") @RequestParam(required = false) Long parentId,
+            @Parameter(description = "鍒嗙被鐘舵€?) @RequestParam(required = false) Integer status) {
 
         try {
             Page<CategoryDTO> pageResult = categoryService.getCategoriesPage(page, size, parentId, status);
@@ -56,224 +55,221 @@ public class CategoryController {
             );
             return Result.success(result);
         } catch (Exception e) {
-            log.error("分页查询商品分类失败", e);
-            return Result.error("分页查询商品分类失败: " + e.getMessage());
+            log.error("鍒嗛〉鏌ヨ鍟嗗搧鍒嗙被澶辫触", e);
+            return Result.error("鍒嗛〉鏌ヨ鍟嗗搧鍒嗙被澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 根据ID获取商品分类详情
-     */
+    
+
+
     @GetMapping("/{id}")
-    @Operation(summary = "获取商品分类详情", description = "根据分类ID获取详细信息")
+    @Operation(summary = "鑾峰彇鍟嗗搧鍒嗙被璇︽儏", description = "鏍规嵁鍒嗙被ID鑾峰彇璇︾粏淇℃伅")
     public Result<CategoryDTO> getCategoryById(
-            @Parameter(description = "分类ID") @PathVariable
-            @NotNull(message = "分类ID不能为空")
-            @Positive(message = "分类ID必须为正整数") Long id) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable
+            @NotNull(message = "鍒嗙被ID涓嶈兘涓虹┖")
+            @Positive(message = "鍒嗙被ID蹇呴』涓烘鏁存暟") Long id) {
 
         try {
             CategoryDTO category = categoryService.getCategoryById(id);
             if (category == null) {
-                return Result.error("商品分类不存在");
+                return Result.error("鍟嗗搧鍒嗙被涓嶅瓨鍦?);
             }
-            return Result.success("查询成功", category);
+            return Result.success("鏌ヨ鎴愬姛", category);
         } catch (Exception e) {
-            log.error("获取商品分类详情失败，分类ID: {}", id, e);
-            return Result.error("获取商品分类详情失败: " + e.getMessage());
+            log.error("鑾峰彇鍟嗗搧鍒嗙被璇︽儏澶辫触锛屽垎绫籌D: {}", id, e);
+            return Result.error("鑾峰彇鍟嗗搧鍒嗙被璇︽儏澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取树形分类结构
-     */
+    
+
+
     @GetMapping("/tree")
-    @Operation(summary = "获取树形分类结构", description = "获取完整的树形商品分类结构")
+    @Operation(summary = "鑾峰彇鏍戝舰鍒嗙被缁撴瀯", description = "鑾峰彇瀹屾暣鐨勬爲褰㈠晢鍝佸垎绫荤粨鏋?)
     public Result<List<CategoryDTO>> getCategoryTree(
-            @Parameter(description = "是否只返回启用的分类") @RequestParam(defaultValue = "false") Boolean enabledOnly) {
+            @Parameter(description = "鏄惁鍙繑鍥炲惎鐢ㄧ殑鍒嗙被") @RequestParam(defaultValue = "false") Boolean enabledOnly) {
 
         try {
             List<CategoryDTO> tree = categoryService.getCategoryTree(enabledOnly);
-            return Result.success("查询成功", tree);
+            return Result.success("鏌ヨ鎴愬姛", tree);
         } catch (Exception e) {
-            log.error("获取树形分类结构失败", e);
-            return Result.error("获取树形分类结构失败: " + e.getMessage());
+            log.error("鑾峰彇鏍戝舰鍒嗙被缁撴瀯澶辫触", e);
+            return Result.error("鑾峰彇鏍戝舰鍒嗙被缁撴瀯澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取子分类列表
-     */
+    
+
     @GetMapping("/{id}/children")
-    @Operation(summary = "获取子分类列表", description = "获取指定分类下的所有子分类")
+    @Operation(summary = "鑾峰彇瀛愬垎绫诲垪琛?, description = "鑾峰彇鎸囧畾鍒嗙被涓嬬殑鎵€鏈夊瓙鍒嗙被")
     public Result<List<CategoryDTO>> getChildrenCategories(
-            @Parameter(description = "父分类ID") @PathVariable Long id,
-            @Parameter(description = "是否递归获取") @RequestParam(defaultValue = "false") Boolean recursive) {
+            @Parameter(description = "鐖跺垎绫籌D") @PathVariable Long id,
+            @Parameter(description = "鏄惁閫掑綊鑾峰彇") @RequestParam(defaultValue = "false") Boolean recursive) {
 
         try {
             List<CategoryDTO> children = categoryService.getChildrenCategories(id, recursive);
-            return Result.success("查询成功", children);
+            return Result.success("鏌ヨ鎴愬姛", children);
         } catch (Exception e) {
-            log.error("获取子分类列表失败，父分类ID: {}", id, e);
-            return Result.error("获取子分类列表失败: " + e.getMessage());
+            log.error("鑾峰彇瀛愬垎绫诲垪琛ㄥけ璐ワ紝鐖跺垎绫籌D: {}", id, e);
+            return Result.error("鑾峰彇瀛愬垎绫诲垪琛ㄥけ璐? " + e.getMessage());
         }
     }
 
-    /**
-     * 创建商品分类
-     */
+    
+
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "创建商品分类", description = "创建新的商品分类")
+    @Operation(summary = "鍒涘缓鍟嗗搧鍒嗙被", description = "鍒涘缓鏂扮殑鍟嗗搧鍒嗙被")
     public Result<CategoryDTO> createCategory(
-            @Parameter(description = "分类信息") @RequestBody
-            @Valid @NotNull(message = "分类信息不能为空") CategoryDTO categoryDTO) {
+            @Parameter(description = "鍒嗙被淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鍒嗙被淇℃伅涓嶈兘涓虹┖") CategoryDTO categoryDTO) {
 
         try {
             CategoryDTO created = categoryService.createCategory(categoryDTO);
-            return Result.success("商品分类创建成功", created);
+            return Result.success("鍟嗗搧鍒嗙被鍒涘缓鎴愬姛", created);
         } catch (Exception e) {
-            log.error("创建商品分类失败", e);
-            return Result.error("创建商品分类失败: " + e.getMessage());
+            log.error("鍒涘缓鍟嗗搧鍒嗙被澶辫触", e);
+            return Result.error("鍒涘缓鍟嗗搧鍒嗙被澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新商品分类
-     */
+    
+
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "更新商品分类", description = "更新商品分类信息")
+    @Operation(summary = "鏇存柊鍟嗗搧鍒嗙被", description = "鏇存柊鍟嗗搧鍒嗙被淇℃伅")
     public Result<Boolean> updateCategory(
-            @Parameter(description = "分类ID") @PathVariable Long id,
-            @Parameter(description = "分类信息") @RequestBody
-            @Valid @NotNull(message = "分类信息不能为空") CategoryDTO categoryDTO) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable Long id,
+            @Parameter(description = "鍒嗙被淇℃伅") @RequestBody
+            @Valid @NotNull(message = "鍒嗙被淇℃伅涓嶈兘涓虹┖") CategoryDTO categoryDTO) {
 
         categoryDTO.setId(id);
 
         try {
             boolean result = categoryService.updateCategory(categoryDTO);
-            return Result.success("商品分类更新成功", result);
+            return Result.success("鍟嗗搧鍒嗙被鏇存柊鎴愬姛", result);
         } catch (Exception e) {
-            log.error("更新商品分类失败，分类ID: {}", id, e);
-            return Result.error("更新商品分类失败: " + e.getMessage());
+            log.error("鏇存柊鍟嗗搧鍒嗙被澶辫触锛屽垎绫籌D: {}", id, e);
+            return Result.error("鏇存柊鍟嗗搧鍒嗙被澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 删除商品分类
-     */
+    
+
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "删除商品分类", description = "删除商品分类（逻辑删除）")
+    @Operation(summary = "鍒犻櫎鍟嗗搧鍒嗙被", description = "鍒犻櫎鍟嗗搧鍒嗙被锛堥€昏緫鍒犻櫎锛?)
     public Result<Boolean> deleteCategory(
-            @Parameter(description = "分类ID") @PathVariable
-            @NotNull(message = "分类ID不能为空") Long id,
-            @Parameter(description = "是否删除子分类") @RequestParam(defaultValue = "false") Boolean cascade) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable
+            @NotNull(message = "鍒嗙被ID涓嶈兘涓虹┖") Long id,
+            @Parameter(description = "鏄惁鍒犻櫎瀛愬垎绫?) @RequestParam(defaultValue = "false") Boolean cascade) {
 
         try {
             boolean result = categoryService.deleteCategory(id, cascade);
-            return Result.success("删除成功", result);
+            return Result.success("鍒犻櫎鎴愬姛", result);
         } catch (Exception e) {
-            log.error("删除商品分类失败，分类ID: {}", id, e);
-            return Result.error("删除失败: " + e.getMessage());
+            log.error("鍒犻櫎鍟嗗搧鍒嗙被澶辫触锛屽垎绫籌D: {}", id, e);
+            return Result.error("鍒犻櫎澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新分类状态
-     */
+    
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "更新分类状态", description = "启用或禁用分类")
+    @Operation(summary = "鏇存柊鍒嗙被鐘舵€?, description = "鍚敤鎴栫鐢ㄥ垎绫?)
     public Result<Boolean> updateCategoryStatus(
-            @Parameter(description = "分类ID") @PathVariable Long id,
-            @Parameter(description = "分类状态") @RequestParam Integer status) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable Long id,
+            @Parameter(description = "鍒嗙被鐘舵€?) @RequestParam Integer status) {
 
         try {
             boolean result = categoryService.updateCategoryStatus(id, status);
-            return Result.success("状态更新成功", result);
+            return Result.success("鐘舵€佹洿鏂版垚鍔?, result);
         } catch (Exception e) {
-            log.error("更新分类状态失败，分类ID: {}, 状态: {}", id, status, e);
-            return Result.error("更新状态失败: " + e.getMessage());
+            log.error("鏇存柊鍒嗙被鐘舵€佸け璐ワ紝鍒嗙被ID: {}, 鐘舵€? {}", id, status, e);
+            return Result.error("鏇存柊鐘舵€佸け璐? " + e.getMessage());
         }
     }
 
-    /**
-     * 更新分类排序
-     */
+    
+
+
     @PatchMapping("/{id}/sort")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "更新分类排序", description = "更新分类的排序值")
+    @Operation(summary = "鏇存柊鍒嗙被鎺掑簭", description = "鏇存柊鍒嗙被鐨勬帓搴忓€?)
     public Result<Boolean> updateCategorySort(
-            @Parameter(description = "分类ID") @PathVariable Long id,
-            @Parameter(description = "排序值") @RequestParam Integer sort) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable Long id,
+            @Parameter(description = "鎺掑簭鍊?) @RequestParam Integer sort) {
 
         try {
             boolean result = categoryService.updateCategorySort(id, sort);
-            return Result.success("排序更新成功", result);
+            return Result.success("鎺掑簭鏇存柊鎴愬姛", result);
         } catch (Exception e) {
-            log.error("更新分类排序失败，分类ID: {}, 排序: {}", id, sort, e);
-            return Result.error("更新排序失败: " + e.getMessage());
+            log.error("鏇存柊鍒嗙被鎺掑簭澶辫触锛屽垎绫籌D: {}, 鎺掑簭: {}", id, sort, e);
+            return Result.error("鏇存柊鎺掑簭澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 移动分类到新的父分类
-     */
+    
+
+
     @PatchMapping("/{id}/move")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "移动分类", description = "将分类移动到新的父分类下")
+    @Operation(summary = "绉诲姩鍒嗙被", description = "灏嗗垎绫荤Щ鍔ㄥ埌鏂扮殑鐖跺垎绫讳笅")
     public Result<Boolean> moveCategory(
-            @Parameter(description = "分类ID") @PathVariable Long id,
-            @Parameter(description = "新父分类ID") @RequestParam Long newParentId) {
+            @Parameter(description = "鍒嗙被ID") @PathVariable Long id,
+            @Parameter(description = "鏂扮埗鍒嗙被ID") @RequestParam Long newParentId) {
 
         try {
             boolean result = categoryService.moveCategory(id, newParentId);
-            return Result.success("移动成功", result);
+            return Result.success("绉诲姩鎴愬姛", result);
         } catch (Exception e) {
-            log.error("移动分类失败，分类ID: {}, 新父分类ID: {}", id, newParentId, e);
-            return Result.error("移动失败: " + e.getMessage());
+            log.error("绉诲姩鍒嗙被澶辫触锛屽垎绫籌D: {}, 鏂扮埗鍒嗙被ID: {}", id, newParentId, e);
+            return Result.error("绉诲姩澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 批量删除分类
-     */
+    
+
+
     @DeleteMapping("/batch")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "批量删除分类", description = "批量删除商品分类")
+    @Operation(summary = "鎵归噺鍒犻櫎鍒嗙被", description = "鎵归噺鍒犻櫎鍟嗗搧鍒嗙被")
     public Result<Boolean> deleteCategoriesBatch(
-            @Parameter(description = "分类ID列表") @RequestBody
-            @NotNull(message = "分类ID列表不能为空")
-            @NotEmpty(message = "分类ID列表不能为空") List<Long> ids) {
+            @Parameter(description = "鍒嗙被ID鍒楄〃") @RequestBody
+            @NotNull(message = "鍒嗙被ID鍒楄〃涓嶈兘涓虹┖")
+            @NotEmpty(message = "鍒嗙被ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids) {
 
         try {
             boolean result = categoryService.deleteCategoriesBatch(ids);
-            return Result.success("批量删除成功", result);
+            return Result.success("鎵归噺鍒犻櫎鎴愬姛", result);
         } catch (Exception e) {
-            log.error("批量删除分类失败，分类IDs: {}", ids, e);
-            return Result.error("批量删除失败: " + e.getMessage());
+            log.error("鎵归噺鍒犻櫎鍒嗙被澶辫触锛屽垎绫籌Ds: {}", ids, e);
+            return Result.error("鎵归噺鍒犻櫎澶辫触: " + e.getMessage());
         }
     }
 
-    /**
-     * 批量更新分类状态
-     */
+    
+
     @PatchMapping("/batch/status")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "批量更新分类状态", description = "批量启用或禁用分类")
+    @Operation(summary = "鎵归噺鏇存柊鍒嗙被鐘舵€?, description = "鎵归噺鍚敤鎴栫鐢ㄥ垎绫?)
     public Result<Integer> updateCategoryStatusBatch(
-            @Parameter(description = "分类ID列表") @RequestParam
-            @NotNull(message = "分类ID列表不能为空") List<Long> ids,
-            @Parameter(description = "分类状态") @RequestParam
-            @NotNull(message = "分类状态不能为空") Integer status) {
+            @Parameter(description = "鍒嗙被ID鍒楄〃") @RequestParam
+            @NotNull(message = "鍒嗙被ID鍒楄〃涓嶈兘涓虹┖") List<Long> ids,
+            @Parameter(description = "鍒嗙被鐘舵€?) @RequestParam
+            @NotNull(message = "鍒嗙被鐘舵€佷笉鑳戒负绌?) Integer status) {
 
         if (ids == null || ids.isEmpty()) {
-            return Result.badRequest("分类ID列表不能为空");
+            return Result.badRequest("鍒嗙被ID鍒楄〃涓嶈兘涓虹┖");
         }
 
         if (ids.size() > 100) {
-            return Result.badRequest("批量操作数量不能超过100个");
+            return Result.badRequest("鎵归噺鎿嶄綔鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
         try {
@@ -283,26 +279,26 @@ public class CategoryController {
                     successCount++;
                 }
             }
-            log.info("批量更新分类状态完成, 成功: {}/{}", successCount, ids.size());
-            return Result.success(String.format("批量更新分类状态成功: %d/%d", successCount, ids.size()), successCount);
+            
+            return Result.success(String.format("鎵归噺鏇存柊鍒嗙被鐘舵€佹垚鍔? %d/%d", successCount, ids.size()), successCount);
         } catch (Exception e) {
-            log.error("批量更新分类状态失败, IDs: {}", ids, e);
-            return Result.error("批量更新状态失败: " + e.getMessage());
+            log.error("鎵归噺鏇存柊鍒嗙被鐘舵€佸け璐? IDs: {}", ids, e);
+            return Result.error("鎵归噺鏇存柊鐘舵€佸け璐? " + e.getMessage());
         }
     }
 
-    /**
-     * 批量创建分类
-     */
+    
+
+
     @PostMapping("/batch")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
-    @Operation(summary = "批量创建分类", description = "批量创建多个分类")
+    @Operation(summary = "鎵归噺鍒涘缓鍒嗙被", description = "鎵归噺鍒涘缓澶氫釜鍒嗙被")
     public Result<Integer> createCategoriesBatch(
-            @Parameter(description = "分类信息列表") @RequestBody
-            @Valid @NotEmpty(message = "分类信息列表不能为空") List<CategoryDTO> categoryList) {
+            @Parameter(description = "鍒嗙被淇℃伅鍒楄〃") @RequestBody
+            @Valid @NotEmpty(message = "鍒嗙被淇℃伅鍒楄〃涓嶈兘涓虹┖") List<CategoryDTO> categoryList) {
 
         if (categoryList.size() > 100) {
-            return Result.badRequest("批量创建数量不能超过100个");
+            return Result.badRequest("鎵归噺鍒涘缓鏁伴噺涓嶈兘瓒呰繃100涓?);
         }
 
         try {
@@ -312,14 +308,14 @@ public class CategoryController {
                     categoryService.createCategory(categoryDTO);
                     successCount++;
                 } catch (Exception e) {
-                    log.error("创建分类失败, name: {}", categoryDTO.getName(), e);
+                    log.error("鍒涘缓鍒嗙被澶辫触, name: {}", categoryDTO.getName(), e);
                 }
             }
-            log.info("批量创建分类完成, 成功: {}/{}", successCount, categoryList.size());
-            return Result.success(String.format("批量创建分类成功: %d/%d", successCount, categoryList.size()), successCount);
+            
+            return Result.success(String.format("鎵归噺鍒涘缓鍒嗙被鎴愬姛: %d/%d", successCount, categoryList.size()), successCount);
         } catch (Exception e) {
-            log.error("批量创建分类失败", e);
-            return Result.error("批量创建失败: " + e.getMessage());
+            log.error("鎵归噺鍒涘缓鍒嗙被澶辫触", e);
+            return Result.error("鎵归噺鍒涘缓澶辫触: " + e.getMessage());
         }
     }
 }

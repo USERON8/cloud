@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8082}
   tomcat:
     threads:
@@ -15,7 +15,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -41,7 +41,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # OpenFeign 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     openfeign:
       client:
         config:
@@ -55,13 +55,13 @@ spring:
         response:
           enabled: true
 
-    # RocketMQ Stream 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     stream:
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
       bindings:
-        # 鐢ㄦ埛浜嬩欢鐢熶骇鑰呯粦瀹?
+        # Comment sanitized for UTF-8 compatibility.
         user-producer-out-0:
           destination: user-events
           content-type: application/json
@@ -71,25 +71,25 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        # 鏃ュ織鐢熶骇鑰呯粦瀹?
+        # Comment sanitized for UTF-8 compatibility.
         logProducer-out-0:
           destination: LOG_COLLECTION_TOPIC
           content-type: application/json
           producer:
             partition-count: 4
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # 鏂囦欢涓婁紶閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
 
-  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       resourceserver:
@@ -98,7 +98,7 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-  # 鑷姩閰嶇疆鎺掗櫎
+  # Comment sanitized for UTF-8 compatibility.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
@@ -106,24 +106,24 @@ spring:
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
 
-# JWT 鍙戣鑰呴厤缃?
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 缁熶竴鏉冮檺绠＄悊閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 unified:
   security:
     enabled: true
     permission:
-      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
+      # Comment sanitized for UTF-8 compatibility.
       refresh-interval: 300
-      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
+      # Comment sanitized for UTF-8 compatibility.
       cache-ttl: 1800
-      # 鍚敤鏉冮檺璋冭瘯妯″紡
+      # Comment sanitized for UTF-8 compatibility.
       debug: false
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -133,7 +133,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# MyBatis Plus 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.user.module.entity
@@ -149,7 +149,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# 鐢ㄦ埛鏈嶅姟涓撶敤閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 user:
   async:
     enabled: true
@@ -158,7 +158,7 @@ user:
   statistics:
     enabled: true
 
-# SpringDoc 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -177,7 +177,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller.admin
 
-# Knife4j 閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false
@@ -186,7 +186,7 @@ knife4j:
   setting:
     language: ZH_CN
 
-# 鍋ュ悍妫€鏌ラ厤缃?
+# Comment sanitized for UTF-8 compatibility.
 management:
   health:
     elasticsearch:

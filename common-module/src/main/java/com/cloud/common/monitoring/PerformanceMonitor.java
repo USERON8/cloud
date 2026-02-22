@@ -25,33 +25,33 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * 性能监控组件
- * 提供应用性能指标收集、监控和报警功能
- *
- * @author what's up
- */
+
+
+
+
+
+
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "performance.monitoring.enabled", havingValue = "true", matchIfMissing = true)
 public class PerformanceMonitor implements MeterBinder, HealthIndicator {
 
-    // 报警阈值
-    private static final double ERROR_RATE_THRESHOLD = 0.05; // 5% 错误率阈值
-    private static final long RESPONSE_TIME_THRESHOLD = 2000; // 2秒响应时间阈值
-    private static final double MEMORY_USAGE_THRESHOLD = 0.85; // 85% 内存使用率阈值
+    
+    private static final double ERROR_RATE_THRESHOLD = 0.05; 
+    private static final long RESPONSE_TIME_THRESHOLD = 2000; 
+    private static final double MEMORY_USAGE_THRESHOLD = 0.85; 
     private final RedisTemplate<String, Object> redisTemplate;
-    // 性能统计
+    
     private final AtomicLong activeConnections = new AtomicLong(0);
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final AtomicLong errorRequests = new AtomicLong(0);
     private final Map<String, PerformanceMetrics> endpointMetrics = new ConcurrentHashMap<>();
-    // 监控任务调度器
+    
     private final ScheduledExecutorService monitoringExecutor = Executors.newScheduledThreadPool(2);
     @Autowired(required = false)
-    private DataSource dataSource;  // 可选的数据源依赖
+    private DataSource dataSource;  
     private MeterRegistry meterRegistry;
-    // 性能指标
+    
     private Counter requestCounter;
     private Counter errorCounter;
     private Timer responseTimer;
@@ -67,46 +67,46 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
     public void bindTo(MeterRegistry registry) {
         this.meterRegistry = registry;
 
-        // 注册基础指标
+        
         this.requestCounter = Counter.builder("http.requests.total")
-                .description("HTTP请求总数")
+                .description("HTTP璇锋眰鎬绘暟")
                 .register(registry);
 
         this.errorCounter = Counter.builder("http.requests.errors")
-                .description("HTTP错误请求数")
+                .description("Total HTTP error requests")
                 .register(registry);
 
         this.responseTimer = Timer.builder("http.response.time")
-                .description("HTTP响应时间")
+                .description("HTTP鍝嶅簲鏃堕棿")
                 .register(registry);
 
         this.activeConnectionsGauge = Gauge.builder("db.connections.active", this, monitor -> (double) monitor.getActiveConnections())
-                .description("活跃数据库连接数")
+                .description("娲昏穬鏁版嵁搴撹繛鎺ユ暟")
                 .register(registry);
 
         this.memoryUsageGauge = Gauge.builder("jvm.memory.usage.ratio", this, monitor -> monitor.getMemoryUsageRatio())
-                .description("JVM内存使用率")
+                .description("JVM memory usage ratio")
                 .register(registry);
 
         this.redisConnectionsGauge = Gauge.builder("redis.connections.active", this, monitor -> (double) monitor.getRedisConnections())
-                .description("活跃Redis连接数")
+                .description("Active Redis connections")
                 .register(registry);
 
-        // 启动监控任务
+        
         startMonitoringTasks();
 
-        log.info("性能监控指标已注册到MeterRegistry");
+        
     }
 
-    /**
-     * 记录HTTP请求指标
-     *
-     * @param endpoint     端点
-     * @param responseTime 响应时间
-     * @param isError      是否为错误请求
-     */
+    
+
+
+
+
+
+
     public void recordRequest(String endpoint, long responseTime, boolean isError) {
-        // 更新全局计数器
+        
         requestCounter.increment();
         responseTimer.record(responseTime, TimeUnit.MILLISECONDS);
         totalRequests.incrementAndGet();
@@ -116,7 +116,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             errorRequests.incrementAndGet();
         }
 
-        // 更新端点级别指标
+        
         PerformanceMetrics metrics = endpointMetrics.computeIfAbsent(endpoint, k -> new PerformanceMetrics());
         metrics.recordRequest(responseTime);
 
@@ -124,15 +124,15 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             metrics.recordError();
         }
 
-        // 检查是否需要报警
+        
         checkAlerts(endpoint, metrics, responseTime);
     }
 
-    /**
-     * 记录数据库连接使用
-     *
-     * @param increment 是否为增加连接
-     */
+    
+
+
+
+
     public void recordDatabaseConnection(boolean increment) {
         if (increment) {
             activeConnections.incrementAndGet();
@@ -141,15 +141,15 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
         }
     }
 
-    /**
-     * 获取当前性能快照
-     *
-     * @return 性能快照
-     */
+    
+
+
+
+
     public Map<String, Object> getPerformanceSnapshot() {
         Map<String, Object> snapshot = new ConcurrentHashMap<>();
 
-        // 基础指标
+        
         snapshot.put("totalRequests", totalRequests.get());
         snapshot.put("errorRequests", errorRequests.get());
         snapshot.put("errorRate", getGlobalErrorRate());
@@ -157,7 +157,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
         snapshot.put("memoryUsage", getMemoryUsageRatio());
         snapshot.put("redisConnections", getRedisConnections());
 
-        // 端点指标
+        
         Map<String, Map<String, Object>> endpointStats = new ConcurrentHashMap<>();
         endpointMetrics.forEach((endpoint, metrics) -> {
             Map<String, Object> stats = new ConcurrentHashMap<>();
@@ -175,25 +175,25 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
         return snapshot;
     }
 
-    /**
-     * 获取系统健康状态
-     */
+    
+
+
     @Override
     public Health health() {
         try {
             Health.Builder builder = new Health.Builder();
 
-            // 检查数据库连接
+            
             boolean dbHealthy = checkDatabaseHealth();
 
-            // 检查Redis连接
+            
             boolean redisHealthy = checkRedisHealth();
 
-            // 检查内存使用率
+            
             double memoryUsage = getMemoryUsageRatio();
             boolean memoryHealthy = memoryUsage < MEMORY_USAGE_THRESHOLD;
 
-            // 检查错误率
+            
             double errorRate = getGlobalErrorRate();
             boolean errorRateHealthy = errorRate < ERROR_RATE_THRESHOLD;
 
@@ -203,7 +203,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
                 builder.down();
             }
 
-            // 添加详细信息
+            
             builder.withDetail("database", dbHealthy ? "UP" : "DOWN")
                     .withDetail("redis", redisHealthy ? "UP" : "DOWN")
                     .withDetail("memoryUsage", String.format("%.2f%%", memoryUsage * 100))
@@ -214,42 +214,42 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             return builder.build();
 
         } catch (Exception e) {
-            log.error("健康检查异常", e);
+            log.error("Health check failed", e);
             return Health.down()
                     .withDetail("error", e.getMessage())
                     .build();
         }
     }
 
-    /**
-     * 启动监控任务
-     */
+    
+
+
     private void startMonitoringTasks() {
-        // 每分钟记录性能指标
+        
         monitoringExecutor.scheduleWithFixedDelay(() -> {
             try {
                 recordSystemMetrics();
             } catch (Exception e) {
-                log.error("记录系统指标异常", e);
+                log.error("璁板綍绯荤粺鎸囨爣寮傚父", e);
             }
         }, 1, 1, TimeUnit.MINUTES);
 
-        // 每5分钟清理过期指标
+        
         monitoringExecutor.scheduleWithFixedDelay(() -> {
             try {
                 cleanupExpiredMetrics();
             } catch (Exception e) {
-                log.error("清理过期指标异常", e);
+                log.error("娓呯悊杩囨湡鎸囨爣寮傚父", e);
             }
         }, 5, 5, TimeUnit.MINUTES);
     }
 
-    /**
-     * 记录系统指标
-     */
+    
+
+
     private void recordSystemMetrics() {
         try {
-            // 记录JVM内存使用情况
+            
             Runtime runtime = Runtime.getRuntime();
             long totalMemory = runtime.totalMemory();
             long freeMemory = runtime.freeMemory();
@@ -258,27 +258,27 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
 
             if (meterRegistry != null) {
                 Gauge.builder("jvm.memory.used", () -> (double) usedMemory)
-                        .description("JVM已使用内存")
+                        .description("JVM used memory")
                         .baseUnit("bytes")
                         .register(meterRegistry);
 
                 Gauge.builder("jvm.memory.total", () -> (double) totalMemory)
-                        .description("JVM总内存")
+                        .description("JVM total memory")
                         .baseUnit("bytes")
                         .register(meterRegistry);
             }
 
-            log.debug("系统指标记录完成 - 内存使用率: {:.2f}%, 活跃连接: {}",
+            log.debug("System metrics collected - memory usage: {:.2f}%, active connections: {}",
                     memoryUsageRatio * 100, activeConnections.get());
 
         } catch (Exception e) {
-            log.error("记录系统指标异常", e);
+            log.error("璁板綍绯荤粺鎸囨爣寮傚父", e);
         }
     }
 
-    /**
-     * 清理过期指标
-     */
+    
+
+
     private void cleanupExpiredMetrics() {
         Instant cutoffTime = Instant.now().minus(Duration.ofHours(1));
 
@@ -288,46 +288,46 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
                     metrics.getLastRequestTime().isBefore(cutoffTime);
         });
 
-        log.debug("清理过期指标完成，当前端点数量: {}", endpointMetrics.size());
+        log.debug("娓呯悊杩囨湡鎸囨爣瀹屾垚锛屽綋鍓嶇鐐规暟閲? {}", endpointMetrics.size());
     }
 
-    /**
-     * 检查报警条件
-     */
+    
+
+
     private void checkAlerts(String endpoint, PerformanceMetrics metrics, long responseTime) {
         try {
-            // 响应时间报警
+            
             if (responseTime > RESPONSE_TIME_THRESHOLD) {
                 triggerAlert("SLOW_RESPONSE",
-                        String.format("端点 %s 响应时间过长: %dms", endpoint, responseTime));
+                        String.format("绔偣 %s 鍝嶅簲鏃堕棿杩囬暱: %dms", endpoint, responseTime));
             }
 
-            // 错误率报警
+            
             if (metrics.getRequestCount() >= 10 && metrics.getErrorRate() > ERROR_RATE_THRESHOLD) {
                 triggerAlert("HIGH_ERROR_RATE",
-                        String.format("端点 %s 错误率过高: %.2f%%", endpoint, metrics.getErrorRate() * 100));
+                        String.format("绔偣 %s 閿欒鐜囪繃楂? %.2f%%", endpoint, metrics.getErrorRate() * 100));
             }
 
-            // 内存使用率报警
+            
             double memoryUsage = getMemoryUsageRatio();
             if (memoryUsage > MEMORY_USAGE_THRESHOLD) {
                 triggerAlert("HIGH_MEMORY_USAGE",
-                        String.format("内存使用率过高: %.2f%%", memoryUsage * 100));
+                        String.format("鍐呭瓨浣跨敤鐜囪繃楂? %.2f%%", memoryUsage * 100));
             }
 
         } catch (Exception e) {
-            log.error("报警检查异常", e);
+            log.error("Alert check failed", e);
         }
     }
 
-    /**
-     * 触发报警
-     */
-    private void triggerAlert(String alertType, String message) {
-        // 这里可以集成实际的报警系统，如邮件、短信、钉钉等
-        log.warn("性能报警 - {}: {}", alertType, message);
+    
 
-        // 记录报警到Redis（可选）
+
+    private void triggerAlert(String alertType, String message) {
+        
+        log.warn("鎬ц兘鎶ヨ - {}: {}", alertType, message);
+
+        
         try {
             String alertKey = "performance:alerts:" + Instant.now().toString().substring(0, 10);
             Map<String, Object> alert = new ConcurrentHashMap<>();
@@ -339,50 +339,50 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             redisTemplate.expire(alertKey, Duration.ofDays(7));
 
         } catch (Exception e) {
-            log.error("记录报警信息失败", e);
+            log.error("璁板綍鎶ヨ淇℃伅澶辫触", e);
         }
     }
 
-    /**
-     * 检查数据库健康状态
-     */
+    
+
+
     private boolean checkDatabaseHealth() {
         if (dataSource == null) {
-            // 没有数据源配置时，跳过数据库健康检查
+            
             return true;
         }
 
         try (Connection connection = dataSource.getConnection()) {
-            return connection.isValid(5); // 5秒超时
+            return connection.isValid(5); 
         } catch (SQLException e) {
-            log.error("数据库健康检查失败", e);
+            log.error("Database health check failed", e);
             return false;
         }
     }
 
-    /**
-     * 检查Redis健康状态
-     */
+    
+
+
     private boolean checkRedisHealth() {
         try {
             redisTemplate.opsForValue().get("health_check");
             return true;
         } catch (Exception e) {
-            log.error("Redis健康检查失败", e);
+            log.error("Redis health check failed", e);
             return false;
         }
     }
 
-    /**
-     * 获取活跃连接数
-     */
+    
+
+
     private long getActiveConnections() {
         return activeConnections.get();
     }
 
-    /**
-     * 获取内存使用率
-     */
+    
+
+
     private double getMemoryUsageRatio() {
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory();
@@ -391,48 +391,47 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
         return (double) usedMemory / totalMemory;
     }
 
-    /**
-     * 获取Redis连接数（简化实现）
-     */
+    
+
+
     private long getRedisConnections() {
-        // 这里应该获取实际的Redis连接池信息
-        // 简化实现，返回固定值
+        
+        
         return 5;
     }
 
-    /**
-     * 获取全局错误率
-     */
+    
+
+
     private double getGlobalErrorRate() {
         long total = totalRequests.get();
         long errors = errorRequests.get();
         return total > 0 ? (double) errors / total : 0.0;
     }
 
-    /**
-     * 获取端点性能指标
-     *
-     * @param endpoint 端点
-     * @return 性能指标
-     */
+    
+
+
+
+
+
     public PerformanceMetrics getEndpointMetrics(String endpoint) {
         return endpointMetrics.get(endpoint);
     }
 
-    /**
-     * 重置性能指标
-     */
+    
+
+
     public void resetMetrics() {
         totalRequests.set(0);
         errorRequests.set(0);
         activeConnections.set(0);
         endpointMetrics.clear();
-        log.info("性能指标已重置");
     }
 
-    /**
-     * 性能指标数据
-     */
+    
+
+
     public static class PerformanceMetrics {
         private long requestCount;
         private long errorCount;
@@ -461,7 +460,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             return requestCount > 0 ? (double) totalResponseTime / requestCount : 0.0;
         }
 
-        // Getters
+        
         public long getRequestCount() {
             return requestCount;
         }

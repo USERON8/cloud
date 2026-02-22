@@ -14,59 +14,59 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-/**
- * 商品服务全局异常处理器
- * 继承公共异常处理器，只处理商品服务特有的异常
- * 其他常见异常由父类 GlobalExceptionHandler 统一处理
- *
- * @author what's up
- * @date 2025-01-15
- */
+
+
+
+
+
+
+
+
 @Slf4j
 @Component("productGlobalExceptionHandler")
 @RestControllerAdvice
 public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
 
-    /**
-     * 处理权限拒绝异常
-     */
+    
+
+
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Object> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("权限拒绝 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return Result.error("FORBIDDEN", "您没有权限执行此操作");
+        log.warn("鏉冮檺鎷掔粷 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return Result.error("FORBIDDEN", "鎮ㄦ病鏈夋潈闄愭墽琛屾鎿嶄綔");
     }
 
-    /**
-     * 处理唯一约束冲突异常
-     */
+    
+
+
     @ExceptionHandler(DuplicateKeyException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public Result<Object> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
-        log.warn("数据重复冲突 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return Result.error("BUSINESS_ERROR", "数据已存在，请检查重复项");
+        log.warn("鏁版嵁閲嶅鍐茬獊 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return Result.error("BUSINESS_ERROR", "鏁版嵁宸插瓨鍦紝璇锋鏌ラ噸澶嶉」");
     }
 
-    /**
-     * 处理商品服务特定异常
-     */
+    
+
+
     @ExceptionHandler(ProductServiceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleProductServiceException(ProductServiceException e, HttpServletRequest request) {
-        log.warn("商品服务异常 [{}]: {}", request.getRequestURI(), e.getMessage());
+        log.warn("鍟嗗搧鏈嶅姟寮傚父 [{}]: {}", request.getRequestURI(), e.getMessage());
 
-        // 根据异常类型返回更具体的响应
+        
         if (e instanceof ProductServiceException.ProductNotFoundException) {
-            return Result.error("NOT_FOUND", "商品不存在");
+            return Result.error("NOT_FOUND", "鍟嗗搧涓嶅瓨鍦?);
         } else if (e instanceof ProductServiceException.ProductAlreadyExistsException) {
-            return Result.error("BUSINESS_ERROR", "商品已存在");
+            return Result.error("BUSINESS_ERROR", "鍟嗗搧宸插瓨鍦?);
         } else if (e instanceof ProductServiceException.ProductStatusException) {
-            return Result.error("BUSINESS_ERROR", "商品状态不允许执行此操作");
+            return Result.error("BUSINESS_ERROR", "鍟嗗搧鐘舵€佷笉鍏佽鎵ц姝ゆ搷浣?);
         } else if (e instanceof ProductServiceException.CategoryNotFoundException) {
-            return Result.error("NOT_FOUND", "商品分类不存在");
+            return Result.error("NOT_FOUND", "鍟嗗搧鍒嗙被涓嶅瓨鍦?);
         } else if (e instanceof ProductServiceException.StockInsufficientException) {
-            return Result.error("BUSINESS_ERROR", "库存不足");
+            return Result.error("BUSINESS_ERROR", "搴撳瓨涓嶈冻");
         } else if (e instanceof ProductServiceException.ProductPermissionException) {
             return Result.error("FORBIDDEN", e.getMessage());
         }
@@ -75,36 +75,36 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     }
 
 
-    /**
-     * 处理参数类型不匹配异常
-     */
+    
+
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleTypeMismatchException(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
-        log.warn("参数类型不匹配 [{}]: 参数 {} 类型错误", request.getRequestURI(), e.getName());
-        return Result.error("BAD_REQUEST", String.format("参数 %s 类型错误，期望类型: %s",
+        log.warn("鍙傛暟绫诲瀷涓嶅尮閰?[{}]: 鍙傛暟 {} 绫诲瀷閿欒", request.getRequestURI(), e.getName());
+        return Result.error("BAD_REQUEST", String.format("鍙傛暟 %s 绫诲瀷閿欒锛屾湡鏈涚被鍨? %s",
                 e.getName(), e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown"));
     }
 
 
-    /**
-     * 处理文件上传大小超限异常
-     */
+    
+
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
-        log.warn("文件上传大小超限 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return Result.error("BAD_REQUEST", "文件上传大小超过限制");
+        log.warn("鏂囦欢涓婁紶澶у皬瓒呴檺 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return Result.error("BAD_REQUEST", "鏂囦欢涓婁紶澶у皬瓒呰繃闄愬埗");
     }
 
-    /**
-     * 处理数据库完整性违反异常
-     */
+    
+
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn("数据完整性违反 [{}]: {}", request.getRequestURI(), e.getMessage());
-        return Result.error("BUSINESS_ERROR", "数据操作失败，请检查数据的完整性");
+        log.warn("鏁版嵁瀹屾暣鎬ц繚鍙?[{}]: {}", request.getRequestURI(), e.getMessage());
+        return Result.error("BUSINESS_ERROR", "鏁版嵁鎿嶄綔澶辫触锛岃妫€鏌ユ暟鎹殑瀹屾暣鎬?);
     }
 
 

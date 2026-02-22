@@ -14,11 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * @author what's up
- * @description 针对表【payment(支付主表)】的数据库操作Service实现
- * @createDate 2025-08-17 20:53:31
- */
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,37 +29,37 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
 
     @Override
     public boolean isPaymentRecordExists(Long orderId) {
-        log.info("检查支付记录是否存在 - 订单ID: {}", orderId);
+        
         try {
             long count = count(new LambdaQueryWrapper<Payment>()
                     .eq(Payment::getOrderId, orderId));
             boolean exists = count > 0;
-            log.info("支付记录检查结果 - 订单ID: {}, 是否存在: {}", orderId, exists);
+            
             return exists;
         } catch (Exception e) {
-            log.error("检查支付记录是否存在失败 - 订单ID: {}", orderId, e);
+            log.error("妫€鏌ユ敮浠樿褰曟槸鍚﹀瓨鍦ㄥけ璐?- 璁㈠崟ID: {}", orderId, e);
             return false;
         }
     }
 
 
-    /**
-     * 发送支付退款日志
-     */
+    
+
+
     public void sendPaymentRefundLog(Long paymentId, Long refundId, Long orderId,
                                      Long userId, java.math.BigDecimal refundAmount,
                                      String refundReason, String operator) {
         try {
 
         } catch (Exception e) {
-            log.warn("发送支付退款日志失败 - 支付ID: {}, 退款ID: {}, 订单ID: {}",
+            log.warn("鍙戦€佹敮浠橀€€娆炬棩蹇楀け璐?- 鏀粯ID: {}, 閫€娆綢D: {}, 璁㈠崟ID: {}",
                     paymentId, refundId, orderId, e);
         }
     }
 
-    /**
-     * 获取支付方式名称
-     */
+    
+
+
     private String getPaymentMethodName(Integer channel) {
         if (channel == null) return "UNKNOWN";
         return switch (channel) {
@@ -74,8 +74,8 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     @Override
     public com.baomidou.mybatisplus.extension.plugins.pagination.Page<com.cloud.common.domain.dto.payment.PaymentDTO> getPaymentsPage(
             Integer page, Integer size, Long userId, Integer status, Integer channel) {
-        log.info("分页查询支付列表 - 页码: {}, 数量: {}, 用户ID: {}, 状态: {}, 渠道: {}",
-                page, size, userId, status, channel);
+        
+
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Payment> paymentPage =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
@@ -155,7 +155,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processPaymentSuccess(Long id) {
-        log.info("处理支付成功 - 支付ID: {}", id);
+        
         Payment payment = getById(id);
         if (payment == null) return false;
         payment.setStatus(2);
@@ -171,7 +171,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processPaymentFailed(Long id, String failReason) {
-        log.info("处理支付失败 - 支付ID: {}, 原因: {}", id, failReason);
+        
         Payment payment = getById(id);
         if (payment == null) return false;
         payment.setStatus(3);
@@ -187,7 +187,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processRefund(Long id, java.math.BigDecimal refundAmount, String refundReason) {
-        log.info("处理退款 - 支付ID: {}, 金额: {}, 原因: {}", id, refundAmount, refundReason);
+        
         Payment payment = getById(id);
         if (payment == null) return false;
         payment.setStatus(4);
@@ -202,7 +202,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
 
     @Override
     public Boolean riskCheck(Long userId, java.math.BigDecimal amount, String paymentMethod) {
-        log.info("风控检查 - 用户ID: {}, 金额: {}, 支付方式: {}", userId, amount, paymentMethod);
+        
         return true;
     }
 
@@ -234,7 +234,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
 
     @Override
     public java.util.Map<String, Object> getUserPaymentStats(Long userId) {
-        log.info("获取用户支付统计 - 用户ID: {}", userId);
+        
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         long count = count(new LambdaQueryWrapper<Payment>().eq(Payment::getUserId, userId));
         stats.put("totalCount", count);

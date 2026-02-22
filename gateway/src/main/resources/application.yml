@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:80}
   tomcat:
     threads:
@@ -16,7 +16,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-  # Nacos 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
@@ -42,15 +42,15 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # Gateway 閰嶇疆
+    # Comment sanitized for UTF-8 compatibility.
     gateway:
       discovery:
         locator:
-          enabled: false  # 绂佺敤鑷姩鏈嶅姟鍙戠幇,浣跨敤application-route.yml涓殑鎵嬪姩璺敱閰嶇疆
+          enabled: false  # Comment sanitized for UTF-8 compatibility.
           lower-case-service-id: true
       csrf:
         enabled: true
-      # 鍏ㄥ眬CORS閰嶇疆
+      # Comment sanitized for UTF-8 compatibility.
       globals:
         cors-configurations:
           '[/**]':
@@ -72,7 +72,7 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-      # 榛樿杩囨护鍣?
+      # Comment sanitized for UTF-8 compatibility.
       default-filters:
         - name: Security
           args:
@@ -81,16 +81,16 @@ spring:
             enableTokenCheck: true
             enablePerformanceMonitoring: true
 
-  # Config 閰嶇疆
+  # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
 
-  # 闈欐€佽祫婧愰厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   web:
     resources:
       static-locations: classpath:/static/
 
-  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
+  # Comment sanitized for UTF-8 compatibility.
   security:
     oauth2:
       resourceserver:
@@ -106,7 +106,7 @@ spring:
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
 
-# 鏃ュ織閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 logging:
   file:
     path: logs
@@ -117,7 +117,7 @@ logging:
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
 
-# Spring Boot Actuator閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 management:
   endpoints:
     web:
@@ -137,7 +137,7 @@ management:
       enabled: true
   health:
     redis:
-      enabled: false  # Gateway浣跨敤Redis浣嗕笉寮轰緷璧?
+      enabled: false  # Comment sanitized for UTF-8 compatibility.
     nacos:
       enabled: true
   info:
@@ -148,12 +148,12 @@ management:
     os:
       enabled: true
 
-# 搴旂敤瀹夊叏閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 app:
   security:
     enable-test-api: false
 
-# Knife4j 缃戝叧鑱氬悎閰嶇疆
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false

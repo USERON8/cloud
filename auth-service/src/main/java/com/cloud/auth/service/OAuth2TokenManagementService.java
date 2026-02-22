@@ -3,10 +3,16 @@ package com.cloud.auth.service;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.core.*;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -18,8 +24,10 @@ import org.springframework.security.oauth2.server.authorization.token.DefaultOAu
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,13 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * OAuth2令牌管理服务
- * 统一管理令牌的生成、存储和撤销
- * 确保通过Authorization Server正确颁发令牌并存储到Redis
- *
- * @author what's up
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,98 +44,70 @@ public class OAuth2TokenManagementService {
     private final RegisteredClientRepository registeredClientRepository;
     private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
     private final TokenBlacklistService tokenBlacklistService;
+    @Qualifier("oauth2MainRedisTemplate")
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${app.oauth2.default-redirect-uri:http://127.0.0.1:80/authorized}")
     private String defaultRedirectUri;
 
-    /**
-     * 为用户登录生成OAuth2令牌（使用授权码模式的内部实现）
-     * 注意：这是一个内部方法，用于简化的登录流程
-     * 生产环境建议使用标准的OAuth2授权码流程
-     *
-     * @param userDTO 用户信息
-     * @param scopes  请求的权限范围，如果为空则使用默认范围
-     * @return OAuth2Authorization 包含访问令牌和刷新令牌的授权对象
-     */
     public OAuth2Authorization generateTokensForUser(UserDTO userDTO, Set<String> scopes) {
         if (userDTO == null) {
-            throw new IllegalArgumentException("用户信息不能为空");
+            throw new IllegalArgumentException("User DTO cannot be null");
         }
 
-        // 获取默认的Web客户端（用于用户登录）
         RegisteredClient registeredClient = registeredClientRepository.findByClientId("web-client");
         if (registeredClient == null) {
-            throw new IllegalStateException("未找到web-client客户端配置");
+            throw new IllegalStateException("Registered client 'web-client' not found");
         }
 
-        // 构建用户认证信息
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if ("ADMIN".equals(userDTO.getUserType())) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        } else if ("MERCHANT".equals(userDTO.getUserType())) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
+        if (userDTO.getUserType() != null) {
+            switch (userDTO.getUserType()) {
+                case ADMIN -> authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                case MERCHANT -> authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
+                case USER -> {
+                }
+            }
         }
 
         UsernamePasswordAuthenticationToken userAuthentication =
-                new UsernamePasswordAuthenticationToken(
-                        userDTO.getUsername(),
-                        "[PROTECTED]",
-                        authorities
-                );
+                new UsernamePasswordAuthenticationToken(userDTO.getUsername(), "[PROTECTED]", authorities);
 
-        // 设置默认权限范围
         if (scopes == null || scopes.isEmpty()) {
             scopes = Set.of("openid", "profile", "read", "write", "user.read", "user.write");
         }
-
-        // 验证权限范围是否在客户端允许的范围内
         Set<String> allowedScopes = registeredClient.getScopes();
-        scopes = scopes.stream()
-                .filter(allowedScopes::contains)
-                .collect(Collectors.toSet());
+        scopes = scopes.stream().filter(allowedScopes::contains).collect(Collectors.toSet());
 
-        // 构建客户端认证信息
-        OAuth2ClientAuthenticationToken clientAuthentication =
-                new OAuth2ClientAuthenticationToken(
-                        registeredClient,
-                        ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
-                        registeredClient.getClientSecret()
-                );
-
-        // 创建OAuth2Authorization构建器，使用授权码模式
         OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .id(UUID.randomUUID().toString())
                 .principalName(userDTO.getUsername())
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) // 使用授权码模式
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizedScopes(scopes)
                 .attribute(Principal.class.getName(), userAuthentication)
                 .attribute("user_id", userDTO.getId())
-                .attribute("user_type", userDTO.getUserType())
+                .attribute("user_type", userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null)
                 .attribute("nickname", userDTO.getNickname())
-                // 添加授权码相关属性（模拟已经完成的授权码流程）
                 .attribute("authorization_code", "SIMULATED_" + UUID.randomUUID())
                 .attribute("redirect_uri", defaultRedirectUri);
 
-        // 生成访问令牌
         OAuth2TokenContext accessTokenContext = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
                 .principal(userAuthentication)
                 .authorizationServerContext(AuthorizationServerContextHolder.getContext())
                 .authorization(authorizationBuilder.build())
                 .tokenType(OAuth2TokenType.ACCESS_TOKEN)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) // 使用授权码模式
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizedScopes(scopes)
                 .build();
 
         OAuth2Token accessToken = tokenGenerator.generate(accessTokenContext);
         if (!(accessToken instanceof OAuth2AccessToken oauth2AccessToken)) {
-            throw new IllegalStateException("生成的访问令牌类型不正确");
+            throw new IllegalStateException("Generated token is not an OAuth2 access token");
         }
-
         authorizationBuilder.accessToken(oauth2AccessToken);
 
-        // 生成刷新令牌（如果客户端支持）
         if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN)) {
             OAuth2TokenContext refreshTokenContext = DefaultOAuth2TokenContext.builder()
                     .registeredClient(registeredClient)
@@ -142,60 +115,40 @@ public class OAuth2TokenManagementService {
                     .authorizationServerContext(AuthorizationServerContextHolder.getContext())
                     .authorization(authorizationBuilder.build())
                     .tokenType(OAuth2TokenType.REFRESH_TOKEN)
-                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) // 使用授权码模式
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizedScopes(scopes)
                     .build();
-
             OAuth2Token refreshToken = tokenGenerator.generate(refreshTokenContext);
-            if (refreshToken instanceof OAuth2RefreshToken) {
-                authorizationBuilder.refreshToken((OAuth2RefreshToken) refreshToken);
+            if (refreshToken instanceof OAuth2RefreshToken oauth2RefreshToken) {
+                authorizationBuilder.refreshToken(oauth2RefreshToken);
             }
         }
 
-        // 构建最终的授权对象
         OAuth2Authorization authorization = authorizationBuilder.build();
-
-        // 保存到Redis
         authorizationService.save(authorization);
-
-        log.info("为用户 {} 生成OAuth2令牌成功，授权ID: {}",
-                userDTO.getUsername(), authorization.getId());
-
         return authorization;
     }
 
-    /**
-     * 为客户端凭证模式生成令牌
-     *
-     * @param clientId 客户端ID
-     * @param scopes   权限范围
-     * @return OAuth2Authorization 授权对象
-     */
     public OAuth2Authorization generateTokensForClient(String clientId, Set<String> scopes) {
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
         if (registeredClient == null) {
-            throw new IllegalArgumentException("未找到客户端: " + clientId);
+            throw new IllegalArgumentException("Client not found: " + clientId);
         }
-
         if (!registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS)) {
-            throw new IllegalArgumentException("客户端不支持client_credentials模式");
+            throw new IllegalArgumentException("Client does not support client_credentials grant");
         }
 
-        // 验证权限范围
         if (scopes == null || scopes.isEmpty()) {
             scopes = registeredClient.getScopes();
         } else {
-            scopes = scopes.stream()
-                    .filter(registeredClient.getScopes()::contains)
-                    .collect(Collectors.toSet());
+            scopes = scopes.stream().filter(registeredClient.getScopes()::contains).collect(Collectors.toSet());
         }
 
-        OAuth2ClientAuthenticationToken clientAuthentication =
-                new OAuth2ClientAuthenticationToken(
-                        registeredClient,
-                        ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
-                        registeredClient.getClientSecret()
-                );
+        OAuth2ClientAuthenticationToken clientAuthentication = new OAuth2ClientAuthenticationToken(
+                registeredClient,
+                ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
+                registeredClient.getClientSecret()
+        );
 
         OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .id(UUID.randomUUID().toString())
@@ -203,7 +156,6 @@ public class OAuth2TokenManagementService {
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .authorizedScopes(scopes);
 
-        // 生成访问令牌
         OAuth2TokenContext tokenContext = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
                 .principal(clientAuthentication)
@@ -215,243 +167,122 @@ public class OAuth2TokenManagementService {
                 .build();
 
         OAuth2Token accessToken = tokenGenerator.generate(tokenContext);
-        if (!(accessToken instanceof OAuth2AccessToken)) {
-            throw new IllegalStateException("生成的访问令牌类型不正确");
+        if (!(accessToken instanceof OAuth2AccessToken oauth2AccessToken)) {
+            throw new IllegalStateException("Generated token is not an OAuth2 access token");
         }
 
-        OAuth2Authorization authorization = authorizationBuilder
-                .accessToken((OAuth2AccessToken) accessToken)
-                .build();
-
+        OAuth2Authorization authorization = authorizationBuilder.accessToken(oauth2AccessToken).build();
         authorizationService.save(authorization);
-
-        log.info("为客户端 {} 生成OAuth2令牌成功，授权ID: {}",
-                clientId, authorization.getId());
-
         return authorization;
     }
 
-    /**
-     * 撤销授权令牌（增强版，支持黑名单）
-     *
-     * @param tokenValue 令牌值
-     */
     public void revokeToken(String tokenValue) {
-        OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
+        OAuth2Authorization authorization = findByToken(tokenValue);
         if (authorization != null) {
-            // 将访问令牌加入黑名单
-            if (authorization.getAccessToken() != null) {
-                try {
-                    String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
-                    // 如果是JWT令牌，解析后加入黑名单
-                    if (accessTokenValue.contains(".")) {
-                        // 计算令牌剩余有效期
-                        long ttlSeconds = authorization.getAccessToken().getToken().getExpiresAt() != null ?
-                                java.time.Duration.between(java.time.Instant.now(),
-                                        authorization.getAccessToken().getToken().getExpiresAt()).getSeconds() : 3600;
-
-                        tokenBlacklistService.addToBlacklist(accessTokenValue,
-                                authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
-                    }
-                } catch (Exception e) {
-                    log.warn("将访问令牌加入黑名单失败: {}", e.getMessage());
-                }
-            }
-
-            // 将刷新令牌加入黑名单
-            if (authorization.getRefreshToken() != null) {
-                try {
-                    String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
-                    long ttlSeconds = authorization.getRefreshToken().getToken().getExpiresAt() != null ?
-                            java.time.Duration.between(java.time.Instant.now(),
-                                    authorization.getRefreshToken().getToken().getExpiresAt()).getSeconds() : 2592000; // 30天
-
-                    tokenBlacklistService.addToBlacklist(refreshTokenValue,
-                            authorization.getPrincipalName(), ttlSeconds, "manual_revocation");
-                } catch (Exception e) {
-                    log.warn("将刷新令牌加入黑名单失败: {}", e.getMessage());
-                }
-            }
-
-            // 从授权存储中移除
-            authorizationService.remove(authorization);
-            log.info("撤销令牌成功，授权ID: {}，已加入黑名单", authorization.getId());
-        } else {
-            log.warn("未找到要撤销的令牌: {}", tokenValue.substring(0, Math.min(tokenValue.length(), 10)) + "...");
+            revokeAuthorization(authorization, "manual_revocation");
         }
     }
 
-    /**
-     * 查找授权信息
-     *
-     * @param tokenValue 令牌值
-     * @return OAuth2Authorization 授权对象
-     */
     public OAuth2Authorization findByToken(String tokenValue) {
+        if (!StringUtils.hasText(tokenValue)) {
+            return null;
+        }
         return authorizationService.findByToken(tokenValue, null);
     }
 
-    /**
-     * 用户登出 - 撤销指定令牌
-     *
-     * @param tokenValue 要撤销的令牌值
-     * @param username   用户名（用于日志记录）
-     * @return 是否成功撤销
-     */
-    public boolean logout(String tokenValue, String username) {
-        if (tokenValue == null || tokenValue.trim().isEmpty()) {
-            log.warn("登出失败：令牌值为空, username: {}", username);
+    public boolean isTokenValid(String tokenValue) {
+        OAuth2Authorization authorization = findByToken(tokenValue);
+        if (authorization == null) {
+            return false;
+        }
+        if (tokenBlacklistService.isBlacklisted(tokenValue)) {
             return false;
         }
 
-        try {
-            // 查找授权信息
-            OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
-            if (authorization == null) {
-                log.warn("登出失败：未找到对应的授权信息, username: {}, tokenPrefix: {}",
-                        username, tokenValue.substring(0, Math.min(tokenValue.length(), 10)) + "...");
+        OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
+        if (accessToken != null && accessToken.getToken() != null) {
+            Instant expiresAt = accessToken.getToken().getExpiresAt();
+            if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
                 return false;
             }
-
-            // 验证用户身份（可选，确保只能撤销自己的令牌）
-            if (username != null && !username.equals(authorization.getPrincipalName())) {
-                log.warn("登出失败：用户身份不匹配, requestUser: {}, tokenOwner: {}",
-                        username, authorization.getPrincipalName());
-                return false;
-            }
-
-            // 撤销授权（这将删除Redis中的所有相关数据）
-            authorizationService.remove(authorization);
-
-            log.info("用户登出成功, username: {}, authorizationId: {}",
-                    authorization.getPrincipalName(), authorization.getId());
-
-            return true;
-        } catch (Exception e) {
-            log.error("登出过程中发生异常, username: {}", username, e);
-            return false;
         }
+        return true;
     }
 
-    /**
-     * 用户登出 - 撤销用户的所有令牌
-     *
-     * @param username 用户名
-     * @return 撤销的令牌数量
-     */
+    public boolean logout(String accessToken, String refreshToken) {
+        boolean revoked = false;
+
+        if (StringUtils.hasText(accessToken)) {
+            OAuth2Authorization authorization = findByToken(accessToken);
+            if (authorization != null) {
+                revokeAuthorization(authorization, "logout");
+                revoked = true;
+            }
+        }
+
+        if (StringUtils.hasText(refreshToken)) {
+            OAuth2Authorization authorization = findByToken(refreshToken);
+            if (authorization != null) {
+                revokeAuthorization(authorization, "logout");
+                revoked = true;
+            }
+        }
+
+        return revoked;
+    }
+
     public int logoutAllSessions(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            log.warn("批量登出失败：用户名为空");
+        if (!StringUtils.hasText(username)) {
+            return 0;
+        }
+
+        Set<String> authKeys = redisTemplate.keys("oauth2:auth:*");
+        if (authKeys == null || authKeys.isEmpty()) {
             return 0;
         }
 
         int revokedCount = 0;
-        try {
-            // 注意：这是一个简化实现，实际生产环境中可能需要更高效的查询方式
-            // 可以考虑在Redis中维护用户到令牌的反向索引
+        for (String key : authKeys) {
+            Object principalName = redisTemplate.opsForHash().get(key, "principalName");
+            if (principalName == null || !username.equals(principalName.toString())) {
+                continue;
+            }
 
-            log.info("开始撤销用户 {} 的所有活跃会话", username);
-
-            // 由于当前的OAuth2AuthorizationService接口没有提供按用户名查询的方法
-            // 这里我们通过日志记录，实际实现可能需要扩展服务接口
-            log.warn("批量撤销功能需要额外的索引支持，当前仅支持单个令牌撤销");
-
-        } catch (Exception e) {
-            log.error("批量登出过程中发生异常, username: {}", username, e);
+            String authorizationId = key.substring("oauth2:auth:".length());
+            OAuth2Authorization authorization = authorizationService.findById(authorizationId);
+            if (authorization != null) {
+                revokeAuthorization(authorization, "logout_all_sessions");
+                revokedCount++;
+            }
         }
-
         return revokedCount;
     }
 
-    /**
-     * 检查令牌是否有效
-     *
-     * @param tokenValue 令牌值
-     * @return 是否有效
-     */
-    public boolean isTokenValid(String tokenValue) {
-        if (tokenValue == null || tokenValue.trim().isEmpty()) {
-            return false;
-        }
-
+    private void revokeAuthorization(OAuth2Authorization authorization, String reason) {
         try {
-            OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
-            if (authorization == null) {
-                return false;
+            if (authorization.getAccessToken() != null && authorization.getAccessToken().getToken() != null) {
+                String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
+                long ttl = computeTtlSeconds(authorization.getAccessToken().getToken().getExpiresAt(), 3600);
+                tokenBlacklistService.addToBlacklist(accessTokenValue, authorization.getPrincipalName(), ttl, reason);
             }
 
-            // 检查访问令牌是否存在且未过期
-            OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
-            if (accessToken == null) {
-                return false;
+            if (authorization.getRefreshToken() != null && authorization.getRefreshToken().getToken() != null) {
+                String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
+                long ttl = computeTtlSeconds(authorization.getRefreshToken().getToken().getExpiresAt(), 2592000);
+                tokenBlacklistService.addToBlacklist(refreshTokenValue, authorization.getPrincipalName(), ttl, reason);
             }
 
-            // 检查是否过期
-            Instant expiresAt = accessToken.getToken().getExpiresAt();
-            if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
-                log.debug("令牌已过期, tokenPrefix: {}", tokenValue.substring(0, Math.min(tokenValue.length(), 10)) + "...");
-                return false;
-            }
-
-            return true;
+            authorizationService.remove(authorization);
         } catch (Exception e) {
-            log.error("检查令牌有效性时发生异常", e);
-            return false;
+            log.warn("Failed to revoke authorization id={}: {}", authorization.getId(), e.getMessage());
         }
     }
 
-    /**
-     * 刷新令牌
-     *
-     * @param refreshTokenValue 刷新令牌值
-     * @return 新的授权对象，如果刷新失败返回null
-     */
-    public OAuth2Authorization refreshToken(String refreshTokenValue) {
-        if (refreshTokenValue == null || refreshTokenValue.trim().isEmpty()) {
-            log.warn("刷新令牌失败：刷新令牌值为空");
-            return null;
+    private long computeTtlSeconds(Instant expiresAt, long defaultTtl) {
+        if (expiresAt == null) {
+            return defaultTtl;
         }
-
-        try {
-            // 查找现有授权
-            OAuth2Authorization existingAuthorization = authorizationService.findByToken(refreshTokenValue, OAuth2TokenType.REFRESH_TOKEN);
-            if (existingAuthorization == null) {
-                log.warn("刷新令牌失败：未找到对应的授权信息, refreshTokenPrefix: {}",
-                        refreshTokenValue.substring(0, Math.min(refreshTokenValue.length(), 10)) + "...");
-                return null;
-            }
-
-            // 检查刷新令牌是否过期
-            OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = existingAuthorization.getRefreshToken();
-            if (refreshToken == null) {
-                log.warn("刷新令牌失败：授权中不存在刷新令牌");
-                return null;
-            }
-
-            Instant refreshExpiresAt = refreshToken.getToken().getExpiresAt();
-            if (refreshExpiresAt != null && Instant.now().isAfter(refreshExpiresAt)) {
-                log.warn("刷新令牌失败：刷新令牌已过期");
-                return null;
-            }
-
-            // 获取用户信息重新生成令牌
-            String username = existingAuthorization.getPrincipalName();
-            Set<String> scopes = existingAuthorization.getAuthorizedScopes();
-
-            // 撤销旧的授权
-            authorizationService.remove(existingAuthorization);
-
-            // 注意：这里需要重新获取用户信息，实际实现中可能需要从授权属性中获取
-            // 或者调用用户服务获取最新用户信息
-            log.info("令牌刷新成功, username: {}, oldAuthorizationId: {}", username, existingAuthorization.getId());
-
-            // 这里返回null，因为需要完整的UserDTO才能重新生成令牌
-            // 实际使用时，应该从控制器层传入UserDTO或在此处查询用户信息
-            return null;
-
-        } catch (Exception e) {
-            log.error("刷新令牌过程中发生异常", e);
-            return null;
-        }
+        long seconds = Duration.between(Instant.now(), expiresAt).getSeconds();
+        return Math.max(seconds, 60);
     }
 }

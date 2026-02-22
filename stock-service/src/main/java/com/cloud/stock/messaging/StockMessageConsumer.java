@@ -16,9 +16,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Stock message consumer.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -37,16 +37,16 @@ public class StockMessageConsumer {
     private final MessageIdempotencyService messageIdempotencyService;
     private final StringRedisTemplate stringRedisTemplate;
 
-    /**
-     * Freeze stock when order created.
-     */
+    
+
+
     @Bean
     public Consumer<Message<OrderCreatedEvent>> orderCreatedConsumer() {
         return message -> {
             OrderCreatedEvent event = message.getPayload();
 
-            log.info("Receive order-created event: orderId={}, orderNo={}, userId={}, totalAmount={}",
-                    event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
+            
+
 
             try {
                 String eventId = event.getEventId();
@@ -94,8 +94,8 @@ public class StockMessageConsumer {
                     markOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
-                    log.info("Order stock frozen success: orderId={}, orderNo={}, products={}",
-                            event.getOrderId(), event.getOrderNo(), productQuantityMap.size());
+                    
+
                 } else {
                     log.error("Order stock freeze failed: orderId={}, orderNo={}, reason={}",
                             event.getOrderId(), event.getOrderNo(), failureReason);
@@ -106,7 +106,7 @@ public class StockMessageConsumer {
                             failureReason
                     );
 
-                    // Roll back all stock reserved in this attempt.
+                    
                     for (Map.Entry<Long, Integer> frozen : frozenSuccessMap.entrySet()) {
                         try {
                             stockService.releaseReservedStock(frozen.getKey(), frozen.getValue());
@@ -135,16 +135,16 @@ public class StockMessageConsumer {
         };
     }
 
-    /**
-     * Confirm stock deduction after payment success.
-     */
+    
+
+
     @Bean
     public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
         return message -> {
             PaymentSuccessEvent event = message.getPayload();
 
-            log.info("Receive payment-success event: orderId={}, orderNo={}, paymentId={}, amount={}",
-                    event.getOrderId(), event.getOrderNo(), event.getPaymentId(), event.getAmount());
+            
+
 
             try {
                 String eventId = event.getEventId();
@@ -184,8 +184,8 @@ public class StockMessageConsumer {
 
                 markOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                 clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
-                log.info("Order stock deduction completed: orderId={}, orderNo={}",
-                        event.getOrderId(), event.getOrderNo());
+                
+
 
             } catch (Exception e) {
                 messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, event.getEventId());
@@ -196,9 +196,9 @@ public class StockMessageConsumer {
         };
     }
 
-    /**
-     * Restore stock after refund completed.
-     */
+    
+
+
     @Bean
     public Consumer<Message<Map<String, Object>>> stockRestoreConsumer() {
         return message -> {
@@ -210,7 +210,7 @@ public class StockMessageConsumer {
             @SuppressWarnings("unchecked")
             Map<Long, Integer> productQuantityMap = (Map<Long, Integer>) event.get("productQuantityMap");
 
-            log.info("Receive stock-restore event: orderId={}, orderNo={}, refundNo={}", orderId, orderNo, refundNo);
+            
 
             try {
                 String eventId = (String) event.get("eventId");
@@ -244,8 +244,8 @@ public class StockMessageConsumer {
                     clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
                     markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
-                    log.info("Stock restore completed: orderId={}, refundNo={}, products={}",
-                            orderId, refundNo, productQuantityMap.size());
+                    
+
                 } else {
                     log.error("Stock restore partial failed: orderId={}, refundNo={}, details={}",
                             orderId, refundNo, failureDetails);

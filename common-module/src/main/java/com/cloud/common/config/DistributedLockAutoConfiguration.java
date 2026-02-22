@@ -11,14 +11,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-/**
- * 分布式锁自动配置类
- * 自动配置分布式锁相关的Bean和AOP切面
- *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
- */
+
+
+
+
+
+
+
+
 @Slf4j
 @AutoConfiguration
 @ConditionalOnClass({RedissonClient.class})
@@ -26,17 +26,17 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableAspectJAutoProxy
 public class DistributedLockAutoConfiguration {
 
-    /**
-     * 配置分布式锁AOP切面
-     *
-     * @param redissonClient Redisson客户端
-     * @return 分布式锁切面
-     */
+    
+
+
+
+
+
     @Bean
     @ConditionalOnBean(RedissonClient.class)
     @ConditionalOnMissingBean(DistributedLockAspect.class)
     public DistributedLockAspect distributedLockAspect(RedissonClient redissonClient) {
-        log.info("✅ 配置分布式锁AOP切面");
+        
         return new DistributedLockAspect(redissonClient);
     }
 }

@@ -3,10 +3,10 @@ spring:
     gateway:
       routes:
         # ========================================
-        # 认证服务 (auth-service) - 优先级: 10
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # OAuth2.1标准端点
+        # Comment sanitized for UTF-8 compatibility.
         - id: oauth2-endpoints
           uri: lb://auth-service
           order: 10
@@ -15,7 +15,7 @@ spring:
           filters:
             - PreserveHostHeader
         
-        # OpenID Connect和Well-Known端点
+        # Comment sanitized for UTF-8 compatibility.
         - id: oidc-endpoints
           uri: lb://auth-service
           order: 10
@@ -24,7 +24,7 @@ spring:
           filters:
             - PreserveHostHeader
         
-        # 认证服务API
+        # Comment sanitized for UTF-8 compatibility.
         - id: auth-service-api
           uri: lb://auth-service
           order: 10
@@ -32,24 +32,24 @@ spring:
             - Path=/auth/**
         
         # ========================================
-        # 用户服务 (user-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 用户管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: user-management
           uri: lb://user-service
           order: 20
           predicates:
             - Path=/users/**
         
-        # 商家管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: merchant-management
           uri: lb://user-service
           order: 20
           predicates:
             - Path=/merchant/**
         
-        # 管理后台
+        # Comment sanitized for UTF-8 compatibility.
         - id: admin-management
           uri: lb://user-service
           order: 20
@@ -57,24 +57,24 @@ spring:
             - Path=/admin/**
         
         # ========================================
-        # 商品服务 (product-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 商品管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: product-management
           uri: lb://product-service
           order: 20
           predicates:
             - Path=/product/**
         
-        # 分类管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: category-management
           uri: lb://product-service
           order: 20
           predicates:
             - Path=/category/**
         
-        # 品牌管理（如果需要）
+        # Comment sanitized for UTF-8 compatibility.
         - id: brand-management
           uri: lb://product-service
           order: 20
@@ -82,17 +82,17 @@ spring:
             - Path=/brand/**
         
         # ========================================
-        # 订单服务 (order-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 订单管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: order-management
           uri: lb://order-service
           order: 20
           predicates:
             - Path=/order/**
         
-        # 购物车管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: cart-management
           uri: lb://order-service
           order: 20
@@ -100,10 +100,10 @@ spring:
             - Path=/cart/**
         
         # ========================================
-        # 支付服务 (payment-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 支付管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: payment-management
           uri: lb://payment-service
           order: 20
@@ -111,10 +111,10 @@ spring:
             - Path=/payment/**
         
         # ========================================
-        # 库存服务 (stock-service) - 优先级: 20  
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 库存管理
+        # Comment sanitized for UTF-8 compatibility.
         - id: stock-management
           uri: lb://stock-service
           order: 20
@@ -122,10 +122,10 @@ spring:
             - Path=/stock/**
         
         # ========================================
-        # 搜索服务 (search-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 搜索API
+        # Comment sanitized for UTF-8 compatibility.
         - id: search-api
           uri: lb://search-service
           order: 20
@@ -133,10 +133,10 @@ spring:
             - Path=/search/**
         
         # ========================================
-        # 日志服务 (log-service) - 优先级: 20
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 日志API
+        # Comment sanitized for UTF-8 compatibility.
         - id: log-api
           uri: lb://log-service
           order: 20
@@ -144,67 +144,67 @@ spring:
             - Path=/log/**
         
         # ========================================
-        # Knife4j文档路由 - 优先级: 50
+        # Comment sanitized for UTF-8 compatibility.
         # ========================================
         
-        # 认证服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: auth-service-doc
           uri: lb://auth-service
           order: 50
           predicates:
             - Path=/auth-service/doc.html,/auth-service/webjars/**,/auth-service/swagger-ui/**,/auth-service/v3/api-docs/**,/auth-service/swagger-resources/**
         
-        # 用户服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: user-service-doc
           uri: lb://user-service
           order: 50
           predicates:
             - Path=/user-service/doc.html,/user-service/webjars/**,/user-service/swagger-ui/**,/user-service/v3/api-docs/**,/user-service/swagger-resources/**
         
-        # 产品服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: product-service-doc
           uri: lb://product-service
           order: 50
           predicates:
             - Path=/product-service/doc.html,/product-service/webjars/**,/product-service/swagger-ui/**,/product-service/v3/api-docs/**,/product-service/swagger-resources/**
         
-        # 订单服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: order-service-doc
           uri: lb://order-service
           order: 50
           predicates:
             - Path=/order-service/doc.html,/order-service/webjars/**,/order-service/swagger-ui/**,/order-service/v3/api-docs/**,/order-service/swagger-resources/**
         
-        # 支付服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: payment-service-doc
           uri: lb://payment-service
           order: 50
           predicates:
             - Path=/payment-service/doc.html,/payment-service/webjars/**,/payment-service/swagger-ui/**,/payment-service/v3/api-docs/**,/payment-service/swagger-resources/**
         
-        # 库存服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: stock-service-doc
           uri: lb://stock-service
           order: 50
           predicates:
             - Path=/stock-service/doc.html,/stock-service/webjars/**,/stock-service/swagger-ui/**,/stock-service/v3/api-docs/**,/stock-service/swagger-resources/**
         
-        # 搜索服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: search-service-doc
           uri: lb://search-service
           order: 50
           predicates:
             - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
         
-        # 日志服务文档
+        # Comment sanitized for UTF-8 compatibility.
         - id: log-service-doc
           uri: lb://log-service
           order: 50
           predicates:
             - Path=/log-service/doc.html,/log-service/webjars/**,/log-service/swagger-ui/**,/log-service/v3/api-docs/**,/log-service/swagger-resources/**
 
-      # 服务发现配置
+      # Comment sanitized for UTF-8 compatibility.
       discovery:
         locator:
-          enabled: false  # 禁用自动服务发现
+          enabled: false  # Comment sanitized for UTF-8 compatibility.
           lower-case-service-id: true

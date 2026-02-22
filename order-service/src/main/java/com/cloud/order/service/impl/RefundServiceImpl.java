@@ -26,12 +26,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 退款服务实现
- *
- * @author CloudDevAgent
- * @since 2025-01-15
- */
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,45 +44,45 @@ public class RefundServiceImpl implements RefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createRefund(Long userId, RefundCreateDTO dto) {
-        log.info("📝 开始创建退款申请: userId={}, orderId={}, orderNo={}",
-                userId, dto.getOrderId(), dto.getOrderNo());
+        
 
-        // 1. 验证订单
+
+        
         Order order = orderService.getById(dto.getOrderId());
         if (order == null) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException("璁㈠崟涓嶅瓨鍦?);
         }
 
         if (!order.getUserId().equals(userId)) {
-            throw new BusinessException("无权操作此订单");
+            throw new BusinessException("鏃犳潈鎿嶄綔姝よ鍗?);
         }
 
-        // 2. 检查订单状态 - 只有已支付、已发货、已完成的订单可以退款
+        
         OrderStatusEnum orderStatus = order.getStatusEnum();
         if (orderStatus != OrderStatusEnum.PAID &&
                 orderStatus != OrderStatusEnum.SHIPPED &&
                 orderStatus != OrderStatusEnum.COMPLETED) {
-            throw new BusinessException("订单状态不允许退款,当前状态:" + orderStatus.getName());
+            throw new BusinessException("璁㈠崟鐘舵€佷笉鍏佽閫€娆?褰撳墠鐘舵€?" + orderStatus.getName());
         }
 
-        // 3. 检查是否已有退款申请
+        
         Refund existingRefund = getRefundByOrderId(dto.getOrderId());
         if (existingRefund != null && !existingRefund.isCompleted()) {
-            throw new BusinessException("该订单已有退款申请在处理中");
+            throw new BusinessException("璇ヨ鍗曞凡鏈夐€€娆剧敵璇峰湪澶勭悊涓?);
         }
 
-        // 4. 验证退款金额
+        
         if (dto.getRefundAmount().compareTo(order.getPayAmount()) > 0) {
-            throw new BusinessException("退款金额不能超过实付金额");
+            throw new BusinessException("閫€娆鹃噾棰濅笉鑳借秴杩囧疄浠橀噾棰?);
         }
 
-        // 5. 创建退款单
+        
         Refund refund = new Refund();
         refund.setRefundNo(Refund.generateRefundNo());
         refund.setOrderId(dto.getOrderId());
         refund.setOrderNo(dto.getOrderNo());
         refund.setUserId(userId);
-        refund.setMerchantId(order.getShopId()); // 假设shopId就是merchantId
+        refund.setMerchantId(order.getShopId()); 
         refund.setRefundType(dto.getRefundType());
         refund.setRefundReason(dto.getRefundReason());
         refund.setRefundDescription(dto.getRefundDescription());
@@ -95,15 +95,15 @@ public class RefundServiceImpl implements RefundService {
 
         refundMapper.insert(refund);
 
-        log.info("✅ 退款申请创建成功: refundId={}, refundNo={}, amount={}",
-                refund.getId(), refund.getRefundNo(), refund.getRefundAmount());
+        
 
-        // 6. 更新订单退款状态为"退款申请中"
+
+        
         order.setRefundStatus(OrderRefundStatusEnum.REFUND_APPLYING.getCode());
         order.setUpdatedAt(LocalDateTime.now());
         orderService.updateById(order);
 
-        // 7. 发送退款创建事件(通知商家)
+        
         refundMessageProducer.sendRefundCreatedEvent(refund);
 
         return refund.getId();
@@ -112,26 +112,26 @@ public class RefundServiceImpl implements RefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean auditRefund(Long refundId, Long merchantId, Boolean approved, String auditRemark) {
-        log.info("🔍 开始审核退款: refundId={}, merchantId={}, approved={}",
-                refundId, merchantId, approved);
+        
 
-        // 1. 查询退款单
+
+        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("退款单不存在");
+            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
         }
 
-        // 2. 验证商家权限
+        
         if (!refund.getMerchantId().equals(merchantId)) {
-            throw new BusinessException("无权审核此退款单");
+            throw new BusinessException("鏃犳潈瀹℃牳姝ら€€娆惧崟");
         }
 
-        // 3. 验证退款状态
+        
         if (!refund.isPendingAudit()) {
-            throw new BusinessException("退款单状态不是待审核,无法审核");
+            throw new BusinessException("閫€娆惧崟鐘舵€佷笉鏄緟瀹℃牳,鏃犳硶瀹℃牳");
         }
 
-        // 4. 更新退款单状态
+        
         refund.setStatus(approved ? RefundStatusEnum.AUDIT_PASSED.getCode() :
                 RefundStatusEnum.AUDIT_REJECTED.getCode());
         refund.setAuditTime(LocalDateTime.now());
@@ -141,14 +141,14 @@ public class RefundServiceImpl implements RefundService {
         int rows = refundMapper.updateById(refund);
 
         if (rows > 0) {
-            log.info("✅ 退款审核完成: refundId={}, approved={}", refundId, approved);
+            
 
-            // 5. 如果审核通过且是仅退款类型,直接处理退款
+            
             if (approved && refund.isRefundOnly()) {
                 processRefund(refundId);
             }
 
-            // 6. 发送审核结果事件
+            
             refundMessageProducer.sendRefundAuditedEvent(refund, approved);
 
             return true;
@@ -160,34 +160,34 @@ public class RefundServiceImpl implements RefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean cancelRefund(Long refundId, Long userId) {
-        log.info("❌ 用户取消退款: refundId={}, userId={}", refundId, userId);
+        
 
-        // 1. 查询退款单
+        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("退款单不存在");
+            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
         }
 
-        // 2. 验证用户权限
+        
         if (!refund.getUserId().equals(userId)) {
-            throw new BusinessException("无权取消此退款单");
+            throw new BusinessException("鏃犳潈鍙栨秷姝ら€€娆惧崟");
         }
 
-        // 3. 验证是否可以取消
+        
         if (!refund.canCancel()) {
-            throw new BusinessException("退款单当前状态不允许取消");
+            throw new BusinessException("閫€娆惧崟褰撳墠鐘舵€佷笉鍏佽鍙栨秷");
         }
 
-        // 4. 更新状态
+        
         refund.setStatus(RefundStatusEnum.CANCELLED.getCode());
         refund.setUpdatedAt(LocalDateTime.now());
 
         int rows = refundMapper.updateById(refund);
 
         if (rows > 0) {
-            log.info("✅ 退款已取消: refundId={}", refundId);
+            
 
-            // 发送取消事件
+            
             refundMessageProducer.sendRefundCancelledEvent(refund);
 
             return true;
@@ -199,42 +199,42 @@ public class RefundServiceImpl implements RefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean processRefund(Long refundId) {
-        log.info("💰 开始处理退款: refundId={}", refundId);
+        
 
-        // 1. 查询退款单
+        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("退款单不存在");
+            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
         }
 
-        // 2. 验证状态 - 只有审核通过或已收货的退款可以处理
+        
         if (!refund.isAuditPassed() && refund.getStatus() != RefundStatusEnum.GOODS_RECEIVED.getCode()) {
-            throw new BusinessException("退款单状态不允许处理退款");
+            throw new BusinessException("閫€娆惧崟鐘舵€佷笉鍏佽澶勭悊閫€娆?);
         }
 
-        // 3. 更新退款单状态为退款中
+        
         refund.setStatus(RefundStatusEnum.REFUNDING.getCode());
         refund.setUpdatedAt(LocalDateTime.now());
         refundMapper.updateById(refund);
 
-        // 4. 更新订单退款状态为"退款中"
+        
         Order order = orderService.getById(refund.getOrderId());
         if (order != null) {
             order.setRefundStatus(OrderRefundStatusEnum.REFUNDING.getCode());
             order.setUpdatedAt(LocalDateTime.now());
             orderService.updateById(order);
-            log.info("✅ 订单退款状态已更新为退款中: orderId={}", order.getId());
+            
         }
 
-        // 5. 发送退款处理事件给payment-service
+        
         boolean sent = refundMessageProducer.sendRefundProcessEvent(refund);
 
         if (sent) {
-            log.info("✅ 退款处理事件已发送: refundId={}, refundNo={}",
-                    refund.getId(), refund.getRefundNo());
+            
+
             return true;
         } else {
-            log.error("❌ 退款处理事件发送失败: refundId={}", refundId);
+            log.error("鉂?閫€娆惧鐞嗕簨浠跺彂閫佸け璐? refundId={}", refundId);
             return false;
         }
     }
@@ -257,45 +257,45 @@ public class RefundServiceImpl implements RefundService {
 
     @Override
     public PageResult<RefundVO> pageQuery(RefundPageDTO pageDTO) {
-        log.info("📋 开始查询退款列表: pageNum={}, pageSize={}", pageDTO.getPageNum(), pageDTO.getPageSize());
+        
 
-        // 1. 构建查询条件
+        
         LambdaQueryWrapper<Refund> wrapper = new LambdaQueryWrapper<>();
 
-        // 只查询未删除的记录
+        
         wrapper.eq(Refund::getIsDeleted, 0);
 
-        // 按状态筛选
+        
         if (pageDTO.getStatus() != null) {
             wrapper.eq(Refund::getStatus, pageDTO.getStatus());
         }
 
-        // 按用户ID筛选
+        
         if (pageDTO.getUserId() != null) {
             wrapper.eq(Refund::getUserId, pageDTO.getUserId());
         }
 
-        // 按商家ID筛选
+        
         if (pageDTO.getMerchantId() != null) {
             wrapper.eq(Refund::getMerchantId, pageDTO.getMerchantId());
         }
 
-        // 按订单号筛选
+        
         if (StringUtils.hasText(pageDTO.getOrderNo())) {
             wrapper.eq(Refund::getOrderNo, pageDTO.getOrderNo());
         }
 
-        // 按退款单号筛选
+        
         if (StringUtils.hasText(pageDTO.getRefundNo())) {
             wrapper.eq(Refund::getRefundNo, pageDTO.getRefundNo());
         }
 
-        // 按退款类型筛选
+        
         if (pageDTO.getRefundType() != null) {
             wrapper.eq(Refund::getRefundType, pageDTO.getRefundType());
         }
 
-        // 按时间范围筛选
+        
         if (StringUtils.hasText(pageDTO.getStartDate())) {
             wrapper.ge(Refund::getCreatedAt, pageDTO.getStartDate() + " 00:00:00");
         }
@@ -303,7 +303,7 @@ public class RefundServiceImpl implements RefundService {
             wrapper.le(Refund::getCreatedAt, pageDTO.getEndDate() + " 23:59:59");
         }
 
-        // 排序
+        
         String sortField = pageDTO.getSortField();
         String sortOrder = pageDTO.getSortOrder();
 
@@ -314,7 +314,7 @@ public class RefundServiceImpl implements RefundService {
                 wrapper.orderByDesc(Refund::getRefundAmount);
             }
         } else {
-            // 默认按创建时间排序
+            
             if ("asc".equalsIgnoreCase(sortOrder)) {
                 wrapper.orderByAsc(Refund::getCreatedAt);
             } else {
@@ -322,17 +322,17 @@ public class RefundServiceImpl implements RefundService {
             }
         }
 
-        // 2. 分页查询
+        
         Page<Refund> page = new Page<>(pageDTO.getPageNum(), pageDTO.getPageSize());
         Page<Refund> resultPage = refundMapper.selectPage(page, wrapper);
 
-        // 3. 转换为VO
+        
         List<RefundVO> voList = resultPage.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
 
-        log.info("✅ 查询退款列表成功: total={}, pages={}, current={}",
-                resultPage.getTotal(), resultPage.getPages(), resultPage.getCurrent());
+        
+
 
         return new PageResult<>(
                 resultPage.getCurrent(),
@@ -342,9 +342,9 @@ public class RefundServiceImpl implements RefundService {
         );
     }
 
-    /**
-     * 将Refund实体转换为RefundVO
-     */
+    
+
+
     private RefundVO convertToVO(Refund refund) {
         RefundVO vo = new RefundVO();
         vo.setId(refund.getId());
@@ -354,7 +354,7 @@ public class RefundServiceImpl implements RefundService {
         vo.setUserId(refund.getUserId());
         vo.setMerchantId(refund.getMerchantId());
         vo.setRefundType(refund.getRefundType());
-        vo.setRefundTypeName(refund.isRefundOnly() ? "仅退款" : "退货退款");
+        vo.setRefundTypeName(refund.isRefundOnly() ? "浠呴€€娆? : "閫€璐ч€€娆?);
         vo.setRefundReason(refund.getRefundReason());
         vo.setRefundDescription(refund.getRefundDescription());
         vo.setRefundAmount(refund.getRefundAmount());

@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Internal admin endpoints for service-to-service calls.
- */
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/admin")

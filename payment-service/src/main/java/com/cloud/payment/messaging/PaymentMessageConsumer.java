@@ -1,4 +1,4 @@
-﻿package com.cloud.payment.messaging;
+package com.cloud.payment.messaging;
 
 import com.cloud.common.domain.dto.payment.PaymentDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
@@ -14,9 +14,9 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Payment message consumer.
- */
+
+
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -29,16 +29,16 @@ public class PaymentMessageConsumer {
     private final PaymentMessageProducer paymentMessageProducer;
     private final MessageIdempotencyService messageIdempotencyService;
 
-    /**
-     * Create payment and emit payment-success event when order is created.
-     */
+    
+
+
     @Bean
     public Consumer<Message<OrderCreatedEvent>> orderCreatedConsumer() {
         return message -> {
             OrderCreatedEvent event = message.getPayload();
 
-            log.info("Receive order-created event: orderId={}, orderNo={}, userId={}, totalAmount={}",
-                    event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
+            
+
 
             try {
                 String eventId = event.getEventId();
@@ -86,8 +86,8 @@ public class PaymentMessageConsumer {
                 );
 
                 if (sendResult) {
-                    log.info("Order payment flow completed: paymentId={}, orderId={}, orderNo={}, amount={}",
-                            paymentId, event.getOrderId(), event.getOrderNo(), event.getTotalAmount());
+                    
+
                 } else {
                     log.error("Payment-success event send failed: paymentId={}, orderId={}, orderNo={}",
                             paymentId, event.getOrderId(), event.getOrderNo());
@@ -102,9 +102,9 @@ public class PaymentMessageConsumer {
         };
     }
 
-    /**
-     * Process refund request and emit refund-completed event.
-     */
+    
+
+
     @Bean
     public Consumer<Message<Map<String, Object>>> refundProcessConsumer() {
         return message -> {
@@ -117,8 +117,8 @@ public class PaymentMessageConsumer {
             Long userId = ((Number) event.get("userId")).longValue();
             BigDecimal refundAmount = new BigDecimal(event.get("refundAmount").toString());
 
-            log.info("Receive refund-process event: refundId={}, refundNo={}, orderId={}, orderNo={}, amount={}",
-                    refundId, refundNo, orderId, orderNo, refundAmount);
+            
+
 
             try {
                 String eventId = (String) event.get("eventId");
@@ -139,7 +139,7 @@ public class PaymentMessageConsumer {
                 );
 
                 if (sent) {
-                    log.info("Refund-completed event sent: refundId={}, refundNo={}", refundId, refundNo);
+                    
                 } else {
                     log.error("Refund-completed event send failed: refundId={}, refundNo={}", refundId, refundNo);
                 }

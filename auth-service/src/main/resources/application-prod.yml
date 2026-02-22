@@ -1,7 +1,7 @@
-# 认证服务 - 生产环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # 数据源配置
+  # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/cloud_auth?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
@@ -15,7 +15,7 @@ spring:
       max-lifetime: 1800000
       leak-detection-threshold: 60000
   
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -30,7 +30,7 @@ spring:
           max-idle: 16
           min-idle: 4
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.auth: info
@@ -40,13 +40,13 @@ logging:
     com.alibaba.nacos: warn
     root: warn
 
-# JWT 配置
+# Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
     test-mode: false
     issuer: ${JWT_ISSUER:http://prod-auth:8080}
 
-# Knife4j 生产配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: false
   production: true

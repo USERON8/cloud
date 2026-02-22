@@ -17,96 +17,93 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 店铺搜索控制器
- *
- * @author what's up
- * @date 2025-01-15
- * @since 1.0.0
- */
+
+
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/search/shops")
 @RequiredArgsConstructor
-@Tag(name = "店铺搜索", description = "店铺搜索相关接口")
+@Tag(name = "搴楅摵鎼滅储", description = "搴楅摵鎼滅储鐩稿叧鎺ュ彛")
 @Validated
 public class ShopSearchController {
 
     private final ShopSearchService shopSearchService;
 
-    @Operation(summary = "复杂店铺搜索", description = "支持多条件组合的复杂店铺搜索，包含聚合、高亮、排序等功能")
+    @Operation(summary = "澶嶆潅搴楅摵鎼滅储", description = "鏀寔澶氭潯浠剁粍鍚堢殑澶嶆潅搴楅摵鎼滅储锛屽寘鍚仛鍚堛€侀珮浜€佹帓搴忕瓑鍔熻兘")
     @PostMapping("/complex-search")
     public Result<SearchResult<ShopDocument>> complexSearch(@Valid @RequestBody ShopSearchRequest request) {
-        log.info("复杂店铺搜索请求 - 关键字: {}, 商家ID: {}, 状态: {}",
-                request.getKeyword(), request.getMerchantId(), request.getStatus());
+        
+
 
         SearchResult<ShopDocument> result = shopSearchService.searchShops(request);
 
-        log.info("✅ 复杂店铺搜索完成 - 总数: {}, 耗时: {}ms", result.getTotal(), result.getTook());
-        return Result.success("搜索成功", result);
+        
+        return Result.success("鎼滅储鎴愬姛", result);
     }
 
-    @Operation(summary = "获取店铺筛选聚合信息", description = "获取店铺搜索的筛选聚合信息，用于构建筛选条件")
+    @Operation(summary = "鑾峰彇搴楅摵绛涢€夎仛鍚堜俊鎭?, description = "鑾峰彇搴楅摵鎼滅储鐨勭瓫閫夎仛鍚堜俊鎭紝鐢ㄤ簬鏋勫缓绛涢€夋潯浠?)
     @PostMapping("/filters")
     public Result<SearchResult<ShopDocument>> getShopFilters(@Valid @RequestBody ShopSearchRequest request) {
-        log.info("获取店铺筛选聚合信息请求");
+        
 
-        SearchResult<ShopDocument> result = shopSearchService.getShopFilters(request);
-
-        log.info("✅ 获取店铺筛选聚合信息完成");
-        return Result.success("获取筛选信息成功", result);
+        return Result.success("鑾峰彇绛涢€変俊鎭垚鍔?, result);
     }
 
-    @Operation(summary = "获取店铺搜索建议", description = "根据输入关键字获取店铺搜索建议")
+    @Operation(summary = "鑾峰彇搴楅摵鎼滅储寤鸿", description = "鏍规嵁杈撳叆鍏抽敭瀛楄幏鍙栧簵閾烘悳绱㈠缓璁?)
     @GetMapping("/suggestions")
     public Result<List<String>> getSearchSuggestions(
-            @Parameter(description = "搜索关键字") @RequestParam String keyword,
-            @Parameter(description = "建议数量") @RequestParam(defaultValue = "10") Integer size) {
-        log.info("获取店铺搜索建议请求 - 关键字: {}, 数量: {}", keyword, size);
+            @Parameter(description = "鎼滅储鍏抽敭瀛?) @RequestParam String keyword,
+            @Parameter(description = "寤鸿鏁伴噺") @RequestParam(defaultValue = "10") Integer size) {
+        
 
         List<String> suggestions = shopSearchService.getSearchSuggestions(keyword, size);
 
-        log.info("✅ 获取店铺搜索建议完成 - 数量: {}", suggestions.size());
-        return Result.success("获取建议成功", suggestions);
+        
+        return Result.success("鑾峰彇寤鸿鎴愬姛", suggestions);
     }
 
-    @Operation(summary = "获取热门店铺", description = "获取当前热门的店铺")
+    @Operation(summary = "鑾峰彇鐑棬搴楅摵", description = "鑾峰彇褰撳墠鐑棬鐨勫簵閾?)
     @GetMapping("/hot-shops")
     public Result<List<ShopDocument>> getHotShops(
-            @Parameter(description = "店铺数量") @RequestParam(defaultValue = "10") Integer size) {
-        log.info("获取热门店铺请求 - 数量: {}", size);
+            @Parameter(description = "搴楅摵鏁伴噺") @RequestParam(defaultValue = "10") Integer size) {
+        
 
         List<ShopDocument> hotShops = shopSearchService.getHotShops(size);
 
-        log.info("✅ 获取热门店铺完成 - 数量: {}", hotShops.size());
-        return Result.success("获取热门店铺成功", hotShops);
+        
+        return Result.success("鑾峰彇鐑棬搴楅摵鎴愬姛", hotShops);
     }
 
-    @Operation(summary = "根据店铺ID查询", description = "根据店铺ID查询店铺详情")
+    @Operation(summary = "鏍规嵁搴楅摵ID鏌ヨ", description = "鏍规嵁搴楅摵ID鏌ヨ搴楅摵璇︽儏")
     @GetMapping("/{shopId}")
-    public Result<ShopDocument> getShopById(@Parameter(description = "店铺ID") @PathVariable Long shopId) {
-        log.info("根据店铺ID查询 - 店铺ID: {}", shopId);
+    public Result<ShopDocument> getShopById(@Parameter(description = "搴楅摵ID") @PathVariable Long shopId) {
+        
 
         ShopDocument shop = shopSearchService.findByShopId(shopId);
 
         if (shop == null) {
-            log.warn("⚠️ 店铺不存在 - 店铺ID: {}", shopId);
+            log.warn("鈿狅笍 搴楅摵涓嶅瓨鍦?- 搴楅摵ID: {}", shopId);
             throw new ResourceNotFoundException("Shop", String.valueOf(shopId));
         }
-        log.info("✅ 店铺查询成功 - 店铺ID: {}, 店铺名称: {}", shopId, shop.getShopName());
-        return Result.success("查询成功", shop);
+        
+        return Result.success("鏌ヨ鎴愬姛", shop);
     }
 
-    @Operation(summary = "推荐店铺", description = "获取推荐店铺列表")
+    @Operation(summary = "鎺ㄨ崘搴楅摵", description = "鑾峰彇鎺ㄨ崘搴楅摵鍒楄〃")
     @GetMapping("/recommended")
     public Result<SearchResult<ShopDocument>> getRecommendedShops(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
-        log.info("获取推荐店铺请求 - 页码: {}, 大小: {}", page, size);
+            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "姣忛〉澶у皬") @RequestParam(defaultValue = "20") Integer size) {
+        
 
         ShopSearchRequest request = new ShopSearchRequest();
         request.setRecommended(true);
-        request.setStatus(1); // 只查询营业中的店铺
+        request.setStatus(1); 
         request.setPage(page);
         request.setSize(size);
         request.setSortBy("hotScore");
@@ -114,21 +111,21 @@ public class ShopSearchController {
 
         SearchResult<ShopDocument> result = shopSearchService.searchShops(request);
 
-        log.info("✅ 获取推荐店铺完成 - 总数: {}", result.getTotal());
-        return Result.success("获取推荐店铺成功", result);
+        
+        return Result.success("鑾峰彇鎺ㄨ崘搴楅摵鎴愬姛", result);
     }
 
-    @Operation(summary = "按地区搜索店铺", description = "根据地区关键字搜索店铺")
+    @Operation(summary = "鎸夊湴鍖烘悳绱㈠簵閾?, description = "鏍规嵁鍦板尯鍏抽敭瀛楁悳绱㈠簵閾?)
     @GetMapping("/by-location")
     public Result<SearchResult<ShopDocument>> searchShopsByLocation(
-            @Parameter(description = "地区关键字") @RequestParam String location,
-            @Parameter(description = "页码") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "每页大小") @RequestParam(defaultValue = "20") Integer size) {
-        log.info("按地区搜索店铺请求 - 地区: {}, 页码: {}, 大小: {}", location, page, size);
+            @Parameter(description = "鍦板尯鍏抽敭瀛?) @RequestParam String location,
+            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "姣忛〉澶у皬") @RequestParam(defaultValue = "20") Integer size) {
+        
 
         ShopSearchRequest request = new ShopSearchRequest();
         request.setAddressKeyword(location);
-        request.setStatus(1); // 只查询营业中的店铺
+        request.setStatus(1); 
         request.setPage(page);
         request.setSize(size);
         request.setSortBy("rating");
@@ -136,7 +133,7 @@ public class ShopSearchController {
 
         SearchResult<ShopDocument> result = shopSearchService.searchShops(request);
 
-        log.info("✅ 按地区搜索店铺完成 - 地区: {}, 总数: {}", location, result.getTotal());
-        return Result.success("搜索成功", result);
+        
+        return Result.success("鎼滅储鎴愬姛", result);
     }
 }

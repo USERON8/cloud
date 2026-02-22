@@ -1,5 +1,6 @@
 package com.cloud.common.cache.controller;
 
+import com.cloud.common.cache.core.MultiLevelCache;
 import com.cloud.common.cache.core.MultiLevelCacheManager;
 import com.cloud.common.cache.metrics.CacheMetricsCollector;
 import com.cloud.common.result.Result;
@@ -10,26 +11,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.lang.Nullable;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * 缓存监控控制器
- * <p>
- * 提供缓存监控和管理接口:
- * - 查看缓存统计信息
- * - 查看热点数据
- * - 手动清理缓存
- * - 查看缓存配置
- *
- * @author CloudDevAgent
- * @since 2025-10-12
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/cache/monitor")
-@Tag(name = "缓存监控", description = "缓存统计和管理接口")
+@Tag(name = "Cache Monitor", description = "Cache monitoring endpoints")
 @ConditionalOnBean(CacheManager.class)
 public class CacheMonitorController {
 
@@ -41,41 +39,31 @@ public class CacheMonitorController {
         this.metricsCollector = metricsCollector;
     }
 
-    /**
-     * 获取所有缓存名称
-     */
     @GetMapping("/names")
-    @Operation(summary = "获取所有缓存名称")
+    @Operation(summary = "Get cache names")
     public Result<Collection<String>> getCacheNames() {
-        Collection<String> cacheNames = cacheManager.getCacheNames();
-        return Result.success(cacheNames);
+        return Result.success(cacheManager.getCacheNames());
     }
 
-    /**
-     * 获取指定缓存的统计信息
-     */
     @GetMapping("/stats/{cacheName}")
-    @Operation(summary = "获取指定缓存的统计信息")
+    @Operation(summary = "Get cache stats")
     public Result<Map<String, Object>> getCacheStats(@PathVariable String cacheName) {
         try {
             Cache cache = cacheManager.getCache(cacheName);
             if (cache == null) {
-                return Result.error("缓存 " + cacheName + " 不存在");
+                return Result.error("Cache not found: " + cacheName);
             }
 
             Map<String, Object> stats = new HashMap<>();
             stats.put("cacheName", cacheName);
             stats.put("cacheType", cache.getClass().getSimpleName());
 
-            // 如果是多级缓存,获取详细统计
-            if (cache instanceof com.cloud.common.cache.core.MultiLevelCache multiCache) {
-                stats.put("stats", multiCache.getStats());
+            if (cache instanceof MultiLevelCache multiLevelCache) {
+                stats.put("stats", multiLevelCache.getStats());
             }
 
-            // 从MetricsCollector获取统计信息
             if (metricsCollector != null) {
-                CacheMetricsCollector.CacheStats cacheStats =
-                        metricsCollector.getCacheStats(cacheName);
+                CacheMetricsCollector.CacheStats cacheStats = metricsCollector.getCacheStats(cacheName);
                 if (cacheStats != null) {
                     stats.put("hitCount", cacheStats.getHitCount().get());
                     stats.put("missCount", cacheStats.getMissCount().get());
@@ -87,18 +75,14 @@ public class CacheMonitorController {
             }
 
             return Result.success(stats);
-
         } catch (Exception e) {
-            log.error("获取缓存统计失败: {}", cacheName, e);
-            return Result.error("获取缓存统计失败: " + e.getMessage());
+            log.error("Failed to get cache stats: {}", cacheName, e);
+            return Result.error("Failed to get cache stats: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取所有缓存的统计信息
-     */
     @GetMapping("/stats")
-    @Operation(summary = "获取所有缓存的统计信息")
+    @Operation(summary = "Get all cache stats")
     public Result<List<Map<String, Object>>> getAllCacheStats() {
         try {
             List<Map<String, Object>> statsList = new ArrayList<>();
@@ -107,10 +91,8 @@ public class CacheMonitorController {
                 Map<String, Object> stats = new HashMap<>();
                 stats.put("cacheName", cacheName);
 
-                // 从MetricsCollector获取统计信息
                 if (metricsCollector != null) {
-                    CacheMetricsCollector.CacheStats cacheStats =
-                            metricsCollector.getCacheStats(cacheName);
+                    CacheMetricsCollector.CacheStats cacheStats = metricsCollector.getCacheStats(cacheName);
                     if (cacheStats != null) {
                         stats.put("hitCount", cacheStats.getHitCount().get());
                         stats.put("missCount", cacheStats.getMissCount().get());
@@ -124,70 +106,52 @@ public class CacheMonitorController {
             }
 
             return Result.success(statsList);
-
         } catch (Exception e) {
-            log.error("获取所有缓存统计失败", e);
-            return Result.error("获取所有缓存统计失败: " + e.getMessage());
+            log.error("Failed to get all cache stats", e);
+            return Result.error("Failed to get all cache stats: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取热点数据分析
-     */
     @GetMapping("/hotspot/{cacheName}")
-    @Operation(summary = "获取指定缓存的热点数据")
-    public Result<Map<String, Long>> getHotspotData(
-            @PathVariable String cacheName,
-            @RequestParam(defaultValue = "10") int limit) {
-
+    @Operation(summary = "Get cache hotspot keys")
+    public Result<Map<String, Long>> getHotspotData(@PathVariable String cacheName,
+                                                    @RequestParam(defaultValue = "10") int limit) {
         try {
             if (metricsCollector == null) {
-                return Result.error("指标收集器未启用");
+                return Result.error("Cache metrics collector is not available");
             }
 
-            CacheMetricsCollector.CacheStats cacheStats =
-                    metricsCollector.getCacheStats(cacheName);
-
+            CacheMetricsCollector.CacheStats cacheStats = metricsCollector.getCacheStats(cacheName);
             if (cacheStats == null) {
-                return Result.error("缓存 " + cacheName + " 的统计信息不存在");
+                return Result.error("No cache stats found for: " + cacheName);
             }
 
-            Map<String, Long> hotspotData = cacheStats.getTopAccessedKeys(limit);
-            return Result.success(hotspotData);
-
+            return Result.success(cacheStats.getTopAccessedKeys(limit));
         } catch (Exception e) {
-            log.error("获取热点数据失败: {}", cacheName, e);
-            return Result.error("获取热点数据失败: " + e.getMessage());
+            log.error("Failed to get hotspot data: {}", cacheName, e);
+            return Result.error("Failed to get hotspot data: " + e.getMessage());
         }
     }
 
-    /**
-     * 清除指定缓存
-     */
     @DeleteMapping("/clear/{cacheName}")
-    @Operation(summary = "清除指定缓存")
+    @Operation(summary = "Clear cache")
     public Result<String> clearCache(@PathVariable String cacheName) {
         try {
             Cache cache = cacheManager.getCache(cacheName);
             if (cache == null) {
-                return Result.error("缓存 " + cacheName + " 不存在");
+                return Result.error("Cache not found: " + cacheName);
             }
 
             cache.clear();
-            log.info("手动清除缓存: {}", cacheName);
-            return Result.success("缓存 " + cacheName + " 已清除");
-
+            return Result.success("Cache cleared: " + cacheName);
         } catch (Exception e) {
-            log.error("清除缓存失败: {}", cacheName, e);
-            return Result.error("清除缓存失败: " + e.getMessage());
+            log.error("Failed to clear cache: {}", cacheName, e);
+            return Result.error("Failed to clear cache: " + e.getMessage());
         }
     }
 
-    /**
-     * 清除所有缓存
-     */
     @DeleteMapping("/clear-all")
-    @Operation(summary = "清除所有缓存")
+    @Operation(summary = "Clear all caches")
     public Result<String> clearAllCaches() {
         try {
             int count = 0;
@@ -199,20 +163,15 @@ public class CacheMonitorController {
                 }
             }
 
-            log.info("手动清除所有缓存, 总数: {}", count);
-            return Result.success("已清除 " + count + " 个缓存");
-
+            return Result.success("Cleared caches: " + count);
         } catch (Exception e) {
-            log.error("清除所有缓存失败", e);
-            return Result.error("清除所有缓存失败: " + e.getMessage());
+            log.error("Failed to clear all caches", e);
+            return Result.error("Failed to clear all caches: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取缓存管理器信息
-     */
     @GetMapping("/manager-info")
-    @Operation(summary = "获取缓存管理器信息")
+    @Operation(summary = "Get cache manager info")
     public Result<Map<String, Object>> getCacheManagerInfo() {
         try {
             Map<String, Object> info = new HashMap<>();
@@ -220,66 +179,60 @@ public class CacheMonitorController {
             info.put("cacheCount", cacheManager.getCacheNames().size());
             info.put("cacheNames", cacheManager.getCacheNames());
 
-            // 如果是多级缓存管理器,获取额外信息
-            if (cacheManager instanceof MultiLevelCacheManager multiManager) {
-                info.put("nodeId", multiManager.getNodeId());
-                info.put("cacheConfig", multiManager.getCacheConfig());
+            if (cacheManager instanceof MultiLevelCacheManager multiLevelCacheManager) {
+                info.put("nodeId", multiLevelCacheManager.getNodeId());
+                info.put("cacheConfig", multiLevelCacheManager.getCacheConfig());
             }
 
             return Result.success(info);
-
         } catch (Exception e) {
-            log.error("获取缓存管理器信息失败", e);
-            return Result.error("获取缓存管理器信息失败: " + e.getMessage());
+            log.error("Failed to get cache manager info", e);
+            return Result.error("Failed to get cache manager info: " + e.getMessage());
         }
     }
 
-    /**
-     * 获取系统总体缓存指标
-     */
     @GetMapping("/metrics/summary")
-    @Operation(summary = "获取系统总体缓存指标")
+    @Operation(summary = "Get cache metrics summary")
     public Result<Map<String, Object>> getCacheMetricsSummary() {
         try {
             if (metricsCollector == null) {
-                return Result.error("指标收集器未启用");
+                return Result.error("Cache metrics collector is not available");
             }
 
-            Map<String, Object> summary = new HashMap<>();
-
-            long totalHits = 0;
-            long totalMisses = 0;
-            double totalAccessTime = 0;
+            long totalHits = 0L;
+            long totalMisses = 0L;
+            long totalEvictions = 0L;
+            double totalAccessTime = 0D;
             int cacheCount = 0;
 
             for (String cacheName : cacheManager.getCacheNames()) {
-                CacheMetricsCollector.CacheStats stats =
-                        metricsCollector.getCacheStats(cacheName);
-
+                CacheMetricsCollector.CacheStats stats = metricsCollector.getCacheStats(cacheName);
                 if (stats != null) {
                     totalHits += stats.getHitCount().get();
                     totalMisses += stats.getMissCount().get();
+                    totalEvictions += stats.getEvictionCount().get();
                     totalAccessTime += stats.getAverageAccessTime();
                     cacheCount++;
                 }
             }
 
             long totalAccess = totalHits + totalMisses;
-            double overallHitRatio = totalAccess > 0 ? (double) totalHits / totalAccess : 0.0;
-            double avgAccessTime = cacheCount > 0 ? totalAccessTime / cacheCount : 0.0;
+            double hitRatio = totalAccess > 0 ? (double) totalHits / totalAccess : 0D;
+            double avgAccessTime = cacheCount > 0 ? totalAccessTime / cacheCount : 0D;
 
+            Map<String, Object> summary = new HashMap<>();
             summary.put("totalHits", totalHits);
             summary.put("totalMisses", totalMisses);
+            summary.put("totalEvictions", totalEvictions);
             summary.put("totalAccess", totalAccess);
-            summary.put("overallHitRatio", String.format("%.2f%%", overallHitRatio * 100));
+            summary.put("overallHitRatio", String.format("%.2f%%", hitRatio * 100));
             summary.put("averageAccessTime", String.format("%.2fms", avgAccessTime));
             summary.put("cacheCount", cacheCount);
 
             return Result.success(summary);
-
         } catch (Exception e) {
-            log.error("获取缓存指标汇总失败", e);
-            return Result.error("获取缓存指标汇总失败: " + e.getMessage());
+            log.error("Failed to get cache metrics summary", e);
+            return Result.error("Failed to get cache metrics summary: " + e.getMessage());
         }
     }
 }

@@ -1,7 +1,7 @@
-# 网关服务 - 开发环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: localhost
@@ -16,7 +16,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.gateway: debug
@@ -25,12 +25,12 @@ logging:
     org.springframework.web: debug
     com.alibaba.nacos: warn
 
-# 应用安全配置
+# Comment sanitized for UTF-8 compatibility.
 app:
   security:
     enable-test-api: true
 
-# Knife4j 开发配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false

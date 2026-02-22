@@ -32,13 +32,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/**
- * 订单服务实现类
- * 针对表【order(订单主表)】的数据库操作Service实现
- *
- * @author cloud
- * @since 1.0.0
- */
+
+
+
+
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,15 +54,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         try {
             Page<Order> page = new Page<>(queryDTO.getCurrent(), queryDTO.getSize());
             Page<Order> resultPage = this.baseMapper.pageQuery(page, queryDTO);
-            // 转换为VO对象
+            
             Page<OrderVO> voPage = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
             voPage.setRecords(resultPage.getRecords().stream()
                     .map(orderConverter::toVO)
                     .collect(Collectors.toList()));
             return voPage;
         } catch (Exception e) {
-            log.error("分页查询订单失败: ", e);
-            throw new OrderServiceException("分页查询订单失败: " + e.getMessage());
+            log.error("鍒嗛〉鏌ヨ璁㈠崟澶辫触: ", e);
+            throw new OrderServiceException("鍒嗛〉鏌ヨ璁㈠崟澶辫触: " + e.getMessage());
         }
     }
 
@@ -78,7 +77,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     @Cacheable(cacheNames = "orderCache", key = "#id", unless = "#result == null")
     public OrderDTO getByOrderEntityId(Long id) {
         try {
-            // 直接从数据库查询
+            
             Order order = this.baseMapper.selectById(id);
             if (order == null) {
                 throw EntityNotFoundException.order(id);
@@ -89,8 +88,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            log.error("根据ID查询订单失败: ", e);
-            throw new OrderServiceException("根据ID查询订单失败: " + e.getMessage());
+            log.error("鏍规嵁ID鏌ヨ璁㈠崟澶辫触: ", e);
+            throw new OrderServiceException("鏍规嵁ID鏌ヨ璁㈠崟澶辫触: " + e.getMessage());
         }
     }
 
@@ -103,13 +102,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.baseMapper.insert(order) > 0;
 
             if (result) {
-                log.info("订单创建成功，订单ID: {}", order.getId());
+                
             }
 
             return result;
         } catch (Exception e) {
-            log.error("保存订单失败: ", e);
-            throw new OrderServiceException("保存订单失败: " + e.getMessage());
+            log.error("淇濆瓨璁㈠崟澶辫触: ", e);
+            throw new OrderServiceException("淇濆瓨璁㈠崟澶辫触: " + e.getMessage());
         }
     }
 
@@ -125,25 +124,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     )
     public Boolean updateOrder(OrderDTO orderDTO) {
         try {
-            // 根据ID获取现有订单记录
+            
             Order existingOrder = this.baseMapper.selectById(orderDTO.getId());
             if (existingOrder == null) {
                 throw EntityNotFoundException.order(orderDTO.getId());
             }
 
-            // 更新订单信息
+            
             Order order = orderConverter.toEntity(orderDTO);
             boolean result = this.baseMapper.updateById(order) > 0;
 
             if (result) {
-                log.info("订单更新成功，订单ID: {}", order.getId());
+                
             }
 
             return result;
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            log.error("更新订单失败: ", e);
+            log.error("鏇存柊璁㈠崟澶辫触: ", e);
             throw e;
         }
     }
@@ -154,7 +153,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             key = "'order:pay:' + #orderId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "订单支付操作获取锁失败"
+            failMessage = "璁㈠崟鏀粯鎿嶄綔鑾峰彇閿佸け璐?
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean payOrder(Long orderId) {
@@ -164,18 +163,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 throw EntityNotFoundException.order(orderId);
             }
 
-            // 验证订单状态（必须是待支付状态）
+            
             if (order.getStatus() != 0) {
-                throw InvalidStatusException.order(order.getStatus().toString(), "支付");
+                throw InvalidStatusException.order(order.getStatus().toString(), "鏀粯");
             }
-            order.setStatus(1); // 设置为已支付状态
-            boolean result = this.baseMapper.updateById(order) > 0;
+            order.setStatus(1); 
 
             return result;
         } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
-            log.error("支付订单失败: ", e);
+            log.error("鏀粯璁㈠崟澶辫触: ", e);
             throw e;
         }
     }
@@ -186,7 +184,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             key = "'order:ship:' + #orderId",
             waitTime = 3,
             leaseTime = 10,
-            failMessage = "订单发货操作获取锁失败"
+            failMessage = "璁㈠崟鍙戣揣鎿嶄綔鑾峰彇閿佸け璐?
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean shipOrder(Long orderId) {
@@ -196,18 +194,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 throw EntityNotFoundException.order(orderId);
             }
 
-            // 验证订单状态（必须是已支付状态）
+            
             if (order.getStatus() != 1) {
-                throw InvalidStatusException.order(order.getStatus().toString(), "发货");
+                throw InvalidStatusException.order(order.getStatus().toString(), "鍙戣揣");
             }
-            order.setStatus(2); // 设置为已发货状态
-            boolean result = this.baseMapper.updateById(order) > 0;
+            order.setStatus(2); 
 
             return result;
         } catch (EntityNotFoundException | InvalidStatusException e) {
             throw e;
         } catch (Exception e) {
-            log.error("发货订单失败: ", e);
+            log.error("鍙戣揣璁㈠崟澶辫触: ", e);
             throw e;
         }
     }
@@ -217,7 +214,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             key = "'order:complete:' + #orderId",
             waitTime = 3,
             leaseTime = 10,
-            failMessage = "订单完成操作获取锁失败"
+            failMessage = "璁㈠崟瀹屾垚鎿嶄綔鑾峰彇閿佸け璐?
     )
     @Transactional(rollbackFor = Exception.class)
     public Boolean completeOrder(Long orderId) {
@@ -227,14 +224,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             throw EntityNotFoundException.order(orderId);
         }
 
-        // 验证订单状态（必须是已发货状态）
+        
         if (order.getStatus() != 2) {
-            throw InvalidStatusException.order(order.getStatus().toString(), "完成");
+            throw InvalidStatusException.order(order.getStatus().toString(), "瀹屾垚");
         }
-        order.setStatus(3); // 设置为已完成状态
-        boolean result = this.baseMapper.updateById(order) > 0;
+        order.setStatus(3); 
 
-        log.info("订单完成成功，订单ID: {}", orderId);
+        
         return result;
 
     }
@@ -252,7 +248,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             throw EntityNotFoundException.order(orderId);
         }
         if (order.getStatus() == null || (order.getStatus() != 0 && order.getStatus() != 1)) {
-            throw InvalidStatusException.order(String.valueOf(order.getStatus()), "取消");
+            throw InvalidStatusException.order(String.valueOf(order.getStatus()), "鍙栨秷");
         }
         order.setStatus(4);
         order.setCancelTime(LocalDateTime.now());
@@ -265,10 +261,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             try {
                 Long currentUser = Long.parseLong(currentUserId);
                 if (!Objects.equals(currentUser, orderCreateDTO.getUserId())) {
-                    throw new OrderServiceException("当前用户与订单用户不一致");
+                    throw new OrderServiceException("褰撳墠鐢ㄦ埛涓庤鍗曠敤鎴蜂笉涓€鑷?);
                 }
             } catch (NumberFormatException e) {
-                throw new OrderServiceException("当前用户ID格式错误");
+                throw new OrderServiceException("褰撳墠鐢ㄦ埛ID鏍煎紡閿欒");
             }
         }
         OrderDTO created = createOrder(orderCreateDTO);
@@ -331,7 +327,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         BigDecimal totalAmount = orderCreateDTO.getTotalAmount() == null ? BigDecimal.ZERO : orderCreateDTO.getTotalAmount();
         BigDecimal payAmount = orderCreateDTO.getPayAmount() == null ? totalAmount : orderCreateDTO.getPayAmount();
         if (totalAmount.compareTo(BigDecimal.ZERO) <= 0 || payAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new OrderServiceException("订单金额必须大于0");
+            throw new OrderServiceException("璁㈠崟閲戦蹇呴』澶т簬0");
         }
         orderDTO.setTotalAmount(totalAmount);
         orderDTO.setPayAmount(payAmount);
@@ -377,11 +373,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     public OrderVO createOrderForFeign(OrderDTO orderDTO) {
         OrderDTO created = createOrder(orderDTO);
         if (created == null || created.getId() == null) {
-            throw new BusinessException("创建订单失败");
+            throw new BusinessException("鍒涘缓璁㈠崟澶辫触");
         }
         Order persisted = this.baseMapper.selectById(created.getId());
         if (persisted == null) {
-            throw new EntityNotFoundException("订单", created.getId());
+            throw new EntityNotFoundException("璁㈠崟", created.getId());
         }
         return orderConverter.toVO(persisted);
     }
@@ -421,26 +417,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 throw EntityNotFoundException.order(orderId);
             }
 
-            // 验证订单状态（必须是待支付状态）
+            
             if (order.getStatus() != 0) {
-                log.warn("订单状态不正确，无法更新支付状态: orderId={}, currentStatus={}", orderId, order.getStatus());
+                log.warn("璁㈠崟鐘舵€佷笉姝ｇ‘锛屾棤娉曟洿鏂版敮浠樼姸鎬? orderId={}, currentStatus={}", orderId, order.getStatus());
                 return false;
             }
 
-            order.setStatus(1); // 设置为已支付状态
-            boolean result = this.baseMapper.updateById(order) > 0;
+            order.setStatus(1); 
 
             if (result) {
-                log.info("支付成功后更新订单状态成功: orderId={}, paymentId={}, transactionNo={}",
-                        orderId, paymentId, transactionNo);
+                
+
             }
 
             return result;
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            log.error("支付成功后更新订单状态失败: orderId={}", orderId, e);
-            throw new OrderServiceException("支付成功后更新订单状态失败: " + e.getMessage());
+            log.error("鏀粯鎴愬姛鍚庢洿鏂拌鍗曠姸鎬佸け璐? orderId={}", orderId, e);
+            throw new OrderServiceException("鏀粯鎴愬姛鍚庢洿鏂拌鍗曠姸鎬佸け璐? " + e.getMessage());
         }
     }
 
@@ -460,29 +455,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
                 throw EntityNotFoundException.order(orderId);
             }
 
-            // 验证订单状态（只有待支付状态可以取消）
+            
             if (order.getStatus() != 0) {
-                log.warn("订单状态不正确，无法取消: orderId={}, currentStatus={}", orderId, order.getStatus());
+                log.warn("璁㈠崟鐘舵€佷笉姝ｇ‘锛屾棤娉曞彇娑? orderId={}, currentStatus={}", orderId, order.getStatus());
                 return false;
             }
 
-            order.setStatus(4); // 设置为已取消状态
-            boolean result = this.baseMapper.updateById(order) > 0;
+            order.setStatus(4); 
 
             if (result) {
-                log.info("库存冻结失败取消订单成功: orderId={}, reason={}", orderId, reason);
+                
             }
 
             return result;
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            log.error("库存冻结失败取消订单失败: orderId={}", orderId, e);
-            throw new OrderServiceException("库存冻结失败取消订单失败: " + e.getMessage());
+            log.error("搴撳瓨鍐荤粨澶辫触鍙栨秷璁㈠崟澶辫触: orderId={}", orderId, e);
+            throw new OrderServiceException("搴撳瓨鍐荤粨澶辫触鍙栨秷璁㈠崟澶辫触: " + e.getMessage());
         }
     }
 
-    // ================= 批量操作方法实现 =================
+    
 
     @Override
     @DistributedLock(
@@ -495,19 +489,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     @CacheEvict(cacheNames = "orderCache", allEntries = true)
     public Integer batchUpdateOrderStatus(List<Long> orderIds, Integer status) {
         if (orderIds == null || orderIds.isEmpty()) {
-            log.warn("批量更新订单状态失败，订单ID集合为空");
-            throw new OrderServiceException("订单ID集合不能为空");
+            log.warn("鎵归噺鏇存柊璁㈠崟鐘舵€佸け璐ワ紝璁㈠崟ID闆嗗悎涓虹┖");
+            throw new OrderServiceException("璁㈠崟ID闆嗗悎涓嶈兘涓虹┖");
         }
 
         if (status == null) {
-            log.warn("批量更新订单状态失败，状态值为空");
-            throw new OrderServiceException("状态值不能为空");
+            log.warn("鎵归噺鏇存柊璁㈠崟鐘舵€佸け璐ワ紝鐘舵€佸€间负绌?);
+            throw new OrderServiceException("鐘舵€佸€间笉鑳戒负绌?);
         }
 
-        log.info("开始批量更新订单状态，订单数量: {}, 状态值: {}", orderIds.size(), status);
+        
 
         try {
-            // 使用 MyBatis Plus 的 lambdaUpdate 批量更新
+            
             com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Order> wrapper =
                     new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
             wrapper.in(Order::getId, orderIds);
@@ -518,15 +512,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
             boolean result = this.update(updateEntity, wrapper);
 
             if (result) {
-                log.info("批量更新订单状态成功，订单数量: {}", orderIds.size());
+                
                 return orderIds.size();
             } else {
-                log.warn("批量更新订单状态失败");
+                log.warn("鎵归噺鏇存柊璁㈠崟鐘舵€佸け璐?);
                 return 0;
             }
         } catch (Exception e) {
-            log.error("批量更新订单状态时发生异常，订单IDs: {}", orderIds, e);
-            throw new OrderServiceException("批量更新订单状态失败: " + e.getMessage(), e);
+            log.error("鎵归噺鏇存柊璁㈠崟鐘舵€佹椂鍙戠敓寮傚父锛岃鍗旾Ds: {}", orderIds, e);
+            throw new OrderServiceException("鎵归噺鏇存柊璁㈠崟鐘舵€佸け璐? " + e.getMessage(), e);
         }
     }
 
@@ -541,32 +535,31 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     @CacheEvict(cacheNames = "orderCache", allEntries = true)
     public Integer batchDeleteOrders(List<Long> orderIds) {
         if (orderIds == null || orderIds.isEmpty()) {
-            log.warn("批量删除订单失败，订单ID集合为空");
-            throw new OrderServiceException("订单ID集合不能为空");
+            log.warn("鎵归噺鍒犻櫎璁㈠崟澶辫触锛岃鍗旾D闆嗗悎涓虹┖");
+            throw new OrderServiceException("璁㈠崟ID闆嗗悎涓嶈兘涓虹┖");
         }
 
-        log.info("开始批量删除订单，订单数量: {}", orderIds.size());
+        
 
         try {
-            // 使用 MyBatis Plus 的批量删除（逻辑删除）
-            boolean result = this.removeByIds(orderIds);
+            
 
             if (result) {
-                log.info("批量删除订单成功，订单数量: {}", orderIds.size());
+                
                 return orderIds.size();
             } else {
-                log.warn("批量删除订单失败");
+                log.warn("鎵归噺鍒犻櫎璁㈠崟澶辫触");
                 return 0;
             }
         } catch (Exception e) {
-            log.error("批量删除订单时发生异常，订单IDs: {}", orderIds, e);
-            throw new OrderServiceException("批量删除订单失败: " + e.getMessage(), e);
+            log.error("鎵归噺鍒犻櫎璁㈠崟鏃跺彂鐢熷紓甯革紝璁㈠崟IDs: {}", orderIds, e);
+            throw new OrderServiceException("鎵归噺鍒犻櫎璁㈠崟澶辫触: " + e.getMessage(), e);
         }
     }
 
     private void validateOrderUser(Long orderId, String currentUserId) {
         if (currentUserId == null || currentUserId.isBlank()) {
-            throw new OrderServiceException("当前用户ID不能为空");
+            throw new OrderServiceException("褰撳墠鐢ㄦ埛ID涓嶈兘涓虹┖");
         }
         Order order = this.baseMapper.selectById(orderId);
         if (order == null) {
@@ -575,10 +568,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         try {
             Long currentUser = Long.parseLong(currentUserId);
             if (!Objects.equals(order.getUserId(), currentUser)) {
-                throw new OrderServiceException("无权操作该订单");
+                throw new OrderServiceException("鏃犳潈鎿嶄綔璇ヨ鍗?);
             }
         } catch (NumberFormatException e) {
-            throw new OrderServiceException("当前用户ID格式错误");
+            throw new OrderServiceException("褰撳墠鐢ㄦ埛ID鏍煎紡閿欒");
         }
     }
 }

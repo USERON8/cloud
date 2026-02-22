@@ -18,124 +18,124 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 支付宝支付控制器
- *
- * @author what's up
- * @since 1.0.0
- */
+
+
+
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/payment/alipay")
 @RequiredArgsConstructor
-@Tag(name = "支付宝支付", description = "支付宝支付相关接口")
+@Tag(name = "鏀粯瀹濇敮浠?, description = "鏀粯瀹濇敮浠樼浉鍏虫帴鍙?)
 public class AlipayController {
 
     private final AlipayService alipayService;
 
     @PostMapping("/create")
-    @Operation(summary = "创建支付宝支付", description = "创建支付宝支付订单，返回支付表单")
+    @Operation(summary = "鍒涘缓鏀粯瀹濇敮浠?, description = "鍒涘缓鏀粯瀹濇敮浠樿鍗曪紝杩斿洖鏀粯琛ㄥ崟")
     public Result<AlipayCreateResponse> createPayment(
             @Valid @RequestBody AlipayCreateRequest request) {
 
-        log.info("创建支付宝支付请求 - 订单ID: {}, 金额: {}", request.getOrderId(), request.getAmount());
+        
 
         AlipayCreateResponse response = alipayService.createPayment(request);
 
-        return Result.success("支付订单创建成功", response);
+        return Result.success("鏀粯璁㈠崟鍒涘缓鎴愬姛", response);
     }
 
     @PostMapping(value = "/notify", produces = MediaType.TEXT_PLAIN_VALUE)
-    @Operation(summary = "支付宝异步通知", description = "接收支付宝异步通知")
+    @Operation(summary = "鏀粯瀹濆紓姝ラ€氱煡", description = "鎺ユ敹鏀粯瀹濆紓姝ラ€氱煡")
     public String handleNotify(HttpServletRequest request) {
-        log.info("收到支付宝异步通知");
+        
 
         try {
-            // 获取支付宝POST过来反馈信息
+            
             Map<String, String> params = convertRequestToMap(request);
 
-            // 处理通知
+            
             boolean success = alipayService.handleNotify(params);
 
             if (success) {
-                log.info("支付宝异步通知处理成功");
+                
                 return "success";
             } else {
-                log.error("支付宝异步通知处理失败");
+                log.error("鏀粯瀹濆紓姝ラ€氱煡澶勭悊澶辫触");
                 return "failure";
             }
 
         } catch (Exception e) {
-            log.error("支付宝异步通知处理异常", e);
+            log.error("鏀粯瀹濆紓姝ラ€氱煡澶勭悊寮傚父", e);
             return "failure";
         }
     }
 
     @GetMapping("/query/{outTradeNo}")
-    @Operation(summary = "查询支付状态", description = "查询支付宝支付状态")
+    @Operation(summary = "鏌ヨ鏀粯鐘舵€?, description = "鏌ヨ鏀粯瀹濇敮浠樼姸鎬?)
     public Result<String> queryPaymentStatus(
-            @Parameter(description = "商户订单号") @PathVariable String outTradeNo) {
+            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
 
-        log.info("查询支付状态 - 订单号: {}", outTradeNo);
+        
 
         String status = alipayService.queryPaymentStatus(outTradeNo);
 
         if (status != null) {
-            return Result.success(status, "查询成功");
+            return Result.success(status, "鏌ヨ鎴愬姛");
         } else {
-            return Result.error("查询失败");
+            return Result.error("鏌ヨ澶辫触");
         }
     }
 
     @PostMapping("/refund")
-    @Operation(summary = "申请退款", description = "申请支付宝退款")
+    @Operation(summary = "鐢宠閫€娆?, description = "鐢宠鏀粯瀹濋€€娆?)
     public Result<Boolean> refund(
-            @Parameter(description = "商户订单号") @RequestParam String outTradeNo,
-            @Parameter(description = "退款金额") @RequestParam BigDecimal refundAmount,
-            @Parameter(description = "退款原因") @RequestParam String refundReason) {
+            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @RequestParam String outTradeNo,
+            @Parameter(description = "閫€娆鹃噾棰?) @RequestParam BigDecimal refundAmount,
+            @Parameter(description = "閫€娆惧師鍥?) @RequestParam String refundReason) {
 
-        log.info("申请退款 - 订单号: {}, 金额: {}, 原因: {}", outTradeNo, refundAmount, refundReason);
+        
 
         boolean success = alipayService.refund(outTradeNo, refundAmount, refundReason);
 
         if (success) {
-            return Result.success("退款申请成功", true);
+            return Result.success("閫€娆剧敵璇锋垚鍔?, true);
         } else {
-            return Result.error("退款申请失败");
+            return Result.error("閫€娆剧敵璇峰け璐?);
         }
     }
 
     @PostMapping("/close/{outTradeNo}")
-    @Operation(summary = "关闭订单", description = "关闭支付宝订单")
+    @Operation(summary = "鍏抽棴璁㈠崟", description = "鍏抽棴鏀粯瀹濊鍗?)
     public Result<Boolean> closeOrder(
-            @Parameter(description = "商户订单号") @PathVariable String outTradeNo) {
+            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
 
-        log.info("关闭订单 - 订单号: {}", outTradeNo);
+        
 
         boolean success = alipayService.closeOrder(outTradeNo);
 
         if (success) {
-            return Result.success("订单关闭成功", true);
+            return Result.success("璁㈠崟鍏抽棴鎴愬姛", true);
         } else {
-            return Result.error("订单关闭失败");
+            return Result.error("璁㈠崟鍏抽棴澶辫触");
         }
     }
 
     @GetMapping("/verify/{outTradeNo}")
-    @Operation(summary = "验证支付结果", description = "验证支付宝支付结果")
+    @Operation(summary = "楠岃瘉鏀粯缁撴灉", description = "楠岃瘉鏀粯瀹濇敮浠樼粨鏋?)
     public Result<Boolean> verifyPayment(
-            @Parameter(description = "商户订单号") @PathVariable String outTradeNo) {
+            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
 
-        log.info("验证支付结果 - 订单号: {}", outTradeNo);
+        
 
         boolean success = alipayService.verifyPayment(outTradeNo);
 
-        return Result.success(success ? "支付成功" : "支付未完成", success);
+        return Result.success(success ? "鏀粯鎴愬姛" : "鏀粯鏈畬鎴?, success);
     }
 
-    /**
-     * 将HttpServletRequest转换为Map
-     */
+    
+
+
     private Map<String, String> convertRequestToMap(HttpServletRequest request) {
         Map<String, String> params = new HashMap<>();
         Map<String, String[]> requestParams = request.getParameterMap();

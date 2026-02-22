@@ -47,8 +47,8 @@ public class ProductApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        log.info("正在启动商品服务...");
+        
         SpringApplication.run(ProductApplication.class, args);
-        log.info("商品服务启动完成！");
+        
     }
 }

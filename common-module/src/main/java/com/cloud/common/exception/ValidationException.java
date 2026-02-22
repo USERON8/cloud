@@ -3,10 +3,10 @@ package com.cloud.common.exception;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 参数校验异常类
- * 用于处理参数校验失败的情况
- */
+
+
+
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ValidationException extends BusinessException {

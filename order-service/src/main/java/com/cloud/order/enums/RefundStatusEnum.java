@@ -2,24 +2,18 @@ package com.cloud.order.enums;
 
 import lombok.Getter;
 
-/**
- * 退款状态枚举
- *
- * @author CloudDevAgent
- * @since 2025-01-15
- */
 @Getter
 public enum RefundStatusEnum {
 
-    PENDING_AUDIT(0, "待审核", "用户提交退款申请,等待商家审核"),
-    AUDIT_PASSED(1, "审核通过", "商家审核通过,等待用户退货或直接退款"),
-    AUDIT_REJECTED(2, "审核拒绝", "商家拒绝退款申请"),
-    RETURNING(3, "退货中", "用户已发货,商品退货中"),
-    GOODS_RECEIVED(4, "已收货", "商家已收到退货,等待退款"),
-    REFUNDING(5, "退款中", "退款处理中"),
-    COMPLETED(6, "已完成", "退款已完成"),
-    CANCELLED(7, "已取消", "用户取消退款申请"),
-    CLOSED(8, "已关闭", "退款流程异常关闭");
+    PENDING_AUDIT(0, "Pending audit", "Waiting for merchant audit"),
+    AUDIT_PASSED(1, "Audit passed", "Merchant approved the refund request"),
+    AUDIT_REJECTED(2, "Audit rejected", "Merchant rejected the refund request"),
+    RETURNING(3, "Returning", "User is returning the goods"),
+    GOODS_RECEIVED(4, "Goods received", "Merchant confirmed goods receipt"),
+    REFUNDING(5, "Refunding", "Refund is being processed"),
+    COMPLETED(6, "Completed", "Refund completed successfully"),
+    CANCELLED(7, "Cancelled", "Refund request cancelled by user"),
+    CLOSED(8, "Closed", "Refund process closed");
 
     private final Integer code;
     private final String name;
@@ -31,9 +25,6 @@ public enum RefundStatusEnum {
         this.description = description;
     }
 
-    /**
-     * 根据code获取枚举
-     */
     public static RefundStatusEnum fromCode(Integer code) {
         if (code == null) {
             return null;
@@ -46,16 +37,10 @@ public enum RefundStatusEnum {
         return null;
     }
 
-    /**
-     * 是否为终态
-     */
     public boolean isFinalStatus() {
         return this == AUDIT_REJECTED || this == COMPLETED || this == CANCELLED || this == CLOSED;
     }
 
-    /**
-     * 是否可以取消
-     */
     public boolean canCancel() {
         return this == PENDING_AUDIT || this == AUDIT_PASSED;
     }

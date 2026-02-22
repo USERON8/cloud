@@ -10,9 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Internal user endpoints for service-to-service calls.
- */
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/internal/user")

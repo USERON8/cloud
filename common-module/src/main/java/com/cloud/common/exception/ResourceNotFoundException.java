@@ -3,10 +3,10 @@ package com.cloud.common.exception;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 资源未找到异常类
- * 用于处理请求的资源不存在的情况
- */
+
+
+
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ResourceNotFoundException extends BusinessException {

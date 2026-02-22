@@ -1,4 +1,4 @@
-# 权限配置文件
-# 允许IK分词器进行网络访问
+# ASCII comment sanitized for compatibility.
+# ASCII comment sanitized for compatibility.
 ALL-UNNAMED:
   - outbound_network

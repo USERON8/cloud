@@ -14,9 +14,9 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Payment internal feign endpoints.
- */
+
+
+
 @Slf4j
 @RestController
 @RequestMapping("/internal/payment")

@@ -26,8 +26,8 @@ public class OrderApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        log.info("正在启动订单服务...");
+        
         SpringApplication.run(OrderApplication.class, args);
-        log.info("订单服务启动完成！");
+        
     }
 }

@@ -3,12 +3,12 @@ package com.cloud.product.exception;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 
-/**
- * 商品服务业务异常基类
- * 所有商品服务特定的业务异常都应该继承此类
- *
- * @author what's up
- */
+
+
+
+
+
+
 public class ProductServiceException extends BusinessException {
 
     public ProductServiceException(int code, String message) {
@@ -39,14 +39,14 @@ public class ProductServiceException extends BusinessException {
         super(code, message, cause);
     }
 
-    // 商品相关特定异常
+    
     public static class ProductNotFoundException extends ProductServiceException {
         public ProductNotFoundException(String message) {
             super(ResultCode.PRODUCT_NOT_FOUND, message);
         }
 
         public ProductNotFoundException(Long productId) {
-            super(ResultCode.PRODUCT_NOT_FOUND, "商品不存在，商品ID: " + productId);
+            super(ResultCode.PRODUCT_NOT_FOUND, "鍟嗗搧涓嶅瓨鍦紝鍟嗗搧ID: " + productId);
         }
     }
 
@@ -63,7 +63,7 @@ public class ProductServiceException extends BusinessException {
 
         public ProductStatusException(Long productId, String currentStatus, String targetStatus) {
             super(ResultCode.PRODUCT_STATUS_ERROR,
-                    String.format("商品状态错误，商品ID: %d，当前状态: %s，目标状态: %s", productId, currentStatus, targetStatus));
+                    String.format("鍟嗗搧鐘舵€侀敊璇紝鍟嗗搧ID: %d锛屽綋鍓嶇姸鎬? %s锛岀洰鏍囩姸鎬? %s", productId, currentStatus, targetStatus));
         }
     }
 
@@ -73,7 +73,7 @@ public class ProductServiceException extends BusinessException {
         }
 
         public CategoryNotFoundException(Long categoryId) {
-            super(ResultCode.CATEGORY_NOT_FOUND, "商品分类不存在，分类ID: " + categoryId);
+            super(ResultCode.CATEGORY_NOT_FOUND, "鍟嗗搧鍒嗙被涓嶅瓨鍦紝鍒嗙被ID: " + categoryId);
         }
     }
 
@@ -84,7 +84,7 @@ public class ProductServiceException extends BusinessException {
 
         public StockInsufficientException(Long productId, Integer required, Integer available) {
             super(ResultCode.STOCK_INSUFFICIENT,
-                    String.format("库存不足，商品ID: %d，需要: %d，可用: %d", productId, required, available));
+                    String.format("搴撳瓨涓嶈冻锛屽晢鍝両D: %d锛岄渶瑕? %d锛屽彲鐢? %d", productId, required, available));
         }
     }
 
@@ -94,7 +94,7 @@ public class ProductServiceException extends BusinessException {
         }
 
         public ProductValidationException(String field, String message) {
-            super(ResultCode.PARAM_ERROR, String.format("字段 %s %s", field, message));
+            super(ResultCode.PARAM_ERROR, String.format("瀛楁 %s %s", field, message));
         }
     }
 
@@ -104,7 +104,7 @@ public class ProductServiceException extends BusinessException {
         }
 
         public ProductPermissionException(Long userId, Long productId) {
-            super(ResultCode.FORBIDDEN.getCode(), String.format("用户 %d 无权访问商品 %d", userId, productId));
+            super(ResultCode.FORBIDDEN.getCode(), String.format("鐢ㄦ埛 %d 鏃犳潈璁块棶鍟嗗搧 %d", userId, productId));
         }
     }
 }

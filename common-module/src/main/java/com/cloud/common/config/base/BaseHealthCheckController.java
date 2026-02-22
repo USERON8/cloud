@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 健康检查控制器基类
- * 提供统一的健康检查接口模板
- * 注意：此类仅用于继承，不作为Spring Controller Bean
- */
+
+
+
+
+
 @RequiredArgsConstructor
 public class BaseHealthCheckController {
 
@@ -26,11 +26,11 @@ public class BaseHealthCheckController {
 
     private final MeterRegistry meterRegistry;
 
-    /**
-     * 健康检查接口
-     *
-     * @return 健康状态信息
-     */
+    
+
+
+
+
     @GetMapping("/health")
     public Result<?> health() {
         logger.info("Health check endpoint accessed");
@@ -49,7 +49,7 @@ public class BaseHealthCheckController {
             healthInfo.put("ip", "unknown");
         }
 
-        // 如果配置了Micrometer，添加指标信息
+        
         if (meterRegistry != null) {
             healthInfo.put("metrics", "enabled");
         } else {
@@ -59,11 +59,11 @@ public class BaseHealthCheckController {
         return Result.success(healthInfo.toString(), "Service is healthy");
     }
 
-    /**
-     * 简单的ping接口
-     *
-     * @return pong
-     */
+    
+
+
+
+
     @GetMapping("/ping")
     public Result<String> ping() {
         logger.debug("Ping endpoint accessed");

@@ -1,7 +1,7 @@
-# 支付服务 - 生产环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # 数据源配置
+  # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
@@ -15,7 +15,7 @@ spring:
       max-lifetime: 1800000
       leak-detection-threshold: 60000
   
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -30,7 +30,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.payment: info
@@ -40,12 +40,12 @@ logging:
     com.alibaba.nacos: warn
     root: warn
 
-# MyBatis Plus 生产配置
+# Comment sanitized for UTF-8 compatibility.
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
-# Knife4j 生产配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: false
   production: true

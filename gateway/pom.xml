@@ -36,13 +36,13 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
-        <!-- JWT 支持 -->
+        <!-- JWT 鏀寔 -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
 
-        <!-- Spring Cloud Gateway 核心依赖 -->
+        <!-- Spring Cloud Gateway 鏍稿績渚濊禆 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-gateway-server-webflux</artifactId>
@@ -52,7 +52,7 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
-        <!-- Spring Cloud Alibaba组件 -->
+        <!-- Spring Cloud Alibaba缁勪欢 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -61,27 +61,31 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <!-- Spring Boot Actuator - 健康检查和监控 -->
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-module</artifactId>
+        </dependency>
+        <!-- Spring Boot Actuator - 鍋ュ悍妫€鏌ュ拰鐩戞帶 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- 工具类 -->
+        <!-- 宸ュ叿绫?-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
 
-        <!-- API文档 - Knife4j Gateway 聚合文档 -->
+        <!-- API鏂囨。 - Knife4j Gateway 鑱氬悎鏂囨。 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
             <version>4.5.0</version>
         </dependency>
 
-        <!-- SpringDoc依赖已移除，使用Knife4j进行API文档聚合 -->
+        <!-- SpringDoc渚濊禆宸茬Щ闄わ紝浣跨敤Knife4j杩涜API鏂囨。鑱氬悎 -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -103,7 +107,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <excludes> <!-- 添加排除配置 -->
+                    <excludes> <!-- 娣诲姞鎺掗櫎閰嶇疆 -->
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>

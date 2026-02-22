@@ -9,9 +9,9 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-/**
- * 订单转换器
- */
+
+
+
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
@@ -20,51 +20,51 @@ import java.util.List;
 public interface OrderConverter {
     OrderConverter INSTANCE = Mappers.getMapper(OrderConverter.class);
 
-    /**
-     * 转换订单实体为DTO
-     *
-     * @param order 订单实体
-     * @return 订单DTO
-     */
+    
+
+
+
+
+
     OrderDTO toDTO(Order order);
 
-    /**
-     * 转换订单DTO为实体
-     *
-     * @param orderDTO 订单DTO
-     * @return 订单实体
-     */
+    
+
+
+
+
+
     Order toEntity(OrderDTO orderDTO);
 
-    /**
-     * 转换订单实体列表为DTO列表
-     *
-     * @param orders 订单实体列表
-     * @return 订单DTO列表
-     */
+    
+
+
+
+
+
     List<OrderDTO> toDTOList(List<Order> orders);
 
-    /**
-     * 转换订单实体为VO
-     *
-     * @param order 订单实体
-     * @return 订单VO
-     */
+    
+
+
+
+
+
     OrderVO toVO(Order order);
 
-    /**
-     * 转换订单VO为实体
-     *
-     * @param orderVO 订单VO
-     * @return 订单实体
-     */
+    
+
+
+
+
+
     Order toEntity(OrderVO orderVO);
 
-    /**
-     * 转换订单实体列表为VO列表
-     *
-     * @param orders 订单实体列表
-     * @return 订单VO列表
-     */
+    
+
+
+
+
+
     List<OrderVO> toVOList(List<Order> orders);
 }

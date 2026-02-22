@@ -1,13 +1,13 @@
-# 搜索服务 - 开发环境配置
+# Comment sanitized for UTF-8 compatibility.
 
 spring:
-  # Elasticsearch 配置
+  # Comment sanitized for UTF-8 compatibility.
   elasticsearch:
     uris: http://localhost:9200
     username:
     password:
 
-  # Redis 配置
+  # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
       host: localhost
@@ -22,7 +22,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# 多级缓存配置
+# Comment sanitized for UTF-8 compatibility.
 cache:
   multi-level:
     enabled: true
@@ -36,7 +36,7 @@ cache:
       redis:
         time-to-live: 30m
 
-# 日志级别配置
+# Comment sanitized for UTF-8 compatibility.
 logging:
   level:
     com.cloud.search: debug
@@ -46,7 +46,7 @@ logging:
     org.elasticsearch: debug
     com.alibaba.nacos: warn
 
-# Knife4j 开发配置
+# Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
   production: false

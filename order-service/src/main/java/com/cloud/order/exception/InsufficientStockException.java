@@ -2,12 +2,12 @@ package com.cloud.order.exception;
 
 import com.cloud.common.exception.BusinessException;
 
-/**
- * 库存不足异常
- * 当商品库存不足时抛出此异常
- *
- * @author cloud
- */
+
+
+
+
+
+
 public class InsufficientStockException extends BusinessException {
 
     private static final int INSUFFICIENT_STOCK_ERROR_CODE = 40002;
@@ -20,13 +20,13 @@ public class InsufficientStockException extends BusinessException {
 
     public InsufficientStockException(Long productId, Integer required, Integer available) {
         super(INSUFFICIENT_STOCK_ERROR_CODE,
-                String.format("商品[ID:%d]库存不足，需要：%d，可用：%d", productId, required, available));
+                String.format("鍟嗗搧[ID:%d]搴撳瓨涓嶈冻锛岄渶瑕侊細%d锛屽彲鐢細%d", productId, required, available));
         this.productId = productId;
     }
 
     public InsufficientStockException(String productName, Integer required, Integer available) {
         super(INSUFFICIENT_STOCK_ERROR_CODE,
-                String.format("商品[%s]库存不足，需要：%d，可用：%d", productName, required, available));
+                String.format("鍟嗗搧[%s]搴撳瓨涓嶈冻锛岄渶瑕侊細%d锛屽彲鐢細%d", productName, required, available));
     }
 
     public InsufficientStockException(String message, Throwable cause) {

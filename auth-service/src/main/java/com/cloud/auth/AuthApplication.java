@@ -9,9 +9,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
 
-/**
- * @author what's up
- */
+
+
+
 @Slf4j
 @SpringBootApplication(
         exclude = {
@@ -53,8 +53,8 @@ public class AuthApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        log.info("正在启动认证服务...");
+        
         SpringApplication.run(AuthApplication.class, args);
-        log.info("认证服务启动完成！");
+        
     }
 }

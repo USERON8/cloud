@@ -1,60 +1,60 @@
 spring:
   cloud:
     stream:
-      # 定义函数绑定
+      # Comment sanitized for UTF-8 compatibility.
       function:
         definition: orderCreatedConsumer;refundProcessConsumer
 
-      # RocketMQ Binder配置
+      # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
         bindings:
-          # 支付成功事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           paymentSuccessProducer-out-0:
             producer:
               group: payment-producer-group
-              sync: false  # 异步发送
+              sync: false  # Comment sanitized for UTF-8 compatibility.
 
-          # 退款完成事件生产者
+          # Comment sanitized for UTF-8 compatibility.
           refundCompletedProducer-out-0:
             producer:
               group: payment-producer-group
               sync: false
 
-          # 订单创建事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           orderCreatedConsumer-in-0:
             consumer:
-              # 标签过滤
+              # Comment sanitized for UTF-8 compatibility.
               subscription: 'ORDER_CREATED'
-              # 并发消费
+              # Comment sanitized for UTF-8 compatibility.
               orderly: false
 
-          # 退款处理事件消费者
+          # Comment sanitized for UTF-8 compatibility.
           refundProcessConsumer-in-0:
             consumer:
               subscription: 'REFUND_PROCESS'
               orderly: false
 
-      # Binding配置
+      # Comment sanitized for UTF-8 compatibility.
       bindings:
-        # 支付成功事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         paymentSuccessProducer-out-0:
           destination: payment-success
           content-type: application/json
 
-        # 退款完成事件 - 输出
+        # Comment sanitized for UTF-8 compatibility.
         refundCompletedProducer-out-0:
           destination: refund-completed
           content-type: application/json
 
-        # 订单创建事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         orderCreatedConsumer-in-0:
           destination: order-created
           content-type: application/json
           group: payment-consumer-group
 
-        # 退款处理事件 - 输入
+        # Comment sanitized for UTF-8 compatibility.
         refundProcessConsumer-in-0:
           destination: refund-process
           content-type: application/json
