@@ -125,15 +125,15 @@ public class OrderMessageProducer {
      * 发送库存恢复事件
      * 通知库存服务恢复退款订单的库存
      *
-     * @param orderId              订单ID
-     * @param orderNo              订单号
-     * @param refundId             退款ID
-     * @param refundNo             退款单号
-     * @param productQuantityMap   商品数量映射
+     * @param orderId            订单ID
+     * @param orderNo            订单号
+     * @param refundId           退款ID
+     * @param refundNo           退款单号
+     * @param productQuantityMap 商品数量映射
      * @return 是否发送成功
      */
     public boolean sendStockRestoreEvent(Long orderId, String orderNo, Long refundId,
-                                        String refundNo, Map<Long, Integer> productQuantityMap) {
+                                         String refundNo, Map<Long, Integer> productQuantityMap) {
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("eventId", UUID.randomUUID().toString());

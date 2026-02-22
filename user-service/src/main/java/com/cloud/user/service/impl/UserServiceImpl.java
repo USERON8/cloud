@@ -37,7 +37,7 @@ import java.util.List;
 
 /**
  * @author what's up
- * @description 针对表【users(用户表)】的数据库操作Service实现
+ * @description 针对表【users(用户�?】的数据库操作Service实现
  * @createDate 2025-09-06 19:31:12
  */
 @Slf4j
@@ -59,11 +59,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     public UserDTO findByUsername(String username) {
         if (StringUtils.isBlank(username)) {
-            log.warn("用户名不能为空");
-            throw new BusinessException("用户名不能为空");
+            log.warn("用户名不能为�?);
+            throw new BusinessException("用户名不能为�?);
         }
 
-        log.info("开始调用用户服务, 获取用户信息, username: {}", username);
+        log.info("开始调用用户服�? 获取用户信息, username: {}", username);
 
         // 使用Lambda表达式查询，避免SQL注入风险
         User user = getOne(new LambdaQueryWrapper<User>()
@@ -78,22 +78,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Cacheable(
             cacheNames = "userList",  // 用户列表缓存
             key = "'page:' + #pageDTO.current + ':size:' + #pageDTO.size + " +
-                  "':username:' + (#pageDTO.username != null ? #pageDTO.username : '') + " +
-                  "':phone:' + (#pageDTO.phone != null ? #pageDTO.phone : '') + " +
-                  "':nickname:' + (#pageDTO.nickname != null ? #pageDTO.nickname : '') + " +
-                  "':status:' + (#pageDTO.status != null ? #pageDTO.status : '') + " +
-                  "':userType:' + (#pageDTO.userType != null ? #pageDTO.userType : '')",
-            condition = "#pageDTO.current <= 10",  // 只缓存前10页
+                    "':username:' + (#pageDTO.username != null ? #pageDTO.username : '') + " +
+                    "':phone:' + (#pageDTO.phone != null ? #pageDTO.phone : '') + " +
+                    "':nickname:' + (#pageDTO.nickname != null ? #pageDTO.nickname : '') + " +
+                    "':status:' + (#pageDTO.status != null ? #pageDTO.status : '') + " +
+                    "':userType:' + (#pageDTO.userType != null ? #pageDTO.userType : '')",
+            condition = "#pageDTO.current <= 10",  // 只缓存前10�?
             unless = "#result == null || #result.total == 0"
     )
     public PageResult<UserVO> pageQuery(UserPageDTO pageDTO) {
         try {
             log.info("分页查询用户，查询条件：{}", pageDTO);
 
-            // 1. 构造分页对象
+            // 1. 构造分页对�?
             Page<User> page = PageUtils.buildPage(pageDTO);
 
-            // 2. 构造查询条件
+            // 2. 构造查询条�?
             LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
             if (StringUtils.isNotBlank(pageDTO.getUsername())) {
                 queryWrapper.like(User::getUsername, pageDTO.getUsername());
@@ -137,6 +137,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:delete:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user delete lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @Caching(
@@ -154,10 +160,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         try {
             log.info("开始逻辑删除用户, id: {}", id);
 
-            // 检查用户是否存在
+            // 检查用户是否存�?
             User user = getById(id);
             if (user == null) {
-                log.warn("要删除的用户不存在, id: {}", id);
+                log.warn("要删除的用户不存�? id: {}", id);
                 throw new EntityNotFoundException("用户", id);
             }
 
@@ -177,10 +183,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
-            key = "'user:batch:delete:' + T(String).join(',', #userIds)",
+            key = "'user:batch:delete:' + #userIds.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "批量删除用户操作获取锁失败"
+            failMessage = "批量删除用户操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
@@ -203,7 +209,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             log.info("批量用户逻辑删除完成, 删除数量: {}, result: {}", userIds.size(), result);
             return result;
         } catch (Exception e) {
-            log.error("批量删除用户时发生异常, 用户IDs: {}", userIds, e);
+            log.error("批量删除用户时发生异�? 用户IDs: {}", userIds, e);
             throw new BusinessException("批量删除用户失败", e);
         }
     }
@@ -255,8 +261,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @Cacheable(
             cacheNames = "user",
-            key = "'batch:' + #userIds.toString()", // 15分钟，批量查询缓存时间短一些
-            condition = "#userIds != null && #userIds.size() <= 100", // 只对小批量查询启用缓存
+            key = "'batch:' + #userIds.toString()", // 15分钟，批量查询缓存时间短一�?
+            condition = "#userIds != null && #userIds.size() <= 100", // 只对小批量查询启用缓�?
             unless = "#result == null || #result.isEmpty()"
     )
     public List<UserDTO> getUsersByIds(Collection<Long> userIds) {
@@ -315,7 +321,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             key = "'user:register:' + #registerRequest.username",
             waitTime = 3,
             leaseTime = 15,
-            failMessage = "用户注册操作获取锁失败,请稍后重试"
+            failMessage = "用户注册操作获取锁失�?请稍后重�?
     )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
@@ -325,35 +331,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             }
     )
     public UserDTO registerUser(RegisterRequestDTO registerRequest) {
-        log.info("🚀 开始用户注册流程, username: {}, userType: {}",
+        log.info("🚀 开始用户注册流�? username: {}, userType: {}",
                 registerRequest.getUsername(), registerRequest.getUserType());
 
         try {
             // 1. 检查用户是否已存在
             UserDTO existingUser = findByUsername(registerRequest.getUsername());
             if (existingUser != null) {
-                log.warn("⚠️ 用户注册失败，用户名已存在: {}", registerRequest.getUsername());
+                log.warn("⚠️ 用户注册失败，用户名已存�? {}", registerRequest.getUsername());
                 throw new BusinessException("用户名已存在: " + registerRequest.getUsername());
             }
 
-            // 2. 转换并准备用户实体
+            // 2. 转换并准备用户实�?
             User user = prepareUserEntity(registerRequest);
-            log.debug("✅ 用户实体准备完成: username={}, userType={}",
+            log.debug("�?用户实体准备完成: username={}, userType={}",
                     user.getUsername(), user.getUserType());
 
-            // 3. 保存用户（使用缓存注解的save方法）
+            // 3. 保存用户（使用缓存注解的save方法�?
             boolean saved = save(user);
 
             if (!saved) {
-                log.error("❌ 用户注册失败，数据保存失败: {}", registerRequest.getUsername());
+                log.error("�?用户注册失败，数据保存失�? {}", registerRequest.getUsername());
                 throw new BusinessException("用户注册失败");
             }
 
-            // 4. 重新查询用户以获取完整信息
+            // 4. 重新查询用户以获取完整信�?
             UserDTO userDTO = findByUsername(registerRequest.getUsername());
             if (userDTO == null) {
-                log.error("❌ 用户注册后查询失败: {}", registerRequest.getUsername());
-                throw new BusinessException("用户注册失败，无法获取用户信息");
+                log.error("�?用户注册后查询失�? {}", registerRequest.getUsername());
+                throw new BusinessException("用户注册失败，无法获取用户信�?);
             }
 
             // 5. 处理商家用户的特殊逻辑
@@ -393,12 +399,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             );
 
             if (user == null) {
-                log.warn("用户不存在: {}", username);
+                log.warn("用户不存�? {}", username);
                 return null;
             }
 
             if (user.getStatus() == null || user.getStatus() != 1) {
-                log.warn("用户账户已禁用: {}", username);
+                log.warn("用户账户已禁�? {}", username);
                 return null;
             }
 
@@ -422,15 +428,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (StringUtils.isNotBlank(rawPassword)) {
             String encodedPassword = passwordEncoder.encode(rawPassword.trim());
             user.setPassword(encodedPassword);
-            log.debug("🔐 密码已加密, username: {}", registerRequest.getUsername());
+            log.debug("🔐 密码已加�? username: {}", registerRequest.getUsername());
         } else {
-            // 如果没有提供密码，设置默认密码
+            // 如果没有提供密码，设置默认密�?
             String encodedPassword = passwordEncoder.encode("123456");
             user.setPassword(encodedPassword);
             log.debug("🔐 使用默认密码, username: {}", registerRequest.getUsername());
         }
 
-        // 设置默认值
+        // 设置默认�?
         if (user.getStatus() == null) {
             user.setStatus(1); // 默认启用
         }
@@ -446,7 +452,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     private void handleMerchantUserRegistration(UserDTO userDTO) {
         try {
-            log.info("🏪 开始创建商家记录, username: {}", userDTO.getUsername());
+            log.info("🏪 开始创建商家记�? username: {}", userDTO.getUsername());
 
             MerchantDTO merchantDTO = new MerchantDTO();
             merchantDTO.setId(userDTO.getId()); // 使用用户ID作为商家ID
@@ -457,21 +463,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             merchantDTO.setPhone(userDTO.getPhone());
             merchantDTO.setUserType(String.valueOf(userDTO.getUserType()));
             merchantDTO.setStatus(userDTO.getStatus());
-            merchantDTO.setAuthStatus(0); // 默认为待审核状态
+            merchantDTO.setAuthStatus(0); // 默认为待审核状�?
 
             // 调用商家服务创建商家记录
             boolean merchantSaved = merchantService.save(merchantConverter.toEntity(merchantDTO));
             if (merchantSaved) {
-                log.info("✅ 成功为用户 {} 创建商家记录", userDTO.getUsername());
+                log.info("�?成功为用�?{} 创建商家记录", userDTO.getUsername());
             } else {
-                log.warn("⚠️ 为用户 {} 创建商家记录失败", userDTO.getUsername());
+                log.warn("⚠️ 为用�?{} 创建商家记录失败", userDTO.getUsername());
                 // 这里可以考虑回滚整个用户注册事务，或者记录失败日志供后续处理
                 throw new BusinessException("创建商家记录失败");
             }
 
         } catch (Exception e) {
-            log.error("❌ 为用户 {} 创建商家记录时发生异常", userDTO.getUsername(), e);
-            // 在事务中抛出异常，触发回滚
+            log.error("�?为用�?{} 创建商家记录时发生异�?, userDTO.getUsername(), e);
+            // 在事务中抛出异常，触发回�?
             throw new BusinessException("创建商家记录失败: " + e.getMessage(), e);
         }
     }
@@ -512,11 +518,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     )
     public UserDTO findByGitHubUsername(String githubUsername) {
         if (StringUtils.isBlank(githubUsername)) {
-            log.warn("GitHub用户名不能为空");
+            log.warn("GitHub用户名不能为�?);
             return null;
         }
 
-        log.debug("根据GitHub用户名查找用户: {}", githubUsername);
+        log.debug("根据GitHub用户名查找用�? {}", githubUsername);
 
         try {
             User user = getOne(new LambdaQueryWrapper<User>()
@@ -525,7 +531,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
             return user != null ? userConverter.toDTO(user) : null;
         } catch (Exception e) {
-            log.error("根据GitHub用户名查找用户时发生异常，GitHub用户名: {}", githubUsername, e);
+            log.error("根据GitHub用户名查找用户时发生异常，GitHub用户�? {}", githubUsername, e);
             return null;
         }
     }
@@ -543,7 +549,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return null;
         }
 
-        log.debug("根据OAuth提供商信息查找用户: provider={}, providerId={}", oauthProvider, oauthProviderId);
+        log.debug("根据OAuth提供商信息查找用�? provider={}, providerId={}", oauthProvider, oauthProviderId);
 
         try {
             User user = getOne(new LambdaQueryWrapper<User>()
@@ -563,7 +569,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             key = "'user:github:create:' + #githubUserDTO.githubId",
             waitTime = 3,
             leaseTime = 15,
-            failMessage = "GitHub用户创建操作获取锁失败"
+            failMessage = "GitHub用户创建操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -576,10 +582,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 githubUserDTO.getGithubId(), githubUserDTO.getLogin());
 
         try {
-            // 1. 检查GitHub用户是否已存在
+            // 1. 检查GitHub用户是否已存�?
             UserDTO existingUser = findByGitHubId(githubUserDTO.getGithubId());
             if (existingUser != null) {
-                log.warn("⚠️ GitHub用户已存在: githubId={}, 系统用户ID={}",
+                log.warn("⚠️ GitHub用户已存�? githubId={}, 系统用户ID={}",
                         githubUserDTO.getGithubId(), existingUser.getId());
                 return existingUser;
             }
@@ -588,7 +594,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             String systemUsername = githubUserDTO.buildSystemUsername();
             UserDTO userWithSameUsername = findByUsername(systemUsername);
             if (userWithSameUsername != null) {
-                log.warn("⚠️ 系统用户名已存在，需要生成唯一用户名: {}", systemUsername);
+                log.warn("⚠️ 系统用户名已存在，需要生成唯一用户�? {}", systemUsername);
                 systemUsername = generateUniqueUsername(githubUserDTO.getLogin());
             }
 
@@ -598,15 +604,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             // 4. 保存用户
             boolean saved = save(user);
             if (!saved) {
-                log.error("❌ GitHub用户创建失败，数据保存失败: githubId={}", githubUserDTO.getGithubId());
+                log.error("�?GitHub用户创建失败，数据保存失�? githubId={}", githubUserDTO.getGithubId());
                 throw new BusinessException("GitHub用户创建失败");
             }
 
-            // 5. 查询完整的用户信息
+            // 5. 查询完整的用户信�?
             UserDTO userDTO = findByUsername(systemUsername);
             if (userDTO == null) {
-                log.error("❌ GitHub用户创建后查询失败: username={}", systemUsername);
-                throw new BusinessException("GitHub用户创建失败，无法获取用户信息");
+                log.error("�?GitHub用户创建后查询失�? username={}", systemUsername);
+                throw new BusinessException("GitHub用户创建失败，无法获取用户信�?);
             }
 
             log.info("🎉 GitHub OAuth用户创建成功: username={}, userId={}, githubId={}",
@@ -628,7 +634,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             key = "'user:github:update:' + #userId",
             waitTime = 3,
             leaseTime = 10,
-            failMessage = "GitHub用户信息更新操作获取锁失败"
+            failMessage = "GitHub用户信息更新操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
@@ -642,10 +648,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 userId, githubUserDTO.getGithubId());
 
         try {
-            // 1. 检查用户是否存在
+            // 1. 检查用户是否存�?
             User existingUser = getById(userId);
             if (existingUser == null) {
-                log.warn("⚠️ 要更新的用户不存在: userId={}", userId);
+                log.warn("⚠️ 要更新的用户不存�? userId={}", userId);
                 throw new EntityNotFoundException("用户", userId);
             }
 
@@ -664,10 +670,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             boolean result = updateById(updatedUser);
 
             if (result) {
-                log.info("✅ GitHub用户信息更新成功: userId={}, githubId={}",
+                log.info("�?GitHub用户信息更新成功: userId={}, githubId={}",
                         userId, githubUserDTO.getGithubId());
             } else {
-                log.error("❌ GitHub用户信息更新失败: userId={}, githubId={}",
+                log.error("�?GitHub用户信息更新失败: userId={}, githubId={}",
                         userId, githubUserDTO.getGithubId());
             }
 
@@ -691,9 +697,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setNickname(githubUserDTO.getDisplayName());
         user.setEmail(githubUserDTO.getEmail());
         user.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        user.setUserType("USER"); // GitHub用户默认为普通用户
+        user.setUserType("USER"); // GitHub用户默认为普通用�?
         user.setStatus(1); // 默认启用
-        user.setPhone("000-0000-0000"); // GitHub用户默认手机号
+        user.setPhone("000-0000-0000"); // GitHub用户默认手机�?
 
         // GitHub OAuth相关信息
         user.setGithubId(githubUserDTO.getGithubId());
@@ -701,7 +707,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setOauthProvider("github");
         user.setOauthProviderId(githubUserDTO.getGithubId().toString());
 
-        // OAuth用户使用特殊密码（不用于登录）
+        // OAuth用户使用特殊密码（不用于登录�?
         String oauthPassword = "github_oauth2_" + githubUserDTO.getGithubId();
         user.setPassword(passwordEncoder.encode(oauthPassword));
 
@@ -709,7 +715,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 生成唯一的用户名（处理用户名冲突）
+     * 生成唯一的用户名（处理用户名冲突�?
      */
     private String generateUniqueUsername(String baseUsername) {
         String result = com.cloud.common.utils.StringUtils.generateUniqueUsername(
@@ -718,7 +724,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 username -> findByUsername(username) != null
         );
 
-        log.info("生成唯一用户名: github_{} -> {}", baseUsername, result);
+        log.info("生成唯一用户�? github_{} -> {}", baseUsername, result);
         return result;
     }
 
@@ -747,6 +753,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:create:' + #userDTO.username",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user create lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
@@ -767,6 +779,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:update:' + #userDTO.id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user update lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
@@ -783,6 +801,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:delete:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user delete lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
@@ -797,6 +821,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:status:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user status lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
@@ -805,7 +835,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             }
     )
     public Boolean updateUserStatus(Long id, Integer status) {
-        log.info("更新用户状态, userId: {}, status: {}", id, status);
+        log.info("更新用户状�? userId: {}, status: {}", id, status);
 
         User user = new User();
         user.setId(id);
@@ -814,6 +844,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:password:reset:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user reset password lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "user", key = "#id")
     public String resetPassword(Long id) {
@@ -829,6 +865,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:password:change:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire user change password lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "user", key = "#id")
     public Boolean changePassword(Long id, String oldPassword, String newPassword) {
@@ -839,9 +881,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new EntityNotFoundException("用户", id);
         }
 
-        // 验证旧密码
+        // 验证旧密�?
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new BusinessException("旧密码错误");
+            throw new BusinessException("旧密码错�?);
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -849,6 +891,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    @DistributedLock(
+            key = "'user:batch:status:' + #userIds.toString()",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "Acquire user batch status lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             evict = {
@@ -863,14 +911,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         if (status == null) {
-            log.warn("批量更新用户状态失败，状态值为空");
-            throw new BusinessException("状态值不能为空");
+            log.warn("批量更新用户状态失败，状态值为�?);
+            throw new BusinessException("状态值不能为�?);
         }
 
-        log.info("开始批量更新用户状态，用户数量: {}, 状态值: {}", userIds.size(), status);
+        log.info("开始批量更新用户状态，用户数量: {}, 状态�? {}", userIds.size(), status);
 
         try {
-            // 使用 MyBatis Plus 的 lambdaUpdate 批量更新
+            // 使用 MyBatis Plus �?lambdaUpdate 批量更新
             LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
             wrapper.in(User::getId, userIds);
 
@@ -883,13 +931,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 log.info("批量更新用户状态成功，用户数量: {}", userIds.size());
                 return userIds.size();
             } else {
-                log.warn("批量更新用户状态失败");
+                log.warn("批量更新用户状态失�?);
                 return 0;
             }
         } catch (Exception e) {
             log.error("批量更新用户状态时发生异常，用户IDs: {}", userIds, e);
-            throw new BusinessException("批量更新用户状态失败: " + e.getMessage(), e);
+            throw new BusinessException("批量更新用户状态失�? " + e.getMessage(), e);
         }
     }
 
 }
+

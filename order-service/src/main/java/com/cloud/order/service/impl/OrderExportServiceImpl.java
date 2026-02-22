@@ -26,10 +26,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderExportServiceImpl implements OrderExportService {
 
-    private final OrderService orderService;
-
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final OrderService orderService;
 
     @Override
     public void exportOrdersToExcel(List<Order> orders, OutputStream outputStream) {
@@ -96,7 +95,7 @@ public class OrderExportServiceImpl implements OrderExportService {
 
     @Override
     public void exportOrdersByConditions(String orderStatus, LocalDateTime startTime,
-                                          LocalDateTime endTime, OutputStream outputStream) {
+                                         LocalDateTime endTime, OutputStream outputStream) {
         log.info("根据条件导出订单, orderStatus: {}, startTime: {}, endTime: {}",
                 orderStatus, startTime, endTime);
 

@@ -1,11 +1,11 @@
-server:
-  port: 8087
+﻿server:
+  port: ${SERVER_PORT:8087}
   tomcat:
     threads:
-      max: 200
-      min-spare: 10
-    max-connections: 8192
-    accept-count: 100
+      max: ${SERVER_TOMCAT_THREADS_MAX:400}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
   application:
@@ -13,7 +13,7 @@ spring:
   profiles:
     active: dev
 
-  # Nacos 配置
+  # Nacos 閰嶇疆
   cloud:
     nacos:
       discovery:
@@ -22,6 +22,15 @@ spring:
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
@@ -30,7 +39,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # OpenFeign 配置
+    # OpenFeign 閰嶇疆
     openfeign:
       client:
         config:
@@ -44,11 +53,11 @@ spring:
         response:
           enabled: true
 
-    # RocketMQ Stream 配置
+    # RocketMQ Stream 閰嶇疆
     stream:
       rocketmq:
         binder:
-          name-server: 127.0.0.1:39876
+          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
       bindings:
         searchLog-out-0:
           destination: LOG_SEARCH_TOPIC
@@ -63,37 +72,37 @@ spring:
             maxRedeliveryTimes: 3
             delayLevelWhenNextConsume: 1
 
-  # Config 配置
+  # Config 閰嶇疆
   config:
     import: optional:nacos:common
 
-  # OAuth2 资源服务器配置
+  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
-          issuer-uri: http://127.0.0.1:8081
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-# JWT 发行者配置
+# JWT 鍙戣鑰呴厤缃?
 app:
   jwt:
-    issuer: http://127.0.0.1:8081
+    issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 统一权限管理配置
+# 缁熶竴鏉冮檺绠＄悊閰嶇疆
 unified:
   security:
     enabled: true
     permission:
-      # 动态权限更新间隔(秒)
+      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
       refresh-interval: 300
-      # 权限缓存过期时间(秒)
+      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
       cache-ttl: 1800
-      # 启用权限调试模式
+      # 鍚敤鏉冮檺璋冭瘯妯″紡
       debug: false
 
-# 日志配置
+# 鏃ュ織閰嶇疆
 logging:
   file:
     path: logs
@@ -103,7 +112,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# 搜索服务专用配置
+# 鎼滅储鏈嶅姟涓撶敤閰嶇疆
 search:
   async:
     enabled: true
@@ -112,7 +121,7 @@ search:
   statistics:
     enabled: true
 
-# SpringDoc 配置
+# SpringDoc 閰嶇疆
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -121,7 +130,7 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# Knife4j 配置
+# Knife4j 閰嶇疆
 knife4j:
   enable: true
   production: false
@@ -129,7 +138,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Spring Boot Actuator配置
+# Spring Boot Actuator閰嶇疆
 management:
   endpoints:
     web:
@@ -163,3 +172,7 @@ management:
       enabled: true
     os:
       enabled: true
+
+
+
+

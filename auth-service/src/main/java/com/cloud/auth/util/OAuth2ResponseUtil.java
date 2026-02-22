@@ -29,7 +29,7 @@ public class OAuth2ResponseUtil {
     @Value("${app.jwt.test-mode:false}")
     private boolean testMode;
 
-    @Value("${app.jwt.issuer:http://localhost:8080}")
+    @Value("${app.jwt.issuer:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String jwtIssuer;
 
     @Value("${app.jwt.access-token-validity:PT2H}")

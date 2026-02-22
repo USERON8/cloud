@@ -60,6 +60,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     // ================= 基础CRUD操作 =================
 
     @Override
+    @DistributedLock(
+            key = "'product:create:' + #requestDTO.shopId + ':' + #requestDTO.name",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product create lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @CachePut(cacheNames = "productCache", key = "#result",
@@ -72,12 +78,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("创建商品: {}", requestDTO.getName());
 
         try {
-            // 转换为实体
+            // 转换为实�?
             Product product = productConverter.requestDTOToEntity(requestDTO);
 
-            // 设置默认状态
+            // 设置默认状�?
             if (product.getStatus() == null) {
-                product.setStatus(0); // 默认下架状态
+                product.setStatus(0); // 默认下架状�?
             }
 
             // 保存商品
@@ -92,12 +98,18 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("创建商品时发生未预期异常，商品名称: {}", requestDTO.getName(), e);
+            log.error("创建商品时发生未预期异常，商品名�? {}", requestDTO.getName(), e);
             throw new BusinessException("创建商品失败: " + e.getMessage(), e);
         }
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:update:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product update lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @Caching(
@@ -110,7 +122,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     )
     public Boolean updateProduct(Long id, ProductRequestDTO requestDTO) throws ProductServiceException {
         if (id == null || id <= 0) {
-            throw new BusinessException("商品ID不能为空或小于等于0");
+            throw new BusinessException("商品ID不能为空或小于等�?");
         }
         if (requestDTO == null || !StringUtils.hasText(requestDTO.getName())) {
             throw new BusinessException("商品信息不能为空");
@@ -119,7 +131,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("更新商品: ID={}, Name={}", id, requestDTO.getName());
 
         try {
-            // 检查商品是否存在
+            // 检查商品是否存�?
             Product existingProduct = getById(id);
             if (existingProduct == null) {
                 throw new EntityNotFoundException("商品", id);
@@ -150,6 +162,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:delete:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product delete lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @Caching(
@@ -161,13 +179,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     )
     public Boolean deleteProduct(Long id) throws ProductServiceException {
         if (id == null || id <= 0) {
-            throw new BusinessException("商品ID不能为空或小于等于0");
+            throw new BusinessException("商品ID不能为空或小于等�?");
         }
 
         log.info("删除商品: {}", id);
 
         try {
-            // 检查商品是否存在
+            // 检查商品是否存�?
             Product product = getById(id);
             if (product == null) {
                 throw new EntityNotFoundException("商品", id);
@@ -194,10 +212,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Override
     @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
-            key = "'product:batch:delete:' + T(String).join(',', #ids)",
+            key = "'product:batch:delete:' + #ids.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "批量删除商品操作获取锁失败"
+            failMessage = "批量删除商品操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
@@ -214,7 +232,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("批量删除商品: {}", ids);
 
         try {
-            // 先获取要删除的商品信息
+            // 先获取要删除的商品信�?
             List<Product> productsToDelete = listByIds(ids);
             if (productsToDelete.size() != ids.size()) {
                 log.warn("部分商品不存在，请求删除: {}, 实际找到: {}", ids.size(), productsToDelete.size());
@@ -231,7 +249,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("批量删除商品时发生未预期异常，商品数量: {}", ids.size(), e);
+            log.error("批量删除商品时发生未预期异常，商品数�? {}", ids.size(), e);
             throw new BusinessException("批量删除商品失败: " + e.getMessage(), e);
         }
     }
@@ -256,7 +274,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productCache",
-            key = "'batch:' + T(String).join(',', #ids)",
+            key = "'batch:' + #ids.toString()",
             condition = "!T(org.springframework.util.CollectionUtils).isEmpty(#ids)")
     public List<ProductVO> getProductsByIds(List<Long> ids) {
         log.debug("批量获取商品: {}", ids);
@@ -343,9 +361,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         return productConverter.toVOList(products);
     }
 
-    // ================= 状态管�?=================
+    // ================= 状态管�?=================
 
     @Override
+    @DistributedLock(
+            key = "'product:enable:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product enable lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             put = @CachePut(cacheNames = "productCache", key = "#id"),
@@ -359,6 +383,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:disable:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product disable lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             put = @CachePut(cacheNames = "productCache", key = "#id"),
@@ -373,10 +403,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @DistributedLock(
-            key = "'product:batch:enable:' + T(String).join(',', #ids)",
+            key = "'product:batch:enable:' + #ids.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "批量上架商品操作获取锁失败"
+            failMessage = "批量上架商品操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
@@ -387,10 +417,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
     @Override
     @DistributedLock(
-            key = "'product:batch:disable:' + T(String).join(',', #ids)",
+            key = "'product:batch:disable:' + #ids.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "批量下架商品操作获取锁失败"
+            failMessage = "批量下架商品操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
@@ -402,6 +432,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     // ================= 库存管理 =================
 
     @Override
+    @DistributedLock(
+            key = "'product:stock:update:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product stock update lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             put = @CachePut(cacheNames = "productCache", key = "#id"),
@@ -411,7 +447,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("更新商品库存: ID={}, Stock={}", id, stock);
 
         if (stock < 0) {
-            throw new BusinessException("库存数量不能为负数");
+            throw new BusinessException("库存数量不能为负�?);
         }
 
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
@@ -426,6 +462,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:stock:increase:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product stock increase lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             put = @CachePut(cacheNames = "productCache", key = "#id"),
@@ -451,6 +493,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     @Override
+    @DistributedLock(
+            key = "'product:stock:decrease:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire product stock decrease lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @Caching(
             put = @CachePut(cacheNames = "productCache", key = "#id"),
@@ -470,7 +518,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
 
         boolean updated = update(updateWrapper);
         if (!updated) {
-            throw new BusinessException("库存不足或减少失败");
+            throw new BusinessException("库存不足或减少失�?);
         }
 
         return true;
@@ -480,7 +528,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "productCache", key = "'stock:' + #id + ':' + #quantity")
     public Boolean checkStock(Long id, Integer quantity) {
-        log.debug("检查商品库存: ID={}, Quantity={}", id, quantity);
+        log.debug("检查商品库�? ID={}, Quantity={}", id, quantity);
 
         if (quantity <= 0) {
             return true;
@@ -551,7 +599,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"},
             allEntries = true)
     public void evictAllProductCache() {
-        log.info("清除所有商品缓存");
+        log.info("清除所有商品缓�?);
     }
 
     @Override
@@ -568,7 +616,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         log.info("商品缓存预热完成, 数量: {}", ids.size());
     }
 
-    // ================= Feign客户端接口方法实现 =================
+    // ================= Feign客户端接口方法实�?=================
 
     /**
      * 创建商品（Feign客户端接口）
@@ -586,7 +634,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         ProductRequestDTO requestDTO = productConverter.dtoToRequestDTO(productDTO);
         Long productId = createProduct(requestDTO);
 
-        // 返回创建的商品信息
+        // 返回创建的商品信�?
         ProductVO productVO = getProductById(productId);
         return productConverter.voToDTO(productVO);
     }
@@ -604,13 +652,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
             condition = "#id != null")
     public ProductDTO getProductByIdForFeign(Long id) {
         log.debug("获取商品详情（Feign): {}", id);
-
-        ProductVO productVO = getProductById(id);
-        if (productVO == null) {
-            return null;
+        try {
+            ProductVO productVO = getProductById(id);
+            return productConverter.voToDTO(productVO);
+        } catch (ProductServiceException.ProductNotFoundException e) {
+            log.warn("商品不存在（Feign�? {}", id);
+            throw new EntityNotFoundException("商品", id);
         }
-
-        return productConverter.voToDTO(productVO);
     }
 
     /**
@@ -630,17 +678,17 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         ProductRequestDTO requestDTO = productConverter.dtoToRequestDTO(productDTO);
         Boolean success = updateProduct(id, requestDTO);
 
-        if (success) {
-            ProductVO productVO = getProductById(id);
-            return productConverter.voToDTO(productVO);
+        if (!Boolean.TRUE.equals(success)) {
+            throw new BusinessException("更新商品失败");
         }
 
-        return null;
+        ProductVO productVO = getProductById(id);
+        return productConverter.voToDTO(productVO);
     }
 
     /**
      * 获取所有商品（Feign客户端接口）
-     * 供其他服务通过Feign调用获取所有商品信息
+     * 供其他服务通过Feign调用获取所有商品信�?
      *
      * @return 商品DTO列表
      */
@@ -781,26 +829,26 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 更新商品状态
+     * 更新商品状�?
      */
     private Boolean updateProductStatus(Long id, Integer status, String operation) {
         if (id == null || id <= 0) {
-            throw new BusinessException("商品ID不能为空或小于等于0");
+            throw new BusinessException("商品ID不能为空或小于等�?");
         }
 
         log.info("{}商品: {}", operation, id);
 
         try {
-            // 检查商品是否存在
+            // 检查商品是否存�?
             Product product = getById(id);
             if (product == null) {
                 throw new EntityNotFoundException("商品", id);
             }
 
-            // 检查状态是否已经是目标状态
+            // 检查状态是否已经是目标状�?
             Integer beforeStatus = product.getStatus();
             if (product.getStatus().equals(status)) {
-                log.warn("商品已经是{}状态 {}", operation, id);
+                log.warn("商品已经是{}状�?{}", operation, id);
                 return true;
             }
 
@@ -826,7 +874,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     }
 
     /**
-     * 批量更新商品状态
+     * 批量更新商品状�?
      */
     private Boolean batchUpdateProductStatus(List<Long> ids, Integer status, String operation) {
         if (CollectionUtils.isEmpty(ids)) {
@@ -854,7 +902,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("{}时发生未预期异常，商品数量: {}", operation, ids.size(), e);
+            log.error("{}时发生未预期异常，商品数�? {}", operation, ids.size(), e);
             throw new BusinessException(operation + "失败: " + e.getMessage(), e);
         }
     }
@@ -864,14 +912,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     private String getShopName(Long shopId) {
         if (shopId == null) {
-            return null;
+            return "未知店铺";
         }
 
         try {
             Shop shop = shopService.getById(shopId);
             return shop != null ? shop.getShopName() : "店铺" + shopId;
         } catch (Exception e) {
-            log.warn("获取店铺名称失败，店铺ID：{}，使用默认名称", shopId, e);
+            log.warn("获取店铺名称失败，店铺ID：{}，使用默认名�?, shopId, e);
             return "店铺" + shopId;
         }
     }
@@ -885,18 +933,18 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
         }
 
         try {
-            // 首先尝试从库存服务获取
+            // 首先尝试从库存服务获�?
             StockVO stockVO = stockFeignClient.getStockByProductId(productId);
             if (stockVO != null && stockVO.getStockQuantity() != null) {
                 return stockVO.getStockQuantity();
             }
 
-            // 如果库存服务没有数据，从商品表获取
+            // 如果库存服务没有数据，从商品表获�?
             Product product = getById(productId);
             return product != null ? product.getStock() : 0;
 
         } catch (Exception e) {
-            log.warn("获取库存数量失败，商品ID：{}，尝试从商品表获取", productId, e);
+            log.warn("获取库存数量失败，商品ID：{}，尝试从商品表获�?, productId, e);
             try {
                 Product product = getById(productId);
                 return product != null ? product.getStock() : 0;
@@ -912,14 +960,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     private String getCategoryName(Long categoryId) {
         if (categoryId == null) {
-            return null;
+            return "未分�?;
         }
 
         try {
             Category category = categoryService.getById(categoryId);
             return category != null ? category.getName() : "分类" + categoryId;
         } catch (Exception e) {
-            log.warn("获取分类名称失败，分类ID：{}，使用默认名称", categoryId, e);
+            log.warn("获取分类名称失败，分类ID：{}，使用默认名�?, categoryId, e);
             return "分类" + categoryId;
         }
     }
@@ -931,7 +979,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
      */
     private String getBrandName(Long brandId) {
         if (brandId == null) {
-            return null;
+            return "未知品牌";
         }
 
         try {
@@ -947,16 +995,17 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
                 return product.getBrandName();
             }
 
-            // 如果没有找到品牌名称，返回默认值
+            // 如果没有找到品牌名称，返回默认�?
             return "品牌" + brandId;
 
         } catch (Exception e) {
-            log.warn("获取品牌名称失败，品牌ID：{}，使用默认名称", brandId, e);
+            log.warn("获取品牌名称失败，品牌ID：{}，使用默认名�?, brandId, e);
             return "品牌" + brandId;
         }
     }
 
 }
+
 
 
 

@@ -600,8 +600,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Cacheable(cacheNames = "productSearchCache",
             key = "'combined:' + #keyword + ':' + #categoryId + ':' + #brandId + ':' + #minPrice + ':' + #maxPrice + ':' + #shopId + ':' + #page + ':' + #size")
     public SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
-                                                         BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
-                                                         String sortBy, String sortOrder, Integer page, Integer size) {
+                                                        BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
+                                                        String sortBy, String sortOrder, Integer page, Integer size) {
         try {
             log.info("执行组合搜索 - 关键字: {}, 分类: {}, 品牌: {}, 价格: {}-{}, 店铺: {}",
                     keyword, categoryId, brandId, minPrice, maxPrice, shopId);

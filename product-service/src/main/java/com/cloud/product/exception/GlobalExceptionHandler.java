@@ -8,8 +8,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -77,8 +75,6 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
     }
 
 
-  
-
     /**
      * 处理参数类型不匹配异常
      */
@@ -90,7 +86,7 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
                 e.getName(), e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown"));
     }
 
-    
+
     /**
      * 处理文件上传大小超限异常
      */
@@ -111,5 +107,5 @@ public class GlobalExceptionHandler extends com.cloud.common.exception.GlobalExc
         return Result.error("BUSINESS_ERROR", "数据操作失败，请检查数据的完整性");
     }
 
-    
+
 }

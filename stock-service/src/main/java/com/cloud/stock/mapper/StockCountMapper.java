@@ -24,8 +24,8 @@ public interface StockCountMapper extends BaseMapper<StockCount> {
      * @return 盘点记录列表
      */
     List<StockCount> selectByProductId(@Param("productId") Long productId,
-                                        @Param("startTime") LocalDateTime startTime,
-                                        @Param("endTime") LocalDateTime endTime);
+                                       @Param("startTime") LocalDateTime startTime,
+                                       @Param("endTime") LocalDateTime endTime);
 
     /**
      * 根据盘点单号查询盘点记录
@@ -44,8 +44,8 @@ public interface StockCountMapper extends BaseMapper<StockCount> {
      * @return 盘点记录列表
      */
     List<StockCount> selectByStatus(@Param("status") String status,
-                                     @Param("startTime") LocalDateTime startTime,
-                                     @Param("endTime") LocalDateTime endTime);
+                                    @Param("startTime") LocalDateTime startTime,
+                                    @Param("endTime") LocalDateTime endTime);
 
     /**
      * 查询待确认的盘点记录数量

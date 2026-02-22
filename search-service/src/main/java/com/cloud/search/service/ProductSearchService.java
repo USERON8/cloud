@@ -192,6 +192,6 @@ public interface ProductSearchService {
      * @return 搜索结果
      */
     SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
-                                                  BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
-                                                  String sortBy, String sortOrder, Integer page, Integer size);
+                                                 BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
+                                                 String sortBy, String sortOrder, Integer page, Integer size);
 }

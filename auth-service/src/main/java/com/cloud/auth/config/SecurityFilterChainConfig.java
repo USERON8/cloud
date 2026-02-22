@@ -1,10 +1,11 @@
-package com.cloud.auth.config;
+﻿package com.cloud.auth.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,13 +17,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
- * 安全过滤器链配置
- * 严格遵循OAuth2.1标准，分离授权服务器和资源服务器的安全配置
+ * 瀹夊叏杩囨护鍣ㄩ摼閰嶇疆
+ * 涓ユ牸閬靛惊OAuth2.1鏍囧噯锛屽垎绂绘巿鏉冩湇鍔″櫒鍜岃祫婧愭湇鍔″櫒鐨勫畨鍏ㄩ厤缃?
  * <p>
- * 配置优先级:
- * 1. OAuth2授权服务器过滤器链 (Order = 1)
- * 2. 资源服务器过滤器链 (Order = 2)
- * 3. 默认过滤器链 (Order = 3)
+ * 閰嶇疆浼樺厛绾?
+ * 1. OAuth2鎺堟潈鏈嶅姟鍣ㄨ繃婊ゅ櫒閾?(Order = 1)
+ * 2. 璧勬簮鏈嶅姟鍣ㄨ繃婊ゅ櫒閾?(Order = 2)
+ * 3. 榛樿杩囨护鍣ㄩ摼 (Order = 3)
  *
  * @author what's up
  */
@@ -40,33 +41,33 @@ public class SecurityFilterChainConfig {
     }
 
     /**
-     * OAuth2.1授权服务器安全过滤器链
-     * 处理OAuth2授权服务器的所有端点
+     * OAuth2.1鎺堟潈鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾?
+     * 澶勭悊OAuth2鎺堟潈鏈嶅姟鍣ㄧ殑鎵€鏈夌鐐?
      * <p>
-     * 处理的端点:
-     * - /oauth2/authorize (授权端点)
-     * - /oauth2/token (令牌端点)
-     * - /oauth2/revoke (令牌撤销端点)
-     * - /oauth2/introspect (令牌内省端点)
-     * - /oauth2/jwks (JWK集合端点)
-     * - /.well-known/oauth-authorization-server (发现端点)
-     * - /connect/logout (OpenID Connect登出端点)
-     * - /userinfo (用户信息端点)
+     * 澶勭悊鐨勭鐐?
+     * - /oauth2/authorize (鎺堟潈绔偣)
+     * - /oauth2/token (浠ょ墝绔偣)
+     * - /oauth2/revoke (浠ょ墝鎾ら攢绔偣)
+     * - /oauth2/introspect (浠ょ墝鍐呯渷绔偣)
+     * - /oauth2/jwks (JWK闆嗗悎绔偣)
+     * - /.well-known/oauth-authorization-server (鍙戠幇绔偣)
+     * - /connect/logout (OpenID Connect鐧诲嚭绔偣)
+     * - /userinfo (鐢ㄦ埛淇℃伅绔偣)
      */
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        log.info("🔧 配置OAuth2.1授权服务器安全过滤器链");
+        log.info("馃敡 閰嶇疆OAuth2.1鎺堟潈鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾?);
 
-        // 创建OAuth2授权服务器配置器
+        // 鍒涘缓OAuth2鎺堟潈鏈嶅姟鍣ㄩ厤缃櫒
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
 
-        // 启用OpenID Connect支持
+        // 鍚敤OpenID Connect鏀寔
         authorizationServerConfigurer.oidc(Customizer.withDefaults());
 
         http
-                // 匹配OAuth2和OpenID Connect相关端点
+                // 鍖归厤OAuth2鍜孫penID Connect鐩稿叧绔偣
                 .securityMatcher(new RequestMatcher() {
                     @Override
                     public boolean matches(jakarta.servlet.http.HttpServletRequest request) {
@@ -78,11 +79,11 @@ public class SecurityFilterChainConfig {
                     }
                 })
 
-                // 应用OAuth2授权服务器配置
+                // 搴旂敤OAuth2鎺堟潈鏈嶅姟鍣ㄩ厤缃?
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
 
-                // OAuth2.1安全配置
-                .csrf(AbstractHttpConfigurer::disable)  // OAuth2不需要CSRF保护
+                // OAuth2.1瀹夊叏閰嶇疆
+                .csrf(AbstractHttpConfigurer::disable)  // OAuth2涓嶉渶瑕丆SRF淇濇姢
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
                     config.setAllowCredentials(true);
@@ -92,211 +93,221 @@ public class SecurityFilterChainConfig {
                     return config;
                 }))
 
-                // 授权配置 - OAuth2授权服务器会自动处理端点授权
+                // 鎺堟潈閰嶇疆 - OAuth2鎺堟潈鏈嶅姟鍣ㄤ細鑷姩澶勭悊绔偣鎺堟潈
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
 
-                // OAuth2.1认证方式
-                .httpBasic(Customizer.withDefaults())  // 支持HTTP Basic认证
-                .formLogin(Customizer.withDefaults())  // 支持表单登录（用于授权页面）
+                // OAuth2.1璁よ瘉鏂瑰紡
+                .httpBasic(Customizer.withDefaults())  // 鏀寔HTTP Basic璁よ瘉
+                .formLogin(Customizer.withDefaults())  // 鏀寔琛ㄥ崟鐧诲綍锛堢敤浜庢巿鏉冮〉闈級
 
-                // OAuth2.1会话管理
+                // OAuth2.1浼氳瘽绠＄悊
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // 授权服务器需要会话支持
-                        .maximumSessions(1)  // 限制并发会话
-                        .maxSessionsPreventsLogin(false)  // 允许踢出旧会话
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // 鎺堟潈鏈嶅姟鍣ㄩ渶瑕佷細璇濇敮鎸?
+                        .maximumSessions(1)  // 闄愬埗骞跺彂浼氳瘽
+                        .maxSessionsPreventsLogin(false)  // 鍏佽韪㈠嚭鏃т細璇?
                 );
 
-        log.info("✅ OAuth2.1授权服务器安全过滤器链配置完成");
+        log.info("鉁?OAuth2.1鎺堟潈鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾鹃厤缃畬鎴?);
         return http.build();
     }
 
     /**
-     * OAuth2.1资源服务器安全过滤器链
-     * 处理受保护的API端点，验证JWT令牌
+     * OAuth2.1璧勬簮鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾?
+     * 澶勭悊鍙椾繚鎶ょ殑API绔偣锛岄獙璇丣WT浠ょ墝
      * <p>
-     * 处理的端点:
-     * - /auth/** (认证相关API)
-     * - /admin/** (管理API)
-     * - 其他需要JWT验证的API
+     * 澶勭悊鐨勭鐐?
+     * - /auth/** (璁よ瘉鐩稿叧API)
+     * - /admin/** (绠＄悊API)
+     * - 鍏朵粬闇€瑕丣WT楠岃瘉鐨凙PI
      */
     @Bean
     @Order(2)
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        log.info("🔧 配置OAuth2.1资源服务器安全过滤器链");
+        log.info("馃敡 閰嶇疆OAuth2.1璧勬簮鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾?);
 
         http
-                // 匹配需要JWT验证的端点
+                // 鍖归厤闇€瑕丣WT楠岃瘉鐨勭鐐?
                 .securityMatcher(
-                        "/auth/validate-token",
-                        "/auth/refresh-token",
+                        "/auth/**",
                         "/admin/**",
                         "/management/**"
                 )
 
-                // OAuth2.1资源服务器配置
+                // OAuth2.1璧勬簮鏈嶅姟鍣ㄩ厤缃?
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
 
-                // 授权配置
+                // 鎺堟潈閰嶇疆
                 .authorizeHttpRequests(authorize -> authorize
-                        // 管理端点需要管理员权限
-                        .requestMatchers("/admin/**", "/management/**")
-                        .hasAnyRole("ADMIN")
-
-                        // 其他端点需要认证
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/auth/users/register",
+                                "/auth/sessions",
+                                "/auth/users/register-and-login",
+                                "/auth/tokens/refresh",
+                                // backward-compatible paths
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/register-and-login",
+                                "/auth/refresh-token"
+                        ).permitAll()
+                        .requestMatchers("/auth/oauth2/github/**").permitAll()
+                        .requestMatchers("/admin/**", "/management/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 
-                // OAuth2.1资源服务器JWT配置
+                // OAuth2.1璧勬簮鏈嶅姟鍣↗WT閰嶇疆
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter)
                         )
 
-                        // JWT认证异常处理
+                        // JWT璁よ瘉寮傚父澶勭悊
                         .authenticationEntryPoint((request, response, authException) -> {
-                            log.warn("🔒 JWT认证失败: {}", authException.getMessage());
+                            log.warn("馃敀 JWT璁よ瘉澶辫触: {}", authException.getMessage());
                             response.setStatus(401);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write(
-                                    "{\"error\":\"unauthorized\",\"message\":\"JWT令牌无效或已过期\"}"
+                                    "{\"error\":\"unauthorized\",\"message\":\"JWT浠ょ墝鏃犳晥鎴栧凡杩囨湡\"}"
                             );
                         })
 
-                        // JWT授权异常处理
+                        // JWT鎺堟潈寮傚父澶勭悊
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            log.warn("🚫 JWT授权失败: {}", accessDeniedException.getMessage());
+                            log.warn("馃毇 JWT鎺堟潈澶辫触: {}", accessDeniedException.getMessage());
                             response.setStatus(403);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write(
-                                    "{\"error\":\"access_denied\",\"message\":\"权限不足\"}"
+                                    "{\"error\":\"access_denied\",\"message\":\"鏉冮檺涓嶈冻\"}"
                             );
                         })
                 )
 
-                // 无状态会话
+                // 鏃犵姸鎬佷細璇?
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
-        log.info("✅ OAuth2.1资源服务器安全过滤器链配置完成");
+        log.info("鉁?OAuth2.1璧勬簮鏈嶅姟鍣ㄥ畨鍏ㄨ繃婊ゅ櫒閾鹃厤缃畬鎴?);
         return http.build();
     }
 
     /**
-     * 默认安全过滤器链
-     * 处理其他所有请求，包括公开API和文档端点
+     * 榛樿瀹夊叏杩囨护鍣ㄩ摼
+     * 澶勭悊鍏朵粬鎵€鏈夎姹傦紝鍖呮嫭鍏紑API鍜屾枃妗ｇ鐐?
      * <p>
-     * 处理的端点:
-     * - 公开API (如注册、登录等)
-     * - 文档端点 (Swagger, Actuator等)
-     * - 静态资源
+     * 澶勭悊鐨勭鐐?
+     * - 鍏紑API (濡傛敞鍐屻€佺櫥褰曠瓑)
+     * - 鏂囨。绔偣 (Swagger, Actuator绛?
+     * - 闈欐€佽祫婧?
      */
     @Bean
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        log.info("🔧 配置默认安全过滤器链");
+        log.info("馃敡 閰嶇疆榛樿瀹夊叏杩囨护鍣ㄩ摼");
 
         http
-                // OAuth2.1基础配置
+                // OAuth2.1鍩虹閰嶇疆
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
 
-                // 授权配置
+                // 鎺堟潈閰嶇疆
                 .authorizeHttpRequests(authorize -> authorize
-                        // 完全公开的端点
+                        // 瀹屽叏鍏紑鐨勭鐐?
                         .requestMatchers(
-                                // 健康检查和监控
+                                // 鍋ュ悍妫€鏌ュ拰鐩戞帶
                                 "/actuator/**",
                                 "/health/**",
 
-                                // API文档 - Swagger/OpenAPI
+                                // API鏂囨。 - Swagger/OpenAPI
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
 
-                                // Knife4j文档 - 公开访问
-                                "/doc.html",              // Knife4j文档首页
-                                "/doc.html/**",           // Knife4j相关资源
+                                // Knife4j鏂囨。 - 鍏紑璁块棶
+                                "/doc.html",              // Knife4j鏂囨。棣栭〉
+                                "/doc.html/**",           // Knife4j鐩稿叧璧勬簮
                                 "/favicon.ico",
                                 "/error",
 
-                                // 简单登录页面 - 公开访问
-                                "/login",                 // 简单登录页面
-                                "/login/**",              // 登录相关资源
+                                // 绠€鍗曠櫥褰曢〉闈?- 鍏紑璁块棶
+                                "/login",                 // 绠€鍗曠櫥褰曢〉闈?
+                                "/login/**",              // 鐧诲綍鐩稿叧璧勬簮
 
-                                // 公开API
-                                "/auth/register",         // 用户注册
-                                "/auth/login",            // 用户登录
-                                "/auth/logout",           // 用户登出
-                                "/auth/register-and-login", // 注册并登录
-                                "/auth/refresh-token",    // 刷新令牌
+                                // 鍏紑API
+                                "/auth/register",         // 鐢ㄦ埛娉ㄥ唽
+                                "/auth/login",            // 鐢ㄦ埛鐧诲綍
+                                "/auth/logout",           // 鐢ㄦ埛鐧诲嚭
+                                "/auth/register-and-login", // 娉ㄥ唽骞剁櫥褰?
+                                "/auth/refresh-token",    // 鍒锋柊浠ょ墝
                                 "/auth/github/**"         // GitHub OAuth2
                         ).permitAll()
 
-                        // 其他请求允许访问（由网关统一鉴权）
+                        // 鍏朵粬璇锋眰鍏佽璁块棶锛堢敱缃戝叧缁熶竴閴存潈锛?
                         .anyRequest().permitAll()
                 )
 
-                // 禁用不需要的认证方式
+                // 绂佺敤涓嶉渶瑕佺殑璁よ瘉鏂瑰紡
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
 
-                // 无状态会话
+                // 鏃犵姸鎬佷細璇?
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
-        log.info("✅ 默认安全过滤器链配置完成");
+        log.info("鉁?榛樿瀹夊叏杩囨护鍣ㄩ摼閰嶇疆瀹屾垚");
         return http.build();
     }
 
     /**
-     * CORS配置（全局）
-     * OAuth2.1标准推荐的跨域配置
+     * CORS閰嶇疆锛堝叏灞€锛?
+     * OAuth2.1鏍囧噯鎺ㄨ崘鐨勮法鍩熼厤缃?
      */
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        log.info("🔧 配置CORS跨域设置");
+        log.info("馃敡 閰嶇疆CORS璺ㄥ煙璁剧疆");
 
         org.springframework.web.cors.CorsConfiguration configuration =
                 new org.springframework.web.cors.CorsConfiguration();
 
-        // OAuth2.1 CORS设置
+        // OAuth2.1 CORS璁剧疆
         configuration.setAllowCredentials(true);
         configuration.addAllowedOriginPattern("http://localhost:*");
         configuration.addAllowedOriginPattern("https://localhost:*");
         configuration.addAllowedOriginPattern("http://127.0.0.1:*");
         configuration.addAllowedOriginPattern("https://127.0.0.1:*");
 
-        // 允许的HTTP方法
+        // 鍏佽鐨凥TTP鏂规硶
         configuration.addAllowedMethod("GET");
         configuration.addAllowedMethod("POST");
         configuration.addAllowedMethod("PUT");
         configuration.addAllowedMethod("DELETE");
         configuration.addAllowedMethod("OPTIONS");
 
-        // 允许的请求头
+        // 鍏佽鐨勮姹傚ご
         configuration.addAllowedHeader("*");
 
-        // 暴露的响应头（OAuth2.1需要）
+        // 鏆撮湶鐨勫搷搴斿ご锛圤Auth2.1闇€瑕侊級
         configuration.addExposedHeader("Authorization");
         configuration.addExposedHeader("Cache-Control");
         configuration.addExposedHeader("Content-Type");
 
-        // 预检请求缓存时间
+        // 棰勬璇锋眰缂撳瓨鏃堕棿
         configuration.setMaxAge(3600L);
 
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source =
                 new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
-        log.info("✅ CORS跨域设置配置完成");
+        log.info("鉁?CORS璺ㄥ煙璁剧疆閰嶇疆瀹屾垚");
         return source;
     }
 
 }
+
+

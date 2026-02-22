@@ -29,7 +29,7 @@ public interface OrderExportService {
      * @param outputStream 输出流
      */
     void exportOrdersByConditions(String orderStatus, LocalDateTime startTime,
-                                   LocalDateTime endTime, OutputStream outputStream);
+                                  LocalDateTime endTime, OutputStream outputStream);
 
     /**
      * 导出单个订单详情到Excel

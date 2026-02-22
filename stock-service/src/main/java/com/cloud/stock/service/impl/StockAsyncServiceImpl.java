@@ -11,11 +11,14 @@ import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -30,15 +33,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StockAsyncServiceImpl implements StockAsyncService {
 
-    private final StockService stockService;
-    private final StockMapper stockMapper;
-    private final StockConverter stockConverter;
-    private final CacheManager cacheManager;
-
     /**
      * 批处理大小
      */
     private static final int BATCH_SIZE = 50;
+    private final StockService stockService;
+    private final StockMapper stockMapper;
+    private final StockConverter stockConverter;
+    private final CacheManager cacheManager;
+    @Resource
+    @Qualifier("stockQueryExecutor")
+    private Executor stockQueryExecutor;
+    @Resource
+    @Qualifier("stockOperationExecutor")
+    private Executor stockOperationExecutor;
+    @Resource
+    @Qualifier("stockCommonExecutor")
+    private Executor stockCommonExecutor;
 
     @Override
     @Async("stockQueryExecutor")
@@ -67,7 +78,8 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 List<Long> batch = productIdList.subList(i, end);
 
                 CompletableFuture<List<StockDTO>> future = CompletableFuture.supplyAsync(
-                        () -> stockService.getStocksByProductIds(batch)
+                        () -> stockService.getStocksByProductIds(batch),
+                        stockQueryExecutor
                 );
                 futures.add(future);
             }
@@ -106,7 +118,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                                     Integer quantity = entry.getValue();
                                     boolean sufficient = stockService.checkStockSufficient(productId, quantity);
                                     return Map.entry(productId, sufficient);
-                                }))
+                                }, stockQueryExecutor))
                                 .collect(Collectors.toList());
 
                 // 等待所有检查完成
@@ -121,7 +133,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 log.error("异步批量检查库存失败", e);
                 throw new RuntimeException("批量检查库存失败", e);
             }
-        });
+        }, stockQueryExecutor);
     }
 
     @Override
@@ -133,7 +145,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = Collections.synchronizedList(new ArrayList<>());
+            List<String> errors = new ArrayList<>();
 
             try {
                 // 并发预留库存
@@ -163,7 +175,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 errors.add("批量操作失败: " + e.getMessage());
                 return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
-        });
+        }, stockOperationExecutor);
     }
 
     @Override
@@ -175,7 +187,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = Collections.synchronizedList(new ArrayList<>());
+            List<String> errors = new ArrayList<>();
 
             try {
                 productQuantityMap.forEach((productId, quantity) -> {
@@ -204,7 +216,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 errors.add("批量操作失败: " + e.getMessage());
                 return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
-        });
+        }, stockOperationExecutor);
     }
 
     @Override
@@ -216,7 +228,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = Collections.synchronizedList(new ArrayList<>());
+            List<String> errors = new ArrayList<>();
 
             try {
                 stockInList.forEach(request -> {
@@ -249,7 +261,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 errors.add("批量操作失败: " + e.getMessage());
                 return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
-        });
+        }, stockOperationExecutor);
     }
 
     @Override
@@ -261,7 +273,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = Collections.synchronizedList(new ArrayList<>());
+            List<String> errors = new ArrayList<>();
 
             try {
                 stockOutList.forEach(request -> {
@@ -296,7 +308,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 errors.add("批量操作失败: " + e.getMessage());
                 return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
-        });
+        }, stockOperationExecutor);
     }
 
     @Override
@@ -318,7 +330,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
             } catch (Exception e) {
                 log.error("刷新库存缓存失败: productId={}", productId, e);
             }
-        });
+        }, stockCommonExecutor);
     }
 
     @Override
@@ -340,7 +352,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
             } catch (Exception e) {
                 log.error("批量刷新库存缓存失败", e);
             }
-        });
+        }, stockCommonExecutor);
     }
 
     @Override
@@ -376,7 +388,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 log.error("预加载热门商品库存失败", e);
                 return 0;
             }
-        });
+        }, stockCommonExecutor);
     }
 
     @Override
@@ -400,7 +412,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 log.error("统计库存预警失败", e);
                 return Collections.emptyList();
             }
-        });
+        }, stockQueryExecutor);
     }
 
     @Override
@@ -435,6 +447,6 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                 log.error("计算库存总值失败", e);
                 return Collections.emptyMap();
             }
-        });
+        }, stockQueryExecutor);
     }
 }

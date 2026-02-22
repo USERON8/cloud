@@ -9,10 +9,12 @@ import com.cloud.user.service.UserDataExportService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.annotation.Resource;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,15 +36,17 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserDataExportServiceImpl implements UserDataExportService {
 
-    private final UserMapper userMapper;
-    private final UserService userService;
-    private final UserConverter userConverter;
-    private final RedisTemplate<String, Object> redisTemplate;
-
     /**
      * 批处理大小
      */
     private static final int BATCH_SIZE = 1000;
+    private final UserMapper userMapper;
+    private final UserService userService;
+    private final UserConverter userConverter;
+    private final RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    @Qualifier("userCommonAsyncExecutor")
+    private Executor userCommonAsyncExecutor;
 
     @Override
     @Async("userCommonAsyncExecutor")
@@ -88,7 +93,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 updateExportTaskStatus(taskId, "FAILED", 0, 0);
                 throw new RuntimeException("导出失败", e);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -151,7 +156,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 updateExportTaskStatus(taskId, "FAILED", 0, 0);
                 throw new RuntimeException("导出失败", e);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -185,7 +190,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 errors.add("导入失败: " + e.getMessage());
                 return new ImportResult(successCount, failureCount, errors);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -265,7 +270,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 errors.add("导入失败: " + e.getMessage());
                 return new ImportResult(successCount, failureCount, errors);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -290,7 +295,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 log.error("获取导出任务状态失败: taskId={}", taskId, e);
                 return new ExportTaskStatus(taskId, "ERROR", 0, 0, null);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -315,7 +320,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 log.error("获取导入任务状态失败: taskId={}", taskId, e);
                 return new ImportTaskStatus(taskId, "ERROR", 0, 0, 0);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     /**

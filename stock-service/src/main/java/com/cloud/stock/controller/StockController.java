@@ -540,6 +540,259 @@ public class StockController {
     // ==================== 内部类 ====================
 
     /**
+     * 获取低库存商品列表
+     */
+    @GetMapping("/alerts")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "获取低库存商品列表", description = "查询所有低于预警阈值的商品")
+    public Result<List<Stock>> getLowStockAlerts(Authentication authentication) {
+        log.info("查询低库存商品列表");
+        List<Stock> lowStockProducts = stockAlertService.getLowStockProducts();
+        return Result.success("查询成功", lowStockProducts);
+    }
+
+    /**
+     * 根据阈值查询低库存商品
+     */
+    @GetMapping("/alerts/threshold/{threshold}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "根据阈值查询低库存商品", description = "查询库存低于指定阈值的商品")
+    public Result<List<Stock>> getLowStockByThreshold(
+            @Parameter(description = "库存阈值") @PathVariable
+            @NotNull(message = "阈值不能为空")
+            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
+            Authentication authentication) {
+        log.info("查询库存低于 {} 的商品", threshold);
+        List<Stock> lowStockProducts = stockAlertService.getLowStockProductsByThreshold(threshold);
+        return Result.success("查询成功", lowStockProducts);
+    }
+
+    // ==================== 库存预警接口 ====================
+
+    /**
+     * 更新商品库存预警阈值
+     */
+    @PutMapping("/{productId}/threshold")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "更新库存预警阈值", description = "设置商品的低库存预警阈值")
+    public Result<Boolean> updateLowStockThreshold(
+            @Parameter(description = "商品ID") @PathVariable
+            @NotNull(message = "商品ID不能为空") Long productId,
+            @Parameter(description = "预警阈值") @RequestParam("threshold")
+            @NotNull(message = "阈值不能为空")
+            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
+            Authentication authentication) {
+        log.info("更新库存预警阈值, productId: {}, threshold: {}", productId, threshold);
+        boolean result = stockAlertService.updateLowStockThreshold(productId, threshold);
+        return Result.success("更新成功", result);
+    }
+
+    /**
+     * 批量更新库存预警阈值
+     */
+    @PutMapping("/threshold/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "批量更新库存预警阈值", description = "批量设置商品的低库存预警阈值")
+    public Result<Integer> batchUpdateLowStockThreshold(
+            @Parameter(description = "商品ID列表") @RequestParam("productIds")
+            @NotNull(message = "商品ID列表不能为空") List<Long> productIds,
+            @Parameter(description = "预警阈值") @RequestParam("threshold")
+            @NotNull(message = "阈值不能为空")
+            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold) {
+        log.info("批量更新库存预警阈值, 数量: {}, threshold: {}", productIds.size(), threshold);
+        int count = stockAlertService.batchUpdateLowStockThreshold(productIds, threshold);
+        return Result.success("批量更新成功", count);
+    }
+
+    /**
+     * 创建库存盘点记录
+     */
+    @PostMapping("/count")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "创建库存盘点记录", description = "对指定商品进行库存盘点")
+    public Result<Long> createStockCount(
+            @Parameter(description = "商品ID") @RequestParam("productId")
+            @NotNull(message = "商品ID不能为空") Long productId,
+            @Parameter(description = "实际盘点数量") @RequestParam("actualQuantity")
+            @NotNull(message = "实际数量不能为空")
+            @Min(value = 0, message = "实际数量必须大于等于0") Integer actualQuantity,
+            @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
+            Authentication authentication) {
+        log.info("创建库存盘点记录, productId: {}, actualQuantity: {}", productId, actualQuantity);
+
+        // 从认证信息获取操作人信息
+        Long operatorId = 1L; // TODO: 从authentication获取实际用户ID
+        String operatorName = authentication.getName();
+
+        Long countId = stockCountService.createStockCount(productId, actualQuantity,
+                operatorId, operatorName, remark);
+        return Result.success("盘点记录创建成功", countId);
+    }
+
+    /**
+     * 确认库存盘点并调整库存
+     */
+    @PutMapping("/count/{countId}/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "确认库存盘点", description = "确认盘点记录并调整库存")
+    public Result<Boolean> confirmStockCount(
+            @Parameter(description = "盘点记录ID") @PathVariable
+            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            Authentication authentication) {
+        log.info("确认库存盘点, countId: {}", countId);
+
+        // 从认证信息获取确认人信息
+        Long confirmUserId = 1L; // TODO: 从authentication获取实际用户ID
+        String confirmUserName = authentication.getName();
+
+        boolean result = stockCountService.confirmStockCount(countId, confirmUserId, confirmUserName);
+        return Result.success("盘点确认成功", result);
+    }
+
+    // ==================== 库存盘点接口 ====================
+
+    /**
+     * 取消库存盘点
+     */
+    @DeleteMapping("/count/{countId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "取消库存盘点", description = "取消待确认的盘点记录")
+    public Result<Boolean> cancelStockCount(
+            @Parameter(description = "盘点记录ID") @PathVariable
+            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            Authentication authentication) {
+        log.info("取消库存盘点, countId: {}", countId);
+        boolean result = stockCountService.cancelStockCount(countId);
+        return Result.success("盘点记录已取消", result);
+    }
+
+    /**
+     * 根据ID查询盘点记录
+     */
+    @GetMapping("/count/{countId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "查询盘点记录", description = "根据ID查询盘点记录详情")
+    public Result<StockCount> getStockCountById(
+            @Parameter(description = "盘点记录ID") @PathVariable
+            @NotNull(message = "盘点记录ID不能为空") Long countId,
+            Authentication authentication) {
+        log.info("查询盘点记录, countId: {}", countId);
+        StockCount stockCount = stockCountService.getStockCountById(countId);
+        if (stockCount == null) {
+            throw new ResourceNotFoundException("StockCount", String.valueOf(countId));
+        }
+        return Result.success("查询成功", stockCount);
+    }
+
+    /**
+     * 根据商品ID查询盘点记录
+     */
+    @GetMapping("/count/product/{productId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "根据商品查询盘点记录", description = "查询指定商品的盘点记录列表")
+    public Result<List<StockCount>> getStockCountsByProductId(
+            @Parameter(description = "商品ID") @PathVariable
+            @NotNull(message = "商品ID不能为空") Long productId,
+            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime startTime,
+            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime endTime,
+            Authentication authentication) {
+        log.info("根据商品ID查询盘点记录, productId: {}", productId);
+        List<StockCount> counts = stockCountService.getStockCountsByProductId(productId, startTime, endTime);
+        return Result.success("查询成功", counts);
+    }
+
+    /**
+     * 根据状态查询盘点记录
+     */
+    @GetMapping("/count/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "根据状态查询盘点记录", description = "查询指定状态的盘点记录")
+    public Result<List<StockCount>> getStockCountsByStatus(
+            @Parameter(description = "盘点状态") @PathVariable String status,
+            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime startTime,
+            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime endTime) {
+        log.info("根据状态查询盘点记录, status: {}", status);
+        List<StockCount> counts = stockCountService.getStockCountsByStatus(status, startTime, endTime);
+        return Result.success("查询成功", counts);
+    }
+
+    /**
+     * 查询待确认的盘点记录数量
+     */
+    @GetMapping("/count/pending/count")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "查询待确认盘点数量", description = "查询待确认的盘点记录数量")
+    public Result<Integer> countPendingRecords() {
+        int count = stockCountService.countPendingRecords();
+        return Result.success("查询成功", count);
+    }
+
+    /**
+     * 根据商品ID查询库存日志
+     */
+    @GetMapping("/logs/product/{productId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "根据商品查询库存日志", description = "查询指定商品的库存操作日志")
+    public Result<List<StockLog>> getLogsByProductId(
+            @Parameter(description = "商品ID") @PathVariable
+            @NotNull(message = "商品ID不能为空") Long productId,
+            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime startTime,
+            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime endTime,
+            Authentication authentication) {
+        log.info("根据商品ID查询库存日志, productId: {}", productId);
+        List<StockLog> logs = stockLogService.getLogsByProductId(productId, startTime, endTime);
+        return Result.success("查询成功", logs);
+    }
+
+    /**
+     * 根据订单ID查询库存日志
+     */
+    @GetMapping("/logs/order/{orderId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "根据订单查询库存日志", description = "查询指定订单的库存操作日志")
+    public Result<List<StockLog>> getLogsByOrderId(
+            @Parameter(description = "订单ID") @PathVariable
+            @NotNull(message = "订单ID不能为空") Long orderId,
+            Authentication authentication) {
+        log.info("根据订单ID查询库存日志, orderId: {}", orderId);
+        List<StockLog> logs = stockLogService.getLogsByOrderId(orderId);
+        return Result.success("查询成功", logs);
+    }
+
+    // ==================== 库存日志接口 ====================
+
+    /**
+     * 根据操作类型查询库存日志
+     */
+    @GetMapping("/logs/type/{operationType}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "根据操作类型查询库存日志", description = "查询指定操作类型的库存日志")
+    public Result<List<StockLog>> getLogsByOperationType(
+            @Parameter(description = "操作类型") @PathVariable String operationType,
+            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime startTime,
+            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            java.time.LocalDateTime endTime) {
+        log.info("根据操作类型查询库存日志, operationType: {}", operationType);
+        List<StockLog> logs = stockLogService.getLogsByOperationType(operationType, startTime, endTime);
+        return Result.success("查询成功", logs);
+    }
+
+    /**
      * 库存调整请求DTO
      */
     public static class StockAdjustment {
@@ -632,258 +885,5 @@ public class StockController {
         public void setRemark(String remark) {
             this.remark = remark;
         }
-    }
-
-    // ==================== 库存预警接口 ====================
-
-    /**
-     * 获取低库存商品列表
-     */
-    @GetMapping("/alerts")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "获取低库存商品列表", description = "查询所有低于预警阈值的商品")
-    public Result<List<Stock>> getLowStockAlerts(Authentication authentication) {
-        log.info("查询低库存商品列表");
-        List<Stock> lowStockProducts = stockAlertService.getLowStockProducts();
-        return Result.success("查询成功", lowStockProducts);
-    }
-
-    /**
-     * 根据阈值查询低库存商品
-     */
-    @GetMapping("/alerts/threshold/{threshold}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据阈值查询低库存商品", description = "查询库存低于指定阈值的商品")
-    public Result<List<Stock>> getLowStockByThreshold(
-            @Parameter(description = "库存阈值") @PathVariable
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
-            Authentication authentication) {
-        log.info("查询库存低于 {} 的商品", threshold);
-        List<Stock> lowStockProducts = stockAlertService.getLowStockProductsByThreshold(threshold);
-        return Result.success("查询成功", lowStockProducts);
-    }
-
-    /**
-     * 更新商品库存预警阈值
-     */
-    @PutMapping("/{productId}/threshold")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "更新库存预警阈值", description = "设置商品的低库存预警阈值")
-    public Result<Boolean> updateLowStockThreshold(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "预警阈值") @RequestParam("threshold")
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold,
-            Authentication authentication) {
-        log.info("更新库存预警阈值, productId: {}, threshold: {}", productId, threshold);
-        boolean result = stockAlertService.updateLowStockThreshold(productId, threshold);
-        return Result.success("更新成功", result);
-    }
-
-    /**
-     * 批量更新库存预警阈值
-     */
-    @PutMapping("/threshold/batch")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "批量更新库存预警阈值", description = "批量设置商品的低库存预警阈值")
-    public Result<Integer> batchUpdateLowStockThreshold(
-            @Parameter(description = "商品ID列表") @RequestParam("productIds")
-            @NotNull(message = "商品ID列表不能为空") List<Long> productIds,
-            @Parameter(description = "预警阈值") @RequestParam("threshold")
-            @NotNull(message = "阈值不能为空")
-            @Min(value = 0, message = "阈值必须大于等于0") Integer threshold) {
-        log.info("批量更新库存预警阈值, 数量: {}, threshold: {}", productIds.size(), threshold);
-        int count = stockAlertService.batchUpdateLowStockThreshold(productIds, threshold);
-        return Result.success("批量更新成功", count);
-    }
-
-    // ==================== 库存盘点接口 ====================
-
-    /**
-     * 创建库存盘点记录
-     */
-    @PostMapping("/count")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "创建库存盘点记录", description = "对指定商品进行库存盘点")
-    public Result<Long> createStockCount(
-            @Parameter(description = "商品ID") @RequestParam("productId")
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "实际盘点数量") @RequestParam("actualQuantity")
-            @NotNull(message = "实际数量不能为空")
-            @Min(value = 0, message = "实际数量必须大于等于0") Integer actualQuantity,
-            @Parameter(description = "备注") @RequestParam(value = "remark", required = false) String remark,
-            Authentication authentication) {
-        log.info("创建库存盘点记录, productId: {}, actualQuantity: {}", productId, actualQuantity);
-
-        // 从认证信息获取操作人信息
-        Long operatorId = 1L; // TODO: 从authentication获取实际用户ID
-        String operatorName = authentication.getName();
-
-        Long countId = stockCountService.createStockCount(productId, actualQuantity,
-                operatorId, operatorName, remark);
-        return Result.success("盘点记录创建成功", countId);
-    }
-
-    /**
-     * 确认库存盘点并调整库存
-     */
-    @PutMapping("/count/{countId}/confirm")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "确认库存盘点", description = "确认盘点记录并调整库存")
-    public Result<Boolean> confirmStockCount(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
-            Authentication authentication) {
-        log.info("确认库存盘点, countId: {}", countId);
-
-        // 从认证信息获取确认人信息
-        Long confirmUserId = 1L; // TODO: 从authentication获取实际用户ID
-        String confirmUserName = authentication.getName();
-
-        boolean result = stockCountService.confirmStockCount(countId, confirmUserId, confirmUserName);
-        return Result.success("盘点确认成功", result);
-    }
-
-    /**
-     * 取消库存盘点
-     */
-    @DeleteMapping("/count/{countId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "取消库存盘点", description = "取消待确认的盘点记录")
-    public Result<Boolean> cancelStockCount(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
-            Authentication authentication) {
-        log.info("取消库存盘点, countId: {}", countId);
-        boolean result = stockCountService.cancelStockCount(countId);
-        return Result.success("盘点记录已取消", result);
-    }
-
-    /**
-     * 根据ID查询盘点记录
-     */
-    @GetMapping("/count/{countId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "查询盘点记录", description = "根据ID查询盘点记录详情")
-    public Result<StockCount> getStockCountById(
-            @Parameter(description = "盘点记录ID") @PathVariable
-            @NotNull(message = "盘点记录ID不能为空") Long countId,
-            Authentication authentication) {
-        log.info("查询盘点记录, countId: {}", countId);
-        StockCount stockCount = stockCountService.getStockCountById(countId);
-        if (stockCount == null) {
-            throw new ResourceNotFoundException("StockCount", String.valueOf(countId));
-        }
-        return Result.success("查询成功", stockCount);
-    }
-
-    /**
-     * 根据商品ID查询盘点记录
-     */
-    @GetMapping("/count/product/{productId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据商品查询盘点记录", description = "查询指定商品的盘点记录列表")
-    public Result<List<StockCount>> getStockCountsByProductId(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime endTime,
-            Authentication authentication) {
-        log.info("根据商品ID查询盘点记录, productId: {}", productId);
-        List<StockCount> counts = stockCountService.getStockCountsByProductId(productId, startTime, endTime);
-        return Result.success("查询成功", counts);
-    }
-
-    /**
-     * 根据状态查询盘点记录
-     */
-    @GetMapping("/count/status/{status}")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "根据状态查询盘点记录", description = "查询指定状态的盘点记录")
-    public Result<List<StockCount>> getStockCountsByStatus(
-            @Parameter(description = "盘点状态") @PathVariable String status,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime endTime) {
-        log.info("根据状态查询盘点记录, status: {}", status);
-        List<StockCount> counts = stockCountService.getStockCountsByStatus(status, startTime, endTime);
-        return Result.success("查询成功", counts);
-    }
-
-    /**
-     * 查询待确认的盘点记录数量
-     */
-    @GetMapping("/count/pending/count")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "查询待确认盘点数量", description = "查询待确认的盘点记录数量")
-    public Result<Integer> countPendingRecords() {
-        int count = stockCountService.countPendingRecords();
-        return Result.success("查询成功", count);
-    }
-
-    // ==================== 库存日志接口 ====================
-
-    /**
-     * 根据商品ID查询库存日志
-     */
-    @GetMapping("/logs/product/{productId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据商品查询库存日志", description = "查询指定商品的库存操作日志")
-    public Result<List<StockLog>> getLogsByProductId(
-            @Parameter(description = "商品ID") @PathVariable
-            @NotNull(message = "商品ID不能为空") Long productId,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime endTime,
-            Authentication authentication) {
-        log.info("根据商品ID查询库存日志, productId: {}", productId);
-        List<StockLog> logs = stockLogService.getLogsByProductId(productId, startTime, endTime);
-        return Result.success("查询成功", logs);
-    }
-
-    /**
-     * 根据订单ID查询库存日志
-     */
-    @GetMapping("/logs/order/{orderId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
-    @Operation(summary = "根据订单查询库存日志", description = "查询指定订单的库存操作日志")
-    public Result<List<StockLog>> getLogsByOrderId(
-            @Parameter(description = "订单ID") @PathVariable
-            @NotNull(message = "订单ID不能为空") Long orderId,
-            Authentication authentication) {
-        log.info("根据订单ID查询库存日志, orderId: {}", orderId);
-        List<StockLog> logs = stockLogService.getLogsByOrderId(orderId);
-        return Result.success("查询成功", logs);
-    }
-
-    /**
-     * 根据操作类型查询库存日志
-     */
-    @GetMapping("/logs/type/{operationType}")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "根据操作类型查询库存日志", description = "查询指定操作类型的库存日志")
-    public Result<List<StockLog>> getLogsByOperationType(
-            @Parameter(description = "操作类型") @PathVariable String operationType,
-            @Parameter(description = "开始时间") @RequestParam(value = "startTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime startTime,
-            @Parameter(description = "结束时间") @RequestParam(value = "endTime", required = false)
-            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            java.time.LocalDateTime endTime) {
-        log.info("根据操作类型查询库存日志, operationType: {}", operationType);
-        List<StockLog> logs = stockLogService.getLogsByOperationType(operationType, startTime, endTime);
-        return Result.success("查询成功", logs);
     }
 }

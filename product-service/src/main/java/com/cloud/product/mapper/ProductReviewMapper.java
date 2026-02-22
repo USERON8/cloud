@@ -24,7 +24,7 @@ public interface ProductReviewMapper extends BaseMapper<ProductReview> {
      * @return 评价列表
      */
     List<ProductReview> selectByProductId(@Param("productId") Long productId,
-                                           @Param("rating") Integer rating);
+                                          @Param("rating") Integer rating);
 
     /**
      * 根据用户ID查询评价列表
@@ -50,7 +50,7 @@ public interface ProductReviewMapper extends BaseMapper<ProductReview> {
      * @return 待审核评价列表
      */
     List<ProductReview> selectPendingReviews(@Param("startTime") LocalDateTime startTime,
-                                              @Param("endTime") LocalDateTime endTime);
+                                             @Param("endTime") LocalDateTime endTime);
 
     /**
      * 统计商品评价数据

@@ -24,8 +24,8 @@ public interface StockLogMapper extends BaseMapper<StockLog> {
      * @return 日志列表
      */
     List<StockLog> selectByProductId(@Param("productId") Long productId,
-                                      @Param("startTime") LocalDateTime startTime,
-                                      @Param("endTime") LocalDateTime endTime);
+                                     @Param("startTime") LocalDateTime startTime,
+                                     @Param("endTime") LocalDateTime endTime);
 
     /**
      * 根据订单ID查询日志
@@ -44,6 +44,6 @@ public interface StockLogMapper extends BaseMapper<StockLog> {
      * @return 日志列表
      */
     List<StockLog> selectByOperationType(@Param("operationType") String operationType,
-                                          @Param("startTime") LocalDateTime startTime,
-                                          @Param("endTime") LocalDateTime endTime);
+                                         @Param("startTime") LocalDateTime startTime,
+                                         @Param("endTime") LocalDateTime endTime);
 }

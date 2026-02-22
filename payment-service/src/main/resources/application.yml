@@ -1,20 +1,20 @@
-server:
-  port: 8086
+﻿server:
+  port: ${SERVER_PORT:8086}
   tomcat:
     threads:
-      max: 200
-      min-spare: 10
-    max-connections: 8192
-    accept-count: 100
+      max: ${SERVER_TOMCAT_THREADS_MAX:400}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
   application:
     name: payment-service
   profiles:
     active: dev
-    include: rocketmq  # 引入RocketMQ配置
+    include: rocketmq  # 寮曞叆RocketMQ閰嶇疆
 
-  # Nacos 配置
+  # Nacos 閰嶇疆
   cloud:
     nacos:
       discovery:
@@ -23,6 +23,15 @@ spring:
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
@@ -30,7 +39,7 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-    # OpenFeign 配置
+    # OpenFeign 閰嶇疆
     openfeign:
       client:
         config:
@@ -44,37 +53,37 @@ spring:
         response:
           enabled: true
 
-  # Config 配置
+  # Config 閰嶇疆
   config:
     import: optional:nacos:common
 
-  # OAuth2 资源服务器配置
+  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
-          issuer-uri: http://127.0.0.1:8081
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
           cache-duration: PT30M
 
-# JWT 发行者配置
+# JWT 鍙戣鑰呴厤缃?
 app:
   jwt:
-    issuer: http://127.0.0.1:8081
+    issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
 
-# 统一权限管理配置
+# 缁熶竴鏉冮檺绠＄悊閰嶇疆
 unified:
   security:
     enabled: true
     permission:
-      # 动态权限更新间隔(秒)
+      # 鍔ㄦ€佹潈闄愭洿鏂伴棿闅?绉?
       refresh-interval: 300
-      # 权限缓存过期时间(秒)
+      # 鏉冮檺缂撳瓨杩囨湡鏃堕棿(绉?
       cache-ttl: 1800
-      # 启用权限调试模式
+      # 鍚敤鏉冮檺璋冭瘯妯″紡
       debug: false
 
-# 日志配置
+# 鏃ュ織閰嶇疆
 logging:
   file:
     path: logs
@@ -84,7 +93,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# MyBatis Plus 配置
+# MyBatis Plus 閰嶇疆
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.payment.module.entity
@@ -100,7 +109,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# 支付服务专用配置
+# 鏀粯鏈嶅姟涓撶敤閰嶇疆
 payment:
   async:
     enabled: true
@@ -109,7 +118,7 @@ payment:
   statistics:
     enabled: true
 
-# Redis 配置
+# Redis 閰嶇疆
 redis:
   host: ${REDIS_HOST:127.0.0.1}
   port: ${REDIS_PORT:6379}
@@ -123,7 +132,7 @@ redis:
       max-idle: 10
       min-idle: 2
 
-# Redisson 配置
+# Redisson 閰嶇疆
 redisson:
   address: redis://${redis.host}:${redis.port}
   password: ${redis.password}
@@ -138,20 +147,20 @@ redisson:
   subscriptions-per-connection: 5
   client-name: payment-service
 
-# 支付宝配置
+# 鏀粯瀹濋厤缃?
 alipay:
-  app-id: ${ALIPAY_APP_ID:2021000122671234}  # 支付宝应用ID，生产环境使用环境变量
-  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # 应用私钥
-  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # 支付宝公钥
-  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # 沙箱环境网关
-  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # 异步通知地址
-  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # 同步跳转地址
+  app-id: ${ALIPAY_APP_ID:2021000122671234}  # 鏀粯瀹濆簲鐢↖D锛岀敓浜х幆澧冧娇鐢ㄧ幆澧冨彉閲?
+  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # 搴旂敤绉侀挜
+  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # 鏀粯瀹濆叕閽?
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # 娌欑鐜缃戝叧
+  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # 寮傛閫氱煡鍦板潃
+  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # 鍚屾璺宠浆鍦板潃
   sign-type: RSA2
   charset: UTF-8
   format: json
-  timeout: 30m  # 支付超时时间
+  timeout: 30m  # 鏀粯瓒呮椂鏃堕棿
 
-# SpringDoc 配置
+# SpringDoc 閰嶇疆
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -167,7 +176,7 @@ springdoc:
     - group: 'payment-operation'
       paths-to-match: '/api/v1/payment/operation/**'
 
-# Knife4j 配置
+# Knife4j 閰嶇疆
 knife4j:
   enable: true
   production: false
@@ -175,7 +184,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Spring Boot Actuator配置
+# Spring Boot Actuator閰嶇疆
 management:
   endpoints:
     web:
@@ -207,3 +216,7 @@ management:
       enabled: true
     os:
       enabled: true
+
+
+
+

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 认证服务全局异常处理器
  * 继承公共异常处理器，只处理认证服务特有的异常
  * 其他常见异常由父类 GlobalExceptionHandler 统一处理
- *
+ * <p>
  * 核心原则：
  * 1. Controller层不允许抛异常，所有异常由全局异常处理器统一处理
  * 2. Service层抛出特定异常，由全局异常处理器转换为标准Result格式
@@ -134,6 +134,5 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.ACCOUNT_EXPIRED);
     }
 
-    
-    
-    }
+
+}

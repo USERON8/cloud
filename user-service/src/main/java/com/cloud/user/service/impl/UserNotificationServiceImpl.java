@@ -5,12 +5,15 @@ import com.cloud.user.service.UserNotificationService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * 用户通知服务实现类
@@ -24,6 +27,9 @@ public class UserNotificationServiceImpl implements UserNotificationService {
 
     private final UserService userService;
     private final RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    @Qualifier("userNotificationExecutor")
+    private Executor userNotificationExecutor;
 
     @Override
     @Async("userNotificationExecutor")
@@ -53,7 +59,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("发送欢迎邮件失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -85,7 +91,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("发送密码重置邮件失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -117,7 +123,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("发送账户激活邮件失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -151,7 +157,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("发送账户状态变更通知失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -193,7 +199,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("批量发送通知失败", e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -221,6 +227,6 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 log.error("发送系统公告失败", e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 }

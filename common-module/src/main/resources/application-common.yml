@@ -1,12 +1,21 @@
-# 通用配置模板
-# 所有微服务都可以继承的基础配置
+﻿# 閫氱敤閰嶇疆妯℃澘
+# 鎵€鏈夊井鏈嶅姟閮藉彲浠ョ户鎵跨殑鍩虹閰嶇疆
+
+server:
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: ${SERVER_TOMCAT_THREADS_MAX:400}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
-  # 通用Spring配置
+  # 閫氱敤Spring閰嶇疆
   main:
     allow-bean-definition-overriding: true
   
-  # Nacos配置 - 所有服务统一
+  # Nacos閰嶇疆 - 鎵€鏈夋湇鍔＄粺涓€
   cloud:
     nacos:
       discovery:
@@ -15,6 +24,15 @@ spring:
         password: ${NACOS_PASSWORD:nacos}
         namespace: ${NACOS_NAMESPACE:public}
         group: ${NACOS_GROUP:DEFAULT_GROUP}
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: ${NACOS_USERNAME:nacos}
@@ -23,7 +41,7 @@ spring:
         file-extension: yaml
         group: ${NACOS_GROUP:DEFAULT_GROUP}
     
-    # OpenFeign通用配置
+    # OpenFeign閫氱敤閰嶇疆
     openfeign:
       client:
         config:
@@ -37,17 +55,17 @@ spring:
         response:
           enabled: true
     
-    # RocketMQ通用配置
+    # RocketMQ閫氱敤閰嶇疆
     stream:
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
 
-  # 配置导入
+  # 閰嶇疆瀵煎叆
   config:
     import: optional:nacos:common
 
-  # 数据库通用配置
+  # 鏁版嵁搴撻€氱敤閰嶇疆
   datasource:
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${DB_USERNAME:root}
@@ -59,7 +77,7 @@ spring:
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
 
-  # Redis通用配置
+  # Redis閫氱敤閰嶇疆
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -68,14 +86,14 @@ spring:
       timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
-          max-active: ${REDIS_MAX_ACTIVE:50}      # 最大连接数(优化后)
-          max-wait: ${REDIS_MAX_WAIT:3000ms}      # 最大等待时间(避免无限等待)
-          max-idle: ${REDIS_MAX_IDLE:20}          # 最大空闲连接
-          min-idle: ${REDIS_MIN_IDLE:5}           # 最小空闲连接
-          time-between-eviction-runs: 60000       # 空闲连接检测周期(毫秒)
+          max-active: ${REDIS_MAX_ACTIVE:50}      # 鏈€澶ц繛鎺ユ暟(浼樺寲鍚?
+          max-wait: ${REDIS_MAX_WAIT:3000ms}      # 鏈€澶х瓑寰呮椂闂?閬垮厤鏃犻檺绛夊緟)
+          max-idle: ${REDIS_MAX_IDLE:20}          # 鏈€澶х┖闂茶繛鎺?
+          min-idle: ${REDIS_MIN_IDLE:5}           # 鏈€灏忕┖闂茶繛鎺?
+          time-between-eviction-runs: 60000       # 绌洪棽杩炴帴妫€娴嬪懆鏈?姣)
         shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
 
-# 日志通用配置
+# 鏃ュ織閫氱敤閰嶇疆
 logging:
   file:
     path: ${LOG_PATH:D:/logs}/${spring.application.name}
@@ -86,7 +104,7 @@ logging:
     org.springframework.web: ${LOG_LEVEL_WEB:warn}
     org.springframework.cloud: ${LOG_LEVEL_CLOUD_FRAMEWORK:warn}
 
-# MyBatis-Plus基础配置（各服务可以覆盖）
+# MyBatis-Plus鍩虹閰嶇疆锛堝悇鏈嶅姟鍙互瑕嗙洊锛?
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   configuration:
@@ -100,12 +118,12 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
-      # 字段策略配置
+      # 瀛楁绛栫暐閰嶇疆
       insert-strategy: not_null
       update-strategy: not_null
       select-strategy: not_empty
 
-# SpringDoc OpenAPI通用配置
+# SpringDoc OpenAPI閫氱敤閰嶇疆
 springdoc:
   api-docs:
     enabled: ${API_DOCS_ENABLED:true}
@@ -117,7 +135,7 @@ springdoc:
     operations-sorter: alpha
   default-flat-param-object: true
 
-# Knife4j通用配置
+# Knife4j閫氱敤閰嶇疆
 knife4j:
   enable: ${KNIFE4J_ENABLED:true}
   production: ${KNIFE4J_PRODUCTION:false}
@@ -127,24 +145,24 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 实体类列表
+    swagger-model-name: 瀹炰綋绫诲垪琛?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 微服务平台 API 文档"
+    footer-custom-content: "Cloud 寰湇鍔″钩鍙?API 鏂囨。"
 
-# 缓存通用配置
+# 缂撳瓨閫氱敤閰嶇疆
 cache:
-  multi-level: ${CACHE_MULTI_LEVEL:true}  # 启用多级缓存(Caffeine + Redis)
-  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # 缓存一致性机制(暂时关闭)
+  multi-level: ${CACHE_MULTI_LEVEL:true}  # 鍚敤澶氱骇缂撳瓨(Caffeine + Redis)
+  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # 缂撳瓨涓€鑷存€ф満鍒?鏆傛椂鍏抽棴)
   ttl:
-    user: ${CACHE_TTL_USER:1800}        # 用户相关: 30分钟
-    product: ${CACHE_TTL_PRODUCT:2700}  # 商品相关: 45分钟
-    stock: ${CACHE_TTL_STOCK:300}       # 库存相关: 5分钟 (高频变化)
-    order: ${CACHE_TTL_ORDER:900}       # 订单相关: 15分钟
-    payment: ${CACHE_TTL_PAYMENT:600}   # 支付相关: 10分钟
-    search: ${CACHE_TTL_SEARCH:1200}    # 搜索相关: 20分钟
-    auth: ${CACHE_TTL_AUTH:3600}        # 权限相关: 1小时
+    user: ${CACHE_TTL_USER:1800}        # 鐢ㄦ埛鐩稿叧: 30鍒嗛挓
+    product: ${CACHE_TTL_PRODUCT:2700}  # 鍟嗗搧鐩稿叧: 45鍒嗛挓
+    stock: ${CACHE_TTL_STOCK:300}       # 搴撳瓨鐩稿叧: 5鍒嗛挓 (楂橀鍙樺寲)
+    order: ${CACHE_TTL_ORDER:900}       # 璁㈠崟鐩稿叧: 15鍒嗛挓
+    payment: ${CACHE_TTL_PAYMENT:600}   # 鏀粯鐩稿叧: 10鍒嗛挓
+    search: ${CACHE_TTL_SEARCH:1200}    # 鎼滅储鐩稿叧: 20鍒嗛挓
+    auth: ${CACHE_TTL_AUTH:3600}        # 鏉冮檺鐩稿叧: 1灏忔椂
 
-# 分布式锁通用配置
+# 鍒嗗竷寮忛攣閫氱敤閰嶇疆
 cloud:
   distributed-lock:
     enabled: ${DISTRIBUTED_LOCK_ENABLED:true}
@@ -154,13 +172,19 @@ cloud:
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
 
-# 权限配置
+# 鏉冮檺閰嶇疆
 app:
+  deploy:
+    # admin-service/log-service are singleton by default; others are multi-instance.
+    singleton-services: ${APP_SINGLETON_SERVICES:admin-service,log-service}
   permission:
     enabled: ${PERMISSION_ENABLED:true}
     strict-mode: ${PERMISSION_STRICT_MODE:false}
+  message:
+    idempotent-enabled: ${MESSAGE_IDEMPOTENT_ENABLED:true}
+    idempotent-expire-seconds: ${MESSAGE_IDEMPOTENT_EXPIRE_SECONDS:86400}
 
-# 监控配置
+# 鐩戞帶閰嶇疆
 management:
   endpoints:
     web:
@@ -173,3 +197,4 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+

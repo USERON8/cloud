@@ -1,5 +1,6 @@
 package com.cloud.gateway.monitor;
 
+import com.cloud.common.annotation.DistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,6 +44,12 @@ public class SystemMonitor {
      * 定时监控系统状态
      * 每10分钟执行一次
      */
+    @DistributedLock(
+            key = "'gateway:monitor:system'",
+            waitTime = 0,
+            leaseTime = 540,
+            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
+    )
     @Scheduled(fixedRate = 600000) // 10分钟
     public void monitorSystemStatus() {
         log.info("🔍 网关系统监控报告:");

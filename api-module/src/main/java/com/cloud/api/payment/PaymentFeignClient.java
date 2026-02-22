@@ -48,7 +48,7 @@ public interface PaymentFeignClient {
     /**
      * 更新支付记录
      *
-     * @param paymentId 支付ID
+     * @param paymentId  支付ID
      * @param paymentDTO 支付信息
      * @return 是否更新成功
      */
@@ -76,39 +76,39 @@ public interface PaymentFeignClient {
     /**
      * 处理支付失败
      *
-     * @param paymentId 支付ID
+     * @param paymentId  支付ID
      * @param failReason 失败原因
      * @return 是否处理成功
      */
     @PostMapping("/{paymentId}/fail")
     Boolean paymentFail(@PathVariable("paymentId") Long paymentId,
-                         @RequestParam(required = false) String failReason);
+                        @RequestParam(required = false) String failReason);
 
     /**
      * 支付退款
      *
-     * @param paymentId 支付ID
+     * @param paymentId    支付ID
      * @param refundAmount 退款金额
      * @param refundReason 退款原因
      * @return 是否退款成功
      */
     @PostMapping("/{paymentId}/refund")
     Boolean refundPayment(@PathVariable("paymentId") Long paymentId,
-                           @RequestParam BigDecimal refundAmount,
-                           @RequestParam(required = false) String refundReason);
+                          @RequestParam BigDecimal refundAmount,
+                          @RequestParam(required = false) String refundReason);
 
     /**
      * 支付风控检查
      *
-     * @param userId 用户ID
-     * @param amount 支付金额
+     * @param userId        用户ID
+     * @param amount        支付金额
      * @param paymentMethod 支付方式
      * @return 风控检查是否通过
      */
     @PostMapping("/risk-check")
     Boolean riskCheck(@RequestParam Long userId,
-                       @RequestParam BigDecimal amount,
-                       @RequestParam String paymentMethod);
+                      @RequestParam BigDecimal amount,
+                      @RequestParam String paymentMethod);
 
     // ==================== 批量操作接口 ====================
 
@@ -148,5 +148,5 @@ public interface PaymentFeignClient {
      */
     @PostMapping("/batch/fail")
     Integer paymentFailBatch(@RequestBody List<Long> paymentIds,
-                              @RequestParam(required = false) String failReason);
+                             @RequestParam(required = false) String failReason);
 }

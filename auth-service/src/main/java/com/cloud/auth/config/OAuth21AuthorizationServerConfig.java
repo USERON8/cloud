@@ -2,6 +2,7 @@ package com.cloud.auth.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -16,7 +17,6 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 
 import java.time.Duration;
-import java.util.UUID;
 
 /**
  * OAuth2.1授权服务器核心配置
@@ -47,6 +47,14 @@ import java.util.UUID;
 })
 public class OAuth21AuthorizationServerConfig {
 
+    private static final String WEB_CLIENT_ID = "9ef97d40-818a-47c8-bce7-5c0d0c80f851";
+    private static final String MOBILE_CLIENT_ID = "1111c7d3-cf12-4b2d-ad1f-f86713e52b9f";
+    private static final String SERVICE_CLIENT_ID = "53ee7f0b-3f93-4859-b5f3-b0ab816901a4";
+    private static final String INTERNAL_SERVICE_CLIENT_ID = "c4d3b385-90a5-4b8d-a664-29a6b2f8dd4a";
+
+    @Value("${app.jwt.issuer:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
+    private String issuer;
+
     /**
      * OAuth2.1授权服务器设置
      * <p>
@@ -58,7 +66,7 @@ public class OAuth21AuthorizationServerConfig {
 
         AuthorizationServerSettings settings = AuthorizationServerSettings.builder()
                 // OAuth2.1标准端点配置
-                .issuer("http://127.0.0.1")                         // 发行者URL - 使用网关地址(端口80)
+                .issuer(issuer)
                 .authorizationEndpoint("/oauth2/authorize")         // 授权端点
                 .tokenEndpoint("/oauth2/token")                     // 令牌端点  
                 .tokenIntrospectionEndpoint("/oauth2/introspect")   // 令牌内省端点
@@ -84,7 +92,7 @@ public class OAuth21AuthorizationServerConfig {
         log.info("🔧 配置OAuth2.1注册客户端仓库");
 
         // 创建默认的Web应用客户端（支持授权码流程 + PKCE）
-        RegisteredClient webAppClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient webAppClient = RegisteredClient.withId(WEB_CLIENT_ID)
                 .clientId("web-client")
                 .clientSecret("{noop}WebClient@2024#Secure")  // 开发环境使用简单密码，生产环境需要加密
 
@@ -135,7 +143,7 @@ public class OAuth21AuthorizationServerConfig {
                 .build();
 
         // 创建移动应用客户端（公共客户端，仅支持PKCE）
-        RegisteredClient mobileAppClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient mobileAppClient = RegisteredClient.withId(MOBILE_CLIENT_ID)
                 .clientId("mobile-client")
                 // 公共客户端不需要密钥
 
@@ -168,7 +176,7 @@ public class OAuth21AuthorizationServerConfig {
                 .build();
 
         // 创建服务间通信客户端（客户端凭证流程）
-        RegisteredClient serviceClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient serviceClient = RegisteredClient.withId(SERVICE_CLIENT_ID)
                 .clientId("service-client")
                 .clientSecret("{bcrypt}$2a$12$MwWVVHU9XUgKnUC8XKDI3OQPv0WA8Glt1Y6.1X1lVZp7ywdMqF.2S")  // 生产环境密码
 
@@ -197,7 +205,7 @@ public class OAuth21AuthorizationServerConfig {
                 .build();
 
         // 创建内部服务调用客户端（用于auth-service调用user-service）
-        RegisteredClient internalServiceClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient internalServiceClient = RegisteredClient.withId(INTERNAL_SERVICE_CLIENT_ID)
                 .clientId("client-service")
                 .clientSecret("{bcrypt}$2a$12$B2QJK4UtQVQ5vXuCw.I2Nu1.X2QzJzj8.YFJ4m3Q5r8wXzZ2B.P6G")  // InternalClient@2024#Secure
 

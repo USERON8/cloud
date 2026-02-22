@@ -2,7 +2,8 @@
 
 ## 服务概述
 
-Payment Service 是电商平台的**支付网关服务**,负责对接第三方支付平台(支付宝、微信支付等),处理支付创建、支付回调、退款处理等核心支付业务。通过RocketMQ与order-service异步协作完成支付流程。
+Payment Service 是电商平台的**支付网关服务**,负责对接第三方支付平台(支付宝、微信支付等)
+,处理支付创建、支付回调、退款处理等核心支付业务。通过RocketMQ与order-service异步协作完成支付流程。
 
 - **服务端口**: 8086
 - **服务名称**: payment-service
@@ -11,16 +12,16 @@ Payment Service 是电商平台的**支付网关服务**,负责对接第三方�
 
 ## 技术栈
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 应用框架 |
-| MySQL | 9.3.0 | 支付记录存储 |
-| MyBatis Plus | 最新 | ORM框架 |
-| Redis | - | 缓存、防重 |
-| Redisson | - | 分布式锁 |
-| RocketMQ | - | 支付事件 |
-| Alipay SDK | - | 支付宝SDK |
-| MapStruct | 1.5.5.Final | DTO转换 |
+| 技术           | 版本          | 用途     |
+|--------------|-------------|--------|
+| Spring Boot  | 3.5.3       | 应用框架   |
+| MySQL        | 9.3.0       | 支付记录存储 |
+| MyBatis Plus | 最新          | ORM框架  |
+| Redis        | -           | 缓存、防重  |
+| Redisson     | -           | 分布式锁   |
+| RocketMQ     | -           | 支付事件   |
+| Alipay SDK   | -           | 支付宝SDK |
+| MapStruct    | 1.5.5.Final | DTO转换  |
 
 ## 核心功能
 
@@ -58,6 +59,7 @@ Payment Service 是电商平台的**支付网关服务**,负责对接第三方�
 ## 数据模型
 
 ### Payment (payments表)
+
 ```sql
 CREATE TABLE payments (
   id BIGINT PRIMARY KEY,
@@ -82,14 +84,15 @@ CREATE TABLE payments (
 
 ## 依赖服务
 
-| 服务 | 用途 | 通信方式 |
-|------|------|----------|
+| 服务            | 用途     | 通信方式       |
+|---------------|--------|------------|
 | order-service | 订单信息确认 | RocketMQ异步 |
-| 支付宝开放平台 | 支付处理 | HTTP API |
+| 支付宝开放平台       | 支付处理   | HTTP API   |
 
 ## 配置说明
 
 ### 支付宝配置
+
 ```yaml
 alipay:
   app-id: 2021000122671234                 # 应用ID
@@ -107,49 +110,49 @@ alipay:
 ### ✅ 已完成功能
 
 1. **支付核心**
-   - [x] 支付订单创建
-   - [x] 支付宝支付完整集成(PC/手机/APP)
-   - [x] 支付回调处理(异步通知+同步返回)
-   - [x] 支付状态查询
-   - [x] 支付取消
-   - [x] 退款处理(支持部分退款)
-   - [x] 交易关闭
+    - [x] 支付订单创建
+    - [x] 支付宝支付完整集成(PC/手机/APP)
+    - [x] 支付回调处理(异步通知+同步返回)
+    - [x] 支付状态查询
+    - [x] 支付取消
+    - [x] 退款处理(支持部分退款)
+    - [x] 交易关闭
 
 2. **支付宝集成**
-   - [x] 沙箱环境配置
-   - [x] RSA2签名验证
-   - [x] 支付订单创建
-   - [x] 支付结果查询
-   - [x] 退款申请
-   - [x] 异步通知处理
-   - [x] 同步回调处理
+    - [x] 沙箱环境配置
+    - [x] RSA2签名验证
+    - [x] 支付订单创建
+    - [x] 支付结果查询
+    - [x] 退款申请
+    - [x] 异步通知处理
+    - [x] 同步回调处理
 
 3. **支付流水**
-   - [x] 支付流水记录(PaymentFlowServiceImpl)
-   - [x] 流水状态追踪
-   - [x] 支付锁定机制(PaymentLockServiceImpl)
-   - [x] 防止重复支付
+    - [x] 支付流水记录(PaymentFlowServiceImpl)
+    - [x] 流水状态追踪
+    - [x] 支付锁定机制(PaymentLockServiceImpl)
+    - [x] 防止重复支付
 
 4. **数据转换**
-   - [x] PaymentConverter
-   - [x] AlipayConverter
+    - [x] PaymentConverter
+    - [x] AlipayConverter
 
 5. **服务集成**
-   - [x] 内部Feign接口(供order-service调用)
-   - [x] RocketMQ支付事件发送
-   - [x] 与order-service异步协作
+    - [x] 内部Feign接口(供order-service调用)
+    - [x] RocketMQ支付事件发送
+    - [x] 与order-service异步协作
 
 ### 📋 计划中功能
 
 1. **更多支付渠道**
-   - [ ] 微信支付
-   - [ ] 余额支付
-   - [ ] 银联支付
+    - [ ] 微信支付
+    - [ ] 余额支付
+    - [ ] 银联支付
 
 2. **支付安全**
-   - [ ] 签名验证增强
-   - [ ] 防重放攻击
-   - [ ] 支付限额控制
+    - [ ] 签名验证增强
+    - [ ] 防重放攻击
+    - [ ] 支付限额控制
 
 ## 本地运行
 

@@ -28,15 +28,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 
 /**
- * 库存服务实现类
+ * 库存服务实现�?
  *
  * @author what's up
  */
@@ -45,12 +47,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements StockService {
 
+    private static final String ORDER_RESERVED_KEY_PREFIX = "stock:order:reserved:";
+    private static final String ORDER_CONFIRMED_KEY_PREFIX = "stock:order:confirmed:";
+    private static final String ORDER_ROLLED_BACK_KEY_PREFIX = "stock:order:rolledback:";
+    private static final Duration ORDER_STATE_KEY_TTL = Duration.ofDays(7);
+
     private final StockMapper stockMapper;
     private final StockInMapper stockInMapper;
     private final StockOutMapper stockOutMapper;
     private final StockConverter stockConverter;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
+    @DistributedLock(
+            key = "'stock:create:' + #stockDTO.productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire stock create lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CachePut(
             cacheNames = "stockCache",
@@ -82,6 +96,12 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     @Override
+    @DistributedLock(
+            key = "'stock:update:' + #stockDTO.id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire stock update lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CachePut(
             cacheNames = "stockCache",
@@ -185,10 +205,10 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         try {
             log.info("分页查询库存，查询条件：{}", pageDTO);
 
-            // 1. 构造分页对象
+            // 1. 构造分页对�?
             Page<Stock> page = PageUtils.buildPage(pageDTO);
 
-            // 2. 构造查询条件
+            // 2. 构造查询条�?
             LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
             if (pageDTO.getProductId() != null) {
                 queryWrapper.eq(Stock::getProductId, pageDTO.getProductId());
@@ -228,6 +248,12 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:delete:' + #id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire stock delete lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
             cacheNames = "stockCache",
@@ -255,10 +281,10 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     @Override
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     @DistributedLock(
-            key = "'stock:batch:delete:' + T(String).join(',', #ids)",
+            key = "'stock:batch:delete:' + #ids.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "批量删除库存操作获取锁失败"
+            failMessage = "批量删除库存操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -289,7 +315,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:in:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "库存入库操作获取锁失败"
+            failMessage = "库存入库操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -303,7 +329,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             Stock stock = getOne(new LambdaQueryWrapper<Stock>()
                     .eq(Stock::getProductId, productId));
             if (stock == null) {
-                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行入库操作");
+                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行入库操�?);
             }
 
             // 更新库存数量
@@ -315,7 +341,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 创建入库记录
             createStockInRecord(stock, quantity, remark);
 
-            // 发送库存变更日志 - 使用统一业务日志系统
+            // 发送库存变更日�?- 使用统一业务日志系统
             try {
                 Integer originalStock = stock.getStockQuantity() - quantity; // 计算原始库存
 
@@ -337,7 +363,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:out:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "库存出库操作获取锁失败"
+            failMessage = "库存出库操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -351,12 +377,12 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             Stock stock = getOne(new LambdaQueryWrapper<Stock>()
                     .eq(Stock::getProductId, productId));
             if (stock == null) {
-                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行出库操作");
+                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行出库操�?);
             }
 
             // 计算可用库存
             int availableQuantity = stock.getStockQuantity() - stock.getFrozenQuantity();
-            // 检查库存是否充足
+            // 检查库存是否充�?
             if (availableQuantity < quantity) {
                 throw new StockInsufficientException(productId, quantity, availableQuantity);
             }
@@ -364,13 +390,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             // 更新库存数量
             int affected = stockMapper.updateStockQuantity(stock.getId(), -quantity);
             if (affected == 0) {
-                throw new StockOperationException("出库", productId, "库存更新失败，可能是库存不足或并发冲突");
+                throw new StockOperationException("出库", productId, "库存更新失败，可能是库存不足或并发冲�?);
             }
 
             // 创建出库记录
             createStockOutRecord(stock, quantity, orderId, orderNo, remark);
 
-            // 发送库存扣减日志 - 使用统一业务日志系统
+            // 发送库存扣减日�?- 使用统一业务日志系统
             try {
                 Integer originalStock = stock.getStockQuantity() + quantity; // 计算原始库存
 
@@ -392,7 +418,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:reserve:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "库存预留操作获取锁失败"
+            failMessage = "库存预留操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -406,7 +432,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             Stock stock = getOne(new LambdaQueryWrapper<Stock>()
                     .eq(Stock::getProductId, productId));
             if (stock == null) {
-                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行预留库存操作");
+                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行预留库存操�?);
             }
 
             int affected = stockMapper.freezeStock(stock.getId(), quantity);
@@ -414,7 +440,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                 throw new StockFrozenException("预留", productId, quantity);
             }
 
-            // 发送库存冻结日志 - 使用统一业务日志系统
+            // 发送库存冻结日�?- 使用统一业务日志系统
             try {
 
             } catch (Exception e) {
@@ -435,7 +461,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:release:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "库存释放预留操作获取锁失败"
+            failMessage = "库存释放预留操作获取锁失�?
     )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(
@@ -449,7 +475,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             Stock stock = getOne(new LambdaQueryWrapper<Stock>()
                     .eq(Stock::getProductId, productId));
             if (stock == null) {
-                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行释放预留库存操作");
+                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行释放预留库存操�?);
             }
 
             int affected = stockMapper.unfreezeStock(stock.getId(), quantity);
@@ -457,7 +483,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
                 throw new StockFrozenException("释放", productId, quantity);
             }
 
-            // 发送库存解冻日志 - 使用统一业务日志系统
+            // 发送库存解冻日�?- 使用统一业务日志系统
             try {
 
             } catch (Exception e) {
@@ -469,6 +495,45 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         } catch (Exception e) {
             log.error("释放预留库存失败，商品ID：{}，数量：{}", productId, quantity, e);
             throw new BusinessException("释放预留库存失败", e);
+        }
+    }
+
+    @Override
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @DistributedLock(
+            key = "'stock:confirm:' + #productId",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "确认预留库存扣减操作获取锁失�?
+    )
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(
+            cacheNames = "stockCache",
+            key = "'product:' + #productId"
+    )
+    public boolean confirmReservedStockOut(Long productId, Integer quantity, Long orderId, String orderNo, String remark) {
+        log.info("确认预留库存扣减，商品ID：{}，数量：{}，订单ID：{}", productId, quantity, orderId);
+
+        try {
+            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
+                    .eq(Stock::getProductId, productId));
+            if (stock == null) {
+                throw new EntityNotFoundException("库存信息不存在，商品ID: " + productId + "，无法执行确认扣减操�?);
+            }
+
+            int affected = stockMapper.confirmStockOutWithCondition(productId, quantity);
+            if (affected == 0) {
+                throw new StockOperationException("确认扣减", productId, "冻结库存不足或并发冲�?);
+            }
+
+            createStockOutRecord(stock, quantity, orderId, orderNo, remark);
+            markOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
+            clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
+            log.info("确认预留库存扣减成功，商品ID：{}，数量：{}，订单ID：{}", productId, quantity, orderId);
+            return true;
+        } catch (Exception e) {
+            log.error("确认预留库存扣减失败，商品ID：{}，数量：{}，订单ID：{}", productId, quantity, orderId, e);
+            throw new BusinessException("确认预留库存扣减失败", e);
         }
     }
 
@@ -517,7 +582,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     public boolean isStockDeducted(Long orderId) {
         log.info("检查库存是否已扣减，订单ID：{}", orderId);
         try {
-            // 查询出库记录表，检查是否已有该订单的出库记录
+            // 查询出库记录表，检查是否已有该订单的出库记�?
             long count = stockOutMapper.selectCount(new LambdaQueryWrapper<StockOut>()
                     .eq(StockOut::getOrderId, orderId));
             boolean deducted = count > 0;
@@ -531,31 +596,70 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
     @Override
     public boolean isStockFrozen(Long orderId) {
-        return false;
+        return isStockReserved(orderId) && !isStockConfirmed(orderId) && !isStockRolledBack(orderId);
     }
 
     @Override
     public boolean isStockReserved(Long orderId) {
-        return false;
+        return hasOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
     }
 
     @Override
     public boolean isStockConfirmed(Long orderId) {
-        return false;
+        return hasOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId) || isStockDeducted(orderId);
     }
 
     @Override
     public boolean isStockRolledBack(Long orderId) {
-        return false;
+        return hasOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
+    }
+    private boolean hasOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return false;
+        }
+        try {
+            return Boolean.TRUE.equals(stringRedisTemplate.hasKey(keyPrefix + orderId));
+        } catch (Exception e) {
+            log.warn("Check order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+            return false;
+        }
+    }
+
+    private void markOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.opsForValue().set(keyPrefix + orderId, "1", ORDER_STATE_KEY_TTL);
+        } catch (Exception e) {
+            log.warn("Mark order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
+    }
+
+    private void clearOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(keyPrefix + orderId);
+        } catch (Exception e) {
+            log.warn("Clear order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
     }
 
     // ================= 批量操作方法实现 =================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @DistributedLock(
+            key = "'stock:batch:create'",
+            waitTime = 10,
+            leaseTime = 60,
+            failMessage = "Acquire stock batch create lock failed"
+    )
     public Integer batchCreateStocks(List<StockDTO> stockDTOList) {
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            log.warn("批量创建库存记录失败，库存信息列表为空");
+            log.warn("批量创建库存记录失败，库存信息列表为�?);
             throw new BusinessException("库存信息列表不能为空");
         }
 
@@ -575,15 +679,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             }
         }
 
-        log.info("批量创建库存记录完成，成功: {}/{}", successCount, stockDTOList.size());
+        log.info("批量创建库存记录完成，成�? {}/{}", successCount, stockDTOList.size());
         return successCount;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @DistributedLock(
+            key = "'stock:batch:update'",
+            waitTime = 10,
+            leaseTime = 60,
+            failMessage = "Acquire stock batch update lock failed"
+    )
     public Integer batchUpdateStocks(List<StockDTO> stockDTOList) {
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            log.warn("批量更新库存信息失败，库存信息列表为空");
+            log.warn("批量更新库存信息失败，库存信息列表为�?);
             throw new BusinessException("库存信息列表不能为空");
         }
 
@@ -604,15 +714,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             }
         }
 
-        log.info("批量更新库存信息完成，成功: {}/{}", successCount, stockDTOList.size());
+        log.info("批量更新库存信息完成，成�? {}/{}", successCount, stockDTOList.size());
         return successCount;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @DistributedLock(
+            key = "'stock:batch:in'",
+            waitTime = 10,
+            leaseTime = 60,
+            failMessage = "Acquire stock batch in lock failed"
+    )
     public Integer batchStockIn(List<StockService.StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("批量入库失败，入库请求列表为空");
+            log.warn("批量入库失败，入库请求列表为�?);
             throw new BusinessException("入库请求列表不能为空");
         }
 
@@ -633,15 +749,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             }
         }
 
-        log.info("批量入库完成，成功: {}/{}", successCount, requests.size());
+        log.info("批量入库完成，成�? {}/{}", successCount, requests.size());
         return successCount;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @DistributedLock(
+            key = "'stock:batch:out'",
+            waitTime = 10,
+            leaseTime = 60,
+            failMessage = "Acquire stock batch out lock failed"
+    )
     public Integer batchStockOut(List<StockService.StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("批量出库失败，出库请求列表为空");
+            log.warn("批量出库失败，出库请求列表为�?);
             throw new BusinessException("出库请求列表不能为空");
         }
 
@@ -663,15 +785,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             }
         }
 
-        log.info("批量出库完成，成功: {}/{}", successCount, requests.size());
+        log.info("批量出库完成，成�? {}/{}", successCount, requests.size());
         return successCount;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @DistributedLock(
+            key = "'stock:batch:reserve'",
+            waitTime = 10,
+            leaseTime = 60,
+            failMessage = "Acquire stock batch reserve lock failed"
+    )
     public Integer batchReserveStock(List<StockService.StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("批量预留库存失败，预留请求列表为空");
+            log.warn("批量预留库存失败，预留请求列表为�?);
             throw new BusinessException("预留请求列表不能为空");
         }
 
@@ -692,9 +820,11 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             }
         }
 
-        log.info("批量预留库存完成，成功: {}/{}", successCount, requests.size());
+        log.info("批量预留库存完成，成�? {}/{}", successCount, requests.size());
         return successCount;
     }
 
 }
+
+
 

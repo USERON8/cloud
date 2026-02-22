@@ -56,6 +56,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 **规则**:
+
 - 类必须有完整的JavaDoc注释
 - 使用`@RequiredArgsConstructor`替代构造函数注入
 - 使用`@Slf4j`记录日志
@@ -102,6 +103,7 @@ public UserVO getUserById(Long userId) {
 ```
 
 **规则**:
+
 - 公共方法必须有JavaDoc注释
 - 使用占位符记录日志: `log.info("msg: {}", param)`
 - 参数校验优先
@@ -111,6 +113,7 @@ public UserVO getUserById(Long userId) {
 ### 3. 禁止事项
 
 ❌ **严禁**:
+
 - 使用`System.out.println()`打印日志
 - 硬编码魔法值(使用常量类)
 - 捕获异常后不处理(`catch (Exception e) {}`)
@@ -136,6 +139,7 @@ com.cloud.{service}.{layer}
 ```
 
 **层级划分**:
+
 - `controller` - 控制器层
 - `service` / `service.impl` - 服务层
 - `mapper` - 数据访问层
@@ -151,33 +155,33 @@ com.cloud.{service}.{layer}
 
 ### 3. 类命名
 
-| 类型 | 命名规则 | 示例 |
-|------|---------|------|
-| Controller | XxxController | UserController |
-| Service接口 | XxxService | UserService |
-| Service实现 | XxxServiceImpl | UserServiceImpl |
-| Mapper | XxxMapper | UserMapper |
-| Entity | Xxx | User, Order |
-| DTO | XxxDTO | UserDTO, CreateUserDTO |
-| VO | XxxVO | UserVO, OrderVO |
-| Converter | XxxConverter | UserConverter |
-| Exception | XxxException | BusinessException |
-| Config | XxxConfig | RedisConfig, SecurityConfig |
-| Constant | XxxConstant | UserConstant, RedisKeyConstant |
+| 类型         | 命名规则           | 示例                             |
+|------------|----------------|--------------------------------|
+| Controller | XxxController  | UserController                 |
+| Service接口  | XxxService     | UserService                    |
+| Service实现  | XxxServiceImpl | UserServiceImpl                |
+| Mapper     | XxxMapper      | UserMapper                     |
+| Entity     | Xxx            | User, Order                    |
+| DTO        | XxxDTO         | UserDTO, CreateUserDTO         |
+| VO         | XxxVO          | UserVO, OrderVO                |
+| Converter  | XxxConverter   | UserConverter                  |
+| Exception  | XxxException   | BusinessException              |
+| Config     | XxxConfig      | RedisConfig, SecurityConfig    |
+| Constant   | XxxConstant    | UserConstant, RedisKeyConstant |
 
 ### 4. 方法命名
 
-| 操作类型 | 命名规则 | 示例 |
-|---------|---------|------|
-| 查询单个 | getXxxById, getXxxByXxx | getUserById |
-| 查询列表 | listXxx, getXxxList | listUsers |
-| 分页查询 | pageXxx, getXxxPage | pageUsers |
-| 新增 | createXxx, addXxx, saveXxx | createUser |
-| 修改 | updateXxx, modifyXxx | updateUser |
-| 删除 | deleteXxx, removeXxx | deleteUser |
-| 统计 | countXxx | countUsers |
-| 判断存在 | existsXxx, hasXxx | existsUser |
-| 校验 | validateXxx, checkXxx | validateUser |
+| 操作类型 | 命名规则                       | 示例           |
+|------|----------------------------|--------------|
+| 查询单个 | getXxxById, getXxxByXxx    | getUserById  |
+| 查询列表 | listXxx, getXxxList        | listUsers    |
+| 分页查询 | pageXxx, getXxxPage        | pageUsers    |
+| 新增   | createXxx, addXxx, saveXxx | createUser   |
+| 修改   | updateXxx, modifyXxx       | updateUser   |
+| 删除   | deleteXxx, removeXxx       | deleteUser   |
+| 统计   | countXxx                   | countUsers   |
+| 判断存在 | existsXxx, hasXxx          | existsUser   |
+| 校验   | validateXxx, checkXxx      | validateUser |
 
 ### 5. 变量命名
 
@@ -244,13 +248,13 @@ xxx-service/
 
 #### HTTP方法语义
 
-| 方法 | 语义 | 幂等性 | 示例 |
-|------|------|-------|------|
-| GET | 查询资源 | ✅ | GET /api/users/{id} |
-| POST | 创建资源 | ❌ | POST /api/users |
-| PUT | 完整更新 | ✅ | PUT /api/users/{id} |
-| PATCH | 部分更新 | ❌ | PATCH /api/users/{id}/status |
-| DELETE | 删除资源 | ✅ | DELETE /api/users/{id} |
+| 方法     | 语义   | 幂等性 | 示例                           |
+|--------|------|-----|------------------------------|
+| GET    | 查询资源 | ✅   | GET /api/users/{id}          |
+| POST   | 创建资源 | ❌   | POST /api/users              |
+| PUT    | 完整更新 | ✅   | PUT /api/users/{id}          |
+| PATCH  | 部分更新 | ❌   | PATCH /api/users/{id}/status |
+| DELETE | 删除资源 | ✅   | DELETE /api/users/{id}       |
 
 #### URL设计规范
 
@@ -350,15 +354,15 @@ public class Result<T> {
 
 ### 4. 状态码规范
 
-| 状态码 | 说明 | 使用场景 |
-|-------|------|---------|
-| 200 | 成功 | 操作成功 |
-| 400 | 参数错误 | 请求参数不合法 |
-| 401 | 未认证 | 未登录或Token无效 |
-| 403 | 无权限 | 没有操作权限 |
-| 404 | 资源不存在 | 找不到指定资源 |
-| 409 | 冲突 | 资源已存在(如用户名重复) |
-| 500 | 服务器错误 | 系统异常 |
+| 状态码 | 说明    | 使用场景          |
+|-----|-------|---------------|
+| 200 | 成功    | 操作成功          |
+| 400 | 参数错误  | 请求参数不合法       |
+| 401 | 未认证   | 未登录或Token无效   |
+| 403 | 无权限   | 没有操作权限        |
+| 404 | 资源不存在 | 找不到指定资源       |
+| 409 | 冲突    | 资源已存在(如用户名重复) |
+| 500 | 服务器错误 | 系统异常          |
 
 **自定义业务错误码** (40001-49999):
 
@@ -446,17 +450,17 @@ CREATE TABLE example_table (
 
 ### 3. 字段类型规范
 
-| 数据类型 | MySQL类型 | 说明 |
-|---------|----------|------|
-| 主键ID | BIGINT | 使用雪花算法生成 |
-| 字符串 | VARCHAR(n) | 明确长度,最大65535 |
-| 长文本 | TEXT | 超过2000字符使用 |
-| 整数 | INT, BIGINT | 根据取值范围选择 |
-| 小数 | DECIMAL(10,2) | 金额必须用DECIMAL |
-| 日期时间 | DATETIME | 不使用TIMESTAMP |
-| 布尔 | TINYINT | 0/1表示 |
-| 枚举 | VARCHAR(20) | 不使用ENUM类型 |
-| JSON | JSON | MySQL 5.7+ |
+| 数据类型 | MySQL类型       | 说明           |
+|------|---------------|--------------|
+| 主键ID | BIGINT        | 使用雪花算法生成     |
+| 字符串  | VARCHAR(n)    | 明确长度,最大65535 |
+| 长文本  | TEXT          | 超过2000字符使用   |
+| 整数   | INT, BIGINT   | 根据取值范围选择     |
+| 小数   | DECIMAL(10,2) | 金额必须用DECIMAL |
+| 日期时间 | DATETIME      | 不使用TIMESTAMP |
+| 布尔   | TINYINT       | 0/1表示        |
+| 枚举   | VARCHAR(20)   | 不使用ENUM类型    |
+| JSON | JSON          | MySQL 5.7+   |
 
 ### 4. 索引规范
 
@@ -627,13 +631,13 @@ try {
 
 ### 1. 日志级别
 
-| 级别 | 使用场景 | 示例 |
-|------|---------|------|
+| 级别    | 使用场景    | 示例                 |
+|-------|---------|--------------------|
 | ERROR | 系统错误、异常 | 数据库连接失败、第三方API调用失败 |
-| WARN | 业务异常、警告 | 用户不存在、库存不足 |
-| INFO | 重要业务流程 | 用户登录、订单创建、支付成功 |
-| DEBUG | 调试信息 | 方法入参、SQL语句、中间结果 |
-| TRACE | 详细追踪 | 几乎不用 |
+| WARN  | 业务异常、警告 | 用户不存在、库存不足         |
+| INFO  | 重要业务流程  | 用户登录、订单创建、支付成功     |
+| DEBUG | 调试信息    | 方法入参、SQL语句、中间结果    |
+| TRACE | 详细追踪    | 几乎不用               |
 
 ### 2. 日志格式
 
@@ -694,6 +698,7 @@ public class OrderServiceImpl implements OrderService {
 ### 4. 禁止事项
 
 ❌ **严禁**:
+
 - 在循环中打印日志(影响性能)
 - 记录敏感信息(密码、身份证、银行卡号)
 - 使用`System.out.println()`
@@ -804,16 +809,16 @@ main/master       - 生产环境分支(受保护)
 
 #### Type类型
 
-| Type | 说明 | 示例 |
-|------|------|------|
-| feat | 新功能 | feat(user): 添加用户注册功能 |
-| fix | Bug修复 | fix(order): 修复订单金额计算错误 |
-| docs | 文档 | docs: 更新API文档 |
-| style | 格式 | style: 格式化代码 |
-| refactor | 重构 | refactor(cache): 重构缓存模块 |
-| perf | 性能优化 | perf(query): 优化用户查询性能 |
-| test | 测试 | test(order): 添加订单单元测试 |
-| chore | 构建/工具 | chore: 升级Spring Boot版本 |
+| Type     | 说明    | 示例                      |
+|----------|-------|-------------------------|
+| feat     | 新功能   | feat(user): 添加用户注册功能    |
+| fix      | Bug修复 | fix(order): 修复订单金额计算错误  |
+| docs     | 文档    | docs: 更新API文档           |
+| style    | 格式    | style: 格式化代码            |
+| refactor | 重构    | refactor(cache): 重构缓存模块 |
+| perf     | 性能优化  | perf(query): 优化用户查询性能   |
+| test     | 测试    | test(order): 添加订单单元测试   |
+| chore    | 构建/工具 | chore: 升级Spring Boot版本  |
 
 #### 示例
 
@@ -976,6 +981,7 @@ private Integer version;
 ### 2. README文档
 
 每个服务必须有README.md,包含:
+
 - 服务概述
 - 技术栈
 - 核心功能

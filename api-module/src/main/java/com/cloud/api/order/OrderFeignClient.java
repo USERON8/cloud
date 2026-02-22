@@ -39,7 +39,7 @@ public interface OrderFeignClient {
     /**
      * 更新订单信息
      *
-     * @param orderId 订单ID
+     * @param orderId  订单ID
      * @param orderDTO 订单信息
      * @return 是否更新成功
      */
@@ -96,13 +96,13 @@ public interface OrderFeignClient {
     /**
      * 取消订单
      *
-     * @param orderId 订单ID
+     * @param orderId      订单ID
      * @param cancelReason 取消原因
      * @return 是否取消成功
      */
     @PostMapping("/{orderId}/cancel")
     Boolean cancelOrder(@PathVariable("orderId") Long orderId,
-                         @RequestParam(required = false) String cancelReason);
+                        @RequestParam(required = false) String cancelReason);
 
     /**
      * 根据用户ID查询订单列表
@@ -136,13 +136,13 @@ public interface OrderFeignClient {
     /**
      * 批量取消订单
      *
-     * @param orderIds 订单ID列表
+     * @param orderIds     订单ID列表
      * @param cancelReason 取消原因
      * @return 成功取消的数量
      */
     @PostMapping("/batch/cancel")
     Integer cancelOrdersBatch(@RequestBody List<Long> orderIds,
-                               @RequestParam(required = false) String cancelReason);
+                              @RequestParam(required = false) String cancelReason);
 
     /**
      * 批量支付订单

@@ -49,7 +49,7 @@ import java.util.UUID;
 @Configuration
 public class JwtPasswordConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}}")
     private String jwkSetUri;
 
     /**
@@ -166,7 +166,7 @@ public class JwtPasswordConfig {
 
         // 返回一个简单的解码器，仅用于开发环境
         // 生产环境建议使用远程JWK URI
-        return NimbusJwtDecoder.withJwkSetUri("http://localhost:8081/.well-known/jwks.json")
+        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
                 .build();
     }
 

@@ -24,7 +24,7 @@ public class BatchValidationUtils {
     /**
      * 校验批量操作数量限制
      *
-     * @param collection 集合对象
+     * @param collection    集合对象
      * @param operationName 操作名称
      * @throws ValidationException 校验失败时抛出
      */
@@ -35,9 +35,9 @@ public class BatchValidationUtils {
     /**
      * 校验批量操作数量限制
      *
-     * @param collection 集合对象
+     * @param collection    集合对象
      * @param operationName 操作名称
-     * @param limit 数量限制
+     * @param limit         数量限制
      * @throws ValidationException 校验失败时抛出
      */
     public static void validateBatchSize(Collection<?> collection, String operationName, int limit) {
@@ -47,14 +47,14 @@ public class BatchValidationUtils {
 
         if (collection.size() > limit) {
             throw new ValidationException("batchSize", collection.size(),
-                String.format("%s数量不能超过%d个，当前数量: %d", operationName, limit, collection.size()));
+                    String.format("%s数量不能超过%d个，当前数量: %d", operationName, limit, collection.size()));
         }
     }
 
     /**
      * 校验批量操作数量限制，返回Result格式的错误
      *
-     * @param collection 集合对象
+     * @param collection    集合对象
      * @param operationName 操作名称
      * @return 校验失败时返回错误Result，成功时返回null
      */
@@ -65,9 +65,9 @@ public class BatchValidationUtils {
     /**
      * 校验批量操作数量限制，返回Result格式的错误
      *
-     * @param collection 集合对象
+     * @param collection    集合对象
      * @param operationName 操作名称
-     * @param limit 数量限制
+     * @param limit         数量限制
      * @return 校验失败时返回错误Result，成功时返回null
      */
     public static Result<String> validateBatchSizeWithError(Collection<?> collection, String operationName, int limit) {
@@ -85,7 +85,7 @@ public class BatchValidationUtils {
     /**
      * 校验数组批量操作数量限制
      *
-     * @param array 数组对象
+     * @param array         数组对象
      * @param operationName 操作名称
      * @throws ValidationException 校验失败时抛出
      */
@@ -96,9 +96,9 @@ public class BatchValidationUtils {
     /**
      * 校验数组批量操作数量限制
      *
-     * @param array 数组对象
+     * @param array         数组对象
      * @param operationName 操作名称
-     * @param limit 数量限制
+     * @param limit         数量限制
      * @throws ValidationException 校验失败时抛出
      */
     public static void validateBatchSize(Object[] array, String operationName, int limit) {
@@ -108,14 +108,14 @@ public class BatchValidationUtils {
 
         if (array.length > limit) {
             throw new ValidationException("batchSize", array.length,
-                String.format("%s数量不能超过%d个，当前数量: %d", operationName, limit, array.length));
+                    String.format("%s数量不能超过%d个，当前数量: %d", operationName, limit, array.length));
         }
     }
 
     /**
      * 校验ID列表
      *
-     * @param ids ID列表
+     * @param ids           ID列表
      * @param operationName 操作名称
      */
     public static void validateIdList(List<Long> ids, String operationName) {
@@ -132,7 +132,7 @@ public class BatchValidationUtils {
     /**
      * 校验ID数组
      *
-     * @param ids ID数组
+     * @param ids           ID数组
      * @param operationName 操作名称
      */
     public static void validateIdArray(Long[] ids, String operationName) {
@@ -149,7 +149,7 @@ public class BatchValidationUtils {
     /**
      * 快速校验并返回批量操作参数
      *
-     * @param collection 集合对象
+     * @param collection    集合对象
      * @param operationName 操作名称
      * @return 校验通过的集合
      * @throws ValidationException 校验失败时抛出
@@ -162,7 +162,7 @@ public class BatchValidationUtils {
     /**
      * 快速校验并返回批量操作参数
      *
-     * @param array 数组对象
+     * @param array         数组对象
      * @param operationName 操作名称
      * @return 校验通过的数组
      * @throws ValidationException 校验失败时抛出

@@ -87,8 +87,8 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void logStockChange(Long productId, String productName, String operationType,
-                                Integer quantityBefore, Integer quantityAfter,
-                                Long orderId, String orderNo, String remark) {
+                               Integer quantityBefore, Integer quantityAfter,
+                               Long orderId, String orderNo, String remark) {
         StockLog stockLog = new StockLog();
         stockLog.setProductId(productId);
         stockLog.setProductName(productName);

@@ -38,7 +38,7 @@ public interface ProductFeignClient {
     /**
      * 更新商品
      *
-     * @param id      商品ID
+     * @param id                商品ID
      * @param productRequestDTO 商品信息
      * @return 是否更新成功
      */
@@ -48,7 +48,7 @@ public interface ProductFeignClient {
     /**
      * 部分更新商品
      *
-     * @param id      商品ID
+     * @param id                商品ID
      * @param productRequestDTO 商品信息
      * @return 是否更新成功
      */
@@ -76,7 +76,7 @@ public interface ProductFeignClient {
     /**
      * 更新商品档案
      *
-     * @param id 商品ID
+     * @param id         商品ID
      * @param profileDTO 商品档案信息
      * @return 是否更新成功
      */
@@ -86,7 +86,7 @@ public interface ProductFeignClient {
     /**
      * 更新商品状态
      *
-     * @param id 商品ID
+     * @param id     商品ID
      * @param status 商品状态
      * @return 是否更新成功
      */
@@ -97,23 +97,23 @@ public interface ProductFeignClient {
      * 根据分类查询商品
      *
      * @param categoryId 分类ID
-     * @param status 商品状态
+     * @param status     商品状态
      * @return 商品列表，无数据时返回空列表
      */
     @GetMapping("/category/{categoryId}")
     List<ProductVO> getProductsByCategoryId(@PathVariable("categoryId") Long categoryId,
-                                             @RequestParam(required = false) Integer status);
+                                            @RequestParam(required = false) Integer status);
 
     /**
      * 根据品牌查询商品
      *
      * @param brandId 品牌ID
-     * @param status 商品状态
+     * @param status  商品状态
      * @return 商品列表，无数据时返回空列表
      */
     @GetMapping("/brand/{brandId}")
     List<ProductVO> getProductsByBrandId(@PathVariable("brandId") Long brandId,
-                                          @RequestParam(required = false) Integer status);
+                                         @RequestParam(required = false) Integer status);
 
     // ==================== 批量操作接口 ====================
 
@@ -168,7 +168,7 @@ public interface ProductFeignClient {
      * 检查商品库存
      *
      * @param productId 商品ID
-     * @param quantity 需要的数量
+     * @param quantity  需要的数量
      * @return 是否有足够库存
      */
     @GetMapping("/{productId}/stock/check")
@@ -178,7 +178,7 @@ public interface ProductFeignClient {
      * 扣减商品库存
      *
      * @param productId 商品ID
-     * @param quantity 扣减数量
+     * @param quantity  扣减数量
      * @return 是否扣减成功
      */
     @PostMapping("/{productId}/stock/deduct")
@@ -188,7 +188,7 @@ public interface ProductFeignClient {
      * 恢复商品库存
      *
      * @param productId 商品ID
-     * @param quantity 恢复数量
+     * @param quantity  恢复数量
      * @return 是否恢复成功
      */
     @PostMapping("/{productId}/stock/restore")

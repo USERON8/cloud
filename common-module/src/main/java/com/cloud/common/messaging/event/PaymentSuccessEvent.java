@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * 支付成功事件
@@ -56,6 +57,11 @@ public class PaymentSuccessEvent implements Serializable {
      * 支付流水号
      */
     private String transactionNo;
+
+    /**
+     * 商品数量映射 Map<商品ID, 购买数量>
+     */
+    private Map<Long, Integer> productQuantityMap;
 
     /**
      * 事件时间戳

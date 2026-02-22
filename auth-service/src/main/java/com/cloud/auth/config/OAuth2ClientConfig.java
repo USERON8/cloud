@@ -1,5 +1,6 @@
 package com.cloud.auth.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.*;
@@ -14,6 +15,9 @@ import java.util.List;
 
 @Configuration
 public class OAuth2ClientConfig {
+
+    @Value("${AUTH_TOKEN_URI:http://127.0.0.1:8081/oauth2/token}")
+    private String authTokenUri;
 
     /**
      * 配置 OAuth2 客户端注册仓库
@@ -46,7 +50,7 @@ public class OAuth2ClientConfig {
                 .clientSecret("ClientService@2024#Secure")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .tokenUri("http://127.0.0.1:80/oauth2/token") // 修改为通过网关的token端点
+                .tokenUri(authTokenUri)
                 .scope("internal_api")
                 .build();
 

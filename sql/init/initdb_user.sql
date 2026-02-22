@@ -87,8 +87,10 @@ CREATE TABLE `admin`
     INDEX idx_status (status),
 
     -- 性能优化索引
-    INDEX idx_date_type (DATE(created_at), user_type)
-) COMMENT ='管理员表';
+    INDEX idx_date_type (DATE(created_at),
+    user_type
+)
+    ) COMMENT ='管理员表';
 
 -- 商家表
 CREATE TABLE `merchant`

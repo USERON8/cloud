@@ -29,7 +29,7 @@ public class ThreadPoolShutdownManager implements ApplicationListener<ContextClo
         log.info("开始优雅关闭线程池...");
 
         Map<String, ThreadPoolTaskExecutor> executors =
-            applicationContext.getBeansOfType(ThreadPoolTaskExecutor.class);
+                applicationContext.getBeansOfType(ThreadPoolTaskExecutor.class);
 
         if (executors.isEmpty()) {
             log.info("未发现需要关闭的线程池");

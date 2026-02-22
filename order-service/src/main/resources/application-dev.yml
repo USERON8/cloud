@@ -54,4 +54,4 @@ knife4j:
       resourceserver:
         jwt:
           # 通过网关访问 OAuth2.1 授权服务器的 JWK 端点
-          jwk-set-uri: http://127.0.0.1:80/.well-known/jwks.json
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}

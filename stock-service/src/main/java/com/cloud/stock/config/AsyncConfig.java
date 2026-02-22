@@ -28,12 +28,11 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("stockQueryExecutor")
     public Executor stockQueryExecutor() {
-        // 根据库存查询的特点，使用更多核心线程来处理高并发查询
         int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                Math.max(4, processors),
-                processors * 4,
-                500,
+                Math.max(8, processors * 2),
+                Math.max(16, processors * 6),
+                1000,
                 "stock-query-"
         );
         executor.initialize();
@@ -50,10 +49,11 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("stockOperationExecutor")
     public Executor stockOperationExecutor() {
+        int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                10,
-                100,
+                Math.max(4, processors),
+                Math.max(8, processors * 2),
+                300,
                 "stock-operation-"
         );
         executor.initialize();
@@ -68,8 +68,8 @@ public class AsyncConfig extends BaseAsyncConfig {
      * 通用异步线程池
      * 用于处理其他异步任务
      */
-    @Bean("stockCommonAsyncExecutor")
-    public Executor stockCommonAsyncExecutor() {
+    @Bean("stockCommonExecutor")
+    public Executor stockCommonExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
                 Math.max(2, processors / 2),

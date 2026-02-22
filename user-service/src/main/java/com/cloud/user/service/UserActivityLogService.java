@@ -18,7 +18,7 @@ public interface UserActivityLogService {
      * 记录用户登录行为
      *
      * @param userId 用户ID
-     * @param ip IP地址
+     * @param ip     IP地址
      * @param device 设备信息
      * @return 记录结果
      */
@@ -35,7 +35,7 @@ public interface UserActivityLogService {
     /**
      * 记录用户注册行为
      *
-     * @param userId 用户ID
+     * @param userId           用户ID
      * @param registrationType 注册方式
      * @return 记录结果
      */
@@ -44,7 +44,7 @@ public interface UserActivityLogService {
     /**
      * 记录用户信息修改行为
      *
-     * @param userId 用户ID
+     * @param userId         用户ID
      * @param modifiedFields 修改的字段
      * @return 记录结果
      */
@@ -61,20 +61,20 @@ public interface UserActivityLogService {
     /**
      * 记录用户通用行为
      *
-     * @param userId 用户ID
+     * @param userId       用户ID
      * @param activityType 行为类型
-     * @param description 行为描述
-     * @param metadata 元数据
+     * @param description  行为描述
+     * @param metadata     元数据
      * @return 记录结果
      */
     CompletableFuture<Boolean> logActivityAsync(Long userId, UserActivityType activityType,
-                                                  String description, Map<String, Object> metadata);
+                                                String description, Map<String, Object> metadata);
 
     /**
      * 获取用户最近的活动日志
      *
      * @param userId 用户ID
-     * @param limit 数量限制
+     * @param limit  数量限制
      * @return 活动日志列表
      */
     CompletableFuture<List<Map<String, Object>>> getRecentActivitiesAsync(Long userId, Integer limit);
@@ -83,7 +83,7 @@ public interface UserActivityLogService {
      * 统计用户活跃度
      *
      * @param userId 用户ID
-     * @param days 统计天数
+     * @param days   统计天数
      * @return 活跃度分数
      */
     CompletableFuture<Long> calculateUserActivityScoreAsync(Long userId, Integer days);

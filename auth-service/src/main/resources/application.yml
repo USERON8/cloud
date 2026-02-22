@@ -1,11 +1,11 @@
-server:
-  port: 8081
+﻿server:
+  port: ${SERVER_PORT:8081}
   tomcat:
     threads:
-      max: 200
-      min-spare: 10
-    max-connections: 8192
-    accept-count: 100
+      max: ${SERVER_TOMCAT_THREADS_MAX:400}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
   application:
@@ -15,7 +15,7 @@ spring:
   main:
     allow-circular-references: true
 
-  # Nacos 配置
+  # Nacos 閰嶇疆
   cloud:
     nacos:
       discovery:
@@ -24,6 +24,15 @@ spring:
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
@@ -32,7 +41,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # RocketMQ Stream 配置
+    # RocketMQ Stream 閰嶇疆
     stream:
       rocketmq:
         binder:
@@ -43,11 +52,11 @@ spring:
           content-type: application/json
           group: auth-log-group
 
-  # Config 配置
+  # Config 閰嶇疆
   config:
     import: optional:nacos:common
 
-  # OAuth2 配置
+  # OAuth2 閰嶇疆
   security:
     oauth2:
       client:
@@ -71,12 +80,12 @@ spring:
             scope: internal_api,service.read,service.write
         provider:
           custom-authorization-server:
-            token-uri: http://127.0.0.1:8081/oauth2/token
+            token-uri: ${AUTH_TOKEN_URI:http://127.0.0.1:8081/oauth2/token}
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
 
-  # 自动配置排除
+  # 鑷姩閰嶇疆鎺掗櫎
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -85,7 +94,7 @@ spring:
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
 
-# 日志配置
+# 鏃ュ織閰嶇疆
 logging:
   file:
     path: logs
@@ -96,15 +105,15 @@ logging:
     org.springframework.security: debug
     org.springframework.web: warn
 
-# 应用自定义配置
+# 搴旂敤鑷畾涔夐厤缃?
 app:
   jwt:
     test-mode: true
-    issuer: http://127.0.0.1:8081
+    issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
     access-token-validity: PT2H
     test-token-validity: P365D
 
-# SpringDoc 配置
+# SpringDoc 閰嶇疆
 springdoc:
   api-docs:
     enabled: true
@@ -121,7 +130,7 @@ springdoc:
       paths-to-match: '/oauth2/**'
   default-flat-param-object: true
 
-# Knife4j 配置
+# Knife4j 閰嶇疆
 knife4j:
   enable: true
   production: false
@@ -132,7 +141,7 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-# Spring Boot Actuator配置
+# Spring Boot Actuator閰嶇疆
 management:
   endpoints:
     web:
@@ -164,3 +173,8 @@ management:
       enabled: true
     os:
       enabled: true
+
+
+
+
+

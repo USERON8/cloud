@@ -2,7 +2,8 @@
 
 ## 服务概述
 
-Auth Service 是整个微服务架构的**OAuth2.1 授权服务器**,负责用户认证、令牌颁发、令牌管理和会话管理。基于 Spring Authorization Server 实现完整的 OAuth2.1 标准协议,支持多种授权模式和第三方登录。
+Auth Service 是整个微服务架构的**OAuth2.1 授权服务器**,负责用户认证、令牌颁发、令牌管理和会话管理。基于 Spring
+Authorization Server 实现完整的 OAuth2.1 标准协议,支持多种授权模式和第三方登录。
 
 - **服务端口**: 8081
 - **服务名称**: auth-service
@@ -11,17 +12,17 @@ Auth Service 是整个微服务架构的**OAuth2.1 授权服务器**,负责用�
 
 ## 技术栈
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 应用框架 |
-| Spring Security OAuth2 | 最新 | OAuth2.1 授权服务器 |
-| Spring Security OAuth2 Client | 最新 | 第三方OAuth2客户端 |
-| Spring Security OAuth2 JOSE | 最新 | JWT/JWKS支持 |
-| Spring Cloud Alibaba Nacos | 2025.0.0.0-preview | 服务注册与配置中心 |
-| Redis | - | 令牌存储、黑名单 |
-| Redisson | 3.51.0 | 分布式锁、Redis客户端 |
-| Caffeine | - | 本地缓存 |
-| RocketMQ | - | 认证日志事件 |
+| 技术                            | 版本                 | 用途             |
+|-------------------------------|--------------------|----------------|
+| Spring Boot                   | 3.5.3              | 应用框架           |
+| Spring Security OAuth2        | 最新                 | OAuth2.1 授权服务器 |
+| Spring Security OAuth2 Client | 最新                 | 第三方OAuth2客户端   |
+| Spring Security OAuth2 JOSE   | 最新                 | JWT/JWKS支持     |
+| Spring Cloud Alibaba Nacos    | 2025.0.0.0-preview | 服务注册与配置中心      |
+| Redis                         | -                  | 令牌存储、黑名单       |
+| Redisson                      | 3.51.0             | 分布式锁、Redis客户端  |
+| Caffeine                      | -                  | 本地缓存           |
+| RocketMQ                      | -                  | 认证日志事件         |
 
 ## 核心功能
 
@@ -49,10 +50,10 @@ Auth Service 是整个微服务架构的**OAuth2.1 授权服务器**,负责用�
 - ✅ **撤销授权**: DELETE `/auth/tokens/authorization/{id}` - 撤销指定授权
 - ✅ **清理过期**: POST `/auth/tokens/cleanup` - 手动清理过期令牌
 - ✅ **黑名单管理**:
-  - GET `/auth/tokens/blacklist/stats` - 黑名单统计
-  - POST `/auth/tokens/blacklist/add` - 加入黑名单
-  - GET `/auth/tokens/blacklist/check` - 检查黑名单
-  - POST `/auth/tokens/blacklist/cleanup` - 清理黑名单
+    - GET `/auth/tokens/blacklist/stats` - 黑名单统计
+    - POST `/auth/tokens/blacklist/add` - 加入黑名单
+    - GET `/auth/tokens/blacklist/check` - 检查黑名单
+    - POST `/auth/tokens/blacklist/cleanup` - 清理黑名单
 
 ### 4. 第三方登录 (/auth/oauth2/github)
 
@@ -66,6 +67,7 @@ Auth Service 是整个微服务架构的**OAuth2.1 授权服务器**,负责用�
 ### 核心实体
 
 #### OAuth2Authorization (存储在Redis)
+
 ```java
 - id: String                    // 授权ID
 - registeredClientId: String    // 客户端ID
@@ -98,22 +100,24 @@ Hash存储模式:
 
 ## 依赖服务
 
-| 服务 | 用途 | 调用方式 |
-|------|------|----------|
-| user-service | 用户信息验证、注册 | Feign Client (UserFeignClient) |
-| Redis | 令牌存储、黑名单、缓存 | RedisTemplate, Redisson |
-| Nacos | 服务注册、配置管理 | Spring Cloud Alibaba |
-| RocketMQ | 认证日志事件发送 | Spring Cloud Stream |
+| 服务           | 用途          | 调用方式                           |
+|--------------|-------------|--------------------------------|
+| user-service | 用户信息验证、注册   | Feign Client (UserFeignClient) |
+| Redis        | 令牌存储、黑名单、缓存 | RedisTemplate, Redisson        |
+| Nacos        | 服务注册、配置管理   | Spring Cloud Alibaba           |
+| RocketMQ     | 认证日志事件发送    | Spring Cloud Stream            |
 
 ## 配置说明
 
 ### 端口配置
+
 ```yaml
 server:
   port: 8081
 ```
 
 ### OAuth2 客户端配置
+
 ```yaml
 spring:
   security:
@@ -136,6 +140,7 @@ spring:
 ```
 
 ### JWT 配置
+
 ```yaml
 app:
   jwt:
@@ -145,6 +150,7 @@ app:
 ```
 
 ### RocketMQ 配置
+
 ```yaml
 spring:
   cloud:
@@ -160,108 +166,110 @@ spring:
 ### ✅ 已完成功能
 
 1. **核心认证流程**
-   - [x] 用户注册与自动登录
-   - [x] 用户名密码登录验证
-   - [x] 用户类型验证(USER/ADMIN/MERCHANT)
-   - [x] 账户状态检查
-   - [x] 密码加密存储(BCrypt)
-   - [x] 自动令牌生成与返回
+    - [x] 用户注册与自动登录
+    - [x] 用户名密码登录验证
+    - [x] 用户类型验证(USER/ADMIN/MERCHANT)
+    - [x] 账户状态检查
+    - [x] 密码加密存储(BCrypt)
+    - [x] 自动令牌生成与返回
 
 2. **OAuth2.1 标准实现**
-   - [x] Authorization Code Flow (授权码模式)
-   - [x] Client Credentials Flow (客户端凭证模式)
-   - [x] Token Refresh Flow (刷新令牌模式)
-   - [x] PKCE 支持
-   - [x] Token Rotation (令牌轮转)
-   - [x] JWT 令牌签发(RSA256)
-   - [x] JWKS 公钥端点
-   - [x] Token Introspection (令牌自省)
-   - [x] Token Revocation (令牌撤销)
+    - [x] Authorization Code Flow (授权码模式)
+    - [x] Client Credentials Flow (客户端凭证模式)
+    - [x] Token Refresh Flow (刷新令牌模式)
+    - [x] PKCE 支持
+    - [x] Token Rotation (令牌轮转)
+    - [x] JWT 令牌签发(RSA256)
+    - [x] JWKS 公钥端点
+    - [x] Token Introspection (令牌自省)
+    - [x] Token Revocation (令牌撤销)
 
 3. **令牌管理**
-   - [x] Redis Hash存储优化
-   - [x] 令牌黑名单机制
-   - [x] 自动过期清理(Redis TTL)
-   - [x] 令牌撤销与吊销
-   - [x] 多会话管理
-   - [x] 批量登出功能
-   - [x] 授权详情查询(/auth/tokens/authorization/{id})
-   - [x] 手动清理过期令牌(/auth/tokens/cleanup)
-   - [x] 黑名单统计与管理
+    - [x] Redis Hash存储优化
+    - [x] 令牌黑名单机制
+    - [x] 自动过期清理(Redis TTL)
+    - [x] 令牌撤销与吊销
+    - [x] 多会话管理
+    - [x] 批量登出功能
+    - [x] 授权详情查询(/auth/tokens/authorization/{id})
+    - [x] 手动清理过期令牌(/auth/tokens/cleanup)
+    - [x] 黑名单统计与管理
 
 4. **第三方登录**
-   - [x] GitHub OAuth2 完整集成
-   - [x] 获取GitHub登录URL (/auth/oauth2/github/login-url)
-   - [x] GitHub回调处理 (/auth/oauth2/github/callback)
-   - [x] GitHub用户信息获取 (/auth/oauth2/github/user-info)
-   - [x] 认证状态检查 (/auth/oauth2/github/status)
-   - [x] 自动用户信息同步到user-service
-   - [x] JWT令牌自动生成
+    - [x] GitHub OAuth2 完整集成
+    - [x] 获取GitHub登录URL (/auth/oauth2/github/login-url)
+    - [x] GitHub回调处理 (/auth/oauth2/github/callback)
+    - [x] GitHub用户信息获取 (/auth/oauth2/github/user-info)
+    - [x] 认证状态检查 (/auth/oauth2/github/status)
+    - [x] 自动用户信息同步到user-service
+    - [x] JWT令牌自动生成
 
 5. **监控与管理**
-   - [x] Token 统计信息 (总数、活跃、过期统计)
-   - [x] 黑名单管理API (添加、检查、清理)
-   - [x] 授权详情查询
-   - [x] Spring Boot Actuator集成
-   - [x] 完整的API文档(Knife4j)
-   - [x] RocketMQ认证日志事件发送
+    - [x] Token 统计信息 (总数、活跃、过期统计)
+    - [x] 黑名单管理API (添加、检查、清理)
+    - [x] 授权详情查询
+    - [x] Spring Boot Actuator集成
+    - [x] 完整的API文档(Knife4j)
+    - [x] RocketMQ认证日志事件发送
 
 ### 🚧 进行中功能
 
 1. **安全增强**
-   - [ ] 登录失败次数限制
-   - [ ] IP白名单/黑名单
-   - [ ] 验证码支持(图形/短信)
-   - [ ] 设备指纹识别
+    - [ ] 登录失败次数限制
+    - [ ] IP白名单/黑名单
+    - [ ] 验证码支持(图形/短信)
+    - [ ] 设备指纹识别
 
 2. **多因素认证**
-   - [ ] TOTP (Time-based OTP)
-   - [ ] SMS 短信验证码
-   - [ ] Email 邮箱验证
+    - [ ] TOTP (Time-based OTP)
+    - [ ] SMS 短信验证码
+    - [ ] Email 邮箱验证
 
 ### 📋 计划中功能
 
 1. **更多第三方登录**
-   - [ ] 微信登录
-   - [ ] 支付宝登录
-   - [ ] 钉钉/企业微信登录
+    - [ ] 微信登录
+    - [ ] 支付宝登录
+    - [ ] 钉钉/企业微信登录
 
 2. **高级会话管理**
-   - [ ] 设备管理(查看所有登录设备)
-   - [ ] 异地登录提醒
-   - [ ] 单点登录(SSO)
-   - [ ] 会话并发控制
+    - [ ] 设备管理(查看所有登录设备)
+    - [ ] 异地登录提醒
+    - [ ] 单点登录(SSO)
+    - [ ] 会话并发控制
 
 3. **审计日志**
-   - [ ] 详细的认证审计日志
-   - [ ] 失败登录记录
-   - [ ] 敏感操作追踪
+    - [ ] 详细的认证审计日志
+    - [ ] 失败登录记录
+    - [ ] 敏感操作追踪
 
 ### ⚠️ 技术债
 
 1. **性能优化**
-   - 考虑使用本地缓存(Caffeine)缓存用户信息减少Feign调用
-   - Token验证性能优化(考虑JWT自包含特性)
+    - 考虑使用本地缓存(Caffeine)缓存用户信息减少Feign调用
+    - Token验证性能优化(考虑JWT自包含特性)
 
 2. **可扩展性**
-   - 令牌存储考虑分片策略(当前单Redis实例)
-   - JWKS密钥轮转机制完善
+    - 令牌存储考虑分片策略(当前单Redis实例)
+    - JWKS密钥轮转机制完善
 
 3. **测试覆盖**
-   - 增加集成测试覆盖率
-   - 安全测试用例补充
+    - 增加集成测试覆盖率
+    - 安全测试用例补充
 
 ## 本地运行
 
 ### 前置条件
 
 1. **基础设施启动**
+
 ```bash
 cd docker
 docker-compose up -d mysql redis nacos rocketmq
 ```
 
 2. **依赖服务启动**
+
 ```bash
 # User Service 必须先启动(Feign依赖)
 cd user-service
@@ -299,6 +307,7 @@ curl http://localhost:8081/.well-known/jwks.json
 ## 测试
 
 ### 运行单元测试
+
 ```bash
 mvn test
 ```
@@ -306,6 +315,7 @@ mvn test
 ### 手动测试流程
 
 #### 1. 用户注册
+
 ```bash
 curl -X POST "http://localhost:8081/auth/users/register" \
   -H "Content-Type: application/json" \
@@ -320,6 +330,7 @@ curl -X POST "http://localhost:8081/auth/users/register" \
 ```
 
 #### 2. 用户登录
+
 ```bash
 curl -X POST "http://localhost:8081/auth/sessions" \
   -H "Content-Type: application/json" \
@@ -331,6 +342,7 @@ curl -X POST "http://localhost:8081/auth/sessions" \
 ```
 
 #### 3. OAuth2.1 标准令牌获取
+
 ```bash
 curl -X POST "http://localhost:8081/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -343,6 +355,7 @@ curl -X POST "http://localhost:8081/oauth2/token" \
 ```
 
 #### 4. 令牌刷新
+
 ```bash
 curl -X POST "http://localhost:8081/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -353,6 +366,7 @@ curl -X POST "http://localhost:8081/oauth2/token" \
 ```
 
 #### 5. 用户登出
+
 ```bash
 curl -X DELETE "http://localhost:8081/auth/sessions" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
@@ -371,6 +385,7 @@ curl -X DELETE "http://localhost:8081/auth/sessions" \
 ### 数据库
 
 Auth Service **不直接访问数据库**,所有用户信息通过 **UserFeignClient** 从 user-service 获取。这种设计:
+
 - ✅ 解耦认证与用户管理
 - ✅ 认证服务无状态化(仅依赖Redis)
 - ✅ 支持多用户源集成
@@ -384,6 +399,7 @@ Auth Service **不直接访问数据库**,所有用户信息通过 **UserFeignCl
 ### 监控指标
 
 重点关注以下指标:
+
 - Token生成速率 (tokens/sec)
 - Token验证失败率
 - 黑名单命中率

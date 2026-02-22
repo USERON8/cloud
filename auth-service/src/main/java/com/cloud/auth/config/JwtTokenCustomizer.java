@@ -3,45 +3,59 @@ package com.cloud.auth.config;
 import com.cloud.api.user.UserFeignClient;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.stereotype.Component;
 
 /**
- * JWT令牌自定义增强器
- * 用于在JWT令牌中添加额外的用户信息，如用户ID和用户类型
+ * Customize JWT access-token claims consumed by gateway/downstream services.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
     private final UserFeignClient userFeignClient;
 
-    /**
-     * 自定义JWT令牌
-     * 添加用户ID和用户类型到JWT声明中
-     *
-     * @param context JWT编码上下文
-     */
     @Override
     public void customize(JwtEncodingContext context) {
-        // 检查是否是访问令牌
-        if (context.getTokenType().equals(org.springframework.security.oauth2.server.authorization.OAuth2TokenType.ACCESS_TOKEN)) {
-            // 从授权信息中获取用户信息
-            Object principal = context.getPrincipal().getPrincipal();
+        if (!OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+            return;
+        }
 
-            // 如果是UserDetails类型，则添加额外信息到JWT声明中
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                String username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+        context.getClaims()
+                .claim("client_id", context.getRegisteredClient().getClientId())
+                .claim("token_version", "v1");
 
-                // 通过Feign客户端获取用户详细信息
+        if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
+            context.getClaims().claim("user_type", "SERVICE");
+        }
+
+        Object principal = context.getPrincipal().getPrincipal();
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+            String username = userDetails.getUsername();
+            context.getClaims().claim("username", username);
+
+            try {
                 UserDTO user = userFeignClient.findByUsername(username);
                 if (user != null) {
                     context.getClaims()
-                            .claim("user_id", user.getId())              // 添加用户ID
-                            .claim("user_type", user.getUserType())      // 添加用户类型
-                            .claim("nickname", user.getNickname());   // 添加用户昵称
+                            .claim("user_id", user.getId())
+                            .claim("user_type", user.getUserType())
+                            .claim("nickname", user.getNickname())
+                            .claim("status", user.getStatus());
                 }
+            } catch (Exception ex) {
+                // Keep token issuance available even when user-service is transiently unavailable.
+                log.warn("load user info for jwt claims failed, username={}", username, ex);
+            }
+        } else {
+            String principalName = context.getPrincipal().getName();
+            if (principalName != null && !principalName.isBlank()) {
+                context.getClaims().claim("username", principalName);
             }
         }
     }

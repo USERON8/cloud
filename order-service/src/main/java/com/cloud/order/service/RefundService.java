@@ -17,7 +17,7 @@ public interface RefundService {
     /**
      * 创建退款申请
      *
-     * @param userId         用户ID
+     * @param userId          用户ID
      * @param refundCreateDTO 退款创建DTO
      * @return 退款单ID
      */
@@ -26,10 +26,10 @@ public interface RefundService {
     /**
      * 审核退款申请
      *
-     * @param refundId     退款单ID
-     * @param merchantId   商家ID
-     * @param approved     是否通过
-     * @param auditRemark  审核备注
+     * @param refundId    退款单ID
+     * @param merchantId  商家ID
+     * @param approved    是否通过
+     * @param auditRemark 审核备注
      * @return 是否成功
      */
     Boolean auditRefund(Long refundId, Long merchantId, Boolean approved, String auditRemark);

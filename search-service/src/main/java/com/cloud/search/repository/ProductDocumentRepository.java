@@ -264,8 +264,8 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
             }
             """)
     Page<ProductDocument> filterSearch(String keyword, Long categoryId, Long brandId, Long shopId,
-                                        BigDecimal minPrice, BigDecimal maxPrice, Integer minSalesCount,
-                                        Integer status, Pageable pageable);
+                                       BigDecimal minPrice, BigDecimal maxPrice, Integer minSalesCount,
+                                       Integer status, Pageable pageable);
 
     /**
      * 组合搜索 - 支持所有条件的组合查询
@@ -288,5 +288,5 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
             }
             """)
     Page<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId, Long shopId,
-                                          BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
+                                         BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
 }

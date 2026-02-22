@@ -31,17 +31,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCount>
         implements StockCountService {
 
+    private static final AtomicLong COUNTER = new AtomicLong(0);
     private final StockCountMapper stockCountMapper;
     private final StockService stockService;
     private final StockLogService stockLogService;
     private final StockMapper stockMapper;
 
-    private static final AtomicLong COUNTER = new AtomicLong(0);
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createStockCount(Long productId, Integer actualQuantity,
-                                  Long operatorId, String operatorName, String remark) {
+                                 Long operatorId, String operatorName, String remark) {
         log.info("创建库存盘点记录, productId: {}, actualQuantity: {}, operatorId: {}",
                 productId, actualQuantity, operatorId);
 

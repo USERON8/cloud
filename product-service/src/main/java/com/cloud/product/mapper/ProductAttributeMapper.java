@@ -30,7 +30,7 @@ public interface ProductAttributeMapper extends BaseMapper<ProductAttribute> {
      * @return 属性列表
      */
     List<ProductAttribute> selectByProductIdAndGroup(@Param("productId") Long productId,
-                                                      @Param("attrGroup") String attrGroup);
+                                                     @Param("attrGroup") String attrGroup);
 
     /**
      * 批量插入属性

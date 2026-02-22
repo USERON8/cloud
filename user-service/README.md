@@ -2,7 +2,8 @@
 
 ## 服务概述
 
-User Service 是微服务架构中的**核心业务服务**,负责用户、商户、管理员三类用户的完整生命周期管理。提供用户注册、信息管理、地址管理、数据导出、统计分析等全方位功能,并为 auth-service 提供用户认证数据支持。
+User Service 是微服务架构中的**核心业务服务**,负责用户、商户、管理员三类用户的完整生命周期管理。提供用户注册、信息管理、地址管理、数据导出、统计分析等全方位功能,并为
+auth-service 提供用户认证数据支持。
 
 - **服务端口**: 8082
 - **服务名称**: user-service
@@ -11,18 +12,18 @@ User Service 是微服务架构中的**核心业务服务**,负责用户、商�
 
 ## 技术栈
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 应用框架 |
-| MySQL | 9.3.0 | 持久化存储 |
-| MyBatis Plus | 最新 | ORM框架 |
-| Redis | - | 缓存、分布式锁 |
-| Redisson | - | 分布式锁实现 |
-| Spring Security OAuth2 | - | 资源服务器(JWT验证) |
-| Spring Cloud Alibaba Nacos | 2025.0.0.0-preview | 服务注册与配置 |
-| RocketMQ | - | 异步消息(用户事件、日志) |
-| MapStruct | 1.5.5.Final | DTO转换 |
-| MinIO | - | 头像文件存储 |
+| 技术                         | 版本                 | 用途            |
+|----------------------------|--------------------|---------------|
+| Spring Boot                | 3.5.3              | 应用框架          |
+| MySQL                      | 9.3.0              | 持久化存储         |
+| MyBatis Plus               | 最新                 | ORM框架         |
+| Redis                      | -                  | 缓存、分布式锁       |
+| Redisson                   | -                  | 分布式锁实现        |
+| Spring Security OAuth2     | -                  | 资源服务器(JWT验证)  |
+| Spring Cloud Alibaba Nacos | 2025.0.0.0-preview | 服务注册与配置       |
+| RocketMQ                   | -                  | 异步消息(用户事件、日志) |
+| MapStruct                  | 1.5.5.Final        | DTO转换         |
+| MinIO                      | -                  | 头像文件存储        |
 
 ## 核心功能
 
@@ -130,6 +131,7 @@ User Service 是微服务架构中的**核心业务服务**,负责用户、商�
 ### 核心实体
 
 #### User (users表)
+
 ```sql
 CREATE TABLE users (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -153,6 +155,7 @@ CREATE TABLE users (
 ```
 
 #### UserAddress (user_addresses表)
+
 ```sql
 CREATE TABLE user_addresses (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -171,6 +174,7 @@ CREATE TABLE user_addresses (
 ```
 
 #### Merchant (merchants表)
+
 ```sql
 CREATE TABLE merchants (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -187,6 +191,7 @@ CREATE TABLE merchants (
 ```
 
 #### MerchantAuth (merchant_auth表)
+
 ```sql
 CREATE TABLE merchant_auth (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -205,6 +210,7 @@ CREATE TABLE merchant_auth (
 ```
 
 #### Admin (admins表)
+
 ```sql
 CREATE TABLE admins (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -220,24 +226,26 @@ CREATE TABLE admins (
 
 ## 依赖服务
 
-| 服务 | 用途 | 通信方式 |
-|------|------|----------|
-| auth-service | 提供认证数据支持 | 被Feign调用(被动) |
-| MySQL | 用户数据持久化 | JDBC |
-| Redis | 缓存、分布式锁 | RedisTemplate |
-| MinIO | 头像、认证材料存储 | MinIO SDK |
-| RocketMQ | 用户事件发送 | Spring Cloud Stream |
-| Nacos | 服务注册、配置管理 | Spring Cloud Alibaba |
+| 服务           | 用途        | 通信方式                 |
+|--------------|-----------|----------------------|
+| auth-service | 提供认证数据支持  | 被Feign调用(被动)         |
+| MySQL        | 用户数据持久化   | JDBC                 |
+| Redis        | 缓存、分布式锁   | RedisTemplate        |
+| MinIO        | 头像、认证材料存储 | MinIO SDK            |
+| RocketMQ     | 用户事件发送    | Spring Cloud Stream  |
+| Nacos        | 服务注册、配置管理 | Spring Cloud Alibaba |
 
 ## 配置说明
 
 ### 端口配置
+
 ```yaml
 server:
   port: 8082
 ```
 
 ### 数据库配置
+
 ```yaml
 # 通过Nacos配置中心管理
 spring:
@@ -248,6 +256,7 @@ spring:
 ```
 
 ### Redis配置
+
 ```yaml
 # 通过Nacos配置中心管理
 spring:
@@ -258,6 +267,7 @@ spring:
 ```
 
 ### OAuth2 资源服务器
+
 ```yaml
 spring:
   security:
@@ -269,6 +279,7 @@ spring:
 ```
 
 ### RocketMQ 配置
+
 ```yaml
 spring:
   cloud:
@@ -283,6 +294,7 @@ spring:
 ```
 
 ### 文件上传配置
+
 ```yaml
 spring:
   servlet:
@@ -292,6 +304,7 @@ spring:
 ```
 
 ### 自定义配置
+
 ```yaml
 user:
   async:
@@ -307,65 +320,65 @@ user:
 ### ✅ 已完成功能
 
 1. **用户基础管理**
-   - [x] 用户CRUD完整实现
-   - [x] 用户状态管理(启用/禁用)
-   - [x] 批量操作(批量激活/禁用)
-   - [x] 密码加密存储(BCrypt)
-   - [x] 头像上传(本地/MinIO)
-   - [x] 软删除支持
+    - [x] 用户CRUD完整实现
+    - [x] 用户状态管理(启用/禁用)
+    - [x] 批量操作(批量激活/禁用)
+    - [x] 密码加密存储(BCrypt)
+    - [x] 头像上传(本地/MinIO)
+    - [x] 软删除支持
 
 2. **用户查询与搜索**
-   - [x] 多维度查询(ID/用户名/邮箱)
-   - [x] 分页列表查询
-   - [x] 关键词搜索
-   - [x] 用户存在性检查
-   - [x] 当前用户信息获取
+    - [x] 多维度查询(ID/用户名/邮箱)
+    - [x] 分页列表查询
+    - [x] 关键词搜索
+    - [x] 用户存在性检查
+    - [x] 当前用户信息获取
 
 3. **收货地址管理**
-   - [x] 地址CRUD操作
-   - [x] 默认地址设置
-   - [x] 用户多地址支持
-   - [x] 地址信息完整性验证
+    - [x] 地址CRUD操作
+    - [x] 默认地址设置
+    - [x] 用户多地址支持
+    - [x] 地址信息完整性验证
 
 4. **商户管理**
-   - [x] 商户基础信息管理
-   - [x] 商户认证流程(提交/审批/拒绝)
-   - [x] 认证材料上传(营业执照/身份证)
-   - [x] 商户状态管理
-   - [x] 认证记录查询
+    - [x] 商户基础信息管理
+    - [x] 商户认证流程(提交/审批/拒绝)
+    - [x] 认证材料上传(营业执照/身份证)
+    - [x] 商户状态管理
+    - [x] 认证记录查询
 
 5. **管理员管理**
-   - [x] 管理员账户管理
-   - [x] 管理员等级设置
-   - [x] 权限配置
-   - [x] 密码重置功能
+    - [x] 管理员账户管理
+    - [x] 管理员等级设置
+    - [x] 权限配置
+    - [x] 密码重置功能
 
 6. **统计分析**
-   - [x] 用户统计仪表板
-   - [x] 用户增长趋势分析
-   - [x] 用户类型分布
-   - [x] 注册来源统计
-   - [x] 活跃用户统计
-   - [x] 用户留存率分析
-   - [x] Excel数据导出
+    - [x] 用户统计仪表板
+    - [x] 用户增长趋势分析
+    - [x] 用户类型分布
+    - [x] 注册来源统计
+    - [x] 活跃用户统计
+    - [x] 用户留存率分析
+    - [x] Excel数据导出
 
 7. **OAuth2集成**
-   - [x] GitHub OAuth2用户创建
-   - [x] OAuth用户信息同步
-   - [x] 多OAuth提供商支持
+    - [x] GitHub OAuth2用户创建
+    - [x] OAuth用户信息同步
+    - [x] 多OAuth提供商支持
 
 8. **内部服务接口**
-   - [x] 用户注册接口(供auth-service)
-   - [x] 用户认证信息查询
-   - [x] OAuth2用户查找或创建
+    - [x] 用户注册接口(供auth-service)
+    - [x] 用户认证信息查询
+    - [x] OAuth2用户查找或创建
 
 9. **异步处理**
-   - [x] 用户事件异步发送(RocketMQ)
-   - [x] 日志异步记录
-   - [x] 自定义线程池配置
-   - [x] 线程池监控与动态调整
-   - [x] 线程池健康检查
-   - [x] 异步任务执行追踪
+    - [x] 用户事件异步发送(RocketMQ)
+    - [x] 日志异步记录
+    - [x] 自定义线程池配置
+    - [x] 线程池监控与动态调整
+    - [x] 线程池健康检查
+    - [x] 异步任务执行追踪
 
 10. **数据转换**
     - [x] MapStruct自动转换
@@ -384,71 +397,73 @@ user:
 ### 🚧 进行中功能
 
 1. **数据导出优化**
-   - [ ] 大数据量导出优化(流式导出)
-   - [ ] 自定义导出模板
-   - [ ] 定时导出任务
+    - [ ] 大数据量导出优化(流式导出)
+    - [ ] 自定义导出模板
+    - [ ] 定时导出任务
 
 2. **用户画像**
-   - [ ] 用户行为分析
-   - [ ] 用户标签体系
-   - [ ] 用户偏好推荐
+    - [ ] 用户行为分析
+    - [ ] 用户标签体系
+    - [ ] 用户偏好推荐
 
 ### 📋 计划中功能
 
 1. **实名认证**
-   - [ ] 身份证OCR识别
-   - [ ] 人脸识别验证
-   - [ ] 第三方实名认证对接
+    - [ ] 身份证OCR识别
+    - [ ] 人脸识别验证
+    - [ ] 第三方实名认证对接
 
 2. **积分系统**
-   - [ ] 用户积分管理
-   - [ ] 积分规则配置
-   - [ ] 积分兑换功能
+    - [ ] 用户积分管理
+    - [ ] 积分规则配置
+    - [ ] 积分兑换功能
 
 3. **会员等级**
-   - [ ] 会员等级体系
-   - [ ] 等级权益配置
-   - [ ] 自动升降级
+    - [ ] 会员等级体系
+    - [ ] 等级权益配置
+    - [ ] 自动升降级
 
 4. **用户标签**
-   - [ ] 标签管理
-   - [ ] 用户打标签
-   - [ ] 基于标签的用户分组
+    - [ ] 标签管理
+    - [ ] 用户打标签
+    - [ ] 基于标签的用户分组
 
 5. **消息通知**
-   - [ ] 站内信
-   - [ ] 短信通知
-   - [ ] 邮件通知
-   - [ ] Push推送
+    - [ ] 站内信
+    - [ ] 短信通知
+    - [ ] 邮件通知
+    - [ ] Push推送
 
 ### ⚠️ 技术债
 
 1. **性能优化**
-   - 用户列表查询考虑增加Redis缓存
-   - 统计分析考虑使用ClickHouse或ES
-   - 头像上传优化(CDN加速)
+    - 用户列表查询考虑增加Redis缓存
+    - 统计分析考虑使用ClickHouse或ES
+    - 头像上传优化(CDN加速)
 
 2. **数据安全**
-   - 敏感信息脱敏(手机号/邮箱/身份证)
-   - 数据导出权限细化
-   - 操作日志完善
+    - 敏感信息脱敏(手机号/邮箱/身份证)
+    - 数据导出权限细化
+    - 操作日志完善
 
 3. **测试覆盖**
-   - 单元测试覆盖率提升
-   - 集成测试补充
-   - 性能测试(并发注册/查询)
+    - 单元测试覆盖率提升
+    - 集成测试补充
+    - 性能测试(并发注册/查询)
 
 ## 本地运行
 
 ### 前置条件
 
 1. **基础设施启动**
+
 ```bash
 cd docker
 docker-compose up -d mysql redis nacos rocketmq minio
 ```
 
 2. **数据库初始化**
+
 ```bash
 # 导入SQL脚本
 mysql -h localhost -u root -p < sql/init/initdb_user.sql
@@ -486,16 +501,19 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ## 测试
 
 ### 运行单元测试
+
 ```bash
 mvn test
 ```
 
 ### 运行特定测试类
+
 ```bash
 mvn test -Dtest=UserServiceImplTest
 ```
 
 ### 运行集成测试
+
 ```bash
 mvn test -Dtest=UserManageControllerTest
 ```
@@ -503,6 +521,7 @@ mvn test -Dtest=UserManageControllerTest
 ### 手动测试流程
 
 #### 1. 创建用户
+
 ```bash
 curl -X POST "http://localhost:8082/api/manage/users" \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -518,12 +537,14 @@ curl -X POST "http://localhost:8082/api/manage/users" \
 ```
 
 #### 2. 查询用户
+
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   "http://localhost:8082/api/query/users/1"
 ```
 
 #### 3. 更新用户
+
 ```bash
 curl -X PUT "http://localhost:8082/api/manage/users/1" \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -535,6 +556,7 @@ curl -X PUT "http://localhost:8082/api/manage/users/1" \
 ```
 
 #### 4. 创建收货地址
+
 ```bash
 curl -X POST "http://localhost:8082/api/user/address" \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -556,11 +578,13 @@ curl -X POST "http://localhost:8082/api/user/address" \
 ### 权限控制
 
 所有API端点都受OAuth2保护,需要在请求头中携带有效的JWT令牌:
+
 ```
 Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 ```
 
 权限要求:
+
 - **用户接口**: 需要 `SCOPE_read` 或 `SCOPE_write`
 - **管理员接口**: 需要 `ROLE_ADMIN` + `SCOPE_admin:write`
 - **内部接口**: 仅限服务间调用(通过Feign)
@@ -582,6 +606,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 ### 监控指标
 
 重点关注:
+
 - 用户注册速率 (registrations/hour)
 - 用户查询QPS
 - 数据库连接池使用率

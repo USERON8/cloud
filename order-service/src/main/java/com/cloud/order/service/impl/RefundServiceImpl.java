@@ -60,8 +60,8 @@ public class RefundServiceImpl implements RefundService {
         // 2. 检查订单状态 - 只有已支付、已发货、已完成的订单可以退款
         OrderStatusEnum orderStatus = order.getStatusEnum();
         if (orderStatus != OrderStatusEnum.PAID &&
-            orderStatus != OrderStatusEnum.SHIPPED &&
-            orderStatus != OrderStatusEnum.COMPLETED) {
+                orderStatus != OrderStatusEnum.SHIPPED &&
+                orderStatus != OrderStatusEnum.COMPLETED) {
             throw new BusinessException("订单状态不允许退款,当前状态:" + orderStatus.getName());
         }
 
@@ -133,7 +133,7 @@ public class RefundServiceImpl implements RefundService {
 
         // 4. 更新退款单状态
         refund.setStatus(approved ? RefundStatusEnum.AUDIT_PASSED.getCode() :
-                                    RefundStatusEnum.AUDIT_REJECTED.getCode());
+                RefundStatusEnum.AUDIT_REJECTED.getCode());
         refund.setAuditTime(LocalDateTime.now());
         refund.setAuditRemark(auditRemark);
         refund.setUpdatedAt(LocalDateTime.now());
@@ -248,9 +248,9 @@ public class RefundServiceImpl implements RefundService {
     public Refund getRefundByOrderId(Long orderId) {
         LambdaQueryWrapper<Refund> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Refund::getOrderId, orderId)
-               .eq(Refund::getIsDeleted, 0)
-               .orderByDesc(Refund::getCreatedAt)
-               .last("LIMIT 1");
+                .eq(Refund::getIsDeleted, 0)
+                .orderByDesc(Refund::getCreatedAt)
+                .last("LIMIT 1");
 
         return refundMapper.selectOne(wrapper);
     }

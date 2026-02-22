@@ -1,7 +1,6 @@
 package com.cloud.common.config;
 
 import com.cloud.common.aspect.DistributedLockAspect;
-import com.cloud.common.lock.RedissonLockManager;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -39,19 +38,5 @@ public class DistributedLockAutoConfiguration {
     public DistributedLockAspect distributedLockAspect(RedissonClient redissonClient) {
         log.info("✅ 配置分布式锁AOP切面");
         return new DistributedLockAspect(redissonClient);
-    }
-
-    /**
-     * 配置Redisson锁管理器
-     *
-     * @param redissonClient Redisson客户端
-     * @return Redisson锁管理器
-     */
-    @Bean
-    @ConditionalOnBean(RedissonClient.class)
-    @ConditionalOnMissingBean(RedissonLockManager.class)
-    public RedissonLockManager redissonLockManager(RedissonClient redissonClient) {
-        log.info("✅ 配置Redisson锁管理器");
-        return new RedissonLockManager(redissonClient);
     }
 }

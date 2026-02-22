@@ -3,7 +3,6 @@ package com.cloud.product.controller.product;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.exception.ResourceNotFoundException;
-import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.validation.BatchValidationUtils;

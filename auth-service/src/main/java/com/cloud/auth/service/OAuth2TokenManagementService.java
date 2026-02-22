@@ -3,6 +3,7 @@ package com.cloud.auth.service;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.*;
@@ -42,6 +43,9 @@ public class OAuth2TokenManagementService {
     private final RegisteredClientRepository registeredClientRepository;
     private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
     private final TokenBlacklistService tokenBlacklistService;
+
+    @Value("${app.oauth2.default-redirect-uri:http://127.0.0.1:80/authorized}")
+    private String defaultRedirectUri;
 
     /**
      * 为用户登录生成OAuth2令牌（使用授权码模式的内部实现）
@@ -110,7 +114,7 @@ public class OAuth2TokenManagementService {
                 .attribute("nickname", userDTO.getNickname())
                 // 添加授权码相关属性（模拟已经完成的授权码流程）
                 .attribute("authorization_code", "SIMULATED_" + UUID.randomUUID())
-                .attribute("redirect_uri", "http://127.0.0.1:8080/authorized");
+                .attribute("redirect_uri", defaultRedirectUri);
 
         // 生成访问令牌
         OAuth2TokenContext accessTokenContext = DefaultOAuth2TokenContext.builder()

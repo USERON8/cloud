@@ -7,15 +7,18 @@ import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +33,9 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    @Qualifier("userStatisticsExecutor")
+    private Executor userStatisticsExecutor;
 
     @Override
     @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
@@ -76,7 +82,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<UserStatisticsVO> getUserStatisticsOverviewAsync() {
-        return CompletableFuture.supplyAsync(this::getUserStatisticsOverview);
+        return CompletableFuture.supplyAsync(this::getUserStatisticsOverview, userStatisticsExecutor);
     }
 
     @Override
@@ -116,9 +122,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(days - 1);
 
-        return CompletableFuture.supplyAsync(() ->
-                getUserRegistrationTrend(startDate, endDate)
-        );
+        return CompletableFuture.supplyAsync(() -> getUserRegistrationTrend(startDate, endDate), userStatisticsExecutor);
     }
 
     @Override
@@ -143,7 +147,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<String, Long>> getUserTypeDistributionAsync() {
-        return CompletableFuture.supplyAsync(this::getUserTypeDistribution);
+        return CompletableFuture.supplyAsync(this::getUserTypeDistribution, userStatisticsExecutor);
     }
 
     @Override
@@ -172,7 +176,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<String, Long>> getUserStatusDistributionAsync() {
-        return CompletableFuture.supplyAsync(this::getUserStatusDistribution);
+        return CompletableFuture.supplyAsync(this::getUserStatusDistribution, userStatisticsExecutor);
     }
 
     @Override
@@ -205,7 +209,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Long> countActiveUsersAsync(Integer days) {
-        return CompletableFuture.supplyAsync(() -> countActiveUsers(days));
+        return CompletableFuture.supplyAsync(() -> countActiveUsers(days), userStatisticsExecutor);
     }
 
     @Override
@@ -279,7 +283,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Double> calculateUserGrowthRateAsync(Integer days) {
-        return CompletableFuture.supplyAsync(() -> calculateUserGrowthRate(days));
+        return CompletableFuture.supplyAsync(() -> calculateUserGrowthRate(days), userStatisticsExecutor);
     }
 
     @Override
@@ -330,7 +334,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 log.error("获取用户活跃度排行失败", e);
                 return Collections.emptyMap();
             }
-        });
+        }, userStatisticsExecutor);
     }
 
     @Override
@@ -354,6 +358,6 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 log.error("刷新统计数据缓存失败", e);
                 return false;
             }
-        });
+        }, userStatisticsExecutor);
     }
 }

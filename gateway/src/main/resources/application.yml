@@ -1,11 +1,11 @@
-server:
-  port: 80
+﻿server:
+  port: ${SERVER_PORT:80}
   tomcat:
     threads:
-      max: 200
-      min-spare: 10
-    max-connections: 8192
-    accept-count: 100
+      max: ${SERVER_TOMCAT_THREADS_MAX:400}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
   application:
@@ -16,7 +16,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-  # Nacos 配置
+  # Nacos 閰嶇疆
   cloud:
     nacos:
       discovery:
@@ -25,6 +25,15 @@ spring:
         password: nacos
         namespace: public
         group: DEFAULT_GROUP
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
         username: nacos
@@ -33,15 +42,15 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # Gateway 配置
+    # Gateway 閰嶇疆
     gateway:
       discovery:
         locator:
-          enabled: false  # 禁用自动服务发现,使用application-route.yml中的手动路由配置
+          enabled: false  # 绂佺敤鑷姩鏈嶅姟鍙戠幇,浣跨敤application-route.yml涓殑鎵嬪姩璺敱閰嶇疆
           lower-case-service-id: true
       csrf:
         enabled: true
-      # 全局CORS配置
+      # 鍏ㄥ眬CORS閰嶇疆
       globals:
         cors-configurations:
           '[/**]':
@@ -63,7 +72,7 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-      # 默认过滤器
+      # 榛樿杩囨护鍣?
       default-filters:
         - name: Security
           args:
@@ -72,22 +81,22 @@ spring:
             enableTokenCheck: true
             enablePerformanceMonitoring: true
 
-  # Config 配置
+  # Config 閰嶇疆
   config:
     import: optional:nacos:common
 
-  # 静态资源配置
+  # 闈欐€佽祫婧愰厤缃?
   web:
     resources:
       static-locations: classpath:/static/
 
-  # OAuth2 资源服务器配置
+  # OAuth2 璧勬簮鏈嶅姟鍣ㄩ厤缃?
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
-          issuer-uri: http://127.0.0.1:8081
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
     headers:
       content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
       xss-protection-enabled: true
@@ -97,7 +106,7 @@ spring:
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
 
-# 日志配置
+# 鏃ュ織閰嶇疆
 logging:
   file:
     path: logs
@@ -108,7 +117,7 @@ logging:
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
 
-# Spring Boot Actuator配置
+# Spring Boot Actuator閰嶇疆
 management:
   endpoints:
     web:
@@ -128,7 +137,7 @@ management:
       enabled: true
   health:
     redis:
-      enabled: false  # Gateway使用Redis但不强依赖
+      enabled: false  # Gateway浣跨敤Redis浣嗕笉寮轰緷璧?
     nacos:
       enabled: true
   info:
@@ -139,12 +148,12 @@ management:
     os:
       enabled: true
 
-# 应用安全配置
+# 搴旂敤瀹夊叏閰嶇疆
 app:
   security:
-    enable-test-api: true
+    enable-test-api: false
 
-# Knife4j 网关聚合配置
+# Knife4j 缃戝叧鑱氬悎閰嶇疆
 knife4j:
   enable: true
   production: false
@@ -154,9 +163,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 实体类列表
+    swagger-model-name: 瀹炰綋绫诲垪琛?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 微服务平台 API 文档"
+    footer-custom-content: "Cloud 寰湇鍔″钩鍙?API 鏂囨。"
   gateway:
     enabled: true
     strategy: discover
@@ -167,23 +176,28 @@ knife4j:
         - gateway
       service-config:
         auth-service:
-          group-name: 认证服务
+          group-name: 璁よ瘉鏈嶅姟
           api-docs-path: /v3/api-docs
         user-service:
-          group-name: 用户服务
+          group-name: 鐢ㄦ埛鏈嶅姟
           api-docs-path: /v3/api-docs
         product-service:
-          group-name: 商品服务
+          group-name: 鍟嗗搧鏈嶅姟
           api-docs-path: /v3/api-docs
         order-service:
-          group-name: 订单服务
+          group-name: 璁㈠崟鏈嶅姟
           api-docs-path: /v3/api-docs
         payment-service:
-          group-name: 支付服务
+          group-name: 鏀粯鏈嶅姟
           api-docs-path: /v3/api-docs
         stock-service:
-          group-name: 库存服务
+          group-name: 搴撳瓨鏈嶅姟
           api-docs-path: /v3/api-docs
         search-service:
-          group-name: 搜索服务
+          group-name: 鎼滅储鏈嶅姟
           api-docs-path: /v3/api-docs
+
+
+
+
+

@@ -4,13 +4,16 @@ import com.cloud.user.module.enums.UserActivityType;
 import com.cloud.user.service.UserActivityLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,12 +27,17 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserActivityLogServiceImpl implements UserActivityLogService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-
     /**
      * 日志保留天数
      */
     private static final int LOG_RETENTION_DAYS = 90;
+    private final RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    @Qualifier("userLogExecutor")
+    private Executor userLogExecutor;
+    @Resource
+    @Qualifier("userStatisticsExecutor")
+    private Executor userStatisticsExecutor;
 
     @Override
     @Async("userLogExecutor")
@@ -64,7 +72,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 log.error("记录用户登录行为失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userLogExecutor);
     }
 
     @Override
@@ -108,7 +116,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
     @Override
     @Async("userLogExecutor")
     public CompletableFuture<Boolean> logActivityAsync(Long userId, UserActivityType activityType,
-                                                         String description, Map<String, Object> metadata) {
+                                                       String description, Map<String, Object> metadata) {
         log.debug("记录用户行为，userId: {}, type: {}", userId, activityType);
 
         return CompletableFuture.supplyAsync(() -> {
@@ -141,7 +149,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 log.error("记录用户行为失败: userId={}, type={}", userId, activityType, e);
                 return false;
             }
-        });
+        }, userLogExecutor);
     }
 
     @Override
@@ -173,7 +181,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 log.error("获取用户最近活动失败: userId={}", userId, e);
                 return Collections.emptyList();
             }
-        });
+        }, userLogExecutor);
     }
 
     @Override
@@ -192,7 +200,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 log.error("计算用户活跃度失败: userId={}", userId, e);
                 return 0L;
             }
-        });
+        }, userStatisticsExecutor);
     }
 
     @Override
@@ -228,7 +236,7 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
                 log.error("批量记录用户活动失败", e);
                 return false;
             }
-        });
+        }, userLogExecutor);
     }
 
     /**

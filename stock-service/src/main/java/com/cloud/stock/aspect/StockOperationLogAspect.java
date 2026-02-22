@@ -30,10 +30,10 @@ public class StockOperationLogAspect {
      * 切入点: 库存入库、出库、预留、释放等操作
      */
     @Pointcut("execution(* com.cloud.stock.service.StockService.stockIn(..)) || " +
-              "execution(* com.cloud.stock.service.StockService.stockOut(..)) || " +
-              "execution(* com.cloud.stock.service.StockService.reserveStock(..)) || " +
-              "execution(* com.cloud.stock.service.StockService.releaseStock(..)) || " +
-              "execution(* com.cloud.stock.service.StockService.seckillReserveStock(..))")
+            "execution(* com.cloud.stock.service.StockService.stockOut(..)) || " +
+            "execution(* com.cloud.stock.service.StockService.reserveStock(..)) || " +
+            "execution(* com.cloud.stock.service.StockService.releaseStock(..)) || " +
+            "execution(* com.cloud.stock.service.StockService.seckillReserveStock(..))")
     public void stockOperationPointcut() {
     }
 

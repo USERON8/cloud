@@ -1,57 +1,73 @@
 package com.cloud.stock.messaging;
 
+import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * 库存消息消费者
- * 接收并处理库存相关的事件消息
- *
- * @author what's up
+ * Stock message consumer.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class StockMessageConsumer {
 
+    private static final String ORDER_CREATED_NAMESPACE = "stock:orderCreated";
+    private static final String PAYMENT_SUCCESS_NAMESPACE = "stock:paymentSuccess";
+    private static final String STOCK_RESTORE_NAMESPACE = "stock:stockRestore";
+    private static final String ORDER_RESERVED_KEY_PREFIX = "stock:order:reserved:";
+    private static final String ORDER_CONFIRMED_KEY_PREFIX = "stock:order:confirmed:";
+    private static final String ORDER_ROLLED_BACK_KEY_PREFIX = "stock:order:rolledback:";
+    private static final Duration ORDER_STOCK_STATE_TTL = Duration.ofDays(7);
+
     private final StockService stockService;
     private final StockMessageProducer stockMessageProducer;
+    private final MessageIdempotencyService messageIdempotencyService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
-     * 消费订单创建事件
-     * 冻结库存（预留库存）
+     * Freeze stock when order created.
      */
     @Bean
     public Consumer<Message<OrderCreatedEvent>> orderCreatedConsumer() {
         return message -> {
             OrderCreatedEvent event = message.getPayload();
 
-            log.info("📨 接收到订单创建事件: orderId={}, orderNo={}, userId={}, totalAmount={}",
+            log.info("Receive order-created event: orderId={}, orderNo={}, userId={}, totalAmount={}",
                     event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
 
             try {
-                // 幂等性检查
                 String eventId = event.getEventId();
-                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
+                if (!messageIdempotencyService.tryAcquire(ORDER_CREATED_NAMESPACE, eventId)) {
+                    log.warn("Duplicate order-created event, skip: orderId={}, orderNo={}, eventId={}",
+                            event.getOrderId(), event.getOrderNo(), eventId);
+                    return;
+                }
 
-                // 检查订单是否已冻结库存
                 if (stockService.isStockFrozen(event.getOrderId())) {
-                    log.warn("⚠️ 订单库存已冻结，跳过处理: orderId={}, orderNo={}",
+                    log.warn("Order stock already frozen, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     return;
                 }
 
-                // 遍历商品列表，逐个冻结库存
                 Map<Long, Integer> productQuantityMap = event.getProductQuantityMap();
+                if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    throw new RuntimeException("productQuantityMap is empty");
+                }
+
+                Map<Long, Integer> frozenSuccessMap = new HashMap<>();
                 boolean allSuccess = true;
                 String failureReason = null;
 
@@ -59,114 +75,129 @@ public class StockMessageConsumer {
                     Long productId = entry.getKey();
                     Integer quantity = entry.getValue();
 
-                    log.info("🔒 开始冻结库存: orderId={}, productId={}, quantity={}",
-                            event.getOrderId(), productId, quantity);
-
-                    // 检查库存是否充足
                     if (!stockService.checkStockSufficient(productId, quantity)) {
-                        failureReason = String.format("商品 %d 库存不足，需要 %d，可用库存不足", productId, quantity);
-                        log.warn("⚠️ {}", failureReason);
+                        failureReason = "Insufficient stock: productId=" + productId + ", quantity=" + quantity;
                         allSuccess = false;
                         break;
                     }
 
-                    // 预留库存（冻结）
                     boolean success = stockService.reserveStock(productId, quantity);
-
                     if (!success) {
-                        failureReason = String.format("商品 %d 库存冻结失败", productId);
-                        log.error("❌ {}", failureReason);
+                        failureReason = "Reserve stock failed: productId=" + productId;
                         allSuccess = false;
                         break;
                     }
-
-                    log.info("✅ 库存冻结成功: productId={}, quantity={}", productId, quantity);
+                    frozenSuccessMap.put(productId, quantity);
                 }
 
                 if (allSuccess) {
-                    log.info("✅ 订单库存全部冻结成功: orderId={}, orderNo={}, 商品数量={}",
+                    markOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
+                    clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
+                    clearOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
+                    log.info("Order stock frozen success: orderId={}, orderNo={}, products={}",
                             event.getOrderId(), event.getOrderNo(), productQuantityMap.size());
                 } else {
-                    log.error("❌ 订单库存冻结失败: orderId={}, orderNo={}, reason={}",
+                    log.error("Order stock freeze failed: orderId={}, orderNo={}, reason={}",
                             event.getOrderId(), event.getOrderNo(), failureReason);
 
-                    // 发送库存冻结失败事件
                     stockMessageProducer.sendStockFreezeFailedEvent(
                             event.getOrderId(),
                             event.getOrderNo(),
                             failureReason
                     );
 
-                    // TODO: 回滚已冻结的库存（需要记录已冻结的商品）
+                    // Roll back all stock reserved in this attempt.
+                    for (Map.Entry<Long, Integer> frozen : frozenSuccessMap.entrySet()) {
+                        try {
+                            stockService.releaseReservedStock(frozen.getKey(), frozen.getValue());
+                        } catch (Exception rollbackEx) {
+                            log.error("Rollback reserved stock failed: orderId={}, productId={}, quantity={}",
+                                    event.getOrderId(), frozen.getKey(), frozen.getValue(), rollbackEx);
+                        }
+                    }
+                    clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
+                    markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
                 }
 
             } catch (Exception e) {
-                log.error("❌ 处理订单创建事件失败: orderId={}, orderNo={}",
+                messageIdempotencyService.release(ORDER_CREATED_NAMESPACE, event.getEventId());
+                log.error("Handle order-created event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
 
-                // 发送库存冻结失败事件
                 stockMessageProducer.sendStockFreezeFailedEvent(
                         event.getOrderId(),
                         event.getOrderNo(),
-                        "系统异常: " + e.getMessage()
+                        "System exception: " + e.getMessage()
                 );
 
-                // 抛出异常触发消息重试
-                throw new RuntimeException("处理订单创建事件失败", e);
+                throw new RuntimeException("Handle order-created event failed", e);
             }
         };
     }
 
     /**
-     * 消费支付成功事件
-     * 解冻库存并确认扣减
+     * Confirm stock deduction after payment success.
      */
     @Bean
     public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
         return message -> {
             PaymentSuccessEvent event = message.getPayload();
 
-            log.info("📨 接收到支付成功事件: orderId={}, orderNo={}, paymentId={}, amount={}",
+            log.info("Receive payment-success event: orderId={}, orderNo={}, paymentId={}, amount={}",
                     event.getOrderId(), event.getOrderNo(), event.getPaymentId(), event.getAmount());
 
             try {
-                // 幂等性检查
                 String eventId = event.getEventId();
-                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
+                if (!messageIdempotencyService.tryAcquire(PAYMENT_SUCCESS_NAMESPACE, eventId)) {
+                    log.warn("Duplicate payment-success event, skip: orderId={}, orderNo={}, eventId={}",
+                            event.getOrderId(), event.getOrderNo(), eventId);
+                    return;
+                }
 
-                // 检查订单是否已扣减库存
                 if (stockService.isStockDeducted(event.getOrderId())) {
-                    log.warn("⚠️ 订单库存已扣减，跳过处理: orderId={}, orderNo={}",
+                    log.warn("Order stock already deducted, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     return;
                 }
 
-                // TODO: 需要从订单中获取商品列表
-                // 这里简化处理，假设从订单服务查询或者从消息中携带商品信息
-                // 实际应该通过Feign调用订单服务获取订单详情
+                Map<Long, Integer> productQuantityMap = event.getProductQuantityMap();
+                if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    log.warn("Payment-success event has empty product map, skip deduction: orderId={}, orderNo={}",
+                            event.getOrderId(), event.getOrderNo());
+                    return;
+                }
 
-                log.warn("⚠️ 支付成功后库存扣减功能待完善: 需要获取订单商品列表");
-                log.info("💡 建议: OrderCreatedEvent中已包含productQuantityMap，可以考虑在PaymentSuccessEvent中也携带此信息");
+                for (Map.Entry<Long, Integer> entry : productQuantityMap.entrySet()) {
+                    Long productId = entry.getKey();
+                    Integer quantity = entry.getValue();
+                    boolean success = stockService.confirmReservedStockOut(
+                            productId,
+                            quantity,
+                            event.getOrderId(),
+                            event.getOrderNo(),
+                            "Payment success confirm stock out"
+                    );
+                    if (!success) {
+                        throw new RuntimeException("Confirm reserved stock out failed, productId=" + productId);
+                    }
+                }
 
-                // 临时标记：实际应该调用stockOut方法扣减库存
-                // stockService.stockOut(productId, quantity, orderId, orderNo, "支付成功扣减");
-
-                log.info("✅ 订单库存扣减处理完成: orderId={}, orderNo={}",
+                markOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
+                clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
+                log.info("Order stock deduction completed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo());
 
             } catch (Exception e) {
-                log.error("❌ 处理支付成功事件失败: orderId={}, orderNo={}",
+                messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, event.getEventId());
+                log.error("Handle payment-success event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
-
-                // 抛出异常触发消息重试
-                throw new RuntimeException("处理支付成功事件失败", e);
+                throw new RuntimeException("Handle payment-success event failed", e);
             }
         };
     }
 
     /**
-     * 消费库存恢复事件
-     * 当退款完成时，恢复订单商品的库存
+     * Restore stock after refund completed.
      */
     @Bean
     public Consumer<Message<Map<String, Object>>> stockRestoreConsumer() {
@@ -175,25 +206,25 @@ public class StockMessageConsumer {
 
             Long orderId = ((Number) event.get("orderId")).longValue();
             String orderNo = (String) event.get("orderNo");
-            Long refundId = ((Number) event.get("refundId")).longValue();
             String refundNo = (String) event.get("refundNo");
             @SuppressWarnings("unchecked")
             Map<Long, Integer> productQuantityMap = (Map<Long, Integer>) event.get("productQuantityMap");
 
-            log.info("📨 接收到库存恢复事件: orderId={}, refundNo={}, products={}",
-                    orderId, refundNo, productQuantityMap != null ? productQuantityMap.size() : 0);
+            log.info("Receive stock-restore event: orderId={}, orderNo={}, refundNo={}", orderId, orderNo, refundNo);
 
             try {
-                // 幂等性检查
                 String eventId = (String) event.get("eventId");
-                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
-
-                if (productQuantityMap == null || productQuantityMap.isEmpty()) {
-                    log.warn("⚠️ 没有需要恢复的商品库存: refundNo={}", refundNo);
+                if (!messageIdempotencyService.tryAcquire(STOCK_RESTORE_NAMESPACE, eventId)) {
+                    log.warn("Duplicate stock-restore event, skip: orderId={}, refundNo={}, eventId={}",
+                            orderId, refundNo, eventId);
                     return;
                 }
 
-                // 遍历商品列表，逐个恢复库存
+                if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    log.warn("No products to restore: orderId={}, refundNo={}", orderId, refundNo);
+                    return;
+                }
+
                 boolean allSuccess = true;
                 StringBuilder failureDetails = new StringBuilder();
 
@@ -201,38 +232,52 @@ public class StockMessageConsumer {
                     Long productId = entry.getKey();
                     Integer quantity = entry.getValue();
 
-                    log.info("📦 开始恢复库存: refundNo={}, productId={}, quantity={}",
-                            refundNo, productId, quantity);
-
-                    // 释放预留库存（增加可用库存）
                     boolean success = stockService.releaseReservedStock(productId, quantity);
-
                     if (!success) {
-                        String error = String.format("商品 %d 库存恢复失败", productId);
-                        log.error("❌ {}", error);
-                        failureDetails.append(error).append("; ");
                         allSuccess = false;
-                        // 继续处理其他商品
-                    } else {
-                        log.info("✅ 库存恢复成功: productId={}, quantity={}", productId, quantity);
+                        failureDetails.append("productId=").append(productId)
+                                .append(",quantity=").append(quantity).append("; ");
                     }
                 }
 
                 if (allSuccess) {
-                    log.info("✅ 订单库存全部恢复成功: orderId={}, refundNo={}, 商品数量={}",
+                    clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
+                    clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
+                    markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
+                    log.info("Stock restore completed: orderId={}, refundNo={}, products={}",
                             orderId, refundNo, productQuantityMap.size());
                 } else {
-                    log.error("⚠️ 订单库存部分恢复失败: orderId={}, refundNo={}, 失败详情: {}",
-                            orderId, refundNo, failureDetails.toString());
-                    // 部分失败不抛异常，避免重复消费已成功的商品
+                    log.error("Stock restore partial failed: orderId={}, refundNo={}, details={}",
+                            orderId, refundNo, failureDetails);
                 }
 
             } catch (Exception e) {
-                log.error("❌ 处理库存恢复事件失败: orderId={}, refundNo={}",
-                        orderId, refundNo, e);
-                // 抛出异常触发消息重试
-                throw new RuntimeException("处理库存恢复事件失败", e);
+                messageIdempotencyService.release(STOCK_RESTORE_NAMESPACE, (String) event.get("eventId"));
+                log.error("Handle stock-restore event failed: orderId={}, refundNo={}", orderId, refundNo, e);
+                throw new RuntimeException("Handle stock-restore event failed", e);
             }
         };
+    }
+
+    private void markOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.opsForValue().set(keyPrefix + orderId, "1", ORDER_STOCK_STATE_TTL);
+        } catch (Exception e) {
+            log.warn("Mark order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
+    }
+
+    private void clearOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(keyPrefix + orderId);
+        } catch (Exception e) {
+            log.warn("Clear order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
     }
 }

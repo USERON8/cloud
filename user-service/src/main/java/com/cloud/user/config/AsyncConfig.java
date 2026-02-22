@@ -56,10 +56,11 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("userLogExecutor")
     public Executor userLogExecutor() {
+        int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                4,
-                800,
+                Math.max(2, processors / 2),
+                Math.max(4, processors),
+                1200,
                 "user-log-"
         );
         executor.initialize();
@@ -76,10 +77,11 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("userNotificationExecutor")
     public Executor userNotificationExecutor() {
+        int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                6,
-                300,
+                Math.max(4, processors),
+                Math.max(8, processors * 2),
+                800,
                 "user-notification-"
         );
         executor.initialize();
@@ -96,12 +98,7 @@ public class AsyncConfig extends BaseAsyncConfig {
      */
     @Bean("userStatisticsExecutor")
     public Executor userStatisticsExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                2,
-                4,
-                500,
-                "user-statistics-"
-        );
+        ThreadPoolTaskExecutor executor = createCPUExecutor("user-statistics-");
         executor.initialize();
 
         log.info("✅ [USER-SERVICE-STATISTICS] 线程池初始化完成 - 核心:{}, 最大:{}, 队列:{}, 存活:{}s",

@@ -4,7 +4,6 @@ import com.cloud.common.config.properties.AsyncProperties;
 import com.cloud.common.threadpool.ContextAwareTaskDecorator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;

@@ -124,6 +124,18 @@ public interface StockService extends IService<Stock> {
     boolean releaseReservedStock(Long productId, Integer quantity);
 
     /**
+     * 确认预留库存并扣减（从冻结库存中扣减）
+     *
+     * @param productId 商品ID
+     * @param quantity  确认扣减数量
+     * @param orderId   订单ID
+     * @param orderNo   订单号
+     * @param remark    备注
+     * @return 是否成功
+     */
+    boolean confirmReservedStockOut(Long productId, Integer quantity, Long orderId, String orderNo, String remark);
+
+    /**
      * 检查库存是否充足
      *
      * @param productId 商品ID

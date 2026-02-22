@@ -3,7 +3,9 @@ package com.cloud.payment.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
+import com.cloud.payment.converter.PaymentConverter;
 import com.cloud.payment.mapper.PaymentMapper;
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         implements PaymentService {
 
+    private final PaymentConverter paymentConverter;
 
     @Override
     public boolean isPaymentRecordExists(Long orderId) {
@@ -82,40 +85,74 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         wrapper.orderByDesc(Payment::getCreatedAt);
         page(paymentPage, wrapper);
         Page<PaymentDTO> result = new Page<>(paymentPage.getCurrent(), paymentPage.getSize(), paymentPage.getTotal());
-        result.setRecords(new java.util.ArrayList<>());
+        result.setRecords(paymentConverter.toDTOList(paymentPage.getRecords()));
         return result;
     }
 
     @Override
     public com.cloud.common.domain.dto.payment.PaymentDTO getPaymentById(Long id) {
         Payment payment = getById(id);
-        return payment != null ? new com.cloud.common.domain.dto.payment.PaymentDTO() : null;
+        return payment != null ? paymentConverter.toDTO(payment) : null;
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:create:order:' + #paymentDTO.orderId",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire payment create lock failed"
+    )
     public Long createPayment(com.cloud.common.domain.dto.payment.PaymentDTO paymentDTO) {
         Payment payment = new Payment();
         payment.setOrderId(paymentDTO.getOrderId());
         payment.setUserId(paymentDTO.getUserId());
         payment.setAmount(paymentDTO.getAmount());
+        payment.setChannel(paymentDTO.getChannel());
+        payment.setTransactionId(paymentDTO.getTransactionId());
+        payment.setTraceId(paymentDTO.getTraceId());
         payment.setStatus(0);
         save(payment);
         return payment.getId();
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:update:' + #paymentDTO.id",
+            waitTime = 5,
+            leaseTime = 15,
+            failMessage = "Acquire payment update lock failed"
+    )
     public Boolean updatePayment(com.cloud.common.domain.dto.payment.PaymentDTO paymentDTO) {
         Payment payment = getById(paymentDTO.getId());
         if (payment == null) return false;
+        if (paymentDTO.getOrderId() != null) payment.setOrderId(paymentDTO.getOrderId());
+        if (paymentDTO.getUserId() != null) payment.setUserId(paymentDTO.getUserId());
+        if (paymentDTO.getAmount() != null) payment.setAmount(paymentDTO.getAmount());
+        if (paymentDTO.getStatus() != null) payment.setStatus(paymentDTO.getStatus());
+        if (paymentDTO.getChannel() != null) payment.setChannel(paymentDTO.getChannel());
+        if (paymentDTO.getTransactionId() != null) payment.setTransactionId(paymentDTO.getTransactionId());
+        if (paymentDTO.getTraceId() != null) payment.setTraceId(paymentDTO.getTraceId());
         return updateById(payment);
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:delete:' + #id",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "Acquire payment delete lock failed"
+    )
     public Boolean deletePayment(Long id) {
         return removeById(id);
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:status:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire payment status lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processPaymentSuccess(Long id) {
         log.info("处理支付成功 - 支付ID: {}", id);
@@ -126,6 +163,12 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:status:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire payment status lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processPaymentFailed(Long id, String failReason) {
         log.info("处理支付失败 - 支付ID: {}, 原因: {}", id, failReason);
@@ -136,6 +179,12 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:status:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire payment status lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     public Boolean processRefund(Long id, java.math.BigDecimal refundAmount, String refundReason) {
         log.info("处理退款 - 支付ID: {}, 金额: {}, 原因: {}", id, refundAmount, refundReason);
@@ -148,7 +197,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     @Override
     public com.cloud.common.domain.dto.payment.PaymentDTO getPaymentByOrderId(Long orderId) {
         Payment payment = getOne(new LambdaQueryWrapper<Payment>().eq(Payment::getOrderId, orderId));
-        return payment != null ? new com.cloud.common.domain.dto.payment.PaymentDTO() : null;
+        return payment != null ? paymentConverter.toDTO(payment) : null;
     }
 
     @Override
@@ -158,6 +207,12 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     }
 
     @Override
+    @DistributedLock(
+            key = "'payment:status:' + #id",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire payment status lock failed"
+    )
     public Boolean updatePaymentStatus(Long id, Integer status, String remark) {
         Payment payment = getById(id);
         if (payment == null) return false;

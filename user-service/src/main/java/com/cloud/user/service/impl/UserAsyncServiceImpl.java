@@ -10,14 +10,17 @@ import com.cloud.user.service.UserAsyncService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +39,21 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     private final UserConverter userConverter;
     private final CacheManager cacheManager;
     private final RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    @Qualifier("userQueryExecutor")
+    private Executor userQueryExecutor;
+    @Resource
+    @Qualifier("userOperationExecutor")
+    private Executor userOperationExecutor;
+    @Resource
+    @Qualifier("userNotificationExecutor")
+    private Executor userNotificationExecutor;
+    @Resource
+    @Qualifier("userCommonAsyncExecutor")
+    private Executor userCommonAsyncExecutor;
+    @Resource
+    @Qualifier("userStatisticsExecutor")
+    private Executor userStatisticsExecutor;
 
     /**
      * 批量查询的分批大小
@@ -70,7 +88,8 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 List<Long> batch = userIdList.subList(i, end);
 
                 CompletableFuture<List<UserDTO>> future = CompletableFuture.supplyAsync(
-                        () -> userService.getUsersByIds(batch)
+                        () -> userService.getUsersByIds(batch),
+                        userQueryExecutor
                 );
                 futures.add(future);
             }
@@ -123,7 +142,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步查询用户信息失败: userId={}", userId, e);
                 throw new RuntimeException("查询用户信息失败", e);
             }
-        });
+        }, userQueryExecutor);
     }
 
     @Override
@@ -139,7 +158,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                         .map(username -> CompletableFuture.supplyAsync(() -> {
                             UserDTO user = userService.findByUsername(username);
                             return Map.entry(username, user != null);
-                        }))
+                        }, userQueryExecutor))
                         .collect(Collectors.toList());
 
                 // 等待所有检查完成
@@ -155,7 +174,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步批量检查用户名失败", e);
                 throw new RuntimeException("检查用户名失败", e);
             }
-        });
+        }, userQueryExecutor);
     }
 
     @Override
@@ -206,7 +225,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步批量更新最后登录时间失败", e);
                 return false;
             }
-        });
+        }, userOperationExecutor);
     }
 
     @Override
@@ -230,7 +249,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("发送欢迎邮件失败: userId={}", userId, e);
                 return false;
             }
-        });
+        }, userNotificationExecutor);
     }
 
     @Override
@@ -253,7 +272,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
             } catch (Exception e) {
                 log.error("刷新用户缓存失败: userId={}", userId, e);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -275,7 +294,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
             } catch (Exception e) {
                 log.error("批量刷新用户缓存失败", e);
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -311,7 +330,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("预加载热门用户数据失败", e);
                 return 0;
             }
-        });
+        }, userCommonAsyncExecutor);
     }
 
     @Override
@@ -326,7 +345,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步统计用户总数失败", e);
                 return 0L;
             }
-        });
+        }, userStatisticsExecutor);
     }
 
     @Override
@@ -359,7 +378,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步统计活跃用户数失败", e);
                 return 0L;
             }
-        });
+        }, userStatisticsExecutor);
     }
 
     @Override
@@ -392,6 +411,6 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 log.error("异步获取用户增长趋势失败", e);
                 return Collections.emptyMap();
             }
-        });
+        }, userStatisticsExecutor);
     }
 }

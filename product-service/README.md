@@ -2,7 +2,9 @@
 
 ## 服务概述
 
-Product Service 是电商平台的**核心商品管理服务**,负责商品、分类、店铺的全生命周期管理。提供商品CRUD、分类管理、库存查询、商品搜索同步等功能,支持多级缓存(Caffeine + Redis)提升查询性能。
+Product Service 是电商平台的**核心商品管理服务**
+,负责商品、分类、店铺的全生命周期管理。提供商品CRUD、分类管理、库存查询、商品搜索同步等功能,支持多级缓存(Caffeine + Redis)
+提升查询性能。
 
 - **服务端口**: 8084
 - **服务名称**: product-service
@@ -11,17 +13,17 @@ Product Service 是电商平台的**核心商品管理服务**,负责商品、�
 
 ## 技术栈
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Spring Boot | 3.5.3 | 应用框架 |
-| MySQL | 9.3.0 | 数据持久化 |
-| MyBatis Plus | 最新 | ORM框架 |
-| Redis | - | 二级缓存 |
-| Caffeine | - | 本地一级缓存 |
-| Spring Security OAuth2 | - | 资源服务器 |
-| RocketMQ | - | 商品事件、搜索同步 |
-| MapStruct | 1.5.5.Final | DTO转换 |
-| Nacos | 2025.0.0.0-preview | 服务注册与配置 |
+| 技术                     | 版本                 | 用途        |
+|------------------------|--------------------|-----------|
+| Spring Boot            | 3.5.3              | 应用框架      |
+| MySQL                  | 9.3.0              | 数据持久化     |
+| MyBatis Plus           | 最新                 | ORM框架     |
+| Redis                  | -                  | 二级缓存      |
+| Caffeine               | -                  | 本地一级缓存    |
+| Spring Security OAuth2 | -                  | 资源服务器     |
+| RocketMQ               | -                  | 商品事件、搜索同步 |
+| MapStruct              | 1.5.5.Final        | DTO转换     |
+| Nacos                  | 2025.0.0.0-preview | 服务注册与配置   |
 
 ## 核心功能
 
@@ -61,6 +63,7 @@ Product Service 是电商平台的**核心商品管理服务**,负责商品、�
 - ✅ POST `/api/category/batch` - 批量创建分类
 
 **分类特性**:
+
 - 支持3级分类树结构
 - 分类排序功能
 - 启用/禁用状态控制
@@ -81,6 +84,7 @@ Product Service 是电商平台的**核心商品管理服务**,负责商品、�
 ### 核心实体
 
 #### Product (products表)
+
 ```sql
 CREATE TABLE products (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -108,6 +112,7 @@ CREATE TABLE products (
 ```
 
 #### Category (categories表)
+
 ```sql
 CREATE TABLE categories (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -125,6 +130,7 @@ CREATE TABLE categories (
 ```
 
 #### Shop (shops表)
+
 ```sql
 CREATE TABLE shops (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -141,24 +147,26 @@ CREATE TABLE shops (
 
 ## 依赖服务
 
-| 服务 | 用途 | 通信方式 |
-|------|------|----------|
-| search-service | 商品搜索同步 | RocketMQ异步 |
-| stock-service | 库存管理 | Feign同步调用 |
-| MySQL | 商品数据持久化 | JDBC |
-| Redis | 二级缓存 | RedisTemplate |
-| RocketMQ | 商品事件、搜索同步 | Spring Cloud Stream |
-| Nacos | 服务注册、配置管理 | Spring Cloud Alibaba |
+| 服务             | 用途        | 通信方式                 |
+|----------------|-----------|----------------------|
+| search-service | 商品搜索同步    | RocketMQ异步           |
+| stock-service  | 库存管理      | Feign同步调用            |
+| MySQL          | 商品数据持久化   | JDBC                 |
+| Redis          | 二级缓存      | RedisTemplate        |
+| RocketMQ       | 商品事件、搜索同步 | Spring Cloud Stream  |
+| Nacos          | 服务注册、配置管理 | Spring Cloud Alibaba |
 
 ## 配置说明
 
 ### 端口配置
+
 ```yaml
 server:
   port: 8084
 ```
 
 ### 多级缓存配置
+
 ```yaml
 cache:
   multi-level:
@@ -175,6 +183,7 @@ cache:
 ```
 
 ### RocketMQ 配置
+
 ```yaml
 spring:
   cloud:
@@ -187,6 +196,7 @@ spring:
 ```
 
 ### 商品服务配置
+
 ```yaml
 product:
   async:
@@ -212,92 +222,92 @@ product:
 ### ✅ 已完成功能
 
 1. **商品管理**
-   - [x] 商品CRUD完整实现
-   - [x] 批量创建/更新商品
-   - [x] 商品状态管理(上架/下架)
-   - [x] 商品搜索(关键词)
-   - [x] 多维度查询(分类/店铺/品牌)
-   - [x] 热门商品推荐
-   - [x] 软删除支持
+    - [x] 商品CRUD完整实现
+    - [x] 批量创建/更新商品
+    - [x] 商品状态管理(上架/下架)
+    - [x] 商品搜索(关键词)
+    - [x] 多维度查询(分类/店铺/品牌)
+    - [x] 热门商品推荐
+    - [x] 软删除支持
 
 2. **分类管理** ✨ 完整实现
-   - [x] 多级分类支持(3级)
-   - [x] 分类树查询(递归构建)
-   - [x] 父子分类关系
-   - [x] 分类排序功能
-   - [x] 分类状态管理(启用/禁用)
-   - [x] 分类移动功能(更改父分类)
-   - [x] 批量删除分类
-   - [x] 批量更新分类状态
-   - [x] 批量创建分类
-   - [x] 级联删除子分类
+    - [x] 多级分类支持(3级)
+    - [x] 分类树查询(递归构建)
+    - [x] 父子分类关系
+    - [x] 分类排序功能
+    - [x] 分类状态管理(启用/禁用)
+    - [x] 分类移动功能(更改父分类)
+    - [x] 批量删除分类
+    - [x] 批量更新分类状态
+    - [x] 批量创建分类
+    - [x] 级联删除子分类
 
 3. **缓存优化**
-   - [x] 两级缓存架构(Caffeine + Redis)
-   - [x] 缓存预热机制
-   - [x] 自动缓存失效
-   - [x] 缓存统计监控
+    - [x] 两级缓存架构(Caffeine + Redis)
+    - [x] 缓存预热机制
+    - [x] 自动缓存失效
+    - [x] 缓存统计监控
 
 4. **搜索同步**
-   - [x] 商品创建同步到ES
-   - [x] 商品更新同步到ES
-   - [x] 商品删除同步到ES
-   - [x] RocketMQ异步解耦
+    - [x] 商品创建同步到ES
+    - [x] 商品更新同步到ES
+    - [x] 商品删除同步到ES
+    - [x] RocketMQ异步解耦
 
 5. **数据转换**
-   - [x] MapStruct自动转换
-   - [x] ProductConverter
-   - [x] CategoryConverter
-   - [x] ShopConverter
+    - [x] MapStruct自动转换
+    - [x] ProductConverter
+    - [x] CategoryConverter
+    - [x] ShopConverter
 
 ### 🚧 进行中功能
 
 1. **商品规格管理**
-   - [ ] SKU规格定义
-   - [ ] 规格组合价格
-   - [ ] 规格图片管理
+    - [ ] SKU规格定义
+    - [ ] 规格组合价格
+    - [ ] 规格图片管理
 
 2. **商品属性**
-   - [ ] 自定义商品属性
-   - [ ] 属性模板
-   - [ ] 属性筛选
+    - [ ] 自定义商品属性
+    - [ ] 属性模板
+    - [ ] 属性筛选
 
 ### 📋 计划中功能
 
 1. **商品审核**
-   - [ ] 商品发布审核
-   - [ ] 审核流程配置
-   - [ ] 审核记录查询
+    - [ ] 商品发布审核
+    - [ ] 审核流程配置
+    - [ ] 审核记录查询
 
 2. **品牌管理**
-   - [ ] 品牌CRUD
-   - [ ] 品牌授权管理
-   - [ ] 品牌商品关联
+    - [ ] 品牌CRUD
+    - [ ] 品牌授权管理
+    - [ ] 品牌商品关联
 
 3. **商品评价**
-   - [ ] 评价管理
-   - [ ] 评价统计
-   - [ ] 评价审核
+    - [ ] 评价管理
+    - [ ] 评价统计
+    - [ ] 评价审核
 
 4. **商品导入导出**
-   - [ ] Excel批量导入
-   - [ ] 商品数据导出
-   - [ ] 模板下载
+    - [ ] Excel批量导入
+    - [ ] 商品数据导出
+    - [ ] 模板下载
 
 ### ⚠️ 技术债
 
 1. **性能优化**
-   - 商品列表查询考虑ES实现
-   - 缓存策略进一步优化
-   - 数据库索引优化
+    - 商品列表查询考虑ES实现
+    - 缓存策略进一步优化
+    - 数据库索引优化
 
 2. **搜索优化**
-   - 搜索同步失败重试机制
-   - 增量同步优化
+    - 搜索同步失败重试机制
+    - 增量同步优化
 
 3. **测试覆盖**
-   - 缓存逻辑单元测试
-   - 并发更新测试
+    - 缓存逻辑单元测试
+    - 并发更新测试
 
 ## 本地运行
 
@@ -338,6 +348,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ## 测试
 
 ### 运行测试
+
 ```bash
 mvn test -Dtest=ProductServiceImplTest
 ```
@@ -345,6 +356,7 @@ mvn test -Dtest=ProductServiceImplTest
 ### 手动测试
 
 #### 创建商品
+
 ```bash
 curl -X POST "http://localhost:8084/api/product" \
   -H "Authorization: Bearer YOUR_TOKEN" \

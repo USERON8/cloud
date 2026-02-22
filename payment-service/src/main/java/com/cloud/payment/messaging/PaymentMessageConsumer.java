@@ -1,6 +1,7 @@
-package com.cloud.payment.messaging;
+﻿package com.cloud.payment.messaging;
 
 import com.cloud.common.domain.dto.payment.PaymentDTO;
+import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -14,87 +15,65 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * 支付消息消费者
- * 接收并处理支付相关的事件消息
- *
- * @author what's up
+ * Payment message consumer.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class PaymentMessageConsumer {
 
+    private static final String ORDER_CREATED_NAMESPACE = "payment:orderCreated";
+    private static final String REFUND_PROCESS_NAMESPACE = "payment:refundProcess";
+
     private final PaymentService paymentService;
     private final PaymentMessageProducer paymentMessageProducer;
+    private final MessageIdempotencyService messageIdempotencyService;
 
     /**
-     * 消费订单创建事件
-     * 创建支付并立即完成支付（简化逻辑）
+     * Create payment and emit payment-success event when order is created.
      */
     @Bean
     public Consumer<Message<OrderCreatedEvent>> orderCreatedConsumer() {
         return message -> {
             OrderCreatedEvent event = message.getPayload();
 
-            log.info("📨 接收到订单创建事件: orderId={}, orderNo={}, userId={}, totalAmount={}",
+            log.info("Receive order-created event: orderId={}, orderNo={}, userId={}, totalAmount={}",
                     event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
 
             try {
-                // 幂等性检查
                 String eventId = event.getEventId();
-                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
-
-                // 检查支付记录是否已存在
-                if (paymentService.isPaymentRecordExists(event.getOrderId())) {
-                    log.warn("⚠️ 订单支付记录已存在，跳过处理: orderId={}, orderNo={}",
-                            event.getOrderId(), event.getOrderNo());
+                if (!messageIdempotencyService.tryAcquire(ORDER_CREATED_NAMESPACE, eventId)) {
+                    log.warn("Duplicate order-created event, skip: orderId={}, orderNo={}, eventId={}",
+                            event.getOrderId(), event.getOrderNo(), eventId);
                     return;
                 }
 
-                // 第一步：创建支付
-                log.info("💳 开始创建支付: orderId={}, orderNo={}, amount={}",
-                        event.getOrderId(), event.getOrderNo(), event.getTotalAmount());
+                if (paymentService.isPaymentRecordExists(event.getOrderId())) {
+                    log.warn("Payment record already exists, skip: orderId={}, orderNo={}",
+                            event.getOrderId(), event.getOrderNo());
+                    return;
+                }
 
                 PaymentDTO paymentDTO = new PaymentDTO();
                 paymentDTO.setOrderId(event.getOrderId());
                 paymentDTO.setOrderNo(event.getOrderNo());
                 paymentDTO.setUserId(event.getUserId());
                 paymentDTO.setAmount(event.getTotalAmount());
-                paymentDTO.setPaymentMethod("ALIPAY"); // 默认使用支付宝
-                paymentDTO.setStatus(0); // 待支付
+                paymentDTO.setPaymentMethod("ALIPAY");
+                paymentDTO.setStatus(0);
+                paymentDTO.setChannel(1);
 
                 Long paymentId = paymentService.createPayment(paymentDTO);
-
                 if (paymentId == null) {
-                    log.error("❌ 创建支付失败: orderId={}, orderNo={}",
-                            event.getOrderId(), event.getOrderNo());
-                    throw new RuntimeException("创建支付失败");
+                    throw new RuntimeException("Create payment failed");
                 }
-
-                log.info("✅ 支付创建成功: paymentId={}, orderId={}, orderNo={}",
-                        paymentId, event.getOrderId(), event.getOrderNo());
-
-                // 第二步：立即完成支付（简化逻辑）
-                log.info("💰 开始处理支付成功: paymentId={}, orderId={}, orderNo={}",
-                        paymentId, event.getOrderId(), event.getOrderNo());
 
                 Boolean success = paymentService.processPaymentSuccess(paymentId);
-
-                if (!success) {
-                    log.error("❌ 处理支付成功失败: paymentId={}, orderId={}, orderNo={}",
-                            paymentId, event.getOrderId(), event.getOrderNo());
-                    throw new RuntimeException("处理支付成功失败");
+                if (!Boolean.TRUE.equals(success)) {
+                    throw new RuntimeException("Process payment success failed");
                 }
 
-                log.info("✅ 支付处理成功: paymentId={}, orderId={}, orderNo={}",
-                        paymentId, event.getOrderId(), event.getOrderNo());
-
-                // 第三步：发送支付成功事件
-                log.info("📤 发送支付成功事件: paymentId={}, orderId={}, orderNo={}",
-                        paymentId, event.getOrderId(), event.getOrderNo());
-
-                String transactionNo = "TXN" + System.currentTimeMillis() + paymentId; // 生成流水号
-
+                String transactionNo = "TXN" + System.currentTimeMillis() + paymentId;
                 boolean sendResult = paymentMessageProducer.sendPaymentSuccessEvent(
                         paymentId,
                         event.getOrderId(),
@@ -102,29 +81,29 @@ public class PaymentMessageConsumer {
                         event.getUserId(),
                         event.getTotalAmount(),
                         "ALIPAY",
-                        transactionNo
+                        transactionNo,
+                        event.getProductQuantityMap()
                 );
 
                 if (sendResult) {
-                    log.info("🎉 订单支付流程完成: paymentId={}, orderId={}, orderNo={}, amount={}",
+                    log.info("Order payment flow completed: paymentId={}, orderId={}, orderNo={}, amount={}",
                             paymentId, event.getOrderId(), event.getOrderNo(), event.getTotalAmount());
                 } else {
-                    log.error("⚠️ 支付成功事件发送失败，但支付已完成: paymentId={}, orderId={}, orderNo={}",
+                    log.error("Payment-success event send failed: paymentId={}, orderId={}, orderNo={}",
                             paymentId, event.getOrderId(), event.getOrderNo());
                 }
 
             } catch (Exception e) {
-                log.error("❌ 处理订单创建事件失败: orderId={}, orderNo={}",
+                messageIdempotencyService.release(ORDER_CREATED_NAMESPACE, event.getEventId());
+                log.error("Handle order-created event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
-                // 抛出异常触发消息重试
-                throw new RuntimeException("处理订单创建事件失败", e);
+                throw new RuntimeException("Handle order-created event failed", e);
             }
         };
     }
 
     /**
-     * 消费退款处理事件
-     * 处理退款申请，完成退款后发送退款完成事件
+     * Process refund request and emit refund-completed event.
      */
     @Bean
     public Consumer<Message<Map<String, Object>>> refundProcessConsumer() {
@@ -138,33 +117,17 @@ public class PaymentMessageConsumer {
             Long userId = ((Number) event.get("userId")).longValue();
             BigDecimal refundAmount = new BigDecimal(event.get("refundAmount").toString());
 
-            log.info("📨 接收到退款处理事件: refundId={}, refundNo={}, orderId={}, orderNo={}, amount={}",
+            log.info("Receive refund-process event: refundId={}, refundNo={}, orderId={}, orderNo={}, amount={}",
                     refundId, refundNo, orderId, orderNo, refundAmount);
 
             try {
-                // 幂等性检查
                 String eventId = (String) event.get("eventId");
-                // TODO: 检查该事件是否已处理（可使用Redis存储已处理的eventId）
+                if (!messageIdempotencyService.tryAcquire(REFUND_PROCESS_NAMESPACE, eventId)) {
+                    log.warn("Duplicate refund-process event, skip: refundNo={}, eventId={}", refundNo, eventId);
+                    return;
+                }
 
-                // 1. 查询原支付记录
-                log.info("🔍 查询原支付记录: orderId={}, orderNo={}", orderId, orderNo);
-
-                // TODO: 实际场景应查询支付记录
-                // Payment payment = paymentService.getPaymentByOrderId(orderId);
-
-                // 2. 调用支付网关退款接口（简化逻辑，直接成功）
-                log.info("💰 调用支付网关退款: refundNo={}, amount={}", refundNo, refundAmount);
-
-                // TODO: 实际场景应调用支付宝/微信退款API
-                // RefundResult result = alipayService.refund(refundNo, refundAmount);
-
-                // 模拟退款成功
                 String refundTransactionNo = "REFUND_TXN" + System.currentTimeMillis() + refundId;
-
-                log.info("✅ 退款处理成功: refundNo={}, transactionNo={}, amount={}",
-                        refundNo, refundTransactionNo, refundAmount);
-
-                // 3. 发送退款完成事件
                 boolean sent = paymentMessageProducer.sendRefundCompletedEvent(
                         refundId,
                         refundNo,
@@ -176,16 +139,16 @@ public class PaymentMessageConsumer {
                 );
 
                 if (sent) {
-                    log.info("✅ 退款完成事件已发送: refundId={}, refundNo={}", refundId, refundNo);
+                    log.info("Refund-completed event sent: refundId={}, refundNo={}", refundId, refundNo);
                 } else {
-                    log.error("❌ 退款完成事件发送失败: refundId={}, refundNo={}", refundId, refundNo);
+                    log.error("Refund-completed event send failed: refundId={}, refundNo={}", refundId, refundNo);
                 }
 
             } catch (Exception e) {
-                log.error("❌ 处理退款事件失败: refundId={}, refundNo={}, orderId={}",
+                messageIdempotencyService.release(REFUND_PROCESS_NAMESPACE, (String) event.get("eventId"));
+                log.error("Handle refund-process event failed: refundId={}, refundNo={}, orderId={}",
                         refundId, refundNo, orderId, e);
-                // 抛出异常触发消息重试
-                throw new RuntimeException("处理退款事件失败", e);
+                throw new RuntimeException("Handle refund-process event failed", e);
             }
         };
     }

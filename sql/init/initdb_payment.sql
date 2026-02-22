@@ -38,15 +38,15 @@ CREATE TABLE `payment`
 -- 支付流水表
 CREATE TABLE `payment_flow`
 (
-    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-    payment_id BIGINT UNSIGNED NOT NULL COMMENT '支付ID',
-    flow_type  TINYINT         NOT NULL COMMENT '流水类型：1-支付，2-退款',
-    amount     DECIMAL(10, 2)  NOT NULL COMMENT '变动金额',
-    trace_id   VARCHAR(64) COMMENT '跟踪ID',
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    payment_id  BIGINT UNSIGNED NOT NULL COMMENT '支付ID',
+    flow_type   TINYINT         NOT NULL COMMENT '流水类型：1-支付，2-退款',
+    amount      DECIMAL(10, 2)  NOT NULL COMMENT '变动金额',
+    trace_id    VARCHAR(64) COMMENT '跟踪ID',
     flow_status TINYINT         NOT NULL DEFAULT 1 COMMENT '流水状态：1-成功，2-失败',
-    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    deleted    TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted     TINYINT         NOT NULL DEFAULT 0 COMMENT '软删除标记',
 
     -- 基础索引
     INDEX idx_payment_flow (payment_id, flow_type),

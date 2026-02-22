@@ -1,11 +1,13 @@
 package com.cloud.order.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
 import com.cloud.common.domain.vo.order.OrderVO;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.exception.InvalidStatusException;
 import com.cloud.order.converter.OrderConverter;
@@ -24,7 +26,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -235,86 +240,178 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:cancel:' + #orderId",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire order cancel lock failed"
+    )
     public Boolean cancelOrder(Long orderId) {
-        return null;
+        Order order = this.baseMapper.selectById(orderId);
+        if (order == null) {
+            throw EntityNotFoundException.order(orderId);
+        }
+        if (order.getStatus() == null || (order.getStatus() != 0 && order.getStatus() != 1)) {
+            throw InvalidStatusException.order(String.valueOf(order.getStatus()), "取消");
+        }
+        order.setStatus(4);
+        order.setCancelTime(LocalDateTime.now());
+        return this.baseMapper.updateById(order) > 0;
     }
 
     @Override
     public Boolean createOrder(OrderCreateDTO orderCreateDTO, String currentUserId) {
-        return null;
+        if (currentUserId != null && !currentUserId.isBlank()) {
+            try {
+                Long currentUser = Long.parseLong(currentUserId);
+                if (!Objects.equals(currentUser, orderCreateDTO.getUserId())) {
+                    throw new OrderServiceException("当前用户与订单用户不一致");
+                }
+            } catch (NumberFormatException e) {
+                throw new OrderServiceException("当前用户ID格式错误");
+            }
+        }
+        OrderDTO created = createOrder(orderCreateDTO);
+        return created != null && created.getId() != null;
     }
 
     @Override
     public Boolean payOrder(Long orderId, String currentUserId) {
-        return null;
+        validateOrderUser(orderId, currentUserId);
+        return payOrder(orderId);
     }
 
     @Override
     public Boolean shipOrder(Long orderId, String currentUserId) {
-        return null;
+        return shipOrder(orderId);
     }
 
     @Override
     public Boolean completeOrder(Long orderId, String currentUserId) {
-        return null;
+        validateOrderUser(orderId, currentUserId);
+        return completeOrder(orderId);
     }
 
     @Override
     public Boolean cancelOrder(Long orderId, String currentUserId) {
-        return null;
+        validateOrderUser(orderId, currentUserId);
+        return cancelOrder(orderId);
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:delete:' + #id",
+            waitTime = 3,
+            leaseTime = 10,
+            failMessage = "Acquire order delete lock failed"
+    )
     public Boolean deleteOrder(Long id) {
-        return null;
+        return this.baseMapper.deleteById(id) > 0;
     }
 
     @Override
     public OrderDTO createOrder(OrderDTO orderDTO) {
-        return null;
+        Order order = orderConverter.toEntity(orderDTO);
+        if (order.getOrderNo() == null || order.getOrderNo().isBlank()) {
+            order.setOrderNo(Order.generateOrderNo());
+        }
+        if (order.getStatus() == null) {
+            order.setStatus(0);
+        }
+        this.baseMapper.insert(order);
+        return orderConverter.toDTO(order);
     }
 
     @Override
     public OrderDTO createOrder(OrderCreateDTO orderCreateDTO) {
-        return null;
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setOrderNo(Order.generateOrderNo());
+        orderDTO.setUserId(orderCreateDTO.getUserId());
+        orderDTO.setAddressId(orderCreateDTO.getAddressId());
+        BigDecimal totalAmount = orderCreateDTO.getTotalAmount() == null ? BigDecimal.ZERO : orderCreateDTO.getTotalAmount();
+        BigDecimal payAmount = orderCreateDTO.getPayAmount() == null ? totalAmount : orderCreateDTO.getPayAmount();
+        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0 || payAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new OrderServiceException("订单金额必须大于0");
+        }
+        orderDTO.setTotalAmount(totalAmount);
+        orderDTO.setPayAmount(payAmount);
+        orderDTO.setStatus(0);
+        orderDTO.setRemark(orderCreateDTO.getRemark());
+        return createOrder(orderDTO);
     }
 
     @Override
     public List<OrderDTO> getOrdersByUserId(Long userId) {
-        return List.of();
+        List<Order> orders = this.baseMapper.selectList(
+                new LambdaQueryWrapper<Order>()
+                        .eq(Order::getUserId, userId)
+                        .orderByDesc(Order::getCreatedAt)
+        );
+        return orderConverter.toDTOList(orders);
     }
 
     @Override
     public OrderDTO getOrderByOrderNo(String orderNo) {
-        return null;
+        Order order = this.baseMapper.selectOne(
+                new LambdaQueryWrapper<Order>().eq(Order::getOrderNo, orderNo)
+        );
+        return order == null ? null : orderConverter.toDTO(order);
     }
 
     @Override
     public Boolean isOrderPaid(Long orderId) {
-        return null;
+        Order order = this.baseMapper.selectById(orderId);
+        if (order == null || order.getStatus() == null) {
+            return false;
+        }
+        return order.getStatus() == 1 || order.getStatus() == 2 || order.getStatus() == 3;
     }
 
     @Override
     public OrderVO getOrderByOrderIdForFeign(Long orderId) {
-        return null;
+        Order order = this.baseMapper.selectById(orderId);
+        return order == null ? null : orderConverter.toVO(order);
     }
 
     @Override
     public OrderVO createOrderForFeign(OrderDTO orderDTO) {
-        return null;
+        OrderDTO created = createOrder(orderDTO);
+        if (created == null || created.getId() == null) {
+            throw new BusinessException("创建订单失败");
+        }
+        Order persisted = this.baseMapper.selectById(created.getId());
+        if (persisted == null) {
+            throw new EntityNotFoundException("订单", created.getId());
+        }
+        return orderConverter.toVO(persisted);
     }
 
     @Override
     public Boolean updateOrderStatusForFeign(Long orderId, Integer status) {
-        return null;
+        if (status == null) {
+            return false;
+        }
+        return switch (status) {
+            case 1 -> payOrder(orderId);
+            case 2 -> shipOrder(orderId);
+            case 3 -> completeOrder(orderId);
+            case 4 -> cancelOrder(orderId);
+            default -> false;
+        };
     }
 
     @Override
     public Boolean completeOrderForFeign(Long orderId) {
-        return null;
+        return completeOrder(orderId);
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:payment:callback:' + #orderId",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire order payment callback lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "orderCache", key = "#orderId")
     public Boolean updateOrderStatusAfterPayment(Long orderId, Long paymentId, String transactionNo) {
@@ -348,6 +445,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:stock:freeze:failed:' + #orderId",
+            waitTime = 5,
+            leaseTime = 20,
+            failMessage = "Acquire order stock freeze failed lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "orderCache", key = "#orderId")
     public Boolean cancelOrderDueToStockFreezeFailed(Long orderId, String reason) {
@@ -382,6 +485,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     // ================= 批量操作方法实现 =================
 
     @Override
+    @DistributedLock(
+            key = "'order:batch:update:' + #orderIds.toString()",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "Acquire order batch update lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "orderCache", allEntries = true)
     public Integer batchUpdateOrderStatus(List<Long> orderIds, Integer status) {
@@ -422,6 +531,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
     }
 
     @Override
+    @DistributedLock(
+            key = "'order:batch:delete:' + #orderIds.toString()",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "Acquire order batch delete lock failed"
+    )
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = "orderCache", allEntries = true)
     public Integer batchDeleteOrders(List<Long> orderIds) {
@@ -446,6 +561,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order>
         } catch (Exception e) {
             log.error("批量删除订单时发生异常，订单IDs: {}", orderIds, e);
             throw new OrderServiceException("批量删除订单失败: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateOrderUser(Long orderId, String currentUserId) {
+        if (currentUserId == null || currentUserId.isBlank()) {
+            throw new OrderServiceException("当前用户ID不能为空");
+        }
+        Order order = this.baseMapper.selectById(orderId);
+        if (order == null) {
+            throw EntityNotFoundException.order(orderId);
+        }
+        try {
+            Long currentUser = Long.parseLong(currentUserId);
+            if (!Objects.equals(order.getUserId(), currentUser)) {
+                throw new OrderServiceException("无权操作该订单");
+            }
+        } catch (NumberFormatException e) {
+            throw new OrderServiceException("当前用户ID格式错误");
         }
     }
 }

@@ -1,19 +1,16 @@
 package com.cloud.common.threadpool;
 
 import com.cloud.common.config.properties.DynamicAsyncProperties;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 增强型线程池监控工具类
@@ -123,13 +120,13 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
             allThreadPools.forEach((name, info) -> {
                 if (info.getPoolUsageRate() > usageThreshold) {
                     healthStatus.addWarning(name,
-                        String.format("线程池使用率过高: %.1f%% > %.1f%%",
-                            info.getPoolUsageRate(), usageThreshold));
+                            String.format("线程池使用率过高: %.1f%% > %.1f%%",
+                                    info.getPoolUsageRate(), usageThreshold));
                 }
                 if (info.getQueueUsageRate() > queueThreshold) {
                     healthStatus.addWarning(name,
-                        String.format("队列使用率过高: %.1f%% > %.1f%%",
-                            info.getQueueUsageRate(), queueThreshold));
+                            String.format("队列使用率过高: %.1f%% > %.1f%%",
+                                    info.getQueueUsageRate(), queueThreshold));
                 }
             });
         }
@@ -169,7 +166,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
                 double usageDiff = Math.abs(currentInfo.getPoolUsageRate() - lastInfo.getPoolUsageRate());
                 if (usageDiff > 20) { // 使用率变化超过20%
                     log.warn("⚠️ 线程池 {} 使用率大幅变化: {:.1f}% -> {:.1f}%",
-                        name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
+                            name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
                 }
             }
         });
@@ -184,13 +181,13 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
 
         if ("CRITICAL".equals(newStatus)) {
             log.error("🚨 线程池 {} 状态恶化: {} {} -> {} {}",
-                poolName, oldIcon, oldStatus, newIcon, newStatus);
+                    poolName, oldIcon, oldStatus, newIcon, newStatus);
         } else if ("WARNING".equals(newStatus)) {
             log.warn("⚠️ 线程池 {} 状态警告: {} {} -> {} {}",
-                poolName, oldIcon, oldStatus, newIcon, newStatus);
+                    poolName, oldIcon, oldStatus, newIcon, newStatus);
         } else if ("HEALTHY".equals(newStatus) && !"HEALTHY".equals(oldStatus)) {
             log.info("✅ 线程池 {} 状态恢复: {} {} -> {} {}",
-                poolName, oldIcon, oldStatus, newIcon, newStatus);
+                    poolName, oldIcon, oldStatus, newIcon, newStatus);
         }
     }
 
@@ -260,21 +257,68 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         private long timestamp;
 
         // getters and setters
-        public String getPoolName() { return poolName; }
-        public void setPoolName(String poolName) { this.poolName = poolName; }
-        public int getCurrentPoolSize() { return currentPoolSize; }
-        public void setCurrentPoolSize(int currentPoolSize) { this.currentPoolSize = currentPoolSize; }
-        public int getActiveThreadCount() { return activeThreadCount; }
-        public void setActiveThreadCount(int activeThreadCount) { this.activeThreadCount = activeThreadCount; }
-        public int getQueueSize() { return queueSize; }
-        public void setQueueSize(int queueSize) { this.queueSize = queueSize; }
-        public double getPoolUsageRate() { return poolUsageRate; }
-        public void setPoolUsageRate(double poolUsageRate) { this.poolUsageRate = poolUsageRate; }
-        public double getQueueUsageRate() { return queueUsageRate; }
-        public void setQueueUsageRate(double queueUsageRate) { this.queueUsageRate = queueUsageRate; }
-        public double getTasksPerSecond() { return tasksPerSecond; }
-        public void setTasksPerSecond(double tasksPerSecond) { this.tasksPerSecond = tasksPerSecond; }
-        public long getTimestamp() { return timestamp; }
-        public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+        public String getPoolName() {
+            return poolName;
+        }
+
+        public void setPoolName(String poolName) {
+            this.poolName = poolName;
+        }
+
+        public int getCurrentPoolSize() {
+            return currentPoolSize;
+        }
+
+        public void setCurrentPoolSize(int currentPoolSize) {
+            this.currentPoolSize = currentPoolSize;
+        }
+
+        public int getActiveThreadCount() {
+            return activeThreadCount;
+        }
+
+        public void setActiveThreadCount(int activeThreadCount) {
+            this.activeThreadCount = activeThreadCount;
+        }
+
+        public int getQueueSize() {
+            return queueSize;
+        }
+
+        public void setQueueSize(int queueSize) {
+            this.queueSize = queueSize;
+        }
+
+        public double getPoolUsageRate() {
+            return poolUsageRate;
+        }
+
+        public void setPoolUsageRate(double poolUsageRate) {
+            this.poolUsageRate = poolUsageRate;
+        }
+
+        public double getQueueUsageRate() {
+            return queueUsageRate;
+        }
+
+        public void setQueueUsageRate(double queueUsageRate) {
+            this.queueUsageRate = queueUsageRate;
+        }
+
+        public double getTasksPerSecond() {
+            return tasksPerSecond;
+        }
+
+        public void setTasksPerSecond(double tasksPerSecond) {
+            this.tasksPerSecond = tasksPerSecond;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
     }
 }

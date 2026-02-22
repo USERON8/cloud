@@ -81,11 +81,11 @@ public interface UserFeignClient {
     /**
      * 更新GitHub OAuth用户信息（仅供auth-service使用）
      *
-     * @param userId 系统用户ID
+     * @param userId        系统用户ID
      * @param githubUserDTO GitHub用户信息
      * @return 是否更新成功
      */
     @PutMapping("/github/update/{userId}")
     Boolean updateGitHubUserInfo(@PathVariable("userId") Long userId,
-                                  @RequestBody com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO);
+                                 @RequestBody com.cloud.common.domain.dto.oauth.GitHubUserDTO githubUserDTO);
 }

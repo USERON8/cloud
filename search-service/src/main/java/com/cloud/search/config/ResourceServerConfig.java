@@ -48,7 +48,7 @@ public class ResourceServerConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.cache-duration:PT30M}")
     private String jwtCacheDuration;
 
-    @Value("${app.jwt.issuer:http://localhost:8080}")
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String jwtIssuer;
 
     /**

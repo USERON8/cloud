@@ -1,5 +1,6 @@
-package com.cloud.order.task;
+﻿package com.cloud.order.task;
 
+import com.cloud.common.annotation.DistributedLock;
 import com.cloud.order.service.OrderTimeoutService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,9 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * 订单超时处理定时任务
- *
- * @author what's up
+ * Scheduled tasks for timeout orders.
  */
 @Slf4j
 @Component
@@ -19,36 +18,42 @@ public class OrderTimeoutScheduledTask {
     private final OrderTimeoutService orderTimeoutService;
 
     /**
-     * 每5分钟检查一次超时未支付订单
-     * Cron: 每5分钟执行一次
+     * Check timeout unpaid orders every 5 minutes.
      */
     @Scheduled(cron = "0 */5 * * * ?")
+    @DistributedLock(
+            key = "'schedule:order:timeout-check'",
+            waitTime = 1,
+            leaseTime = 300,
+            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
+    )
     public void checkTimeoutOrders() {
-        log.info("⏰ 开始执行订单超时检查定时任务");
-
+        log.info("Start timeout-order check task");
         try {
             int cancelCount = orderTimeoutService.checkAndHandleTimeoutOrders();
-            log.info("✅ 订单超时检查定时任务执行完成, 取消订单数: {}", cancelCount);
+            log.info("Finish timeout-order check task: cancelCount={}", cancelCount);
         } catch (Exception e) {
-            log.error("❌ 订单超时检查定时任务执行失败", e);
+            log.error("Timeout-order check task failed", e);
         }
     }
 
     /**
-     * 每天凌晨1点生成超时订单统计报告
-     * Cron: 每天1:00执行
+     * Generate daily timeout order report at 01:00.
      */
     @Scheduled(cron = "0 0 1 * * ?")
+    @DistributedLock(
+            key = "'schedule:order:timeout-report'",
+            waitTime = 1,
+            leaseTime = 600,
+            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
+    )
     public void generateTimeoutOrderReport() {
-        log.info("⏰ 开始生成每日超时订单统计报告");
-
+        log.info("Start timeout-order report task");
         try {
-            // TODO: 统计昨天的超时订单数据
-            // TODO: 生成报告并发送给管理员
-
-            log.info("✅ 每日超时订单统计报告生成完成");
+            // Report generation extension point.
+            log.info("Finish timeout-order report task");
         } catch (Exception e) {
-            log.error("❌ 每日超时订单统计报告生成失败", e);
+            log.error("Timeout-order report task failed", e);
         }
     }
 }

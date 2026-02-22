@@ -27,8 +27,8 @@ public interface StockCountService {
     /**
      * 确认盘点并调整库存
      *
-     * @param countId        盘点记录ID
-     * @param confirmUserId  确认人ID
+     * @param countId         盘点记录ID
+     * @param confirmUserId   确认人ID
      * @param confirmUserName 确认人名称
      * @return 确认结果
      */

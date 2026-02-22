@@ -39,7 +39,7 @@ public interface BrandAuthorizationMapper extends BaseMapper<BrandAuthorization>
      * @return 授权记录
      */
     BrandAuthorization selectByBrandIdAndMerchantId(@Param("brandId") Long brandId,
-                                                     @Param("merchantId") Long merchantId);
+                                                    @Param("merchantId") Long merchantId);
 
     /**
      * 查询即将过期的授权(30天内)

@@ -21,7 +21,7 @@ public interface UserNotificationService {
     /**
      * 发送密码重置邮件
      *
-     * @param userId 用户ID
+     * @param userId     用户ID
      * @param resetToken 重置令牌
      * @return 发送结果
      */
@@ -30,7 +30,7 @@ public interface UserNotificationService {
     /**
      * 发送账户激活邮件
      *
-     * @param userId 用户ID
+     * @param userId          用户ID
      * @param activationToken 激活令牌
      * @return 发送结果
      */
@@ -39,9 +39,9 @@ public interface UserNotificationService {
     /**
      * 发送账户状态变更通知
      *
-     * @param userId 用户ID
+     * @param userId    用户ID
      * @param newStatus 新状态
-     * @param reason 变更原因
+     * @param reason    变更原因
      * @return 发送结果
      */
     CompletableFuture<Boolean> sendStatusChangeNotificationAsync(Long userId, Integer newStatus, String reason);
@@ -50,7 +50,7 @@ public interface UserNotificationService {
      * 发送批量通知
      *
      * @param userIds 用户ID列表
-     * @param title 通知标题
+     * @param title   通知标题
      * @param content 通知内容
      * @return 发送结果
      */
@@ -59,7 +59,7 @@ public interface UserNotificationService {
     /**
      * 发送系统公告
      *
-     * @param title 公告标题
+     * @param title   公告标题
      * @param content 公告内容
      * @return 发送结果
      */

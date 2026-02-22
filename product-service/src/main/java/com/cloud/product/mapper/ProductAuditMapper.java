@@ -32,8 +32,8 @@ public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
      * @return 审核记录列表
      */
     List<ProductAudit> selectByMerchantId(@Param("merchantId") Long merchantId,
-                                           @Param("startTime") LocalDateTime startTime,
-                                           @Param("endTime") LocalDateTime endTime);
+                                          @Param("startTime") LocalDateTime startTime,
+                                          @Param("endTime") LocalDateTime endTime);
 
     /**
      * 根据审核状态查询审核记录
@@ -44,8 +44,8 @@ public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
      * @return 审核记录列表
      */
     List<ProductAudit> selectByAuditStatus(@Param("auditStatus") String auditStatus,
-                                            @Param("startTime") LocalDateTime startTime,
-                                            @Param("endTime") LocalDateTime endTime);
+                                           @Param("startTime") LocalDateTime startTime,
+                                           @Param("endTime") LocalDateTime endTime);
 
     /**
      * 查询待审核数量
