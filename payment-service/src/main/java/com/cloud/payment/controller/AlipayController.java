@@ -12,143 +12,100 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
-
-
-
-
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/payment/alipay")
 @RequiredArgsConstructor
-@Tag(name = "鏀粯瀹濇敮浠?, description = "鏀粯瀹濇敮浠樼浉鍏虫帴鍙?)
+@Tag(name = "Alipay API", description = "Alipay payment operations")
 public class AlipayController {
 
     private final AlipayService alipayService;
 
     @PostMapping("/create")
-    @Operation(summary = "鍒涘缓鏀粯瀹濇敮浠?, description = "鍒涘缓鏀粯瀹濇敮浠樿鍗曪紝杩斿洖鏀粯琛ㄥ崟")
-    public Result<AlipayCreateResponse> createPayment(
-            @Valid @RequestBody AlipayCreateRequest request) {
-
-        
-
+    @Operation(summary = "Create Alipay payment", description = "Create a payment order and return payment form")
+    public Result<AlipayCreateResponse> createPayment(@Valid @RequestBody AlipayCreateRequest request) {
         AlipayCreateResponse response = alipayService.createPayment(request);
-
-        return Result.success("鏀粯璁㈠崟鍒涘缓鎴愬姛", response);
+        return Result.success("Create payment success", response);
     }
 
     @PostMapping(value = "/notify", produces = MediaType.TEXT_PLAIN_VALUE)
-    @Operation(summary = "鏀粯瀹濆紓姝ラ€氱煡", description = "鎺ユ敹鏀粯瀹濆紓姝ラ€氱煡")
+    @Operation(summary = "Handle Alipay notify", description = "Handle asynchronous Alipay callback")
     public String handleNotify(HttpServletRequest request) {
-        
-
         try {
-            
             Map<String, String> params = convertRequestToMap(request);
-
-            
             boolean success = alipayService.handleNotify(params);
-
-            if (success) {
-                
-                return "success";
-            } else {
-                log.error("鏀粯瀹濆紓姝ラ€氱煡澶勭悊澶辫触");
-                return "failure";
-            }
-
+            return success ? "success" : "failure";
         } catch (Exception e) {
-            log.error("鏀粯瀹濆紓姝ラ€氱煡澶勭悊寮傚父", e);
+            log.error("Handle Alipay notify failed", e);
             return "failure";
         }
     }
 
     @GetMapping("/query/{outTradeNo}")
-    @Operation(summary = "鏌ヨ鏀粯鐘舵€?, description = "鏌ヨ鏀粯瀹濇敮浠樼姸鎬?)
+    @Operation(summary = "Query payment status", description = "Query Alipay payment status")
     public Result<String> queryPaymentStatus(
-            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
-
-        
-
+            @Parameter(description = "Merchant out trade number") @PathVariable String outTradeNo) {
         String status = alipayService.queryPaymentStatus(outTradeNo);
-
-        if (status != null) {
-            return Result.success(status, "鏌ヨ鎴愬姛");
-        } else {
-            return Result.error("鏌ヨ澶辫触");
+        if (status == null) {
+            return Result.error("Query payment status failed");
         }
+        return Result.success("Query payment status success", status);
     }
 
     @PostMapping("/refund")
-    @Operation(summary = "鐢宠閫€娆?, description = "鐢宠鏀粯瀹濋€€娆?)
+    @Operation(summary = "Refund payment", description = "Create Alipay refund request")
     public Result<Boolean> refund(
-            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @RequestParam String outTradeNo,
-            @Parameter(description = "閫€娆鹃噾棰?) @RequestParam BigDecimal refundAmount,
-            @Parameter(description = "閫€娆惧師鍥?) @RequestParam String refundReason) {
-
-        
-
+            @Parameter(description = "Merchant out trade number") @RequestParam String outTradeNo,
+            @Parameter(description = "Refund amount") @RequestParam BigDecimal refundAmount,
+            @Parameter(description = "Refund reason") @RequestParam String refundReason) {
         boolean success = alipayService.refund(outTradeNo, refundAmount, refundReason);
-
-        if (success) {
-            return Result.success("閫€娆剧敵璇锋垚鍔?, true);
-        } else {
-            return Result.error("閫€娆剧敵璇峰け璐?);
+        if (!success) {
+            return Result.error("Refund failed");
         }
+        return Result.success("Refund success", true);
     }
 
     @PostMapping("/close/{outTradeNo}")
-    @Operation(summary = "鍏抽棴璁㈠崟", description = "鍏抽棴鏀粯瀹濊鍗?)
+    @Operation(summary = "Close payment order", description = "Close Alipay order")
     public Result<Boolean> closeOrder(
-            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
-
-        
-
+            @Parameter(description = "Merchant out trade number") @PathVariable String outTradeNo) {
         boolean success = alipayService.closeOrder(outTradeNo);
-
-        if (success) {
-            return Result.success("璁㈠崟鍏抽棴鎴愬姛", true);
-        } else {
-            return Result.error("璁㈠崟鍏抽棴澶辫触");
+        if (!success) {
+            return Result.error("Close order failed");
         }
+        return Result.success("Close order success", true);
     }
 
     @GetMapping("/verify/{outTradeNo}")
-    @Operation(summary = "楠岃瘉鏀粯缁撴灉", description = "楠岃瘉鏀粯瀹濇敮浠樼粨鏋?)
+    @Operation(summary = "Verify payment", description = "Verify whether payment is completed")
     public Result<Boolean> verifyPayment(
-            @Parameter(description = "鍟嗘埛璁㈠崟鍙?) @PathVariable String outTradeNo) {
-
-        
-
+            @Parameter(description = "Merchant out trade number") @PathVariable String outTradeNo) {
         boolean success = alipayService.verifyPayment(outTradeNo);
-
-        return Result.success(success ? "鏀粯鎴愬姛" : "鏀粯鏈畬鎴?, success);
+        return Result.success(success ? "Payment verified" : "Payment is not successful", success);
     }
-
-    
-
 
     private Map<String, String> convertRequestToMap(HttpServletRequest request) {
         Map<String, String> params = new HashMap<>();
         Map<String, String[]> requestParams = request.getParameterMap();
-
-        for (String name : requestParams.keySet()) {
-            String[] values = requestParams.get(name);
-            String valueStr = "";
-            for (int i = 0; i < values.length; i++) {
-                valueStr = (i == values.length - 1) ? valueStr + values[i] : valueStr + values[i] + ",";
+        for (Map.Entry<String, String[]> entry : requestParams.entrySet()) {
+            String[] values = entry.getValue();
+            if (values == null || values.length == 0) {
+                continue;
             }
-            params.put(name, valueStr);
+            params.put(entry.getKey(), String.join(",", values));
         }
-
         return params;
     }
 }

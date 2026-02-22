@@ -19,138 +19,106 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
-
-
-
-
-
 
 @Slf4j
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@Tag(name = "鏀粯鏈嶅姟", description = "鏀粯璧勬簮鐨凴ESTful API鎺ュ彛")
+@Tag(name = "Payment API", description = "Payment management APIs")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    
-
-
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "鑾峰彇鏀粯鍒楄〃", description = "鑾峰彇鏀粯鍒楄〃锛屾敮鎸佸垎椤靛拰鏌ヨ鍙傛暟")
+    @Operation(summary = "Get payment list", description = "Get paged payment records")
     public Result<PageResult<PaymentDTO>> getPayments(
-            @Parameter(description = "椤电爜") @RequestParam(defaultValue = "1")
-            @Min(value = 1, message = "椤电爜蹇呴』澶т簬0") Integer page,
-
-            @Parameter(description = "姣忛〉鏁伴噺") @RequestParam(defaultValue = "10")
-            @Min(value = 1, message = "姣忛〉鏁伴噺蹇呴』澶т簬0")
-            @Max(value = 100, message = "姣忛〉鏁伴噺涓嶈兘瓒呰繃100") Integer size,
-
-            @Parameter(description = "鐢ㄦ埛ID") @RequestParam(required = false)
-            @Positive(message = "鐢ㄦ埛ID蹇呴』涓烘鏁存暟") Long userId,
-
-            @Parameter(description = "鏀粯鐘舵€?) @RequestParam(required = false)
-            @Min(value = 0, message = "鏀粯鐘舵€佸€奸敊璇?)
-            @Max(value = 9, message = "鏀粯鐘舵€佸€奸敊璇?) Integer status,
-
-            @Parameter(description = "鏀粯娓犻亾") @RequestParam(required = false)
-            @Min(value = 0, message = "鏀粯娓犻亾鍊奸敊璇?)
-            @Max(value = 9, message = "鏀粯娓犻亾鍊奸敊璇?) Integer channel,
-
-            Authentication authentication) {
+            @Parameter(description = "Page index") @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "Page index must be greater than or equal to 1") Integer page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "Page size must be greater than or equal to 1")
+            @Max(value = 100, message = "Page size must be less than or equal to 100") Integer size,
+            @Parameter(description = "User id") @RequestParam(required = false)
+            @Positive(message = "User id must be positive") Long userId,
+            @Parameter(description = "Payment status") @RequestParam(required = false)
+            @Min(value = 0, message = "Status must be greater than or equal to 0")
+            @Max(value = 9, message = "Status must be less than or equal to 9") Integer status,
+            @Parameter(description = "Payment channel") @RequestParam(required = false)
+            @Min(value = 0, message = "Channel must be greater than or equal to 0")
+            @Max(value = 9, message = "Channel must be less than or equal to 9") Integer channel) {
 
         Page<PaymentDTO> pageResult = paymentService.getPaymentsPage(page, size, userId, status, channel);
-
         PageResult<PaymentDTO> result = PageResult.of(
                 pageResult.getCurrent(),
                 pageResult.getSize(),
                 pageResult.getTotal(),
                 pageResult.getRecords()
         );
-
-        
         return Result.success(result);
     }
 
-    
-
-
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "鑾峰彇鏀粯璇︽儏", description = "鏍规嵁鏀粯ID鑾峰彇鏀粯璇︾粏淇℃伅")
+    @Operation(summary = "Get payment detail", description = "Get payment detail by id")
     public Result<PaymentDTO> getPaymentById(
-            @Parameter(description = "鏀粯ID") @PathVariable
-            @NotNull(message = "鏀粯ID涓嶈兘涓虹┖")
-            @Positive(message = "鏀粯ID蹇呴』涓烘鏁存暟") Long id,
-            Authentication authentication) {
+            @Parameter(description = "Payment id") @PathVariable
+            @NotNull(message = "Payment id cannot be null")
+            @Positive(message = "Payment id must be positive") Long id) {
 
         PaymentDTO payment = paymentService.getPaymentById(id);
         if (payment == null) {
-            log.warn("鏀粯璁板綍涓嶅瓨鍦? id={}", id);
             throw new ResourceNotFoundException("Payment", String.valueOf(id));
         }
-        
-        return Result.success("鏌ヨ鎴愬姛", payment);
+        return Result.success("Query payment success", payment);
     }
-
-    
-
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "鍒涘缓鏀粯璁板綍", description = "鍒涘缓鏂扮殑鏀粯璁板綍")
+    @Operation(summary = "Create payment", description = "Create a payment record")
     public Result<Long> createPayment(
-            @Parameter(description = "鏀粯淇℃伅") @RequestBody
-            @Valid @NotNull(message = "鏀粯淇℃伅涓嶈兘涓虹┖") PaymentDTO paymentDTO) {
+            @Parameter(description = "Payment payload") @RequestBody
+            @Valid @NotNull(message = "Payment payload cannot be null") PaymentDTO paymentDTO) {
 
         Long paymentId = paymentService.createPayment(paymentDTO);
-        
-        return Result.success("鏀粯璁板綍鍒涘缓鎴愬姛", paymentId);
+        return Result.success("Create payment success", paymentId);
     }
-
-    
-
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "鏇存柊鏀粯璁板綍", description = "鏇存柊鏀粯璁板綍淇℃伅")
+    @Operation(summary = "Update payment", description = "Update payment by id")
     public Result<Boolean> updatePayment(
-            @Parameter(description = "鏀粯ID") @PathVariable Long id,
-            @Parameter(description = "鏀粯淇℃伅") @RequestBody
-            @Valid @NotNull(message = "鏀粯淇℃伅涓嶈兘涓虹┖") PaymentDTO paymentDTO,
-            Authentication authentication) {
+            @Parameter(description = "Payment id") @PathVariable Long id,
+            @Parameter(description = "Payment payload") @RequestBody
+            @Valid @NotNull(message = "Payment payload cannot be null") PaymentDTO paymentDTO) {
 
-        
-        Boolean result = paymentService.updatePayment(paymentDTO);
-        
-        return Result.success("鏀粯璁板綍鏇存柊鎴愬姛", result);
+        paymentDTO.setId(id);
+        Boolean updated = paymentService.updatePayment(paymentDTO);
+        return Result.success("Update payment success", updated);
     }
-
-    
-
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "鍒犻櫎鏀粯璁板綍", description = "鍒犻櫎鏀粯璁板綍")
+    @Operation(summary = "Delete payment", description = "Delete payment by id")
     public Result<Boolean> deletePayment(
-            @Parameter(description = "鏀粯ID") @PathVariable
-            @NotNull(message = "鏀粯ID涓嶈兘涓虹┖")
-            @Positive(message = "鏀粯ID蹇呴』涓烘鏁存暟") Long id) {
+            @Parameter(description = "Payment id") @PathVariable
+            @NotNull(message = "Payment id cannot be null")
+            @Positive(message = "Payment id must be positive") Long id) {
 
-        Boolean result = paymentService.deletePayment(id);
-        
-        return Result.success("鏀粯璁板綍鍒犻櫎鎴愬姛", result);
+        Boolean deleted = paymentService.deletePayment(id);
+        return Result.success("Delete payment success", deleted);
     }
-
-    
-
 
     @PostMapping("/{id}/success")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
@@ -159,27 +127,16 @@ public class PaymentController {
             waitTime = 5,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "鏀粯澶勭悊涓紝璇峰嬁閲嶅鎻愪氦"
+            failMessage = "Acquire payment success lock failed"
     )
-    @Operation(summary = "鏀粯鎴愬姛", description = "澶勭悊鏀粯鎴愬姛鐘舵€佸彉鏇?)
-    public Result<Boolean> paymentSuccess(
-            @Parameter(description = "鏀粯ID") @PathVariable Long id,
-            Authentication authentication) {
-
-        
+    @Operation(summary = "Mark payment success", description = "Mark payment as success")
+    public Result<Boolean> paymentSuccess(@Parameter(description = "Payment id") @PathVariable Long id) {
         Boolean result = paymentService.processPaymentSuccess(id);
-
-        if (!result) {
-            log.warn("鈿狅笍 鏀粯鎴愬姛澶勭悊澶辫触 - 鏀粯ID: {}", id);
-            throw new BusinessException("鏀粯鎴愬姛澶勭悊澶辫触锛岃妫€鏌ユ敮浠樼姸鎬?);
+        if (!Boolean.TRUE.equals(result)) {
+            throw new BusinessException("Process payment success failed");
         }
-        
-        return Result.success("鏀粯鎴愬姛澶勭悊瀹屾垚", result);
+        return Result.success("Payment marked as success", true);
     }
-
-
-    
-
 
     @PostMapping("/{id}/fail")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
@@ -188,26 +145,19 @@ public class PaymentController {
             waitTime = 5,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "鏀粯澶勭悊涓紝璇峰嬁閲嶅鎻愪氦"
+            failMessage = "Acquire payment fail lock failed"
     )
-    @Operation(summary = "鏀粯澶辫触", description = "澶勭悊鏀粯澶辫触鐘舵€佸彉鏇?)
+    @Operation(summary = "Mark payment failed", description = "Mark payment as failed")
     public Result<Boolean> paymentFail(
-            @Parameter(description = "鏀粯ID") @PathVariable Long id,
-            @Parameter(description = "澶辫触鍘熷洜") @RequestParam(required = false) String failReason,
-            Authentication authentication) {
+            @Parameter(description = "Payment id") @PathVariable Long id,
+            @Parameter(description = "Failure reason") @RequestParam(required = false) String failReason) {
 
-        
         Boolean result = paymentService.processPaymentFailed(id, failReason);
-
-        if (!result) {
-            log.warn("鈿狅笍 鏀粯澶辫触澶勭悊澶辫触 - 鏀粯ID: {}", id);
-            throw new BusinessException("鏀粯澶辫触澶勭悊澶辫触锛岃妫€鏌ユ敮浠樼姸鎬?);
+        if (!Boolean.TRUE.equals(result)) {
+            throw new BusinessException("Process payment fail failed");
         }
-        
-        return Result.success("鏀粯澶辫触澶勭悊瀹屾垚", result);
+        return Result.success("Payment marked as failed", true);
     }
-
-    
 
     @PostMapping("/{id}/refund")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
@@ -216,46 +166,31 @@ public class PaymentController {
             waitTime = 3,
             leaseTime = 20,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "閫€娆惧鐞嗕腑锛岃鍕块噸澶嶆彁浜?
+            failMessage = "Acquire payment refund lock failed"
     )
-    @Operation(summary = "鏀粯閫€娆?, description = "澶勭悊鏀粯閫€娆?)
+    @Operation(summary = "Refund payment", description = "Create payment refund")
     public Result<Boolean> refundPayment(
-            @Parameter(description = "鏀粯ID") @PathVariable Long id,
-            @Parameter(description = "閫€娆鹃噾棰?) @RequestParam BigDecimal refundAmount,
-            @Parameter(description = "閫€娆惧師鍥?) @RequestParam(required = false) String refundReason,
-            Authentication authentication) {
+            @Parameter(description = "Payment id") @PathVariable Long id,
+            @Parameter(description = "Refund amount") @RequestParam BigDecimal refundAmount,
+            @Parameter(description = "Refund reason") @RequestParam(required = false) String refundReason) {
 
-        
         Boolean result = paymentService.processRefund(id, refundAmount, refundReason);
-
-        if (!result) {
-            log.warn("鈿狅笍 閫€娆惧鐞嗗け璐?- 鏀粯ID: {}", id);
-            throw new BusinessException("閫€娆惧鐞嗗け璐ワ紝璇锋鏌ユ敮浠樼姸鎬?);
+        if (!Boolean.TRUE.equals(result)) {
+            throw new BusinessException("Process payment refund failed");
         }
-        
-        return Result.success("閫€娆惧鐞嗗畬鎴?, result);
+        return Result.success("Refund processed", true);
     }
-
-    
-
 
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
-    @Operation(summary = "鏍规嵁璁㈠崟ID鏌ヨ鏀粯淇℃伅", description = "鏍规嵁璁㈠崟ID鑾峰彇鏀粯淇℃伅")
-    public Result<PaymentDTO> getPaymentByOrderId(
-            @Parameter(description = "璁㈠崟ID") @PathVariable Long orderId,
-            Authentication authentication) {
-
+    @Operation(summary = "Get payment by order", description = "Get payment record by order id")
+    public Result<PaymentDTO> getPaymentByOrderId(@Parameter(description = "Order id") @PathVariable Long orderId) {
         PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
         if (payment == null) {
-            log.warn("鈿狅笍 鏈壘鍒拌璁㈠崟鐨勬敮浠樿褰?- 璁㈠崟ID: {}", orderId);
-            throw new ResourceNotFoundException("Payment for Order", String.valueOf(orderId));
+            throw new ResourceNotFoundException("Payment for order", String.valueOf(orderId));
         }
-        
-        return Result.success("鏌ヨ鎴愬姛", payment);
+        return Result.success("Query payment success", payment);
     }
-
-    
 
     @PostMapping("/risk-check")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:read')")
@@ -264,23 +199,18 @@ public class PaymentController {
             waitTime = 0,
             leaseTime = 3,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "椋庢帶妫€鏌ョ郴缁熺箒蹇欙紝璇风◢鍚庡啀璇?
+            failMessage = "Acquire payment risk lock failed"
     )
-    @Operation(summary = "鏀粯椋庢帶妫€鏌?, description = "鎵ц鏀粯椋庢帶妫€鏌?)
+    @Operation(summary = "Run payment risk check", description = "Run risk checks before payment")
     public Result<Boolean> riskCheck(
-            @Parameter(description = "鐢ㄦ埛ID") @RequestParam Long userId,
-            @Parameter(description = "鏀粯閲戦") @RequestParam BigDecimal amount,
-            @Parameter(description = "鏀粯鏂瑰紡") @RequestParam String paymentMethod,
-            Authentication authentication) {
+            @Parameter(description = "User id") @RequestParam Long userId,
+            @Parameter(description = "Payment amount") @RequestParam BigDecimal amount,
+            @Parameter(description = "Payment method") @RequestParam String paymentMethod) {
 
-        
         Boolean riskPassed = paymentService.riskCheck(userId, amount, paymentMethod);
-
-        if (riskPassed) {
-            
-        } else {
-            log.warn("鈿狅笍 椋庢帶妫€鏌ヤ笉閫氳繃 - 鐢ㄦ埛ID: {}, 閲戦: {}", userId, amount);
+        if (!Boolean.TRUE.equals(riskPassed)) {
+            log.warn("Risk check failed: userId={}, amount={}, paymentMethod={}", userId, amount, paymentMethod);
         }
-        return Result.success(riskPassed ? "椋庢帶妫€鏌ラ€氳繃" : "椋庢帶妫€鏌ヤ笉閫氳繃", riskPassed);
+        return Result.success(riskPassed ? "Risk check passed" : "Risk check failed", Boolean.TRUE.equals(riskPassed));
     }
 }

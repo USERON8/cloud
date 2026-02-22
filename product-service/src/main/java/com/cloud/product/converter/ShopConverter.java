@@ -10,67 +10,27 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-
-
-
-
-
-
-
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface ShopConverter {
+
     ShopConverter INSTANCE = Mappers.getMapper(ShopConverter.class);
-
-    
-
-    
-
-
-
-
 
     Shop requestDTOToEntity(ShopRequestDTO requestDTO);
 
-    
-
-
-
-
-
     ShopRequestDTO entityToRequestDTO(Shop shop);
-
-    
-
-    
-
-
-
-
 
     @Mapping(target = "statusDesc", expression = "java(getStatusDesc(shop.getStatus()))")
     @Mapping(target = "productCount", ignore = true)
     @Mapping(target = "isOwner", ignore = true)
+    @Mapping(source = "createdAt", target = "createTime")
+    @Mapping(source = "updatedAt", target = "updateTime")
     ShopVO toVO(Shop shop);
 
-    
-
-
-
-
-
     List<ShopVO> toVOList(List<Shop> shops);
-
-    
-
-    
-
-
-
-
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "statusDesc", expression = "java(getStatusDesc(requestDTO.getStatus()))")
@@ -82,24 +42,12 @@ public interface ShopConverter {
     @Mapping(target = "isOwner", ignore = true)
     ShopVO dtoToVO(ShopRequestDTO requestDTO);
 
-    
-
-
-
-
-
     List<ShopVO> dtoToVOList(List<ShopRequestDTO> requestDTOs);
-
-    
-
-
-
-
 
     default String getStatusDesc(Integer status) {
         if (status == null) {
-            return "鏈煡";
+            return "UNKNOWN";
         }
-        return status == 1 ? "钀ヤ笟涓? : "宸插叧闂?;
+        return status == 1 ? "ENABLED" : "DISABLED";
     }
 }

@@ -6,65 +6,57 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-
-
-
-
-
-
 @Data
-@Schema(description = "搴楅摵瑙嗗浘瀵硅薄")
+@Schema(description = "Shop view object")
 public class ShopVO {
 
-    @Schema(description = "搴楅摵ID")
+    @Schema(description = "Shop id")
     private Long id;
 
-    @Schema(description = "鍟嗗ID")
+    @Schema(description = "Merchant id")
     private Long merchantId;
 
-    @Schema(description = "搴楅摵鍚嶇О")
+    @Schema(description = "Shop name")
     private String shopName;
 
-    @Schema(description = "搴楅摵澶村儚URL")
+    @Schema(description = "Avatar url")
     private String avatarUrl;
 
-    @Schema(description = "搴楅摵鎻忚堪")
+    @Schema(description = "Description")
     private String description;
 
-    @Schema(description = "瀹㈡湇鐢佃瘽")
+    @Schema(description = "Contact phone")
     private String contactPhone;
 
-    @Schema(description = "璇︾粏鍦板潃")
+    @Schema(description = "Address")
     private String address;
 
-    @Schema(description = "搴楅摵鐘舵€侊細0-鍏抽棴锛?-钀ヤ笟")
+    @Schema(description = "Status")
     private Integer status;
 
-    @Schema(description = "搴楅摵鐘舵€佹弿杩?)
+    @Schema(description = "Status description")
     private String statusDesc;
 
-    @Schema(description = "鍒涘缓鏃堕棿")
+    @Schema(description = "Create time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
-    @Schema(description = "鏇存柊鏃堕棿")
+    @Schema(description = "Update time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
-    @Schema(description = "鍒涘缓鑰匢D")
+    @Schema(description = "Created by")
     private Long createBy;
 
-    @Schema(description = "鏇存柊鑰匢D")
+    @Schema(description = "Updated by")
     private Long updateBy;
 
-    
-    @Schema(description = "搴楅摵涓嬬殑鍟嗗搧鏁伴噺")
+    @Schema(description = "Product count")
     private Long productCount;
 
-    @Schema(description = "鏄惁涓哄綋鍓嶇敤鎴风殑搴楅摵")
+    @Schema(description = "Owner flag")
     private Boolean isOwner;
 
-    
     public String getName() {
         return this.shopName;
     }

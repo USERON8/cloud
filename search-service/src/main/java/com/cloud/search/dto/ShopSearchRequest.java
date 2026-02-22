@@ -5,98 +5,49 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-
-
-
-
-
-
-
 @Data
-@Schema(description = "搴楅摵鎼滅储璇锋眰鍙傛暟")
+@Schema(description = "Shop search request")
 public class ShopSearchRequest {
 
-    
-
-
-    @Schema(description = "鎼滅储鍏抽敭瀛?, example = "鍗庝负鏃楄埌搴?)
+    @Schema(description = "Keyword")
     private String keyword;
 
-    
-
-
-    @Schema(description = "鍟嗗ID", example = "1")
+    @Schema(description = "Merchant id")
     private Long merchantId;
 
-    
-
-
-    @Schema(description = "搴楅摵鐘舵€侊細0-鍏抽棴锛?-钀ヤ笟", example = "1")
+    @Schema(description = "Shop status")
     private Integer status;
 
-    
-
-
-    @Schema(description = "鏈€浣庤瘎鍒?, example = "4.0")
+    @Schema(description = "Min rating")
     private BigDecimal minRating;
 
-    
-
-
-    @Schema(description = "鏈€浣庡晢鍝佹暟閲?, example = "10")
+    @Schema(description = "Min product count")
     private Integer minProductCount;
 
-    
-
-
-    @Schema(description = "鏈€浣庡叧娉ㄦ暟閲?, example = "100")
+    @Schema(description = "Min follow count")
     private Integer minFollowCount;
 
-    
-
-
-    @Schema(description = "鏄惁鎺ㄨ崘搴楅摵", example = "true")
+    @Schema(description = "Recommended")
     private Boolean recommended;
 
-    
-
-
-    @Schema(description = "鍦板潃鍏抽敭瀛?, example = "鍖椾含")
+    @Schema(description = "Address keyword")
     private String addressKeyword;
 
-    
-
-
-    @Schema(description = "椤电爜", example = "0")
+    @Schema(description = "Page number")
     private Integer page = 0;
 
-    
-
-
-    @Schema(description = "姣忛〉澶у皬", example = "20")
+    @Schema(description = "Page size")
     private Integer size = 20;
 
-    
-
-
-    @Schema(description = "鎺掑簭瀛楁", example = "rating", allowableValues = {"rating", "productCount", "followCount", "createdAt", "hotScore"})
+    @Schema(description = "Sort by")
     private String sortBy;
 
-    
-
-
-    @Schema(description = "鎺掑簭鏂瑰紡", example = "desc", allowableValues = {"asc", "desc"})
+    @Schema(description = "Sort order")
     private String sortOrder = "desc";
 
-    
-
-
-    @Schema(description = "鏄惁鍚敤楂樹寒", example = "true")
+    @Schema(description = "Enable highlight")
     private Boolean highlight = false;
 
-    
-
-
-    @Schema(description = "鏄惁杩斿洖鑱氬悎淇℃伅", example = "true")
+    @Schema(description = "Include aggregations")
     private Boolean includeAggregations = false;
 }

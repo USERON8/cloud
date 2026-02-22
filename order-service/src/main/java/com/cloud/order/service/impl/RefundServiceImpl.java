@@ -26,12 +26,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-
-
-
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,45 +38,36 @@ public class RefundServiceImpl implements RefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createRefund(Long userId, RefundCreateDTO dto) {
-        
-
-
-        
         Order order = orderService.getById(dto.getOrderId());
         if (order == null) {
-            throw new BusinessException("璁㈠崟涓嶅瓨鍦?);
+            throw new BusinessException("Order not found");
         }
-
         if (!order.getUserId().equals(userId)) {
-            throw new BusinessException("鏃犳潈鎿嶄綔姝よ鍗?);
+            throw new BusinessException("Current user is not the order owner");
         }
 
-        
         OrderStatusEnum orderStatus = order.getStatusEnum();
-        if (orderStatus != OrderStatusEnum.PAID &&
-                orderStatus != OrderStatusEnum.SHIPPED &&
-                orderStatus != OrderStatusEnum.COMPLETED) {
-            throw new BusinessException("璁㈠崟鐘舵€佷笉鍏佽閫€娆?褰撳墠鐘舵€?" + orderStatus.getName());
+        if (orderStatus != OrderStatusEnum.PAID
+                && orderStatus != OrderStatusEnum.SHIPPED
+                && orderStatus != OrderStatusEnum.COMPLETED) {
+            throw new BusinessException("Current order status does not support refund");
         }
 
-        
         Refund existingRefund = getRefundByOrderId(dto.getOrderId());
         if (existingRefund != null && !existingRefund.isCompleted()) {
-            throw new BusinessException("璇ヨ鍗曞凡鏈夐€€娆剧敵璇峰湪澶勭悊涓?);
+            throw new BusinessException("An unfinished refund already exists for this order");
         }
 
-        
         if (dto.getRefundAmount().compareTo(order.getPayAmount()) > 0) {
-            throw new BusinessException("閫€娆鹃噾棰濅笉鑳借秴杩囧疄浠橀噾棰?);
+            throw new BusinessException("Refund amount cannot exceed paid amount");
         }
 
-        
         Refund refund = new Refund();
         refund.setRefundNo(Refund.generateRefundNo());
         refund.setOrderId(dto.getOrderId());
-        refund.setOrderNo(dto.getOrderNo());
+        refund.setOrderNo(StringUtils.hasText(dto.getOrderNo()) ? dto.getOrderNo() : order.getOrderNo());
         refund.setUserId(userId);
-        refund.setMerchantId(order.getShopId()); 
+        refund.setMerchantId(order.getShopId());
         refund.setRefundType(dto.getRefundType());
         refund.setRefundReason(dto.getRefundReason());
         refund.setRefundDescription(dto.getRefundDescription());
@@ -95,148 +80,112 @@ public class RefundServiceImpl implements RefundService {
 
         refundMapper.insert(refund);
 
-        
-
-
-        
         order.setRefundStatus(OrderRefundStatusEnum.REFUND_APPLYING.getCode());
         order.setUpdatedAt(LocalDateTime.now());
         orderService.updateById(order);
 
-        
         refundMessageProducer.sendRefundCreatedEvent(refund);
-
         return refund.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean auditRefund(Long refundId, Long merchantId, Boolean approved, String auditRemark) {
-        
-
-
-        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
+            throw new BusinessException("Refund not found");
         }
-
-        
         if (!refund.getMerchantId().equals(merchantId)) {
-            throw new BusinessException("鏃犳潈瀹℃牳姝ら€€娆惧崟");
+            throw new BusinessException("Current merchant has no permission for this refund");
         }
-
-        
         if (!refund.isPendingAudit()) {
-            throw new BusinessException("閫€娆惧崟鐘舵€佷笉鏄緟瀹℃牳,鏃犳硶瀹℃牳");
+            throw new BusinessException("Current refund status does not allow audit");
         }
 
-        
-        refund.setStatus(approved ? RefundStatusEnum.AUDIT_PASSED.getCode() :
-                RefundStatusEnum.AUDIT_REJECTED.getCode());
+        refund.setStatus(Boolean.TRUE.equals(approved)
+                ? RefundStatusEnum.AUDIT_PASSED.getCode()
+                : RefundStatusEnum.AUDIT_REJECTED.getCode());
         refund.setAuditTime(LocalDateTime.now());
         refund.setAuditRemark(auditRemark);
         refund.setUpdatedAt(LocalDateTime.now());
 
         int rows = refundMapper.updateById(refund);
-
-        if (rows > 0) {
-            
-
-            
-            if (approved && refund.isRefundOnly()) {
-                processRefund(refundId);
-            }
-
-            
-            refundMessageProducer.sendRefundAuditedEvent(refund, approved);
-
-            return true;
+        if (rows <= 0) {
+            return false;
         }
 
-        return false;
+        if (Boolean.TRUE.equals(approved) && refund.isRefundOnly()) {
+            processRefund(refundId);
+        } else if (!Boolean.TRUE.equals(approved)) {
+            Order order = orderService.getById(refund.getOrderId());
+            if (order != null) {
+                order.setRefundStatus(OrderRefundStatusEnum.REFUND_FAILED.getCode());
+                orderService.updateById(order);
+            }
+        }
+
+        refundMessageProducer.sendRefundAuditedEvent(refund, approved);
+        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean cancelRefund(Long refundId, Long userId) {
-        
-
-        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
+            throw new BusinessException("Refund not found");
         }
-
-        
         if (!refund.getUserId().equals(userId)) {
-            throw new BusinessException("鏃犳潈鍙栨秷姝ら€€娆惧崟");
+            throw new BusinessException("Current user has no permission for this refund");
         }
-
-        
         if (!refund.canCancel()) {
-            throw new BusinessException("閫€娆惧崟褰撳墠鐘舵€佷笉鍏佽鍙栨秷");
+            throw new BusinessException("Current refund status does not allow cancellation");
         }
 
-        
         refund.setStatus(RefundStatusEnum.CANCELLED.getCode());
         refund.setUpdatedAt(LocalDateTime.now());
-
         int rows = refundMapper.updateById(refund);
-
-        if (rows > 0) {
-            
-
-            
-            refundMessageProducer.sendRefundCancelledEvent(refund);
-
-            return true;
+        if (rows <= 0) {
+            return false;
         }
 
-        return false;
+        Order order = orderService.getById(refund.getOrderId());
+        if (order != null) {
+            order.setRefundStatus(OrderRefundStatusEnum.REFUND_CLOSED.getCode());
+            orderService.updateById(order);
+        }
+
+        refundMessageProducer.sendRefundCancelledEvent(refund);
+        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean processRefund(Long refundId) {
-        
-
-        
         Refund refund = getRefundById(refundId);
         if (refund == null) {
-            throw new BusinessException("閫€娆惧崟涓嶅瓨鍦?);
+            throw new BusinessException("Refund not found");
+        }
+        if (!refund.isAuditPassed() && !RefundStatusEnum.GOODS_RECEIVED.getCode().equals(refund.getStatus())) {
+            throw new BusinessException("Current refund status does not allow processing");
         }
 
-        
-        if (!refund.isAuditPassed() && refund.getStatus() != RefundStatusEnum.GOODS_RECEIVED.getCode()) {
-            throw new BusinessException("閫€娆惧崟鐘舵€佷笉鍏佽澶勭悊閫€娆?);
-        }
-
-        
         refund.setStatus(RefundStatusEnum.REFUNDING.getCode());
         refund.setUpdatedAt(LocalDateTime.now());
         refundMapper.updateById(refund);
 
-        
         Order order = orderService.getById(refund.getOrderId());
         if (order != null) {
             order.setRefundStatus(OrderRefundStatusEnum.REFUNDING.getCode());
             order.setUpdatedAt(LocalDateTime.now());
             orderService.updateById(order);
-            
         }
 
-        
         boolean sent = refundMessageProducer.sendRefundProcessEvent(refund);
-
-        if (sent) {
-            
-
-            return true;
-        } else {
-            log.error("鉂?閫€娆惧鐞嗕簨浠跺彂閫佸け璐? refundId={}", refundId);
-            return false;
+        if (!sent) {
+            log.error("Send refund process message failed, refundId={}", refundId);
         }
+        return sent;
     }
 
     @Override
@@ -251,51 +200,32 @@ public class RefundServiceImpl implements RefundService {
                 .eq(Refund::getIsDeleted, 0)
                 .orderByDesc(Refund::getCreatedAt)
                 .last("LIMIT 1");
-
         return refundMapper.selectOne(wrapper);
     }
 
     @Override
     public PageResult<RefundVO> pageQuery(RefundPageDTO pageDTO) {
-        
-
-        
         LambdaQueryWrapper<Refund> wrapper = new LambdaQueryWrapper<>();
-
-        
         wrapper.eq(Refund::getIsDeleted, 0);
 
-        
         if (pageDTO.getStatus() != null) {
             wrapper.eq(Refund::getStatus, pageDTO.getStatus());
         }
-
-        
         if (pageDTO.getUserId() != null) {
             wrapper.eq(Refund::getUserId, pageDTO.getUserId());
         }
-
-        
         if (pageDTO.getMerchantId() != null) {
             wrapper.eq(Refund::getMerchantId, pageDTO.getMerchantId());
         }
-
-        
         if (StringUtils.hasText(pageDTO.getOrderNo())) {
             wrapper.eq(Refund::getOrderNo, pageDTO.getOrderNo());
         }
-
-        
         if (StringUtils.hasText(pageDTO.getRefundNo())) {
             wrapper.eq(Refund::getRefundNo, pageDTO.getRefundNo());
         }
-
-        
         if (pageDTO.getRefundType() != null) {
             wrapper.eq(Refund::getRefundType, pageDTO.getRefundType());
         }
-
-        
         if (StringUtils.hasText(pageDTO.getStartDate())) {
             wrapper.ge(Refund::getCreatedAt, pageDTO.getStartDate() + " 00:00:00");
         }
@@ -303,47 +233,28 @@ public class RefundServiceImpl implements RefundService {
             wrapper.le(Refund::getCreatedAt, pageDTO.getEndDate() + " 23:59:59");
         }
 
-        
-        String sortField = pageDTO.getSortField();
-        String sortOrder = pageDTO.getSortOrder();
-
-        if ("refund_amount".equals(sortField)) {
-            if ("asc".equalsIgnoreCase(sortOrder)) {
+        if ("refund_amount".equals(pageDTO.getSortField())) {
+            if ("asc".equalsIgnoreCase(pageDTO.getSortOrder())) {
                 wrapper.orderByAsc(Refund::getRefundAmount);
             } else {
                 wrapper.orderByDesc(Refund::getRefundAmount);
             }
         } else {
-            
-            if ("asc".equalsIgnoreCase(sortOrder)) {
+            if ("asc".equalsIgnoreCase(pageDTO.getSortOrder())) {
                 wrapper.orderByAsc(Refund::getCreatedAt);
             } else {
                 wrapper.orderByDesc(Refund::getCreatedAt);
             }
         }
 
-        
         Page<Refund> page = new Page<>(pageDTO.getPageNum(), pageDTO.getPageSize());
         Page<Refund> resultPage = refundMapper.selectPage(page, wrapper);
-
-        
         List<RefundVO> voList = resultPage.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
 
-        
-
-
-        return new PageResult<>(
-                resultPage.getCurrent(),
-                resultPage.getSize(),
-                resultPage.getTotal(),
-                voList
-        );
+        return new PageResult<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal(), voList);
     }
-
-    
-
 
     private RefundVO convertToVO(Refund refund) {
         RefundVO vo = new RefundVO();
@@ -354,13 +265,16 @@ public class RefundServiceImpl implements RefundService {
         vo.setUserId(refund.getUserId());
         vo.setMerchantId(refund.getMerchantId());
         vo.setRefundType(refund.getRefundType());
-        vo.setRefundTypeName(refund.isRefundOnly() ? "浠呴€€娆? : "閫€璐ч€€娆?);
+        vo.setRefundTypeName(refund.isRefundOnly() ? "Refund only" : "Return and refund");
         vo.setRefundReason(refund.getRefundReason());
         vo.setRefundDescription(refund.getRefundDescription());
         vo.setRefundAmount(refund.getRefundAmount());
         vo.setRefundQuantity(refund.getRefundQuantity());
         vo.setStatus(refund.getStatus());
-        vo.setStatusName(RefundStatusEnum.fromCode(refund.getStatus()).getName());
+
+        RefundStatusEnum statusEnum = RefundStatusEnum.fromCode(refund.getStatus());
+        vo.setStatusName(statusEnum == null ? "Unknown" : statusEnum.getName());
+
         vo.setAuditTime(refund.getAuditTime());
         vo.setAuditRemark(refund.getAuditRemark());
         vo.setLogisticsCompany(refund.getLogisticsCompany());

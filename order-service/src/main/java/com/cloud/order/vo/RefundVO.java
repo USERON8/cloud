@@ -6,82 +6,76 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
-
-
-
-
-
 @Data
-@Schema(description = "閫€娆句俊鎭?)
+@Schema(description = "Refund view object")
 public class RefundVO {
 
-    @Schema(description = "閫€娆惧崟ID")
+    @Schema(description = "Refund ID")
     private Long id;
 
-    @Schema(description = "閫€娆惧崟鍙?)
+    @Schema(description = "Refund number")
     private String refundNo;
 
-    @Schema(description = "璁㈠崟ID")
+    @Schema(description = "Order ID")
     private Long orderId;
 
-    @Schema(description = "璁㈠崟鍙?)
+    @Schema(description = "Order number")
     private String orderNo;
 
-    @Schema(description = "鐢ㄦ埛ID")
+    @Schema(description = "User ID")
     private Long userId;
 
-    @Schema(description = "鍟嗗ID")
+    @Schema(description = "Merchant ID")
     private Long merchantId;
 
-    @Schema(description = "閫€娆剧被鍨嬶細1-浠呴€€娆撅紝2-閫€璐ч€€娆?)
+    @Schema(description = "Refund type: 1 refund only, 2 return and refund")
     private Integer refundType;
 
-    @Schema(description = "閫€娆剧被鍨嬪悕绉?)
+    @Schema(description = "Refund type display name")
     private String refundTypeName;
 
-    @Schema(description = "閫€娆惧師鍥?)
+    @Schema(description = "Refund reason")
     private String refundReason;
 
-    @Schema(description = "璇︾粏璇存槑")
+    @Schema(description = "Refund description")
     private String refundDescription;
 
-    @Schema(description = "閫€娆鹃噾棰?)
+    @Schema(description = "Refund amount")
     private BigDecimal refundAmount;
 
-    @Schema(description = "閫€璐ф暟閲?)
+    @Schema(description = "Refund quantity")
     private Integer refundQuantity;
 
-    @Schema(description = "閫€娆剧姸鎬侊細0-寰呭鏍革紝1-瀹℃牳閫氳繃锛?-瀹℃牳鎷掔粷锛?-閫€璐т腑锛?-宸叉敹璐э紝5-閫€娆句腑锛?-宸插畬鎴愶紝7-宸插彇娑堬紝8-宸插叧闂?)
+    @Schema(description = "Refund status")
     private Integer status;
 
-    @Schema(description = "閫€娆剧姸鎬佸悕绉?)
+    @Schema(description = "Refund status display name")
     private String statusName;
 
-    @Schema(description = "瀹℃牳鏃堕棿")
+    @Schema(description = "Audit time")
     private LocalDateTime auditTime;
 
-    @Schema(description = "瀹℃牳澶囨敞")
+    @Schema(description = "Audit remark")
     private String auditRemark;
 
-    @Schema(description = "鐗╂祦鍏徃")
+    @Schema(description = "Logistics company")
     private String logisticsCompany;
 
-    @Schema(description = "鐗╂祦鍗曞彿")
+    @Schema(description = "Logistics number")
     private String logisticsNo;
 
-    @Schema(description = "閫€娆炬椂闂?)
+    @Schema(description = "Refund time")
     private LocalDateTime refundTime;
 
-    @Schema(description = "閫€娆炬笭閬?)
+    @Schema(description = "Refund channel")
     private String refundChannel;
 
-    @Schema(description = "閫€娆句氦鏄撳彿")
+    @Schema(description = "Refund transaction number")
     private String refundTransactionNo;
 
-    @Schema(description = "鍒涘缓鏃堕棿")
+    @Schema(description = "Created time")
     private LocalDateTime createdAt;
 
-    @Schema(description = "鏇存柊鏃堕棿")
+    @Schema(description = "Updated time")
     private LocalDateTime updatedAt;
 }

@@ -8,45 +8,46 @@ import com.cloud.stock.module.dto.StockOperationResult;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.StockAsyncService;
 import com.cloud.stock.service.StockService;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.CacheManager;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-
-
-
-
-
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockAsyncServiceImpl implements StockAsyncService {
 
-    
-
-
     private static final int BATCH_SIZE = 50;
     private final StockService stockService;
     private final StockMapper stockMapper;
     private final StockConverter stockConverter;
     private final CacheManager cacheManager;
+
     @Resource
     @Qualifier("stockQueryExecutor")
     private Executor stockQueryExecutor;
+
     @Resource
     @Qualifier("stockOperationExecutor")
     private Executor stockOperationExecutor;
+
     @Resource
     @Qualifier("stockCommonExecutor")
     private Executor stockCommonExecutor;
@@ -54,228 +55,98 @@ public class StockAsyncServiceImpl implements StockAsyncService {
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<List<StockDTO>> getStocksByProductIdsAsync(Collection<Long> productIds) {
-        log.debug("寮傛鎵归噺鏌ヨ搴撳瓨锛屽晢鍝佹暟閲? {}", productIds.size());
-        long startTime = System.currentTimeMillis();
-
-        try {
-            if (productIds == null || productIds.isEmpty()) {
-                return CompletableFuture.completedFuture(Collections.emptyList());
-            }
-
-            
-            if (productIds.size() <= BATCH_SIZE) {
-                List<StockDTO> result = stockService.getStocksByProductIds(productIds);
-                log.debug("寮傛鎵归噺鏌ヨ搴撳瓨瀹屾垚锛岃€楁椂: {}ms", System.currentTimeMillis() - startTime);
-                return CompletableFuture.completedFuture(result);
-            }
-
-            
-            List<Long> productIdList = new ArrayList<>(productIds);
-            List<CompletableFuture<List<StockDTO>>> futures = new ArrayList<>();
-
-            for (int i = 0; i < productIdList.size(); i += BATCH_SIZE) {
-                int end = Math.min(i + BATCH_SIZE, productIdList.size());
-                List<Long> batch = productIdList.subList(i, end);
-
-                CompletableFuture<List<StockDTO>> future = CompletableFuture.supplyAsync(
-                        () -> stockService.getStocksByProductIds(batch),
-                        stockQueryExecutor
-                );
-                futures.add(future);
-            }
-
-            
-            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenApply(v -> {
-                        List<StockDTO> result = futures.stream()
-                                .map(CompletableFuture::join)
-                                .flatMap(List::stream)
-                                .collect(Collectors.toList());
-
-                        
-
-                        return result;
-                    });
-
-        } catch (Exception e) {
-            log.error("寮傛鎵归噺鏌ヨ搴撳瓨澶辫触", e);
-            return CompletableFuture.failedFuture(e);
+        if (productIds == null || productIds.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
+
+        if (productIds.size() <= BATCH_SIZE) {
+            return CompletableFuture.completedFuture(stockService.getStocksByProductIds(productIds));
+        }
+
+        List<Long> idList = new ArrayList<>(productIds);
+        List<CompletableFuture<List<StockDTO>>> futures = new ArrayList<>();
+        for (int i = 0; i < idList.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, idList.size());
+            List<Long> batch = idList.subList(i, end);
+            futures.add(CompletableFuture.supplyAsync(() -> stockService.getStocksByProductIds(batch), stockQueryExecutor));
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream()
+                        .map(CompletableFuture::join)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toList()));
     }
 
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<Map<Long, Boolean>> checkStocksSufficientAsync(Map<Long, Integer> productQuantityMap) {
-        log.debug("寮傛鎵归噺妫€鏌ュ簱瀛橈紝鍟嗗搧鏁伴噺: {}", productQuantityMap.size());
+        if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                
-                List<CompletableFuture<Map.Entry<Long, Boolean>>> futures =
-                        productQuantityMap.entrySet().stream()
-                                .map(entry -> CompletableFuture.supplyAsync(() -> {
-                                    Long productId = entry.getKey();
-                                    Integer quantity = entry.getValue();
-                                    boolean sufficient = stockService.checkStockSufficient(productId, quantity);
-                                    return Map.entry(productId, sufficient);
-                                }, stockQueryExecutor))
-                                .collect(Collectors.toList());
-
-                
-                Map<Long, Boolean> result = futures.stream()
-                        .map(CompletableFuture::join)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                
-                return result;
-
-            } catch (Exception e) {
-                log.error("寮傛鎵归噺妫€鏌ュ簱瀛樺け璐?, e);
-                throw new RuntimeException("鎵归噺妫€鏌ュ簱瀛樺け璐?, e);
-            }
+            Map<Long, Boolean> result = new HashMap<>();
+            productQuantityMap.forEach((productId, quantity) ->
+                    result.put(productId, stockService.checkStockSufficient(productId, quantity)));
+            return result;
         }, stockQueryExecutor);
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchReserveStockAsync(Map<Long, Integer> productQuantityMap) {
-        
-        long startTime = System.currentTimeMillis();
-
-        return CompletableFuture.supplyAsync(() -> {
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = new ArrayList<>();
-
-            try {
-                
-                productQuantityMap.forEach((productId, quantity) -> {
-                    try {
-                        boolean success = stockService.reserveStock(productId, quantity);
-                        if (success) {
-                            successCount.incrementAndGet();
-                        } else {
-                            failureCount.incrementAndGet();
-                            errors.add("鍟嗗搧" + productId + "棰勭暀澶辫触");
-                        }
-                    } catch (Exception e) {
-                        failureCount.incrementAndGet();
-                        errors.add("鍟嗗搧" + productId + "棰勭暀寮傚父: " + e.getMessage());
-                        log.warn("棰勭暀搴撳瓨澶辫触: productId={}", productId, e);
-                    }
-                });
-
-                
-
-
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-
-            } catch (Exception e) {
-                log.error("寮傛鎵归噺棰勭暀搴撳瓨澶辫触", e);
-                errors.add("鎵归噺鎿嶄綔澶辫触: " + e.getMessage());
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-            }
-        }, stockOperationExecutor);
+        return CompletableFuture.supplyAsync(() ->
+                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.reserveStock(productId, qty)),
+                stockOperationExecutor);
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchReleaseStockAsync(Map<Long, Integer> productQuantityMap) {
-        
-        long startTime = System.currentTimeMillis();
-
-        return CompletableFuture.supplyAsync(() -> {
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = new ArrayList<>();
-
-            try {
-                productQuantityMap.forEach((productId, quantity) -> {
-                    try {
-                        boolean success = stockService.releaseReservedStock(productId, quantity);
-                        if (success) {
-                            successCount.incrementAndGet();
-                        } else {
-                            failureCount.incrementAndGet();
-                            errors.add("鍟嗗搧" + productId + "閲婃斁澶辫触");
-                        }
-                    } catch (Exception e) {
-                        failureCount.incrementAndGet();
-                        errors.add("鍟嗗搧" + productId + "閲婃斁寮傚父: " + e.getMessage());
-                        log.warn("閲婃斁搴撳瓨澶辫触: productId={}", productId, e);
-                    }
-                });
-
-                
-
-
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-
-            } catch (Exception e) {
-                log.error("寮傛鎵归噺閲婃斁搴撳瓨澶辫触", e);
-                errors.add("鎵归噺鎿嶄綔澶辫触: " + e.getMessage());
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-            }
-        }, stockOperationExecutor);
+        return CompletableFuture.supplyAsync(() ->
+                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.releaseReservedStock(productId, qty)),
+                stockOperationExecutor);
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchStockInAsync(List<StockInRequest> stockInList) {
-        
-        long startTime = System.currentTimeMillis();
-
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
             List<String> errors = new ArrayList<>();
 
-            try {
+            if (stockInList != null) {
                 stockInList.forEach(request -> {
                     try {
-                        boolean success = stockService.stockIn(
-                                request.getProductId(),
-                                request.getQuantity(),
-                                request.getRemark()
-                        );
+                        boolean success = stockService.stockIn(request.getProductId(), request.getQuantity(), request.getRemark());
                         if (success) {
                             successCount.incrementAndGet();
                         } else {
                             failureCount.incrementAndGet();
-                            errors.add("鍟嗗搧" + request.getProductId() + "鍏ュ簱澶辫触");
+                            errors.add("stock in failed for productId=" + request.getProductId());
                         }
                     } catch (Exception e) {
                         failureCount.incrementAndGet();
-                        errors.add("鍟嗗搧" + request.getProductId() + "鍏ュ簱寮傚父: " + e.getMessage());
-                        log.warn("鍏ュ簱澶辫触: productId={}", request.getProductId(), e);
+                        errors.add("stock in exception for productId=" + request.getProductId() + ", " + e.getMessage());
                     }
                 });
-
-                
-
-
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-
-            } catch (Exception e) {
-                log.error("寮傛鎵归噺鍏ュ簱澶辫触", e);
-                errors.add("鎵归噺鎿嶄綔澶辫触: " + e.getMessage());
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
+
+            return new StockOperationResult(successCount.get(), failureCount.get(), errors);
         }, stockOperationExecutor);
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchStockOutAsync(List<StockOutRequest> stockOutList) {
-        
-        long startTime = System.currentTimeMillis();
-
         return CompletableFuture.supplyAsync(() -> {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
             List<String> errors = new ArrayList<>();
 
-            try {
+            if (stockOutList != null) {
                 stockOutList.forEach(request -> {
                     try {
                         boolean success = stockService.stockOut(
@@ -289,139 +160,131 @@ public class StockAsyncServiceImpl implements StockAsyncService {
                             successCount.incrementAndGet();
                         } else {
                             failureCount.incrementAndGet();
-                            errors.add("鍟嗗搧" + request.getProductId() + "鍑哄簱澶辫触");
+                            errors.add("stock out failed for productId=" + request.getProductId());
                         }
                     } catch (Exception e) {
                         failureCount.incrementAndGet();
-                        errors.add("鍟嗗搧" + request.getProductId() + "鍑哄簱寮傚父: " + e.getMessage());
-                        log.warn("鍑哄簱澶辫触: productId={}", request.getProductId(), e);
+                        errors.add("stock out exception for productId=" + request.getProductId() + ", " + e.getMessage());
                     }
                 });
-
-                
-
-
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-
-            } catch (Exception e) {
-                log.error("寮傛鎵归噺鍑哄簱澶辫触", e);
-                errors.add("鎵归噺鎿嶄綔澶辫触: " + e.getMessage());
-                return new StockOperationResult(successCount.get(), failureCount.get(), errors);
             }
+
+            return new StockOperationResult(successCount.get(), failureCount.get(), errors);
         }, stockOperationExecutor);
     }
 
     @Override
     @Async("stockCommonExecutor")
     public CompletableFuture<Void> refreshStockCacheAsync(Long productId) {
-        log.debug("寮傛鍒锋柊搴撳瓨缂撳瓨: productId={}", productId);
-
         return CompletableFuture.runAsync(() -> {
-            try {
-                if (cacheManager != null) {
-                    
-                    Objects.requireNonNull(cacheManager.getCache("stock")).evict(productId);
-
-                    
-                    stockService.getStockByProductId(productId);
-
-                    log.debug("鍒锋柊搴撳瓨缂撳瓨鎴愬姛: productId={}", productId);
-                }
-            } catch (Exception e) {
-                log.error("鍒锋柊搴撳瓨缂撳瓨澶辫触: productId={}", productId, e);
-            }
+            evictCache("stockCache", productId);
+            evictCache("stockCache", "product:" + productId);
+            stockService.getStockByProductId(productId);
         }, stockCommonExecutor);
     }
 
     @Override
     @Async("stockCommonExecutor")
     public CompletableFuture<Void> batchRefreshStockCacheAsync(Collection<Long> productIds) {
-        
+        if (productIds == null || productIds.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
 
-        return CompletableFuture.runAsync(() -> {
-            try {
-                
-                List<CompletableFuture<Void>> futures = productIds.stream()
-                        .map(this::refreshStockCacheAsync)
-                        .collect(Collectors.toList());
-
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-                
-
-            } catch (Exception e) {
-                log.error("鎵归噺鍒锋柊搴撳瓨缂撳瓨澶辫触", e);
-            }
-        }, stockCommonExecutor);
+        List<CompletableFuture<Void>> futures = productIds.stream()
+                .map(this::refreshStockCacheAsync)
+                .collect(Collectors.toList());
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     @Override
     @Async("stockCommonExecutor")
     public CompletableFuture<Integer> preloadPopularStocksAsync(Integer limit) {
-        
-        long startTime = System.currentTimeMillis();
-
+        int size = (limit == null || limit <= 0) ? 100 : limit;
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                
-                LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
-                wrapper.gt(Stock::getAvailableQuantity, 0)
-                        .orderByDesc(Stock::getAvailableQuantity)
-                        .last("LIMIT " + limit);
-
-                List<Stock> stocks = stockMapper.selectList(wrapper);
-
-                
-                stocks.forEach(stock -> {
-                    try {
-                        stockService.getStockByProductId(stock.getProductId());
-                    } catch (Exception e) {
-                        log.warn("棰勫姞杞藉簱瀛樼紦瀛樺け璐? productId={}", stock.getProductId(), e);
-                    }
-                });
-
-                
-
-                return stocks.size();
-
-            } catch (Exception e) {
-                log.error("棰勫姞杞界儹闂ㄥ晢鍝佸簱瀛樺け璐?, e);
-                return 0;
-            }
+            LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
+            wrapper.gt(Stock::getStockQuantity, 0)
+                    .orderByDesc(Stock::getStockQuantity)
+                    .last("LIMIT " + size);
+            List<Stock> stocks = stockMapper.selectList(wrapper);
+            stocks.forEach(stock -> stockService.getStockByProductId(stock.getProductId()));
+            return stocks.size();
         }, stockCommonExecutor);
     }
 
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<List<StockDTO>> getStockAlertListAsync(Integer threshold) {
-        
-
+        int alertThreshold = threshold == null ? 10 : threshold;
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
-                wrapper.le(Stock::getAvailableQuantity, threshold)
-                        .gt(Stock::getAvailableQuantity, 0)
-                        .orderByAsc(Stock::getAvailableQuantity);
-
-                List<Stock> stocks = stockMapper.selectList(wrapper);
-
-                
-                return stockConverter.toDTOList(stocks);
-
-            } catch (Exception e) {
-                log.error("缁熻搴撳瓨棰勮澶辫触", e);
-                return Collections.emptyList();
-            }
+            LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
+            wrapper.le(Stock::getStockQuantity, alertThreshold)
+                    .orderByAsc(Stock::getStockQuantity);
+            List<Stock> stocks = stockMapper.selectList(wrapper);
+            return stockConverter.toDTOList(stocks);
         }, stockQueryExecutor);
     }
 
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<Map<String, Object>> calculateStockValueAsync() {
-        
+        return CompletableFuture.supplyAsync(() -> {
+            List<Stock> stocks = stockMapper.selectList(new LambdaQueryWrapper<>());
+            int totalProducts = stocks.size();
+            int totalStockQuantity = stocks.stream().map(Stock::getStockQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+            int totalFrozenQuantity = stocks.stream().map(Stock::getFrozenQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+            int totalAvailableQuantity = stocks.stream()
+                    .map(Stock::getAvailableQuantity)
+                    .filter(Objects::nonNull)
+                    .mapToInt(Integer::intValue)
+                    .sum();
 
-                return Collections.emptyMap();
-            }
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalProducts", totalProducts);
+            result.put("totalStockQuantity", totalStockQuantity);
+            result.put("totalFrozenQuantity", totalFrozenQuantity);
+            result.put("totalAvailableQuantity", totalAvailableQuantity);
+            return result;
         }, stockQueryExecutor);
+    }
+
+    private StockOperationResult executeBatchMapOperation(Map<Long, Integer> productQuantityMap,
+                                                          BatchOperation operation) {
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        List<String> errors = new ArrayList<>();
+
+        if (productQuantityMap != null) {
+            productQuantityMap.forEach((productId, quantity) -> {
+                try {
+                    boolean success = operation.execute(productId, quantity);
+                    if (success) {
+                        successCount.incrementAndGet();
+                    } else {
+                        failureCount.incrementAndGet();
+                        errors.add("operation failed for productId=" + productId);
+                    }
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                    errors.add("operation exception for productId=" + productId + ", " + e.getMessage());
+                }
+            });
+        }
+
+        return new StockOperationResult(successCount.get(), failureCount.get(), errors);
+    }
+
+    private void evictCache(String cacheName, Object key) {
+        if (cacheManager == null) {
+            return;
+        }
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
+        }
+    }
+
+    @FunctionalInterface
+    private interface BatchOperation {
+        boolean execute(Long productId, Integer quantity);
     }
 }

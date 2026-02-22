@@ -10,15 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-
-
-
-
-
-
-
 
 @Slf4j
 @Service
@@ -28,49 +21,17 @@ public class StockAnnotationServiceImpl {
     private final StockMapper stockMapper;
     private final StockConverter stockConverter;
 
-    
-
-
-
-
-
-
-
     @DistributedLock(
             key = "'stock:product:' + #productId",
             waitTime = 5,
             leaseTime = 10,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "搴撳瓨鍑哄簱鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock out lock failed"
     )
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean stockOutWithAnnotation(Long productId, Integer quantity) {
-        
-
-        
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        
-        int affectedRows = stockMapper.stockOutWithCondition(productId, quantity);
-
-        boolean success = affectedRows > 0;
-        
-
-
-        return success;
+        return stockMapper.stockOutWithCondition(productId, quantity) > 0;
     }
-
-    
-
-
-
-
-
-
 
     @DistributedLock(
             key = "'stock:reserve:' + #productId",
@@ -79,35 +40,12 @@ public class StockAnnotationServiceImpl {
             leaseTime = 15,
             timeUnit = TimeUnit.SECONDS,
             failStrategy = DistributedLock.LockFailStrategy.RETURN_DEFAULT,
-            failMessage = "搴撳瓨棰勭暀鎿嶄綔鑾峰彇鍏钩閿佸け璐?
+            failMessage = "Acquire reserve lock failed"
     )
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean reserveStockWithAnnotation(Long productId, Integer quantity) {
-        
-
-        
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        
-        int affectedRows = stockMapper.reserveStockWithCondition(productId, quantity);
-
-        boolean success = affectedRows > 0;
-        
-
-
-        return success;
+        return stockMapper.reserveStockWithCondition(productId, quantity) > 0;
     }
-
-    
-
-
-
-
-
 
     @DistributedLock(
             key = "'stock:query:' + #productId",
@@ -119,35 +57,9 @@ public class StockAnnotationServiceImpl {
     )
     @Transactional(readOnly = true)
     public StockDTO getStockWithAnnotation(Long productId) {
-        
-
-        
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         Stock stock = stockMapper.selectByProductIdForUpdate(productId);
-        if (stock == null) {
-            log.warn("鈿狅笍 搴撳瓨淇℃伅涓嶅瓨鍦?- 鍟嗗搧ID: {}", productId);
-            return null;
-        }
-
-        StockDTO stockDTO = stockConverter.toDTO(stock);
-        
-
-
-        return stockDTO;
+        return stock == null ? null : stockConverter.toDTO(stock);
     }
-
-    
-
-
-
-
-
-
 
     @DistributedLock(
             key = "'stock:update:' + #productId",
@@ -157,42 +69,15 @@ public class StockAnnotationServiceImpl {
             timeUnit = TimeUnit.SECONDS,
             failStrategy = DistributedLock.LockFailStrategy.FAIL_FAST
     )
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateStockWithAnnotation(Long productId, Integer newQuantity) {
-        
-
-        
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        
         Stock stock = stockMapper.selectByProductIdForUpdate(productId);
         if (stock == null) {
-            log.warn("鈿狅笍 搴撳瓨淇℃伅涓嶅瓨鍦?- 鍟嗗搧ID: {}", productId);
             return false;
         }
-
-        
         stock.setStockQuantity(newQuantity);
-        int affectedRows = stockMapper.updateById(stock);
-
-        boolean success = affectedRows > 0;
-        
-
-
-        return success;
+        return stockMapper.updateById(stock) > 0;
     }
-
-    
-
-
-
-
-
-
 
     @DistributedLock(
             key = "'stock:batch:' + #operation + ':' + T(String).join(',', #productIds)",
@@ -200,56 +85,36 @@ public class StockAnnotationServiceImpl {
             waitTime = 10,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
-            failMessage = "鎵归噺搴撳瓨鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire batch stock operation lock failed"
     )
-    @Transactional
-    public int batchStockOperationWithAnnotation(java.util.List<Long> productIds, String operation) {
-        
-
-        int processedCount = 0;
-
-        for (Long productId : productIds) {
-            try {
-                
-                Thread.sleep(10);
-
-                Stock stock = stockMapper.selectByProductIdForUpdate(productId);
-                if (stock != null) {
-                    
-                    switch (operation) {
-                        case "refresh" -> {
-                            
-                            stockMapper.updateById(stock);
-                            processedCount++;
-                        }
-                        case "check" -> {
-                            
-                            if (stock.getStockQuantity() > 0) {
-                                processedCount++;
-                            }
-                        }
-                        default -> log.warn("鈿狅笍 鏈煡鎿嶄綔绫诲瀷: {}", operation);
-                    }
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                log.error("鉂?澶勭悊鍟嗗搧搴撳瓨寮傚父 - 鍟嗗搧ID: {}", productId, e);
-            }
+    @Transactional(rollbackFor = Exception.class)
+    public int batchStockOperationWithAnnotation(List<Long> productIds, String operation) {
+        if (productIds == null || productIds.isEmpty()) {
+            return 0;
         }
 
-        
+        int processedCount = 0;
+        for (Long productId : productIds) {
+            Stock stock = stockMapper.selectByProductIdForUpdate(productId);
+            if (stock == null) {
+                continue;
+            }
 
-
+            switch (operation) {
+                case "refresh" -> {
+                    stockMapper.updateById(stock);
+                    processedCount++;
+                }
+                case "check" -> {
+                    if (stock.getStockQuantity() != null && stock.getStockQuantity() > 0) {
+                        processedCount++;
+                    }
+                }
+                default -> log.warn("Unknown operation in batchStockOperationWithAnnotation: {}", operation);
+            }
+        }
         return processedCount;
     }
-
-    
-
-
-
-
 
     @DistributedLock(
             key = "'stock:safe:' + #productId",
@@ -257,12 +122,10 @@ public class StockAnnotationServiceImpl {
             leaseTime = 5,
             timeUnit = TimeUnit.SECONDS,
             failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL,
-            failMessage = "蹇€熸煡璇㈠簱瀛樿幏鍙栭攣澶辫触"
+            failMessage = "Quick stock query lock failed"
     )
     public StockDTO quickGetStockWithAnnotation(Long productId) {
-        
-
-        Stock stock = stockMapper.selectById(productId);
-        return stock != null ? stockConverter.toDTO(stock) : null;
+        Stock stock = stockMapper.selectByProductIdForUpdate(productId);
+        return stock == null ? null : stockConverter.toDTO(stock);
     }
 }

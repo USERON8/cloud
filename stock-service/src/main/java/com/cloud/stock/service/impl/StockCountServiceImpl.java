@@ -20,11 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-
-
-
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,26 +36,18 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
     @Transactional(rollbackFor = Exception.class)
     public Long createStockCount(Long productId, Integer actualQuantity,
                                  Long operatorId, String operatorName, String remark) {
-        
-
-
-        
         if (productId == null) {
-            throw new BusinessException("鍟嗗搧ID涓嶈兘涓虹┖");
+            throw new BusinessException("productId is required");
         }
         if (actualQuantity == null || actualQuantity < 0) {
-            throw new BusinessException("鐩樼偣鏁伴噺鏃犳晥");
+            throw new BusinessException("actualQuantity must be >= 0");
         }
 
-        
-        LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Stock::getProductId, productId);
-        Stock stock = stockMapper.selectOne(queryWrapper);
+        Stock stock = stockMapper.selectOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, productId));
         if (stock == null) {
-            throw new BusinessException("鍟嗗搧搴撳瓨涓嶅瓨鍦?);
+            throw new BusinessException("Stock not found");
         }
 
-        
         StockCount stockCount = new StockCount();
         stockCount.setCountNo(generateCountNo());
         stockCount.setProductId(productId);
@@ -75,103 +62,66 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
         stockCount.setRemark(remark);
 
         save(stockCount);
-
-        
-
-
         return stockCount.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean confirmStockCount(Long countId, Long confirmUserId, String confirmUserName) {
-        
-
-        
         StockCount stockCount = getById(countId);
         if (stockCount == null) {
-            throw new BusinessException("鐩樼偣璁板綍涓嶅瓨鍦?);
+            throw new BusinessException("Stock count not found");
         }
-
-        
         if (!"PENDING".equals(stockCount.getStatus())) {
-            throw new BusinessException("鐩樼偣璁板綍鐘舵€佷笉鏄緟纭锛屾棤娉曠‘璁?);
+            throw new BusinessException("Only pending stock count can be confirmed");
         }
 
-        
-        LambdaQueryWrapper<Stock> queryWrapper2 = new LambdaQueryWrapper<>();
-        queryWrapper2.eq(Stock::getProductId, stockCount.getProductId());
-        Stock stock = stockMapper.selectOne(queryWrapper2);
+        Stock stock = stockMapper.selectOne(new LambdaQueryWrapper<Stock>()
+                .eq(Stock::getProductId, stockCount.getProductId()));
         if (stock == null) {
-            throw new BusinessException("鍟嗗搧搴撳瓨涓嶅瓨鍦?);
+            throw new BusinessException("Stock not found");
         }
 
-        Integer quantityBefore = stock.getStockQuantity();
-
-        
+        int beforeQuantity = stock.getStockQuantity();
         if (stockCount.getDifference() != 0) {
-            
-
-
-            
             stock.setStockQuantity(stockCount.getActualQuantity());
             boolean updateSuccess = stockService.updateById(stock);
-
             if (!updateSuccess) {
-                throw new BusinessException("璋冩暣搴撳瓨澶辫触");
+                throw new BusinessException("Adjust stock quantity failed");
             }
 
-            
             stockLogService.logStockChange(
                     stock.getProductId(),
                     stock.getProductName(),
                     "ADJUST",
-                    quantityBefore,
+                    beforeQuantity,
                     stockCount.getActualQuantity(),
                     null,
                     null,
-                    String.format("鐩樼偣璋冩暣, 鐩樼偣鍗曞彿: %s, %s",
-                            stockCount.getCountNo(),
-                            stockCount.getCountType())
+                    "Stock count confirmation, countNo=" + stockCount.getCountNo()
             );
         }
 
-        
         stockCount.setStatus("CONFIRMED");
         stockCount.setConfirmUserId(confirmUserId);
         stockCount.setConfirmUserName(confirmUserName);
         stockCount.setConfirmTime(LocalDateTime.now());
-
-        boolean success = updateById(stockCount);
-
-        
-
-        return success;
+        return updateById(stockCount);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelStockCount(Long countId) {
-        
-
-        
         StockCount stockCount = getById(countId);
         if (stockCount == null) {
-            throw new BusinessException("鐩樼偣璁板綍涓嶅瓨鍦?);
+            throw new BusinessException("Stock count not found");
         }
-
-        
         if (!"PENDING".equals(stockCount.getStatus())) {
-            throw new BusinessException("鍙兘鍙栨秷寰呯‘璁ょ殑鐩樼偣璁板綍");
+            throw new BusinessException("Only pending stock count can be cancelled");
         }
 
-        
         stockCount.setStatus("CANCELLED");
-        boolean success = updateById(stockCount);
-
-        
-
-        return success;
+        return updateById(stockCount);
     }
 
     @Override
@@ -181,31 +131,48 @@ public class StockCountServiceImpl extends ServiceImpl<StockCountMapper, StockCo
 
     @Override
     public StockCount getStockCountByNo(String countNo) {
-        return stockCountMapper.selectByCountNo(countNo);
+        return getOne(new LambdaQueryWrapper<StockCount>()
+                .eq(StockCount::getCountNo, countNo)
+                .last("LIMIT 1"));
     }
 
     @Override
     public List<StockCount> getStockCountsByProductId(Long productId, LocalDateTime startTime, LocalDateTime endTime) {
-        
-        return stockCountMapper.selectByProductId(productId, startTime, endTime);
+        LambdaQueryWrapper<StockCount> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StockCount::getProductId, productId);
+        if (startTime != null) {
+            wrapper.ge(StockCount::getCountTime, startTime);
+        }
+        if (endTime != null) {
+            wrapper.le(StockCount::getCountTime, endTime);
+        }
+        wrapper.orderByDesc(StockCount::getCountTime);
+        return list(wrapper);
     }
 
     @Override
     public List<StockCount> getStockCountsByStatus(String status, LocalDateTime startTime, LocalDateTime endTime) {
-        
-        return stockCountMapper.selectByStatus(status, startTime, endTime);
+        LambdaQueryWrapper<StockCount> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StockCount::getStatus, status);
+        if (startTime != null) {
+            wrapper.ge(StockCount::getCountTime, startTime);
+        }
+        if (endTime != null) {
+            wrapper.le(StockCount::getCountTime, endTime);
+        }
+        wrapper.orderByDesc(StockCount::getCountTime);
+        return list(wrapper);
     }
 
     @Override
     public int countPendingRecords() {
-        return stockCountMapper.countPendingRecords();
+        return Math.toIntExact(count(new LambdaQueryWrapper<StockCount>().eq(StockCount::getStatus, "PENDING")));
     }
 
     @Override
     public String generateCountNo() {
-        
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long sequence = COUNTER.incrementAndGet() % 1000000;
+        long sequence = COUNTER.incrementAndGet() % 1_000_000;
         return String.format("COUNT%s%06d", datePart, sequence);
     }
 }

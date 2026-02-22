@@ -7,45 +7,38 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-
-
-
-
-
-
 @Data
-@Schema(description = "搴楅摵璇锋眰DTO")
+@Schema(description = "Shop request DTO")
 public class ShopRequestDTO {
 
-    @Schema(description = "鍟嗗ID", required = true)
-    @NotNull(message = "鍟嗗ID涓嶈兘涓虹┖")
+    @Schema(description = "Merchant id", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "Merchant id cannot be null")
     private Long merchantId;
 
-    @Schema(description = "搴楅摵鍚嶇О", required = true)
-    @NotBlank(message = "搴楅摵鍚嶇О涓嶈兘涓虹┖")
-    @Size(max = 100, message = "搴楅摵鍚嶇О涓嶈兘瓒呰繃100涓瓧绗?)
+    @Schema(description = "Shop name", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "Shop name cannot be blank")
+    @Size(max = 100, message = "Shop name length must be <= 100")
     private String shopName;
 
-    @Schema(description = "搴楅摵澶村儚URL")
-    @Size(max = 500, message = "搴楅摵澶村儚URL涓嶈兘瓒呰繃500涓瓧绗?)
+    @Schema(description = "Avatar url")
+    @Size(max = 500, message = "Avatar url length must be <= 500")
     private String avatarUrl;
 
-    @Schema(description = "搴楅摵鎻忚堪")
-    @Size(max = 500, message = "搴楅摵鎻忚堪涓嶈兘瓒呰繃500涓瓧绗?)
+    @Schema(description = "Description")
+    @Size(max = 500, message = "Description length must be <= 500")
     private String description;
 
-    @Schema(description = "瀹㈡湇鐢佃瘽")
-    @Pattern(regexp = "^[0-9-()\\s+]{0,20}$", message = "瀹㈡湇鐢佃瘽鏍煎紡涓嶆纭?)
+    @Schema(description = "Contact phone")
+    @Pattern(regexp = "^[0-9-()\\s+]{0,20}$", message = "Invalid contact phone format")
     private String contactPhone;
 
-    @Schema(description = "璇︾粏鍦板潃")
-    @Size(max = 200, message = "璇︾粏鍦板潃涓嶈兘瓒呰繃200涓瓧绗?)
+    @Schema(description = "Address")
+    @Size(max = 200, message = "Address length must be <= 200")
     private String address;
 
-    @Schema(description = "搴楅摵鐘舵€侊細0-鍏抽棴锛?-钀ヤ笟", allowableValues = {"0", "1"})
+    @Schema(description = "Status: 0-disabled, 1-enabled", allowableValues = {"0", "1"})
     private Integer status;
 
-    
     public String getName() {
         return this.shopName;
     }

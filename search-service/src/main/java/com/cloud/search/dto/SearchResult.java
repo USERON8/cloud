@@ -9,93 +9,56 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
-
-
-
-
-
-
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "鎼滅储缁撴灉鍝嶅簲")
+@Schema(description = "Search result")
 public class SearchResult<T> {
 
-    
-
-
-    @Schema(description = "鎼滅储缁撴灉鍒楄〃")
+    @Schema(description = "Current page records")
     private List<T> list;
 
-    
-
-
-    @Schema(description = "鎬昏褰曟暟", example = "1000")
+    @Schema(description = "Total records")
     private Long total;
 
-    
-
-
-    @Schema(description = "褰撳墠椤电爜", example = "0")
+    @Schema(description = "Current page")
     private Integer page;
 
-    
-
-
-    @Schema(description = "姣忛〉澶у皬", example = "20")
+    @Schema(description = "Page size")
     private Integer size;
 
-    
-
-
-    @Schema(description = "鎬婚〉鏁?, example = "50")
+    @Schema(description = "Total pages")
     private Integer totalPages;
 
-    
-
-
-    @Schema(description = "鏄惁鏈変笅涓€椤?, example = "true")
+    @Schema(description = "Has next page")
     private Boolean hasNext;
 
-    
-
-
-    @Schema(description = "鏄惁鏈変笂涓€椤?, example = "false")
+    @Schema(description = "Has previous page")
     private Boolean hasPrevious;
 
-    
-
-
-    @Schema(description = "鎼滅储鑰楁椂锛堟绉掞級", example = "50")
+    @Schema(description = "Query time in milliseconds")
     private Long took;
 
-    
-
-
-    @Schema(description = "鑱氬悎缁撴灉")
+    @Schema(description = "Aggregation data")
     private Map<String, Object> aggregations;
 
-    
-
-
-    @Schema(description = "楂樹寒缁撴灉")
+    @Schema(description = "Highlight data")
     private Map<String, List<String>> highlights;
 
-    
-
-
     public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took) {
-        int totalPages = (int) Math.ceil((double) total / size);
-        boolean hasNext = page < totalPages - 1;
-        boolean hasPrevious = page > 0;
+        int safeSize = size == null || size <= 0 ? 20 : size;
+        int safePage = page == null || page < 0 ? 0 : page;
+        long safeTotal = total == null ? 0L : total;
+        int totalPages = (int) Math.ceil((double) safeTotal / safeSize);
+        boolean hasNext = safePage < totalPages - 1;
+        boolean hasPrevious = safePage > 0;
 
         return SearchResult.<T>builder()
                 .list(list)
-                .total(total)
-                .page(page)
-                .size(size)
+                .total(safeTotal)
+                .page(safePage)
+                .size(safeSize)
                 .totalPages(totalPages)
                 .hasNext(hasNext)
                 .hasPrevious(hasPrevious)
@@ -103,18 +66,12 @@ public class SearchResult<T> {
                 .build();
     }
 
-    
-
-
     public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
                                          Map<String, Object> aggregations) {
         SearchResult<T> result = of(list, total, page, size, took);
         result.setAggregations(aggregations);
         return result;
     }
-
-    
-
 
     public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
                                          Map<String, Object> aggregations, Map<String, List<String>> highlights) {

@@ -17,7 +17,9 @@ import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.module.dto.AlipayCreateRequest;
 import com.cloud.payment.module.dto.AlipayCreateResponse;
 import com.cloud.payment.module.entity.Payment;
+import com.cloud.payment.module.entity.PaymentFlow;
 import com.cloud.payment.service.AlipayService;
+import com.cloud.payment.service.PaymentFlowService;
 import com.cloud.payment.service.PaymentService;
 import com.cloud.payment.utils.AlipayUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +31,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-
-
-
-
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,94 +39,66 @@ public class AlipayServiceImpl implements AlipayService {
     private final AlipayClient alipayClient;
     private final AlipayConfig alipayConfig;
     private final PaymentService paymentService;
+    private final PaymentFlowService paymentFlowService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AlipayCreateResponse createPayment(AlipayCreateRequest request) {
-        
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("Invalid payment amount");
+        }
+        if (paymentService.isPaymentRecordExists(request.getOrderId())) {
+            throw new BusinessException("Payment record already exists for this order");
+        }
+
+        String outTradeNo = AlipayUtils.generateOutTradeNo(request.getOrderId());
+        String traceId = StringUtils.generateTraceId();
+
+        Payment payment = createPaymentRecord(request, traceId);
+        AlipayTradePagePayRequest alipayRequest = buildAlipayRequest(request, outTradeNo);
 
         try {
-            
-            if (paymentService.isPaymentRecordExists(request.getOrderId())) {
-                throw new BusinessException("鏀粯璁板綍宸插瓨鍦紝璇峰嬁閲嶅鍒涘缓");
-            }
-
-            
-            String outTradeNo = AlipayUtils.generateOutTradeNo(request.getOrderId());
-            String traceId = StringUtils.generateTraceId();
-
-            
-            Payment payment = createPaymentRecord(request, outTradeNo, traceId);
-
-            
-            AlipayTradePagePayRequest alipayRequest = buildAlipayRequest(request, outTradeNo);
-
-            
             AlipayTradePagePayResponse response = alipayClient.pageExecute(alipayRequest);
-
             if (!response.isSuccess()) {
-                log.error("鏀粯瀹濇敮浠樺垱寤哄け璐?- 璁㈠崟ID: {}, 閿欒: {}", request.getOrderId(), response.getSubMsg());
-                throw new BusinessException("鏀粯瀹濇敮浠樺垱寤哄け璐? " + response.getSubMsg());
+                throw new BusinessException("Create Alipay payment failed: " + response.getSubMsg());
             }
-
-            
-
             return AlipayCreateResponse.builder()
                     .paymentForm(response.getBody())
                     .paymentId(payment.getId())
                     .outTradeNo(outTradeNo)
-                    .status(0) 
+                    .status(payment.getStatus())
                     .timestamp(System.currentTimeMillis())
                     .traceId(traceId)
                     .build();
-
         } catch (AlipayApiException e) {
-            log.error("鏀粯瀹滱PI璋冪敤寮傚父 - 璁㈠崟ID: {}", request.getOrderId(), e);
-            throw new BusinessException("鏀粯瀹濇敮浠樺垱寤哄け璐? " + e.getMessage());
+            throw new BusinessException("Call Alipay API failed", e);
         }
     }
 
     @Override
     public boolean handleNotify(Map<String, String> params) {
-        
-
         try {
-            
             if (!AlipayUtils.validateNotifyParams(params)) {
-                log.error("鏀粯瀹濆紓姝ラ€氱煡鍙傛暟涓嶅畬鏁?);
                 return false;
             }
-
-            
             if (!verifySign(params)) {
-                log.error("鏀粯瀹濆紓姝ラ€氱煡绛惧悕楠岃瘉澶辫触");
                 return false;
             }
 
-            
             String tradeStatus = params.get("trade_status");
             String outTradeNo = params.get("out_trade_no");
             String tradeNo = params.get("trade_no");
-            String totalAmount = params.get("total_amount");
+            BigDecimal totalAmount = new BigDecimal(params.get("total_amount"));
 
-            
-
-
-            
             if (AlipayUtils.isPaymentSuccess(tradeStatus)) {
-                return processSuccessfulPayment(outTradeNo, tradeNo, new BigDecimal(totalAmount));
+                return processSuccessfulPayment(outTradeNo, tradeNo, totalAmount);
             }
-
-            
             if (AlipayUtils.isPaymentClosed(tradeStatus)) {
                 return processClosedPayment(outTradeNo);
             }
-
-            log.warn("鏈鐞嗙殑鏀粯鐘舵€?- 璁㈠崟鍙? {}, 鐘舵€? {}", outTradeNo, tradeStatus);
             return true;
-
         } catch (Exception e) {
-            log.error("澶勭悊鏀粯瀹濆紓姝ラ€氱煡寮傚父", e);
+            log.error("Handle Alipay notify failed", e);
             return false;
         }
     }
@@ -145,83 +113,63 @@ public class AlipayServiceImpl implements AlipayService {
                     alipayConfig.getSignType()
             );
         } catch (AlipayApiException e) {
-            log.error("鏀粯瀹濈鍚嶉獙璇佸紓甯?, e);
+            log.error("Verify Alipay signature failed", e);
             return false;
         }
     }
 
     @Override
     public String queryPaymentStatus(String outTradeNo) {
-        
-
         try {
             AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
-            request.setBizContent(String.format("{\"out_trade_no\":\"%s\"}", outTradeNo));
-
+            request.setBizContent(String.format("{\"out_trade_no\":\"%s\"}", sanitizeJsonValue(outTradeNo)));
             AlipayTradeQueryResponse response = alipayClient.execute(request);
-
-            if (response.isSuccess()) {
-                
-                return response.getTradeStatus();
-            } else {
-                log.error("鏀粯鐘舵€佹煡璇㈠け璐?- 璁㈠崟鍙? {}, 閿欒: {}", outTradeNo, response.getSubMsg());
+            if (!response.isSuccess()) {
+                log.warn("Query Alipay payment status failed: outTradeNo={}, subMsg={}", outTradeNo, response.getSubMsg());
                 return null;
             }
-
+            return response.getTradeStatus();
         } catch (AlipayApiException e) {
-            log.error("鏀粯鐘舵€佹煡璇㈠紓甯?- 璁㈠崟鍙? {}", outTradeNo, e);
+            log.error("Query Alipay payment status failed: outTradeNo={}", outTradeNo, e);
             return null;
         }
     }
 
     @Override
     public boolean refund(String outTradeNo, BigDecimal refundAmount, String refundReason) {
-        
-
         try {
             AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
-            String bizContent = String.format(
+            request.setBizContent(String.format(
                     "{\"out_trade_no\":\"%s\",\"refund_amount\":\"%s\",\"refund_reason\":\"%s\"}",
-                    outTradeNo, refundAmount.toString(), refundReason
-            );
-            request.setBizContent(bizContent);
-
+                    sanitizeJsonValue(outTradeNo),
+                    refundAmount,
+                    sanitizeJsonValue(refundReason)
+            ));
             AlipayTradeRefundResponse response = alipayClient.execute(request);
-
-            if (response.isSuccess()) {
-                
-                return true;
-            } else {
-                log.error("閫€娆剧敵璇峰け璐?- 璁㈠崟鍙? {}, 閿欒: {}", outTradeNo, response.getSubMsg());
+            if (!response.isSuccess()) {
+                log.warn("Refund failed: outTradeNo={}, subMsg={}", outTradeNo, response.getSubMsg());
                 return false;
             }
-
+            return true;
         } catch (AlipayApiException e) {
-            log.error("閫€娆剧敵璇峰紓甯?- 璁㈠崟鍙? {}", outTradeNo, e);
+            log.error("Refund failed: outTradeNo={}", outTradeNo, e);
             return false;
         }
     }
 
     @Override
     public boolean closeOrder(String outTradeNo) {
-        
-
         try {
             AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
-            request.setBizContent(String.format("{\"out_trade_no\":\"%s\"}", outTradeNo));
-
+            request.setBizContent(String.format("{\"out_trade_no\":\"%s\"}", sanitizeJsonValue(outTradeNo)));
             AlipayTradeCloseResponse response = alipayClient.execute(request);
-
-            if (response.isSuccess()) {
-                
-                return true;
-            } else {
-                log.error("璁㈠崟鍏抽棴澶辫触 - 璁㈠崟鍙? {}, 閿欒: {}", outTradeNo, response.getSubMsg());
+            if (!response.isSuccess()) {
+                log.warn("Close order failed: outTradeNo={}, subMsg={}", outTradeNo, response.getSubMsg());
                 return false;
             }
-
+            return true;
         } catch (AlipayApiException e) {
-            log.error("璁㈠崟鍏抽棴寮傚父 - 璁㈠崟鍙? {}", outTradeNo, e);
+            log.error("Close order failed: outTradeNo={}", outTradeNo, e);
             return false;
         }
     }
@@ -232,157 +180,128 @@ public class AlipayServiceImpl implements AlipayService {
         return AlipayUtils.isPaymentSuccess(status);
     }
 
-    
-
-
-    private Payment createPaymentRecord(AlipayCreateRequest request, String outTradeNo, String traceId) {
+    private Payment createPaymentRecord(AlipayCreateRequest request, String traceId) {
         Payment payment = new Payment();
         payment.setOrderId(request.getOrderId());
         payment.setUserId(request.getUserId());
         payment.setAmount(request.getAmount());
-        payment.setStatus(0); 
-        payment.setChannel(1); 
+        payment.setStatus(0);
+        payment.setChannel(1);
         payment.setTraceId(traceId);
+        payment.setUpdatedAt(LocalDateTime.now());
 
         if (!paymentService.save(payment)) {
-            throw new BusinessException("鍒涘缓鏀粯璁板綍澶辫触");
+            throw new BusinessException("Create payment record failed");
         }
-
         return payment;
     }
-
-    
-
 
     private AlipayTradePagePayRequest buildAlipayRequest(AlipayCreateRequest request, String outTradeNo) {
         AlipayTradePagePayRequest alipayRequest = new AlipayTradePagePayRequest();
         alipayRequest.setNotifyUrl(alipayConfig.getNotifyUrl());
         alipayRequest.setReturnUrl(alipayConfig.getReturnUrl());
 
-        String bizContent = String.format(
-                "{\"out_trade_no\":\"%s\",\"total_amount\":\"%s\",\"subject\":\"%s\",\"body\":\"%s\",\"product_code\":\"%s\",\"timeout_express\":\"%s\"}",
-                outTradeNo,
-                request.getAmount().toString(),
-                request.getSubject(),
-                request.getBody() != null ? request.getBody() : request.getSubject(),
-                request.getProductCode(),
-                request.getTimeoutMinutes() + "m"
-        );
+        String subject = sanitizeJsonValue(request.getSubject());
+        String body = sanitizeJsonValue(request.getBody() == null ? request.getSubject() : request.getBody());
+        String productCode = sanitizeJsonValue(request.getProductCode());
+        int timeoutMinutes = request.getTimeoutMinutes() == null || request.getTimeoutMinutes() <= 0
+                ? 30 : request.getTimeoutMinutes();
 
+        String bizContent = String.format(
+                "{\"out_trade_no\":\"%s\",\"total_amount\":\"%s\",\"subject\":\"%s\",\"body\":\"%s\",\"product_code\":\"%s\",\"timeout_express\":\"%sm\"}",
+                sanitizeJsonValue(outTradeNo),
+                request.getAmount(),
+                subject,
+                body,
+                productCode,
+                timeoutMinutes
+        );
         alipayRequest.setBizContent(bizContent);
         return alipayRequest;
     }
 
-    
-
-
     @Transactional(rollbackFor = Exception.class)
     private boolean processSuccessfulPayment(String outTradeNo, String tradeNo, BigDecimal amount) {
-        
-
-        try {
-            
-            Long orderId = AlipayUtils.extractOrderIdFromOutTradeNo(outTradeNo);
-            if (orderId == null) {
-                log.error("鏃犳硶浠庡晢鎴疯鍗曞彿涓彁鍙栬鍗旾D - 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            Payment payment = paymentService.lambdaQuery()
-                    .eq(Payment::getOrderId, orderId)
-                    .eq(Payment::getStatus, 0) 
-                    .one();
-
-            if (payment == null) {
-                log.warn("鏈壘鍒板緟鏀粯鐨勬敮浠樿褰?- 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            
-            if (payment.getTransactionId() != null && payment.getTransactionId().equals(tradeNo)) {
-                
-                return true;
-            }
-
-            
-            payment.setStatus(1); 
-            payment.setTransactionId(tradeNo);
-            payment.setUpdatedAt(LocalDateTime.now());
-
-            boolean updateSuccess = paymentService.updateById(payment);
-            if (!updateSuccess) {
-                log.error("鏇存柊鏀粯璁板綍澶辫触 - 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            
-            createPaymentFlow(payment.getId(), 1, amount, payment.getTraceId());
-
-            
-            
-
-            
-            return true;
-
-        } catch (Exception e) {
-            log.error("澶勭悊鏀粯鎴愬姛寮傚父 - 璁㈠崟鍙? {}", outTradeNo, e);
+        Long orderId = AlipayUtils.extractOrderIdFromOutTradeNo(outTradeNo);
+        if (orderId == null) {
             return false;
         }
+
+        Payment payment = paymentService.lambdaQuery()
+                .eq(Payment::getOrderId, orderId)
+                .orderByDesc(Payment::getId)
+                .last("LIMIT 1")
+                .one();
+        if (payment == null) {
+            return false;
+        }
+        if (payment.getAmount() != null && amount != null && payment.getAmount().compareTo(amount) != 0) {
+            log.warn("Notify amount mismatch: paymentId={}, dbAmount={}, notifyAmount={}", payment.getId(), payment.getAmount(), amount);
+            return false;
+        }
+        if (payment.getStatus() != null && payment.getStatus() == 2) {
+            return true;
+        }
+
+        payment.setTransactionId(tradeNo);
+        payment.setUpdatedAt(LocalDateTime.now());
+        if (!paymentService.updateById(payment)) {
+            return false;
+        }
+
+        boolean updated = Boolean.TRUE.equals(paymentService.processPaymentSuccess(payment.getId()));
+        if (updated) {
+            createPaymentFlow(payment.getId(), 1, amount, payment.getTraceId());
+        }
+        return updated;
     }
-
-    
-
 
     @Transactional(rollbackFor = Exception.class)
     private boolean processClosedPayment(String outTradeNo) {
-        
-
-        try {
-            
-            Long orderId = AlipayUtils.extractOrderIdFromOutTradeNo(outTradeNo);
-            if (orderId == null) {
-                log.error("鏃犳硶浠庡晢鎴疯鍗曞彿涓彁鍙栬鍗旾D - 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            Payment payment = paymentService.lambdaQuery()
-                    .eq(Payment::getOrderId, orderId)
-                    .eq(Payment::getStatus, 0) 
-                    .one();
-
-            if (payment == null) {
-                log.warn("鏈壘鍒板緟鏀粯鐨勬敮浠樿褰?- 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            
-            payment.setStatus(2); 
-            payment.setUpdatedAt(LocalDateTime.now());
-
-            boolean updateSuccess = paymentService.updateById(payment);
-            if (!updateSuccess) {
-                log.error("鏇存柊鏀粯璁板綍澶辫触 - 璁㈠崟鍙? {}", outTradeNo);
-                return false;
-            }
-
-            
-            
-
-            
-            return true;
-
-        } catch (Exception e) {
-            log.error("澶勭悊鏀粯鍏抽棴寮傚父 - 璁㈠崟鍙? {}", outTradeNo, e);
+        Long orderId = AlipayUtils.extractOrderIdFromOutTradeNo(outTradeNo);
+        if (orderId == null) {
             return false;
+        }
+
+        Payment payment = paymentService.lambdaQuery()
+                .eq(Payment::getOrderId, orderId)
+                .orderByDesc(Payment::getId)
+                .last("LIMIT 1")
+                .one();
+        if (payment == null) {
+            return false;
+        }
+        if (payment.getStatus() != null && payment.getStatus() == 3) {
+            return true;
+        }
+
+        boolean updated = Boolean.TRUE.equals(paymentService.processPaymentFailed(payment.getId(), "closed by Alipay"));
+        if (updated) {
+            createPaymentFlow(payment.getId(), 2, payment.getAmount(), payment.getTraceId());
+        }
+        return updated;
+    }
+
+    private void createPaymentFlow(Long paymentId, Integer flowType, BigDecimal amount, String traceId) {
+        if (paymentId == null || flowType == null || amount == null) {
+            return;
+        }
+        try {
+            PaymentFlow flow = new PaymentFlow();
+            flow.setPaymentId(paymentId);
+            flow.setFlowType(flowType);
+            flow.setAmount(amount);
+            flow.setTraceId(traceId);
+            paymentFlowService.save(flow);
+        } catch (Exception e) {
+            log.warn("Create payment flow failed: paymentId={}, flowType={}", paymentId, flowType, e);
         }
     }
 
-
-    
-
-
-    private void createPaymentFlow(Long paymentId, Integer flowType, BigDecimal amount, String traceId) {
-        
-        
+    private String sanitizeJsonValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

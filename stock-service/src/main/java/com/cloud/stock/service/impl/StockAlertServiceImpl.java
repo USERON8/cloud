@@ -15,11 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-
-
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,126 +25,71 @@ public class StockAlertServiceImpl implements StockAlertService {
 
     @Override
     public List<Stock> getLowStockProducts() {
-        
-
-        
         List<Stock> allStocks = stockService.list();
-
-        
-        List<Stock> lowStockProducts = allStocks.stream()
+        return allStocks.stream()
                 .filter(Stock::isLowStock)
                 .collect(Collectors.toList());
-
-        
-        return lowStockProducts;
     }
 
     @Override
     public List<Stock> getLowStockProductsByThreshold(Integer threshold) {
-        
-
-        }
-
-        
+        int effectiveThreshold = threshold == null || threshold < 0 ? 0 : threshold;
         List<Stock> allStocks = stockService.list();
-
-        
-        List<Stock> lowStockProducts = allStocks.stream()
+        return allStocks.stream()
                 .filter(stock -> {
                     Integer available = stock.getAvailableQuantity();
-                    return available != null && available <= threshold;
+                    return available != null && available <= effectiveThreshold;
                 })
                 .collect(Collectors.toList());
-
-        
-        return lowStockProducts;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateLowStockThreshold(Long productId, Integer threshold) {
-        
-
         if (productId == null) {
-            throw new BusinessException("鍟嗗搧ID涓嶈兘涓虹┖");
+            throw new BusinessException("productId is required");
         }
-
         if (threshold == null || threshold < 0) {
-            throw new BusinessException("搴撳瓨棰勮闃堝€兼棤鏁?);
+            throw new BusinessException("threshold must be >= 0");
         }
 
-        
-        LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Stock::getProductId, productId);
-        Stock stock = stockMapper.selectOne(queryWrapper);
+        Stock stock = stockMapper.selectOne(new LambdaQueryWrapper<Stock>()
+                .eq(Stock::getProductId, productId));
         if (stock == null) {
-            throw new BusinessException("鍟嗗搧搴撳瓨涓嶅瓨鍦?);
+            throw new BusinessException("Stock not found by productId");
         }
 
-        
         LambdaUpdateWrapper<Stock> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Stock::getProductId, productId)
                 .set(Stock::getLowStockThreshold, threshold);
-
-        boolean success = stockService.update(updateWrapper);
-
-        if (success) {
-            
-        } else {
-            log.warn("鏇存柊搴撳瓨棰勮闃堝€煎け璐? productId: {}", productId);
-        }
-
-        return success;
+        return stockService.update(updateWrapper);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchUpdateLowStockThreshold(List<Long> productIds, Integer threshold) {
-        
-
         if (productIds == null || productIds.isEmpty()) {
-            throw new BusinessException("鍟嗗搧ID鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("productIds cannot be empty");
         }
-
         if (threshold == null || threshold < 0) {
-            throw new BusinessException("搴撳瓨棰勮闃堝€兼棤鏁?);
+            throw new BusinessException("threshold must be >= 0");
         }
 
-        
         LambdaUpdateWrapper<Stock> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.in(Stock::getProductId, productIds)
                 .set(Stock::getLowStockThreshold, threshold);
-
         boolean success = stockService.update(updateWrapper);
-
-        int count = success ? productIds.size() : 0;
-        
-
-        return count;
+        return success ? productIds.size() : 0;
     }
 
     @Override
     public int checkAndSendLowStockAlerts() {
-        
-
-        try {
-            
-            List<Stock> lowStockProducts = getLowStockProducts();
-
-            if (lowStockProducts.isEmpty()) {
-                return 0;
-            }
-
-            
-            batchSendLowStockAlerts(lowStockProducts);
-
-            
-            return lowStockProducts.size();
-
-        } catch (Exception e) {
-            log.error("妫€鏌ヤ綆搴撳瓨棰勮澶辫触", e);
-            throw new BusinessException("妫€鏌ヤ綆搴撳瓨棰勮澶辫触", e);
+        List<Stock> lowStockProducts = getLowStockProducts();
+        if (lowStockProducts.isEmpty()) {
+            return 0;
         }
+        batchSendLowStockAlerts(lowStockProducts);
+        return lowStockProducts.size();
     }
 
     @Override
@@ -157,16 +97,11 @@ public class StockAlertServiceImpl implements StockAlertService {
         if (stock == null) {
             return;
         }
-
-        log.warn("鈿狅笍 浣庡簱瀛橀璀? 鍟嗗搧: {}, ID: {}, 鍙敤搴撳瓨: {}, 棰勮闃堝€? {}",
-                stock.getProductName(),
+        log.warn("Low stock alert: productId={}, productName={}, available={}, threshold={}",
                 stock.getProductId(),
+                stock.getProductName(),
                 stock.getAvailableQuantity(),
                 stock.getLowStockThreshold());
-
-        
-        
-        
     }
 
     @Override
@@ -174,14 +109,11 @@ public class StockAlertServiceImpl implements StockAlertService {
         if (stocks == null || stocks.isEmpty()) {
             return;
         }
-
-        
-
         for (Stock stock : stocks) {
             try {
                 sendLowStockAlert(stock);
             } catch (Exception e) {
-                log.error("鍙戦€佷綆搴撳瓨棰勮澶辫触, productId: {}", stock.getProductId(), e);
+                log.error("Send low stock alert failed: productId={}", stock.getProductId(), e);
             }
         }
     }

@@ -8,60 +8,33 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-
-
-
-
-
-
 @Data
-@Schema(description = "鏀粯瀹濇敮浠樺垱寤鸿姹?)
+@Schema(description = "Alipay create payment request")
 public class AlipayCreateRequest {
 
-    
-
-
-    @NotNull(message = "璁㈠崟ID涓嶈兘涓虹┖")
-    @Schema(description = "璁㈠崟ID", example = "1234567890")
+    @NotNull(message = "Order id cannot be null")
+    @Schema(description = "Order id", example = "1234567890")
     private Long orderId;
 
-    
-
-
-    @NotNull(message = "鏀粯閲戦涓嶈兘涓虹┖")
-    @DecimalMin(value = "0.01", message = "鏀粯閲戦蹇呴』澶т簬0.01")
-    @Schema(description = "鏀粯閲戦", example = "99.99")
+    @NotNull(message = "Payment amount cannot be null")
+    @DecimalMin(value = "0.01", message = "Payment amount must be greater than 0")
+    @Schema(description = "Payment amount", example = "99.99")
     private BigDecimal amount;
 
-    
-
-
-    @NotBlank(message = "鍟嗗搧鏍囬涓嶈兘涓虹┖")
-    @Schema(description = "鍟嗗搧鏍囬", example = "iPhone 15 Pro Max")
+    @NotBlank(message = "Payment subject cannot be blank")
+    @Schema(description = "Payment subject", example = "iPhone 15 Pro Max")
     private String subject;
 
-    
-
-
-    @Schema(description = "鍟嗗搧鎻忚堪", example = "鑻规灉iPhone 15 Pro Max 256GB 娣辩┖榛戣壊")
+    @Schema(description = "Payment body", example = "iPhone 15 Pro Max 256GB")
     private String body;
 
-    
-
-
-    @NotNull(message = "鐢ㄦ埛ID涓嶈兘涓虹┖")
-    @Schema(description = "鐢ㄦ埛ID", example = "1001")
+    @NotNull(message = "User id cannot be null")
+    @Schema(description = "User id", example = "1001")
     private Long userId;
 
-    
-
-
-    @Schema(description = "鏀粯瓒呮椂鏃堕棿锛堝垎閽燂級", example = "30")
+    @Schema(description = "Payment timeout in minutes", example = "30")
     private Integer timeoutMinutes = 30;
 
-    
-
-
-    @Schema(description = "鍟嗗搧绫诲瀷", example = "FAST_INSTANT_TRADE_PAY")
+    @Schema(description = "Alipay product code", example = "FAST_INSTANT_TRADE_PAY")
     private String productCode = "FAST_INSTANT_TRADE_PAY";
 }

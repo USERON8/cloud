@@ -45,8 +45,24 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         
 
         return this.list(new LambdaQueryWrapper<Category>()
-                .eq(Category::getLevel, level)
+                .eq(Category::getLevel, 1)
                 .eq(Category::getStatus, 1)
+                .orderByAsc(Category::getSortOrder));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Category> getChildrenByParentId(Long parentId) {
+        return this.list(new LambdaQueryWrapper<Category>()
+                .eq(Category::getParentId, parentId)
+                .orderByAsc(Category::getSortOrder));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Category> getCategoriesByLevel(Integer level) {
+        return this.list(new LambdaQueryWrapper<Category>()
+                .eq(Category::getLevel, level)
                 .orderByAsc(Category::getSortOrder));
     }
 
@@ -321,3 +337,4 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
                 .collect(Collectors.toList());
     }
 }
+

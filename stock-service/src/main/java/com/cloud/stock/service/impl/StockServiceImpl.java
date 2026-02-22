@@ -13,7 +13,6 @@ import com.cloud.common.utils.PageUtils;
 import com.cloud.stock.converter.StockConverter;
 import com.cloud.stock.exception.StockFrozenException;
 import com.cloud.stock.exception.StockInsufficientException;
-import com.cloud.stock.exception.StockOperationException;
 import com.cloud.stock.mapper.StockInMapper;
 import com.cloud.stock.mapper.StockMapper;
 import com.cloud.stock.mapper.StockOutMapper;
@@ -24,7 +23,6 @@ import com.cloud.stock.module.entity.StockOut;
 import com.cloud.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -35,12 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
-
-
-
-
-
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -66,33 +61,24 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             failMessage = "Acquire stock create lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(
-            cacheNames = "stockCache",
-            key = "#result.id",
-            unless = "#result == null"
-    )
+    @CachePut(cacheNames = "stockCache", key = "#result.id", unless = "#result == null")
     public StockDTO createStock(StockDTO stockDTO) {
-        if (stockDTO == null) {
-            log.warn("搴撳瓨淇℃伅涓嶈兘涓虹┖");
-            throw new IllegalArgumentException("搴撳瓨淇℃伅涓嶈兘涓虹┖");
+        if (stockDTO == null || stockDTO.getProductId() == null) {
+            throw new IllegalArgumentException("stockDTO and productId are required");
         }
 
-        try {
-            
-            Stock stock = stockConverter.toEntity(stockDTO);
-            boolean saved = save(stock);
-
-            if (saved) {
-                
-                return stockConverter.toDTO(stock);
-            } else {
-                log.error("搴撳瓨璁板綍鍒涘缓澶辫触锛屽晢鍝両D: {}", stockDTO.getProductId());
-                throw new BusinessException("鍒涘缓搴撳瓨璁板綍澶辫触");
-            }
-        } catch (Exception e) {
-            log.error("鍒涘缓搴撳瓨璁板綍寮傚父锛屽晢鍝両D: {}", stockDTO.getProductId(), e);
-            throw new BusinessException("鍒涘缓搴撳瓨璁板綍澶辫触: " + e.getMessage(), e);
+        Stock existing = getOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, stockDTO.getProductId()));
+        if (existing != null) {
+            throw new BusinessException("Stock already exists for productId=" + stockDTO.getProductId());
         }
+
+        Stock stock = stockConverter.toEntity(stockDTO);
+        initStockOnCreate(stock);
+        boolean saved = save(stock);
+        if (!saved) {
+            throw new BusinessException("Create stock failed");
+        }
+        return stockConverter.toDTO(stock);
     }
 
     @Override
@@ -103,83 +89,45 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             failMessage = "Acquire stock update lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(
-            cacheNames = "stockCache",
-            key = "#stockDTO.id",
-            unless = "#result == false"
-    )
+    @CachePut(cacheNames = "stockCache", key = "#stockDTO.id", unless = "#result == false")
     public boolean updateStock(StockDTO stockDTO) {
         if (stockDTO == null || stockDTO.getId() == null) {
-            log.warn("搴撳瓨淇℃伅鎴朓D涓嶈兘涓虹┖");
-            throw new IllegalArgumentException("搴撳瓨淇℃伅鎴朓D涓嶈兘涓虹┖");
+            throw new IllegalArgumentException("stockDTO and id are required");
         }
 
-        try {
-            
-            Stock stock = stockConverter.toEntity(stockDTO);
-            boolean updated = updateById(stock);
-
-            if (updated) {
-                
-                return true;
-            } else {
-                log.warn("搴撳瓨璁板綍鏇存柊澶辫触锛孖D: {}", stockDTO.getId());
-                return false;
-            }
-        } catch (Exception e) {
-            log.error("鏇存柊搴撳瓨璁板綍寮傚父锛孖D: {}", stockDTO.getId(), e);
-            throw new BusinessException("鏇存柊搴撳瓨璁板綍澶辫触: " + e.getMessage(), e);
+        Stock existing = getById(stockDTO.getId());
+        if (existing == null) {
+            throw EntityNotFoundException.stock(stockDTO.getId());
         }
+
+        Stock stock = stockConverter.toEntity(stockDTO);
+        mergeStockForUpdate(stock, existing);
+        return updateById(stock);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = "stockCache",
-            key = "#id",
-            unless = "#result == null"
-    )
+    @Cacheable(cacheNames = "stockCache", key = "#id", unless = "#result == null")
     public StockDTO getStockById(Long id) {
         if (id == null) {
-            log.warn("搴撳瓨ID涓嶈兘涓虹┖");
-            throw new IllegalArgumentException("搴撳瓨ID涓嶈兘涓虹┖");
+            throw new IllegalArgumentException("stock id is required");
         }
-
-        try {
-            
-            Stock stock = getById(id);
-            if (stock == null) {
-                throw EntityNotFoundException.stock(id);
-            }
-            return stockConverter.toDTO(stock);
-        } catch (Exception e) {
-            log.error("鏍规嵁ID鏌ユ壘搴撳瓨澶辫触锛屽簱瀛業D: {}", id, e);
-            throw new BusinessException("鑾峰彇搴撳瓨淇℃伅澶辫触", e);
+        Stock stock = getById(id);
+        if (stock == null) {
+            throw EntityNotFoundException.stock(id);
         }
+        return stockConverter.toDTO(stock);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId",
-            unless = "#result == null"
-    )
+    @Cacheable(cacheNames = "stockCache", key = "'product:' + #productId", unless = "#result == null")
     public StockDTO getStockByProductId(Long productId) {
         if (productId == null) {
-            log.warn("鍟嗗搧ID涓嶈兘涓虹┖");
-            throw new IllegalArgumentException("鍟嗗搧ID涓嶈兘涓虹┖");
+            throw new IllegalArgumentException("productId is required");
         }
-
-        try {
-            
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            return stock != null ? stockConverter.toDTO(stock) : null;
-        } catch (Exception e) {
-            log.error("鏍规嵁鍟嗗搧ID鏌ユ壘搴撳瓨澶辫触锛屽晢鍝両D: {}", productId, e);
-            throw new BusinessException("鑾峰彇搴撳瓨淇℃伅澶辫触", e);
-        }
+        Stock stock = getOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, productId));
+        return stock == null ? null : stockConverter.toDTO(stock);
     }
 
     @Override
@@ -194,57 +142,30 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
-        List<Stock> stocks = list(new LambdaQueryWrapper<Stock>()
-                .in(Stock::getProductId, productIds));
+        List<Stock> stocks = list(new LambdaQueryWrapper<Stock>().in(Stock::getProductId, productIds));
         return stockConverter.toDTOList(stocks);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<StockVO> pageQuery(StockPageDTO pageDTO) {
-        try {
-            
-
-            
-            Page<Stock> page = PageUtils.buildPage(pageDTO);
-
-            
-            LambdaQueryWrapper<Stock> queryWrapper = new LambdaQueryWrapper<>();
-            if (pageDTO.getProductId() != null) {
-                queryWrapper.eq(Stock::getProductId, pageDTO.getProductId());
-            }
-            if (StringUtils.isNotBlank(pageDTO.getProductName())) {
-                queryWrapper.like(Stock::getProductName, pageDTO.getProductName());
-            }
-            if (pageDTO.getStockStatus() != null) {
-                queryWrapper.eq(Stock::getStockStatus, pageDTO.getStockStatus());
-            }
-            queryWrapper.orderByDesc(Stock::getCreatedAt);
-
-            
-            Page<Stock> resultPage = this.page(page, queryWrapper);
-
-            
-            List<StockVO> stockVOList = stockConverter.toVOList(resultPage.getRecords());
-
-            
-            PageResult<StockVO> pageResult = PageResult.of(
-                    resultPage.getCurrent(),
-                    resultPage.getSize(),
-                    resultPage.getTotal(),
-                    stockVOList
-            );
-
-            
-
-
-            return pageResult;
-        } catch (Exception e) {
-            log.error("鍒嗛〉鏌ヨ搴撳瓨鏃跺彂鐢熷紓甯革紝鏌ヨ鏉′欢锛歿}", pageDTO, e);
-            throw new BusinessException("鍒嗛〉鏌ヨ搴撳瓨澶辫触");
+        Page<Stock> page = PageUtils.buildPage(pageDTO);
+        LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
+        if (pageDTO.getProductId() != null) {
+            wrapper.eq(Stock::getProductId, pageDTO.getProductId());
         }
-    }
+        if (pageDTO.getProductName() != null && !pageDTO.getProductName().isBlank()) {
+            wrapper.like(Stock::getProductName, pageDTO.getProductName());
+        }
+        if (pageDTO.getStockStatus() != null) {
+            wrapper.eq(Stock::getStockStatus, pageDTO.getStockStatus());
+        }
+        wrapper.orderByDesc(Stock::getCreatedAt);
 
+        Page<Stock> resultPage = page(page, wrapper);
+        List<StockVO> voList = stockConverter.toVOList(resultPage.getRecords());
+        return PageResult.of(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal(), voList);
+    }
 
     @Override
     @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
@@ -255,27 +176,13 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             failMessage = "Acquire stock delete lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "#id"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "#id")
     public boolean deleteStock(Long id) {
-        
-
-        try {
-            Stock stock = getById(id);
-            if (stock == null) {
-                throw EntityNotFoundException.stock(id);
-            }
-
-            boolean result = removeById(id);
-
-            
-            return result;
-        } catch (Exception e) {
-            log.error("鍒犻櫎搴撳瓨淇℃伅澶辫触锛孖D锛歿}", id, e);
-            throw new BusinessException("鍒犻櫎搴撳瓨淇℃伅澶辫触", e);
+        Stock stock = getById(id);
+        if (stock == null) {
+            throw EntityNotFoundException.stock(id);
         }
+        return removeById(id);
     }
 
     @Override
@@ -284,29 +191,15 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:batch:delete:' + #ids.toString()",
             waitTime = 10,
             leaseTime = 30,
-            failMessage = "鎵归噺鍒犻櫎搴撳瓨鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock batch delete lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            allEntries = true,
-            condition = "#ids != null && !#ids.isEmpty()"
-    )
+    @CacheEvict(cacheNames = "stockCache", allEntries = true, condition = "#ids != null && !#ids.isEmpty()")
     public boolean deleteStocksByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return false;
         }
-
-        
-
-        try {
-            boolean result = removeByIds(ids);
-            
-            return result;
-        } catch (Exception e) {
-            log.error("鎵归噺鍒犻櫎搴撳瓨淇℃伅澶辫触锛孖Ds锛歿}", ids, e);
-            throw new BusinessException("鎵归噺鍒犻櫎搴撳瓨淇℃伅澶辫触", e);
-        }
+        return removeByIds(ids);
     }
 
     @Override
@@ -315,46 +208,24 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:in:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "搴撳瓨鍏ュ簱鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock in lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "'product:' + #productId")
     public boolean stockIn(Long productId, Integer quantity, String remark) {
-        
+        validateQuantity(productId, quantity);
+        Stock stock = findStockByProductId(productId);
 
-        try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            if (stock == null) {
-                throw new EntityNotFoundException("搴撳瓨淇℃伅涓嶅瓨鍦紝鍟嗗搧ID: " + productId + "锛屾棤娉曟墽琛屽叆搴撴搷浣?);
-            }
-
-            
-            int affected = stockMapper.updateStockQuantity(stock.getId(), quantity);
-            if (affected == 0) {
-                throw new StockOperationException("鍏ュ簱", productId, "搴撳瓨鏇存柊澶辫触锛屽彲鑳芥槸骞跺彂鍐茬獊鎴栨暟鎹凡鍙樻洿");
-            }
-
-            
-            createStockInRecord(stock, quantity, remark);
-
-            
-            try {
-                Integer originalStock = stock.getStockQuantity() - quantity; 
-
-            } catch (Exception e) {
-                log.warn("鍙戦€佸簱瀛樺叆搴撴棩蹇楀け璐ワ紝鍟嗗搧ID锛歿}", productId, e);
-            }
-
-            
-            return true;
-        } catch (Exception e) {
-            log.error("搴撳瓨鍏ュ簱澶辫触锛屽晢鍝両D锛歿}锛屾暟閲忥細{}", productId, quantity, e);
-            throw new BusinessException("搴撳瓨鍏ュ簱澶辫触", e);
+        int affected = stockMapper.stockInWithCondition(productId, quantity);
+        if (affected <= 0) {
+            affected = stockMapper.updateStockQuantity(stock.getId(), quantity);
         }
+        if (affected <= 0) {
+            return false;
+        }
+
+        createStockInRecord(stock, quantity, remark);
+        return true;
     }
 
     @Override
@@ -363,53 +234,27 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:out:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "搴撳瓨鍑哄簱鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock out lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "'product:' + #productId")
     public boolean stockOut(Long productId, Integer quantity, Long orderId, String orderNo, String remark) {
-        
+        validateQuantity(productId, quantity);
+        Stock stock = findStockByProductId(productId);
 
-        try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            if (stock == null) {
-                throw new EntityNotFoundException("搴撳瓨淇℃伅涓嶅瓨鍦紝鍟嗗搧ID: " + productId + "锛屾棤娉曟墽琛屽嚭搴撴搷浣?);
-            }
-
-            
-            int availableQuantity = stock.getStockQuantity() - stock.getFrozenQuantity();
-            
-            if (availableQuantity < quantity) {
-                throw new StockInsufficientException(productId, quantity, availableQuantity);
-            }
-
-            
-            int affected = stockMapper.updateStockQuantity(stock.getId(), -quantity);
-            if (affected == 0) {
-                throw new StockOperationException("鍑哄簱", productId, "搴撳瓨鏇存柊澶辫触锛屽彲鑳芥槸搴撳瓨涓嶈冻鎴栧苟鍙戝啿绐?);
-            }
-
-            
-            createStockOutRecord(stock, quantity, orderId, orderNo, remark);
-
-            
-            try {
-                Integer originalStock = stock.getStockQuantity() + quantity; 
-
-            } catch (Exception e) {
-                log.warn("鍙戦€佸簱瀛樺嚭搴撴棩蹇楀け璐ワ紝鍟嗗搧ID锛歿}", productId, e);
-            }
-
-            
-            return true;
-        } catch (Exception e) {
-            log.error("搴撳瓨鍑哄簱澶辫触锛屽晢鍝両D锛歿}锛屾暟閲忥細{}", productId, quantity, e);
-            throw new BusinessException("搴撳瓨鍑哄簱澶辫触", e);
+        Integer available = stock.getAvailableQuantity();
+        if (available == null || available < quantity) {
+            throw new StockInsufficientException(productId, quantity, available == null ? 0 : available);
         }
+
+        int affected = stockMapper.stockOutWithCondition(productId, quantity);
+        if (affected <= 0) {
+            return false;
+        }
+
+        createStockOutRecord(stock, quantity, orderId, orderNo, remark);
+        markOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
+        return true;
     }
 
     @Override
@@ -418,41 +263,19 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:reserve:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "搴撳瓨棰勭暀鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock reserve lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "'product:' + #productId")
     public boolean reserveStock(Long productId, Integer quantity) {
-        
+        validateQuantity(productId, quantity);
+        findStockByProductId(productId);
 
-        try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            if (stock == null) {
-                throw new EntityNotFoundException("搴撳瓨淇℃伅涓嶅瓨鍦紝鍟嗗搧ID: " + productId + "锛屾棤娉曟墽琛岄鐣欏簱瀛樻搷浣?);
-            }
-
-            int affected = stockMapper.freezeStock(stock.getId(), quantity);
-            if (affected == 0) {
-                throw new StockFrozenException("棰勭暀", productId, quantity);
-            }
-
-            
-            try {
-
-            } catch (Exception e) {
-                log.warn("鍙戦€佸簱瀛樺喕缁撴棩蹇楀け璐ワ紝鍟嗗搧ID锛歿}", productId, e);
-            }
-
-            
-            return true;
-        } catch (Exception e) {
-            log.error("棰勭暀搴撳瓨澶辫触锛屽晢鍝両D锛歿}锛屾暟閲忥細{}", productId, quantity, e);
-            throw new BusinessException("棰勭暀搴撳瓨澶辫触", e);
+        int affected = stockMapper.reserveStockWithCondition(productId, quantity);
+        if (affected <= 0) {
+            throw new StockFrozenException("reserve stock", productId, quantity);
         }
+        return true;
     }
 
     @Override
@@ -461,41 +284,19 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:release:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "搴撳瓨閲婃斁棰勭暀鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire stock release lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "'product:' + #productId")
     public boolean releaseReservedStock(Long productId, Integer quantity) {
-        
+        validateQuantity(productId, quantity);
+        findStockByProductId(productId);
 
-        try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            if (stock == null) {
-                throw new EntityNotFoundException("搴撳瓨淇℃伅涓嶅瓨鍦紝鍟嗗搧ID: " + productId + "锛屾棤娉曟墽琛岄噴鏀鹃鐣欏簱瀛樻搷浣?);
-            }
-
-            int affected = stockMapper.unfreezeStock(stock.getId(), quantity);
-            if (affected == 0) {
-                throw new StockFrozenException("閲婃斁", productId, quantity);
-            }
-
-            
-            try {
-
-            } catch (Exception e) {
-                log.warn("鍙戦€佸簱瀛樿В鍐绘棩蹇楀け璐ワ紝鍟嗗搧ID锛歿}", productId, e);
-            }
-
-            
-            return true;
-        } catch (Exception e) {
-            log.error("閲婃斁棰勭暀搴撳瓨澶辫触锛屽晢鍝両D锛歿}锛屾暟閲忥細{}", productId, quantity, e);
-            throw new BusinessException("閲婃斁棰勭暀搴撳瓨澶辫触", e);
+        int affected = stockMapper.releaseReservedStockWithCondition(productId, quantity);
+        if (affected <= 0) {
+            throw new StockFrozenException("release reserved stock", productId, quantity);
         }
+        return true;
     }
 
     @Override
@@ -504,94 +305,52 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             key = "'stock:confirm:' + #productId",
             waitTime = 5,
             leaseTime = 15,
-            failMessage = "纭棰勭暀搴撳瓨鎵ｅ噺鎿嶄綔鑾峰彇閿佸け璐?
+            failMessage = "Acquire confirm stock out lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(
-            cacheNames = "stockCache",
-            key = "'product:' + #productId"
-    )
+    @CacheEvict(cacheNames = "stockCache", key = "'product:' + #productId")
     public boolean confirmReservedStockOut(Long productId, Integer quantity, Long orderId, String orderNo, String remark) {
-        
+        validateQuantity(productId, quantity);
+        Stock stock = findStockByProductId(productId);
 
-        try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
-            if (stock == null) {
-                throw new EntityNotFoundException("搴撳瓨淇℃伅涓嶅瓨鍦紝鍟嗗搧ID: " + productId + "锛屾棤娉曟墽琛岀‘璁ゆ墸鍑忔搷浣?);
-            }
-
-            int affected = stockMapper.confirmStockOutWithCondition(productId, quantity);
-            if (affected == 0) {
-                throw new StockOperationException("纭鎵ｅ噺", productId, "鍐荤粨搴撳瓨涓嶈冻鎴栧苟鍙戝啿绐?);
-            }
-
-            createStockOutRecord(stock, quantity, orderId, orderNo, remark);
-            markOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
-            clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
-            
-            return true;
-        } catch (Exception e) {
-            log.error("纭棰勭暀搴撳瓨鎵ｅ噺澶辫触锛屽晢鍝両D锛歿}锛屾暟閲忥細{}锛岃鍗旾D锛歿}", productId, quantity, orderId, e);
-            throw new BusinessException("纭棰勭暀搴撳瓨鎵ｅ噺澶辫触", e);
+        int affected = stockMapper.confirmStockOutWithCondition(productId, quantity);
+        if (affected <= 0) {
+            return false;
         }
+
+        createStockOutRecord(stock, quantity, orderId, orderNo, remark);
+        markOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
+        clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
+        return true;
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean checkStockSufficient(Long productId, Integer quantity) {
+        if (productId == null || quantity == null || quantity <= 0) {
+            return false;
+        }
+
         try {
-            Stock stock = getOne(new LambdaQueryWrapper<Stock>()
-                    .eq(Stock::getProductId, productId));
+            Stock stock = getOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, productId));
             if (stock == null) {
                 return false;
             }
-            
-            int availableQuantity = stock.getStockQuantity() - stock.getFrozenQuantity();
-            return availableQuantity >= quantity;
+            Integer available = stock.getAvailableQuantity();
+            return available != null && available >= quantity;
         } catch (Exception e) {
-            log.error("妫€鏌ュ簱瀛樻槸鍚﹀厖瓒虫椂鍙戠敓寮傚父锛屽晢鍝両D锛歿}", productId, e);
+            log.error("Check stock sufficient failed: productId={}", productId, e);
             return false;
         }
-    }
-
-    
-
-
-    private void createStockInRecord(Stock stock, Integer quantity, String remark) {
-        StockIn stockIn = new StockIn();
-        stockIn.setProductId(stock.getProductId());
-        stockIn.setQuantity(quantity);
-
-        stockInMapper.insert(stockIn);
-    }
-
-    
-
-
-    private void createStockOutRecord(Stock stock, Integer quantity, Long orderId, String orderNo, String remark) {
-        StockOut stockOut = new StockOut();
-        stockOut.setProductId(stock.getProductId());
-        stockOut.setOrderId(orderId);
-        stockOut.setQuantity(quantity);
-
-        stockOutMapper.insert(stockOut);
     }
 
     @Override
     public boolean isStockDeducted(Long orderId) {
-        
-        try {
-            
-            long count = stockOutMapper.selectCount(new LambdaQueryWrapper<StockOut>()
-                    .eq(StockOut::getOrderId, orderId));
-            boolean deducted = count > 0;
-            
-            return deducted;
-        } catch (Exception e) {
-            log.error("妫€鏌ュ簱瀛樻槸鍚﹀凡鎵ｅ噺澶辫触锛岃鍗旾D锛歿}", orderId, e);
+        if (orderId == null) {
             return false;
         }
+        long count = stockOutMapper.selectCount(new LambdaQueryWrapper<StockOut>().eq(StockOut::getOrderId, orderId));
+        return count > 0;
     }
 
     @Override
@@ -613,41 +372,6 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     public boolean isStockRolledBack(Long orderId) {
         return hasOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
     }
-    private boolean hasOrderState(String keyPrefix, Long orderId) {
-        if (orderId == null) {
-            return false;
-        }
-        try {
-            return Boolean.TRUE.equals(stringRedisTemplate.hasKey(keyPrefix + orderId));
-        } catch (Exception e) {
-            log.warn("Check order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
-            return false;
-        }
-    }
-
-    private void markOrderState(String keyPrefix, Long orderId) {
-        if (orderId == null) {
-            return;
-        }
-        try {
-            stringRedisTemplate.opsForValue().set(keyPrefix + orderId, "1", ORDER_STATE_KEY_TTL);
-        } catch (Exception e) {
-            log.warn("Mark order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
-        }
-    }
-
-    private void clearOrderState(String keyPrefix, Long orderId) {
-        if (orderId == null) {
-            return;
-        }
-        try {
-            stringRedisTemplate.delete(keyPrefix + orderId);
-        } catch (Exception e) {
-            log.warn("Clear order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
-        }
-    }
-
-    
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -659,27 +383,21 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     )
     public Integer batchCreateStocks(List<StockDTO> stockDTOList) {
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            log.warn("鎵归噺鍒涘缓搴撳瓨璁板綍澶辫触锛屽簱瀛樹俊鎭垪琛ㄤ负绌?);
-            throw new BusinessException("搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("stockDTOList cannot be empty");
         }
-
         if (stockDTOList.size() > 100) {
-            throw new BusinessException("鎵归噺鍒涘缓鏁伴噺涓嶈兘瓒呰繃100");
+            throw new BusinessException("batch create size cannot exceed 100");
         }
-
-        
 
         int successCount = 0;
-        for (StockDTO stockDTO : stockDTOList) {
+        for (StockDTO dto : stockDTOList) {
             try {
-                createStock(stockDTO);
+                createStock(dto);
                 successCount++;
             } catch (Exception e) {
-                log.error("鍒涘缓搴撳瓨璁板綍澶辫触锛屽晢鍝両D: {}", stockDTO.getProductId(), e);
+                log.error("Batch create stock failed: productId={}", dto.getProductId(), e);
             }
         }
-
-        
         return successCount;
     }
 
@@ -693,28 +411,22 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     )
     public Integer batchUpdateStocks(List<StockDTO> stockDTOList) {
         if (stockDTOList == null || stockDTOList.isEmpty()) {
-            log.warn("鎵归噺鏇存柊搴撳瓨淇℃伅澶辫触锛屽簱瀛樹俊鎭垪琛ㄤ负绌?);
-            throw new BusinessException("搴撳瓨淇℃伅鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("stockDTOList cannot be empty");
         }
-
         if (stockDTOList.size() > 100) {
-            throw new BusinessException("鎵归噺鏇存柊鏁伴噺涓嶈兘瓒呰繃100");
+            throw new BusinessException("batch update size cannot exceed 100");
         }
-
-        
 
         int successCount = 0;
-        for (StockDTO stockDTO : stockDTOList) {
+        for (StockDTO dto : stockDTOList) {
             try {
-                if (updateStock(stockDTO)) {
+                if (updateStock(dto)) {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.error("鏇存柊搴撳瓨淇℃伅澶辫触锛屽簱瀛業D: {}", stockDTO.getId(), e);
+                log.error("Batch update stock failed: stockId={}", dto.getId(), e);
             }
         }
-
-        
         return successCount;
     }
 
@@ -726,30 +438,24 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             leaseTime = 60,
             failMessage = "Acquire stock batch in lock failed"
     )
-    public Integer batchStockIn(List<StockService.StockAdjustmentRequest> requests) {
+    public Integer batchStockIn(List<StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("鎵归噺鍏ュ簱澶辫触锛屽叆搴撹姹傚垪琛ㄤ负绌?);
-            throw new BusinessException("鍏ュ簱璇锋眰鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("stock in requests cannot be empty");
         }
-
         if (requests.size() > 100) {
-            throw new BusinessException("鎵归噺鍏ュ簱鏁伴噺涓嶈兘瓒呰繃100");
+            throw new BusinessException("batch stock in size cannot exceed 100");
         }
-
-        
 
         int successCount = 0;
-        for (StockService.StockAdjustmentRequest request : requests) {
+        for (StockAdjustmentRequest request : requests) {
             try {
                 if (stockIn(request.getProductId(), request.getQuantity(), request.getRemark())) {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.error("鍏ュ簱澶辫触锛屽晢鍝両D: {}", request.getProductId(), e);
+                log.error("Batch stock in failed: productId={}", request.getProductId(), e);
             }
         }
-
-        
         return successCount;
     }
 
@@ -761,31 +467,29 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             leaseTime = 60,
             failMessage = "Acquire stock batch out lock failed"
     )
-    public Integer batchStockOut(List<StockService.StockAdjustmentRequest> requests) {
+    public Integer batchStockOut(List<StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("鎵归噺鍑哄簱澶辫触锛屽嚭搴撹姹傚垪琛ㄤ负绌?);
-            throw new BusinessException("鍑哄簱璇锋眰鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("stock out requests cannot be empty");
         }
-
         if (requests.size() > 100) {
-            throw new BusinessException("鎵归噺鍑哄簱鏁伴噺涓嶈兘瓒呰繃100");
+            throw new BusinessException("batch stock out size cannot exceed 100");
         }
-
-        
 
         int successCount = 0;
-        for (StockService.StockAdjustmentRequest request : requests) {
+        for (StockAdjustmentRequest request : requests) {
             try {
-                if (stockOut(request.getProductId(), request.getQuantity(),
-                        request.getOrderId(), request.getOrderNo(), request.getRemark())) {
+                if (stockOut(
+                        request.getProductId(),
+                        request.getQuantity(),
+                        request.getOrderId(),
+                        request.getOrderNo(),
+                        request.getRemark())) {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.error("鍑哄簱澶辫触锛屽晢鍝両D: {}", request.getProductId(), e);
+                log.error("Batch stock out failed: productId={}", request.getProductId(), e);
             }
         }
-
-        
         return successCount;
     }
 
@@ -797,34 +501,126 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             leaseTime = 60,
             failMessage = "Acquire stock batch reserve lock failed"
     )
-    public Integer batchReserveStock(List<StockService.StockAdjustmentRequest> requests) {
+    public Integer batchReserveStock(List<StockAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) {
-            log.warn("鎵归噺棰勭暀搴撳瓨澶辫触锛岄鐣欒姹傚垪琛ㄤ负绌?);
-            throw new BusinessException("棰勭暀璇锋眰鍒楄〃涓嶈兘涓虹┖");
+            throw new BusinessException("reserve requests cannot be empty");
         }
-
         if (requests.size() > 100) {
-            throw new BusinessException("鎵归噺棰勭暀鏁伴噺涓嶈兘瓒呰繃100");
+            throw new BusinessException("batch reserve size cannot exceed 100");
         }
-
-        
 
         int successCount = 0;
-        for (StockService.StockAdjustmentRequest request : requests) {
+        for (StockAdjustmentRequest request : requests) {
             try {
                 if (reserveStock(request.getProductId(), request.getQuantity())) {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.error("棰勭暀搴撳瓨澶辫触锛屽晢鍝両D: {}", request.getProductId(), e);
+                log.error("Batch reserve stock failed: productId={}", request.getProductId(), e);
             }
         }
-
-        
         return successCount;
     }
 
+    private void initStockOnCreate(Stock stock) {
+        if (stock.getStockQuantity() == null) {
+            stock.setStockQuantity(0);
+        }
+        if (stock.getFrozenQuantity() == null) {
+            stock.setFrozenQuantity(0);
+        }
+        if (stock.getStockStatus() == null) {
+            stock.setStockStatus(1);
+        }
+        if (stock.getLowStockThreshold() == null) {
+            stock.setLowStockThreshold(0);
+        }
+    }
+
+    private void mergeStockForUpdate(Stock target, Stock source) {
+        if (target.getProductId() == null) {
+            target.setProductId(source.getProductId());
+        }
+        if (target.getProductName() == null) {
+            target.setProductName(source.getProductName());
+        }
+        if (target.getStockQuantity() == null) {
+            target.setStockQuantity(source.getStockQuantity());
+        }
+        if (target.getFrozenQuantity() == null) {
+            target.setFrozenQuantity(source.getFrozenQuantity());
+        }
+        if (target.getStockStatus() == null) {
+            target.setStockStatus(source.getStockStatus());
+        }
+        if (target.getLowStockThreshold() == null) {
+            target.setLowStockThreshold(source.getLowStockThreshold());
+        }
+    }
+
+    private Stock findStockByProductId(Long productId) {
+        Stock stock = getOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, productId));
+        if (stock == null) {
+            throw new EntityNotFoundException("Stock", "productId: " + productId);
+        }
+        return stock;
+    }
+
+    private void validateQuantity(Long productId, Integer quantity) {
+        if (productId == null) {
+            throw new BusinessException("productId is required");
+        }
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException("quantity must be greater than 0");
+        }
+    }
+
+    private void createStockInRecord(Stock stock, Integer quantity, String remark) {
+        StockIn stockIn = new StockIn();
+        stockIn.setProductId(stock.getProductId());
+        stockIn.setQuantity(quantity);
+        stockInMapper.insert(stockIn);
+    }
+
+    private void createStockOutRecord(Stock stock, Integer quantity, Long orderId, String orderNo, String remark) {
+        StockOut stockOut = new StockOut();
+        stockOut.setProductId(stock.getProductId());
+        stockOut.setOrderId(orderId);
+        stockOut.setQuantity(quantity);
+        stockOutMapper.insert(stockOut);
+    }
+
+    private boolean hasOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return false;
+        }
+        try {
+            return Boolean.TRUE.equals(stringRedisTemplate.hasKey(keyPrefix + orderId));
+        } catch (Exception e) {
+            log.warn("Check order state failed: keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+            return false;
+        }
+    }
+
+    private void markOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.opsForValue().set(keyPrefix + orderId, "1", ORDER_STATE_KEY_TTL);
+        } catch (Exception e) {
+            log.warn("Mark order state failed: keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
+    }
+
+    private void clearOrderState(String keyPrefix, Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(keyPrefix + orderId);
+        } catch (Exception e) {
+            log.warn("Clear order state failed: keyPrefix={}, orderId={}", keyPrefix, orderId, e);
+        }
+    }
 }
-
-
-

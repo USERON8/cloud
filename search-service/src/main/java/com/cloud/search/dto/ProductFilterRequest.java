@@ -1,111 +1,62 @@
 package com.cloud.search.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
-
-
-
-
-
-
-
 @Data
-@Schema(description = "鍟嗗搧绛涢€夎姹傚弬鏁?)
+@Schema(description = "Product filter request")
 public class ProductFilterRequest {
 
-    
-
-
-    @Schema(description = "鎼滅储鍏抽敭瀛?, example = "鎵嬫満")
+    @Schema(description = "Keyword")
     private String keyword;
 
-    
-
-
-    @Schema(description = "鍒嗙被ID", example = "1")
+    @Schema(description = "Category id")
     private Long categoryId;
 
-    
-
-
-    @Schema(description = "鍝佺墝ID", example = "1")
+    @Schema(description = "Brand id")
     private Long brandId;
 
-    
-
-
-    @Schema(description = "搴楅摵ID", example = "1")
+    @Schema(description = "Shop id")
     private Long shopId;
 
-    
-
-
-    @Schema(description = "鏈€浣庝环鏍?, example = "1000.00")
-    @Min(value = 0, message = "浠锋牸涓嶈兘涓鸿礋鏁?)
+    @Schema(description = "Min price")
+    @DecimalMin(value = "0", message = "Min price must be greater than or equal to 0")
     private BigDecimal minPrice;
 
-    
-
-
-    @Schema(description = "鏈€楂樹环鏍?, example = "5000.00")
-    @Min(value = 0, message = "浠锋牸涓嶈兘涓鸿礋鏁?)
+    @Schema(description = "Max price")
+    @DecimalMin(value = "0", message = "Max price must be greater than or equal to 0")
     private BigDecimal maxPrice;
 
-    
-
-
-    @Schema(description = "鏈€浣庨攢閲?, example = "100")
-    @Min(value = 0, message = "閿€閲忎笉鑳戒负璐熸暟")
+    @Schema(description = "Min sales count")
+    @Min(value = 0, message = "Min sales count must be greater than or equal to 0")
     private Integer minSalesCount;
 
-    
-
-
-    @Schema(description = "鏄惁鎺ㄨ崘", example = "true")
+    @Schema(description = "Recommended")
     private Boolean recommended;
 
-    
-
-
-    @Schema(description = "鏄惁鏂板搧", example = "true")
+    @Schema(description = "New product")
     private Boolean isNew;
 
-    
-
-
-    @Schema(description = "鏄惁鐑攢", example = "true")
+    @Schema(description = "Hot product")
     private Boolean isHot;
 
-    
-
-
-    @Schema(description = "鎺掑簭瀛楁", example = "price",
-            allowableValues = {"price", "salesCount", "rating", "createdAt", "hotScore"})
+    @Schema(description = "Sort by")
     private String sortBy = "hotScore";
 
-    
-
-
-    @Schema(description = "鎺掑簭鏂瑰紡", example = "desc", allowableValues = {"asc", "desc"})
+    @Schema(description = "Sort order")
     private String sortOrder = "desc";
 
-    
-
-
-    @Schema(description = "椤电爜", example = "0")
-    @Min(value = 0, message = "椤电爜涓嶈兘涓鸿礋鏁?)
+    @Schema(description = "Page number")
+    @Min(value = 0, message = "Page number must be greater than or equal to 0")
     private Integer page = 0;
 
-    
-
-
-    @Schema(description = "姣忛〉澶у皬", example = "20")
-    @Min(value = 1, message = "姣忛〉澶у皬鑷冲皯涓?")
-    @Max(value = 100, message = "姣忛〉澶у皬涓嶈兘瓒呰繃100")
+    @Schema(description = "Page size")
+    @Min(value = 1, message = "Page size must be greater than or equal to 1")
+    @Max(value = 100, message = "Page size must be less than or equal to 100")
     private Integer size = 20;
 }

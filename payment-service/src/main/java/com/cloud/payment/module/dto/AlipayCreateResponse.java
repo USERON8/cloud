@@ -6,52 +6,28 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-
-
-
-
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "鏀粯瀹濇敮浠樺垱寤哄搷搴?)
+@Schema(description = "Alipay create payment response")
 public class AlipayCreateResponse {
 
-    
-
-
-    @Schema(description = "鏀粯琛ㄥ崟HTML锛屽墠绔渶瑕佸皢姝TML鎻掑叆椤甸潰骞惰嚜鍔ㄦ彁浜?)
+    @Schema(description = "Alipay payment form html")
     private String paymentForm;
 
-    
-
-
-    @Schema(description = "鏀粯ID")
+    @Schema(description = "Internal payment id")
     private Long paymentId;
 
-    
-
-
-    @Schema(description = "璁㈠崟鍙?)
+    @Schema(description = "Merchant out trade number")
     private String outTradeNo;
 
-    
-
-
-    @Schema(description = "鏀粯鐘舵€侊細0-寰呮敮浠橈紝1-鎴愬姛锛?-澶辫触锛?-宸查€€娆?)
+    @Schema(description = "Payment status")
     private Integer status;
 
-    
-
-
-    @Schema(description = "鍒涘缓鏃堕棿鎴?)
+    @Schema(description = "Response timestamp")
     private Long timestamp;
 
-    
-
-
-    @Schema(description = "璺熻釜ID锛岀敤浜庡箓绛夋€у鐞?)
+    @Schema(description = "Request trace id")
     private String traceId;
 }
