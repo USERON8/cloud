@@ -15,7 +15,6 @@ import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -46,8 +45,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(cacheNames = "shopCache", key = "#result",
-            condition = "#result != null")
+    @CacheEvict(cacheNames = {"shopCache", "shopListCache"}, allEntries = true)
     public Long createShop(ShopRequestDTO requestDTO) {
         
 
@@ -66,9 +64,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = @CachePut(cacheNames = "shopCache", key = "#id",
-                    condition = "#result == true"),
             evict = {
+                    @CacheEvict(cacheNames = "shopCache", key = "#id"),
                     @CacheEvict(cacheNames = "shopListCache", allEntries = true)
             }
     )
@@ -237,8 +234,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = @CachePut(cacheNames = "shopCache", key = "#id"),
-            evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
+            evict = {
+                    @CacheEvict(cacheNames = "shopCache", key = "#id"),
+                    @CacheEvict(cacheNames = "shopListCache", allEntries = true)
+            }
     )
     public Boolean enableShop(Long id) {
         
@@ -248,8 +247,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop>
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = @CachePut(cacheNames = "shopCache", key = "#id"),
-            evict = @CacheEvict(cacheNames = "shopListCache", allEntries = true)
+            evict = {
+                    @CacheEvict(cacheNames = "shopCache", key = "#id"),
+                    @CacheEvict(cacheNames = "shopListCache", allEntries = true)
+            }
     )
     public Boolean disableShop(Long id) {
         

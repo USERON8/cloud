@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -89,7 +90,10 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
             failMessage = "Acquire stock update lock failed"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(cacheNames = "stockCache", key = "#stockDTO.id", unless = "#result == false")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "stockCache", key = "#stockDTO.id"),
+            @CacheEvict(cacheNames = "stockCache", key = "'product:' + #stockDTO.productId")
+    })
     public boolean updateStock(StockDTO stockDTO) {
         if (stockDTO == null || stockDTO.getId() == null) {
             throw new IllegalArgumentException("stockDTO and id are required");

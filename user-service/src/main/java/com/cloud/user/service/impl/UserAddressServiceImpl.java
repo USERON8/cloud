@@ -11,7 +11,6 @@ import com.cloud.user.service.UserAddressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -45,10 +44,8 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = {
-                    @CachePut(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id")
-            },
             evict = {
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id"),
                     @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
             }
     )
@@ -75,10 +72,8 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = {
-                    @CachePut(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id")
-            },
             evict = {
+                    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id"),
                     @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
             }
     )

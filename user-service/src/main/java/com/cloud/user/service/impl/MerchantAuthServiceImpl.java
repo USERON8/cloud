@@ -9,7 +9,6 @@ import com.cloud.user.service.MerchantAuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -99,9 +98,9 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(
-            put = {
-                    @CachePut(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
-                    @CachePut(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId")
+            evict = {
+                    @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
+                    @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'merchantId:' + #merchantAuth.merchantId")
             }
     )
     public boolean save(MerchantAuth merchantAuth) {

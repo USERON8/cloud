@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -486,7 +485,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(cacheNames = "user", key = "#entity.id")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "user", key = "#entity.id"),
+            @CacheEvict(cacheNames = "userList", allEntries = true)
+    })
     public boolean save(User entity) {
         return super.save(entity);
     }
@@ -499,8 +501,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     @CacheEvict(cacheNames = "user", key = "'username:' + #entity.username", condition = "#entity.username != null"),
                     @CacheEvict(cacheNames = "userList", allEntries = true),
                     @CacheEvict(cacheNames = "auth", allEntries = true)
-            },
-            put = @CachePut(cacheNames = "user", key = "#entity.id")
+            }
     )
     public boolean updateById(User entity) {
         return super.updateById(entity);
