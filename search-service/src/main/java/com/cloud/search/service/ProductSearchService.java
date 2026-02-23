@@ -22,6 +22,13 @@ public interface ProductSearchService {
 
 
 
+    void upsertProduct(ProductDocument productDocument);
+
+    
+
+
+
+
     void deleteProduct(Long productId);
 
     

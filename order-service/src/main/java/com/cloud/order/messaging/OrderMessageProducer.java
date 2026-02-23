@@ -42,13 +42,16 @@ public class OrderMessageProducer {
             if (event.getTimestamp() == null) {
                 event.setTimestamp(System.currentTimeMillis());
             }
+            if (event.getEventType() == null || event.getEventType().isBlank()) {
+                event.setEventType("ORDER_CREATED");
+            }
 
             
             Map<String, Object> headers = new HashMap<>();
             headers.put(MessageConst.PROPERTY_KEYS, event.getOrderNo());
             headers.put(MessageConst.PROPERTY_TAGS, "ORDER_CREATED");
             headers.put("eventId", event.getEventId());
-            headers.put("eventType", "ORDER_CREATED");
+            headers.put("eventType", event.getEventType());
 
             
             Message<OrderCreatedEvent> message = MessageBuilder

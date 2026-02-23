@@ -17,7 +17,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -32,7 +32,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -165,8 +165,8 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   info:
-    title: 鍟嗗搧鏈嶅姟API鏂囨。
-    description: 鎻愪緵鍟嗗搧绠＄悊鐩稿叧鐨凴EST API鎺ュ彛
+    title: 閸熷棗鎼ч張宥呭API閺傚洦銆?
+    description: 閹绘劒绶甸崯鍡楁惂缁狅紕鎮婇惄绋垮彠閻ㄥ嚧EST API閹恒儱褰?
     version: 1.0.0
     contact:
       name: what's up
@@ -210,7 +210,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,caches
+        include: health,info,metrics,prometheus,env,caches
       base-path: /actuator
   endpoint:
     health:
@@ -218,11 +218,14 @@ management:
       show-components: always
     metrics:
       enabled: true
+    prometheus:
+      enabled: true
     caches:
       enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
+
 
 
 

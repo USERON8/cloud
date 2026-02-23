@@ -20,14 +20,14 @@ scrape_configs:
   # ASCII comment sanitized for compatibility.
   - job_name: 'prometheus'
     static_configs:
-      - targets: [ 'localhost:9090' ]
+      - targets: [ '127.0.0.1:9090' ]
 
   # ASCII comment sanitized for compatibility.
   - job_name: 'spring-boot'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets:
-          - 'host.docker.internal:8080' # ASCII comment sanitized for compatibility.
+          - 'host.docker.internal:80' # ASCII comment sanitized for compatibility.
           - 'host.docker.internal:8081' # ASCII comment sanitized for compatibility.
           - 'host.docker.internal:8082' # ASCII comment sanitized for compatibility.
           - 'host.docker.internal:8083' # ASCII comment sanitized for compatibility.
@@ -35,6 +35,5 @@ scrape_configs:
           - 'host.docker.internal:8085' # ASCII comment sanitized for compatibility.
           - 'host.docker.internal:8086' # ASCII comment sanitized for compatibility.
           - 'host.docker.internal:8087' # ASCII comment sanitized for compatibility.
-          - 'host.docker.internal:8088' # ASCII comment sanitized for compatibility.
-          - 'host.docker.internal:8089' # ASCII comment sanitized for compatibility.
     scrape_interval: 10s
+

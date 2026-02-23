@@ -24,7 +24,7 @@ import java.time.Duration;
 @EnableElasticsearchRepositories(basePackages = "com.cloud.search.repository")
 public class ElasticsearchConfig {
 
-    @Value("${spring.elasticsearch.uris:http://localhost:9200}")
+    @Value("${spring.elasticsearch.uris:http://127.0.0.1:9200}")
     private String elasticsearchUris;
 
     @Value("${spring.elasticsearch.username:}")

@@ -45,4 +45,8 @@ public class StockFreezeFailedEvent implements Serializable {
 
 
     private String eventId;
+
+    
+
+    private String eventType;
 }

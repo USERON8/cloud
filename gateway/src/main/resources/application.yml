@@ -12,7 +12,7 @@ spring:
     name: gateway
   profiles:
     active: dev
-    include: route,api
+    include: route
   main:
     allow-bean-definition-overriding: true
 
@@ -20,7 +20,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -35,7 +35,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -55,8 +55,8 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOriginPatterns:
-              - "http://localhost:*"
               - "http://127.0.0.1:*"
+              - "https://127.0.0.1:*"
               - "https://*.yourdomain.com"
             allowedMethods:
               - GET
@@ -163,9 +163,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 瀹炰綋绫诲垪琛?
+    swagger-model-name: 鐎圭偘缍嬬猾璇插灙鐞?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 寰湇鍔″钩鍙?API 鏂囨。"
+    footer-custom-content: "Cloud 瀵邦喗婀囬崝鈥抽挬閸?API 閺傚洦銆?
   gateway:
     enabled: true
     strategy: discover
@@ -176,26 +176,27 @@ knife4j:
         - gateway
       service-config:
         auth-service:
-          group-name: 璁よ瘉鏈嶅姟
+          group-name: 鐠併倛鐦夐張宥呭
           api-docs-path: /v3/api-docs
         user-service:
-          group-name: 鐢ㄦ埛鏈嶅姟
+          group-name: 閻劍鍩涢張宥呭
           api-docs-path: /v3/api-docs
         product-service:
-          group-name: 鍟嗗搧鏈嶅姟
+          group-name: 閸熷棗鎼ч張宥呭
           api-docs-path: /v3/api-docs
         order-service:
-          group-name: 璁㈠崟鏈嶅姟
+          group-name: 鐠併垹宕熼張宥呭
           api-docs-path: /v3/api-docs
         payment-service:
-          group-name: 鏀粯鏈嶅姟
+          group-name: 閺€顖欑帛閺堝秴濮?
           api-docs-path: /v3/api-docs
         stock-service:
-          group-name: 搴撳瓨鏈嶅姟
+          group-name: 鎼存挸鐡ㄩ張宥呭
           api-docs-path: /v3/api-docs
         search-service:
-          group-name: 鎼滅储鏈嶅姟
+          group-name: 閹兼粎鍌ㄩ張宥呭
           api-docs-path: /v3/api-docs
+
 
 
 

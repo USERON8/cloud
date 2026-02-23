@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
 @ConditionalOnProperty(name = "cloud.redisson.enabled", havingValue = "true", matchIfMissing = true)
 public class RedissonClientConfiguration {
 
-    @Value("${spring.data.redis.host:localhost}")
+    @Value("${spring.data.redis.host:127.0.0.1}")
     private String host;
 
     @Value("${spring.data.redis.port:6379}")

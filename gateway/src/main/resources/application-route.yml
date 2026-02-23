@@ -2,11 +2,6 @@ spring:
   cloud:
     gateway:
       routes:
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
         - id: oauth2-endpoints
           uri: lb://auth-service
           order: 10
@@ -14,8 +9,7 @@ spring:
             - Path=/oauth2/**
           filters:
             - PreserveHostHeader
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: oidc-endpoints
           uri: lb://auth-service
           order: 10
@@ -23,185 +17,126 @@ spring:
             - Path=/.well-known/**,/connect/**,/userinfo
           filters:
             - PreserveHostHeader
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: auth-service-api
           uri: lb://auth-service
           order: 10
           predicates:
             - Path=/auth/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: user-management
+
+        - id: user-service-api-v2
           uri: lb://user-service
           order: 20
           predicates:
-            - Path=/users/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: merchant-management
+            - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
+
+        - id: user-service-api-legacy
           uri: lb://user-service
-          order: 20
+          order: 25
           predicates:
-            - Path=/merchant/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: admin-management
-          uri: lb://user-service
-          order: 20
-          predicates:
-            - Path=/admin/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: product-management
+            - Path=/users/**,/merchant/**,/admin/**
+
+        - id: product-service-api-v2
           uri: lb://product-service
           order: 20
           predicates:
-            - Path=/product/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: category-management
+            - Path=/api/product/**,/api/category/**
+
+        - id: product-service-api-legacy
           uri: lb://product-service
-          order: 20
+          order: 25
           predicates:
-            - Path=/category/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: brand-management
-          uri: lb://product-service
-          order: 20
-          predicates:
-            - Path=/brand/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: order-management
+            - Path=/product/**,/category/**,/brand/**
+
+        - id: order-service-api-v2
           uri: lb://order-service
           order: 20
           predicates:
-            - Path=/order/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: cart-management
+            - Path=/api/orders/**,/api/v1/refund/**
+
+        - id: order-service-api-legacy
           uri: lb://order-service
-          order: 20
+          order: 25
           predicates:
-            - Path=/cart/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: payment-management
+            - Path=/order/**,/cart/**
+
+        - id: payment-service-api-v2
           uri: lb://payment-service
           order: 20
           predicates:
+            - Path=/api/payments/**,/api/v1/payment/alipay/**
+
+        - id: payment-service-api-legacy
+          uri: lb://payment-service
+          order: 25
+          predicates:
             - Path=/payment/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: stock-management
+
+        - id: stock-service-api-v2
           uri: lb://stock-service
           order: 20
           predicates:
+            - Path=/api/stocks/**
+
+        - id: stock-service-api-legacy
+          uri: lb://stock-service
+          order: 25
+          predicates:
             - Path=/stock/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: search-api
+
+        - id: search-service-api-v2
           uri: lb://search-service
           order: 20
           predicates:
-            - Path=/search/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: log-api
-          uri: lb://log-service
-          order: 20
+            - Path=/api/search/**
+
+        - id: search-service-api-legacy
+          uri: lb://search-service
+          order: 25
           predicates:
-            - Path=/log/**
-        
-        # ========================================
-        # Comment sanitized for UTF-8 compatibility.
-        # ========================================
-        
-        # Comment sanitized for UTF-8 compatibility.
+            - Path=/search/**
+
         - id: auth-service-doc
           uri: lb://auth-service
           order: 50
           predicates:
             - Path=/auth-service/doc.html,/auth-service/webjars/**,/auth-service/swagger-ui/**,/auth-service/v3/api-docs/**,/auth-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: user-service-doc
           uri: lb://user-service
           order: 50
           predicates:
             - Path=/user-service/doc.html,/user-service/webjars/**,/user-service/swagger-ui/**,/user-service/v3/api-docs/**,/user-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: product-service-doc
           uri: lb://product-service
           order: 50
           predicates:
             - Path=/product-service/doc.html,/product-service/webjars/**,/product-service/swagger-ui/**,/product-service/v3/api-docs/**,/product-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: order-service-doc
           uri: lb://order-service
           order: 50
           predicates:
             - Path=/order-service/doc.html,/order-service/webjars/**,/order-service/swagger-ui/**,/order-service/v3/api-docs/**,/order-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: payment-service-doc
           uri: lb://payment-service
           order: 50
           predicates:
             - Path=/payment-service/doc.html,/payment-service/webjars/**,/payment-service/swagger-ui/**,/payment-service/v3/api-docs/**,/payment-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: stock-service-doc
           uri: lb://stock-service
           order: 50
           predicates:
             - Path=/stock-service/doc.html,/stock-service/webjars/**,/stock-service/swagger-ui/**,/stock-service/v3/api-docs/**,/stock-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
+
         - id: search-service-doc
           uri: lb://search-service
           order: 50
           predicates:
             - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
-        
-        # Comment sanitized for UTF-8 compatibility.
-        - id: log-service-doc
-          uri: lb://log-service
-          order: 50
-          predicates:
-            - Path=/log-service/doc.html,/log-service/webjars/**,/log-service/swagger-ui/**,/log-service/v3/api-docs/**,/log-service/swagger-resources/**
 
       # Comment sanitized for UTF-8 compatibility.
       discovery:

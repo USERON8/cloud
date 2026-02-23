@@ -4,7 +4,7 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
       password: root
       database: 0
@@ -29,7 +29,7 @@ logging:
 app:
   jwt:
     test-mode: true
-    issuer: http://localhost:8081
+    issuer: http://127.0.0.1:8081
 
 # Comment sanitized for UTF-8 compatibility.
 knife4j:
@@ -37,3 +37,4 @@ knife4j:
   production: false
   basic:
     enable: false
+

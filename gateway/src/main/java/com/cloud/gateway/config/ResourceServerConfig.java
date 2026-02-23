@@ -54,8 +54,10 @@ public class ResourceServerConfig {
                                     "/auth/users/register-and-login",
                                     "/auth/tokens/refresh",
                                     "/auth/register-and-login",
-                                    "/auth/refresh-token"
+                                    "/auth/refresh-token",
+                                    "/api/v1/payment/alipay/notify"
                             ).permitAll()
+                            .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return").permitAll()
                             .pathMatchers("/auth/oauth2/github/**", "/auth/github/**").permitAll()
                             .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
                             .pathMatchers("/actuator/**", "/health/**", "/metrics/**").permitAll()
@@ -92,8 +94,7 @@ public class ResourceServerConfig {
                                     "/order-service/doc.html", "/order-service/doc.html/**",
                                     "/payment-service/doc.html", "/payment-service/doc.html/**",
                                     "/stock-service/doc.html", "/stock-service/doc.html/**",
-                                    "/search-service/doc.html", "/search-service/doc.html/**",
-                                    "/log-service/doc.html", "/log-service/doc.html/**"
+                                    "/search-service/doc.html", "/search-service/doc.html/**"
                             ).permitAll();
 
                     if (enableTestApi) {
@@ -101,14 +102,18 @@ public class ResourceServerConfig {
                     }
 
                     authExchanges
-                            .pathMatchers("/users/**", "/merchant/**", "/admin/**").authenticated()
+                            .pathMatchers(
+                                    "/users/**", "/merchant/**", "/admin/**",
+                                    "/api/manage/users/**", "/api/query/users/**",
+                                    "/api/user/address/**", "/api/merchant/**",
+                                    "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**"
+                            ).authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
-                            .pathMatchers("/product/**", "/category/**").permitAll()
-                            .pathMatchers("/order/**", "/cart/**").authenticated()
-                            .pathMatchers("/payment/**").authenticated()
-                            .pathMatchers("/stock/**").authenticated()
-                            .pathMatchers("/search/**").permitAll()
-                            .pathMatchers("/log/**").authenticated()
+                            .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
+                            .pathMatchers("/order/**", "/cart/**", "/api/orders/**", "/api/v1/refund/**").authenticated()
+                            .pathMatchers("/payment/**", "/api/payments/**", "/api/v1/payment/alipay/**").authenticated()
+                            .pathMatchers("/stock/**", "/api/stocks/**").authenticated()
+                            .pathMatchers("/search/**", "/api/search/**").permitAll()
                             .anyExchange().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2

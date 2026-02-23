@@ -44,6 +44,7 @@ public class StockMessageProducer {
                     .reason(reason)
                     .timestamp(System.currentTimeMillis())
                     .eventId(UUID.randomUUID().toString())
+                    .eventType("STOCK_FREEZE_FAILED")
                     .build();
 
             
@@ -51,7 +52,7 @@ public class StockMessageProducer {
             headers.put(MessageConst.PROPERTY_KEYS, orderNo);
             headers.put(MessageConst.PROPERTY_TAGS, "STOCK_FREEZE_FAILED");
             headers.put("eventId", event.getEventId());
-            headers.put("eventType", "STOCK_FREEZE_FAILED");
+            headers.put("eventType", event.getEventType());
 
             
             Message<StockFreezeFailedEvent> message = MessageBuilder

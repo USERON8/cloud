@@ -10,6 +10,7 @@
 这是一个基于 Spring Cloud + Spring Cloud Alibaba 的微服务后端项目，核心面向电商业务场景，包含认证、网关、用户、商品、库存、订单、支付、搜索等服务。
 
 项目当前重点：
+
 - 统一鉴权：OAuth2.1 + JWT
 - 服务治理：Nacos 注册与配置
 - 异步解耦：RocketMQ
@@ -19,21 +20,21 @@
 
 ## 2. 技术栈（仅保留已验证）
 
-| 技术 | 版本 | 说明 |
-|---|---|---|
-| Java | 17 | 运行时 |
-| Spring Boot | 3.5.3 | 基础框架 |
-| Spring Cloud | 2025.0.0 | 微服务框架 |
-| Spring Cloud Alibaba | 2025.0.0.0-preview | Nacos 等组件 |
-| Spring Security | 6.x | 安全框架 |
-| Spring Authorization Server | 1.x | OAuth2.1 授权能力 |
-| MyBatis Plus | 3.5.13 | ORM |
-| MySQL | 9.3.0（镜像） | 关系型数据库 |
-| Redis | 7.4.5（镜像） | 缓存 |
-| RocketMQ | 5.3.2（镜像） | 消息队列 |
-| Elasticsearch | 9.1.2（镜像） | 搜索 |
-| Redisson | 3.51.0 | 分布式锁 |
-| Knife4j | 4.5.0 | API 文档 |
+| 技术                          | 版本                 | 说明            |
+|-----------------------------|--------------------|---------------|
+| Java                        | 17                 | 运行时           |
+| Spring Boot                 | 3.5.3              | 基础框架          |
+| Spring Cloud                | 2025.0.0           | 微服务框架         |
+| Spring Cloud Alibaba        | 2025.0.0.0-preview | Nacos 等组件     |
+| Spring Security             | 6.x                | 安全框架          |
+| Spring Authorization Server | 1.x                | OAuth2.1 授权能力 |
+| MyBatis Plus                | 3.5.13             | ORM           |
+| MySQL                       | 9.3.0（镜像）          | 关系型数据库        |
+| Redis                       | 7.4.5（镜像）          | 缓存            |
+| RocketMQ                    | 5.3.2（镜像）          | 消息队列          |
+| Elasticsearch               | 9.1.2（镜像）          | 搜索            |
+| Redisson                    | 3.51.0             | 分布式锁          |
+| Knife4j                     | 4.5.0              | API 文档        |
 
 ## 3. 仓库结构与模块职责
 
@@ -200,6 +201,7 @@ curl -X GET "http://localhost:80/api/query/users" \
 ### 7.1 配置文件
 
 每个服务均包含：
+
 - `application.yml`
 - `application-dev.yml`
 - `application-prod.yml`
@@ -230,6 +232,7 @@ docker-compose -f monitoring-compose.yml up -d
 ### 8.3 指标端点
 
 各服务已开启 Actuator 与 Prometheus 端点，可通过：
+
 - `/actuator/health`
 - `/actuator/metrics`
 - `/actuator/prometheus`

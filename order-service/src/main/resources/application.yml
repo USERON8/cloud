@@ -12,12 +12,13 @@ spring:
     name: order-service
   profiles:
     active: dev
+    include: rocketmq
 
   # Comment sanitized for UTF-8 compatibility.
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -32,7 +33,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -211,6 +212,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

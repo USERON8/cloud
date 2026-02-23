@@ -308,4 +308,13 @@ public interface ProductService extends IService<Product> {
 
 
     List<ProductDTO> getProductsByShopId(Long shopId);
+
+    /**
+     * Full sync product data from MySQL to search-service via message events.
+     *
+     * @param pageSize page size per pull from MySQL
+     * @param status optional status filter
+     * @return total events sent
+     */
+    Integer syncProductsToSearch(Integer pageSize, Integer status);
 }

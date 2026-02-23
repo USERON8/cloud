@@ -91,6 +91,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
     networks:
       - monitoring
 
@@ -116,6 +117,60 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    networks:
+      - monitoring
+
+  k6:
+    image: grafana/k6:1.6.1
+    profiles:
+      - loadtest
+    depends_on:
+      - prometheus
+    volumes:
+      - type: bind
+        source: ../tests/perf/k6
+        target: /scripts
+    environment:
+      - BASE_URL=${K6_BASE_URL:-http://host.docker.internal:80}
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+      - K6_PROMETHEUS_RW_STALE_MARKERS=true
+      - AUTH_TOKEN=${AUTH_TOKEN:-}
+      - AUTH_USERNAME=${AUTH_USERNAME:-}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-}
+      - AUTH_USER_TYPE=${AUTH_USER_TYPE:-USER}
+      - USER_ID=${USER_ID:-}
+      - SHOP_ID=${SHOP_ID:-}
+      - PRODUCT_ID=${PRODUCT_ID:-}
+      - CATEGORY_ID=${CATEGORY_ID:-}
+      - ORDER_ID=${ORDER_ID:-}
+      - ORDER_NO=${ORDER_NO:-}
+      - PAYMENT_ID=${PAYMENT_ID:-}
+      - CASE_VUS=${CASE_VUS:-1}
+      - CASE_DURATION=${CASE_DURATION:-30s}
+      - CASE_STAGE_SECONDS=${CASE_STAGE_SECONDS:-35}
+      - SEARCH_DELAY_SECONDS=${SEARCH_DELAY_SECONDS:-2}
+      - INSUFFICIENT_QUANTITY=${INSUFFICIENT_QUANTITY:-999999}
+      - HEALTH_TARGETS=${HEALTH_TARGETS:-}
+      - RECEIVER_NAME=${RECEIVER_NAME:-k6-user}
+      - RECEIVER_PHONE=${RECEIVER_PHONE:-13800138000}
+      - RECEIVER_ADDRESS=${RECEIVER_ADDRESS:-k6-road}
+      - PRODUCT_NAME=${PRODUCT_NAME:-k6-product}
+      - PAY_TYPE=${PAY_TYPE:-1}
+      - ORDER_TOTAL_AMOUNT=${ORDER_TOTAL_AMOUNT:-99.99}
+      - ORDER_PAY_AMOUNT=${ORDER_PAY_AMOUNT:-99.99}
+      - ORDER_ITEM_PRICE=${ORDER_ITEM_PRICE:-99.99}
+      - ORDER_ITEM_QUANTITY=${ORDER_ITEM_QUANTITY:-1}
+      - REFUND_TYPE=${REFUND_TYPE:-1}
+      - REFUND_REASON=${REFUND_REASON:-k6-refund}
+      - REFUND_DESCRIPTION=${REFUND_DESCRIPTION:-k6-acceptance}
+      - REFUND_AMOUNT=${REFUND_AMOUNT:-1.00}
+      - REFUND_QUANTITY=${REFUND_QUANTITY:-1}
+    command:
+      - run
+      - -o
+      - experimental-prometheus-rw
+      - /scripts/acceptance-cases.js
     networks:
       - monitoring
 

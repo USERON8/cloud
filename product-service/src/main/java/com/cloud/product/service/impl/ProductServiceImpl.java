@@ -13,6 +13,7 @@ import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
+import com.cloud.product.messaging.ProductSearchSyncProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Product;
 import com.cloud.product.service.CategoryService;
@@ -39,6 +40,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private final ShopService shopService;
     private final CategoryService categoryService;
     private final StockFeignClient stockFeignClient;
+    private final ProductSearchSyncProducer productSearchSyncProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -51,6 +53,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         boolean saved = save(product);
         if (!saved) {
             throw new BusinessException("Create product failed");
+        }
+        if (!productSearchSyncProducer.sendProductCreated(product)) {
+            throw new BusinessException("Send product-created search sync event failed");
         }
         return product.getId();
     }
@@ -67,17 +72,32 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
 
         applyRequest(product, requestDTO);
-        return updateById(product);
+        boolean updated = updateById(product);
+        if (!updated) {
+            return false;
+        }
+        if (!productSearchSyncProducer.sendProductUpdated(product)) {
+            throw new BusinessException("Send product-updated search sync event failed");
+        }
+        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteProduct(Long id) {
         validateId(id);
-        if (getById(id) == null) {
+        Product existing = getById(id);
+        if (existing == null) {
             throw new ProductServiceException.ProductNotFoundException(id);
         }
-        return removeById(id);
+        boolean deleted = removeById(id);
+        if (!deleted) {
+            return false;
+        }
+        if (!productSearchSyncProducer.sendProductDeleted(id)) {
+            throw new BusinessException("Send product-deleted search sync event failed");
+        }
+        return true;
     }
 
     @Override
@@ -86,7 +106,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
-        return removeByIds(ids);
+        List<Product> existingProducts = listByIds(ids);
+        boolean deleted = removeByIds(ids);
+        if (!deleted) {
+            return false;
+        }
+        for (Product product : existingProducts) {
+            if (product == null || product.getId() == null) {
+                continue;
+            }
+            if (!productSearchSyncProducer.sendProductDeleted(product.getId())) {
+                throw new BusinessException("Send batch product-deleted search sync event failed");
+            }
+        }
+        return true;
     }
 
     @Override
@@ -330,6 +363,47 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getShopId, shopId).orderByDesc(Product::getCreatedAt);
         return productConverter.voListToDTOList(productConverter.toVOList(list(wrapper)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Integer syncProductsToSearch(Integer pageSize, Integer status) {
+        int size = (pageSize == null || pageSize <= 0) ? 200 : Math.min(pageSize, 1000);
+        long current = 1L;
+        int sentCount = 0;
+
+        while (true) {
+            Page<Product> page = new Page<>(current, size);
+            LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+            if (status != null) {
+                wrapper.eq(Product::getStatus, status);
+            }
+            wrapper.orderByAsc(Product::getId);
+
+            Page<Product> result = page(page, wrapper);
+            List<Product> records = result.getRecords();
+            if (CollectionUtils.isEmpty(records)) {
+                break;
+            }
+
+            for (Product product : records) {
+                if (product == null || product.getId() == null) {
+                    continue;
+                }
+                if (!productSearchSyncProducer.sendProductUpdated(product)) {
+                    throw new BusinessException("Send product full-sync event failed, productId=" + product.getId());
+                }
+                sentCount++;
+            }
+
+            if (current >= result.getPages()) {
+                break;
+            }
+            current++;
+        }
+
+        log.info("Product full sync events sent: count={}, pageSize={}, status={}", sentCount, size, status);
+        return sentCount;
     }
 
     private void validateId(Long id) {

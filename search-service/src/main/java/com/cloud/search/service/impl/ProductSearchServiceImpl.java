@@ -42,6 +42,22 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void upsertProduct(ProductDocument productDocument) {
+        if (productDocument == null || productDocument.getProductId() == null) {
+            return;
+        }
+        try {
+            if (productDocument.getId() == null || productDocument.getId().isBlank()) {
+                productDocument.setId(String.valueOf(productDocument.getProductId()));
+            }
+            productDocumentRepository.save(productDocument);
+        } catch (Exception e) {
+            throw new RuntimeException("Upsert product into index failed", e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteProduct(Long productId) {
         try {
             productDocumentRepository.deleteById(String.valueOf(productId));

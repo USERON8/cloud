@@ -71,4 +71,8 @@ public class PaymentSuccessEvent implements Serializable {
 
 
     private String eventId;
+
+    
+
+    private String eventType;
 }

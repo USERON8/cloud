@@ -4,7 +4,7 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    url: jdbc:mysql://127.0.0.1:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
     username: root
     password: root
     hikari:
@@ -17,7 +17,7 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
       password: root
       database: 2
@@ -31,11 +31,11 @@ spring:
 
 # Comment sanitized for UTF-8 compatibility.
 minio:
-  endpoint: http://localhost:9000
+  endpoint: http://127.0.0.1:9000
   access-key: minioadmin
   secret-key: minioadmin
   bucket-name: user-avatars
-  public-endpoint: http://localhost:9000
+  public-endpoint: http://127.0.0.1:9000
 
 # Comment sanitized for UTF-8 compatibility.
 logging:
@@ -57,3 +57,4 @@ knife4j:
   production: false
   basic:
     enable: false
+

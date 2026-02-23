@@ -144,8 +144,6 @@ public class SecurityFilterChainConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("http://localhost:*");
-        configuration.addAllowedOriginPattern("https://localhost:*");
         configuration.addAllowedOriginPattern("http://127.0.0.1:*");
         configuration.addAllowedOriginPattern("https://127.0.0.1:*");
         configuration.addAllowedMethod("GET");

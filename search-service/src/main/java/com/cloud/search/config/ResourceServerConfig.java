@@ -55,14 +55,14 @@ public class ResourceServerConfig {
                             "/favicon.ico"
                     ).permitAll();
 
-                    auth.requestMatchers("/search/internal/**")
+                    auth.requestMatchers("/internal/**")
                             .hasAuthority("SCOPE_internal_api");
 
-                    auth.requestMatchers("/search/manage/**")
+                    auth.requestMatchers("/api/search/rebuild-index")
                             .hasRole("ADMIN");
 
-                    auth.requestMatchers("/search/query/**", "/search/suggest/**", "/search/hot/**")
-                            .authenticated();
+                    auth.requestMatchers("/api/search/**", "/api/search/shops/**")
+                            .permitAll();
 
                     auth.anyRequest().authenticated();
                 })

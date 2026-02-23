@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.OrderCreateDTO;
 import com.cloud.common.domain.dto.order.OrderDTO;
+import com.cloud.common.domain.dto.order.OrderItemDTO;
+import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.domain.vo.order.OrderVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
@@ -13,8 +15,10 @@ import com.cloud.order.converter.OrderConverter;
 import com.cloud.order.dto.OrderPageQueryDTO;
 import com.cloud.order.exception.OrderServiceException;
 import com.cloud.order.mapper.OrderMapper;
+import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.module.entity.Order;
 import com.cloud.order.service.OrderService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,10 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +45,8 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements OrderService {
 
     private final OrderConverter orderConverter;
+    private final OrderMessageProducer orderMessageProducer;
+    private final MeterRegistry meterRegistry;
 
     @Override
     @Transactional(readOnly = true)
@@ -251,7 +260,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (rows <= 0) {
             throw new OrderServiceException.OrderCreateFailedException("Insert order failed");
         }
-        return orderConverter.toDTO(order);
+        OrderDTO created = orderConverter.toDTO(order);
+        publishOrderCreatedEvent(order, buildProductQuantityMapFromOrderDTO(orderDTO));
+        return created;
     }
 
     @Override
@@ -281,6 +292,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (rows <= 0) {
             throw new OrderServiceException.OrderCreateFailedException("Insert order failed");
         }
+        publishOrderCreatedEvent(order, buildProductQuantityMapFromCreateDTO(orderCreateDTO));
         return orderConverter.toDTO(order);
     }
 
@@ -366,7 +378,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         order.setStatus(1);
         order.setPayTime(LocalDateTime.now());
-        return this.baseMapper.updateById(order) > 0;
+        boolean updated = this.baseMapper.updateById(order) > 0;
+        if (updated) {
+            recordOrderMetric("success");
+        }
+        return updated;
     }
 
     @Override
@@ -382,7 +398,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setStatus(4);
         order.setCancelTime(LocalDateTime.now());
         order.setCancelReason(reason);
-        return this.baseMapper.updateById(order) > 0;
+        boolean updated = this.baseMapper.updateById(order) > 0;
+        if (updated) {
+            recordOrderMetric("failed");
+        }
+        return updated;
     }
 
     @Override
@@ -524,5 +544,66 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         } catch (NumberFormatException e) {
             throw new OrderServiceException("Invalid currentUserId format");
         }
+    }
+
+    private void publishOrderCreatedEvent(Order order, Map<Long, Integer> productQuantityMap) {
+        Map<Long, Integer> safeMap = (productQuantityMap == null || productQuantityMap.isEmpty())
+                ? Map.of()
+                : productQuantityMap;
+
+        OrderCreatedEvent event = OrderCreatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventType("ORDER_CREATED")
+                .timestamp(System.currentTimeMillis())
+                .orderId(order.getId())
+                .orderNo(order.getOrderNo())
+                .userId(order.getUserId())
+                .totalAmount(order.getTotalAmount())
+                .remark(order.getRemark())
+                .productQuantityMap(safeMap)
+                .build();
+
+        boolean sent = orderMessageProducer.sendOrderCreatedEvent(event);
+        if (!sent) {
+            throw new OrderServiceException.OrderCreateFailedException("Send order-created event failed");
+        }
+    }
+
+    private Map<Long, Integer> buildProductQuantityMapFromCreateDTO(OrderCreateDTO orderCreateDTO) {
+        if (orderCreateDTO.getOrderItems() == null || orderCreateDTO.getOrderItems().isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Integer> map = new HashMap<>();
+        for (OrderCreateDTO.OrderItemDTO item : orderCreateDTO.getOrderItems()) {
+            if (item == null || item.getProductId() == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+                continue;
+            }
+            map.merge(item.getProductId(), item.getQuantity(), Integer::sum);
+        }
+        return map;
+    }
+
+    private Map<Long, Integer> buildProductQuantityMapFromOrderDTO(OrderDTO orderDTO) {
+        if (orderDTO.getOrderItems() == null || orderDTO.getOrderItems().isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Integer> map = new HashMap<>();
+        for (OrderItemDTO item : orderDTO.getOrderItems()) {
+            if (item == null || item.getProductId() == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+                continue;
+            }
+            map.merge(item.getProductId(), item.getQuantity(), Integer::sum);
+        }
+        return map;
+    }
+
+    private void recordOrderMetric(String result) {
+        meterRegistry.counter(
+                "trade.order",
+                "service", "order-service",
+                "result", result
+        ).increment();
     }
 }

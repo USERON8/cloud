@@ -88,8 +88,8 @@ public class OAuth21AuthorizationServerConfig {
                 })
                 .redirectUris(uris -> {
                     uris.add("http://127.0.0.1/authorized");
-                    uris.add("http://localhost:3000/callback");
-                    uris.add("http://localhost:80/login/callback");
+                    uris.add("http://127.0.0.1:3000/callback");
+                    uris.add("http://127.0.0.1:80/login/callback");
                     uris.add("http://127.0.0.1:80/login/callback");
                 })
                 .scopes(scopes -> {

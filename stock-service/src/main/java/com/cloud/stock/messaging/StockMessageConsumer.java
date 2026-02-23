@@ -4,6 +4,7 @@ import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.stock.service.StockService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,7 @@ public class StockMessageConsumer {
     private final StockMessageProducer stockMessageProducer;
     private final MessageIdempotencyService messageIdempotencyService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final MeterRegistry meterRegistry;
 
     
 
@@ -53,6 +55,7 @@ public class StockMessageConsumer {
                 if (!messageIdempotencyService.tryAcquire(ORDER_CREATED_NAMESPACE, eventId)) {
                     log.warn("Duplicate order-created event, skip: orderId={}, orderNo={}, eventId={}",
                             event.getOrderId(), event.getOrderNo(), eventId);
+                    recordMessageMetric("ORDER_CREATED", "success");
                     return;
                 }
 
@@ -94,7 +97,8 @@ public class StockMessageConsumer {
                     markOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
-                    
+                    recordStockFreezeMetric("success");
+                    recordMessageMetric("ORDER_CREATED", "success");
 
                 } else {
                     log.error("Order stock freeze failed: orderId={}, orderNo={}, reason={}",
@@ -117,6 +121,8 @@ public class StockMessageConsumer {
                     }
                     clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
                     markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
+                    recordStockFreezeMetric("failed");
+                    recordMessageMetric("ORDER_CREATED", "failed");
                 }
 
             } catch (Exception e) {
@@ -130,6 +136,8 @@ public class StockMessageConsumer {
                         "System exception: " + e.getMessage()
                 );
 
+                recordStockFreezeMetric("failed");
+                recordMessageMetric("ORDER_CREATED", "retry");
                 throw new RuntimeException("Handle order-created event failed", e);
             }
         };
@@ -151,6 +159,7 @@ public class StockMessageConsumer {
                 if (!messageIdempotencyService.tryAcquire(PAYMENT_SUCCESS_NAMESPACE, eventId)) {
                     log.warn("Duplicate payment-success event, skip: orderId={}, orderNo={}, eventId={}",
                             event.getOrderId(), event.getOrderNo(), eventId);
+                    recordMessageMetric("PAYMENT_SUCCESS", "success");
                     return;
                 }
 
@@ -164,6 +173,7 @@ public class StockMessageConsumer {
                 if (productQuantityMap == null || productQuantityMap.isEmpty()) {
                     log.warn("Payment-success event has empty product map, skip deduction: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
+                    recordMessageMetric("PAYMENT_SUCCESS", "failed");
                     return;
                 }
 
@@ -184,13 +194,14 @@ public class StockMessageConsumer {
 
                 markOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                 clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
-                
+                recordMessageMetric("PAYMENT_SUCCESS", "success");
 
 
             } catch (Exception e) {
                 messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, event.getEventId());
                 log.error("Handle payment-success event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
+                recordMessageMetric("PAYMENT_SUCCESS", "retry");
                 throw new RuntimeException("Handle payment-success event failed", e);
             }
         };
@@ -217,14 +228,18 @@ public class StockMessageConsumer {
                 if (!messageIdempotencyService.tryAcquire(STOCK_RESTORE_NAMESPACE, eventId)) {
                     log.warn("Duplicate stock-restore event, skip: orderId={}, refundNo={}, eventId={}",
                             orderId, refundNo, eventId);
+                    recordMessageMetric("STOCK_RESTORE", "success");
                     return;
                 }
 
                 if (productQuantityMap == null || productQuantityMap.isEmpty()) {
                     log.warn("No products to restore: orderId={}, refundNo={}", orderId, refundNo);
+                    recordMessageMetric("STOCK_RESTORE", "failed");
+                    recordRefundMetric("failed");
                     return;
                 }
 
+                boolean confirmedDeduction = stockService.isStockConfirmed(orderId);
                 boolean allSuccess = true;
                 StringBuilder failureDetails = new StringBuilder();
 
@@ -232,7 +247,12 @@ public class StockMessageConsumer {
                     Long productId = entry.getKey();
                     Integer quantity = entry.getValue();
 
-                    boolean success = stockService.releaseReservedStock(productId, quantity);
+                    boolean success;
+                    if (confirmedDeduction) {
+                        success = stockService.stockIn(productId, quantity, "Refund stock restore: " + refundNo);
+                    } else {
+                        success = stockService.releaseReservedStock(productId, quantity);
+                    }
                     if (!success) {
                         allSuccess = false;
                         failureDetails.append("productId=").append(productId)
@@ -244,16 +264,21 @@ public class StockMessageConsumer {
                     clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
                     markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
-                    
+                    recordMessageMetric("STOCK_RESTORE", "success");
+                    recordRefundMetric("success");
 
                 } else {
                     log.error("Stock restore partial failed: orderId={}, refundNo={}, details={}",
                             orderId, refundNo, failureDetails);
+                    recordMessageMetric("STOCK_RESTORE", "failed");
+                    recordRefundMetric("failed");
                 }
 
             } catch (Exception e) {
                 messageIdempotencyService.release(STOCK_RESTORE_NAMESPACE, (String) event.get("eventId"));
                 log.error("Handle stock-restore event failed: orderId={}, refundNo={}", orderId, refundNo, e);
+                recordMessageMetric("STOCK_RESTORE", "retry");
+                recordRefundMetric("failed");
                 throw new RuntimeException("Handle stock-restore event failed", e);
             }
         };
@@ -279,5 +304,30 @@ public class StockMessageConsumer {
         } catch (Exception e) {
             log.warn("Clear order stock state failed, keyPrefix={}, orderId={}", keyPrefix, orderId, e);
         }
+    }
+
+    private void recordMessageMetric(String eventType, String result) {
+        meterRegistry.counter(
+                "trade.message.consume",
+                "service", "stock-service",
+                "eventType", eventType,
+                "result", result
+        ).increment();
+    }
+
+    private void recordStockFreezeMetric(String result) {
+        meterRegistry.counter(
+                "trade.stock.freeze",
+                "service", "stock-service",
+                "result", result
+        ).increment();
+    }
+
+    private void recordRefundMetric(String result) {
+        meterRegistry.counter(
+                "trade.refund",
+                "service", "stock-service",
+                "result", result
+        ).increment();
     }
 }

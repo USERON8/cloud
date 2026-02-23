@@ -182,8 +182,7 @@ public class RefundNotificationConsumer {
     }
 
     private void sendNotification(String receiverType, Long receiverId, String title, String content) {
-        
-        
-
+        log.info("Refund notification dispatched: receiverType={}, receiverId={}, title={}, content={}",
+                receiverType, receiverId, title, content);
     }
 }

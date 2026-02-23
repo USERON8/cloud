@@ -18,7 +18,7 @@ import org.redisson.config.Config;
 @Slf4j
 public abstract class RedissonConfig {
 
-    protected String host = "localhost";
+    protected String host = "127.0.0.1";
     protected int port = 6379;
     protected String password = "";
     protected int database = 0;

@@ -62,4 +62,8 @@ public class OrderCreatedEvent implements Serializable {
 
 
     private String eventId;
+
+    
+
+    private String eventType;
 }

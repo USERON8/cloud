@@ -29,8 +29,8 @@ public abstract class BaseKnife4jConfig {
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
-                        new Server().url("http://localhost"),
-                        new Server().url("https://localhost")
+                        new Server().url("http://127.0.0.1"),
+                        new Server().url("https://127.0.0.1")
                 ));
     }
 

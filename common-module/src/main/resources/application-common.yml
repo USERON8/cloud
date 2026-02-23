@@ -19,7 +19,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: ${NACOS_NAMESPACE:public}
@@ -34,7 +34,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: ${NACOS_NAMESPACE:public}
@@ -80,7 +80,7 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:root}
       timeout: ${REDIS_TIMEOUT:10000ms}
@@ -145,9 +145,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 瀹炰綋绫诲垪琛?
+    swagger-model-name: 鐎圭偘缍嬬猾璇插灙鐞?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 寰湇鍔″钩鍙?API 鏂囨。"
+    footer-custom-content: "Cloud 瀵邦喗婀囬崝鈥抽挬閸?API 閺傚洦銆?
 
 # Comment sanitized for UTF-8 compatibility.
 cache:
@@ -197,4 +197,5 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+
 

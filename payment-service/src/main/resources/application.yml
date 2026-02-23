@@ -18,7 +18,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -33,7 +33,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         username: nacos
         password: nacos
         namespace: public
@@ -153,8 +153,8 @@ alipay:
   merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # Comment sanitized for UTF-8 compatibility.
   alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # Comment sanitized for UTF-8 compatibility.
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # Comment sanitized for UTF-8 compatibility.
-  notify-url: ${ALIPAY_NOTIFY_URL:http://localhost:8084/api/v1/payment/alipay/notify}  # Comment sanitized for UTF-8 compatibility.
-  return-url: ${ALIPAY_RETURN_URL:http://localhost:3000/payment/success}  # Comment sanitized for UTF-8 compatibility.
+  notify-url: ${ALIPAY_NOTIFY_URL:http://127.0.0.1:8084/api/v1/payment/alipay/notify}  # Comment sanitized for UTF-8 compatibility.
+  return-url: ${ALIPAY_RETURN_URL:http://127.0.0.1:3000/payment/success}  # Comment sanitized for UTF-8 compatibility.
   sign-type: RSA2
   charset: UTF-8
   format: json
@@ -216,6 +216,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

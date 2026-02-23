@@ -1,0 +1,285 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(trade_order_total{service=\"order-service\",result=\"success\"}[5m])) / clamp_min(sum(rate(trade_order_total{service=\"order-service\"}[5m])), 1e-9)",
+          "legendFormat": "Order Success Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Order Success Rate (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(trade_payment_total{service=\"payment-service\",result=\"success\"}[5m])) / clamp_min(sum(rate(trade_payment_total{service=\"payment-service\"}[5m])), 1e-9)",
+          "legendFormat": "Payment Success Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Payment Success Rate (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(trade_stock_freeze_total{service=\"stock-service\",result=\"failed\"}[5m])) / clamp_min(sum(rate(trade_stock_freeze_total{service=\"stock-service\"}[5m])), 1e-9)",
+          "legendFormat": "Stock Freeze Failure Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Stock Freeze Failure Rate (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(trade_refund_total{service=\"order-service\",result=\"success\"}[5m])) / clamp_min(sum(rate(trade_refund_total{service=\"order-service\"}[5m])), 1e-9)",
+          "legendFormat": "Refund Success Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Refund Success Rate (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(trade_message_consume_total{result=\"success\"}[1m])) by (service,eventType)",
+          "legendFormat": "{{service}} {{eventType}} success",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(trade_message_consume_total{result=\"retry\"}[1m])) by (service,eventType)",
+          "legendFormat": "{{service}} {{eventType}} retry",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(trade_message_consume_total{result=\"failed\"}[1m])) by (service,eventType)",
+          "legendFormat": "{{service}} {{eventType}} failed",
+          "refId": "C"
+        }
+      ],
+      "title": "Message Consume Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(trade_message_consume_total{result=\"retry\"}[5m])) by (service,eventType)",
+          "legendFormat": "{{service}} {{eventType}} retry(5m)",
+          "refId": "A"
+        }
+      ],
+      "title": "Message Retry Count (5m)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "trade",
+    "cloud"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Cloud Trade Chain",
+  "uid": "cloud-trade-chain",
+  "version": 1,
+  "weekStart": ""
+}

@@ -7,8 +7,11 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.payment.PaymentDTO;
 import com.cloud.payment.converter.PaymentConverter;
 import com.cloud.payment.mapper.PaymentMapper;
+import com.cloud.payment.messaging.PaymentMessageProducer;
+import com.cloud.payment.messaging.PaymentOrderContextStore;
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.service.PaymentService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,9 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         implements PaymentService {
 
     private final PaymentConverter paymentConverter;
+    private final PaymentMessageProducer paymentMessageProducer;
+    private final PaymentOrderContextStore paymentOrderContextStore;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public boolean isPaymentRecordExists(Long orderId) {
@@ -157,9 +163,42 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
     public Boolean processPaymentSuccess(Long id) {
         
         Payment payment = getById(id);
-        if (payment == null) return false;
+        if (payment == null) {
+            recordPaymentMetric("failed");
+            return false;
+        }
+        if (payment.getStatus() != null && payment.getStatus() == 2) {
+            return true;
+        }
         payment.setStatus(2);
-        return updateById(payment);
+        boolean updated = updateById(payment);
+        if (!updated) {
+            recordPaymentMetric("failed");
+            return false;
+        }
+
+        String orderNo = paymentOrderContextStore.getOrderNo(payment.getOrderId());
+        java.util.Map<Long, Integer> productQuantityMap = paymentOrderContextStore.getProductQuantityMap(payment.getOrderId());
+        String transactionNo = payment.getTransactionId() != null && !payment.getTransactionId().isBlank()
+                ? payment.getTransactionId()
+                : "TXN" + System.currentTimeMillis() + payment.getId();
+
+        boolean sent = paymentMessageProducer.sendPaymentSuccessEvent(
+                payment.getId(),
+                payment.getOrderId(),
+                orderNo,
+                payment.getUserId(),
+                payment.getAmount(),
+                getPaymentMethodName(payment.getChannel()),
+                transactionNo,
+                productQuantityMap
+        );
+        if (!sent) {
+            recordPaymentMetric("failed");
+            throw new RuntimeException("Send payment-success event failed");
+        }
+        recordPaymentMetric("success");
+        return true;
     }
 
     @Override
@@ -175,7 +214,11 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         Payment payment = getById(id);
         if (payment == null) return false;
         payment.setStatus(3);
-        return updateById(payment);
+        boolean updated = updateById(payment);
+        if (updated) {
+            recordPaymentMetric("failed");
+        }
+        return updated;
     }
 
     @Override
@@ -240,5 +283,13 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         stats.put("totalCount", count);
         stats.put("successCount", count(new LambdaQueryWrapper<Payment>().eq(Payment::getUserId, userId).eq(Payment::getStatus, 2)));
         return stats;
+    }
+
+    private void recordPaymentMetric(String result) {
+        meterRegistry.counter(
+                "trade.payment",
+                "service", "payment-service",
+                "result", result
+        ).increment();
     }
 }

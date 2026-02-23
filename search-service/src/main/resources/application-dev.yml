@@ -3,14 +3,14 @@
 spring:
   # Comment sanitized for UTF-8 compatibility.
   elasticsearch:
-    uris: http://localhost:9200
+    uris: http://127.0.0.1:9200
     username:
     password:
 
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
       password: root
       database: 7
@@ -52,3 +52,4 @@ knife4j:
   production: false
   basic:
     enable: false
+

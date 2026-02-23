@@ -65,27 +65,15 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
         </dependency>
-        <!-- Spring Boot Actuator - 鍋ュ悍妫€鏌ュ拰鐩戞帶 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
-        <!-- 宸ュ叿绫?-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
-
-        <!-- API鏂囨。 - Knife4j Gateway 鑱氬悎鏂囨。 -->
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
-            <version>4.5.0</version>
-        </dependency>
-
-        <!-- SpringDoc渚濊禆宸茬Щ闄わ紝浣跨敤Knife4j杩涜API鏂囨。鑱氬悎 -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -67,7 +67,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             String responseJson = objectMapper.writeValueAsString(loginResponse);
             String encodedResponse = URLEncoder.encode(responseJson, StandardCharsets.UTF_8);
-            String redirectUrl = String.format("http://localhost:3000/auth/success?data=%s", encodedResponse);
+            String redirectUrl = String.format("http://127.0.0.1:3000/auth/success?data=%s", encodedResponse);
             response.sendRedirect(redirectUrl);
         } catch (Exception e) {
             log.error("Failed to build success redirect URL", e);
@@ -78,7 +78,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private void handleError(HttpServletResponse response, String errorMessage) throws IOException {
         try {
             String encodedError = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
-            String redirectUrl = String.format("http://localhost:3000/auth/error?message=%s", encodedError);
+            String redirectUrl = String.format("http://127.0.0.1:3000/auth/error?message=%s", encodedError);
             response.sendRedirect(redirectUrl);
         } catch (Exception e) {
             log.error("Failed to build error redirect URL", e);

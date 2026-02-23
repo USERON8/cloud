@@ -42,13 +42,14 @@ public class PaymentMessageProducer {
                     .productQuantityMap(productQuantityMap)
                     .timestamp(System.currentTimeMillis())
                     .eventId(UUID.randomUUID().toString())
+                    .eventType("PAYMENT_SUCCESS")
                     .build();
 
             Map<String, Object> headers = new HashMap<>();
             headers.put(MessageConst.PROPERTY_KEYS, orderNo);
             headers.put(MessageConst.PROPERTY_TAGS, "PAYMENT_SUCCESS");
             headers.put("eventId", event.getEventId());
-            headers.put("eventType", "PAYMENT_SUCCESS");
+            headers.put("eventType", event.getEventType());
 
             Message<PaymentSuccessEvent> message = MessageBuilder
                     .withPayload(event)

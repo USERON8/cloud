@@ -27,7 +27,7 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -53,7 +53,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD-SHELL", "redis-cli -a root ping | grep PONG" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -120,7 +120,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9090/nacos/" ]
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9090/nacos/" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -195,12 +195,12 @@ services:
       service_net:
         ipv4_address: 172.28.0.70
     ports:
-      - "80:80"      # ASCII comment sanitized for compatibility.
-      - "443:443"    # ASCII comment sanitized for compatibility.
+      - "18080:80"      # ASCII comment sanitized for compatibility.
+      - "18443:443"    # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
-        source: ./docker-compose/nginx/config
-        target: /etc/nginx
+        source: ./docker-compose/nginx/config/nginx.conf
+        target: /etc/nginx/nginx.conf
       - type: bind
         source: ./docker-compose/nginx/logs
         target: /var/log/nginx
@@ -257,7 +257,7 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9200" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -299,7 +299,7 @@ services:
         source: ./docker-compose/kibana/data
         target: /usr/share/kibana/data
     healthcheck: # ASCII comment sanitized for compatibility.
-      test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:5601/api/status" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -312,3 +312,4 @@ networks:
       config:
         - subnet: 172.28.0.0/24
           gateway: 172.28.0.1
+

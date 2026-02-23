@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.payment.PaymentDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.payment.service.PaymentService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -27,7 +28,9 @@ public class PaymentMessageConsumer {
 
     private final PaymentService paymentService;
     private final PaymentMessageProducer paymentMessageProducer;
+    private final PaymentOrderContextStore paymentOrderContextStore;
     private final MessageIdempotencyService messageIdempotencyService;
+    private final MeterRegistry meterRegistry;
 
     
 
@@ -45,12 +48,14 @@ public class PaymentMessageConsumer {
                 if (!messageIdempotencyService.tryAcquire(ORDER_CREATED_NAMESPACE, eventId)) {
                     log.warn("Duplicate order-created event, skip: orderId={}, orderNo={}, eventId={}",
                             event.getOrderId(), event.getOrderNo(), eventId);
+                    recordMessageMetric("ORDER_CREATED", "success");
                     return;
                 }
 
                 if (paymentService.isPaymentRecordExists(event.getOrderId())) {
                     log.warn("Payment record already exists, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
+                    recordMessageMetric("ORDER_CREATED", "success");
                     return;
                 }
 
@@ -65,38 +70,17 @@ public class PaymentMessageConsumer {
 
                 Long paymentId = paymentService.createPayment(paymentDTO);
                 if (paymentId == null) {
+                    recordMessageMetric("ORDER_CREATED", "failed");
                     throw new RuntimeException("Create payment failed");
                 }
-
-                Boolean success = paymentService.processPaymentSuccess(paymentId);
-                if (!Boolean.TRUE.equals(success)) {
-                    throw new RuntimeException("Process payment success failed");
-                }
-
-                String transactionNo = "TXN" + System.currentTimeMillis() + paymentId;
-                boolean sendResult = paymentMessageProducer.sendPaymentSuccessEvent(
-                        paymentId,
-                        event.getOrderId(),
-                        event.getOrderNo(),
-                        event.getUserId(),
-                        event.getTotalAmount(),
-                        "ALIPAY",
-                        transactionNo,
-                        event.getProductQuantityMap()
-                );
-
-                if (sendResult) {
-                    
-
-                } else {
-                    log.error("Payment-success event send failed: paymentId={}, orderId={}, orderNo={}",
-                            paymentId, event.getOrderId(), event.getOrderNo());
-                }
+                paymentOrderContextStore.saveOrderContext(event);
+                recordMessageMetric("ORDER_CREATED", "success");
 
             } catch (Exception e) {
                 messageIdempotencyService.release(ORDER_CREATED_NAMESPACE, event.getEventId());
                 log.error("Handle order-created event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
+                recordMessageMetric("ORDER_CREATED", "retry");
                 throw new RuntimeException("Handle order-created event failed", e);
             }
         };
@@ -124,6 +108,7 @@ public class PaymentMessageConsumer {
                 String eventId = (String) event.get("eventId");
                 if (!messageIdempotencyService.tryAcquire(REFUND_PROCESS_NAMESPACE, eventId)) {
                     log.warn("Duplicate refund-process event, skip: refundNo={}, eventId={}", refundNo, eventId);
+                    recordMessageMetric("REFUND_PROCESS", "success");
                     return;
                 }
 
@@ -139,17 +124,39 @@ public class PaymentMessageConsumer {
                 );
 
                 if (sent) {
-                    
+                    recordMessageMetric("REFUND_PROCESS", "success");
+                    recordRefundMetric("success");
                 } else {
                     log.error("Refund-completed event send failed: refundId={}, refundNo={}", refundId, refundNo);
+                    recordMessageMetric("REFUND_PROCESS", "failed");
+                    recordRefundMetric("failed");
                 }
 
             } catch (Exception e) {
                 messageIdempotencyService.release(REFUND_PROCESS_NAMESPACE, (String) event.get("eventId"));
                 log.error("Handle refund-process event failed: refundId={}, refundNo={}, orderId={}",
                         refundId, refundNo, orderId, e);
+                recordMessageMetric("REFUND_PROCESS", "retry");
+                recordRefundMetric("failed");
                 throw new RuntimeException("Handle refund-process event failed", e);
             }
         };
+    }
+
+    private void recordMessageMetric(String eventType, String result) {
+        meterRegistry.counter(
+                "trade.message.consume",
+                "service", "payment-service",
+                "eventType", eventType,
+                "result", result
+        ).increment();
+    }
+
+    private void recordRefundMetric(String result) {
+        meterRegistry.counter(
+                "trade.refund",
+                "service", "payment-service",
+                "result", result
+        ).increment();
     }
 }
