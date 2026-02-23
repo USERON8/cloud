@@ -7,10 +7,8 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserDataExportService;
 import com.cloud.user.service.UserService;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -26,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -40,10 +37,6 @@ public class UserDataExportServiceImpl implements UserDataExportService {
     private final UserService userService;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Resource
-    @Qualifier("userCommonAsyncExecutor")
-    private Executor userCommonAsyncExecutor;
-
     @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Long> exportUsersToExcelAsync(OutputStream outputStream) {
@@ -55,48 +48,46 @@ public class UserDataExportServiceImpl implements UserDataExportService {
     public CompletableFuture<Long> exportUsersToCsvAsync(OutputStream outputStream) {
         String taskId = UUID.randomUUID().toString();
 
-        return CompletableFuture.supplyAsync(() -> {
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
-                updateExportTaskStatus(taskId, "RUNNING", 0, 0);
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+            updateExportTaskStatus(taskId, "RUNNING", 0, 0);
 
-                writer.write("ID,Username,Nickname,Email,Phone,UserType,Status,CreatedAt");
-                writer.newLine();
+            writer.write("ID,Username,Nickname,Email,Phone,UserType,Status,CreatedAt");
+            writer.newLine();
 
-                long totalCount = userMapper.selectCount(null);
-                long exportedCount = 0;
+            long totalCount = userMapper.selectCount(null);
+            long exportedCount = 0;
 
-                for (long offset = 0; offset < totalCount; offset += BATCH_SIZE) {
-                    LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-                    wrapper.last("LIMIT " + offset + ", " + BATCH_SIZE);
-                    List<User> users = userMapper.selectList(wrapper);
+            for (long offset = 0; offset < totalCount; offset += BATCH_SIZE) {
+                LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+                wrapper.last("LIMIT " + offset + ", " + BATCH_SIZE);
+                List<User> users = userMapper.selectList(wrapper);
 
-                    for (User user : users) {
-                        String line = String.format("%d,%s,%s,%s,%s,%s,%d,%s",
-                                user.getId(),
-                                escapeCsv(user.getUsername()),
-                                escapeCsv(user.getNickname()),
-                                escapeCsv(user.getEmail()),
-                                escapeCsv(user.getPhone()),
-                                escapeCsv(user.getUserType()),
-                                user.getStatus() == null ? 0 : user.getStatus(),
-                                user.getCreatedAt());
-                        writer.write(line);
-                        writer.newLine();
-                        exportedCount++;
-                    }
-
-                    writer.flush();
-                    updateExportTaskStatus(taskId, "RUNNING", totalCount, exportedCount);
+                for (User user : users) {
+                    String line = String.format("%d,%s,%s,%s,%s,%s,%d,%s",
+                            user.getId(),
+                            escapeCsv(user.getUsername()),
+                            escapeCsv(user.getNickname()),
+                            escapeCsv(user.getEmail()),
+                            escapeCsv(user.getPhone()),
+                            escapeCsv(user.getUserType()),
+                            user.getStatus() == null ? 0 : user.getStatus(),
+                            user.getCreatedAt());
+                    writer.write(line);
+                    writer.newLine();
+                    exportedCount++;
                 }
 
-                updateExportTaskStatus(taskId, "COMPLETED", totalCount, exportedCount);
-                return exportedCount;
-            } catch (Exception e) {
-                log.error("Failed to export users to CSV", e);
-                updateExportTaskStatus(taskId, "FAILED", 0, 0);
-                throw new RuntimeException("failed to export users", e);
+                writer.flush();
+                updateExportTaskStatus(taskId, "RUNNING", totalCount, exportedCount);
             }
-        }, userCommonAsyncExecutor);
+
+            updateExportTaskStatus(taskId, "COMPLETED", totalCount, exportedCount);
+            return CompletableFuture.completedFuture(exportedCount);
+        } catch (Exception e) {
+            log.error("Failed to export users to CSV", e);
+            updateExportTaskStatus(taskId, "FAILED", 0, 0);
+            return CompletableFuture.failedFuture(new RuntimeException("failed to export users", e));
+        }
     }
 
     @Override
@@ -110,62 +101,60 @@ public class UserDataExportServiceImpl implements UserDataExportService {
     public CompletableFuture<ImportResult> importUsersFromCsvAsync(MultipartFile file) {
         String taskId = UUID.randomUUID().toString();
 
-        return CompletableFuture.supplyAsync(() -> {
-            List<String> errors = new ArrayList<>();
-            long successCount = 0;
-            long failureCount = 0;
+        List<String> errors = new ArrayList<>();
+        long successCount = 0;
+        long failureCount = 0;
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-                updateImportTaskStatus(taskId, "RUNNING", 0, 0, 0);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            updateImportTaskStatus(taskId, "RUNNING", 0, 0, 0);
 
-                String headerLine = reader.readLine();
-                if (headerLine == null) {
-                    throw new IllegalArgumentException("CSV file is empty");
-                }
-
-                String line;
-                int lineNumber = 1;
-                while ((line = reader.readLine()) != null) {
-                    lineNumber++;
-                    try {
-                        String[] fields = line.split(",");
-                        if (fields.length < 7) {
-                            errors.add("line " + lineNumber + " has invalid field count");
-                            failureCount++;
-                            continue;
-                        }
-
-                        UserDTO userDTO = new UserDTO();
-                        userDTO.setUsername(fields[1]);
-                        userDTO.setNickname(fields[2]);
-                        userDTO.setEmail(fields[3]);
-                        userDTO.setPhone(fields[4]);
-                        UserType userType = UserType.fromCode(fields[5]);
-                        userDTO.setUserType(userType == null ? UserType.USER : userType);
-                        userDTO.setStatus(Integer.parseInt(fields[6]));
-                        userService.createUser(userDTO);
-                        successCount++;
-                    } catch (Exception e) {
-                        errors.add("line " + lineNumber + " failed: " + e.getMessage());
-                        failureCount++;
-                        log.warn("Failed to import one CSV line, lineNumber={}", lineNumber, e);
-                    }
-
-                    long processed = successCount + failureCount;
-                    if (processed % 100 == 0) {
-                        updateImportTaskStatus(taskId, "RUNNING", processed, successCount, failureCount);
-                    }
-                }
-
-                updateImportTaskStatus(taskId, "COMPLETED", successCount + failureCount, successCount, failureCount);
-                return new ImportResult(successCount, failureCount, errors);
-            } catch (Exception e) {
-                log.error("Failed to import users from CSV", e);
-                updateImportTaskStatus(taskId, "FAILED", 0, 0, 0);
-                errors.add("import failed: " + e.getMessage());
-                return new ImportResult(successCount, failureCount, errors);
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                throw new IllegalArgumentException("CSV file is empty");
             }
-        }, userCommonAsyncExecutor);
+
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                try {
+                    List<String> fields = parseCsvLine(line);
+                    if (fields.size() < 7) {
+                        errors.add("line " + lineNumber + " has invalid field count");
+                        failureCount++;
+                        continue;
+                    }
+
+                    UserDTO userDTO = new UserDTO();
+                    userDTO.setUsername(fields.get(1));
+                    userDTO.setNickname(fields.get(2));
+                    userDTO.setEmail(fields.get(3));
+                    userDTO.setPhone(fields.get(4));
+                    UserType userType = UserType.fromCode(fields.get(5));
+                    userDTO.setUserType(userType == null ? UserType.USER : userType);
+                    userDTO.setStatus(Integer.parseInt(fields.get(6)));
+                    userService.createUser(userDTO);
+                    successCount++;
+                } catch (Exception e) {
+                    errors.add("line " + lineNumber + " failed: " + e.getMessage());
+                    failureCount++;
+                    log.warn("Failed to import one CSV line, lineNumber={}", lineNumber, e);
+                }
+
+                long processed = successCount + failureCount;
+                if (processed % 100 == 0) {
+                    updateImportTaskStatus(taskId, "RUNNING", processed, successCount, failureCount);
+                }
+            }
+
+            updateImportTaskStatus(taskId, "COMPLETED", successCount + failureCount, successCount, failureCount);
+            return CompletableFuture.completedFuture(new ImportResult(successCount, failureCount, errors));
+        } catch (Exception e) {
+            log.error("Failed to import users from CSV", e);
+            updateImportTaskStatus(taskId, "FAILED", 0, 0, 0);
+            errors.add("import failed: " + e.getMessage());
+            return CompletableFuture.completedFuture(new ImportResult(successCount, failureCount, errors));
+        }
     }
 
     @Override
@@ -188,7 +177,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 log.error("Failed to read export task status", e);
                 return new ExportTaskStatus(taskId, "ERROR", 0, 0, null);
             }
-        }, userCommonAsyncExecutor);
+        });
     }
 
     @Override
@@ -211,7 +200,7 @@ public class UserDataExportServiceImpl implements UserDataExportService {
                 log.error("Failed to read import task status", e);
                 return new ImportTaskStatus(taskId, "ERROR", 0, 0, 0);
             }
-        }, userCommonAsyncExecutor);
+        });
     }
 
     private void updateExportTaskStatus(String taskId, String status, long total, long exported) {
@@ -247,5 +236,29 @@ public class UserDataExportServiceImpl implements UserDataExportService {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private List<String> parseCsvLine(String line) {
+        List<String> values = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    current.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                values.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        values.add(current.toString());
+        return values;
     }
 }

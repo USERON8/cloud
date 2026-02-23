@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.cloud")
 public class ProductGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)

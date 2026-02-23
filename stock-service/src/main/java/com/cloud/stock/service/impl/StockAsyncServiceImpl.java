@@ -8,10 +8,8 @@ import com.cloud.stock.module.dto.StockOperationResult;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.service.StockAsyncService;
 import com.cloud.stock.service.StockService;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Async;
@@ -25,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -40,18 +37,6 @@ public class StockAsyncServiceImpl implements StockAsyncService {
     private final StockConverter stockConverter;
     private final CacheManager cacheManager;
 
-    @Resource
-    @Qualifier("stockQueryExecutor")
-    private Executor stockQueryExecutor;
-
-    @Resource
-    @Qualifier("stockOperationExecutor")
-    private Executor stockOperationExecutor;
-
-    @Resource
-    @Qualifier("stockCommonExecutor")
-    private Executor stockCommonExecutor;
-
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<List<StockDTO>> getStocksByProductIdsAsync(Collection<Long> productIds) {
@@ -64,18 +49,16 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         }
 
         List<Long> idList = new ArrayList<>(productIds);
-        List<CompletableFuture<List<StockDTO>>> futures = new ArrayList<>();
+        List<StockDTO> result = new ArrayList<>();
         for (int i = 0; i < idList.size(); i += BATCH_SIZE) {
             int end = Math.min(i + BATCH_SIZE, idList.size());
             List<Long> batch = idList.subList(i, end);
-            futures.add(CompletableFuture.supplyAsync(() -> stockService.getStocksByProductIds(batch), stockQueryExecutor));
+            List<StockDTO> batchResult = stockService.getStocksByProductIds(batch);
+            if (batchResult != null && !batchResult.isEmpty()) {
+                result.addAll(batchResult);
+            }
         }
-
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(v -> futures.stream()
-                        .map(CompletableFuture::join)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(result);
     }
 
     @Override
@@ -85,102 +68,99 @@ public class StockAsyncServiceImpl implements StockAsyncService {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        return CompletableFuture.supplyAsync(() -> {
-            Map<Long, Boolean> result = new HashMap<>();
-            productQuantityMap.forEach((productId, quantity) ->
-                    result.put(productId, stockService.checkStockSufficient(productId, quantity)));
-            return result;
-        }, stockQueryExecutor);
+        Map<Long, Boolean> result = new HashMap<>();
+        productQuantityMap.forEach((productId, quantity) ->
+                result.put(productId, stockService.checkStockSufficient(productId, quantity)));
+        return CompletableFuture.completedFuture(result);
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchReserveStockAsync(Map<Long, Integer> productQuantityMap) {
-        return CompletableFuture.supplyAsync(() ->
-                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.reserveStock(productId, qty)),
-                stockOperationExecutor);
+        return CompletableFuture.completedFuture(
+                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.reserveStock(productId, qty))
+        );
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchReleaseStockAsync(Map<Long, Integer> productQuantityMap) {
-        return CompletableFuture.supplyAsync(() ->
-                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.releaseReservedStock(productId, qty)),
-                stockOperationExecutor);
+        return CompletableFuture.completedFuture(
+                executeBatchMapOperation(productQuantityMap, (productId, qty) -> stockService.releaseReservedStock(productId, qty))
+        );
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchStockInAsync(List<StockInRequest> stockInList) {
-        return CompletableFuture.supplyAsync(() -> {
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = new ArrayList<>();
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        List<String> errors = new ArrayList<>();
 
-            if (stockInList != null) {
-                stockInList.forEach(request -> {
-                    try {
-                        boolean success = stockService.stockIn(request.getProductId(), request.getQuantity(), request.getRemark());
-                        if (success) {
-                            successCount.incrementAndGet();
-                        } else {
-                            failureCount.incrementAndGet();
-                            errors.add("stock in failed for productId=" + request.getProductId());
-                        }
-                    } catch (Exception e) {
+        if (stockInList != null) {
+            stockInList.forEach(request -> {
+                try {
+                    boolean success = stockService.stockIn(request.getProductId(), request.getQuantity(), request.getRemark());
+                    if (success) {
+                        successCount.incrementAndGet();
+                    } else {
                         failureCount.incrementAndGet();
-                        errors.add("stock in exception for productId=" + request.getProductId() + ", " + e.getMessage());
+                        errors.add("stock in failed for productId=" + request.getProductId());
                     }
-                });
-            }
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                    errors.add("stock in exception for productId=" + request.getProductId() + ", " + e.getMessage());
+                }
+            });
+        }
 
-            return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-        }, stockOperationExecutor);
+        return CompletableFuture.completedFuture(new StockOperationResult(successCount.get(), failureCount.get(), errors));
     }
 
     @Override
     @Async("stockOperationExecutor")
     public CompletableFuture<StockOperationResult> batchStockOutAsync(List<StockOutRequest> stockOutList) {
-        return CompletableFuture.supplyAsync(() -> {
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failureCount = new AtomicInteger(0);
-            List<String> errors = new ArrayList<>();
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        List<String> errors = new ArrayList<>();
 
-            if (stockOutList != null) {
-                stockOutList.forEach(request -> {
-                    try {
-                        boolean success = stockService.stockOut(
-                                request.getProductId(),
-                                request.getQuantity(),
-                                request.getOrderId(),
-                                request.getOrderNo(),
-                                request.getRemark()
-                        );
-                        if (success) {
-                            successCount.incrementAndGet();
-                        } else {
-                            failureCount.incrementAndGet();
-                            errors.add("stock out failed for productId=" + request.getProductId());
-                        }
-                    } catch (Exception e) {
+        if (stockOutList != null) {
+            stockOutList.forEach(request -> {
+                try {
+                    boolean success = stockService.stockOut(
+                            request.getProductId(),
+                            request.getQuantity(),
+                            request.getOrderId(),
+                            request.getOrderNo(),
+                            request.getRemark()
+                    );
+                    if (success) {
+                        successCount.incrementAndGet();
+                    } else {
                         failureCount.incrementAndGet();
-                        errors.add("stock out exception for productId=" + request.getProductId() + ", " + e.getMessage());
+                        errors.add("stock out failed for productId=" + request.getProductId());
                     }
-                });
-            }
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                    errors.add("stock out exception for productId=" + request.getProductId() + ", " + e.getMessage());
+                }
+            });
+        }
 
-            return new StockOperationResult(successCount.get(), failureCount.get(), errors);
-        }, stockOperationExecutor);
+        return CompletableFuture.completedFuture(new StockOperationResult(successCount.get(), failureCount.get(), errors));
     }
 
     @Override
     @Async("stockCommonExecutor")
     public CompletableFuture<Void> refreshStockCacheAsync(Long productId) {
-        return CompletableFuture.runAsync(() -> {
+        try {
             evictCache("stockCache", productId);
             evictCache("stockCache", "product:" + productId);
             stockService.getStockByProductId(productId);
-        }, stockCommonExecutor);
+        } catch (Exception e) {
+            log.error("Failed to refresh stock cache asynchronously, productId={}", productId, e);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -200,51 +180,45 @@ public class StockAsyncServiceImpl implements StockAsyncService {
     @Async("stockCommonExecutor")
     public CompletableFuture<Integer> preloadPopularStocksAsync(Integer limit) {
         int size = (limit == null || limit <= 0) ? 100 : limit;
-        return CompletableFuture.supplyAsync(() -> {
-            LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
-            wrapper.gt(Stock::getStockQuantity, 0)
-                    .orderByDesc(Stock::getStockQuantity)
-                    .last("LIMIT " + size);
-            List<Stock> stocks = stockMapper.selectList(wrapper);
-            stocks.forEach(stock -> stockService.getStockByProductId(stock.getProductId()));
-            return stocks.size();
-        }, stockCommonExecutor);
+        LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
+        wrapper.gt(Stock::getStockQuantity, 0)
+                .orderByDesc(Stock::getStockQuantity)
+                .last("LIMIT " + size);
+        List<Stock> stocks = stockMapper.selectList(wrapper);
+        stocks.forEach(stock -> stockService.getStockByProductId(stock.getProductId()));
+        return CompletableFuture.completedFuture(stocks.size());
     }
 
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<List<StockDTO>> getStockAlertListAsync(Integer threshold) {
         int alertThreshold = threshold == null ? 10 : threshold;
-        return CompletableFuture.supplyAsync(() -> {
-            LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
-            wrapper.le(Stock::getStockQuantity, alertThreshold)
-                    .orderByAsc(Stock::getStockQuantity);
-            List<Stock> stocks = stockMapper.selectList(wrapper);
-            return stockConverter.toDTOList(stocks);
-        }, stockQueryExecutor);
+        LambdaQueryWrapper<Stock> wrapper = new LambdaQueryWrapper<>();
+        wrapper.le(Stock::getStockQuantity, alertThreshold)
+                .orderByAsc(Stock::getStockQuantity);
+        List<Stock> stocks = stockMapper.selectList(wrapper);
+        return CompletableFuture.completedFuture(stockConverter.toDTOList(stocks));
     }
 
     @Override
     @Async("stockQueryExecutor")
     public CompletableFuture<Map<String, Object>> calculateStockValueAsync() {
-        return CompletableFuture.supplyAsync(() -> {
-            List<Stock> stocks = stockMapper.selectList(new LambdaQueryWrapper<>());
-            int totalProducts = stocks.size();
-            int totalStockQuantity = stocks.stream().map(Stock::getStockQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            int totalFrozenQuantity = stocks.stream().map(Stock::getFrozenQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            int totalAvailableQuantity = stocks.stream()
-                    .map(Stock::getAvailableQuantity)
-                    .filter(Objects::nonNull)
-                    .mapToInt(Integer::intValue)
-                    .sum();
+        List<Stock> stocks = stockMapper.selectList(new LambdaQueryWrapper<>());
+        int totalProducts = stocks.size();
+        int totalStockQuantity = stocks.stream().map(Stock::getStockQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+        int totalFrozenQuantity = stocks.stream().map(Stock::getFrozenQuantity).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+        int totalAvailableQuantity = stocks.stream()
+                .map(Stock::getAvailableQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("totalProducts", totalProducts);
-            result.put("totalStockQuantity", totalStockQuantity);
-            result.put("totalFrozenQuantity", totalFrozenQuantity);
-            result.put("totalAvailableQuantity", totalAvailableQuantity);
-            return result;
-        }, stockQueryExecutor);
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalProducts", totalProducts);
+        result.put("totalStockQuantity", totalStockQuantity);
+        result.put("totalFrozenQuantity", totalFrozenQuantity);
+        result.put("totalAvailableQuantity", totalAvailableQuantity);
+        return CompletableFuture.completedFuture(result);
     }
 
     private StockOperationResult executeBatchMapOperation(Map<Long, Integer> productQuantityMap,

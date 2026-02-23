@@ -52,11 +52,9 @@ public class ResourceServerConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/product/internal/**").hasAuthority("SCOPE_internal_api")
-                        .requestMatchers("/product/manage/**").hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
-                        .requestMatchers("/product/query/**").authenticated()
+                        .requestMatchers("/internal/product/**").hasAuthority("SCOPE_internal_api")
                         .requestMatchers("/api/product/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN")
-                        .requestMatchers("/product/**").authenticated()
+                        .requestMatchers("/api/category/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

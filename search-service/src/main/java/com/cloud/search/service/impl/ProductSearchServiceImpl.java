@@ -20,7 +20,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 public class ProductSearchServiceImpl implements ProductSearchService {
 
     private static final String PROCESSED_EVENT_KEY_PREFIX = "search:processed:";
-    private static final String HOT_SEARCH_KEY_PREFIX = "search:hot:";
+    private static final String HOT_SEARCH_ZSET_KEY = "search:hot:zset";
     private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
 
     private final ProductDocumentRepository productDocumentRepository;
@@ -229,29 +228,12 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     public List<String> getHotSearchKeywords(Integer size) {
         int limit = size == null || size <= 0 ? 10 : Math.min(size, 100);
         try {
-            var keys = redisTemplate.keys(HOT_SEARCH_KEY_PREFIX + "*");
-            if (keys == null || keys.isEmpty()) {
+            var keywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, limit - 1L);
+            if (keywords == null || keywords.isEmpty()) {
                 return Collections.emptyList();
             }
-
-            Map<String, Long> counters = new HashMap<>();
-            for (String key : keys) {
-                String keyword = key.replace(HOT_SEARCH_KEY_PREFIX, "");
-                String countStr = redisTemplate.opsForValue().get(key);
-                long count = 0L;
-                if (StringUtils.hasText(countStr)) {
-                    try {
-                        count = Long.parseLong(countStr);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-                counters.put(keyword, count);
-            }
-
-            return counters.entrySet().stream()
-                    .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
-                    .limit(limit)
-                    .map(Map.Entry::getKey)
+            return keywords.stream()
+                    .filter(StringUtils::hasText)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Get hot search keywords failed", e);
@@ -375,9 +357,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         }
         try {
             String normalized = keyword.trim().toLowerCase();
-            String key = HOT_SEARCH_KEY_PREFIX + normalized;
-            redisTemplate.opsForValue().increment(key);
-            redisTemplate.expire(key, 7, TimeUnit.DAYS);
+            redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
+            redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
         } catch (Exception e) {
             log.warn("Record hot search failed: keyword={}", keyword, e);
         }

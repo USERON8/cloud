@@ -92,7 +92,6 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
-      - org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration
 
 # Comment sanitized for UTF-8 compatibility.
 logging:

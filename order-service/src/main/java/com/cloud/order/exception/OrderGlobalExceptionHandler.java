@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @Hidden
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.cloud")
 public class OrderGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     @ExceptionHandler(OrderServiceException.class)

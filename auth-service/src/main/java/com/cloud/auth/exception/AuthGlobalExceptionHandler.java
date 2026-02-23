@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @Hidden
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.cloud")
 public class AuthGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 public class ElasticsearchOptimizedService {
 
     private static final String SEARCH_CACHE_KEY = "search:cache:";
-    private static final String HOT_SEARCH_KEY = "search:hot:";
+    private static final String HOT_SEARCH_ZSET_KEY = "search:hot:zset";
     private static final int DEFAULT_SEARCH_SIZE = 20;
     private static final int MAX_SEARCH_SIZE = 100;
     private final ElasticsearchClient elasticsearchClient;
@@ -119,7 +119,7 @@ public class ElasticsearchOptimizedService {
                     .build();
 
         } catch (Exception e) {
-            log.error("鏅鸿兘鍟嗗搧鎼滅储澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage(), e);
+            log.error("閺呴缚鍏橀崯鍡楁惂閹兼粎鍌ㄦ径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage(), e);
             return SearchResult.empty(from, size);
         }
     }
@@ -132,7 +132,7 @@ public class ElasticsearchOptimizedService {
     @Transactional(readOnly = true)
     public List<String> getSearchSuggestions(String keyword, int limit) {
         try {
-            log.debug("鑾峰彇鎼滅储寤鸿 - 鍏抽敭璇? {}, 闄愬埗: {}", keyword, limit);
+            log.debug("閼惧嘲褰囬幖婊呭偍瀵ら缚顔?- 閸忔娊鏁拠? {}, 闂勬劕鍩? {}", keyword, limit);
 
             
             Query query = Query.of(q -> q
@@ -175,12 +175,12 @@ public class ElasticsearchOptimizedService {
             }
 
             List<String> result = suggestions.stream().limit(limit).collect(Collectors.toList());
-            log.debug("鎼滅储寤鸿瀹屾垚 - 鍏抽敭璇? {}, 寤鸿鏁? {}", keyword, result.size());
+            log.debug("閹兼粎鍌ㄥ楦款唴鐎瑰本鍨?- 閸忔娊鏁拠? {}, 瀵ら缚顔呴弫? {}", keyword, result.size());
 
             return result;
 
         } catch (Exception e) {
-            log.error("鑾峰彇鎼滅储寤鸿澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage(), e);
+            log.error("閼惧嘲褰囬幖婊呭偍瀵ら缚顔呮径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage(), e);
             return List.of();
         }
     }
@@ -192,42 +192,22 @@ public class ElasticsearchOptimizedService {
     @Transactional(readOnly = true)
     public List<String> getHotSearchKeywords(int limit) {
         try {
-            log.debug("鑾峰彇鐑棬鎼滅储璇?- 闄愬埗: {}", limit);
-
-            
-            Set<String> hotKeys = redisTemplate.keys(HOT_SEARCH_KEY + "*");
-            if (hotKeys == null || hotKeys.isEmpty()) {
+            log.debug("閼惧嘲褰囬悜顓㈡，閹兼粎鍌ㄧ拠?- 闂勬劕鍩? {}", limit);
+            int safeLimit = limit <= 0 ? 10 : Math.min(limit, 100);
+            Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, safeLimit - 1L);
+            if (hotKeywords == null || hotKeywords.isEmpty()) {
                 return List.of();
             }
-
-            
-            List<HotKeyword> hotKeywords = new ArrayList<>();
-            for (String key : hotKeys) {
-                String keyword = key.replace(HOT_SEARCH_KEY, "");
-                String countStr = redisTemplate.opsForValue().get(key);
-                if (countStr != null) {
-                    long count = Long.parseLong(countStr);
-                    hotKeywords.add(new HotKeyword(keyword, count));
-                }
-            }
-
             List<String> result = hotKeywords.stream()
-                    .sorted((a, b) -> Long.compare(b.count, a.count))
-                    .limit(limit)
-                    .map(h -> h.keyword)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-
-            log.debug("鐑棬鎼滅储璇嶈幏鍙栧畬鎴?- 鏁伴噺: {}", result.size());
+            log.debug("閻戭參妫幖婊呭偍鐠囧秷骞忛崣鏍х暚閹?- 閺佷即鍣? {}", result.size());
             return result;
-
         } catch (Exception e) {
-            log.error("鑾峰彇鐑棬鎼滅储璇嶅け璐?- 閿欒: {}", e.getMessage(), e);
+            log.error("閼惧嘲褰囬悜顓㈡，閹兼粎鍌ㄧ拠宥呫亼鐠?- 闁挎瑨顕? {}", e.getMessage(), e);
             return List.of();
         }
     }
-
-    
-
 
     private Query buildProductSearchQuery(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
@@ -260,7 +240,7 @@ public class ElasticsearchOptimizedService {
         
         if (minPrice != null && maxPrice != null) {
             
-            log.debug("浠锋牸杩囨护: {} - {}", minPrice, maxPrice);
+            log.debug("娴犻攱鐗告潻鍥ㄦ姢: {} - {}", minPrice, maxPrice);
         }
 
         
@@ -406,17 +386,14 @@ public class ElasticsearchOptimizedService {
     private void recordHotSearch(String keyword) {
         if (keyword != null && !keyword.trim().isEmpty()) {
             try {
-                String key = HOT_SEARCH_KEY + keyword.trim().toLowerCase();
-                redisTemplate.opsForValue().increment(key);
-                redisTemplate.expire(key, 7, TimeUnit.DAYS); 
+                String normalized = keyword.trim().toLowerCase();
+                redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
+                redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
             } catch (Exception e) {
-                log.warn("璁板綍鐑棬鎼滅储澶辫触 - 鍏抽敭璇? {}, 閿欒: {}", keyword, e.getMessage());
+                log.warn("鐠佹澘缍嶉悜顓㈡，閹兼粎鍌ㄦ径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage());
             }
         }
     }
-
-    
-
 
     public <T> boolean indexDocument(String indexName, String documentId, T document) {
         try {
@@ -432,7 +409,7 @@ public class ElasticsearchOptimizedService {
             return true;
 
         } catch (Exception e) {
-            log.error("绱㈠紩鏂囨。澶辫触 - 绱㈠紩: {}, ID: {}", indexName, documentId, e);
+            log.error("缁便垹绱╅弬鍥ㄣ€傛径杈Е - 缁便垹绱? {}, ID: {}", indexName, documentId, e);
             return false;
         }
     }
@@ -464,7 +441,7 @@ public class ElasticsearchOptimizedService {
             var response = elasticsearchClient.bulk(bulkRequest.build());
 
             if (response.errors()) {
-                log.warn("鎵归噺绱㈠紩閮ㄥ垎澶辫触 - 绱㈠紩: {}, 鏂囨。鏁? {}", indexName, documents.size());
+                log.warn("閹靛綊鍣虹槐銏犵穿闁劌鍨庢径杈Е - 缁便垹绱? {}, 閺傚洦銆傞弫? {}", indexName, documents.size());
                 return documents.size() - response.items().size();
             } else {
                 
@@ -472,21 +449,8 @@ public class ElasticsearchOptimizedService {
             }
 
         } catch (Exception e) {
-            log.error("鎵归噺绱㈠紩澶辫触 - 绱㈠紩: {}, 鏂囨。鏁? {}", indexName, documents.size(), e);
+            log.error("閹靛綊鍣虹槐銏犵穿婢惰精瑙?- 缁便垹绱? {}, 閺傚洦銆傞弫? {}", indexName, documents.size(), e);
             return 0;
-        }
-    }
-
-    
-
-
-    private static class HotKeyword {
-        final String keyword;
-        final long count;
-
-        HotKeyword(String keyword, long count) {
-            this.keyword = keyword;
-            this.count = count;
         }
     }
 

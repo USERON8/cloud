@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Hidden
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.cloud")
 public class GlobalExceptionHandler {
 
     

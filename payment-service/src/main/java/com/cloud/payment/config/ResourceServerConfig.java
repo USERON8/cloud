@@ -52,11 +52,10 @@ public class ResourceServerConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/payment/internal/**").hasAuthority("SCOPE_internal_api")
-                        .requestMatchers("/payment/manage/**").hasAnyAuthority("SCOPE_write", "ROLE_ADMIN")
-                        .requestMatchers("/payment/query/**").hasAnyAuthority("SCOPE_read", "SCOPE_payment.read", "ROLE_USER", "ROLE_ADMIN")
-                        .requestMatchers("/payment/operation/**").hasAnyAuthority("SCOPE_write", "SCOPE_payment.operation", "ROLE_ADMIN")
-                        .requestMatchers("/api/payment/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/v1/payment/alipay/notify").permitAll()
+                        .requestMatchers("/internal/payment/**").hasAuthority("SCOPE_internal_api")
+                        .requestMatchers("/api/payments/**", "/api/v1/payment/alipay/**")
+                        .hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN", "ROLE_MERCHANT")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

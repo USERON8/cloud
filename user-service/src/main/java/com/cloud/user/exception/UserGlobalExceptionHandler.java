@@ -12,67 +12,39 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-
-
-
-
-
-
-
-
-
-
-
-
 @Slf4j
 @Hidden
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.cloud")
 public class UserGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
-
-    
-
 
     @ExceptionHandler(AccessDeniedException.class)
     public Result<String> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("鏉冮檺鎷掔粷 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
-        return Result.forbidden("鎮ㄦ病鏈夋潈闄愭墽琛屾鎿嶄綔");
+        log.warn("Access denied - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        return Result.forbidden("You do not have permission to perform this operation");
     }
-
-    
-
 
     @ExceptionHandler(DuplicateKeyException.class)
     public Result<String> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
-        log.warn("鏁版嵁閲嶅鍐茬獊 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("Duplicate key conflict - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.DB_DUPLICATE_KEY);
     }
 
-    
-
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public Result<String> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn("鏁版嵁瀹屾暣鎬ц繚鍙?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("Data integrity violation - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.DB_CONSTRAINT_VIOLATION);
     }
 
-    
-
-
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Result<String> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
-        log.warn("鏂囦欢涓婁紶澶у皬瓒呴檺 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("File size exceeded - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.FILE_SIZE_EXCEEDED);
     }
 
-    
-
-
     @ExceptionHandler(UserServiceException.class)
     public Result<String> handleUserServiceException(UserServiceException e, HttpServletRequest request) {
-        log.warn("鐢ㄦ埛鏈嶅姟寮傚父 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("User service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
-        
         if (e instanceof UserServiceException.UserNotFoundException) {
             return Result.error(ResultCode.USER_NOT_FOUND, e.getMessage());
         } else if (e instanceof UserServiceException.UserAlreadyExistsException) {
@@ -101,16 +73,12 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
             return Result.error(ResultCode.FILE_SIZE_EXCEEDED, e.getMessage());
         }
 
-        
         return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
     }
 
-    
-
-
     @ExceptionHandler(AdminException.class)
     public Result<String> handleAdminException(AdminException e, HttpServletRequest request) {
-        log.warn("绠＄悊鍛樻湇鍔″紓甯?- uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("Admin service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof AdminException.AdminNotFoundException) {
             return Result.error(ResultCode.ADMIN_NOT_FOUND, e.getMessage());
@@ -129,12 +97,9 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
     }
 
-    
-
-
     @ExceptionHandler(MerchantException.class)
     public Result<String> handleMerchantException(MerchantException e, HttpServletRequest request) {
-        log.warn("鍟嗗鏈嶅姟寮傚父 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("Merchant service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof MerchantException.MerchantNotFoundException) {
             return Result.error(ResultCode.MERCHANT_NOT_FOUND, e.getMessage());
@@ -154,5 +119,4 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
         return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
     }
-
 }

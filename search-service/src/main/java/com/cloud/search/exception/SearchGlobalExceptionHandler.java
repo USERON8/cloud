@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
 @Slf4j
-@RestControllerAdvice("searchGlobalExceptionHandler")
+@RestControllerAdvice(basePackages = "com.cloud")
 public class SearchGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     

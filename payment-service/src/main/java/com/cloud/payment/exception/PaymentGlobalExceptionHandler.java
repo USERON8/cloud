@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
 @Slf4j
-@RestControllerAdvice("paymentGlobalExceptionHandler")
+@RestControllerAdvice(basePackages = "com.cloud")
 public class PaymentGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     

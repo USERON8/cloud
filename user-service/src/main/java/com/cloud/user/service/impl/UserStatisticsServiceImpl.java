@@ -5,26 +5,27 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,10 +35,6 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-
-    @Resource
-    @Qualifier("userStatisticsExecutor")
-    private Executor userStatisticsExecutor;
 
     @Override
     @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
@@ -61,7 +58,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<UserStatisticsVO> getUserStatisticsOverviewAsync() {
-        return CompletableFuture.supplyAsync(this::getUserStatisticsOverview, userStatisticsExecutor);
+        return CompletableFuture.completedFuture(getUserStatisticsOverview());
     }
 
     @Override
@@ -91,7 +88,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
         int safeDays = days == null || days <= 0 ? 30 : days;
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(safeDays - 1L);
-        return CompletableFuture.supplyAsync(() -> getUserRegistrationTrend(startDate, endDate), userStatisticsExecutor);
+        return CompletableFuture.completedFuture(getUserRegistrationTrend(startDate, endDate));
     }
 
     @Override
@@ -112,7 +109,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<String, Long>> getUserTypeDistributionAsync() {
-        return CompletableFuture.supplyAsync(this::getUserTypeDistribution, userStatisticsExecutor);
+        return CompletableFuture.completedFuture(getUserTypeDistribution());
     }
 
     @Override
@@ -135,7 +132,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<String, Long>> getUserStatusDistributionAsync() {
-        return CompletableFuture.supplyAsync(this::getUserStatusDistribution, userStatisticsExecutor);
+        return CompletableFuture.completedFuture(getUserStatusDistribution());
     }
 
     @Override
@@ -143,7 +140,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     public Long countActiveUsers(Integer days) {
         try {
             int safeDays = days == null || days <= 0 ? 7 : days;
-            Set<String> keys = redisTemplate.keys("user:last_login:*");
+            Set<String> keys = scanKeys("user:last_login:*");
             if (keys == null || keys.isEmpty()) {
                 return 0L;
             }
@@ -162,7 +159,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Long> countActiveUsersAsync(Integer days) {
-        return CompletableFuture.supplyAsync(() -> countActiveUsers(days), userStatisticsExecutor);
+        return CompletableFuture.completedFuture(countActiveUsers(days));
     }
 
     @Override
@@ -222,64 +219,74 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Double> calculateUserGrowthRateAsync(Integer days) {
-        return CompletableFuture.supplyAsync(() -> calculateUserGrowthRate(days), userStatisticsExecutor);
+        return CompletableFuture.completedFuture(calculateUserGrowthRate(days));
     }
 
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Map<Long, Long>> getUserActivityRankingAsync(Integer limit, Integer days) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                int safeLimit = limit == null || limit <= 0 ? 10 : limit;
-                Set<String> keys = redisTemplate.keys("user:activity:*");
-                if (keys == null || keys.isEmpty()) {
-                    return Collections.emptyMap();
-                }
-
-                Map<Long, Long> activityMap = new HashMap<>();
-                for (String key : keys) {
-                    try {
-                        Long userId = Long.parseLong(key.substring(key.lastIndexOf(':') + 1));
-                        Long count = (Long) redisTemplate.opsForValue().get(key);
-                        if (count != null) {
-                            activityMap.put(userId, count);
-                        }
-                    } catch (Exception ignore) {
-                        log.warn("Failed to parse activity key: {}", key);
-                    }
-                }
-
-                return activityMap.entrySet().stream()
-                        .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
-                        .limit(safeLimit)
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                (a, b) -> a,
-                                LinkedHashMap::new
-                        ));
-            } catch (Exception e) {
-                log.error("Failed to get activity ranking", e);
-                return Collections.emptyMap();
+        try {
+            int safeLimit = limit == null || limit <= 0 ? 10 : limit;
+            Set<String> keys = scanKeys("user:activity:*");
+            if (keys == null || keys.isEmpty()) {
+                return CompletableFuture.completedFuture(Collections.emptyMap());
             }
-        }, userStatisticsExecutor);
+
+            Map<Long, Long> activityMap = new HashMap<>();
+            for (String key : keys) {
+                try {
+                    Long userId = Long.parseLong(key.substring(key.lastIndexOf(':') + 1));
+                    Long count = (Long) redisTemplate.opsForValue().get(key);
+                    if (count != null) {
+                        activityMap.put(userId, count);
+                    }
+                } catch (Exception ignore) {
+                    log.warn("Failed to parse activity key: {}", key);
+                }
+            }
+
+            Map<Long, Long> result = activityMap.entrySet().stream()
+                    .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+                    .limit(safeLimit)
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (a, b) -> a,
+                            LinkedHashMap::new
+                    ));
+            return CompletableFuture.completedFuture(result);
+        } catch (Exception e) {
+            log.error("Failed to get activity ranking", e);
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
     }
 
     @Override
     @Async("userStatisticsExecutor")
     public CompletableFuture<Boolean> refreshStatisticsCacheAsync() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                getUserStatisticsOverview();
-                getUserTypeDistribution();
-                getUserStatusDistribution();
-                countActiveUsers(7);
-                countActiveUsers(30);
-                return true;
-            } catch (Exception e) {
-                log.error("Failed to refresh statistics cache", e);
-                return false;
+        try {
+            getUserStatisticsOverview();
+            getUserTypeDistribution();
+            getUserStatusDistribution();
+            countActiveUsers(7);
+            countActiveUsers(30);
+            return CompletableFuture.completedFuture(true);
+        } catch (Exception e) {
+            log.error("Failed to refresh statistics cache", e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    private Set<String> scanKeys(String pattern) {
+        return redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Set<String>>) connection -> {
+            Set<String> keys = new HashSet<>();
+            ScanOptions options = ScanOptions.scanOptions().match(pattern).count(500).build();
+            try (Cursor<byte[]> cursor = connection.scan(options)) {
+                while (cursor.hasNext()) {
+                    keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                }
             }
-        }, userStatisticsExecutor);
+            return keys;
+        });
     }
 }

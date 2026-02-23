@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @Hidden
-@RestControllerAdvice("stockGlobalExceptionHandler")
+@RestControllerAdvice(basePackages = "com.cloud")
 public class StockGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
     
