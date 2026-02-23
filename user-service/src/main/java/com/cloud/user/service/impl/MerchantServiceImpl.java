@@ -6,8 +6,12 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.exception.MerchantException;
+import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.mapper.MerchantMapper;
+import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Merchant;
+import com.cloud.user.module.entity.MerchantAuth;
+import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,24 +41,23 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     private static final Integer STATUS_ENABLED = 1;
     private static final Integer STATUS_DISABLED = 0;
 
-    private final MerchantMapper merchantMapper;
+    private final MerchantAuthMapper merchantAuthMapper;
+    private final UserMapper userMapper;
     private final MerchantConverter merchantConverter;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = MERCHANT_CACHE, key = "#id", unless = "#result == null")
     public MerchantDTO getMerchantById(Long id) throws MerchantException.MerchantNotFoundException {
         Merchant merchant = getById(id);
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(id);
         }
-        return merchantConverter.toDTO(merchant);
+        return toEnrichedDTO(merchant);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = MERCHANT_CACHE, key = "'username:' + #username", unless = "#result == null")
     public MerchantDTO getMerchantByUsername(String username) throws MerchantException.MerchantNotFoundException {
         if (!StringUtils.hasText(username)) {
             throw new IllegalArgumentException("username is required");
@@ -64,12 +67,11 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(username);
         }
-        return merchantConverter.toDTO(merchant);
+        return toEnrichedDTO(merchant);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = MERCHANT_CACHE, key = "'name:' + #merchantName", unless = "#result == null")
     public MerchantDTO getMerchantByName(String merchantName) throws MerchantException.MerchantNotFoundException {
         if (!StringUtils.hasText(merchantName)) {
             throw new IllegalArgumentException("merchantName is required");
@@ -79,7 +81,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(merchantName);
         }
-        return merchantConverter.toDTO(merchant);
+        return toEnrichedDTO(merchant);
     }
 
     @Override
@@ -88,7 +90,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (CollectionUtils.isEmpty(ids)) {
             return List.of();
         }
-        return listByIds(ids).stream().map(merchantConverter::toDTO).collect(Collectors.toList());
+        return listByIds(ids).stream().map(this::toEnrichedDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -101,7 +103,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                 .page(pageParam);
 
         Page<MerchantDTO> dtoPage = new Page<>(merchantPage.getCurrent(), merchantPage.getSize(), merchantPage.getTotal());
-        dtoPage.setRecords(merchantPage.getRecords().stream().map(merchantConverter::toDTO).collect(Collectors.toList()));
+        dtoPage.setRecords(merchantPage.getRecords().stream().map(this::toEnrichedDTO).collect(Collectors.toList()));
         return dtoPage;
     }
 
@@ -116,6 +118,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             failMessage = "failed to acquire create merchant lock"
     )
     public MerchantDTO createMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantAlreadyExistsException {
+        if (!StringUtils.hasText(merchantDTO.getPassword())) {
+            throw new IllegalArgumentException("password is required");
+        }
+
         if (lambdaQuery().eq(Merchant::getUsername, merchantDTO.getUsername()).count() > 0) {
             throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
         }
@@ -137,7 +143,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (!save(merchant)) {
             throw new MerchantException("failed to create merchant");
         }
-        return merchantConverter.toDTO(merchant);
+        return toEnrichedDTO(merchant);
     }
 
     @Override
@@ -318,5 +324,25 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     @Override
     @CacheEvict(cacheNames = MERCHANT_CACHE, allEntries = true)
     public void evictAllMerchantCache() {
+    }
+
+    private MerchantDTO toEnrichedDTO(Merchant merchant) {
+        MerchantDTO merchantDTO = merchantConverter.toDTO(merchant);
+
+        MerchantAuth merchantAuth = merchantAuthMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MerchantAuth>()
+                        .eq(MerchantAuth::getMerchantId, merchant.getId())
+        );
+        if (merchantAuth != null) {
+            merchantDTO.setAuthStatus(merchantAuth.getAuthStatus());
+        }
+
+        User user = userMapper.selectById(merchant.getId());
+        if (user != null) {
+            merchantDTO.setEmail(user.getEmail());
+            merchantDTO.setUserType(user.getUserType());
+        }
+
+        return merchantDTO;
     }
 }

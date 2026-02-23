@@ -54,7 +54,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!saved) {
             throw new BusinessException("Create product failed");
         }
-        if (!productSearchSyncProducer.sendProductCreated(product)) {
+        Product persisted = getById(product.getId());
+        if (persisted == null) {
+            throw new BusinessException("Created product not found");
+        }
+        if (!productSearchSyncProducer.sendProductCreated(persisted)) {
             throw new BusinessException("Send product-created search sync event failed");
         }
         return product.getId();
@@ -76,7 +80,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!updated) {
             return false;
         }
-        if (!productSearchSyncProducer.sendProductUpdated(product)) {
+        Product persisted = getById(id);
+        if (persisted == null) {
+            throw new ProductServiceException.ProductNotFoundException(id);
+        }
+        if (!productSearchSyncProducer.sendProductUpdated(persisted)) {
             throw new BusinessException("Send product-updated search sync event failed");
         }
         return true;
@@ -174,13 +182,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(readOnly = true)
     public List<ProductVO> getProductsByBrandId(Long brandId, Integer status) {
-        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getBrandId, brandId);
-        if (status != null) {
-            wrapper.eq(Product::getStatus, status);
-        }
-        wrapper.orderByDesc(Product::getCreatedAt);
-        return productConverter.toVOList(list(wrapper));
+        log.warn("Brand query is ignored because products schema has no brand_id column: brandId={}, status={}",
+                brandId, status);
+        return new ArrayList<>();
     }
 
     @Override
@@ -302,7 +306,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(readOnly = true)
     public Long getProductCountByBrandId(Long brandId) {
-        return count(new LambdaQueryWrapper<Product>().eq(Product::getBrandId, brandId));
+        log.warn("Brand count query is ignored because products schema has no brand_id column: brandId={}", brandId);
+        return 0L;
     }
 
     @Override
@@ -434,19 +439,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (requestDTO.getCategoryId() != null) {
             product.setCategoryId(requestDTO.getCategoryId());
         }
-        if (requestDTO.getBrandId() != null) {
-            product.setBrandId(requestDTO.getBrandId());
-        }
         if (requestDTO.getStatus() != null) {
             product.setStatus(requestDTO.getStatus());
         } else if (product.getStatus() == null) {
             product.setStatus(1);
-        }
-        if (requestDTO.getDescription() != null) {
-            product.setDescription(requestDTO.getDescription());
-        }
-        if (requestDTO.getImageUrl() != null) {
-            product.setImageUrl(requestDTO.getImageUrl());
         }
         if (requestDTO.getShopId() != null) {
             product.setShopId(requestDTO.getShopId());
@@ -466,7 +462,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             wrapper.eq(Product::getCategoryId, pageDTO.getCategoryId());
         }
         if (pageDTO.getBrandId() != null) {
-            wrapper.eq(Product::getBrandId, pageDTO.getBrandId());
+            log.warn("Ignore brand filter because products schema has no brand_id column: brandId={}",
+                    pageDTO.getBrandId());
         }
         if (pageDTO.getShopId() != null) {
             wrapper.eq(Product::getShopId, pageDTO.getShopId());

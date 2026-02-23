@@ -60,18 +60,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = "userList",
-            key = "'page:' + #pageDTO.current + ':size:' + #pageDTO.size + ':username:' + (#pageDTO.username == null ? '' : #pageDTO.username) + ':phone:' + (#pageDTO.phone == null ? '' : #pageDTO.phone) + ':nickname:' + (#pageDTO.nickname == null ? '' : #pageDTO.nickname) + ':status:' + (#pageDTO.status == null ? '' : #pageDTO.status) + ':userType:' + (#pageDTO.userType == null ? '' : #pageDTO.userType)",
-            condition = "#pageDTO.current <= 10",
-            unless = "#result == null || #result.total == 0"
-    )
     public PageResult<UserVO> pageQuery(UserPageDTO pageDTO) {
         Page<User> page = PageUtils.buildPage(pageDTO);
 
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(pageDTO.getUsername())) {
             queryWrapper.like(User::getUsername, pageDTO.getUsername());
+        }
+        if (StringUtils.isNotBlank(pageDTO.getEmail())) {
+            queryWrapper.like(User::getEmail, pageDTO.getEmail());
         }
         if (StringUtils.isNotBlank(pageDTO.getPhone())) {
             queryWrapper.like(User::getPhone, pageDTO.getPhone());
@@ -136,7 +133,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "userInfo", key = "#id", unless = "#result == null")
     public UserDTO getUserById(Long id) {
         if (id == null) {
             throw new BusinessException("user id is required");
@@ -150,19 +146,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "user", key = "'username:' + #username", unless = "#result == null")
     public UserDTO getUserByUsername(String username) {
         return findByUsername(username);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = "user",
-            key = "'batch:' + #userIds.toString()",
-            condition = "#userIds != null && #userIds.size() <= 100",
-            unless = "#result == null || #result.isEmpty()"
-    )
     public List<UserDTO> getUsersByIds(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyList();
@@ -233,7 +222,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "user", key = "'github_id:' + #githubId", unless = "#result == null")
     public UserDTO findByGitHubId(Long githubId) {
         if (githubId == null) {
             return null;
@@ -246,7 +234,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "user", key = "'github_username:' + #githubUsername", unless = "#result == null")
     public UserDTO findByGitHubUsername(String githubUsername) {
         if (StringUtils.isBlank(githubUsername)) {
             return null;
@@ -259,7 +246,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "user", key = "'oauth:' + #oauthProvider + ':' + #oauthProviderId", unless = "#result == null")
     public UserDTO findByOAuthProvider(String oauthProvider, String oauthProviderId) {
         if (StringUtils.isBlank(oauthProvider) || StringUtils.isBlank(oauthProviderId)) {
             return null;
@@ -379,7 +365,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Caching(evict = {
             @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
             @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username"),
-            @CacheEvict(cacheNames = "userList", allEntries = true)
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean updateUser(UserDTO userDTO) {
         User user = userConverter.toEntity(userDTO);
@@ -430,7 +417,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             failMessage = "failed to acquire reset password lock"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "user", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "user", key = "#id"),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
+    })
     public String resetPassword(Long id) {
         String newPassword = "123456";
         User user = new User();
@@ -448,7 +438,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             failMessage = "failed to acquire change password lock"
     )
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "user", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "user", key = "#id"),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
+    })
     public Boolean changePassword(Long id, String oldPassword, String newPassword) {
         User user = getById(id);
         if (user == null) {
@@ -504,7 +497,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             evict = {
                     @CacheEvict(cacheNames = "user", key = "#entity.id"),
                     @CacheEvict(cacheNames = "user", key = "'username:' + #entity.username", condition = "#entity.username != null"),
-                    @CacheEvict(cacheNames = "userList", allEntries = true)
+                    @CacheEvict(cacheNames = "userList", allEntries = true),
+                    @CacheEvict(cacheNames = "auth", allEntries = true)
             },
             put = @CachePut(cacheNames = "user", key = "#entity.id")
     )
@@ -516,6 +510,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         MerchantDTO merchantDTO = new MerchantDTO();
         merchantDTO.setId(userDTO.getId());
         merchantDTO.setUsername(userDTO.getUsername());
+        String merchantPassword = userDTO.getPassword();
+        if (StringUtils.isBlank(merchantPassword)) {
+            merchantPassword = passwordEncoder.encode("merchant_" + userDTO.getId());
+        }
+        merchantDTO.setPassword(merchantPassword);
         merchantDTO.setMerchantName(StringUtils.isNotBlank(userDTO.getNickname()) ? userDTO.getNickname() : userDTO.getUsername());
         merchantDTO.setEmail(userDTO.getEmail());
         merchantDTO.setPhone(userDTO.getPhone());

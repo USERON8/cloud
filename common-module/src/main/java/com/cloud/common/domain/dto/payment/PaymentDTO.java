@@ -35,7 +35,7 @@ public class PaymentDTO implements Serializable {
 
     @NotNull(message = "Status cannot be null")
     @Min(value = 0, message = "Status must be greater than or equal to 0")
-    @Max(value = 3, message = "Status must be less than or equal to 3")
+    @Max(value = 4, message = "Status must be less than or equal to 4")
     private Integer status;
 
     @NotNull(message = "Channel cannot be null")

@@ -186,7 +186,7 @@ public class OrderFeignController implements OrderFeignClient {
     public Boolean cancelOrder(@PathVariable("orderId") Long orderId, @RequestParam(required = false) String cancelReason) {
         
         try {
-            return orderService.cancelOrder(orderId);
+            return orderService.cancelOrderWithReason(orderId, cancelReason);
         } catch (Exception e) {
             log.error("[璁㈠崟Feign鎺у埗鍣╙ 鍙栨秷璁㈠崟澶辫触: orderId={}", orderId, e);
             return false;
@@ -270,7 +270,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             int successCount = 0;
             for (Long orderId : orderIds) {
-                if (orderService.cancelOrder(orderId)) {
+                if (orderService.cancelOrderWithReason(orderId, cancelReason)) {
                     successCount++;
                 }
             }

@@ -112,6 +112,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             failMessage = "failed to acquire create admin lock"
     )
     public AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException {
+        if (!StringUtils.hasText(adminDTO.getPassword())) {
+            throw new IllegalArgumentException("password is required");
+        }
+
         long count = lambdaQuery().eq(Admin::getUsername, adminDTO.getUsername()).count();
         if (count > 0) {
             log.warn("Admin already exists, username={}", adminDTO.getUsername());

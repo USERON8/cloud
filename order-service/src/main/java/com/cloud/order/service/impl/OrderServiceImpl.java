@@ -1,6 +1,7 @@
 package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
@@ -27,6 +28,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -184,17 +186,35 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @DistributedLock(key = "'order:cancel:' + #orderId", waitTime = 5, leaseTime = 20, failMessage = "Acquire order cancel lock failed")
     @Transactional(rollbackFor = Exception.class)
     public Boolean cancelOrder(Long orderId) {
+        return cancelOrderInternal(orderId, null);
+    }
+
+    @Override
+    @DistributedLock(key = "'order:cancel:' + #orderId", waitTime = 5, leaseTime = 20, failMessage = "Acquire order cancel lock failed")
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean cancelOrderWithReason(Long orderId, String cancelReason) {
+        return cancelOrderInternal(orderId, cancelReason);
+    }
+
+    private Boolean cancelOrderInternal(Long orderId, String cancelReason) {
         Order order = requireOrder(orderId);
         Integer status = order.getStatus();
         if (!Objects.equals(status, 0) && !Objects.equals(status, 1)) {
             throw new OrderServiceException("Order status does not allow cancellation");
         }
 
-        int rows = Objects.equals(status, 0)
-                ? this.baseMapper.cancelOrderFromPending(orderId)
-                : this.baseMapper.cancelOrderFromPaid(orderId);
+        LocalDateTime now = LocalDateTime.now();
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Order::getId, orderId)
+                .eq(Order::getDeleted, 0)
+                .eq(Order::getStatus, status)
+                .set(Order::getStatus, 4)
+                .set(Order::getCancelTime, now);
+        if (StringUtils.hasText(cancelReason)) {
+            updateWrapper.set(Order::getCancelReason, cancelReason);
+        }
 
-        if (rows > 0) {
+        if (update(updateWrapper)) {
             return true;
         }
 
@@ -237,7 +257,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public Boolean cancelOrder(Long orderId, String currentUserId) {
         validateOrderUser(orderId, currentUserId);
-        return cancelOrder(orderId);
+        return cancelOrderInternal(orderId, null);
     }
 
     @Override

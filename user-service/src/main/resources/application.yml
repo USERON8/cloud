@@ -175,7 +175,7 @@ springdoc:
       packages-to-scan: com.cloud.user.controller.merchant
     - group: 'admin'
       paths-to-match: '/**'
-      packages-to-scan: com.cloud.user.controller.admin
+      packages-to-scan: com.cloud.user.controller
 
 # Comment sanitized for UTF-8 compatibility.
 knife4j:

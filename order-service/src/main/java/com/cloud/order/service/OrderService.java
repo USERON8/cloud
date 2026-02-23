@@ -61,6 +61,8 @@ public interface OrderService extends IService<Order> {
 
     Boolean cancelOrder(Long orderId);
 
+    Boolean cancelOrderWithReason(Long orderId, String cancelReason);
+
     
 
 

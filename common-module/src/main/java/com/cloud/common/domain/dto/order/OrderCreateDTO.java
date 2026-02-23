@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.io.Serial;
@@ -28,19 +29,15 @@ public class OrderCreateDTO implements Serializable {
     private Long shopId;
 
     @Schema(description = "Receiver name")
-    @NotBlank(message = "receiverName cannot be blank")
     private String receiverName;
 
     @Schema(description = "Receiver phone")
-    @NotBlank(message = "receiverPhone cannot be blank")
     private String receiverPhone;
 
     @Schema(description = "Receiver address")
-    @NotBlank(message = "receiverAddress cannot be blank")
     private String receiverAddress;
 
     @Schema(description = "Pay type")
-    @NotNull(message = "payType cannot be null")
     private Integer payType;
 
     @Schema(description = "Total amount")
@@ -59,6 +56,7 @@ public class OrderCreateDTO implements Serializable {
     private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @Schema(description = "Remark")
+    @Size(max = 255, message = "remark length must be less than or equal to 255")
     private String remark;
 
     @Schema(description = "Order items")

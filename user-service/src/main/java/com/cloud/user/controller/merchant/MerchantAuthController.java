@@ -9,6 +9,7 @@ import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
+import com.cloud.user.service.MerchantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,8 +39,10 @@ public class MerchantAuthController {
 
     private static final int STATUS_PENDING = 0;
     private static final int STATUS_APPROVED = 1;
+    private static final int STATUS_REJECTED = 2;
 
     private final MerchantAuthService merchantAuthService;
+    private final MerchantService merchantService;
     private final MerchantAuthConverter merchantAuthConverter;
 
     @PostMapping("/apply/{merchantId}")
@@ -55,6 +58,9 @@ public class MerchantAuthController {
         if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
             return Result.forbidden("no permission to apply merchant auth");
         }
+        if (merchantService.getById(merchantId) == null) {
+            return Result.notFound("merchant not found");
+        }
 
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
@@ -68,9 +74,20 @@ public class MerchantAuthController {
             merchantAuth.setId(existingAuth.getId());
             merchantAuth.setCreatedAt(existingAuth.getCreatedAt());
             merchantAuth.setUpdatedAt(LocalDateTime.now());
-            merchantAuthService.updateById(merchantAuth);
+            if (!merchantAuthService.updateById(merchantAuth)) {
+                return Result.error("failed to update merchant auth application");
+            }
         } else {
-            merchantAuthService.save(merchantAuth);
+            if (!merchantAuthService.save(merchantAuth)) {
+                return Result.error("failed to submit merchant auth application");
+            }
+        }
+
+        try {
+            merchantService.updateMerchantStatus(merchantId, STATUS_PENDING);
+        } catch (Exception e) {
+            log.error("Failed to set merchant status pending, merchantId={}", merchantId, e);
+            return Result.error("merchant auth submitted but failed to update merchant status");
         }
 
         return Result.success("merchant auth application submitted", merchantAuthConverter.toDTO(merchantAuth));
@@ -113,6 +130,14 @@ public class MerchantAuthController {
         if (!removed) {
             return Result.success("merchant auth not found", false);
         }
+
+        try {
+            merchantService.updateMerchantStatus(merchantId, STATUS_PENDING);
+        } catch (Exception e) {
+            log.error("Failed to reset merchant status after revoke, merchantId={}", merchantId, e);
+            return Result.error("merchant auth revoked but failed to update merchant status");
+        }
+
         return Result.success("merchant auth revoked", true);
     }
 
@@ -125,7 +150,16 @@ public class MerchantAuthController {
             @NotNull(message = "merchant id is required") Long merchantId,
             @RequestParam("authStatus")
             @Parameter(description = "Auth status")
-            @NotNull(message = "auth status is required") Integer authStatus) {
+            @NotNull(message = "auth status is required") Integer authStatus,
+            @RequestParam(value = "remark", required = false)
+            @Parameter(description = "Review remark") String remark) {
+        if (!isReviewStatus(authStatus)) {
+            return Result.badRequest("auth status must be 1(approved) or 2(rejected)");
+        }
+        if (merchantService.getById(merchantId) == null) {
+            return Result.notFound("merchant not found");
+        }
+
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
         MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
@@ -134,13 +168,21 @@ public class MerchantAuthController {
         }
 
         merchantAuth.setAuthStatus(authStatus);
+        merchantAuth.setAuthRemark(remark);
         merchantAuth.setUpdatedAt(LocalDateTime.now());
         boolean updated = merchantAuthService.updateById(merchantAuth);
         if (!updated) {
             return Result.error("failed to update merchant auth status");
         }
 
-        String action = authStatus == STATUS_APPROVED ? "approved" : "updated";
+        try {
+            merchantService.updateMerchantStatus(merchantId, authStatus);
+        } catch (Exception e) {
+            log.error("Failed to update merchant status after auth review, merchantId={}, authStatus={}", merchantId, authStatus, e);
+            return Result.error("merchant auth reviewed but failed to update merchant status");
+        }
+
+        String action = authStatus == STATUS_APPROVED ? "approved" : "rejected";
         return Result.success("merchant auth " + action, true);
     }
 
@@ -151,6 +193,10 @@ public class MerchantAuthController {
             @RequestParam("authStatus")
             @Parameter(description = "Auth status")
             @NotNull(message = "auth status is required") Integer authStatus) {
+        if (!isValidAuthStatus(authStatus)) {
+            return Result.badRequest("invalid auth status");
+        }
+
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(MerchantAuth::getAuthStatus, authStatus);
         List<MerchantAuthDTO> result = merchantAuthService.list(queryWrapper).stream()
@@ -168,26 +214,38 @@ public class MerchantAuthController {
             @NotNull(message = "merchant ids are required") List<Long> merchantIds,
             @RequestParam("authStatus")
             @Parameter(description = "Auth status")
-            @NotNull(message = "auth status is required") Integer authStatus) {
+            @NotNull(message = "auth status is required") Integer authStatus,
+            @RequestParam(value = "remark", required = false)
+            @Parameter(description = "Review remark") String remark) {
         if (merchantIds.isEmpty()) {
             return Result.badRequest("merchant ids cannot be empty");
         }
         if (merchantIds.size() > 100) {
             return Result.badRequest("batch size cannot exceed 100");
         }
+        if (!isReviewStatus(authStatus)) {
+            return Result.badRequest("auth status must be 1(approved) or 2(rejected)");
+        }
 
         int successCount = 0;
         for (Long merchantId : merchantIds) {
             try {
+                if (merchantService.getById(merchantId) == null) {
+                    continue;
+                }
+
                 LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
                 queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
                 MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
                 if (merchantAuth == null) {
                     continue;
                 }
+
                 merchantAuth.setAuthStatus(authStatus);
+                merchantAuth.setAuthRemark(remark);
                 merchantAuth.setUpdatedAt(LocalDateTime.now());
-                if (merchantAuthService.updateById(merchantAuth)) {
+                if (merchantAuthService.updateById(merchantAuth)
+                        && merchantService.updateMerchantStatus(merchantId, authStatus)) {
                     successCount++;
                 }
             } catch (Exception e) {
@@ -197,5 +255,19 @@ public class MerchantAuthController {
 
         String message = String.format("batch review completed: %d/%d", successCount, merchantIds.size());
         return Result.success(message, true);
+    }
+
+    private static boolean isValidAuthStatus(Integer authStatus) {
+        if (authStatus == null) {
+            return false;
+        }
+        return authStatus == STATUS_PENDING || authStatus == STATUS_APPROVED || authStatus == STATUS_REJECTED;
+    }
+
+    private static boolean isReviewStatus(Integer authStatus) {
+        if (authStatus == null) {
+            return false;
+        }
+        return authStatus == STATUS_APPROVED || authStatus == STATUS_REJECTED;
     }
 }

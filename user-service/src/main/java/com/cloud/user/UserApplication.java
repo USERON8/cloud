@@ -10,6 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableCaching
 @Slf4j
 @EnableFeignClients(basePackages = "com.cloud.api")
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @ComponentScan(
         basePackages = {"com.cloud.user", "com.cloud.common"},

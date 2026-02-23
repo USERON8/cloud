@@ -15,6 +15,8 @@ public class UserPageDTO extends PageQuery {
 
     private String username;
 
+    private String email;
+
     
 
 

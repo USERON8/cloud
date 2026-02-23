@@ -73,7 +73,7 @@ public class OrderDTO implements Serializable {
     private String cancelReason;
 
     @Schema(description = "Remark")
-    @Size(max = 500, message = "Remark length must be less than or equal to 500")
+    @Size(max = 255, message = "Remark length must be less than or equal to 255")
     private String remark;
 
     @Schema(description = "Creation time")

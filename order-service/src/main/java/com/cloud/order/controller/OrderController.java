@@ -198,7 +198,7 @@ public class OrderController {
             @Parameter(description = "Cancel reason") @RequestParam(required = false) String cancelReason,
             Authentication authentication) {
 
-        Boolean result = orderService.cancelOrder(id);
+        Boolean result = orderService.cancelOrderWithReason(id, cancelReason);
         if (!Boolean.TRUE.equals(result)) {
             throw new BusinessException("failed to cancel order");
         }
@@ -261,7 +261,16 @@ public class OrderController {
             return Result.badRequest("batch size cannot exceed 100");
         }
 
-        Integer successCount = orderService.batchUpdateOrderStatus(ids, 4);
+        int successCount = 0;
+        for (Long orderId : ids) {
+            try {
+                if (Boolean.TRUE.equals(orderService.cancelOrderWithReason(orderId, cancelReason))) {
+                    successCount++;
+                }
+            } catch (Exception ex) {
+                log.warn("Batch cancel order failed: orderId={}", orderId, ex);
+            }
+        }
         return Result.success(String.format("batch cancel completed: %d/%d", successCount, ids.size()), successCount);
     }
 

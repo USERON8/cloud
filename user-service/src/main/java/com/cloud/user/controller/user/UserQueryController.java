@@ -51,7 +51,7 @@ public class UserQueryController {
         userPageDTO.setCurrent(page.longValue());
         userPageDTO.setSize(size.longValue());
         userPageDTO.setUsername(username);
-        userPageDTO.setPhone(email);
+        userPageDTO.setEmail(email);
         userPageDTO.setUserType(userType);
         return Result.success(userService.pageQuery(userPageDTO));
     }

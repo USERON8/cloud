@@ -1,5 +1,7 @@
 package com.cloud.common.domain.dto.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,6 +21,10 @@ public class MerchantDTO implements Serializable {
 
 
     private String username;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Size(max = 255, message = "Password length must be less than or equal to 255")
+    private String password;
     
 
 
