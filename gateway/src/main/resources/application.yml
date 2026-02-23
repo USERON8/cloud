@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:80}
   tomcat:
     threads:
@@ -15,6 +15,7 @@ spring:
     include: route
   main:
     allow-bean-definition-overriding: true
+    web-application-type: reactive
 
   # Comment sanitized for UTF-8 compatibility.
   cloud:
@@ -44,6 +45,56 @@ spring:
 
     # Comment sanitized for UTF-8 compatibility.
     gateway:
+      routes:
+        - id: oauth2-endpoints
+          uri: lb://auth-service
+          order: 10
+          predicates:
+            - Path=/oauth2/**
+          filters:
+            - PreserveHostHeader
+        - id: oidc-endpoints
+          uri: lb://auth-service
+          order: 10
+          predicates:
+            - Path=/.well-known/**,/connect/**,/userinfo
+          filters:
+            - PreserveHostHeader
+        - id: auth-service-api
+          uri: lb://auth-service
+          order: 10
+          predicates:
+            - Path=/auth/**
+        - id: user-service-api
+          uri: lb://user-service
+          order: 20
+          predicates:
+            - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
+        - id: product-service-api
+          uri: lb://product-service
+          order: 20
+          predicates:
+            - Path=/api/product,/api/product/**,/api/category,/api/category/**
+        - id: order-service-api
+          uri: lb://order-service
+          order: 20
+          predicates:
+            - Path=/api/orders/**,/api/v1/refund/**
+        - id: payment-service-api
+          uri: lb://payment-service
+          order: 20
+          predicates:
+            - Path=/api/payments/**,/api/v1/payment/alipay/**
+        - id: stock-service-api
+          uri: lb://stock-service
+          order: 20
+          predicates:
+            - Path=/api/stocks/**
+        - id: search-service-api
+          uri: lb://search-service
+          order: 20
+          predicates:
+            - Path=/api/search,/api/search/**
       discovery:
         locator:
           enabled: false  # Comment sanitized for UTF-8 compatibility.
@@ -84,6 +135,13 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   config:
     import: optional:nacos:common
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
 
   # Comment sanitized for UTF-8 compatibility.
   web:
@@ -153,6 +211,14 @@ app:
   security:
     enable-test-api: false
 
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /doc.html
+
 # Comment sanitized for UTF-8 compatibility.
 knife4j:
   enable: true
@@ -163,9 +229,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 鐎圭偘缍嬬猾璇插灙鐞?
+    swagger-model-name: API Models
     enable-footer-custom: true
-    footer-custom-content: "Cloud 瀵邦喗婀囬崝鈥抽挬閸?API 閺傚洦銆?
+    footer-custom-content: "Cloud Microservices API Docs"
   gateway:
     enabled: true
     strategy: discover
@@ -176,26 +242,27 @@ knife4j:
         - gateway
       service-config:
         auth-service:
-          group-name: 鐠併倛鐦夐張宥呭
+          group-name: auth-service
           api-docs-path: /v3/api-docs
         user-service:
-          group-name: 閻劍鍩涢張宥呭
+          group-name: user-service
           api-docs-path: /v3/api-docs
         product-service:
-          group-name: 閸熷棗鎼ч張宥呭
+          group-name: product-service
           api-docs-path: /v3/api-docs
         order-service:
-          group-name: 鐠併垹宕熼張宥呭
+          group-name: order-service
           api-docs-path: /v3/api-docs
         payment-service:
-          group-name: 閺€顖欑帛閺堝秴濮?
+          group-name: payment-service
           api-docs-path: /v3/api-docs
         stock-service:
-          group-name: 鎼存挸鐡ㄩ張宥呭
+          group-name: stock-service
           api-docs-path: /v3/api-docs
         search-service:
-          group-name: 閹兼粎鍌ㄩ張宥呭
+          group-name: search-service
           api-docs-path: /v3/api-docs
+
 
 
 

@@ -1,10 +1,8 @@
 spring:
   cloud:
+    function:
+      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
     stream:
-      # Comment sanitized for UTF-8 compatibility.
-      function:
-        definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
-
       # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
@@ -131,37 +129,37 @@ spring:
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
-          group: order-consumer-group
+          group: order-payment-success-consumer-group
 
         # Comment sanitized for UTF-8 compatibility.
         stockFreezeFailedConsumer-in-0:
           destination: stock-freeze-failed
           content-type: application/json
-          group: order-consumer-group
+          group: order-stock-freeze-failed-consumer-group
 
         # Comment sanitized for UTF-8 compatibility.
         refundCompletedConsumer-in-0:
           destination: refund-completed
           content-type: application/json
-          group: order-consumer-group
+          group: order-refund-completed-consumer-group
 
         # Comment sanitized for UTF-8 compatibility.
         refundCreatedNotificationConsumer-in-0:
           destination: refund-created
           content-type: application/json
-          group: order-notification-group
+          group: order-refund-created-notification-group
 
         refundAuditedNotificationConsumer-in-0:
           destination: refund-audited
           content-type: application/json
-          group: order-notification-group
+          group: order-refund-audited-notification-group
 
         refundProcessNotificationConsumer-in-0:
           destination: refund-process
           content-type: application/json
-          group: order-notification-group
+          group: order-refund-process-notification-group
 
         refundCancelledNotificationConsumer-in-0:
           destination: refund-cancelled
           content-type: application/json
-          group: order-notification-group
+          group: order-refund-cancelled-notification-group

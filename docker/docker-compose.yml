@@ -153,9 +153,9 @@ services:
     depends_on:
       - namesrv
     ports:
-      - "30909:10909"  # ASCII comment sanitized for compatibility.
-      - "30911:10911"  # ASCII comment sanitized for compatibility.
-      - "30912:10912"  # ASCII comment sanitized for compatibility.
+      - "30909:30909"  # ASCII comment sanitized for compatibility.
+      - "30911:30911"  # ASCII comment sanitized for compatibility.
+      - "30912:30912"  # ASCII comment sanitized for compatibility.
       - "38080:8080"   # ASCII comment sanitized for compatibility.
       - "38081:8081"   # ASCII comment sanitized for compatibility.
     volumes:

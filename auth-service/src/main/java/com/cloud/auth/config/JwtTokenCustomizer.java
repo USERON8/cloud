@@ -56,6 +56,18 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             String principalName = context.getPrincipal().getName();
             if (principalName != null && !principalName.isBlank()) {
                 context.getClaims().claim("username", principalName);
+                try {
+                    UserDTO user = userFeignClient.findByUsername(principalName);
+                    if (user != null) {
+                        context.getClaims()
+                                .claim("user_id", user.getId())
+                                .claim("user_type", user.getUserType())
+                                .claim("nickname", user.getNickname())
+                                .claim("status", user.getStatus());
+                    }
+                } catch (Exception ex) {
+                    log.warn("load user info for jwt claims failed, username={}", principalName, ex);
+                }
             }
         }
     }

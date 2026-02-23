@@ -16,13 +16,16 @@ import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContext;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.DefaultOAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -49,6 +52,9 @@ public class OAuth2TokenManagementService {
 
     @Value("${app.oauth2.default-redirect-uri:http://127.0.0.1:80/authorized}")
     private String defaultRedirectUri;
+
+    @Value("${AUTH_ISSUER_URI:http://127.0.0.1:8081}")
+    private String issuerUri;
 
     public OAuth2Authorization generateTokensForUser(UserDTO userDTO, Set<String> scopes) {
         if (userDTO == null) {
@@ -92,10 +98,13 @@ public class OAuth2TokenManagementService {
                 .attribute("authorization_code", "SIMULATED_" + UUID.randomUUID())
                 .attribute("redirect_uri", defaultRedirectUri);
 
+        AuthorizationServerContext authorizationServerContext = resolveAuthorizationServerContext();
+
         OAuth2TokenContext accessTokenContext = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
                 .principal(userAuthentication)
-                .authorizationServerContext(AuthorizationServerContextHolder.getContext())
+                .authorizationGrant(userAuthentication)
+                .authorizationServerContext(authorizationServerContext)
                 .authorization(authorizationBuilder.build())
                 .tokenType(OAuth2TokenType.ACCESS_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -103,16 +112,15 @@ public class OAuth2TokenManagementService {
                 .build();
 
         OAuth2Token accessToken = tokenGenerator.generate(accessTokenContext);
-        if (!(accessToken instanceof OAuth2AccessToken oauth2AccessToken)) {
-            throw new IllegalStateException("Generated token is not an OAuth2 access token");
-        }
+        OAuth2AccessToken oauth2AccessToken = toAccessToken(accessToken, scopes);
         authorizationBuilder.accessToken(oauth2AccessToken);
 
         if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN)) {
             OAuth2TokenContext refreshTokenContext = DefaultOAuth2TokenContext.builder()
                     .registeredClient(registeredClient)
                     .principal(userAuthentication)
-                    .authorizationServerContext(AuthorizationServerContextHolder.getContext())
+                    .authorizationGrant(userAuthentication)
+                    .authorizationServerContext(authorizationServerContext)
                     .authorization(authorizationBuilder.build())
                     .tokenType(OAuth2TokenType.REFRESH_TOKEN)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -156,10 +164,13 @@ public class OAuth2TokenManagementService {
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .authorizedScopes(scopes);
 
+        AuthorizationServerContext authorizationServerContext = resolveAuthorizationServerContext();
+
         OAuth2TokenContext tokenContext = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
                 .principal(clientAuthentication)
-                .authorizationServerContext(AuthorizationServerContextHolder.getContext())
+                .authorizationGrant(clientAuthentication)
+                .authorizationServerContext(authorizationServerContext)
                 .authorization(authorizationBuilder.build())
                 .tokenType(OAuth2TokenType.ACCESS_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
@@ -167,13 +178,27 @@ public class OAuth2TokenManagementService {
                 .build();
 
         OAuth2Token accessToken = tokenGenerator.generate(tokenContext);
-        if (!(accessToken instanceof OAuth2AccessToken oauth2AccessToken)) {
-            throw new IllegalStateException("Generated token is not an OAuth2 access token");
-        }
+        OAuth2AccessToken oauth2AccessToken = toAccessToken(accessToken, scopes);
 
         OAuth2Authorization authorization = authorizationBuilder.accessToken(oauth2AccessToken).build();
         authorizationService.save(authorization);
         return authorization;
+    }
+
+    private OAuth2AccessToken toAccessToken(OAuth2Token token, Set<String> scopes) {
+        if (token instanceof OAuth2AccessToken accessToken) {
+            return accessToken;
+        }
+        if (token instanceof Jwt jwt) {
+            return new OAuth2AccessToken(
+                    OAuth2AccessToken.TokenType.BEARER,
+                    jwt.getTokenValue(),
+                    jwt.getIssuedAt(),
+                    jwt.getExpiresAt(),
+                    scopes
+            );
+        }
+        throw new IllegalStateException("Generated token is not an OAuth2 access token");
     }
 
     public void revokeToken(String tokenValue) {
@@ -284,5 +309,24 @@ public class OAuth2TokenManagementService {
         }
         long seconds = Duration.between(Instant.now(), expiresAt).getSeconds();
         return Math.max(seconds, 60);
+    }
+
+    private AuthorizationServerContext resolveAuthorizationServerContext() {
+        AuthorizationServerContext context = AuthorizationServerContextHolder.getContext();
+        if (context != null) {
+            return context;
+        }
+        AuthorizationServerSettings settings = AuthorizationServerSettings.builder().issuer(issuerUri).build();
+        return new AuthorizationServerContext() {
+            @Override
+            public String getIssuer() {
+                return settings.getIssuer();
+            }
+
+            @Override
+            public AuthorizationServerSettings getAuthorizationServerSettings() {
+                return settings;
+            }
+        };
     }
 }

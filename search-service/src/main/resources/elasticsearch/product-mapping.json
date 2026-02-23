@@ -83,11 +83,11 @@
     },
     "createdAt": {
       "type": "date",
-      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||strict_date_optional_time||strict_date_optional_time_nanos||epoch_millis"
     },
     "updatedAt": {
       "type": "date",
-      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||strict_date_optional_time||strict_date_optional_time_nanos||epoch_millis"
     },
     "searchWeight": {
       "type": "double"

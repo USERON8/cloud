@@ -40,7 +40,7 @@ spring:
           uri: lb://product-service
           order: 20
           predicates:
-            - Path=/api/product/**,/api/category/**
+            - Path=/api/product,/api/product/**,/api/category,/api/category/**
 
         - id: product-service-api-legacy
           uri: lb://product-service
@@ -88,7 +88,7 @@ spring:
           uri: lb://search-service
           order: 20
           predicates:
-            - Path=/api/search/**
+            - Path=/api/search,/api/search/**
 
         - id: search-service-api-legacy
           uri: lb://search-service
@@ -101,42 +101,56 @@ spring:
           order: 50
           predicates:
             - Path=/auth-service/doc.html,/auth-service/webjars/**,/auth-service/swagger-ui/**,/auth-service/v3/api-docs/**,/auth-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: user-service-doc
           uri: lb://user-service
           order: 50
           predicates:
             - Path=/user-service/doc.html,/user-service/webjars/**,/user-service/swagger-ui/**,/user-service/v3/api-docs/**,/user-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: product-service-doc
           uri: lb://product-service
           order: 50
           predicates:
             - Path=/product-service/doc.html,/product-service/webjars/**,/product-service/swagger-ui/**,/product-service/v3/api-docs/**,/product-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: order-service-doc
           uri: lb://order-service
           order: 50
           predicates:
             - Path=/order-service/doc.html,/order-service/webjars/**,/order-service/swagger-ui/**,/order-service/v3/api-docs/**,/order-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: payment-service-doc
           uri: lb://payment-service
           order: 50
           predicates:
             - Path=/payment-service/doc.html,/payment-service/webjars/**,/payment-service/swagger-ui/**,/payment-service/v3/api-docs/**,/payment-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: stock-service-doc
           uri: lb://stock-service
           order: 50
           predicates:
             - Path=/stock-service/doc.html,/stock-service/webjars/**,/stock-service/swagger-ui/**,/stock-service/v3/api-docs/**,/stock-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
         - id: search-service-doc
           uri: lb://search-service
           order: 50
           predicates:
             - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
+          filters:
+            - StripPrefix=1
 
       # Comment sanitized for UTF-8 compatibility.
       discovery:

@@ -64,21 +64,21 @@ public class ResourceServerConfig {
                             .pathMatchers(
                                     "/doc.html",
                                     "/doc.html/**",
-                                    "/**/doc.html",
-                                    "/**/doc.html/**"
+                                    "/*/doc.html",
+                                    "/*/doc.html/**"
                             ).permitAll()
                             .pathMatchers(
                                     "/swagger-ui.html",
                                     "/swagger-ui/**",
-                                    "/**/swagger-ui/**"
+                                    "/*/swagger-ui/**"
                             ).permitAll()
                             .pathMatchers(
                                     "/v3/api-docs/**",
-                                    "/**/v3/api-docs/**",
+                                    "/*/v3/api-docs/**",
                                     "/swagger-resources/**",
-                                    "/**/swagger-resources/**",
+                                    "/*/swagger-resources/**",
                                     "/webjars/**",
-                                    "/**/webjars/**"
+                                    "/*/webjars/**"
                             ).permitAll()
                             .pathMatchers(
                                     "/favicon.ico",
@@ -108,6 +108,7 @@ public class ResourceServerConfig {
                                     "/api/user/address/**", "/api/merchant/**",
                                     "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**"
                             ).authenticated()
+                            .pathMatchers("/api/product", "/api/search").authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
                             .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
                             .pathMatchers("/order/**", "/cart/**", "/api/orders/**", "/api/v1/refund/**").authenticated()

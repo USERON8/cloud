@@ -63,7 +63,7 @@ spring:
         registration:
           web-client:
             client-id: web-client
-            client-secret: ${WEB_CLIENT_SECRET:}
+            client-secret: ${WEB_CLIENT_SECRET:WebClient@2024#Secure}
             client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
             redirect-uri: http://127.0.0.1:80/authorized
@@ -75,7 +75,7 @@ spring:
           client-service:
             provider: custom-authorization-server
             client-id: client-service
-            client-secret: ${CLIENT_SERVICE_SECRET:}
+            client-secret: ${CLIENT_SERVICE_SECRET:ClientService@2024#Secure}
             authorization-grant-type: client_credentials
             scope: internal_api,service.read,service.write
         provider:
@@ -116,20 +116,20 @@ app:
       private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
       public-key-base64: ${APP_JWT_PUBLIC_KEY_BASE64:}
       key-id: ${APP_JWT_KEY_ID:auth-service-key}
-      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:false}
+      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:true}
   oauth2:
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
-        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:}
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:${WEB_CLIENT_SECRET:WebClient@2024#Secure}}
       mobile:
         id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
       service:
         id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}
-        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:}
+        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:ServiceClient@2024#Secure}
       internal:
         id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
-        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:}
+        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:ClientService@2024#Secure}}
 
 # Comment sanitized for UTF-8 compatibility.
 springdoc:

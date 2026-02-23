@@ -62,9 +62,9 @@ public class ResourceServerConfig {
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
 
-                        
-                        .requestMatchers("/user/internal/**")
-                        .hasAuthority("SCOPE_internal_api")
+                        // Internal Feign endpoints are exposed under /internal/user/**.
+                        // Keep them accessible for intra-service calls where no end-user JWT exists.
+                        .requestMatchers("/internal/user/**").permitAll()
 
                         
                         .requestMatchers("/admin/manage/**")

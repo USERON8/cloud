@@ -1,10 +1,8 @@
 spring:
   cloud:
+    function:
+      definition: orderCreatedConsumer;refundProcessConsumer
     stream:
-      # Comment sanitized for UTF-8 compatibility.
-      function:
-        definition: orderCreatedConsumer;refundProcessConsumer
-
       # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
@@ -52,10 +50,10 @@ spring:
         orderCreatedConsumer-in-0:
           destination: order-created
           content-type: application/json
-          group: payment-consumer-group
+          group: payment-order-created-consumer-group
 
         # Comment sanitized for UTF-8 compatibility.
         refundProcessConsumer-in-0:
           destination: refund-process
           content-type: application/json
-          group: payment-consumer-group
+          group: payment-refund-process-consumer-group

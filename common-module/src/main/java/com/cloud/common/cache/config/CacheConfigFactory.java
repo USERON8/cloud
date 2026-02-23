@@ -2,6 +2,9 @@ package com.cloud.common.cache.config;
 
 import com.cloud.common.cache.core.MultiLevelCacheManager;
 import com.cloud.common.cache.metrics.CacheMetricsCollector;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -111,13 +114,14 @@ public class CacheConfigFactory {
     @Bean("standardRedisCacheManager")
     @ConditionalOnProperty(prefix = "cache", name = "multi-level", havingValue = "false", matchIfMissing = true)
     public CacheManager standardRedisCacheManager() {
-        
+        GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
+
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(1800)) 
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                        .fromSerializer(jsonSerializer))
                 .disableCachingNullValues(); 
 
         
@@ -138,18 +142,27 @@ public class CacheConfigFactory {
     private RedisTemplate<String, Object> createCacheRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
+        GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
 
         
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(jsonSerializer);
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(jsonSerializer);
 
         template.afterPropertiesSet();
 
         log.debug("閰嶇疆缂撳瓨RedisTemplate: keySerializer=String, valueSerializer=Jackson2Json");
 
         return template;
+    }
+
+    private GenericJackson2JsonRedisSerializer createJsonSerializer() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 
     
