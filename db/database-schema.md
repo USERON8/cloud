@@ -144,29 +144,6 @@
 - uk_merchant_id (merchant_id) UNIQUE
 - idx_auth_status (auth_status)
 
-### 1.6 商家结算账户表 (merchant_settlement_account)
-
-**功能描述**：存储商家的结算银行账户信息
-
-| 字段名            | 数据类型            | 约束                                 | 描述             |
-|----------------|-----------------|------------------------------------|----------------|
-| id             | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键             |
-| merchant_id    | BIGINT UNSIGNED | NOT NULL                           | 商家ID           |
-| account_name   | VARCHAR(100)    | NOT NULL                           | 账户名称           |
-| account_number | VARCHAR(50)     | NOT NULL                           | 账户号码           |
-| account_type   | TINYINT         | NOT NULL                           | 账户类型：1-对公，2-对私 |
-| bank_name      | VARCHAR(100)    | NOT NULL                           | 开户银行           |
-| is_default     | TINYINT         | NOT NULL DEFAULT 0                 | 是否默认账户：0-否，1-是 |
-| status         | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用   |
-| created_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间           |
-| updated_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间           |
-| deleted        | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记          |
-
-**索引**：
-
-- idx_merchant_id (merchant_id)
-- idx_is_default (is_default)
-
 ---
 
 ## 2. 商品数据库 (product_db)

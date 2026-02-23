@@ -319,30 +319,35 @@ CREATE TABLE `payment_order` (
 
 ```bash
 # 1. 创建数据库
-mysql -uroot -p < init.sql
+mysql -uroot -p < sql/init/infra/nacos/init.sql
 
 # 2. 创建表结构（按顺序执行）
-mysql -uroot -p < user_db.sql
-mysql -uroot -p < product_db.sql
-mysql -uroot -p < order_db.sql
-mysql -uroot -p < stock_db.sql
-mysql -uroot -p < payment_db.sql
+mysql -uroot -p < sql/init/user-service/init.sql
+mysql -uroot -p < sql/init/product-service/init.sql
+mysql -uroot -p < sql/init/order-service/init.sql
+mysql -uroot -p < sql/init/stock-service/init.sql
+mysql -uroot -p < sql/init/payment-service/init.sql
 
 # 3. 初始化数据（可选）
-mysql -uroot -p < init_data.sql
+mysql -uroot -p < sql/test/user-service/test.sql
+mysql -uroot -p < sql/test/product-service/test.sql
+mysql -uroot -p < sql/test/stock-service/test.sql
+mysql -uroot -p < sql/test/order-service/test.sql
+mysql -uroot -p < sql/test/payment-service/test.sql
 ```
 
 ### 脚本文件说明
 
 | 文件名            | 说明       | 依赖       |
 |----------------|----------|----------|
-| init.sql       | 创建数据库和用户 | 无        |
-| user_db.sql    | 用户服务表结构  | init.sql |
-| product_db.sql | 商品服务表结构  | init.sql |
-| order_db.sql   | 订单服务表结构  | init.sql |
-| stock_db.sql   | 库存服务表结构  | init.sql |
-| payment_db.sql | 支付服务表结构  | init.sql |
-| init_data.sql  | 初始化测试数据  | 所有表结构    |
+| sql/init/infra/nacos/init.sql     | Nacos configuration init script | none |
+| sql/init/user-service/init.sql    | user-service schema             | none |
+| sql/init/product-service/init.sql | product-service schema          | none |
+| sql/init/order-service/init.sql   | order-service schema            | none |
+| sql/init/stock-service/init.sql   | stock-service schema            | none |
+| sql/init/payment-service/init.sql | payment-service schema          | none |
+| sql/test/*/test.sql               | service test seed scripts       | matching init.sql |
+| sql/archive/**                    | archived migration/monitoring/legacy scripts | none |
 
 ## 🔧 数据库优化建议
 

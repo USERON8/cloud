@@ -466,7 +466,7 @@ docker-compose up -d mysql redis nacos rocketmq minio
 
 ```bash
 # 导入SQL脚本
-mysql -h localhost -u root -p < sql/init/initdb_user.sql
+mysql -h localhost -u root -p < sql/init/user-service/init.sql
 ```
 
 ### 启动服务

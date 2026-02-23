@@ -46,20 +46,16 @@ public class ResourceServerConfig {
                     var authExchanges = exchanges
                             .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
                             .pathMatchers("/connect/**").permitAll()
+                            .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**").permitAll()
                             .pathMatchers(HttpMethod.POST,
-                                    "/auth/register",
-                                    "/auth/login",
                                     "/auth/users/register",
                                     "/auth/sessions",
-                                    "/auth/users/register-and-login",
                                     "/auth/tokens/refresh",
-                                    "/auth/register-and-login",
-                                    "/auth/refresh-token",
                                     "/api/v1/payment/alipay/notify"
                             ).permitAll()
                             .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return").permitAll()
-                            .pathMatchers("/auth/oauth2/github/**", "/auth/github/**").permitAll()
-                            .pathMatchers("/login/**", "/register/**", "/logout/**").permitAll()
+                            .pathMatchers("/auth/oauth2/github/**").permitAll()
+                            .pathMatchers("/login/**").permitAll()
                             .pathMatchers("/actuator/**", "/health/**", "/metrics/**").permitAll()
                             .pathMatchers(
                                     "/doc.html",
@@ -108,7 +104,6 @@ public class ResourceServerConfig {
                                     "/api/user/address/**", "/api/merchant/**",
                                     "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**"
                             ).authenticated()
-                            .pathMatchers("/api/product", "/api/search").authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
                             .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
                             .pathMatchers("/order/**", "/cart/**", "/api/orders/**", "/api/v1/refund/**").authenticated()

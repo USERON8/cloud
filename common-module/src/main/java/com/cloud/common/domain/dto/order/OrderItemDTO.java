@@ -45,10 +45,10 @@ public class OrderItemDTO implements Serializable {
     private BigDecimal price;
 
     @Schema(description = "Creation time")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     @Schema(description = "Update time")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
     @Schema(description = "Created by")
     private Long createBy;

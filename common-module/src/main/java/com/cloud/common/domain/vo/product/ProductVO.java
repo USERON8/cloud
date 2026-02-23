@@ -38,12 +38,27 @@ public class ProductVO {
     
 
 
-    private Integer categoryId;
+    private Long categoryId;
+
+    
+
+
+    private Long brandId;
 
     
 
 
     private Integer status;
+
+    
+
+
+    private String description;
+
+    
+
+
+    private String imageUrl;
 
     
 

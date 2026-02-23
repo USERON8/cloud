@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
@@ -31,7 +32,13 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final JwtEncoder jwtEncoder;
     private final OAuth2ResponseUtil oauth2ResponseUtil;
     private final GitHubUserInfoService gitHubUserInfoService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    @Value("${app.oauth2.github.redirect.success-url:http://127.0.0.1:3000/auth/success}")
+    private String githubSuccessRedirectUrl;
+
+    @Value("${app.oauth2.github.redirect.error-url:http://127.0.0.1:3000/auth/error}")
+    private String githubErrorRedirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -67,8 +74,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         try {
             String responseJson = objectMapper.writeValueAsString(loginResponse);
             String encodedResponse = URLEncoder.encode(responseJson, StandardCharsets.UTF_8);
-            String redirectUrl = String.format("http://127.0.0.1:3000/auth/success?data=%s", encodedResponse);
-            response.sendRedirect(redirectUrl);
+            response.sendRedirect(githubSuccessRedirectUrl + "?data=" + encodedResponse);
         } catch (Exception e) {
             log.error("Failed to build success redirect URL", e);
             handleError(response, "Login succeeded but redirect failed");
@@ -78,8 +84,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private void handleError(HttpServletResponse response, String errorMessage) throws IOException {
         try {
             String encodedError = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
-            String redirectUrl = String.format("http://127.0.0.1:3000/auth/error?message=%s", encodedError);
-            response.sendRedirect(redirectUrl);
+            response.sendRedirect(githubErrorRedirectUrl + "?message=" + encodedError);
         } catch (Exception e) {
             log.error("Failed to build error redirect URL", e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

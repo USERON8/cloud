@@ -59,6 +59,13 @@ public class UserFeignController implements UserFeignClient {
     }
 
     @Override
+    @GetMapping("/oauth")
+    public UserDTO findByOAuthProvider(@RequestParam("oauthProvider") String oauthProvider,
+                                       @RequestParam("oauthProviderId") String oauthProviderId) {
+        return userService.findByOAuthProvider(oauthProvider, oauthProviderId);
+    }
+
+    @Override
     @PostMapping("/github/create")
     public UserDTO createGitHubUser(@RequestBody GitHubUserDTO githubUserDTO) {
         return userService.createGitHubUser(githubUserDTO);

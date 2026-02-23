@@ -321,7 +321,7 @@ docker-compose up -d mysql redis nacos rocketmq
 ### 数据库初始化
 
 ```bash
-mysql -h localhost -u root -p < sql/init/initdb_product.sql
+mysql -h localhost -u root -p < sql/init/product-service/init.sql
 ```
 
 ### 启动服务

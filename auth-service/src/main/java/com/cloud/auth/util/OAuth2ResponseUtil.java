@@ -145,9 +145,10 @@ public class OAuth2ResponseUtil {
                     .issuedAt(now)
                     .expiresAt(expiresAt)
                     .subject(userDTO.getUsername())
+                    .claim("username", userDTO.getUsername())
                     .claim("scope", "read write user.read user.write internal_api")
                     .claim("user_id", userDTO.getId())
-                    .claim("user_type", userDTO.getUserType())
+                    .claim("user_type", userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null)
                     .claim("nickname", userDTO.getNickname())
                     .build();
 

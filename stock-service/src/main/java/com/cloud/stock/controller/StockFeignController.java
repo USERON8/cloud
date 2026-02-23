@@ -39,6 +39,7 @@ public class StockFeignController implements StockFeignClient {
         vo.setFrozenQuantity(stock.getFrozenQuantity());
         vo.setAvailableQuantity(stock.getAvailableQuantity());
         vo.setStockStatus(stock.getStockStatus());
+        vo.setLowStockThreshold(stock.getLowStockThreshold());
         vo.setCreatedAt(stock.getCreatedAt());
         vo.setUpdatedAt(stock.getUpdatedAt());
         return vo;

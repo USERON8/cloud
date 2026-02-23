@@ -42,6 +42,8 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
+        import-check:
+          enabled: false
 
     # Comment sanitized for UTF-8 compatibility.
     gateway:
@@ -122,19 +124,6 @@ spring:
               - "X-Requested-With"
             allowCredentials: true
             maxAge: 3600
-
-      # Comment sanitized for UTF-8 compatibility.
-      default-filters:
-        - name: Security
-          args:
-            enableIpCheck: true
-            enableRateLimit: true
-            enableTokenCheck: true
-            enablePerformanceMonitoring: true
-
-  # Comment sanitized for UTF-8 compatibility.
-  config:
-    import: optional:nacos:common
 
   autoconfigure:
     exclude:

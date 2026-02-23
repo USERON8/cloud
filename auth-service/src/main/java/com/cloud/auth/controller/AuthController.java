@@ -74,14 +74,14 @@ public class AuthController {
             throw new ResourceNotFoundException("User", username);
         }
 
-        if (user.getStatus() == null || user.getStatus() != 1) {
+        if (user.getStatus() != null && user.getStatus() != 1) {
             throw new BusinessException(ResultCode.USER_DISABLED);
         }
 
         if (loginRequestDTO.getUserType() != null
                 && !loginRequestDTO.getUserType().isBlank()
-                && (user.getUserType() == null
-                || !loginRequestDTO.getUserType().equalsIgnoreCase(user.getUserType().getCode()))) {
+                && user.getUserType() != null
+                && !loginRequestDTO.getUserType().equalsIgnoreCase(user.getUserType().getCode())) {
             throw new BusinessException(ResultCode.USER_TYPE_MISMATCH);
         }
 
@@ -96,13 +96,6 @@ public class AuthController {
         OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(user, null);
         LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, user);
         return Result.success(response);
-    }
-
-    @PostMapping("/users/register-and-login")
-    @Operation(summary = "Register and login")
-    public Result<LoginResponseDTO> registerAndLogin(
-            @RequestBody @NotNull RegisterRequestDTO registerRequestDTO) {
-        return register(registerRequestDTO);
     }
 
     @DeleteMapping("/sessions")

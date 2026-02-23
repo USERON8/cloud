@@ -49,7 +49,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "user", key = "'username:' + #username", unless = "#result == null")
     public UserDTO findByUsername(String username) {
         if (StringUtils.isBlank(username)) {
             throw new BusinessException("username is required");
@@ -294,7 +293,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setAvatarUrl(githubUserDTO.getAvatarUrl());
         user.setUserType(UserType.USER.getCode());
         user.setStatus(1);
-        user.setPhone("00000000000");
+        user.setPhone(null);
         user.setGithubId(githubUserDTO.getGithubId());
         user.setGithubUsername(githubUserDTO.getLogin());
         user.setOauthProvider("github");

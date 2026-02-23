@@ -45,7 +45,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             if (userDTO == null) {
                 throw new ResourceNotFoundException("User", username);
             }
-            if (userDTO.getStatus() == null || userDTO.getStatus() != 1) {
+            if (userDTO.getStatus() != null && userDTO.getStatus() != 1) {
                 throw new BusinessException(ResultCode.USER_DISABLED);
             }
 

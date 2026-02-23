@@ -118,6 +118,10 @@ app:
       key-id: ${APP_JWT_KEY_ID:auth-service-key}
       allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:true}
   oauth2:
+    github:
+      redirect:
+        success-url: ${APP_OAUTH2_GITHUB_SUCCESS_URL:http://127.0.0.1:3000/auth/success}
+        error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:3000/auth/error}
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}

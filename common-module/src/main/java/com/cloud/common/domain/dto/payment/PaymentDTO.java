@@ -23,7 +23,7 @@ public class PaymentDTO implements Serializable {
     @NotNull(message = "Order ID cannot be null")
     private Long orderId;
 
-    @Size(max = 32, message = "Order number length must be less than or equal to 32")
+    @Size(max = 64, message = "Order number length must be less than or equal to 64")
     private String orderNo;
 
     @NotNull(message = "User ID cannot be null")

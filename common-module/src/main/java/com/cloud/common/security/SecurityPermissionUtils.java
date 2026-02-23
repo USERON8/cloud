@@ -67,6 +67,10 @@ public final class SecurityPermissionUtils {
     public static String getCurrentUsername(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             Jwt jwt = jwtAuth.getToken();
+            String username = jwt.getClaimAsString("username");
+            if (username != null && !username.isBlank()) {
+                return username;
+            }
             return jwt.getClaimAsString("user_name");
         }
         return authentication != null ? authentication.getName() : null;

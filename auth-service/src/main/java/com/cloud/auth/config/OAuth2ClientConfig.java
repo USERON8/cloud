@@ -40,22 +40,24 @@ public class OAuth2ClientConfig {
     public ClientRegistrationRepository clientRegistrationRepository() {
         List<ClientRegistration> registrations = new ArrayList<>();
 
-        if (StringUtils.hasText(githubClientId) && StringUtils.hasText(githubClientSecret)) {
-            ClientRegistration githubClient = ClientRegistration.withRegistrationId("github")
-                    .clientId(githubClientId)
-                    .clientSecret(githubClientSecret)
-                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                    .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-                    .scope("read:user", "user:email")
-                    .authorizationUri("https://github.com/login/oauth/authorize")
-                    .tokenUri("https://github.com/login/oauth/access_token")
-                    .userInfoUri("https://api.github.com/user")
-                    .userNameAttributeName("id")
-                    .clientName("GitHub")
-                    .build();
-            registrations.add(githubClient);
+        if (!StringUtils.hasText(githubClientId) || !StringUtils.hasText(githubClientSecret)) {
+            throw new IllegalStateException("Missing GitHub OAuth2 credentials. Set spring.security.oauth2.client.registration.github.client-id and client-secret");
         }
+
+        ClientRegistration githubClient = ClientRegistration.withRegistrationId("github")
+                .clientId(githubClientId)
+                .clientSecret(githubClientSecret)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                .scope("read:user", "user:email")
+                .authorizationUri("https://github.com/login/oauth/authorize")
+                .tokenUri("https://github.com/login/oauth/access_token")
+                .userInfoUri("https://api.github.com/user")
+                .userNameAttributeName("id")
+                .clientName("GitHub")
+                .build();
+        registrations.add(githubClient);
 
         if (!StringUtils.hasText(serviceClientSecret)) {
             throw new IllegalStateException("Missing client-service secret. Set spring.security.oauth2.client.registration.client-service.client-secret");

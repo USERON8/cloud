@@ -42,9 +42,10 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             try {
                 UserDTO user = userFeignClient.findByUsername(username);
                 if (user != null) {
+                    String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                     context.getClaims()
                             .claim("user_id", user.getId())
-                            .claim("user_type", user.getUserType())
+                            .claim("user_type", userTypeCode)
                             .claim("nickname", user.getNickname())
                             .claim("status", user.getStatus());
                 }
@@ -59,9 +60,10 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
                 try {
                     UserDTO user = userFeignClient.findByUsername(principalName);
                     if (user != null) {
+                        String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                         context.getClaims()
                                 .claim("user_id", user.getId())
-                                .claim("user_type", user.getUserType())
+                                .claim("user_type", userTypeCode)
                                 .claim("nickname", user.getNickname())
                                 .claim("status", user.getStatus());
                     }

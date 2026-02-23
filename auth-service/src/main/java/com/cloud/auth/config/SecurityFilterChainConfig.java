@@ -1,7 +1,9 @@
 package com.cloud.auth.config;
 
+import com.cloud.auth.handler.OAuth2AuthenticationSuccessHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -19,18 +21,27 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Slf4j
 @Configuration
 public class SecurityFilterChainConfig {
 
     private final JwtDecoder jwtDecoder;
     private final JwtAuthenticationConverter jwtAuthenticationConverter;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+
+    @Value("${app.oauth2.github.redirect.error-url:http://127.0.0.1:3000/auth/error}")
+    private String githubErrorRedirectUrl;
 
     public SecurityFilterChainConfig(
             JwtDecoder jwtDecoder,
-            @Qualifier("enhancedJwtAuthenticationConverter") JwtAuthenticationConverter jwtAuthenticationConverter) {
+            @Qualifier("enhancedJwtAuthenticationConverter") JwtAuthenticationConverter jwtAuthenticationConverter,
+            OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) {
         this.jwtDecoder = jwtDecoder;
         this.jwtAuthenticationConverter = jwtAuthenticationConverter;
+        this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
     }
 
     @Bean
@@ -42,7 +53,7 @@ public class SecurityFilterChainConfig {
         http
                 .securityMatcher((RequestMatcher) request -> {
                     String path = request.getRequestURI();
-                    return path.startsWith("/oauth2/")
+                    return (path.startsWith("/oauth2/") && !path.startsWith("/oauth2/authorization/"))
                             || path.startsWith("/.well-known/")
                             || path.startsWith("/connect/")
                             || "/userinfo".equals(path);
@@ -70,12 +81,7 @@ public class SecurityFilterChainConfig {
                                 HttpMethod.POST,
                                 "/auth/users/register",
                                 "/auth/sessions",
-                                "/auth/users/register-and-login",
-                                "/auth/tokens/refresh",
-                                "/auth/register",
-                                "/auth/login",
-                                "/auth/register-and-login",
-                                "/auth/refresh-token"
+                                "/auth/tokens/refresh"
                         ).permitAll()
                         .requestMatchers("/auth/oauth2/github/**").permitAll()
                         .requestMatchers("/admin/**", "/management/**").hasRole("ADMIN")
@@ -122,20 +128,22 @@ public class SecurityFilterChainConfig {
                                 "/doc.html/**",
                                 "/favicon.ico",
                                 "/error",
-                                "/login",
-                                "/login/**",
-                                "/auth/register",
-                                "/auth/login",
-                                "/auth/logout",
-                                "/auth/register-and-login",
-                                "/auth/refresh-token",
-                                "/auth/github/**"
+                                "/oauth2/authorization/**",
+                                "/login/oauth2/**",
+                                "/auth/oauth2/github/**"
                         ).permitAll()
                         .anyRequest().denyAll()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            String encodedError = URLEncoder.encode(exception.getMessage(), StandardCharsets.UTF_8);
+                            response.sendRedirect(githubErrorRedirectUrl + "?message=" + encodedError);
+                        })
+                )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }

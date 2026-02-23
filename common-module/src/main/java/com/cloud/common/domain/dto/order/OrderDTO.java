@@ -26,7 +26,7 @@ public class OrderDTO implements Serializable {
     private Long id;
 
     @Schema(description = "Order number")
-    @Size(max = 32, message = "Order number length must be less than or equal to 32")
+    @Size(max = 64, message = "Order number length must be less than or equal to 64")
     private String orderNo;
 
     @Schema(description = "User ID")
@@ -78,11 +78,11 @@ public class OrderDTO implements Serializable {
 
     @Schema(description = "Creation time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     @Schema(description = "Update time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
     @Schema(description = "Created by")
     private Long createBy;

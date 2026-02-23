@@ -76,24 +76,32 @@ docker-compose -f docker-compose.yml up -d
 
 初始化脚本位于 `sql/init/`，按需执行：
 
-- `sql/init/initdb_nacos.sql`
-- `sql/init/initdb_user.sql`
-- `sql/init/initdb_product.sql`
-- `sql/init/initdb_stock.sql`
-- `sql/init/initdb_order.sql`
-- `sql/init/initdb_payment.sql`
-- `sql/init/initdb_refund_notification.sql`
+- `sql/init/infra/nacos/init.sql`
+- `sql/init/user-service/init.sql`
+- `sql/init/product-service/init.sql`
+- `sql/init/stock-service/init.sql`
+- `sql/init/order-service/init.sql`
+- `sql/init/payment-service/init.sql`
+
+测试数据脚本位于 `sql/test/`：
+
+- `sql/test/user-service/test.sql`
+- `sql/test/product-service/test.sql`
+- `sql/test/stock-service/test.sql`
+- `sql/test/order-service/test.sql`
+- `sql/test/payment-service/test.sql`
+
+历史迁移/监控/遗留脚本已归档到 `sql/archive/`。
 
 示例（Windows PowerShell）：
 
 ```powershell
-mysql -u root -p < sql/init/initdb_nacos.sql
-mysql -u root -p < sql/init/initdb_user.sql
-mysql -u root -p < sql/init/initdb_product.sql
-mysql -u root -p < sql/init/initdb_stock.sql
-mysql -u root -p < sql/init/initdb_order.sql
-mysql -u root -p < sql/init/initdb_payment.sql
-mysql -u root -p < sql/init/initdb_refund_notification.sql
+mysql -u root -p < sql/init/infra/nacos/init.sql
+mysql -u root -p < sql/init/user-service/init.sql
+mysql -u root -p < sql/init/product-service/init.sql
+mysql -u root -p < sql/init/stock-service/init.sql
+mysql -u root -p < sql/init/order-service/init.sql
+mysql -u root -p < sql/init/payment-service/init.sql
 ```
 
 ### 4.4 Nacos 基础说明
