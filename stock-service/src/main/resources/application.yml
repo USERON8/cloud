@@ -127,10 +127,10 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   group-configs:
-    - group: 'stock-manage'
-      paths-to-match: '/api/v1/stock/manage/**'
-    - group: 'stock-query'
-      paths-to-match: '/api/v1/stock/query/**'
+    - group: 'stock-api'
+      paths-to-match: '/api/stocks/**'
+    - group: 'stock-internal'
+      paths-to-match: '/internal/stock/**'
 
 # Comment sanitized for UTF-8 compatibility.
 knife4j:

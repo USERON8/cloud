@@ -4,25 +4,28 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.api.stock.StockFeignClient;
 import com.cloud.common.domain.dto.product.ProductDTO;
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.vo.product.ProductVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.PageResult;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
 import com.cloud.product.messaging.ProductSearchSyncProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
+import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Product;
+import com.cloud.product.module.entity.Shop;
 import com.cloud.product.service.CategoryService;
 import com.cloud.product.service.ProductService;
 import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -39,13 +42,19 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private final ProductConverter productConverter;
     private final ShopService shopService;
     private final CategoryService categoryService;
-    private final StockFeignClient stockFeignClient;
     private final ProductSearchSyncProducer productSearchSyncProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
     public Long createProduct(ProductRequestDTO requestDTO) {
         validateProductRequest(requestDTO, true);
+
+        Shop shop = requireExistingShop(requestDTO.getShopId());
+        validateOperationPermissionForShop(shop.getMerchantId(), null);
+        if (requestDTO.getCategoryId() != null) {
+            requireExistingCategory(requestDTO.getCategoryId());
+        }
 
         Product product = new Product();
         applyRequest(product, requestDTO);
@@ -54,77 +63,82 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!saved) {
             throw new BusinessException("Create product failed");
         }
-        Product persisted = getById(product.getId());
-        if (persisted == null) {
-            throw new BusinessException("Created product not found");
-        }
-        if (!productSearchSyncProducer.sendProductCreated(persisted)) {
-            throw new BusinessException("Send product-created search sync event failed");
-        }
+
+        Product persisted = requireExistingProduct(product.getId());
+        publishProductCreatedEventOrThrow(persisted);
         return product.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean updateProduct(Long id, ProductRequestDTO requestDTO) {
         validateId(id);
         validateProductRequest(requestDTO, false);
 
-        Product product = getById(id);
-        if (product == null) {
-            throw new ProductServiceException.ProductNotFoundException(id);
+        Product existing = requireExistingProduct(id);
+        validateOperationPermissionForProduct(existing);
+
+        if (requestDTO.getShopId() != null) {
+            Shop targetShop = requireExistingShop(requestDTO.getShopId());
+            validateOperationPermissionForShop(targetShop.getMerchantId(), id);
+        }
+        if (requestDTO.getCategoryId() != null) {
+            requireExistingCategory(requestDTO.getCategoryId());
         }
 
-        applyRequest(product, requestDTO);
-        boolean updated = updateById(product);
+        applyRequest(existing, requestDTO);
+        boolean updated = updateById(existing);
         if (!updated) {
             return false;
         }
-        Product persisted = getById(id);
-        if (persisted == null) {
-            throw new ProductServiceException.ProductNotFoundException(id);
-        }
-        if (!productSearchSyncProducer.sendProductUpdated(persisted)) {
-            throw new BusinessException("Send product-updated search sync event failed");
-        }
+
+        Product persisted = requireExistingProduct(id);
+        publishProductUpdatedEventOrThrow(persisted);
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean deleteProduct(Long id) {
         validateId(id);
-        Product existing = getById(id);
-        if (existing == null) {
-            throw new ProductServiceException.ProductNotFoundException(id);
-        }
+        Product existing = requireExistingProduct(id);
+        validateOperationPermissionForProduct(existing);
+
         boolean deleted = removeById(id);
         if (!deleted) {
             return false;
         }
-        if (!productSearchSyncProducer.sendProductDeleted(id)) {
-            throw new BusinessException("Send product-deleted search sync event failed");
-        }
+        publishProductDeletedEventOrThrow(id);
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchDeleteProducts(List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
+
         List<Product> existingProducts = listByIds(ids);
+        validateBatchProductPermissions(existingProducts, ids);
+
         boolean deleted = removeByIds(ids);
         if (!deleted) {
             return false;
         }
+
         for (Product product : existingProducts) {
-            if (product == null || product.getId() == null) {
-                continue;
-            }
-            if (!productSearchSyncProducer.sendProductDeleted(product.getId())) {
-                throw new BusinessException("Send batch product-deleted search sync event failed");
+            if (product != null && product.getId() != null) {
+                publishProductDeletedEventOrThrow(product.getId());
             }
         }
         return true;
@@ -132,13 +146,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "productCache", key = "#id", condition = "#id != null")
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "productCache", key = "#id", condition = "#id != null")
     public ProductVO getProductById(Long id) {
         validateId(id);
-        Product product = getById(id);
-        if (product == null) {
-            throw new ProductServiceException.ProductNotFoundException(id);
-        }
+        Product product = requireExistingProduct(id);
         return productConverter.toVO(product);
     }
 
@@ -170,6 +181,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(readOnly = true)
     public List<ProductVO> getProductsByCategoryId(Long categoryId, Integer status) {
+        if (categoryId == null || categoryId <= 0) {
+            throw new ProductServiceException.CategoryNotFoundException("Invalid category id");
+        }
+        if (categoryService.getById(categoryId) == null) {
+            throw new ProductServiceException.CategoryNotFoundException(categoryId);
+        }
+
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getCategoryId, categoryId);
         if (status != null) {
@@ -205,64 +223,108 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean enableProduct(Long id) {
         return updateProductStatus(id, 1);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean disableProduct(Long id) {
         return updateProductStatus(id, 0);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchEnableProducts(List<Long> ids) {
         return batchUpdateProductStatus(ids, 1);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchDisableProducts(List<Long> ids) {
         return batchUpdateProductStatus(ids, 0);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean updateStock(Long id, Integer stock) {
         validateId(id);
         if (stock == null || stock < 0) {
             throw new BusinessException("Invalid stock value");
         }
+
+        requireExistingProduct(id);
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id).set(Product::getStock, stock);
-        return update(updateWrapper);
+        boolean updated = update(updateWrapper);
+        if (updated) {
+            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean increaseStock(Long id, Integer amount) {
         validateId(id);
         if (amount == null || amount <= 0) {
             throw new BusinessException("Increase amount must be positive");
         }
+
+        requireExistingProduct(id);
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(Product::getId, id).setSql("stock_quantity = stock_quantity + " + amount);
-        return update(updateWrapper);
+        updateWrapper.eq(Product::getId, id)
+                .setSql("stock_quantity = stock_quantity + " + amount);
+        boolean updated = update(updateWrapper);
+        if (updated) {
+            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "productCache", key = "#id"),
+            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
+    })
     public Boolean decreaseStock(Long id, Integer amount) {
         validateId(id);
         if (amount == null || amount <= 0) {
             throw new BusinessException("Decrease amount must be positive");
         }
+
+        Product existing = requireExistingProduct(id);
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id)
                 .ge(Product::getStock, amount)
                 .setSql("stock_quantity = stock_quantity - " + amount);
-        return update(updateWrapper);
+        boolean updated = update(updateWrapper);
+        if (!updated) {
+            int available = existing.getStock() == null ? 0 : existing.getStock();
+            throw new ProductServiceException.StockInsufficientException(id, amount, available);
+        }
+
+        publishProductUpdatedEventOrThrow(requireExistingProduct(id));
+        return true;
     }
 
     @Override
@@ -272,10 +334,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (amount == null || amount <= 0) {
             return true;
         }
-        Product product = getById(id);
-        if (product == null) {
-            throw new ProductServiceException.ProductNotFoundException(id);
-        }
+        Product product = requireExistingProduct(id);
         return product.getStock() != null && product.getStock() >= amount;
     }
 
@@ -395,9 +454,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 if (product == null || product.getId() == null) {
                     continue;
                 }
-                if (!productSearchSyncProducer.sendProductUpdated(product)) {
-                    throw new BusinessException("Send product full-sync event failed, productId=" + product.getId());
-                }
+                publishProductUpdatedEventOrThrow(product);
                 sentCount++;
             }
 
@@ -423,6 +480,18 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
         if (create && !StringUtils.hasText(requestDTO.getName())) {
             throw new BusinessException("Product name cannot be blank");
+        }
+        if (create && requestDTO.getShopId() == null) {
+            throw new BusinessException("Shop id is required");
+        }
+        if (requestDTO.getPrice() != null && requestDTO.getPrice().signum() < 0) {
+            throw new BusinessException("Product price cannot be negative");
+        }
+        if (requestDTO.getStockQuantity() != null && requestDTO.getStockQuantity() < 0) {
+            throw new BusinessException("Stock quantity cannot be negative");
+        }
+        if (requestDTO.getStatus() != null && requestDTO.getStatus() != 0 && requestDTO.getStatus() != 1) {
+            throw new BusinessException("Product status must be 0 or 1");
         }
     }
 
@@ -487,17 +556,131 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     private Boolean updateProductStatus(Long id, Integer status) {
         validateId(id);
+        Product existing = requireExistingProduct(id);
+        validateOperationPermissionForProduct(existing);
+
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id).set(Product::getStatus, status);
-        return update(updateWrapper);
+        boolean updated = update(updateWrapper);
+        if (updated) {
+            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
+        }
+        return updated;
     }
 
     private Boolean batchUpdateProductStatus(List<Long> ids, Integer status) {
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
+
+        List<Product> existingProducts = listByIds(ids);
+        validateBatchProductPermissions(existingProducts, ids);
+
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.in(Product::getId, ids).set(Product::getStatus, status);
-        return update(updateWrapper);
+        boolean updated = update(updateWrapper);
+        if (!updated) {
+            return false;
+        }
+
+        for (Long id : ids) {
+            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
+        }
+        return true;
+    }
+
+    private Product requireExistingProduct(Long id) {
+        Product product = getById(id);
+        if (product == null) {
+            throw new ProductServiceException.ProductNotFoundException(id);
+        }
+        return product;
+    }
+
+    private Shop requireExistingShop(Long shopId) {
+        if (shopId == null || shopId <= 0) {
+            throw new BusinessException("Invalid shop id");
+        }
+        Shop shop = shopService.getById(shopId);
+        if (shop == null) {
+            throw new BusinessException("Shop not found: " + shopId);
+        }
+        return shop;
+    }
+
+    private Category requireExistingCategory(Long categoryId) {
+        if (categoryId == null || categoryId <= 0) {
+            throw new ProductServiceException.CategoryNotFoundException("Invalid category id");
+        }
+        Category category = categoryService.getById(categoryId);
+        if (category == null) {
+            throw new ProductServiceException.CategoryNotFoundException(categoryId);
+        }
+        return category;
+    }
+
+    private void validateBatchProductPermissions(List<Product> existingProducts, List<Long> requestedIds) {
+        if (CollectionUtils.isEmpty(existingProducts)) {
+            throw new ProductServiceException.ProductNotFoundException("No product found in request");
+        }
+        if (existingProducts.size() != requestedIds.size()) {
+            throw new ProductServiceException.ProductNotFoundException("Some products do not exist");
+        }
+        for (Product product : existingProducts) {
+            validateOperationPermissionForProduct(product);
+        }
+    }
+
+    private void validateOperationPermissionForProduct(Product product) {
+        if (product == null || product.getId() == null) {
+            throw new ProductServiceException.ProductNotFoundException("Product does not exist");
+        }
+        if (product.getShopId() == null) {
+            throw new ProductServiceException.ProductPermissionException(
+                    "Product does not contain a valid shop owner reference: productId=" + product.getId()
+            );
+        }
+        Shop shop = requireExistingShop(product.getShopId());
+        validateOperationPermissionForShop(shop.getMerchantId(), product.getId());
+    }
+
+    private void validateOperationPermissionForShop(Long merchantId, Long productId) {
+        Authentication authentication = SecurityPermissionUtils.getCurrentAuthentication();
+        if (!SecurityPermissionUtils.isAuthenticated(authentication)) {
+            return;
+        }
+        if (SecurityPermissionUtils.hasAuthority(authentication, "SCOPE_internal_api")
+                || SecurityPermissionUtils.isAdmin(authentication)) {
+            return;
+        }
+        if (!SecurityPermissionUtils.isMerchant(authentication)) {
+            throw new ProductServiceException.ProductPermissionException("Current user cannot manage products");
+        }
+
+        String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
+        if (!StringUtils.hasText(currentUserId) || !currentUserId.equals(String.valueOf(merchantId))) {
+            String targetIdText = productId == null ? "N/A" : String.valueOf(productId);
+            throw new ProductServiceException.ProductPermissionException(
+                    String.format("Merchant %s cannot manage product %s", currentUserId, targetIdText)
+            );
+        }
+    }
+
+    private void publishProductCreatedEventOrThrow(Product product) {
+        if (!productSearchSyncProducer.sendProductCreated(product)) {
+            throw new BusinessException("Send product-created search sync event failed");
+        }
+    }
+
+    private void publishProductUpdatedEventOrThrow(Product product) {
+        if (!productSearchSyncProducer.sendProductUpdated(product)) {
+            throw new BusinessException("Send product-updated search sync event failed");
+        }
+    }
+
+    private void publishProductDeletedEventOrThrow(Long productId) {
+        if (!productSearchSyncProducer.sendProductDeleted(productId)) {
+            throw new BusinessException("Send product-deleted search sync event failed");
+        }
     }
 }

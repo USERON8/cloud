@@ -1,6 +1,7 @@
 package com.cloud.product.cache.warmup;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.mapper.ProductMapper;
 import com.cloud.product.module.entity.Product;
 import lombok.RequiredArgsConstructor;
@@ -11,74 +12,51 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class ProductCacheWarmupStrategy implements com.cloud.common.cache.warmup.CacheWarmupStrategy {
 
     private final ProductMapper productMapper;
+    private final ProductConverter productConverter;
 
     @Override
     public int warmup(CacheManager cacheManager) {
-        int warmedUpCount = 0;
+        Cache productCache = cacheManager.getCache("productCache");
+        if (productCache == null) {
+            log.warn("Skip product cache warmup because productCache is not configured");
+            return 0;
+        }
 
         try {
-            
-
-            return warmedUpCount;
-
+            return warmupLatestEnabledProducts(productCache);
         } catch (Exception e) {
-            log.error("鍟嗗搧缂撳瓨棰勭儹澶辫触", e);
-            return warmedUpCount;
+            log.error("Product cache warmup failed", e);
+            return 0;
         }
     }
 
-    
+    private int warmupLatestEnabledProducts(Cache cache) {
+        LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Product::getStatus, 1)
+                .orderByDesc(Product::getUpdatedAt)
+                .last("LIMIT 100");
 
-
-    private int warmupHotProducts(Cache cache) {
-        try {
-            LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Product::getStatus, 1)  
-                    .eq(Product::getIsHot, 1)  
-                    .orderByDesc(Product::getSalesCount)  
-                    .last("LIMIT 50");
-
-            List<Product> hotProducts = productMapper.selectList(queryWrapper);
-            
-
-            int count = 0;
-            for (Product product : hotProducts) {
-                try {
-                    cache.put(product.getId(), product);
-                    count++;
-                } catch (Exception e) {
-                    log.warn("棰勭儹鐑攢鍟嗗搧 {} 澶辫触: {}", product.getId(), e.getMessage());
-                }
+        List<Product> products = productMapper.selectList(queryWrapper);
+        int count = 0;
+        for (Product product : products) {
+            if (product == null || product.getId() == null) {
+                continue;
             }
-
-            
-
-            return count;
-
-        } catch (Exception e) {
-            log.error("棰勭儹鎺ㄨ崘鍟嗗搧澶辫触", e);
-            return 0;
+            try {
+                cache.put(product.getId(), productConverter.toVO(product));
+                count++;
+            } catch (Exception e) {
+                log.warn("Warmup product cache entry failed: productId={}", product.getId(), e);
+            }
         }
+        log.info("Product cache warmup completed: warmedCount={}", count);
+        return count;
     }
 
     @Override

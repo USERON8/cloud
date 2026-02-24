@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -16,14 +18,15 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Configuration
@@ -53,8 +56,7 @@ public class ResourceServerConfig {
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/internal/product/**").hasAuthority("SCOPE_internal_api")
-                        .requestMatchers("/api/product/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN")
-                        .requestMatchers("/api/category/**").hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/product/**", "/api/category/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -94,13 +96,37 @@ public class ResourceServerConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
-        scopeConverter.setAuthorityPrefix("SCOPE_");
-        scopeConverter.setAuthoritiesClaimName("scope");
-
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Collection<GrantedAuthority> authorities = new LinkedHashSet<>(scopeConverter.convert(jwt));
+            Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+
+            authorities.addAll(extractScopeAuthorities(jwt.getClaimAsString("scope")));
+            Object scpClaim = jwt.getClaim("scp");
+            if (scpClaim instanceof Collection<?> scpCollection) {
+                authorities.addAll(
+                        scpCollection.stream()
+                                .filter(Objects::nonNull)
+                                .map(Object::toString)
+                                .map(this::normalizeScope)
+                                .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+                                .collect(Collectors.toSet())
+                );
+            } else if (scpClaim instanceof String scpString) {
+                authorities.addAll(extractScopeAuthorities(scpString));
+            }
+
+            Object authorityClaim = jwt.getClaim("authorities");
+            if (authorityClaim instanceof Collection<?> authorityCollection) {
+                authorities.addAll(
+                        authorityCollection.stream()
+                                .filter(Objects::nonNull)
+                                .map(Object::toString)
+                                .filter(value -> !value.isBlank())
+                                .map(SimpleGrantedAuthority::new)
+                                .collect(Collectors.toSet())
+                );
+            }
+
             String userType = jwt.getClaimAsString("user_type");
             if (userType != null && !userType.isBlank()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + userType.toUpperCase(Locale.ROOT)));
@@ -108,5 +134,23 @@ public class ResourceServerConfig {
             return authorities;
         });
         return converter;
+    }
+
+    private Collection<? extends GrantedAuthority> extractScopeAuthorities(String scopeClaim) {
+        if (scopeClaim == null || scopeClaim.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(scopeClaim.trim().split("\\s+"))
+                .map(this::normalizeScope)
+                .filter(value -> !value.isBlank())
+                .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+                .collect(Collectors.toSet());
+    }
+
+    private String normalizeScope(String scope) {
+        if (scope == null) {
+            return "";
+        }
+        return scope.trim().replace('.', ':').toLowerCase(Locale.ROOT);
     }
 }

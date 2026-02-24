@@ -41,7 +41,7 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get products", description = "Get products by page and filter")
     public Result<PageResult<ProductVO>> getProducts(
             @Parameter(description = "Page index") @RequestParam(defaultValue = "1") Integer page,
@@ -63,7 +63,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Search products", description = "Search products by name")
     public Result<List<ProductVO>> findByName(
             @Parameter(description = "Name") @RequestParam @NotNull String name) {
@@ -72,7 +72,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get product", description = "Get product by id")
     public Result<ProductVO> getProductById(
             @Parameter(description = "Product id") @PathVariable @Positive Long id) {
@@ -126,7 +126,7 @@ public class ProductController {
     }
 
     @GetMapping("/batch")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get products by ids", description = "Batch query products")
     public Result<List<ProductVO>> getProductsByIds(@RequestParam List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
@@ -136,7 +136,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/profile")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get profile", description = "Get product profile")
     public Result<ProductVO> getProductProfile(@PathVariable Long id) {
         return getProductById(id);
@@ -166,7 +166,7 @@ public class ProductController {
     }
 
     @GetMapping("/category/{categoryId}")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get by category", description = "Get products by category")
     public Result<List<ProductVO>> getProductsByCategoryId(
             @PathVariable @NotNull @Positive Long categoryId,
@@ -176,7 +176,7 @@ public class ProductController {
     }
 
     @GetMapping("/brand/{brandId}")
-    @PreAuthorize("hasAuthority('SCOPE_product:read')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Get by brand", description = "Get products by brand")
     public Result<List<ProductVO>> getProductsByBrandId(
             @PathVariable @NotNull @Positive Long brandId,

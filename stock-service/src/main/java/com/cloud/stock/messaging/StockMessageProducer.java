@@ -13,12 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-
-
-
-
-
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,18 +20,8 @@ public class StockMessageProducer {
 
     private final StreamBridge streamBridge;
 
-    
-
-
-
-
-
-
-
-
     public boolean sendStockFreezeFailedEvent(Long orderId, String orderNo, String reason) {
         try {
-            
             StockFreezeFailedEvent event = StockFreezeFailedEvent.builder()
                     .orderId(orderId)
                     .orderNo(orderNo)
@@ -47,34 +31,25 @@ public class StockMessageProducer {
                     .eventType("STOCK_FREEZE_FAILED")
                     .build();
 
-            
             Map<String, Object> headers = new HashMap<>();
             headers.put(MessageConst.PROPERTY_KEYS, orderNo);
             headers.put(MessageConst.PROPERTY_TAGS, "STOCK_FREEZE_FAILED");
             headers.put("eventId", event.getEventId());
             headers.put("eventType", event.getEventType());
 
-            
             Message<StockFreezeFailedEvent> message = MessageBuilder
                     .withPayload(event)
                     .copyHeaders(headers)
                     .build();
 
-            
             boolean result = streamBridge.send("stockFreezeFailedProducer-out-0", message);
-
-            if (result) {
-                
-
-            } else {
-                log.error("鉂?搴撳瓨鍐荤粨澶辫触浜嬩欢鍙戦€佸け璐? orderId={}, orderNo={}, reason={}",
+            if (!result) {
+                log.error("Failed to send stock freeze failed event, orderId={}, orderNo={}, reason={}",
                         orderId, orderNo, reason);
             }
-
             return result;
-
         } catch (Exception e) {
-            log.error("鉂?鍙戦€佸簱瀛樺喕缁撳け璐ヤ簨浠跺紓甯? orderId={}, orderNo={}, reason={}",
+            log.error("Exception while sending stock freeze failed event, orderId={}, orderNo={}, reason={}",
                     orderId, orderNo, reason, e);
             return false;
         }

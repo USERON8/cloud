@@ -3,12 +3,6 @@ package com.cloud.product.exception;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 
-
-
-
-
-
-
 public class ProductServiceException extends BusinessException {
 
     public ProductServiceException(int code, String message) {
@@ -39,14 +33,13 @@ public class ProductServiceException extends BusinessException {
         super(code, message, cause);
     }
 
-    
     public static class ProductNotFoundException extends ProductServiceException {
         public ProductNotFoundException(String message) {
             super(ResultCode.PRODUCT_NOT_FOUND, message);
         }
 
         public ProductNotFoundException(Long productId) {
-            super(ResultCode.PRODUCT_NOT_FOUND, "鍟嗗搧涓嶅瓨鍦紝鍟嗗搧ID: " + productId);
+            super(ResultCode.PRODUCT_NOT_FOUND, "Product not found, productId: " + productId);
         }
     }
 
@@ -63,7 +56,10 @@ public class ProductServiceException extends BusinessException {
 
         public ProductStatusException(Long productId, String currentStatus, String targetStatus) {
             super(ResultCode.PRODUCT_STATUS_ERROR,
-                    String.format("鍟嗗搧鐘舵€侀敊璇紝鍟嗗搧ID: %d锛屽綋鍓嶇姸鎬? %s锛岀洰鏍囩姸鎬? %s", productId, currentStatus, targetStatus));
+                    String.format(
+                            "Invalid product status transition, productId: %d, currentStatus: %s, targetStatus: %s",
+                            productId, currentStatus, targetStatus
+                    ));
         }
     }
 
@@ -73,7 +69,7 @@ public class ProductServiceException extends BusinessException {
         }
 
         public CategoryNotFoundException(Long categoryId) {
-            super(ResultCode.CATEGORY_NOT_FOUND, "鍟嗗搧鍒嗙被涓嶅瓨鍦紝鍒嗙被ID: " + categoryId);
+            super(ResultCode.CATEGORY_NOT_FOUND, "Category not found, categoryId: " + categoryId);
         }
     }
 
@@ -84,7 +80,10 @@ public class ProductServiceException extends BusinessException {
 
         public StockInsufficientException(Long productId, Integer required, Integer available) {
             super(ResultCode.STOCK_INSUFFICIENT,
-                    String.format("搴撳瓨涓嶈冻锛屽晢鍝両D: %d锛岄渶瑕? %d锛屽彲鐢? %d", productId, required, available));
+                    String.format(
+                            "Insufficient stock, productId: %d, required: %d, available: %d",
+                            productId, required, available
+                    ));
         }
     }
 
@@ -94,7 +93,7 @@ public class ProductServiceException extends BusinessException {
         }
 
         public ProductValidationException(String field, String message) {
-            super(ResultCode.PARAM_ERROR, String.format("瀛楁 %s %s", field, message));
+            super(ResultCode.PARAM_ERROR, String.format("Field %s %s", field, message));
         }
     }
 
@@ -104,7 +103,8 @@ public class ProductServiceException extends BusinessException {
         }
 
         public ProductPermissionException(Long userId, Long productId) {
-            super(ResultCode.FORBIDDEN.getCode(), String.format("鐢ㄦ埛 %d 鏃犳潈璁块棶鍟嗗搧 %d", userId, productId));
+            super(ResultCode.FORBIDDEN.getCode(),
+                    String.format("User %d has no permission to access product %d", userId, productId));
         }
     }
 }

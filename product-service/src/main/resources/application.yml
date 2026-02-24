@@ -165,8 +165,8 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   info:
-    title: 閸熷棗鎼ч張宥呭API閺傚洦銆?
-    description: 閹绘劒绶甸崯鍡楁惂缁狅紕鎮婇惄绋垮彠閻ㄥ嚧EST API閹恒儱褰?
+    title: Product Service API
+    description: REST APIs for product, category, and internal product integration.
     version: 1.0.0
     contact:
       name: what's up

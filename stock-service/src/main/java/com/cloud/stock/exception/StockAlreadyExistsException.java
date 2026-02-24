@@ -2,11 +2,6 @@ package com.cloud.stock.exception;
 
 import com.cloud.common.exception.BusinessException;
 
-
-
-
-
-
 public class StockAlreadyExistsException extends BusinessException {
 
     private static final int STOCK_ALREADY_EXISTS_CODE = 3003;
@@ -16,9 +11,8 @@ public class StockAlreadyExistsException extends BusinessException {
     }
 
     public StockAlreadyExistsException(Long productId) {
-        super(STOCK_ALREADY_EXISTS_CODE, String.format("鍟嗗搧ID[%d]鐨勫簱瀛樹俊鎭凡瀛樺湪", productId));
+        super(STOCK_ALREADY_EXISTS_CODE, String.format("Stock already exists for productId=%d", productId));
     }
-
 
     public StockAlreadyExistsException(String message, Throwable cause) {
         super(STOCK_ALREADY_EXISTS_CODE, message, cause);

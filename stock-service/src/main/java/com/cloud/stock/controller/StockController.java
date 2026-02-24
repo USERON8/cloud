@@ -7,11 +7,13 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.stock.module.dto.StockPageDTO;
 import com.cloud.stock.module.entity.Stock;
 import com.cloud.stock.module.entity.StockCount;
 import com.cloud.stock.module.entity.StockLog;
 import com.cloud.stock.service.StockAlertService;
+import com.cloud.stock.service.StockAsyncService;
 import com.cloud.stock.service.StockCountService;
 import com.cloud.stock.service.StockLogService;
 import com.cloud.stock.service.StockService;
@@ -41,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -51,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class StockController {
 
     private final StockService stockService;
+    private final StockAsyncService stockAsyncService;
     private final StockAlertService stockAlertService;
     private final StockCountService stockCountService;
     private final StockLogService stockLogService;
@@ -84,6 +88,7 @@ public class StockController {
     }
 
     @GetMapping("/product/{productId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @Operation(summary = "Get stock by product ID", description = "Get stock detail by product ID")
     public Result<StockDTO> getByProductId(
             @Parameter(description = "Product ID") @PathVariable
@@ -99,6 +104,7 @@ public class StockController {
     }
 
     @PostMapping("/batch/query")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @Operation(summary = "Batch query by product IDs", description = "Batch query stock records by product IDs")
     public Result<List<StockDTO>> getByProductIds(
             @Parameter(description = "Product ID list") @RequestBody
@@ -270,6 +276,7 @@ public class StockController {
     }
 
     @GetMapping("/check/{productId}/{quantity}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @Operation(summary = "Check stock sufficient", description = "Check whether stock is sufficient")
     public Result<Boolean> checkStockSufficient(
             @Parameter(description = "Product ID") @PathVariable
@@ -284,6 +291,7 @@ public class StockController {
     }
 
     @PostMapping("/seckill/{productId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
     @Operation(summary = "Seckill stock out", description = "High-concurrency stock out for flash sale")
     @DistributedLock(
             key = "'seckill:stock:' + #productId",
@@ -603,13 +611,54 @@ public class StockController {
         return Result.success("query successful", logs);
     }
 
+    @PostMapping("/cache/refresh/{productId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "Refresh stock cache", description = "Refresh one stock cache entry asynchronously")
+    public Result<Boolean> refreshStockCache(
+            @Parameter(description = "Product ID") @PathVariable Long productId) {
+        stockAsyncService.refreshStockCacheAsync(productId);
+        return Result.success("stock cache refresh triggered", true);
+    }
+
+    @PostMapping("/cache/refresh/batch")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @Operation(summary = "Batch refresh stock cache", description = "Refresh stock cache entries asynchronously")
+    public Result<Boolean> batchRefreshStockCache(
+            @Parameter(description = "Product ID list") @RequestBody List<Long> productIds) {
+        stockAsyncService.batchRefreshStockCacheAsync(productIds);
+        return Result.success("batch stock cache refresh triggered", true);
+    }
+
+    @PostMapping("/cache/preload")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Preload stock cache", description = "Preload popular stocks into cache asynchronously")
+    public Result<Boolean> preloadStockCache(
+            @Parameter(description = "Preload size")
+            @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit) {
+        stockAsyncService.preloadPopularStocksAsync(limit);
+        return Result.success("stock cache preload triggered", true);
+    }
+
+    @GetMapping("/analytics/value")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Calculate stock value statistics", description = "Calculate stock summary metrics asynchronously")
+    public Result<Map<String, Object>> calculateStockValue() {
+        Map<String, Object> result = stockAsyncService.calculateStockValueAsync().join();
+        return Result.success("query successful", result);
+    }
+
     private Long extractUserId(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
+        if (authentication == null) {
+            return 0L;
+        }
+        String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
+        if (userId == null || userId.isBlank()) {
             return 0L;
         }
         try {
-            return Long.parseLong(authentication.getName());
+            return Long.parseLong(userId);
         } catch (NumberFormatException e) {
+            log.warn("Invalid user id in token claim: {}", userId);
             return 0L;
         }
     }

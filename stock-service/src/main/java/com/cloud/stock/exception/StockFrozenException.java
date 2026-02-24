@@ -2,11 +2,6 @@ package com.cloud.stock.exception;
 
 import com.cloud.common.exception.BusinessException;
 
-
-
-
-
-
 public class StockFrozenException extends BusinessException {
 
     private static final int STOCK_FROZEN_ERROR_CODE = 3005;
@@ -16,13 +11,17 @@ public class StockFrozenException extends BusinessException {
     }
 
     public StockFrozenException(String operation, Long productId) {
-        super(STOCK_FROZEN_ERROR_CODE,
-                String.format("鍐荤粨搴撳瓨[%s]鎿嶄綔澶辫触锛屽晢鍝両D锛?d", operation, productId));
+        super(
+                STOCK_FROZEN_ERROR_CODE,
+                String.format("Stock freeze operation [%s] failed, productId=%d", operation, productId)
+        );
     }
 
     public StockFrozenException(String operation, Long productId, Integer quantity) {
-        super(STOCK_FROZEN_ERROR_CODE,
-                String.format("鍐荤粨搴撳瓨[%s]鎿嶄綔澶辫触锛屽晢鍝両D锛?d锛屾暟閲忥細%d", operation, productId, quantity));
+        super(
+                STOCK_FROZEN_ERROR_CODE,
+                String.format("Stock freeze operation [%s] failed, productId=%d, quantity=%d", operation, productId, quantity)
+        );
     }
 
     public StockFrozenException(String message, Throwable cause) {

@@ -11,6 +11,7 @@ import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
 import com.cloud.stock.converter.StockConverter;
+import com.cloud.stock.exception.StockAlreadyExistsException;
 import com.cloud.stock.exception.StockFrozenException;
 import com.cloud.stock.exception.StockInsufficientException;
 import com.cloud.stock.mapper.StockInMapper;
@@ -70,7 +71,7 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
 
         Stock existing = getOne(new LambdaQueryWrapper<Stock>().eq(Stock::getProductId, stockDTO.getProductId()));
         if (existing != null) {
-            throw new BusinessException("Stock already exists for productId=" + stockDTO.getProductId());
+            throw new StockAlreadyExistsException(stockDTO.getProductId());
         }
 
         Stock stock = stockConverter.toEntity(stockDTO);
@@ -587,6 +588,11 @@ public class StockServiceImpl extends ServiceImpl<StockMapper, Stock> implements
     }
 
     private void createStockOutRecord(Stock stock, Integer quantity, Long orderId, String orderNo, String remark) {
+        if (orderId == null) {
+            log.debug("Skip stock_out record without order context, productId={}, quantity={}, remark={}",
+                    stock.getProductId(), quantity, remark);
+            return;
+        }
         StockOut stockOut = new StockOut();
         stockOut.setProductId(stock.getProductId());
         stockOut.setOrderId(orderId);

@@ -12,16 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
-
-
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
-        implements StockLogService {
+public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog> implements StockLogService {
 
     private final StockLogMapper stockLogMapper;
 
@@ -31,15 +25,8 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
         if (stockLog.getOperateTime() == null) {
             stockLog.setOperateTime(LocalDateTime.now());
         }
-
-        
-        if (stockLog.getQuantityBefore() != null && stockLog.getQuantityAfter() != null) {
-            stockLog.setQuantityChange(stockLog.getQuantityAfter() - stockLog.getQuantityBefore());
-        }
-
+        applyQuantityChange(stockLog);
         save(stockLog);
-        
-
         return stockLog.getId();
     }
 
@@ -55,32 +42,25 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
             if (log.getOperateTime() == null) {
                 log.setOperateTime(now);
             }
-            
-            if (log.getQuantityBefore() != null && log.getQuantityAfter() != null) {
-                log.setQuantityChange(log.getQuantityAfter() - log.getQuantityBefore());
-            }
+            applyQuantityChange(log);
         });
 
         boolean success = saveBatch(stockLogs);
-        
         return success ? stockLogs.size() : 0;
     }
 
     @Override
     public List<StockLog> getLogsByProductId(Long productId, LocalDateTime startTime, LocalDateTime endTime) {
-        
         return stockLogMapper.selectByProductId(productId, startTime, endTime);
     }
 
     @Override
     public List<StockLog> getLogsByOrderId(Long orderId) {
-        
         return stockLogMapper.selectByOrderId(orderId);
     }
 
     @Override
     public List<StockLog> getLogsByOperationType(String operationType, LocalDateTime startTime, LocalDateTime endTime) {
-        
         return stockLogMapper.selectByOperationType(operationType, startTime, endTime);
     }
 
@@ -95,14 +75,25 @@ public class StockLogServiceImpl extends ServiceImpl<StockLogMapper, StockLog>
         stockLog.setOperationType(operationType);
         stockLog.setQuantityBefore(quantityBefore);
         stockLog.setQuantityAfter(quantityAfter);
-        stockLog.setQuantityChange(quantityAfter - quantityBefore);
+        stockLog.setQuantityChange(calculateQuantityChange(quantityBefore, quantityAfter));
         stockLog.setOrderId(orderId);
         stockLog.setOrderNo(orderNo);
         stockLog.setRemark(remark);
         stockLog.setOperateTime(LocalDateTime.now());
 
         save(stockLog);
-        log.debug("璁板綍搴撳瓨鍙樻洿: productId={}, type={}, {}鈫抺}",
+        log.debug("Recorded stock operation log, productId={}, operationType={}, before={}, after={}",
                 productId, operationType, quantityBefore, quantityAfter);
+    }
+
+    private static void applyQuantityChange(StockLog stockLog) {
+        stockLog.setQuantityChange(calculateQuantityChange(stockLog.getQuantityBefore(), stockLog.getQuantityAfter()));
+    }
+
+    private static Integer calculateQuantityChange(Integer before, Integer after) {
+        if (before == null || after == null) {
+            return 0;
+        }
+        return after - before;
     }
 }
