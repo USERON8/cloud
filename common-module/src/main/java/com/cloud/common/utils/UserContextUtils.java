@@ -160,6 +160,7 @@ public class UserContextUtils {
         if (StringUtils.hasText(scopesFromJwt)) {
             return Stream.of(scopesFromJwt.split("\\s+"))
                     .filter(StringUtils::hasText)
+                    .map(UserContextUtils::normalizeScope)
                     .collect(Collectors.toSet());
         }
 
@@ -168,6 +169,7 @@ public class UserContextUtils {
         if (StringUtils.hasText(scopesFromHeader)) {
             return Stream.of(scopesFromHeader.split("\\s+"))
                     .filter(StringUtils::hasText)
+                    .map(UserContextUtils::normalizeScope)
                     .collect(Collectors.toSet());
         }
 
@@ -181,8 +183,11 @@ public class UserContextUtils {
 
 
     public static boolean hasScope(String scope) {
+        if (!StringUtils.hasText(scope)) {
+            return false;
+        }
         Set<String> userScopes = getCurrentUserScopes();
-        return userScopes.contains(scope);
+        return userScopes.contains(normalizeScope(scope));
     }
 
     
@@ -194,11 +199,15 @@ public class UserContextUtils {
     public static boolean hasAnyScope(String... scopes) {
         Set<String> userScopes = getCurrentUserScopes();
         for (String scope : scopes) {
-            if (userScopes.contains(scope)) {
+            if (StringUtils.hasText(scope) && userScopes.contains(normalizeScope(scope))) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static String normalizeScope(String scope) {
+        return scope.replace('.', ':');
     }
 
     

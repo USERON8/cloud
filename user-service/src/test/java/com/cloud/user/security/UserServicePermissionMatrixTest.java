@@ -11,13 +11,17 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.config.ResourceServerConfig;
 import com.cloud.user.config.TokenBlacklistChecker;
 import com.cloud.user.controller.AdminController;
+import com.cloud.user.controller.AdminFeignController;
 import com.cloud.user.controller.ThreadPoolMonitorController;
 import com.cloud.user.controller.merchant.MerchantAuthController;
 import com.cloud.user.controller.merchant.MerchantController;
 import com.cloud.user.controller.user.UserAddressController;
+import com.cloud.user.controller.user.UserFeignController;
 import com.cloud.user.controller.user.UserManageController;
+import com.cloud.user.controller.user.UserNotificationController;
 import com.cloud.user.controller.user.UserProfileController;
 import com.cloud.user.controller.user.UserStatisticsController;
+import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
@@ -30,8 +34,10 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.service.AdminService;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.MinioService;
 import com.cloud.user.service.UserAddressService;
 import com.cloud.user.service.UserAsyncService;
+import com.cloud.user.service.UserNotificationService;
 import com.cloud.user.service.UserService;
 import com.cloud.user.service.UserStatisticsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,11 +58,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.redisson.api.RedissonClient;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -69,6 +77,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -76,11 +85,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AdminController.class,
         UserManageController.class,
         UserProfileController.class,
+        UserNotificationController.class,
         UserStatisticsController.class,
         ThreadPoolMonitorController.class,
         MerchantController.class,
         MerchantAuthController.class,
-        UserAddressController.class
+        UserAddressController.class,
+        AdminFeignController.class,
+        UserFeignController.class
 }, properties = {
         "minio.endpoint=http://127.0.0.1:9000",
         "minio.access-key=test-access-key",
@@ -125,6 +137,12 @@ class UserServicePermissionMatrixTest {
     private UserService userService;
 
     @MockBean
+    private MinioService minioService;
+
+    @MockBean
+    private UserNotificationService userNotificationService;
+
+    @MockBean
     private UserStatisticsService userStatisticsService;
 
     @MockBean
@@ -138,6 +156,9 @@ class UserServicePermissionMatrixTest {
 
     @MockBean
     private MerchantAuthConverter merchantAuthConverter;
+
+    @MockBean
+    private AdminConverter adminConverter;
 
     @MockBean
     private UserAddressService userAddressService;
@@ -412,6 +433,68 @@ class UserServicePermissionMatrixTest {
     }
 
     @Test
+    void anonymousShouldNotUploadAvatar() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "avatar.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/user/profile/current/avatar").file(file))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void userShouldUploadOwnAvatar() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "avatar.png",
+                "image/png",
+                "fake-image".getBytes()
+        );
+        when(minioService.uploadAvatar(any())).thenReturn("http://127.0.0.1:9000/user-avatars/avatar/100/new.png");
+
+        mockMvc.perform(multipart("/api/user/profile/current/avatar")
+                        .file(file)
+                        .with(userJwt("100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void adminWriteShouldSendSystemAnnouncement() throws Exception {
+        when(userNotificationService.sendSystemAnnouncementAsync(any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(true));
+
+        String body = objectMapper.writeValueAsString(Map.of(
+                "title", "System Notice",
+                "content", "Planned maintenance window"
+        ));
+
+        mockMvc.perform(post("/api/user/notification/system")
+                        .with(adminWriteJwt("1"))
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void adminReadShouldNotSendSystemAnnouncement() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "title", "System Notice",
+                "content", "Planned maintenance window"
+        ));
+
+        mockMvc.perform(post("/api/user/notification/system")
+                        .with(adminReadJwt("1"))
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void adminReadShouldAccessStatistics() throws Exception {
         when(userStatisticsService.getUserStatisticsOverview()).thenReturn(new UserStatisticsVO());
 
@@ -439,6 +522,49 @@ class UserServicePermissionMatrixTest {
     void normalUserShouldNotAccessThreadPoolApi() throws Exception {
         mockMvc.perform(get("/api/thread-pool/info").with(userJwt("100")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousShouldNotAccessInternalUserApi() throws Exception {
+        mockMvc.perform(get("/internal/user/id/100"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void normalUserShouldNotAccessInternalUserApi() throws Exception {
+        mockMvc.perform(get("/internal/user/id/100").with(userJwt("100")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void internalTokenShouldAccessInternalUserApi() throws Exception {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(100L);
+        userDTO.setUsername("u100");
+        when(userService.getUserById(100L)).thenReturn(userDTO);
+
+        mockMvc.perform(get("/internal/user/id/100").with(internalApiJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100));
+    }
+
+    @Test
+    void normalAdminScopeShouldNotAccessInternalAdminApi() throws Exception {
+        mockMvc.perform(get("/admin/query/getById/1").with(adminReadJwt("1")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void internalTokenShouldAccessInternalAdminApi() throws Exception {
+        AdminDTO adminDTO = new AdminDTO();
+        adminDTO.setId(1L);
+        adminDTO.setUsername("admin1");
+        when(adminService.getAdminById(eq(1L))).thenReturn(adminDTO);
+
+        mockMvc.perform(get("/admin/query/getById/1").with(internalApiJwt()))
+                .andExpect(status().isOk());
+
+        verify(adminService).getAdminById(eq(1L));
     }
 
     private static Map<String, Object> validMerchantAuthApplyBody() {
@@ -474,6 +600,10 @@ class UserServicePermissionMatrixTest {
 
     private static RequestPostProcessor merchantWriteJwt(String userId) {
         return jwtToken(userId, "MERCHANT", "ROLE_MERCHANT", "SCOPE_merchant:write");
+    }
+
+    private static RequestPostProcessor internalApiJwt() {
+        return jwtToken("0", "SYSTEM", "SCOPE_internal_api");
     }
 
     private static RequestPostProcessor jwtToken(String userId, String userType, String... authorities) {

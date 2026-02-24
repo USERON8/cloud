@@ -57,7 +57,7 @@ public class OAuth2ResponseUtil {
         
         response.setToken_type("Bearer");
         response.setExpires_in(31536000L); 
-        response.setScope("read write user.read user.write internal_api"); 
+        response.setScope("read write user:read user:write internal_api"); 
 
         return response;
     }
@@ -146,7 +146,7 @@ public class OAuth2ResponseUtil {
                     .expiresAt(expiresAt)
                     .subject(userDTO.getUsername())
                     .claim("username", userDTO.getUsername())
-                    .claim("scope", "read write user.read user.write internal_api")
+                    .claim("scope", "read write user:read user:write internal_api")
                     .claim("user_id", userDTO.getId())
                     .claim("user_type", userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null)
                     .claim("nickname", userDTO.getNickname())
@@ -159,12 +159,12 @@ public class OAuth2ResponseUtil {
             response.setAccess_token(jwt.getTokenValue());
             response.setToken_type("Bearer");
             response.setExpires_in(expiresInSeconds);
-            response.setScope("read write user.read user.write internal_api");
+            response.setScope("read write user:read user:write internal_api");
         } else {
             
             response.setToken_type("Bearer");
             response.setExpires_in(31536000L); 
-            response.setScope("read write user.read user.write internal_api"); 
+            response.setScope("read write user:read user:write internal_api"); 
         }
 
         

@@ -171,10 +171,10 @@ public class UserInfoService {
             Map<String, Boolean> commonPermissions = new HashMap<>();
             commonPermissions.put("canRead", UserContextUtils.hasScope("read"));
             commonPermissions.put("canWrite", UserContextUtils.hasScope("write"));
-            commonPermissions.put("canUserRead", UserContextUtils.hasScope("user.read"));
-            commonPermissions.put("canUserWrite", UserContextUtils.hasScope("user.write"));
-            commonPermissions.put("canAdminRead", UserContextUtils.hasScope("admin.read"));
-            commonPermissions.put("canAdminWrite", UserContextUtils.hasScope("admin.write"));
+            commonPermissions.put("canUserRead", UserContextUtils.hasScope("user:read"));
+            commonPermissions.put("canUserWrite", UserContextUtils.hasScope("user:write"));
+            commonPermissions.put("canAdminRead", UserContextUtils.hasScope("admin:read"));
+            commonPermissions.put("canAdminWrite", UserContextUtils.hasScope("admin:write"));
             permissionSummary.put("commonPermissions", commonPermissions);
 
             log.debug("鎴愬姛鑾峰彇鐢ㄦ埛鏉冮檺鎽樿锛岀敤鎴稩D: {}, 鏉冮檺鏁伴噺: {}", userId, scopes.size());

@@ -6,6 +6,7 @@ import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.module.dto.UserProfilePasswordChangeDTO;
 import com.cloud.user.module.dto.UserProfileUpdateDTO;
 import com.cloud.user.module.entity.User;
+import com.cloud.user.service.MinioService;
 import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,12 +15,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserProfileController {
 
     private final UserService userService;
+    private final MinioService minioService;
 
     @GetMapping("/current")
     @PreAuthorize("isAuthenticated()")
@@ -106,6 +112,29 @@ public class UserProfileController {
         } catch (Exception e) {
             log.error("Failed to change current user password, userId={}", currentUserId, e);
             return Result.error("failed to change password: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/current/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Upload current avatar", description = "Upload avatar image for current logged-in user")
+    public Result<String> uploadCurrentAvatar(
+            @RequestPart("file") MultipartFile file,
+            Authentication authentication) {
+        Long currentUserId = parseCurrentUserId(authentication);
+        if (currentUserId == null) {
+            return Result.unauthorized("current user is not available");
+        }
+
+        try {
+            String avatarUrl = minioService.uploadAvatar(file);
+            return Result.success("avatar uploaded", avatarUrl);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid avatar upload request, userId={}", currentUserId, e);
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to upload avatar, userId={}", currentUserId, e);
+            return Result.error("failed to upload avatar");
         }
     }
 

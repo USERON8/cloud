@@ -71,14 +71,6 @@ public interface UserAsyncService {
 
 
 
-    CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId);
-
-    
-
-
-
-
-
     CompletableFuture<Void> refreshUserCacheAsync(Long userId);
 
     

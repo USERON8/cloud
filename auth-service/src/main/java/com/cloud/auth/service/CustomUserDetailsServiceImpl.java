@@ -90,43 +90,43 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         authorities.add(new SimpleGrantedAuthority("SCOPE_read"));
 
         if (userType == null) {
-            authorities.add(new SimpleGrantedAuthority("SCOPE_user.read"));
-            authorities.add(new SimpleGrantedAuthority("SCOPE_order.read"));
-            authorities.add(new SimpleGrantedAuthority("SCOPE_order.write"));
+            authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
+            authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
+            authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
             return authorities;
         }
 
         switch (userType) {
             case ADMIN -> {
                 authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_admin.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_admin.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_admin:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_admin:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_user:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_product:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_product:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
                 authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
             }
             case MERCHANT -> {
                 authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_stock.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_stock.write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_product:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_product:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_stock:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_stock:write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
                 authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
             }
             case USER -> {
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order.write"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
+                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
                 authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
             }
         }

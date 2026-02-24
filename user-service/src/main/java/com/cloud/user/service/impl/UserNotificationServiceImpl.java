@@ -1,17 +1,17 @@
 package com.cloud.user.service.impl;
 
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.user.notification.UserNotificationDeliveryProvider;
 import com.cloud.user.service.UserNotificationService;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -19,18 +19,17 @@ import java.util.concurrent.TimeUnit;
 public class UserNotificationServiceImpl implements UserNotificationService {
 
     private final UserService userService;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final UserNotificationDeliveryProvider deliveryProvider;
 
     @Override
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
         try {
-            UserDTO user = userService.getUserById(userId);
-            if (user == null || user.getEmail() == null) {
+            UserDTO user = getUserForNotification(userId);
+            if (user == null || !StringUtils.hasText(user.getEmail())) {
                 return CompletableFuture.completedFuture(false);
             }
-            redisTemplate.opsForValue().set("notification:welcome:" + userId, System.currentTimeMillis());
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(deliveryProvider.deliverWelcome(userId));
         } catch (Exception e) {
             log.error("Failed to send welcome email", e);
             return CompletableFuture.completedFuture(false);
@@ -41,12 +40,13 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendPasswordResetEmailAsync(Long userId, String resetToken) {
         try {
-            UserDTO user = userService.getUserById(userId);
-            if (user == null || user.getEmail() == null || resetToken == null || resetToken.isBlank()) {
+            UserDTO user = getUserForNotification(userId);
+            if (user == null || !StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(resetToken)) {
                 return CompletableFuture.completedFuture(false);
             }
-            redisTemplate.opsForValue().set("password:reset:token:" + resetToken, userId, 24, TimeUnit.HOURS);
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(
+                    deliveryProvider.deliverPasswordResetToken(userId, resetToken.trim())
+            );
         } catch (Exception e) {
             log.error("Failed to send password reset email", e);
             return CompletableFuture.completedFuture(false);
@@ -57,12 +57,13 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendActivationEmailAsync(Long userId, String activationToken) {
         try {
-            UserDTO user = userService.getUserById(userId);
-            if (user == null || user.getEmail() == null || activationToken == null || activationToken.isBlank()) {
+            UserDTO user = getUserForNotification(userId);
+            if (user == null || !StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(activationToken)) {
                 return CompletableFuture.completedFuture(false);
             }
-            redisTemplate.opsForValue().set("user:activation:token:" + activationToken, userId, 48, TimeUnit.HOURS);
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(
+                    deliveryProvider.deliverActivationToken(userId, activationToken.trim())
+            );
         } catch (Exception e) {
             log.error("Failed to send activation email", e);
             return CompletableFuture.completedFuture(false);
@@ -73,14 +74,13 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendStatusChangeNotificationAsync(Long userId, Integer newStatus, String reason) {
         try {
-            UserDTO user = userService.getUserById(userId);
+            UserDTO user = getUserForNotification(userId);
             if (user == null) {
                 return CompletableFuture.completedFuture(false);
             }
-            String key = "notification:status_change:" + userId + ":" + System.currentTimeMillis();
-            String payload = "status=" + newStatus + ";reason=" + (reason == null ? "" : reason);
-            redisTemplate.opsForValue().set(key, payload);
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(
+                    deliveryProvider.deliverStatusChange(userId, newStatus, reason)
+            );
         } catch (Exception e) {
             log.error("Failed to send status change notification", e);
             return CompletableFuture.completedFuture(false);
@@ -96,14 +96,13 @@ public class UserNotificationServiceImpl implements UserNotificationService {
             }
             int successCount = 0;
             for (Long userId : userIds) {
-                UserDTO user = userService.getUserById(userId);
+                UserDTO user = getUserForNotification(userId);
                 if (user == null) {
                     continue;
                 }
-                String key = "notification:batch:" + userId + ":" + System.currentTimeMillis();
-                String payload = "title=" + title + ";content=" + content;
-                redisTemplate.opsForValue().set(key, payload);
-                successCount++;
+                if (deliveryProvider.deliverBatchNotification(userId, title, content)) {
+                    successCount++;
+                }
             }
             return CompletableFuture.completedFuture(successCount > 0);
         } catch (Exception e) {
@@ -116,13 +115,24 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendSystemAnnouncementAsync(String title, String content) {
         try {
-            String key = "notification:system:" + System.currentTimeMillis();
-            String payload = "title=" + title + ";content=" + content;
-            redisTemplate.opsForValue().set(key, payload);
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(
+                    deliveryProvider.deliverSystemAnnouncement(title, content)
+            );
         } catch (Exception e) {
             log.error("Failed to send system announcement", e);
             return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    private UserDTO getUserForNotification(Long userId) {
+        if (userId == null || userId <= 0) {
+            return null;
+        }
+        try {
+            return userService.getUserById(userId);
+        } catch (Exception e) {
+            log.warn("User is not available for notification, userId={}", userId);
+            return null;
         }
     }
 }

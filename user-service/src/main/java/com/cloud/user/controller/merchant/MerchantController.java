@@ -44,7 +44,7 @@ public class MerchantController {
 
     @GetMapping
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or (hasRole('MERCHANT') and (hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')))")
+            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:read'))")
     @Operation(summary = "Get merchants", description = "Get merchants with pagination and status filter")
     public Result<PageResult<MerchantDTO>> getMerchants(
             @Parameter(description = "Page number")
@@ -90,7 +90,7 @@ public class MerchantController {
 
     @GetMapping("/{id}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or ((hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')) "
+            + "or (hasAuthority('SCOPE_merchant:read') "
             + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Get merchant by ID", description = "Get merchant details by merchant ID")
     public Result<MerchantDTO> getMerchantById(
@@ -130,7 +130,7 @@ public class MerchantController {
 
     @PutMapping("/{id}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or ((hasAuthority('SCOPE_merchant:write') or hasAuthority('SCOPE_merchant.write')) "
+            + "or (hasAuthority('SCOPE_merchant:write') "
             + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Update merchant", description = "Update merchant details")
     public Result<Boolean> updateMerchant(
@@ -213,7 +213,7 @@ public class MerchantController {
 
     @GetMapping("/{id}/statistics")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or ((hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')) "
+            + "or (hasAuthority('SCOPE_merchant:read') "
             + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
     public Result<Object> getMerchantStatistics(

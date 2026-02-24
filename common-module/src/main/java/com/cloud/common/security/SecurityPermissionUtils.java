@@ -243,9 +243,6 @@ public final class SecurityPermissionUtils {
         return hasRole(authentication, "ADMIN")
                 || hasUserType(authentication, "ADMIN")
                 || hasAnyAuthority(authentication,
-                "SCOPE_admin",
-                "SCOPE_admin.read",
-                "SCOPE_admin.write",
                 "SCOPE_admin:read",
                 "SCOPE_admin:write");
     }
@@ -267,9 +264,6 @@ public final class SecurityPermissionUtils {
         return hasRole(authentication, "MERCHANT")
                 || hasUserType(authentication, "MERCHANT")
                 || hasAnyAuthority(authentication,
-                "SCOPE_merchant",
-                "SCOPE_merchant.read",
-                "SCOPE_merchant.write",
                 "SCOPE_merchant:read",
                 "SCOPE_merchant:write");
     }

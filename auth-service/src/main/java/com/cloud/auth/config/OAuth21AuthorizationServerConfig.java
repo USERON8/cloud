@@ -99,10 +99,10 @@ public class OAuth21AuthorizationServerConfig {
                     scopes.add("read");
                     scopes.add("write");
                     scopes.add("admin");
-                    scopes.add("user.read");
-                    scopes.add("user.write");
-                    scopes.add("order.read");
-                    scopes.add("order.write");
+                    scopes.add("user:read");
+                    scopes.add("user:write");
+                    scopes.add("order:read");
+                    scopes.add("order:write");
                 })
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)
@@ -140,9 +140,9 @@ public class OAuth21AuthorizationServerConfig {
                 })
                 .authorizationGrantTypes(grantTypes -> grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS))
                 .scopes(scopes -> {
-                    scopes.add("service.read");
-                    scopes.add("service.write");
-                    scopes.add("service.admin");
+                    scopes.add("service:read");
+                    scopes.add("service:write");
+                    scopes.add("service:admin");
                 })
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)

@@ -81,7 +81,7 @@ public class OAuth2TokenManagementService {
                 new UsernamePasswordAuthenticationToken(userDTO.getUsername(), "[PROTECTED]", authorities);
 
         if (scopes == null || scopes.isEmpty()) {
-            scopes = Set.of("openid", "profile", "read", "write", "user.read", "user.write");
+            scopes = Set.of("openid", "profile", "read", "write", "user:read", "user:write");
         }
         Set<String> allowedScopes = registeredClient.getScopes();
         scopes = scopes.stream().filter(allowedScopes::contains).collect(Collectors.toSet());

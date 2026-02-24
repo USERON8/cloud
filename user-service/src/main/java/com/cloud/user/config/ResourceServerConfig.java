@@ -21,9 +21,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -56,15 +58,8 @@ public class ResourceServerConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                         .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/internal/user/**").permitAll()
-                        .requestMatchers("/admin/**").hasAnyAuthority(
-                                "SCOPE_internal_api",
-                                "SCOPE_admin",
-                                "SCOPE_admin.read",
-                                "SCOPE_admin.write",
-                                "SCOPE_admin:read",
-                                "SCOPE_admin:write"
-                        )
+                        .requestMatchers("/internal/user/**").hasAuthority("SCOPE_internal_api")
+                        .requestMatchers("/admin/**").hasAuthority("SCOPE_internal_api")
                         .requestMatchers(
                                 "/api/admin/**",
                                 "/api/manage/users/**",
@@ -111,22 +106,13 @@ public class ResourceServerConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
-        scopeConverter.setAuthorityPrefix("SCOPE_");
-        scopeConverter.setAuthoritiesClaimName("scope");
-
         JwtGrantedAuthoritiesConverter roleClaimConverter = new JwtGrantedAuthoritiesConverter();
         roleClaimConverter.setAuthorityPrefix("ROLE_");
         roleClaimConverter.setAuthoritiesClaimName("authorities");
 
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Set<GrantedAuthority> authorities = new HashSet<>();
-
-            Collection<GrantedAuthority> scopeAuthorities = scopeConverter.convert(jwt);
-            if (scopeAuthorities != null) {
-                authorities.addAll(scopeAuthorities);
-            }
+            Set<GrantedAuthority> authorities = new HashSet<>(extractScopeAuthorities(jwt));
 
             Collection<GrantedAuthority> roleAuthorities = roleClaimConverter.convert(jwt);
             if (roleAuthorities != null) {
@@ -140,24 +126,15 @@ public class ResourceServerConfig {
 
                 switch (normalizedUserType) {
                     case "ADMIN" -> {
-                        addScopeAuthority(authorities, "admin");
-                        addScopeAuthority(authorities, "admin.read");
-                        addScopeAuthority(authorities, "admin.write");
                         addScopeAuthority(authorities, "admin:read");
                         addScopeAuthority(authorities, "admin:write");
                     }
                     case "MERCHANT" -> {
-                        addScopeAuthority(authorities, "merchant");
-                        addScopeAuthority(authorities, "merchant.read");
-                        addScopeAuthority(authorities, "merchant.write");
                         addScopeAuthority(authorities, "merchant:read");
                         addScopeAuthority(authorities, "merchant:write");
-                        addScopeAuthority(authorities, "user.read");
+                        addScopeAuthority(authorities, "user:read");
                     }
                     case "USER" -> {
-                        addScopeAuthority(authorities, "user");
-                        addScopeAuthority(authorities, "user.read");
-                        addScopeAuthority(authorities, "user.write");
                         addScopeAuthority(authorities, "user:read");
                         addScopeAuthority(authorities, "user:write");
                     }
@@ -170,6 +147,40 @@ public class ResourceServerConfig {
         });
 
         return converter;
+    }
+
+    private static Set<GrantedAuthority> extractScopeAuthorities(Jwt jwt) {
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scope"));
+        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scp"));
+        return authorities;
+    }
+
+    private static void normalizeAndAddScopeAuthorities(Set<GrantedAuthority> authorities, Object scopeClaim) {
+        if (scopeClaim == null) {
+            return;
+        }
+        if (scopeClaim instanceof String scopeString) {
+            Arrays.stream(scopeString.split("\\s+"))
+                    .map(String::trim)
+                    .filter(scope -> !scope.isEmpty())
+                    .map(ResourceServerConfig::normalizeScope)
+                    .forEach(scope -> addScopeAuthority(authorities, scope));
+            return;
+        }
+        if (scopeClaim instanceof Collection<?> scopes) {
+            scopes.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(scope -> !scope.isEmpty())
+                    .map(ResourceServerConfig::normalizeScope)
+                    .forEach(scope -> addScopeAuthority(authorities, scope));
+        }
+    }
+
+    private static String normalizeScope(String scope) {
+        return scope.replace('.', ':');
     }
 
     private static void addScopeAuthority(Set<GrantedAuthority> authorities, String scope) {

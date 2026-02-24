@@ -52,26 +52,6 @@ public class AsyncConfig extends BaseAsyncConfig {
 
 
 
-    @Bean("userLogExecutor")
-    public Executor userLogExecutor() {
-        int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                Math.max(2, processors / 2),
-                Math.max(4, processors),
-                1200,
-                "user-log-"
-        );
-        executor.initialize();
-
-        
-
-        return executor;
-    }
-
-    
-
-
-
     @Bean("userNotificationExecutor")
     public Executor userNotificationExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();

@@ -47,7 +47,7 @@ public class MerchantAuthController {
 
     @PostMapping("/apply/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or ((hasAuthority('SCOPE_merchant:write') or hasAuthority('SCOPE_merchant.write')) "
+            + "or (hasAuthority('SCOPE_merchant:write') "
             + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
     @Operation(summary = "Apply merchant auth", description = "Create or update merchant auth application")
     public Result<MerchantAuthDTO> applyForAuth(
@@ -97,7 +97,7 @@ public class MerchantAuthController {
 
     @GetMapping("/get/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or ((hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')) "
+            + "or (hasAuthority('SCOPE_merchant:read') "
             + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
     @Operation(summary = "Get merchant auth", description = "Get merchant auth information by merchant ID")
     public Result<MerchantAuthDTO> getAuthInfo(
@@ -119,7 +119,7 @@ public class MerchantAuthController {
 
     @DeleteMapping("/revoke/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or ((hasAuthority('SCOPE_merchant:write') or hasAuthority('SCOPE_merchant.write')) "
+            + "or (hasAuthority('SCOPE_merchant:write') "
             + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
     @Operation(summary = "Revoke merchant auth", description = "Delete merchant auth application by merchant ID")
     public Result<Boolean> revokeAuth(

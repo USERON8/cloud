@@ -82,7 +82,7 @@ public class OAuth2ComplianceChecker {
                 if (!authorities.contains("ROLE_ADMIN")) {
                     result.addWarning("Admin user missing ROLE_ADMIN");
                 }
-                if (!authorities.contains("SCOPE_admin.read") || !authorities.contains("SCOPE_admin.write")) {
+                if (!authorities.contains("SCOPE_admin:read") || !authorities.contains("SCOPE_admin:write")) {
                     result.addWarning("Admin user missing admin scopes");
                 }
             }
@@ -90,13 +90,13 @@ public class OAuth2ComplianceChecker {
                 if (!authorities.contains("ROLE_MERCHANT")) {
                     result.addWarning("Merchant user missing ROLE_MERCHANT");
                 }
-                if (!authorities.contains("SCOPE_merchant.read") || !authorities.contains("SCOPE_merchant.write")) {
+                if (!authorities.contains("SCOPE_merchant:read") || !authorities.contains("SCOPE_merchant:write")) {
                     result.addWarning("Merchant user missing merchant scopes");
                 }
             }
             default -> {
-                if (!authorities.contains("SCOPE_user.read")) {
-                    result.addWarning("User missing SCOPE_user.read");
+                if (!authorities.contains("SCOPE_user:read")) {
+                    result.addWarning("User missing SCOPE_user:read");
                 }
             }
         }
@@ -107,12 +107,12 @@ public class OAuth2ComplianceChecker {
                                                String userType) {
         String normalizedType = userType != null ? userType.toUpperCase() : "USER";
         if ("ADMIN".equals(normalizedType)) {
-            if (!authorities.contains("SCOPE_order.read")) {
-                result.addInfo("Admin should include SCOPE_order.read for support operations");
+            if (!authorities.contains("SCOPE_order:read")) {
+                result.addInfo("Admin should include SCOPE_order:read for support operations");
             }
         } else if ("MERCHANT".equals(normalizedType)) {
-            if (!authorities.contains("SCOPE_order.read")) {
-                result.addInfo("Merchant should include SCOPE_order.read");
+            if (!authorities.contains("SCOPE_order:read")) {
+                result.addInfo("Merchant should include SCOPE_order:read");
             }
         }
     }

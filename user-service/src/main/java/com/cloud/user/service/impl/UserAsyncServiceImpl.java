@@ -132,22 +132,6 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     }
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
-        try {
-            UserDTO user = userService.getUserById(userId);
-            if (user == null || user.getEmail() == null) {
-                return CompletableFuture.completedFuture(false);
-            }
-            redisTemplate.opsForValue().set("notification:welcome:" + userId, System.currentTimeMillis());
-            return CompletableFuture.completedFuture(true);
-        } catch (Exception e) {
-            log.error("Failed to send welcome email asynchronously", e);
-            return CompletableFuture.completedFuture(false);
-        }
-    }
-
-    @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Void> refreshUserCacheAsync(Long userId) {
         try {

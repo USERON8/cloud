@@ -39,31 +39,31 @@ public class PermissionConfig {
         defaultPermissions = Arrays.asList("read", "write");
 
         adminPermissions = Arrays.asList(
-                "read", "write", "delete", "admin.read", "admin.write",
-                "user.read", "user.write", "user.delete",
-                "product.read", "product.write", "product.delete",
-                "order.read", "order.write", "order.delete",
-                "payment.read", "payment.write",
-                "stock.read", "stock.write",
-                "search.read", "search.write",
-                "log.read", "log.write"
+                "read", "write", "delete", "admin:read", "admin:write",
+                "user:read", "user:write", "user:delete",
+                "product:read", "product:write", "product:delete",
+                "order:read", "order:write", "order:delete",
+                "payment:read", "payment:write",
+                "stock:read", "stock:write",
+                "search:read", "search:write",
+                "log:read", "log:write"
         );
 
-        userTypePermissions.put("USER", Arrays.asList("read", "user.read", "user.write"));
+        userTypePermissions.put("USER", Arrays.asList("read", "user:read", "user:write"));
         userTypePermissions.put("MERCHANT", Arrays.asList(
                 "read", "write",
-                "user.read", "user.write",
-                "product.read", "product.write",
-                "order.read", "order.write",
-                "stock.read", "stock.write"
+                "user:read", "user:write",
+                "product:read", "product:write",
+                "order:read", "order:write",
+                "stock:read", "stock:write"
         ));
         userTypePermissions.put("ADMIN", new ArrayList<>(adminPermissions));
 
-        rolePermissions.put("ROLE_USER", Arrays.asList("read", "user.read", "user.write"));
+        rolePermissions.put("ROLE_USER", Arrays.asList("read", "user:read", "user:write"));
         rolePermissions.put("ROLE_MERCHANT", Arrays.asList(
                 "read", "write",
-                "user.read", "user.write",
-                "product.read", "product.write"
+                "user:read", "user:write",
+                "product:read", "product:write"
         ));
         rolePermissions.put("ROLE_ADMIN", new ArrayList<>(adminPermissions));
     }
