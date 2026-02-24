@@ -1,5 +1,5 @@
 ﻿param(
-  [string]$BaseUrl = "http://host.docker.internal:80",
+  [string]$BaseUrl = "http://host.docker.internal:18080",
   [string]$Profile = "loadtest"
 )
 

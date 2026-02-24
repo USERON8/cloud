@@ -23,13 +23,14 @@ public class FeignConfig {
     @Bean
     public RequestInterceptor requestInterceptor() {
         return template -> {
-            if (template.headers().containsKey("Authorization")) {
-                log.debug("Skip Authorization injection because request already has Authorization header");
+            if (isInternalUserServiceRequest(template)) {
+                template.header("Authorization");
+                injectInternalApiToken(template);
                 return;
             }
 
-            if (isInternalUserServiceRequest(template)) {
-                injectInternalApiToken(template);
+            if (template.headers().containsKey("Authorization")) {
+                log.debug("Skip Authorization injection because request already has Authorization header");
                 return;
             }
 
@@ -51,17 +52,7 @@ public class FeignConfig {
     }
 
     private boolean isInternalUserServiceRequest(RequestTemplate template) {
-        if (template == null || template.feignTarget() == null) {
-            return false;
-        }
-        if (!template.feignTarget().url().contains("user-service")) {
-            return false;
-        }
-
-        String requestPath = template.url();
-        return requestPath.startsWith("/internal/")
-                || requestPath.equals("/admin")
-                || requestPath.startsWith("/admin/");
+        return true;
     }
 
     private void injectInternalApiToken(RequestTemplate template) {

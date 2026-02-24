@@ -216,9 +216,9 @@ public class BaseAsyncConfig {
 
     protected ThreadPoolTaskExecutor createWriteExecutor(String threadNamePrefix) {
         return createThreadPoolTaskExecutor(
-                2,
-                8,
-                200,
+                4,
+                16,
+                500,
                 threadNamePrefix
         );
     }

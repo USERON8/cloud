@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:80}
+  port: ${SERVER_PORT:8080}
   tomcat:
     threads:
       max: ${SERVER_TOMCAT_THREADS_MAX:400}

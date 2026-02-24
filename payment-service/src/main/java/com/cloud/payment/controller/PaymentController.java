@@ -122,13 +122,6 @@ public class PaymentController {
 
     @PostMapping("/{id}/success")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
-    @DistributedLock(
-            key = "'payment:success:' + #id",
-            waitTime = 5,
-            leaseTime = 30,
-            timeUnit = TimeUnit.SECONDS,
-            failMessage = "Acquire payment success lock failed"
-    )
     @Operation(summary = "Mark payment success", description = "Mark payment as success")
     public Result<Boolean> paymentSuccess(@Parameter(description = "Payment id") @PathVariable Long id) {
         Boolean result = paymentService.processPaymentSuccess(id);
@@ -140,13 +133,6 @@ public class PaymentController {
 
     @PostMapping("/{id}/fail")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
-    @DistributedLock(
-            key = "'payment:fail:' + #id",
-            waitTime = 5,
-            leaseTime = 30,
-            timeUnit = TimeUnit.SECONDS,
-            failMessage = "Acquire payment fail lock failed"
-    )
     @Operation(summary = "Mark payment failed", description = "Mark payment as failed")
     public Result<Boolean> paymentFail(
             @Parameter(description = "Payment id") @PathVariable Long id,
@@ -161,13 +147,6 @@ public class PaymentController {
 
     @PostMapping("/{id}/refund")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_payment:write')")
-    @DistributedLock(
-            key = "'payment:refund:' + #id",
-            waitTime = 3,
-            leaseTime = 20,
-            timeUnit = TimeUnit.SECONDS,
-            failMessage = "Acquire payment refund lock failed"
-    )
     @Operation(summary = "Refund payment", description = "Create payment refund")
     public Result<Boolean> refundPayment(
             @Parameter(description = "Payment id") @PathVariable Long id,

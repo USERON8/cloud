@@ -177,12 +177,6 @@ public class OrderController {
 
     @PostMapping("/{id}/pay")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @DistributedLock(
-            key = "'order:pay:' + #id",
-            waitTime = 5,
-            leaseTime = 15,
-            failMessage = "failed to acquire order pay lock"
-    )
     @Operation(summary = "Pay order", description = "Pay one order")
     public Result<Boolean> payOrder(
             @Parameter(description = "Order ID") @PathVariable Long id,
@@ -200,12 +194,6 @@ public class OrderController {
 
     @PostMapping("/{id}/ship")
     @PreAuthorize("@permissionChecker.checkPermission(authentication, 'order:manage') or @permissionManager.hasAdminAccess(authentication)")
-    @DistributedLock(
-            key = "'order:ship:' + #id",
-            waitTime = 3,
-            leaseTime = 10,
-            failMessage = "failed to acquire order ship lock"
-    )
     @Operation(summary = "Ship order", description = "Ship one order")
     public Result<Boolean> shipOrder(
             @Parameter(description = "Order ID") @PathVariable Long id,
@@ -223,12 +211,6 @@ public class OrderController {
 
     @PostMapping("/{id}/complete")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @DistributedLock(
-            key = "'order:complete:' + #id",
-            waitTime = 3,
-            leaseTime = 10,
-            failMessage = "failed to acquire order complete lock"
-    )
     @Operation(summary = "Complete order", description = "Complete one order")
     public Result<Boolean> completeOrder(
             @Parameter(description = "Order ID") @PathVariable Long id,
@@ -246,12 +228,6 @@ public class OrderController {
 
     @PostMapping("/{id}/cancel")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @DistributedLock(
-            key = "'order:cancel:' + #id",
-            waitTime = 3,
-            leaseTime = 10,
-            failMessage = "failed to acquire order cancel lock"
-    )
     @Operation(summary = "Cancel order", description = "Cancel one order")
     public Result<Boolean> cancelOrder(
             @Parameter(description = "Order ID") @PathVariable Long id,

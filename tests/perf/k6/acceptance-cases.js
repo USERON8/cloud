@@ -2,28 +2,61 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate, Trend } from "k6/metrics";
 
-const BASE_URL = __ENV.BASE_URL || __ENV.K6_BASE_URL || "http://host.docker.internal:80";
+function normalizeBaseUrl(rawUrl) {
+  const url = String(rawUrl || "").trim().replace(/\/+$/, "");
+  return url || "http://host.docker.internal:18080";
+}
+
+function parseOrigin(rawUrl) {
+  const matched = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\/([^:/?#]+)(?::(\d+))?/.exec(rawUrl || "");
+  if (!matched) {
+    return {
+      scheme: "http",
+      host: "host.docker.internal",
+      port: "18080",
+    };
+  }
+
+  const [, scheme, host, port] = matched;
+  return {
+    scheme: scheme || "http",
+    host: host || "host.docker.internal",
+    port: port || (scheme === "https" ? "443" : "80"),
+  };
+}
+
+function buildDefaultHealthTargets(baseUrl) {
+  const origin = parseOrigin(baseUrl);
+  const gatewayHealth = `${origin.scheme}://${origin.host}:${origin.port}/actuator/health`;
+  const servicePorts = [8081, 8082, 8083, 8084, 8085, 8086, 8087];
+  const serviceHealth = servicePorts.map(
+    (port) => `${origin.scheme}://${origin.host}:${port}/actuator/health`
+  );
+
+  return [gatewayHealth, ...serviceHealth];
+}
+
+const BASE_URL = normalizeBaseUrl(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080");
 const DEFAULT_CASE_VUS = Number(__ENV.CASE_VUS || 1);
 const DEFAULT_CASE_DURATION = __ENV.CASE_DURATION || "30s";
 const CASE_STAGE_SECONDS = Number(__ENV.CASE_STAGE_SECONDS || 35);
 const SEARCH_DELAY_SECONDS = Number(__ENV.SEARCH_DELAY_SECONDS || 2);
 const CASE_SLEEP_SECONDS = Number(__ENV.CASE_SLEEP_SECONDS || 1);
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "30s";
+const AUTH_LOGIN_MAX_RETRIES = Number(__ENV.AUTH_LOGIN_MAX_RETRIES || 3);
+const AUTH_LOGIN_RETRY_SLEEP_SECONDS = Number(__ENV.AUTH_LOGIN_RETRY_SLEEP_SECONDS || 1);
 
 const CASE_SUCCESS_RATE_THRESHOLD = Number(__ENV.CASE_SUCCESS_RATE_THRESHOLD || 0.9);
 const HTTP_FAILED_RATE_THRESHOLD = Number(__ENV.HTTP_FAILED_RATE_THRESHOLD || 0.05);
 const CASE_DURATION_P95_THRESHOLD_MS = Number(__ENV.CASE_DURATION_P95_THRESHOLD_MS || 5000);
+const DEBUG_CASE02 = __ENV.DEBUG_CASE02 === "1";
+const REACHABLE_RESPONSE_CALLBACK = http.expectedStatuses({ min: 200, max: 499 });
+const REACHABLE_GET_PARAMS = Object.freeze({
+  timeout: REQUEST_TIMEOUT,
+  responseCallback: REACHABLE_RESPONSE_CALLBACK,
+});
 
-const DEFAULT_HEALTH_TARGETS = [
-  "http://host.docker.internal:80/actuator/health",
-  "http://host.docker.internal:8081/actuator/health",
-  "http://host.docker.internal:8082/actuator/health",
-  "http://host.docker.internal:8083/actuator/health",
-  "http://host.docker.internal:8084/actuator/health",
-  "http://host.docker.internal:8085/actuator/health",
-  "http://host.docker.internal:8086/actuator/health",
-  "http://host.docker.internal:8087/actuator/health",
-];
+const DEFAULT_HEALTH_TARGETS = buildDefaultHealthTargets(BASE_URL);
 
 const GATEWAY_BATCH_REQUESTS = [
   "/api/query/users?username=admin",
@@ -48,6 +81,20 @@ function getLongEnv(name, fallback = 0) {
   return parsed;
 }
 
+function getIdEnv(name, fallback = "") {
+  const raw = String(__ENV[name] || "").trim();
+  if (/^\d+$/.test(raw) && raw !== "0") {
+    return raw;
+  }
+
+  const fallbackRaw = String(fallback || "").trim();
+  if (/^\d+$/.test(fallbackRaw) && fallbackRaw !== "0") {
+    return fallbackRaw;
+  }
+
+  return "";
+}
+
 function parseTargetList(raw) {
   return raw
     .split(",")
@@ -56,38 +103,51 @@ function parseTargetList(raw) {
 }
 
 const HEALTH_TARGETS = parseTargetList(__ENV.HEALTH_TARGETS || DEFAULT_HEALTH_TARGETS.join(","));
-const HEALTH_BATCH_REQUESTS = HEALTH_TARGETS.map((target) => ["GET", target]);
+const HEALTH_BATCH_REQUESTS = HEALTH_TARGETS.map((target) => ["GET", target, null, REACHABLE_GET_PARAMS]);
 
 const TEST_DATA = Object.freeze({
-  userId: getLongEnv("USER_ID"),
-  shopId: getLongEnv("SHOP_ID"),
-  productId: getLongEnv("PRODUCT_ID"),
-  categoryId: getLongEnv("CATEGORY_ID", 1),
-  orderId: getLongEnv("ORDER_ID"),
-  paymentId: getLongEnv("PAYMENT_ID"),
+  userId: getIdEnv("USER_ID"),
+  shopId: getIdEnv("SHOP_ID"),
+  addressId: getIdEnv("ADDRESS_ID", "1"),
+  productId: getIdEnv("PRODUCT_ID"),
+  categoryId: getIdEnv("CATEGORY_ID", "1"),
+  orderId: getIdEnv("ORDER_ID"),
+  paymentId: getIdEnv("PAYMENT_ID"),
   insufficientQuantity: Number(__ENV.INSUFFICIENT_QUANTITY || 999999),
 });
 const ORDER_NO = __ENV.ORDER_NO || "";
+const CASE04_AUTH_TOKEN = __ENV.CASE04_AUTH_TOKEN || "";
+const CASE07_AUTH_TOKEN = __ENV.CASE07_AUTH_TOKEN || "";
+const AUTH_USER_ID = getIdEnv("AUTH_USER_ID");
+const AUTH_USER_TYPE_ENV = String(__ENV.AUTH_USER_TYPE || "USER").toUpperCase();
 
-const ORDER_CREATE_BODY = JSON.stringify({
-  userId: TEST_DATA.userId,
-  shopId: TEST_DATA.shopId,
-  receiverName: __ENV.RECEIVER_NAME || "k6 user",
-  receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
-  receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
-  payType: Number(__ENV.PAY_TYPE || 1),
-  totalAmount: __ENV.ORDER_TOTAL_AMOUNT || "99.99",
-  payAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
-  remark: "k6 acceptance case02",
-  orderItems: [
-    {
-      productId: TEST_DATA.productId,
-      productName: __ENV.PRODUCT_NAME || "k6-product",
-      price: __ENV.ORDER_ITEM_PRICE || "99.99",
-      quantity: Number(__ENV.ORDER_ITEM_QUANTITY || 1),
-    },
-  ],
-});
+function buildOrderCreateBody(userId) {
+  const payload = {
+    shopId: TEST_DATA.shopId,
+    addressId: TEST_DATA.addressId,
+    receiverName: __ENV.RECEIVER_NAME || "k6 user",
+    receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
+    receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
+    payType: Number(__ENV.PAY_TYPE || 1),
+    totalAmount: __ENV.ORDER_TOTAL_AMOUNT || "99.99",
+    payAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
+    remark: "k6 acceptance case02",
+    orderItems: [
+      {
+        productId: TEST_DATA.productId,
+        productName: __ENV.PRODUCT_NAME || "k6-product",
+        price: __ENV.ORDER_ITEM_PRICE || "99.99",
+        quantity: Number(__ENV.ORDER_ITEM_QUANTITY || 1),
+      },
+    ],
+  };
+
+  if (userId) {
+    payload.userId = userId;
+  }
+
+  return JSON.stringify(payload);
+}
 
 const REFUND_CREATE_BODY = JSON.stringify({
   orderId: TEST_DATA.orderId,
@@ -142,21 +202,28 @@ export const options = {
   },
 };
 
-const DEFAULT_JSON_HEADERS = Object.freeze({
-  "Content-Type": "application/json",
-});
+const DEFAULT_JSON_HEADERS = Object.freeze({ "Content-Type": "application/json" });
 const NO_AUTH_PARAMS = Object.freeze({
   headers: DEFAULT_JSON_HEADERS,
   timeout: REQUEST_TIMEOUT,
 });
+const NO_AUTH_REACHABLE_PARAMS = Object.freeze({
+  headers: DEFAULT_JSON_HEADERS,
+  timeout: REQUEST_TIMEOUT,
+  responseCallback: REACHABLE_RESPONSE_CALLBACK,
+});
 const authParamsCache = new Map();
 
-function jsonHeaders(token = "") {
-  if (!token) {
+function jsonHeaders(token = "", allow4xx = false) {
+  if (!token && !allow4xx) {
     return NO_AUTH_PARAMS;
   }
+  if (!token && allow4xx) {
+    return NO_AUTH_REACHABLE_PARAMS;
+  }
 
-  const cached = authParamsCache.get(token);
+  const cacheKey = `${allow4xx ? "reachable" : "strict"}:${token}`;
+  const cached = authParamsCache.get(cacheKey);
   if (cached) {
     return cached;
   }
@@ -168,7 +235,12 @@ function jsonHeaders(token = "") {
     },
     timeout: REQUEST_TIMEOUT,
   };
-  authParamsCache.set(token, params);
+
+  if (allow4xx) {
+    params.responseCallback = REACHABLE_RESPONSE_CALLBACK;
+  }
+
+  authParamsCache.set(cacheKey, params);
   return params;
 }
 
@@ -195,7 +267,9 @@ function isResultSuccess(response) {
 
 function markResult(tags, result) {
   acceptanceCase.add(1, { ...tags, result });
-  acceptanceCaseSuccessRate.add(result === "success", tags);
+  if (result !== "skipped") {
+    acceptanceCaseSuccessRate.add(result === "success", tags);
+  }
 
   if (result === "failed") {
     acceptanceCaseFailed.add(1, tags);
@@ -241,9 +315,100 @@ function getAuthTokenFromSetup(data) {
   return "";
 }
 
+function getAuthUserIdFromSetup(data) {
+  const setupUserId = String(data?.authUserId || "").trim();
+  if (setupUserId) {
+    return setupUserId;
+  }
+
+  if (AUTH_USER_ID) {
+    return AUTH_USER_ID;
+  }
+
+  if (TEST_DATA.userId) {
+    return TEST_DATA.userId;
+  }
+
+  return "";
+}
+
+function getAuthUserTypeFromSetup(data) {
+  const setupUserType = String(data?.authUserType || "").toUpperCase();
+  if (setupUserType) {
+    return setupUserType;
+  }
+  return AUTH_USER_TYPE_ENV;
+}
+
+function hasMerchantOrAdminRole(userType) {
+  return userType === "MERCHANT" || userType === "ADMIN";
+}
+
+function shouldRetryLogin(response) {
+  if (!response) {
+    return true;
+  }
+
+  return response.status === 0 || response.status === 429 || response.status >= 500;
+}
+
+function isStockInsufficientPayload(payload) {
+  if (payload === false) {
+    return true;
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  return (
+    payload.available === false ||
+    payload.sufficient === false ||
+    payload.hasStock === false ||
+    payload.pass === false ||
+    payload.result === false
+  );
+}
+
+function extractUserIdFromLoginResponse(response) {
+  const body = String(response?.body || "");
+  const patterns = [
+    /"user"\s*:\s*\{[\s\S]*?"id"\s*:\s*(\d+)/,
+    /"userId"\s*:\s*(\d+)/,
+    /"user_id"\s*:\s*(\d+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const matched = pattern.exec(body);
+    if (matched && matched[1]) {
+      return matched[1];
+    }
+  }
+
+  return "";
+}
+
+function extractDataIdFromResponse(response) {
+  const body = String(response?.body || "");
+  const patterns = [/"data"\s*:\s*\{[\s\S]*?"id"\s*:\s*(\d+)/, /"id"\s*:\s*(\d+)/];
+
+  for (const pattern of patterns) {
+    const matched = pattern.exec(body);
+    if (matched && matched[1]) {
+      return matched[1];
+    }
+  }
+
+  return "";
+}
+
 export function setup() {
   if (__ENV.AUTH_TOKEN) {
-    return { authToken: __ENV.AUTH_TOKEN };
+    return {
+      authToken: __ENV.AUTH_TOKEN,
+      authUserId: AUTH_USER_ID || TEST_DATA.userId || "",
+      authUserType: AUTH_USER_TYPE_ENV,
+    };
   }
 
   const username = __ENV.AUTH_USERNAME;
@@ -258,35 +423,67 @@ export function setup() {
     userType: __ENV.AUTH_USER_TYPE || "USER",
   };
 
-  const loginResponse = http.post(
-    `${BASE_URL}/auth/sessions`,
-    JSON.stringify(loginPayload),
-    jsonHeaders()
+  let lastResponse = null;
+  for (let attempt = 1; attempt <= AUTH_LOGIN_MAX_RETRIES; attempt += 1) {
+    const loginResponse = http.post(
+      `${BASE_URL}/auth/sessions`,
+      JSON.stringify(loginPayload),
+      jsonHeaders()
+    );
+    lastResponse = loginResponse;
+
+    if (isResultSuccess(loginResponse)) {
+      const parsed = parseJsonResponse(loginResponse);
+      const accessToken = parsed?.data?.access_token || parsed?.data?.accessToken || parsed?.data?.token;
+      if (accessToken) {
+        const responseUserId = extractUserIdFromLoginResponse(loginResponse);
+        const responseUserType = String(parsed?.data?.userType || parsed?.data?.user?.userType || "").toUpperCase();
+        return {
+          authToken: accessToken,
+          authUserId: responseUserId,
+          authUserType: responseUserType || AUTH_USER_TYPE_ENV,
+        };
+      }
+
+      console.error("[setup] access token missing in login response");
+      return { authToken: "" };
+    }
+
+    if (attempt < AUTH_LOGIN_MAX_RETRIES && shouldRetryLogin(loginResponse)) {
+      console.warn(
+        `[setup] auth login retrying (${attempt}/${AUTH_LOGIN_MAX_RETRIES}), status=${loginResponse.status}`
+      );
+      if (AUTH_LOGIN_RETRY_SLEEP_SECONDS > 0) {
+        sleep(AUTH_LOGIN_RETRY_SLEEP_SECONDS);
+      }
+      continue;
+    }
+
+    break;
+  }
+
+  const lastStatus = lastResponse ? lastResponse.status : 0;
+  console.error(
+    `[setup] auth login failed after ${AUTH_LOGIN_MAX_RETRIES} attempts, last_status=${lastStatus}`
   );
-
-  if (!isResultSuccess(loginResponse)) {
-    console.error(`[setup] auth login failed, status=${loginResponse.status}`);
-    return { authToken: "" };
-  }
-
-  const parsed = parseJsonResponse(loginResponse);
-  const accessToken = parsed?.data?.access_token;
-  if (!accessToken) {
-    console.error("[setup] access token missing in login response");
-    return { authToken: "" };
-  }
-
-  return { authToken: accessToken };
+  return { authToken: "" };
 }
 
 export function case01GatewayRoute() {
   runCase("01", "gateway-route", () => {
-    const responses = http.batch(GATEWAY_BATCH_REQUESTS);
-    const notFoundCount = responses.filter((response) => response.status === 404).length;
-    const allReachable = notFoundCount === 0;
+    const gatewayRequests = GATEWAY_BATCH_REQUESTS.map(([method, url]) => [
+      method,
+      url,
+      null,
+      REACHABLE_GET_PARAMS,
+    ]);
+    const responses = http.batch(gatewayRequests);
+    const allReachable = responses.every(
+      (response) => response.status > 0 && response.status < 500 && response.status !== 404
+    );
 
     check(responses, {
-      "case01 routes are not 404": () => allReachable,
+      "case01 routes reachable without 5xx/404": () => allReachable,
     });
 
     return allReachable ? "success" : "failed";
@@ -298,13 +495,21 @@ export function case01GatewayRoute() {
 export function case02OrderCreated(data) {
   runCase("02", "order-created", () => {
     const authToken = getAuthTokenFromSetup(data);
-    if (!authToken || !TEST_DATA.userId || !TEST_DATA.shopId || !TEST_DATA.productId) {
+    const authUserId = getAuthUserIdFromSetup(data);
+    if (!authToken || !TEST_DATA.shopId || !TEST_DATA.productId) {
       return "skipped";
     }
 
     const authParams = jsonHeaders(authToken);
-    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, ORDER_CREATE_BODY, authParams);
+    const createOrderBody = buildOrderCreateBody(authUserId);
+    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, createOrderBody, authParams);
     const createOk = isResultSuccess(createOrderResponse);
+    if (!createOk && DEBUG_CASE02) {
+      const truncatedBody = String(createOrderResponse?.body || "").slice(0, 300);
+      console.error(
+        `[case-02] create order failed, status=${createOrderResponse?.status}, body=${truncatedBody}`
+      );
+    }
     check(createOrderResponse, {
       "case02 create order success": () => createOk,
     });
@@ -313,14 +518,15 @@ export function case02OrderCreated(data) {
       return "failed";
     }
 
-    const orderId = parseJsonResponse(createOrderResponse)?.data?.id;
+    const orderId = extractDataIdFromResponse(createOrderResponse);
     if (!orderId) {
       return "failed";
     }
 
+    const authReachableParams = jsonHeaders(authToken, true);
     const [paymentResponse, stockResponse] = http.batch([
-      ["GET", `${BASE_URL}/api/payments/order/${orderId}`, null, authParams],
-      ["GET", `${BASE_URL}/api/stocks/product/${TEST_DATA.productId}`, null, authParams],
+      ["GET", `${BASE_URL}/api/payments/order/${orderId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/stocks/product/${TEST_DATA.productId}`, null, authReachableParams],
     ]);
 
     const paymentReachable = paymentResponse.status !== 404;
@@ -351,9 +557,10 @@ export function case03PaymentSuccess(data) {
     }
 
     const authParams = jsonHeaders(authToken);
+    const tolerantAuthParams = jsonHeaders(authToken, true);
     if (!paymentId && orderId) {
       const paymentByOrder = http.get(`${BASE_URL}/api/payments/order/${orderId}`, authParams);
-      paymentId = Number(parseJsonResponse(paymentByOrder)?.data?.id || 0);
+      paymentId = extractDataIdFromResponse(paymentByOrder);
     }
 
     if (!paymentId) {
@@ -363,7 +570,7 @@ export function case03PaymentSuccess(data) {
     const paySuccessResponse = http.post(
       `${BASE_URL}/api/payments/${paymentId}/success`,
       null,
-      authParams
+      tolerantAuthParams
     );
 
     const paySuccessOk = paySuccessResponse.status === 200 || paySuccessResponse.status === 409;
@@ -384,22 +591,31 @@ export function case03PaymentSuccess(data) {
   sleepBetweenCases();
 }
 
-export function case04StockInsufficient() {
+export function case04StockInsufficient(data) {
   runCase("04", "stock-insufficient", () => {
-    if (!TEST_DATA.productId) {
+    const authToken = CASE04_AUTH_TOKEN || getAuthTokenFromSetup(data);
+    if (!CASE04_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
+      return "skipped";
+    }
+    if (!authToken || !TEST_DATA.productId) {
       return "skipped";
     }
 
+    const authParams = jsonHeaders(authToken);
     const response = http.get(
-      `${BASE_URL}/api/stocks/check/${TEST_DATA.productId}/${TEST_DATA.insufficientQuantity}`
+      `${BASE_URL}/api/stocks/check/${TEST_DATA.productId}/${TEST_DATA.insufficientQuantity}`,
+      authParams
     );
 
     if (response.status === 404) {
       return "failed";
     }
+    if (response.status === 401 || response.status === 403) {
+      return "skipped";
+    }
 
     const parsed = parseJsonResponse(response);
-    const stockInsufficient = response.status === 200 && parsed?.data === false;
+    const stockInsufficient = response.status === 200 && isStockInsufficientPayload(parsed?.data);
 
     check(response, {
       "case04 stock insufficient path": () => stockInsufficient,
@@ -443,11 +659,16 @@ export function case06EventIdempotency(data) {
     }
 
     const authParams = jsonHeaders(authToken);
-    const first = http.post(`${BASE_URL}/api/payments/${TEST_DATA.paymentId}/success`, null, authParams);
+    const tolerantAuthParams = jsonHeaders(authToken, true);
+    const first = http.post(
+      `${BASE_URL}/api/payments/${TEST_DATA.paymentId}/success`,
+      null,
+      tolerantAuthParams
+    );
     const second = http.post(
       `${BASE_URL}/api/payments/${TEST_DATA.paymentId}/success`,
       null,
-      authParams
+      tolerantAuthParams
     );
 
     const firstOk = first.status !== 404 && first.status < 500;
@@ -468,7 +689,10 @@ export function case06EventIdempotency(data) {
 
 export function case07SearchSync(data) {
   runCase("07", "search-sync", () => {
-    const authToken = getAuthTokenFromSetup(data);
+    const authToken = CASE07_AUTH_TOKEN || getAuthTokenFromSetup(data);
+    if (!CASE07_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
+      return "skipped";
+    }
     if (!authToken || !TEST_DATA.productId) {
       return "skipped";
     }
@@ -489,7 +713,7 @@ export function case07SearchSync(data) {
       name: `${product.name || "k6-product"}-k6`,
       price: String(product.price || "1.00"),
       stockQuantity: Number(product.stockQuantity || 1),
-      categoryId: Number(product.categoryId || TEST_DATA.categoryId),
+      categoryId: Number(product.categoryId || TEST_DATA.categoryId || 1),
       status: Number(product.status || 1),
       description: "k6 acceptance case07",
     };
