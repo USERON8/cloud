@@ -98,7 +98,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
             @CacheEvict(cacheNames = "user", key = "#id"),
-            @CacheEvict(cacheNames = "userList", allEntries = true)
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public boolean deleteUserById(Long id) {
         if (id == null) {
@@ -121,7 +122,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
             @CacheEvict(cacheNames = "user", allEntries = true),
-            @CacheEvict(cacheNames = "userList", allEntries = true)
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public boolean deleteUsersByIds(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -368,7 +370,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean updateUser(UserDTO userDTO) {
+        if (userDTO == null || userDTO.getId() == null) {
+            throw new BusinessException("user id is required");
+        }
+
+        User existingUser = getById(userDTO.getId());
+        if (existingUser == null) {
+            throw new EntityNotFoundException("user", userDTO.getId());
+        }
+
+        if (StringUtils.isNotBlank(userDTO.getUsername())
+                && !StringUtils.equals(userDTO.getUsername(), existingUser.getUsername())) {
+            long count = lambdaQuery()
+                    .eq(User::getUsername, userDTO.getUsername())
+                    .ne(User::getId, userDTO.getId())
+                    .count();
+            if (count > 0) {
+                throw new BusinessException("username already exists");
+            }
+        }
+
         User user = userConverter.toEntity(userDTO);
+        if (StringUtils.isNotBlank(user.getPassword())) {
+            user.setPassword(normalizePassword(user.getPassword()));
+        }
         return updateById(user);
     }
 
@@ -383,7 +408,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Caching(evict = {
             @CacheEvict(cacheNames = "user", key = "#id"),
             @CacheEvict(cacheNames = "user", allEntries = true),
-            @CacheEvict(cacheNames = "userList", allEntries = true)
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean deleteUser(Long id) {
         return removeById(id);
@@ -486,6 +512,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
+            @CacheEvict(cacheNames = "user", allEntries = true),
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
+    })
+    public boolean updateBatchById(Collection<User> entityList) {
+        if (entityList == null || entityList.isEmpty()) {
+            return false;
+        }
+        for (User entity : entityList) {
+            if (entity != null && StringUtils.isNotBlank(entity.getPassword())) {
+                entity.setPassword(normalizePassword(entity.getPassword()));
+            }
+        }
+        return super.updateBatchById(entityList);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
             @CacheEvict(cacheNames = "user", key = "#entity.id"),
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
@@ -504,7 +549,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
     )
     public boolean updateById(User entity) {
+        if (entity != null && StringUtils.isNotBlank(entity.getPassword())) {
+            entity.setPassword(normalizePassword(entity.getPassword()));
+        }
         return super.updateById(entity);
+    }
+
+    private String normalizePassword(String password) {
+        String trimmed = password == null ? null : password.trim();
+        if (StringUtils.isBlank(trimmed)) {
+            return trimmed;
+        }
+        if (isBCryptHash(trimmed)) {
+            return trimmed;
+        }
+        return passwordEncoder.encode(trimmed);
+    }
+
+    private static boolean isBCryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 
     private void createMerchantForUser(UserDTO userDTO) {

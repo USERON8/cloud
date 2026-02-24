@@ -118,6 +118,12 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             failMessage = "failed to acquire create merchant lock"
     )
     public MerchantDTO createMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantAlreadyExistsException {
+        if (!StringUtils.hasText(merchantDTO.getUsername())) {
+            throw new IllegalArgumentException("username is required");
+        }
+        if (!StringUtils.hasText(merchantDTO.getMerchantName())) {
+            throw new IllegalArgumentException("merchantName is required");
+        }
         if (!StringUtils.hasText(merchantDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
@@ -160,6 +166,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             failMessage = "failed to acquire update merchant lock"
     )
     public boolean updateMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantNotFoundException {
+        if (merchantDTO == null || merchantDTO.getId() == null) {
+            throw new IllegalArgumentException("merchant id is required");
+        }
         Merchant existing = getById(merchantDTO.getId());
         if (existing == null) {
             throw new MerchantException.MerchantNotFoundException(merchantDTO.getId());
@@ -187,6 +196,18 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
 
         Merchant merchant = merchantConverter.toEntity(merchantDTO);
         merchant.setId(merchantDTO.getId());
+        if (!StringUtils.hasText(merchant.getUsername())) {
+            merchant.setUsername(existing.getUsername());
+        }
+        if (!StringUtils.hasText(merchant.getMerchantName())) {
+            merchant.setMerchantName(existing.getMerchantName());
+        }
+        if (!StringUtils.hasText(merchant.getPhone())) {
+            merchant.setPhone(existing.getPhone());
+        }
+        if (merchant.getStatus() == null) {
+            merchant.setStatus(existing.getStatus());
+        }
         if (StringUtils.hasText(merchant.getPassword())) {
             merchant.setPassword(passwordEncoder.encode(merchant.getPassword()));
         } else {

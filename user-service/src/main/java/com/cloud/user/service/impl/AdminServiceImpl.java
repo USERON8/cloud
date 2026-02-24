@@ -112,6 +112,12 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             failMessage = "failed to acquire create admin lock"
     )
     public AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException {
+        if (!StringUtils.hasText(adminDTO.getUsername())) {
+            throw new IllegalArgumentException("username is required");
+        }
+        if (!StringUtils.hasText(adminDTO.getRealName())) {
+            throw new IllegalArgumentException("realName is required");
+        }
         if (!StringUtils.hasText(adminDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
@@ -150,6 +156,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             failMessage = "failed to acquire update admin lock"
     )
     public boolean updateAdmin(AdminDTO adminDTO) throws AdminException.AdminNotFoundException {
+        if (adminDTO == null || adminDTO.getId() == null) {
+            throw new IllegalArgumentException("admin id is required");
+        }
         Admin existingAdmin = getById(adminDTO.getId());
         if (existingAdmin == null) {
             log.warn("Admin not found, adminId={}", adminDTO.getId());
@@ -169,6 +178,21 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         Admin admin = adminConverter.toEntity(adminDTO);
         admin.setId(adminDTO.getId());
+        if (!StringUtils.hasText(admin.getUsername())) {
+            admin.setUsername(existingAdmin.getUsername());
+        }
+        if (!StringUtils.hasText(admin.getRealName())) {
+            admin.setRealName(existingAdmin.getRealName());
+        }
+        if (!StringUtils.hasText(admin.getRole())) {
+            admin.setRole(existingAdmin.getRole());
+        }
+        if (admin.getStatus() == null) {
+            admin.setStatus(existingAdmin.getStatus());
+        }
+        if (!StringUtils.hasText(admin.getPhone())) {
+            admin.setPhone(existingAdmin.getPhone());
+        }
 
         if (StringUtils.hasText(admin.getPassword())) {
             admin.setPassword(passwordEncoder.encode(admin.getPassword()));

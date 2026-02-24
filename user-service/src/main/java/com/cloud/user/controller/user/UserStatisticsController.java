@@ -30,7 +30,7 @@ public class UserStatisticsController {
 
     @GetMapping("/overview")
     @Operation(summary = "Get overview", description = "Get user statistics overview")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<UserStatisticsVO> getStatisticsOverview() {
         try {
             UserStatisticsVO statistics = userStatisticsService.getUserStatisticsOverview();
@@ -43,7 +43,7 @@ public class UserStatisticsController {
 
     @GetMapping("/overview/async")
     @Operation(summary = "Get overview async", description = "Get user statistics overview asynchronously")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public CompletableFuture<Result<UserStatisticsVO>> getStatisticsOverviewAsync() {
         return userStatisticsService.getUserStatisticsOverviewAsync()
                 .thenApply(statistics -> Result.success("query successful", statistics))
@@ -55,7 +55,7 @@ public class UserStatisticsController {
 
     @GetMapping("/registration-trend")
     @Operation(summary = "Get registration trend", description = "Get user registration trend by date range")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<Map<LocalDate, Long>> getRegistrationTrend(
             @RequestParam @Parameter(description = "Start date") LocalDate startDate,
             @RequestParam @Parameter(description = "End date") LocalDate endDate) {
@@ -70,7 +70,7 @@ public class UserStatisticsController {
 
     @GetMapping("/registration-trend/async")
     @Operation(summary = "Get registration trend async", description = "Get user registration trend asynchronously")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public CompletableFuture<Result<Map<LocalDate, Long>>> getRegistrationTrendAsync(
             @RequestParam(defaultValue = "30") @Parameter(description = "Recent days") Integer days) {
         return userStatisticsService.getUserRegistrationTrendAsync(days)
@@ -83,7 +83,7 @@ public class UserStatisticsController {
 
     @GetMapping("/type-distribution")
     @Operation(summary = "Get type distribution", description = "Get user type distribution")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<Map<String, Long>> getTypeDistribution() {
         try {
             Map<String, Long> distribution = userStatisticsService.getUserTypeDistribution();
@@ -96,7 +96,7 @@ public class UserStatisticsController {
 
     @GetMapping("/status-distribution")
     @Operation(summary = "Get status distribution", description = "Get user status distribution")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<Map<String, Long>> getStatusDistribution() {
         try {
             Map<String, Long> distribution = userStatisticsService.getUserStatusDistribution();
@@ -109,7 +109,7 @@ public class UserStatisticsController {
 
     @GetMapping("/active-users")
     @Operation(summary = "Count active users", description = "Count active users in recent days")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<Long> countActiveUsers(
             @RequestParam(defaultValue = "7") @Parameter(description = "Recent days") Integer days) {
         try {
@@ -123,7 +123,7 @@ public class UserStatisticsController {
 
     @GetMapping("/growth-rate")
     @Operation(summary = "Calculate growth rate", description = "Calculate user growth rate for recent days")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public Result<Double> calculateGrowthRate(
             @RequestParam(defaultValue = "7") @Parameter(description = "Recent days") Integer days) {
         try {
@@ -137,7 +137,7 @@ public class UserStatisticsController {
 
     @GetMapping("/activity-ranking")
     @Operation(summary = "Get activity ranking", description = "Get top active users ranking")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     public CompletableFuture<Result<Map<Long, Long>>> getActivityRanking(
             @RequestParam(defaultValue = "10") @Parameter(description = "Ranking size") Integer limit,
             @RequestParam(defaultValue = "30") @Parameter(description = "Recent days") Integer days) {
@@ -151,7 +151,7 @@ public class UserStatisticsController {
 
     @PostMapping("/refresh-cache")
     @Operation(summary = "Refresh statistics cache", description = "Refresh statistics cache asynchronously")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     public CompletableFuture<Result<Boolean>> refreshStatisticsCache() {
         return userStatisticsService.refreshStatisticsCacheAsync()
                 .thenApply(result -> Result.success("cache refresh completed", result))

@@ -240,11 +240,14 @@ public final class SecurityPermissionUtils {
         if (authentication == null) {
             return false;
         }
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equals("ROLE_ADMIN")
-                        || authority.contains("admin")
-                        || hasRole(authentication, "ADMIN"));
+        return hasRole(authentication, "ADMIN")
+                || hasUserType(authentication, "ADMIN")
+                || hasAnyAuthority(authentication,
+                "SCOPE_admin",
+                "SCOPE_admin.read",
+                "SCOPE_admin.write",
+                "SCOPE_admin:read",
+                "SCOPE_admin:write");
     }
 
     
@@ -261,11 +264,14 @@ public final class SecurityPermissionUtils {
         if (authentication == null) {
             return false;
         }
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equals("ROLE_MERCHANT")
-                        || authority.contains("merchant")
-                        || hasRole(authentication, "MERCHANT"));
+        return hasRole(authentication, "MERCHANT")
+                || hasUserType(authentication, "MERCHANT")
+                || hasAnyAuthority(authentication,
+                "SCOPE_merchant",
+                "SCOPE_merchant.read",
+                "SCOPE_merchant.write",
+                "SCOPE_merchant:read",
+                "SCOPE_merchant:write");
     }
 
     

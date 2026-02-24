@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -29,6 +30,7 @@ public class ThreadPoolMonitorController {
     private final ApplicationContext applicationContext;
 
     @GetMapping("/info")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "Get all thread pool metrics")
     public Result<List<Map<String, Object>>> getAllThreadPoolInfo() {
         List<Map<String, Object>> threadPoolInfoList = new ArrayList<>();
@@ -48,6 +50,7 @@ public class ThreadPoolMonitorController {
     }
 
     @GetMapping("/info/detail")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "Get thread pool metrics by bean name")
     public Result<Map<String, Object>> getThreadPoolInfoByName(
             @Parameter(description = "Thread pool bean name")

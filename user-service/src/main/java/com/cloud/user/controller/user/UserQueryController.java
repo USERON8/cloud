@@ -56,7 +56,7 @@ public class UserQueryController {
         return Result.success(userService.pageQuery(userPageDTO));
     }
 
-    @RequestMapping("/findByGitHubId")
+    @GetMapping("/findByGitHubId")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "Find user by GitHub ID", description = "Get one user by GitHub ID")
     public Result<UserDTO> findByGitHubId(
@@ -70,7 +70,7 @@ public class UserQueryController {
         return Result.notFound("user not found by github id");
     }
 
-    @RequestMapping("/findByGitHubUsername")
+    @GetMapping("/findByGitHubUsername")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "Find user by GitHub username", description = "Get one user by GitHub username")
     public Result<UserDTO> findByGitHubUsername(
@@ -84,7 +84,7 @@ public class UserQueryController {
         return Result.notFound("user not found by github username");
     }
 
-    @RequestMapping("/findByOAuthProvider")
+    @GetMapping("/findByOAuthProvider")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
     @Operation(summary = "Find user by OAuth provider", description = "Get one user by OAuth provider and provider ID")
     public Result<UserDTO> findByOAuthProvider(

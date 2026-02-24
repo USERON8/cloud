@@ -4,7 +4,6 @@ import com.cloud.api.user.UserFeignClient;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
-import com.cloud.user.converter.UserConverter;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserFeignController implements UserFeignClient {
 
     private final UserService userService;
-    private final UserConverter userConverter;
 
     @Override
     @GetMapping("/username/{username}")
@@ -43,7 +41,7 @@ public class UserFeignController implements UserFeignClient {
     @Override
     @PutMapping("/update")
     public Boolean update(@RequestBody UserDTO userDTO) {
-        return userService.updateById(userConverter.toEntity(userDTO));
+        return userService.updateUser(userDTO);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -41,7 +43,8 @@ public class MerchantController {
     private final MerchantService merchantService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MERCHANT')")
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
+            + "or (hasRole('MERCHANT') and (hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')))")
     @Operation(summary = "Get merchants", description = "Get merchants with pagination and status filter")
     public Result<PageResult<MerchantDTO>> getMerchants(
             @Parameter(description = "Page number")
@@ -55,6 +58,22 @@ public class MerchantController {
             @RequestParam(required = false) Integer status,
             Authentication authentication) {
         try {
+            if (!SecurityPermissionUtils.isAdmin(authentication)) {
+                String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
+                if (!StringUtils.hasText(currentUserId)) {
+                    return Result.unauthorized("current user is not available");
+                }
+
+                Long merchantId = Long.parseLong(currentUserId);
+                MerchantDTO merchant = merchantService.getMerchantById(merchantId);
+                List<MerchantDTO> records = List.of();
+                if (merchant != null && (status == null || status.equals(merchant.getStatus()))) {
+                    records = List.of(merchant);
+                }
+                PageResult<MerchantDTO> result = PageResult.of(1L, size.longValue(), Long.valueOf(records.size()), records);
+                return Result.success(result);
+            }
+
             Page<MerchantDTO> pageResult = merchantService.getMerchantsPage(page, size, status);
             PageResult<MerchantDTO> result = PageResult.of(
                     pageResult.getCurrent(),
@@ -70,7 +89,9 @@ public class MerchantController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @permissionManager.isMerchantOwner(#id, authentication)")
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
+            + "or ((hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')) "
+            + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Get merchant by ID", description = "Get merchant details by merchant ID")
     public Result<MerchantDTO> getMerchantById(
             @Parameter(description = "Merchant ID")
@@ -91,14 +112,13 @@ public class MerchantController {
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
     @Operation(summary = "Create merchant", description = "Create a merchant")
     public Result<MerchantDTO> createMerchant(
             @Parameter(description = "Merchant payload")
             @RequestBody
             @Valid
-            @NotNull(message = "merchant payload is required") MerchantDTO merchantDTO,
-            Authentication authentication) {
+            @NotNull(message = "merchant payload is required") MerchantDTO merchantDTO) {
         try {
             MerchantDTO created = merchantService.createMerchant(merchantDTO);
             return Result.success("merchant created", created);
@@ -109,7 +129,9 @@ public class MerchantController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @permissionManager.isMerchantOwner(#id, authentication)")
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
+            + "or ((hasAuthority('SCOPE_merchant:write') or hasAuthority('SCOPE_merchant.write')) "
+            + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Update merchant", description = "Update merchant details")
     public Result<Boolean> updateMerchant(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -190,7 +212,9 @@ public class MerchantController {
     }
 
     @GetMapping("/{id}/statistics")
-    @PreAuthorize("hasRole('ADMIN') or @permissionManager.isMerchantOwner(#id, authentication)")
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
+            + "or ((hasAuthority('SCOPE_merchant:read') or hasAuthority('SCOPE_merchant.read')) "
+            + "and @permissionManager.isMerchantOwner(#id, authentication))")
     @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
     public Result<Object> getMerchantStatistics(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
