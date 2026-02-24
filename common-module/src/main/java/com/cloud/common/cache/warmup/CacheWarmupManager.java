@@ -1,16 +1,17 @@
 package com.cloud.common.cache.warmup;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Component
 @Slf4j
@@ -18,10 +19,14 @@ public class CacheWarmupManager {
 
     private final CacheManager cacheManager;
     private final List<CacheWarmupStrategy> warmupStrategies;
+    private final Executor warmupExecutor;
 
-    public CacheWarmupManager(CacheManager cacheManager, List<CacheWarmupStrategy> warmupStrategies) {
+    public CacheWarmupManager(CacheManager cacheManager,
+                              List<CacheWarmupStrategy> warmupStrategies,
+                              @Qualifier("warmupExecutor") Executor warmupExecutor) {
         this.cacheManager = cacheManager;
         this.warmupStrategies = warmupStrategies != null ? warmupStrategies : new ArrayList<>();
+        this.warmupExecutor = warmupExecutor;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -30,11 +35,18 @@ public class CacheWarmupManager {
         if (warmupStrategies.isEmpty()) {
             return;
         }
-        executeWarmup();
+        triggerWarmup();
     }
 
-    @Async("warmupExecutor")
     public CompletableFuture<Void> executeWarmup() {
+        return CompletableFuture.runAsync(this::doWarmup, warmupExecutor);
+    }
+
+    public CompletableFuture<Void> triggerWarmup() {
+        return executeWarmup();
+    }
+
+    private void doWarmup() {
         long start = System.currentTimeMillis();
         int successCount = 0;
         int failureCount = 0;
@@ -59,11 +71,5 @@ public class CacheWarmupManager {
             log.debug("Cache warmup finished: success={}, warmedUp={}, costMs={}",
                     successCount, warmedUpCount, cost);
         }
-
-        return CompletableFuture.completedFuture(null);
-    }
-
-    public CompletableFuture<Void> triggerWarmup() {
-        return executeWarmup();
     }
 }

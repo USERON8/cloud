@@ -15,6 +15,9 @@ public class OrderPageQueryDTO extends PageQuery {
     @Schema(description = "User ID")
     private Long userId;
 
+    @Schema(description = "Shop ID")
+    private Long shopId;
+
     @Schema(description = "Order status: 0 pending payment, 1 paid, 2 shipped, 3 completed, 4 cancelled")
     private Integer status;
 

@@ -134,19 +134,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
     @Override
     @Async("userCommonAsyncExecutor")
     public CompletableFuture<Void> refreshUserCacheAsync(Long userId) {
-        try {
-            Cache userCache = cacheManager.getCache("user");
-            Cache userInfoCache = cacheManager.getCache("userInfo");
-            if (userCache != null) {
-                userCache.evict(userId);
-            }
-            if (userInfoCache != null) {
-                userInfoCache.evict(userId);
-            }
-            userService.getUserById(userId);
-        } catch (Exception e) {
-            log.error("Failed to refresh user cache asynchronously, userId={}", userId, e);
-        }
+        refreshUserCacheDirect(userId);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -156,8 +144,10 @@ public class UserAsyncServiceImpl implements UserAsyncService {
         if (userIds == null || userIds.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
-        List<CompletableFuture<Void>> futures = userIds.stream().map(this::refreshUserCacheAsync).toList();
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        userIds.stream()
+                .filter(Objects::nonNull)
+                .forEach(this::refreshUserCacheDirect);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -248,5 +238,21 @@ public class UserAsyncServiceImpl implements UserAsyncService {
             }
             return keys;
         });
+    }
+
+    private void refreshUserCacheDirect(Long userId) {
+        try {
+            Cache userCache = cacheManager.getCache("user");
+            Cache userInfoCache = cacheManager.getCache("userInfo");
+            if (userCache != null) {
+                userCache.evict(userId);
+            }
+            if (userInfoCache != null) {
+                userInfoCache.evict(userId);
+            }
+            userService.getUserById(userId);
+        } catch (Exception e) {
+            log.error("Failed to refresh user cache asynchronously, userId={}", userId, e);
+        }
     }
 }

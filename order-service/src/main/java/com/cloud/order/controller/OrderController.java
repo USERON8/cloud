@@ -47,12 +47,15 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or "
+            + "@permissionManager.hasMerchantAccess(authentication) or "
+            + "@permissionManager.hasAdminAccess(authentication)")
     @Operation(summary = "Get orders", description = "Get order list with pagination")
     public Result<PageResult<OrderVO>> getOrders(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "User ID") @RequestParam(required = false) Long userId,
+            @Parameter(description = "Shop ID") @RequestParam(required = false) Long shopId,
             @Parameter(description = "Order status") @RequestParam(required = false) Integer status,
             Authentication authentication) {
 
@@ -61,12 +64,25 @@ public class OrderController {
         queryDTO.setSize(size.longValue());
         if (isAdmin(authentication)) {
             queryDTO.setUserId(userId);
+            queryDTO.setShopId(shopId);
+        } else if (isMerchant(authentication)) {
+            Long currentMerchantId = requireCurrentUserId(authentication);
+            if (shopId != null && !Objects.equals(shopId, currentMerchantId)) {
+                throw new BusinessException("forbidden to query other merchant's orders");
+            }
+            if (userId != null) {
+                throw new BusinessException("merchant cannot filter by userId");
+            }
+            queryDTO.setShopId(currentMerchantId);
         } else {
             Long currentUserId = requireCurrentUserId(authentication);
             if (userId != null && !Objects.equals(userId, currentUserId)) {
                 throw new BusinessException("forbidden to query other user's orders");
             }
             queryDTO.setUserId(currentUserId);
+            if (shopId != null) {
+                throw new BusinessException("user cannot filter by shopId");
+            }
         }
         queryDTO.setStatus(status);
 

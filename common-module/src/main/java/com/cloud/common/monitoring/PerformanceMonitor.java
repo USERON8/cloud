@@ -5,12 +5,15 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.MeterBinder;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -20,8 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -46,8 +48,9 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final AtomicLong errorRequests = new AtomicLong(0);
     private final Map<String, PerformanceMetrics> endpointMetrics = new ConcurrentHashMap<>();
-    
-    private final ScheduledExecutorService monitoringExecutor = Executors.newScheduledThreadPool(2);
+    private final TaskScheduler monitoringScheduler;
+    private volatile ScheduledFuture<?> metricsCollectionTask;
+    private volatile ScheduledFuture<?> cleanupTask;
     @Autowired(required = false)
     private DataSource dataSource;  
     private MeterRegistry meterRegistry;
@@ -59,8 +62,10 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
     private Gauge memoryUsageGauge;
     private Gauge redisConnectionsGauge;
 
-    public PerformanceMonitor(RedisTemplate<String, Object> redisTemplate) {
+    public PerformanceMonitor(RedisTemplate<String, Object> redisTemplate,
+                              @Qualifier("taskScheduler") TaskScheduler monitoringScheduler) {
         this.redisTemplate = redisTemplate;
+        this.monitoringScheduler = monitoringScheduler;
     }
 
     @Override
@@ -224,24 +229,38 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
     
 
 
-    private void startMonitoringTasks() {
-        
-        monitoringExecutor.scheduleWithFixedDelay(() -> {
+    private synchronized void startMonitoringTasks() {
+        if (metricsCollectionTask != null && !metricsCollectionTask.isCancelled()) {
+            return;
+        }
+
+        metricsCollectionTask = monitoringScheduler.scheduleWithFixedDelay(() -> {
             try {
                 recordSystemMetrics();
             } catch (Exception e) {
-                log.error("璁板綍绯荤粺鎸囨爣寮傚父", e);
+                log.error("Record system metrics failed", e);
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, Duration.ofMinutes(1));
 
-        
-        monitoringExecutor.scheduleWithFixedDelay(() -> {
+        cleanupTask = monitoringScheduler.scheduleWithFixedDelay(() -> {
             try {
                 cleanupExpiredMetrics();
             } catch (Exception e) {
-                log.error("娓呯悊杩囨湡鎸囨爣寮傚父", e);
+                log.error("Cleanup expired metrics failed", e);
             }
-        }, 5, 5, TimeUnit.MINUTES);
+        }, Duration.ofMinutes(5));
+    }
+
+    @PreDestroy
+    public synchronized void stopMonitoringTasks() {
+        if (metricsCollectionTask != null) {
+            metricsCollectionTask.cancel(true);
+            metricsCollectionTask = null;
+        }
+        if (cleanupTask != null) {
+            cleanupTask.cancel(true);
+            cleanupTask = null;
+        }
     }
 
     

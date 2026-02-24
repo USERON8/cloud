@@ -65,18 +65,9 @@ public class AsyncConfig implements AsyncConfigurer {
                 100,
                 "gateway-monitor-"
         );
-        executor.initialize();
-
-        
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-        
         executor.setWaitForTasksToCompleteOnShutdown(true);
-
-        
         executor.setAwaitTerminationSeconds(30);
-
-        
         executor.initialize();
 
         

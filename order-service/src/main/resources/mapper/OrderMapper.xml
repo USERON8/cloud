@@ -42,6 +42,9 @@
             <if test="query.userId != null">
                 AND user_id = #{query.userId}
             </if>
+            <if test="query.shopId != null">
+                AND shop_id = #{query.shopId}
+            </if>
             <if test="query.status != null">
                 AND status = #{query.status}
             </if>

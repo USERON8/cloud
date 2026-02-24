@@ -52,7 +52,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or "
+            + "@permissionManager.hasMerchantAccess(authentication) or "
+            + "@permissionManager.hasAdminAccess(authentication)")
     public Page<OrderVO> pageQuery(OrderPageQueryDTO queryDTO) {
         OrderPageQueryDTO safeQuery = queryDTO == null ? new OrderPageQueryDTO() : queryDTO;
         long current = safeQuery.getCurrent() == null || safeQuery.getCurrent() < 1 ? 1L : safeQuery.getCurrent();

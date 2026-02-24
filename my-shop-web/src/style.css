@@ -1,0 +1,56 @@
+:root {
+  --bg-top: #eef3fb;
+  --bg-bottom: #dfe8f5;
+  --panel-bg: rgba(255, 255, 255, 0.72);
+  --panel-border: rgba(255, 255, 255, 0.75);
+  --text-main: #182033;
+  --text-muted: #687288;
+  --accent: #246bff;
+  --shadow-soft: 0 18px 40px rgba(37, 52, 85, 0.12);
+  font-family: 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif;
+  line-height: 1.4;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 12% -10%, rgba(255, 255, 255, 0.85) 0%, transparent 42%),
+    radial-gradient(circle at 90% -6%, rgba(152, 188, 255, 0.3) 0%, transparent 40%),
+    linear-gradient(170deg, var(--bg-top), var(--bg-bottom));
+}
+
+.glass-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+}
+
+a {
+  color: inherit;
+}
+
+.el-button {
+  font-weight: 600;
+}

@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:80}
   tomcat:
     threads:
@@ -71,7 +71,7 @@ spring:
           uri: lb://user-service
           order: 20
           predicates:
-            - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
+            - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/user/profile/**,/api/user/notification/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
         - id: product-service-api
           uri: lb://product-service
           order: 20

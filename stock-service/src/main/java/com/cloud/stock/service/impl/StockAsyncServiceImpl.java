@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -153,13 +152,7 @@ public class StockAsyncServiceImpl implements StockAsyncService {
     @Override
     @Async("stockCommonExecutor")
     public CompletableFuture<Void> refreshStockCacheAsync(Long productId) {
-        try {
-            evictCache("stockCache", productId);
-            evictCache("stockCache", "product:" + productId);
-            stockService.getStockByProductId(productId);
-        } catch (Exception e) {
-            log.error("Failed to refresh stock cache asynchronously, productId={}", productId, e);
-        }
+        refreshStockCacheDirect(productId);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -170,10 +163,10 @@ public class StockAsyncServiceImpl implements StockAsyncService {
             return CompletableFuture.completedFuture(null);
         }
 
-        List<CompletableFuture<Void>> futures = productIds.stream()
-                .map(this::refreshStockCacheAsync)
-                .collect(Collectors.toList());
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        productIds.stream()
+                .filter(Objects::nonNull)
+                .forEach(this::refreshStockCacheDirect);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -254,6 +247,16 @@ public class StockAsyncServiceImpl implements StockAsyncService {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.evict(key);
+        }
+    }
+
+    private void refreshStockCacheDirect(Long productId) {
+        try {
+            evictCache("stockCache", productId);
+            evictCache("stockCache", "product:" + productId);
+            stockService.getStockByProductId(productId);
+        } catch (Exception e) {
+            log.error("Failed to refresh stock cache asynchronously, productId={}", productId, e);
         }
     }
 
