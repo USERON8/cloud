@@ -47,6 +47,8 @@ spring:
 
     # Comment sanitized for UTF-8 compatibility.
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Expose-Headers, RETAIN_FIRST
       routes:
         - id: oauth2-endpoints
           uri: lb://auth-service
@@ -103,28 +105,6 @@ spring:
           lower-case-service-id: true
       csrf:
         enabled: true
-      # Comment sanitized for UTF-8 compatibility.
-      globals:
-        cors-configurations:
-          '[/**]':
-            allowedOriginPatterns:
-              - "http://127.0.0.1:*"
-              - "https://127.0.0.1:*"
-              - "https://*.yourdomain.com"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders:
-              - "Authorization"
-              - "Content-Type"
-              - "Accept"
-              - "X-Requested-With"
-            allowCredentials: true
-            maxAge: 3600
-
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration

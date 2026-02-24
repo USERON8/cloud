@@ -17,7 +17,12 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -42,8 +47,10 @@ public class ResourceServerConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchanges -> {
                     var authExchanges = exchanges
+                            .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
                             .pathMatchers("/connect/**").permitAll()
                             .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**").permitAll()
@@ -101,7 +108,8 @@ public class ResourceServerConfig {
                             .pathMatchers(
                                     "/users/**", "/merchant/**", "/admin/**",
                                     "/api/manage/users/**", "/api/query/users/**",
-                                    "/api/user/address/**", "/api/merchant/**",
+                                    "/api/user/address/**", "/api/user/profile/**", "/api/user/notification/**",
+                                    "/api/merchant/**",
                                     "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**"
                             ).authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
@@ -131,6 +139,26 @@ public class ResourceServerConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOriginPatterns(List.of(
+                "http://127.0.0.1:*",
+                "https://127.0.0.1:*",
+                "http://localhost:*",
+                "https://localhost:*"
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean

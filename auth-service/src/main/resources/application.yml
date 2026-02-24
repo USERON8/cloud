@@ -72,6 +72,7 @@ spring:
           github:
             client-id: ${GITHUB_CLIENT_ID:}
             client-secret: ${GITHUB_CLIENT_SECRET:}
+            redirect-uri: ${GITHUB_REDIRECT_URI:http://127.0.0.1:18080/login/oauth2/code/github}
           client-service:
             provider: custom-authorization-server
             client-id: client-service
@@ -119,8 +120,8 @@ app:
   oauth2:
     github:
       redirect:
-        success-url: ${APP_OAUTH2_GITHUB_SUCCESS_URL:http://127.0.0.1:3000/auth/success}
-        error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:3000/auth/error}
+        success-url: ${APP_OAUTH2_GITHUB_SUCCESS_URL:http://127.0.0.1:18080/auth/success}
+        error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:18080/auth/error}
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}

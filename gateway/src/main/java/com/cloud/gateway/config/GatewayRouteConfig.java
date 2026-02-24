@@ -23,7 +23,17 @@ public class GatewayRouteConfig {
                         .path("/auth/**")
                         .uri("lb://auth-service"))
                 .route("code-user-service-api", r -> r
-                        .path("/api/manage/users/**", "/api/query/users/**", "/api/user/address/**", "/api/merchant/**", "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**")
+                        .path(
+                                "/api/manage/users/**",
+                                "/api/query/users/**",
+                                "/api/user/address/**",
+                                "/api/user/profile/**",
+                                "/api/user/notification/**",
+                                "/api/merchant/**",
+                                "/api/admin/**",
+                                "/api/statistics/**",
+                                "/api/thread-pool/**"
+                        )
                         .uri("lb://user-service"))
                 .route("code-product-service-api", r -> r
                         .path("/api/product", "/api/product/**", "/api/category", "/api/category/**")

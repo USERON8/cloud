@@ -22,6 +22,8 @@ const userTypeOptions: Array<{ label: string; value: LoginRequest['userType'] }>
   { label: 'Administrator', value: 'ADMIN' }
 ]
 
+const githubAuthorizePath = import.meta.env.VITE_GITHUB_AUTHORIZE_URL || '/oauth2/authorization/github'
+
 async function submitLogin(): Promise<void> {
   if (!form.username || !form.password) {
     ElMessage.warning('Please input username and password.')
@@ -42,6 +44,11 @@ async function submitLogin(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+function signInWithGitHub(mode: 'login' | 'register'): void {
+  localStorage.setItem('shop.oauth.intent', mode)
+  window.location.href = githubAuthorizePath
 }
 </script>
 
@@ -83,6 +90,18 @@ async function submitLogin(): Promise<void> {
         <el-button :loading="loading" class="full-width" round type="primary" @click="submitLogin">
           Continue
         </el-button>
+
+        <div class="oauth-divider">or</div>
+
+        <el-button class="full-width" plain round @click="signInWithGitHub('login')">
+          Continue with GitHub
+        </el-button>
+        <el-button class="full-width" plain round type="success" @click="signInWithGitHub('register')">
+          Register with GitHub
+        </el-button>
+        <p class="oauth-note">
+          First GitHub login will create a new account automatically.
+        </p>
       </el-form>
     </section>
   </div>
@@ -119,5 +138,18 @@ header h1 {
 
 .full-width {
   width: 100%;
+}
+
+.oauth-divider {
+  text-align: center;
+  color: var(--text-muted);
+  margin: 12px 0 10px;
+  font-size: 0.82rem;
+}
+
+.oauth-note {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 </style>

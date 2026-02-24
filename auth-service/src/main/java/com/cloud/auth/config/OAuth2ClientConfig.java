@@ -30,6 +30,9 @@ public class OAuth2ClientConfig {
     @Value("${spring.security.oauth2.client.registration.github.client-secret:}")
     private String githubClientSecret;
 
+    @Value("${spring.security.oauth2.client.registration.github.redirect-uri:http://127.0.0.1:18080/login/oauth2/code/github}")
+    private String githubRedirectUri;
+
     @Value("${spring.security.oauth2.client.registration.client-service.client-id:client-service}")
     private String serviceClientId;
 
@@ -49,7 +52,7 @@ public class OAuth2ClientConfig {
                 .clientSecret(githubClientSecret)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                .redirectUri(githubRedirectUri)
                 .scope("read:user", "user:email")
                 .authorizationUri("https://github.com/login/oauth/authorize")
                 .tokenUri("https://github.com/login/oauth/access_token")

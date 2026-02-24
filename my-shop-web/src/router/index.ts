@@ -18,6 +18,18 @@ const router = createRouter({
       meta: { title: 'Forbidden', public: true }
     },
     {
+      path: '/auth/success',
+      name: 'oauth-success',
+      component: () => import('../views/OAuthSuccessView.vue'),
+      meta: { title: 'GitHub Sign In', public: true }
+    },
+    {
+      path: '/auth/error',
+      name: 'oauth-error',
+      component: () => import('../views/OAuthErrorView.vue'),
+      meta: { title: 'GitHub Error', public: true }
+    },
+    {
       path: '/',
       component: () => import('../views/AppLayout.vue'),
       meta: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] },
