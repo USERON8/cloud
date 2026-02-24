@@ -1,48 +1,32 @@
-﻿# k6 Acceptance Load
+﻿# k6 主链路压测
 
-This folder contains the load script for 8 acceptance scenarios.
+该目录用于电商主链路验收压测。
 
-## Files
+## 文件
 
-- `acceptance-cases.js`: scenario definitions and case metrics.
-- `run-acceptance.ps1`: run with Docker Compose on PowerShell.
-- `run-acceptance.sh`: run with Docker Compose on shell.
+- `acceptance-cases.js`：场景定义
+- `run-acceptance.ps1`：PowerShell 启动
+- `run-acceptance.sh`：Shell 启动
 
-## Quick Start
-
-1. Start monitoring stack:
+## 快速运行
 
 ```bash
-docker compose -f docker/monitoring-compose.yml up -d prometheus grafana
-```
+# PowerShell
+powershell -File tests/perf/k6/run-acceptance.ps1
 
-2. Set required environment variables (example):
-
-```bash
-export K6_BASE_URL=http://host.docker.internal:80
-export AUTH_TOKEN=<jwt>
-export USER_ID=1
-export SHOP_ID=1
-export PRODUCT_ID=1
-```
-
-3. Run:
-
-```bash
+# Shell
 ./tests/perf/k6/run-acceptance.sh
 ```
 
-## Optional Inputs
+默认会通过 `docker/monitoring-compose.yml` 的 `k6` 服务执行。
 
-- `AUTH_USERNAME` + `AUTH_PASSWORD` (if `AUTH_TOKEN` is not provided)
-- `ORDER_ID`, `ORDER_NO`, `PAYMENT_ID`
-- `CASE_VUS`, `CASE_DURATION`, `CASE_STAGE_SECONDS`
-- `HEALTH_TARGETS` (comma-separated URL list)
+## 常用变量
 
-## Output Metrics
-
-- `k6_acceptance_case_total{case_id,case_name,result}`
-- `k6_acceptance_case_failed_total{case_id,case_name}`
-- `k6_acceptance_case_skipped_total{case_id,case_name}`
-- `k6_acceptance_case_duration_ms_*`
-- built-in `k6_http_reqs_total`, `k6_checks_rate`
+- `K6_BASE_URL`（默认 `http://host.docker.internal:80`）
+- `AUTH_TOKEN`
+- `USER_ID`、`PRODUCT_ID`、`ORDER_ID`、`PAYMENT_ID`
+- `CASE_SLEEP_SECONDS`（每轮 case 间隔，默认 `1`）
+- `REQUEST_TIMEOUT`（请求超时，默认 `30s`）
+- `CASE_SUCCESS_RATE_THRESHOLD`（成功率阈值，默认 `0.9`）
+- `CASE_DURATION_P95_THRESHOLD_MS`（case 耗时 p95 阈值，默认 `5000` 毫秒）
+- `HTTP_FAILED_RATE_THRESHOLD`（HTTP 失败率阈值，默认 `0.05`）
