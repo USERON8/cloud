@@ -45,7 +45,6 @@ public class ProductSearchController {
 
     @Operation(summary = "Complex search", description = "Run full search by request payload")
     @PostMapping("/complex-search")
-    @PreAuthorize("hasAuthority('SCOPE_search:read')")
     public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
         SearchResult<ProductDocument> result = productSearchService.searchProducts(request);
         return Result.success("Search success", result);
@@ -195,7 +194,7 @@ public class ProductSearchController {
 
     @Operation(summary = "Rebuild index", description = "Rebuild product index")
     @PostMapping("/rebuild-index")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
     public Result<String> rebuildIndex() {
         productSearchService.rebuildProductIndex();
         return Result.success("Rebuild index success", "Rebuild index success");

@@ -9,7 +9,9 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.OrderPageQueryDTO;
+import com.cloud.order.module.entity.Order;
 import com.cloud.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -50,12 +53,21 @@ public class OrderController {
             @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "User ID") @RequestParam(required = false) Long userId,
-            @Parameter(description = "Order status") @RequestParam(required = false) Integer status) {
+            @Parameter(description = "Order status") @RequestParam(required = false) Integer status,
+            Authentication authentication) {
 
         OrderPageQueryDTO queryDTO = new OrderPageQueryDTO();
         queryDTO.setCurrent(page.longValue());
         queryDTO.setSize(size.longValue());
-        queryDTO.setUserId(userId);
+        if (isAdmin(authentication)) {
+            queryDTO.setUserId(userId);
+        } else {
+            Long currentUserId = requireCurrentUserId(authentication);
+            if (userId != null && !Objects.equals(userId, currentUserId)) {
+                throw new BusinessException("forbidden to query other user's orders");
+            }
+            queryDTO.setUserId(currentUserId);
+        }
         queryDTO.setStatus(status);
 
         Page<OrderVO> pageResult = orderService.pageQuery(queryDTO);
@@ -79,6 +91,7 @@ public class OrderController {
         if (order == null) {
             throw new ResourceNotFoundException("Order", String.valueOf(id));
         }
+        assertCanAccessOrder(order, authentication);
         return Result.success("query successful", order);
     }
 
@@ -94,7 +107,15 @@ public class OrderController {
     @Operation(summary = "Create order", description = "Create a new order")
     public Result<OrderDTO> createOrder(
             @Parameter(description = "Order payload") @RequestBody
-            @Valid @NotNull(message = "order payload is required") OrderCreateDTO orderCreateDTO) {
+            @Valid @NotNull(message = "order payload is required") OrderCreateDTO orderCreateDTO,
+            Authentication authentication) {
+
+        Long currentUserId = requireCurrentUserId(authentication);
+        if (orderCreateDTO.getUserId() == null) {
+            orderCreateDTO.setUserId(currentUserId);
+        } else if (!Objects.equals(orderCreateDTO.getUserId(), currentUserId)) {
+            throw new BusinessException("forbidden to create order for another user");
+        }
 
         OrderDTO orderDTO = orderService.createOrder(orderCreateDTO);
         return Result.success("order created", orderDTO);
@@ -109,6 +130,20 @@ public class OrderController {
             @Valid @NotNull(message = "order payload is required") OrderDTO orderDTO,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            OrderDTO existingOrder = orderService.getByOrderEntityId(id);
+            assertCanAccessOrder(existingOrder, authentication);
+            orderDTO.setUserId(existingOrder.getUserId());
+            orderDTO.setOrderNo(existingOrder.getOrderNo());
+            orderDTO.setTotalAmount(existingOrder.getTotalAmount());
+            orderDTO.setPayAmount(existingOrder.getPayAmount());
+            orderDTO.setStatus(existingOrder.getStatus());
+            orderDTO.setPayTime(existingOrder.getPayTime());
+            orderDTO.setShipTime(existingOrder.getShipTime());
+            orderDTO.setCompleteTime(existingOrder.getCompleteTime());
+            orderDTO.setCancelTime(existingOrder.getCancelTime());
+            orderDTO.setCancelReason(existingOrder.getCancelReason());
+        }
         orderDTO.setId(id);
         Boolean result = orderService.updateOrder(orderDTO);
         return Result.success("order updated", result);
@@ -137,6 +172,9 @@ public class OrderController {
             @Parameter(description = "Order ID") @PathVariable Long id,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderId(id, authentication);
+        }
         Boolean result = orderService.payOrder(id);
         if (!Boolean.TRUE.equals(result)) {
             throw new BusinessException("failed to pay order");
@@ -157,6 +195,9 @@ public class OrderController {
             @Parameter(description = "Order ID") @PathVariable Long id,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            assertCanShipOrderId(id, authentication);
+        }
         Boolean result = orderService.shipOrder(id);
         if (!Boolean.TRUE.equals(result)) {
             throw new BusinessException("failed to ship order");
@@ -177,6 +218,9 @@ public class OrderController {
             @Parameter(description = "Order ID") @PathVariable Long id,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderId(id, authentication);
+        }
         Boolean result = orderService.completeOrder(id);
         if (!Boolean.TRUE.equals(result)) {
             throw new BusinessException("failed to complete order");
@@ -198,6 +242,9 @@ public class OrderController {
             @Parameter(description = "Cancel reason") @RequestParam(required = false) String cancelReason,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderId(id, authentication);
+        }
         Boolean result = orderService.cancelOrderWithReason(id, cancelReason);
         if (!Boolean.TRUE.equals(result)) {
             throw new BusinessException("failed to cancel order");
@@ -212,6 +259,12 @@ public class OrderController {
             @Parameter(description = "User ID") @PathVariable Long userId,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            Long currentUserId = requireCurrentUserId(authentication);
+            if (!Objects.equals(currentUserId, userId)) {
+                throw new BusinessException("forbidden to query other user's orders");
+            }
+        }
         List<OrderDTO> orders = orderService.getOrdersByUserId(userId);
         return Result.success("query successful", orders);
     }
@@ -223,6 +276,9 @@ public class OrderController {
             @Parameter(description = "Order ID") @PathVariable Long id,
             Authentication authentication) {
 
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderId(id, authentication);
+        }
         Boolean isPaid = orderService.isOrderPaid(id);
         return Result.success("query successful", isPaid);
     }
@@ -260,6 +316,9 @@ public class OrderController {
         if (ids.size() > 100) {
             return Result.badRequest("batch size cannot exceed 100");
         }
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderIds(ids, authentication);
+        }
 
         int successCount = 0;
         for (Long orderId : ids) {
@@ -288,6 +347,9 @@ public class OrderController {
         if (ids.size() > 100) {
             return Result.badRequest("batch size cannot exceed 100");
         }
+        if (!isAdmin(authentication)) {
+            assertCanShipOrderIds(ids, authentication);
+        }
 
         Integer successCount = orderService.batchUpdateOrderStatus(ids, 2);
         return Result.success(String.format("batch ship completed: %d/%d", successCount, ids.size()), successCount);
@@ -306,6 +368,9 @@ public class OrderController {
         }
         if (ids.size() > 100) {
             return Result.badRequest("batch size cannot exceed 100");
+        }
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderIds(ids, authentication);
         }
 
         Integer successCount = orderService.batchUpdateOrderStatus(ids, 3);
@@ -326,8 +391,81 @@ public class OrderController {
         if (ids.size() > 100) {
             return Result.badRequest("batch size cannot exceed 100");
         }
+        if (!isAdmin(authentication)) {
+            assertCanAccessOrderIds(ids, authentication);
+        }
 
         Integer successCount = orderService.batchUpdateOrderStatus(ids, 1);
         return Result.success(String.format("batch pay completed: %d/%d", successCount, ids.size()), successCount);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return SecurityPermissionUtils.isAdmin(authentication);
+    }
+
+    private boolean isMerchant(Authentication authentication) {
+        return SecurityPermissionUtils.isMerchant(authentication);
+    }
+
+    private Long requireCurrentUserId(Authentication authentication) {
+        String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
+        if (userId == null || userId.isBlank()) {
+            throw new BusinessException("current user not found in token");
+        }
+        try {
+            return Long.parseLong(userId);
+        } catch (NumberFormatException ex) {
+            throw new BusinessException("invalid user_id in token");
+        }
+    }
+
+    private void assertCanAccessOrderId(Long orderId, Authentication authentication) {
+        OrderDTO order = orderService.getByOrderEntityId(orderId);
+        assertCanAccessOrder(order, authentication);
+    }
+
+    private void assertCanAccessOrder(OrderDTO order, Authentication authentication) {
+        if (order == null) {
+            return;
+        }
+        if (isAdmin(authentication)) {
+            return;
+        }
+        Long currentUserId = requireCurrentUserId(authentication);
+        if (!Objects.equals(currentUserId, order.getUserId())) {
+            throw new BusinessException("forbidden to access other user's order");
+        }
+    }
+
+    private void assertCanAccessOrderIds(List<Long> orderIds, Authentication authentication) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return;
+        }
+        for (Long orderId : orderIds) {
+            assertCanAccessOrderId(orderId, authentication);
+        }
+    }
+
+    private void assertCanShipOrderId(Long orderId, Authentication authentication) {
+        if (!isMerchant(authentication)) {
+            throw new BusinessException("forbidden to ship order");
+        }
+        Long currentUserId = requireCurrentUserId(authentication);
+        Order order = orderService.getById(orderId);
+        if (order == null) {
+            throw new ResourceNotFoundException("Order", String.valueOf(orderId));
+        }
+        if (!Objects.equals(currentUserId, order.getShopId())) {
+            throw new BusinessException("forbidden to ship order of another merchant");
+        }
+    }
+
+    private void assertCanShipOrderIds(List<Long> orderIds, Authentication authentication) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return;
+        }
+        for (Long orderId : orderIds) {
+            assertCanShipOrderId(orderId, authentication);
+        }
     }
 }

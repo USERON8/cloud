@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -22,6 +24,13 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthen
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+
 @Slf4j
 @Configuration
 @EnableWebSecurity
@@ -31,16 +40,11 @@ public class ResourceServerConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.cache-duration:PT30M}")
-    private String jwtCacheDuration;
-
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String jwtIssuer;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
-        
-
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -59,7 +63,7 @@ public class ResourceServerConfig {
                             .hasAuthority("SCOPE_internal_api");
 
                     auth.requestMatchers("/api/search/rebuild-index")
-                            .hasRole("ADMIN");
+                            .hasAnyAuthority("ROLE_ADMIN", "SCOPE_admin:write");
 
                     auth.requestMatchers("/api/search/**", "/api/search/shops/**")
                             .permitAll();
@@ -92,32 +96,69 @@ public class ResourceServerConfig {
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(jwtIssuer);
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, blacklistTokenValidator));
 
-        
         return decoder;
     }
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("SCOPE_");
-        authoritiesConverter.setAuthoritiesClaimName("scope");
+        JwtGrantedAuthoritiesConverter roleClaimConverter = new JwtGrantedAuthoritiesConverter();
+        roleClaimConverter.setAuthorityPrefix("ROLE_");
+        roleClaimConverter.setAuthoritiesClaimName("authorities");
 
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Set<GrantedAuthority> authorities = new HashSet<>(extractScopeAuthorities(jwt));
 
-        
+            Collection<GrantedAuthority> roleAuthorities = roleClaimConverter.convert(jwt);
+            if (roleAuthorities != null) {
+                authorities.addAll(roleAuthorities);
+            }
+
+            String userType = jwt.getClaimAsString("user_type");
+            if (userType != null && !userType.isBlank()) {
+                String normalizedUserType = userType.trim().toUpperCase(Locale.ROOT);
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + normalizedUserType));
+            }
+            return authorities;
+        });
         return converter;
     }
 
-    @Bean
-    public String logSearchSecurityConfiguration() {
-        
-        
-        
-        
-        
-        
-        
-        return "search-security-configured";
+    private static Set<GrantedAuthority> extractScopeAuthorities(Jwt jwt) {
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scope"));
+        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scp"));
+        return authorities;
+    }
+
+    private static void normalizeAndAddScopeAuthorities(Set<GrantedAuthority> authorities, Object scopeClaim) {
+        if (scopeClaim == null) {
+            return;
+        }
+        if (scopeClaim instanceof String scopeString) {
+            Arrays.stream(scopeString.split("\\s+"))
+                    .map(String::trim)
+                    .filter(scope -> !scope.isEmpty())
+                    .map(ResourceServerConfig::normalizeScope)
+                    .forEach(scope -> addScopeAuthority(authorities, scope));
+            return;
+        }
+        if (scopeClaim instanceof Collection<?> scopes) {
+            scopes.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(scope -> !scope.isEmpty())
+                    .map(ResourceServerConfig::normalizeScope)
+                    .forEach(scope -> addScopeAuthority(authorities, scope));
+        }
+    }
+
+    private static String normalizeScope(String scope) {
+        return scope.replace('.', ':').toLowerCase(Locale.ROOT);
+    }
+
+    private static void addScopeAuthority(Set<GrantedAuthority> authorities, String scope) {
+        authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope));
     }
 }

@@ -6,18 +6,30 @@
 
     <resultMap id="BaseResultMap" type="com.cloud.order.module.entity.Order">
         <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
         <result property="userId" column="user_id"/>
         <result property="totalAmount" column="total_amount"/>
         <result property="payAmount" column="pay_amount"/>
         <result property="status" column="status"/>
+        <result property="refundStatus" column="refund_status"/>
         <result property="addressId" column="address_id"/>
+        <result property="payTime" column="pay_time"/>
+        <result property="shipTime" column="ship_time"/>
+        <result property="completeTime" column="complete_time"/>
+        <result property="cancelTime" column="cancel_time"/>
+        <result property="cancelReason" column="cancel_reason"/>
+        <result property="remark" column="remark"/>
+        <result property="shopId" column="shop_id"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,user_id,total_amount,pay_amount,status,address_id,
-        created_at,updated_at
+        id,order_no,user_id,total_amount,pay_amount,status,refund_status,address_id,
+        pay_time,ship_time,complete_time,cancel_time,cancel_reason,remark,shop_id,
+        created_at,updated_at,deleted,version
     </sql>
 
     <!-- 分页查询订单 -->
