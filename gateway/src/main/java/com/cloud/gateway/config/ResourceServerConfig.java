@@ -43,8 +43,20 @@ public class ResourceServerConfig {
     @Value("${app.security.enable-test-api:false}")
     private boolean enableTestApi;
 
+    @Value("${app.security.testenv-bypass-enabled:false}")
+    private boolean securityTestMode;
+
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+        if (securityTestMode) {
+            log.warn("Gateway security test mode is enabled. JWT validation is bypassed and all exchanges are permitAll.");
+            http
+                    .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                    .authorizeExchange(exchanges -> exchanges.anyExchange().permitAll());
+            return http.build();
+        }
+
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -190,3 +202,4 @@ public class ResourceServerConfig {
         return String.valueOf(tokenValue.hashCode());
     }
 }
+

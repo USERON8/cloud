@@ -75,6 +75,17 @@ pnpm --dir my-shop-web build
   - `/api/search/hot-keywords`
   - `/api/search/keyword-recommendations`
 
+## 测试环境（testenv）
+
+- 使用 `testenv` profile 时，网关与各业务服务会关闭 JWT 校验并放开接口权限，仅用于全链路联调。
+- 启动方式示例：
+  - `mvn -pl gateway spring-boot:run -Dspring-boot.run.profiles=testenv`
+  - `mvn -pl user-service spring-boot:run -Dspring-boot.run.profiles=testenv`
+- 已内置永久测试 token（数据库初始化写入）：
+  - token 值：`TEST_ENV_PERMANENT_TOKEN`
+  - 存储表：`user_db.test_access_token`
+  - 过期时间：`2099-12-31 23:59:59`
+
 ## 目录说明
 
 - `db/`：初始化、测试数据与归档 SQL
