@@ -192,6 +192,10 @@ app:
   search:
     fallback:
       timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:700}
+      product-service-base-url: ${SEARCH_FALLBACK_PRODUCT_BASE_URL:http://product-service}
+      routes:
+        search-path: ${SEARCH_FALLBACK_SEARCH_PATH:/api/product/search}
+        suggestions-path: ${SEARCH_FALLBACK_SUGGESTIONS_PATH:/api/product/suggestions}
 
 resilience4j:
   timelimiter:

@@ -42,6 +42,15 @@ public class SearchFallbackController {
     @Value("${app.search.fallback.timeout-ms:700}")
     private long fallbackTimeoutMs;
 
+    @Value("${app.search.fallback.product-service-base-url:http://product-service}")
+    private String productServiceBaseUrl;
+
+    @Value("${app.search.fallback.routes.search-path:/api/product/search}")
+    private String fallbackSearchPath;
+
+    @Value("${app.search.fallback.routes.suggestions-path:/api/product/suggestions}")
+    private String fallbackSuggestionsPath;
+
     @GetMapping("/gateway/fallback/search")
     public Mono<ResponseEntity<String>> searchFallback(ServerWebExchange exchange) {
         String originalPath = resolveOriginalPath(exchange);
@@ -79,7 +88,7 @@ public class SearchFallbackController {
         }
 
         return productClient().get()
-                .uri(uriBuilder -> uriBuilder.path("/api/product/search")
+                .uri(uriBuilder -> uriBuilder.path(fallbackSearchPath)
                         .queryParam("name", keyword)
                         .build())
                 .accept(MediaType.APPLICATION_JSON)
@@ -96,7 +105,7 @@ public class SearchFallbackController {
         }
 
         return productClient().get()
-                .uri(uriBuilder -> uriBuilder.path("/api/product/suggestions")
+                .uri(uriBuilder -> uriBuilder.path(fallbackSuggestionsPath)
                         .queryParam("keyword", keyword)
                         .queryParam("size", size)
                         .build())
@@ -106,7 +115,7 @@ public class SearchFallbackController {
     }
 
     private WebClient productClient() {
-        return loadBalancedWebClientBuilder.baseUrl("http://product-service").build();
+        return loadBalancedWebClientBuilder.baseUrl(productServiceBaseUrl).build();
     }
 
     private Counter counter(String routeType, String result) {
