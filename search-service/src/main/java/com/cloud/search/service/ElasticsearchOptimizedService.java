@@ -419,54 +419,6 @@ public class ElasticsearchOptimizedService {
         }
     }
 
-    public <T> boolean indexDocument(String indexName, String documentId, T document) {
-        try {
-            var request = co.elastic.clients.elasticsearch.core.IndexRequest.of(i -> i
-                    .index(indexName)
-                    .id(documentId)
-                    .document(document)
-                    .refresh(co.elastic.clients.elasticsearch._types.Refresh.WaitFor));
-
-            elasticsearchClient.index(request);
-            return true;
-        } catch (Exception e) {
-            log.error("Index document failed, indexName={}, documentId={}", indexName, documentId, e);
-            return false;
-        }
-    }
-
-    public <T> int bulkIndex(String indexName, List<T> documents) {
-        if (documents == null || documents.isEmpty()) {
-            return 0;
-        }
-
-        try {
-            var bulkRequest = new co.elastic.clients.elasticsearch.core.BulkRequest.Builder();
-
-            for (int i = 0; i < documents.size(); i++) {
-                T document = documents.get(i);
-                String documentId = String.valueOf(i);
-
-                bulkRequest.operations(op -> op
-                        .index(idx -> idx
-                                .index(indexName)
-                                .id(documentId)
-                                .document(document)));
-            }
-
-            var response = elasticsearchClient.bulk(bulkRequest.build());
-            if (response.errors()) {
-                log.warn("Bulk index completed with partial errors, indexName={}, batchSize={}", indexName, documents.size());
-                return documents.size() - response.items().size();
-            }
-
-            return documents.size();
-        } catch (Exception e) {
-            log.error("Bulk index failed, indexName={}, batchSize={}", indexName, documents.size(), e);
-            return 0;
-        }
-    }
-
     private String normalizeKeyword(String keyword) {
         if (!StringUtils.hasText(keyword)) {
             return "";

@@ -1,79 +1,10 @@
 name: monitoring
 
 services:
-  # Elasticsearch
-  elasticsearch:
-    image: elasticsearch:9.1.2
-    container_name: monitor_elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
-      - xpack.security.enabled=false
-      - bootstrap.memory_lock=true
-    ports:
-      - "9201:9200"
-      - "9301:9300"
-    volumes:
-      - type: bind
-        source: ./monitor/elasticsearch/data
-        target: /usr/share/elasticsearch/data
-      - type: bind
-        source: ./monitor/elasticsearch/logs
-        target: /usr/share/elasticsearch/logs
-      - type: bind
-        source: ./monitor/elasticsearch/plugins
-        target: /usr/share/elasticsearch/plugins
-      - type: bind
-        source: ./monitor/elasticsearch/config/elasticsearch.yml
-        target: /usr/share/elasticsearch/config/elasticsearch.yml
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    networks:
-      - monitoring
-
-  # Logstash
-  logstash:
-    image: logstash:9.1.2
-    container_name: monitor_logstash
-    depends_on:
-      - elasticsearch
-    ports:
-      - "5044:5044" # ASCII comment sanitized for compatibility.
-      - "9600:9600" # Logstash API
-    volumes:
-      - type: bind
-        source: ./monitor/logstash/pipeline
-        target: /usr/share/logstash/pipeline
-      - type: bind
-        source: ./monitor/logstash/logs
-        target: /usr/share/logstash/logs
-    networks:
-      - monitoring
-
-  # Kibana
-  kibana:
-    image: kibana:9.1.2
-    container_name: monitor_kibana
-    depends_on:
-      - elasticsearch
-    ports:
-      - "5602:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
-      - I18N_LOCALE=zh-CN
-    volumes:
-      - type: bind
-        source: ./monitor/kibana/config
-        target: /usr/share/kibana/config
-    networks:
-      - monitoring
-
   # Prometheus
   prometheus:
     image: bitnami/prometheus:3.5.0-debian-12-r3
-    container_name: monitor_prometheus
+    container_name: cloud-prometheus
     ports:
       - "9099:9090"
     volumes:
@@ -97,7 +28,7 @@ services:
   # Grafana
   grafana:
     image: grafana/grafana:12.2.0-17084981832
-    container_name: monitor_grafana
+    container_name: cloud-grafana
     depends_on:
       - prometheus
     ports:

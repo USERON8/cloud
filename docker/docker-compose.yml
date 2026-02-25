@@ -2,7 +2,7 @@ services:
   # ASCII comment sanitized for compatibility.
   mysql:
     image: mysql:9.3.0
-    container_name: mysql_db
+    container_name: cloud-mysql
     networks:
       service_net:
         ipv4_address: 172.28.0.10
@@ -35,7 +35,7 @@ services:
   # ASCII comment sanitized for compatibility.
   redis:
     image: redis:7.4.5-bookworm
-    container_name: redis_cache
+    container_name: cloud-redis
     networks:
       service_net:
         ipv4_address: 172.28.0.20
@@ -61,7 +61,7 @@ services:
   # ASCII comment sanitized for compatibility.
   nacos:
     image: nacos/nacos-server:v3.0.2
-    container_name: nacos_server
+    container_name: cloud-nacos
     networks:
       service_net:
         ipv4_address: 172.28.0.30
@@ -127,7 +127,7 @@ services:
   # ASCII comment sanitized for compatibility.
   namesrv:
     image: apache/rocketmq:5.3.2
-    container_name: rmqnamesrv
+    container_name: cloud-rmq-namesrv
     networks:
       service_net:
         ipv4_address: 172.28.0.40
@@ -146,7 +146,7 @@ services:
   # ASCII comment sanitized for compatibility.
   broker:
     image: apache/rocketmq:5.3.2
-    container_name: rmqbroker
+    container_name: cloud-rmq-broker
     networks:
       service_net:
         ipv4_address: 172.28.0.50
@@ -176,7 +176,7 @@ services:
   # ASCII comment sanitized for compatibility.
   rmq-console:
     image: apacherocketmq/rocketmq-dashboard:2.1.0
-    container_name: rmq-console
+    container_name: cloud-rmq-dashboard
     networks:
       service_net:
         ipv4_address: 172.28.0.65
@@ -190,7 +190,7 @@ services:
   # ASCII comment sanitized for compatibility.
   nginx:
     image: nginx:stable-perl
-    container_name: nginx_gateway
+    container_name: cloud-nginx-gateway
     networks:
       service_net:
         ipv4_address: 172.28.0.70
@@ -212,7 +212,7 @@ services:
   # ASCII comment sanitized for compatibility.
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
-    container_name: minio
+    container_name: cloud-minio
     networks:
       service_net:
         ipv4_address: 172.28.0.80
@@ -230,7 +230,7 @@ services:
   # ASCII comment sanitized for compatibility.
   elasticsearch:
     image: elasticsearch:9.1.2
-    container_name: es_search
+    container_name: cloud-es-search
     networks:
       service_net:
         ipv4_address: 172.28.0.90  # ASCII comment sanitized for compatibility.
@@ -264,7 +264,7 @@ services:
   # Kibana
   kibana:
     image: kibana:9.1.2
-    container_name: kibana_es
+    container_name: cloud-kibana-search
     depends_on:
       - elasticsearch
     networks:
@@ -304,6 +304,29 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  logstash:
+    image: logstash:9.1.2
+    container_name: cloud-logstash-sync
+    depends_on:
+      elasticsearch:
+        condition: service_started
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.110
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - type: bind
+        source: ./monitor/logstash/config/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+      - type: bind
+        source: ./monitor/logstash/pipeline
+        target: /usr/share/logstash/pipeline
+      - type: bind
+        source: ./monitor/logstash/logs
+        target: /usr/share/logstash/logs
 # ASCII comment sanitized for compatibility.
 networks:
   service_net:

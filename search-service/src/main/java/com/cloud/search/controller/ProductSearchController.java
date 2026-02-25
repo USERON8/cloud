@@ -18,7 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -203,14 +202,6 @@ public class ProductSearchController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "salesCount"));
         Page<ProductDocument> result = productDocumentRepository.findByIsHotTrue(pageable);
         return Result.success("Query hot products success", result);
-    }
-
-    @Operation(summary = "Rebuild index", description = "Rebuild product index")
-    @PostMapping("/rebuild-index")
-    @PreAuthorize("@permissionManager.hasAdminAccess(authentication)")
-    public Result<String> rebuildIndex() {
-        productSearchService.rebuildProductIndex();
-        return Result.success("Rebuild index success", "Rebuild index success");
     }
 
     @Operation(summary = "Basic API search", description = "Basic paged search API")

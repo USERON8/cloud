@@ -40,7 +40,6 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
     protected void configureServiceEndpoints(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         authz.requestMatchers("/internal/**").hasAuthority("SCOPE_internal_api")
-                .requestMatchers("/api/search/rebuild-index").hasAnyAuthority("ROLE_ADMIN", "SCOPE_admin:write")
                 .requestMatchers("/api/search/**", "/api/search/shops/**").permitAll();
     }
 }

@@ -11,7 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,141 +30,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductSearchServiceImpl implements ProductSearchService {
 
-    private static final String PROCESSED_EVENT_KEY_PREFIX = "search:processed:";
     private static final String HOT_SEARCH_ZSET_KEY = "search:hot:zset";
-    private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
 
     private final ProductDocumentRepository productDocumentRepository;
-    private final ElasticsearchOperations elasticsearchOperations;
     private final StringRedisTemplate redisTemplate;
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void upsertProduct(ProductDocument productDocument) {
-        if (productDocument == null || productDocument.getProductId() == null) {
-            return;
-        }
-        try {
-            if (productDocument.getId() == null || productDocument.getId().isBlank()) {
-                productDocument.setId(String.valueOf(productDocument.getProductId()));
-            }
-            productDocumentRepository.save(productDocument);
-        } catch (Exception e) {
-            throw new RuntimeException("Upsert product into index failed", e);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteProduct(Long productId) {
-        try {
-            productDocumentRepository.deleteById(String.valueOf(productId));
-        } catch (Exception e) {
-            throw new RuntimeException("Delete product from index failed", e);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void updateProductStatus(Long productId, Integer status) {
-        try {
-            ProductDocument document = findByProductId(productId);
-            if (document == null) {
-                return;
-            }
-            document.setStatus(status);
-            productDocumentRepository.save(document);
-        } catch (Exception e) {
-            throw new RuntimeException("Update product status in index failed", e);
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ProductDocument findByProductId(Long productId) {
-        return productDocumentRepository.findById(String.valueOf(productId)).orElse(null);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void batchDeleteProducts(List<Long> productIds) {
-        try {
-            List<String> ids = productIds == null ? Collections.emptyList()
-                    : productIds.stream().map(String::valueOf).toList();
-            if (!ids.isEmpty()) {
-                productDocumentRepository.deleteAllById(ids);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Batch delete products from index failed", e);
-        }
-    }
-
-    @Override
-    public boolean isEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
-            return false;
-        }
-        try {
-            return Boolean.TRUE.equals(redisTemplate.hasKey(PROCESSED_EVENT_KEY_PREFIX + traceId));
-        } catch (Exception e) {
-            log.warn("Check processed event failed: traceId={}", traceId, e);
-            return false;
-        }
-    }
-
-    @Override
-    public void markEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
-            return;
-        }
-        try {
-            redisTemplate.opsForValue().set(
-                    PROCESSED_EVENT_KEY_PREFIX + traceId,
-                    "1",
-                    PROCESSED_EVENT_TTL_SECONDS,
-                    TimeUnit.SECONDS
-            );
-        } catch (Exception e) {
-            log.warn("Mark event processed failed: traceId={}", traceId, e);
-        }
-    }
-
-    @Override
-    public void rebuildProductIndex() {
-        if (indexExists()) {
-            deleteProductIndex();
-        }
-        createProductIndex();
-    }
-
-    @Override
-    public boolean indexExists() {
-        try {
-            return elasticsearchOperations.indexOps(ProductDocument.class).exists();
-        } catch (Exception e) {
-            log.error("Check product index existence failed", e);
-            return false;
-        }
-    }
-
-    @Override
-    public void createProductIndex() {
-        try {
-            elasticsearchOperations.indexOps(ProductDocument.class).create();
-            elasticsearchOperations.indexOps(ProductDocument.class).putMapping();
-        } catch (Exception e) {
-            throw new RuntimeException("Create product index failed", e);
-        }
-    }
-
-    @Override
-    public void deleteProductIndex() {
-        try {
-            elasticsearchOperations.indexOps(ProductDocument.class).delete();
-        } catch (Exception e) {
-            throw new RuntimeException("Delete product index failed", e);
-        }
-    }
 
     @Override
     @Transactional(readOnly = true)
