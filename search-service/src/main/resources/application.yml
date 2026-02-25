@@ -82,12 +82,13 @@ search:
     enabled: true
   optimized:
     elasticsearch:
-      request-timeout-ms: ${SEARCH_ES_REQUEST_TIMEOUT_MS:700}
+      request-timeout-ms: ${SEARCH_ES_REQUEST_TIMEOUT_MS:550}
     limit:
-      default-search-size: ${SEARCH_DEFAULT_SIZE:20}
+      default-search-size: ${SEARCH_DEFAULT_SIZE:16}
       default-keyword-size: ${SEARCH_DEFAULT_KEYWORD_SIZE:10}
-      max-search-size: ${SEARCH_MAX_SIZE:100}
+      max-search-size: ${SEARCH_MAX_SIZE:80}
     cache:
+      l1-max-entries: ${SEARCH_L1_MAX_ENTRIES:5000}
       smart-search:
         l1-ttl-millis: ${SEARCH_SMART_L1_TTL_MS:30000}
         l2-ttl-seconds: ${SEARCH_SMART_L2_TTL_S:120}
@@ -100,6 +101,9 @@ search:
       recommendations:
         l1-ttl-millis: ${SEARCH_RECOMMEND_L1_TTL_MS:20000}
         l2-ttl-seconds: ${SEARCH_RECOMMEND_L2_TTL_S:60}
+    hot-keyword:
+      expire-refresh-seconds: ${SEARCH_HOT_REFRESH_EXPIRE_S:60}
+      cache-invalidate-interval-ms: ${SEARCH_HOT_CACHE_INVALIDATE_MS:3000}
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

@@ -16,6 +16,7 @@ import com.cloud.common.utils.StringUtils;
 import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.module.dto.AlipayCreateRequest;
 import com.cloud.payment.module.dto.AlipayCreateResponse;
+import com.cloud.payment.module.dto.AlipayTradeStatusResponse;
 import com.cloud.payment.module.entity.Payment;
 import com.cloud.payment.module.entity.PaymentFlow;
 import com.cloud.payment.service.AlipayService;
@@ -119,19 +120,35 @@ public class AlipayServiceImpl implements AlipayService {
     }
 
     @Override
-    public String queryPaymentStatus(String outTradeNo) {
+    public AlipayTradeStatusResponse queryPaymentStatus(String outTradeNo) {
         try {
             AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
             request.setBizContent(String.format("{\"out_trade_no\":\"%s\"}", sanitizeJsonValue(outTradeNo)));
             AlipayTradeQueryResponse response = alipayClient.execute(request);
             if (!response.isSuccess()) {
                 log.warn("Query Alipay payment status failed: outTradeNo={}, subMsg={}", outTradeNo, response.getSubMsg());
-                return null;
+                return AlipayTradeStatusResponse.builder()
+                        .success(false)
+                        .outTradeNo(outTradeNo)
+                        .tradeStatus("QUERY_FAILED")
+                        .tradeStatusDescription(response.getSubMsg())
+                        .build();
             }
-            return response.getTradeStatus();
+            return AlipayTradeStatusResponse.builder()
+                    .success(true)
+                    .outTradeNo(outTradeNo)
+                    .tradeNo(response.getTradeNo())
+                    .tradeStatus(response.getTradeStatus())
+                    .tradeStatusDescription(AlipayUtils.getTradeStatusDescription(response.getTradeStatus()))
+                    .build();
         } catch (AlipayApiException e) {
             log.error("Query Alipay payment status failed: outTradeNo={}", outTradeNo, e);
-            return null;
+            return AlipayTradeStatusResponse.builder()
+                    .success(false)
+                    .outTradeNo(outTradeNo)
+                    .tradeStatus("QUERY_EXCEPTION")
+                    .tradeStatusDescription("Call Alipay query API failed")
+                    .build();
         }
     }
 
@@ -176,8 +193,8 @@ public class AlipayServiceImpl implements AlipayService {
 
     @Override
     public boolean verifyPayment(String outTradeNo) {
-        String status = queryPaymentStatus(outTradeNo);
-        return AlipayUtils.isPaymentSuccess(status);
+        AlipayTradeStatusResponse status = queryPaymentStatus(outTradeNo);
+        return status != null && status.isSuccess() && AlipayUtils.isPaymentSuccess(status.getTradeStatus());
     }
 
     private Payment createPaymentRecord(AlipayCreateRequest request, String traceId) {

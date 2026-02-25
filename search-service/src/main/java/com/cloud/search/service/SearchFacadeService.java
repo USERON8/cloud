@@ -113,7 +113,9 @@ public class SearchFacadeService {
 
     public ElasticsearchOptimizedService.SearchResult smartSearch(String keyword, Long categoryId, Double minPrice, Double maxPrice,
                                                                   String sortField, String sortOrder, int page, int size) {
-        int from = Math.max(page - 1, 0) * size;
+        int safePage = Math.max(page, 1);
+        int safeSize = size <= 0 ? 20 : size;
+        int from = (safePage - 1) * safeSize;
         return elasticsearchOptimizedService.smartProductSearch(
                 keyword,
                 categoryId,
@@ -122,7 +124,7 @@ public class SearchFacadeService {
                 sortField,
                 sortOrder,
                 from,
-                size
+                safeSize
         );
     }
 
@@ -184,4 +186,3 @@ public class SearchFacadeService {
         return new PageImpl<>(list, PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy)), total);
     }
 }
-

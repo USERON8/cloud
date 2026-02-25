@@ -1,8 +1,12 @@
 package com.cloud.payment.controller;
 
 import com.cloud.common.result.Result;
+import com.cloud.payment.module.dto.AlipayCloseRequest;
 import com.cloud.payment.module.dto.AlipayCreateRequest;
 import com.cloud.payment.module.dto.AlipayCreateResponse;
+import com.cloud.payment.module.dto.AlipayQueryRequest;
+import com.cloud.payment.module.dto.AlipayRefundRequest;
+import com.cloud.payment.module.dto.AlipayTradeStatusResponse;
 import com.cloud.payment.service.AlipayService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,10 +21,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,12 +55,22 @@ public class AlipayController {
         }
     }
 
-    @GetMapping("/query/{outTradeNo}")
+    @PostMapping("/query")
     @Operation(summary = "Query payment status", description = "Query Alipay payment status")
-    public Result<String> queryPaymentStatus(
+    public Result<AlipayTradeStatusResponse> queryPaymentStatus(@Valid @RequestBody AlipayQueryRequest request) {
+        AlipayTradeStatusResponse status = alipayService.queryPaymentStatus(request.getOutTradeNo());
+        if (status == null || !status.isSuccess()) {
+            return Result.error("Query payment status failed");
+        }
+        return Result.success("Query payment status success", status);
+    }
+
+    @GetMapping("/query/{outTradeNo}")
+    @Operation(summary = "Query payment status (GET)", description = "Query Alipay payment status by path variable")
+    public Result<AlipayTradeStatusResponse> queryPaymentStatusByPath(
             @Parameter(description = "Merchant out trade number") @PathVariable String outTradeNo) {
-        String status = alipayService.queryPaymentStatus(outTradeNo);
-        if (status == null) {
+        AlipayTradeStatusResponse status = alipayService.queryPaymentStatus(outTradeNo);
+        if (status == null || !status.isSuccess()) {
             return Result.error("Query payment status failed");
         }
         return Result.success("Query payment status success", status);
@@ -66,22 +78,18 @@ public class AlipayController {
 
     @PostMapping("/refund")
     @Operation(summary = "Refund payment", description = "Create Alipay refund request")
-    public Result<Boolean> refund(
-            @Parameter(description = "Merchant out trade number") @RequestParam String outTradeNo,
-            @Parameter(description = "Refund amount") @RequestParam BigDecimal refundAmount,
-            @Parameter(description = "Refund reason") @RequestParam String refundReason) {
-        boolean success = alipayService.refund(outTradeNo, refundAmount, refundReason);
+    public Result<Boolean> refund(@Valid @RequestBody AlipayRefundRequest request) {
+        boolean success = alipayService.refund(request.getOutTradeNo(), request.getRefundAmount(), request.getRefundReason());
         if (!success) {
             return Result.error("Refund failed");
         }
         return Result.success("Refund success", true);
     }
 
-    @PostMapping("/close/{outTradeNo}")
+    @PostMapping("/close")
     @Operation(summary = "Close payment order", description = "Close Alipay order")
-    public Result<Boolean> closeOrder(
-            @Parameter(description = "Merchant out trade number") @PathVariable String outTradeNo) {
-        boolean success = alipayService.closeOrder(outTradeNo);
+    public Result<Boolean> closeOrder(@Valid @RequestBody AlipayCloseRequest request) {
+        boolean success = alipayService.closeOrder(request.getOutTradeNo());
         if (!success) {
             return Result.error("Close order failed");
         }

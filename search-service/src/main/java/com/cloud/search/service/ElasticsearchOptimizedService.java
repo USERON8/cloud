@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,6 +92,15 @@ public class ElasticsearchOptimizedService {
     @Value("${search.optimized.elasticsearch.request-timeout-ms:700}")
     private int esRequestTimeoutMs;
 
+    @Value("${search.optimized.cache.l1-max-entries:5000}")
+    private int l1MaxEntries;
+
+    @Value("${search.optimized.hot-keyword.expire-refresh-seconds:60}")
+    private long hotKeywordExpireRefreshSeconds;
+
+    @Value("${search.optimized.hot-keyword.cache-invalidate-interval-ms:3000}")
+    private long hotKeywordCacheInvalidateIntervalMs;
+
     private final ElasticsearchClient elasticsearchClient;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -100,6 +110,10 @@ public class ElasticsearchOptimizedService {
     private final Map<String, CacheEntry<List<String>>> l1SuggestionsCache = new ConcurrentHashMap<>();
     private final Map<String, CacheEntry<List<String>>> l1HotKeywordsCache = new ConcurrentHashMap<>();
     private final Map<String, CacheEntry<List<String>>> l1RecommendationsCache = new ConcurrentHashMap<>();
+    private final Map<String, Timer> searchLatencyTimers = new ConcurrentHashMap<>();
+    private final Map<String, Counter> esErrorCounters = new ConcurrentHashMap<>();
+    private final AtomicLong hotKeywordExpireRefreshedAt = new AtomicLong(0L);
+    private final AtomicLong hotKeywordCacheInvalidatedAt = new AtomicLong(0L);
 
     @Transactional(readOnly = true)
     public SearchResult smartProductSearch(String keyword, Long categoryId,
@@ -466,10 +480,34 @@ public class ElasticsearchOptimizedService {
         try {
             String normalized = keyword.toLowerCase();
             redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
-            redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
-            clearL1HotCache();
+            refreshHotKeywordExpiryIfNeeded();
+            invalidateHotKeywordCachesIfNeeded();
         } catch (Exception e) {
             log.warn("Record hot search failed, keyword={}", keyword, e);
+        }
+    }
+
+    private void refreshHotKeywordExpiryIfNeeded() {
+        long now = System.currentTimeMillis();
+        long refreshIntervalMillis = Math.max(1, hotKeywordExpireRefreshSeconds) * 1000L;
+        long lastRefreshed = hotKeywordExpireRefreshedAt.get();
+        if (now - lastRefreshed < refreshIntervalMillis) {
+            return;
+        }
+        if (hotKeywordExpireRefreshedAt.compareAndSet(lastRefreshed, now)) {
+            redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
+        }
+    }
+
+    private void invalidateHotKeywordCachesIfNeeded() {
+        long now = System.currentTimeMillis();
+        long intervalMillis = Math.max(500L, hotKeywordCacheInvalidateIntervalMs);
+        long lastInvalidated = hotKeywordCacheInvalidatedAt.get();
+        if (now - lastInvalidated < intervalMillis) {
+            return;
+        }
+        if (hotKeywordCacheInvalidatedAt.compareAndSet(lastInvalidated, now)) {
+            clearL1HotCache();
         }
     }
 
@@ -600,6 +638,7 @@ public class ElasticsearchOptimizedService {
     }
 
     private <T> void putL1Cache(Map<String, CacheEntry<T>> cache, String key, T value, long ttlMillis) {
+        trimL1CacheIfNeeded(cache);
         cache.put(key, new CacheEntry<>(value, System.currentTimeMillis() + ttlMillis));
     }
 
@@ -609,19 +648,45 @@ public class ElasticsearchOptimizedService {
     }
 
     private void recordTimer(Timer.Sample sample, String operation, String result) {
-        sample.stop(Timer.builder(METRIC_SEARCH_LATENCY)
-                .description("Search request latency")
-                .tag("operation", operation)
-                .tag("result", result)
-                .register(meterRegistry));
+        String timerKey = operation + ':' + result;
+        Timer timer = searchLatencyTimers.computeIfAbsent(timerKey, key ->
+                Timer.builder(METRIC_SEARCH_LATENCY)
+                        .description("Search request latency")
+                        .tag("operation", operation)
+                        .tag("result", result)
+                        .register(meterRegistry)
+        );
+        sample.stop(timer);
     }
 
     private void incrementEsError(String operation) {
-        Counter.builder(METRIC_ES_ERROR)
-                .description("Elasticsearch error count")
-                .tag("operation", operation)
-                .register(meterRegistry)
-                .increment();
+        Counter counter = esErrorCounters.computeIfAbsent(operation, key ->
+                Counter.builder(METRIC_ES_ERROR)
+                        .description("Elasticsearch error count")
+                        .tag("operation", operation)
+                        .register(meterRegistry)
+        );
+        counter.increment();
+    }
+
+    private <T> void trimL1CacheIfNeeded(Map<String, CacheEntry<T>> cache) {
+        int safeMaxEntries = l1MaxEntries <= 0 ? 5000 : l1MaxEntries;
+        if (cache.size() < safeMaxEntries) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        cache.entrySet().removeIf(entry -> entry.getValue().expiresAtMillis() <= now);
+        if (cache.size() < safeMaxEntries) {
+            return;
+        }
+        int removeCount = Math.max(1, safeMaxEntries / 10);
+        int removed = 0;
+        var iterator = cache.keySet().iterator();
+        while (iterator.hasNext() && removed < removeCount) {
+            iterator.next();
+            iterator.remove();
+            removed++;
+        }
     }
 
     private int defaultSearchSize() {

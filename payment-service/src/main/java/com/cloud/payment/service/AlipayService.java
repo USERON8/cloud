@@ -2,6 +2,7 @@ package com.cloud.payment.service;
 
 import com.cloud.payment.module.dto.AlipayCreateRequest;
 import com.cloud.payment.module.dto.AlipayCreateResponse;
+import com.cloud.payment.module.dto.AlipayTradeStatusResponse;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -44,7 +45,7 @@ public interface AlipayService {
 
 
 
-    String queryPaymentStatus(String outTradeNo);
+    AlipayTradeStatusResponse queryPaymentStatus(String outTradeNo);
 
     
 

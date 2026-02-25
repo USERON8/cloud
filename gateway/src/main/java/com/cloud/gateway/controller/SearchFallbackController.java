@@ -23,8 +23,10 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,6 +41,9 @@ public class SearchFallbackController {
     private final WebClient.Builder loadBalancedWebClientBuilder;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final Map<String, Counter> fallbackCounters = new ConcurrentHashMap<>();
+    private final Map<String, Timer> fallbackLatencyTimers = new ConcurrentHashMap<>();
+    private volatile WebClient productClient;
 
     @Value("${app.search.fallback.timeout-ms:700}")
     private long fallbackTimeoutMs;
@@ -68,10 +73,7 @@ public class SearchFallbackController {
                     log.error("Search fallback failed: path={}, query={}", originalPath, queryParams, ex);
                     return Mono.just(errorResponse("Search fallback failed"));
                 })
-                .doFinally(signal -> sample.stop(Timer.builder(FALLBACK_METRIC_LATENCY)
-                        .description("Gateway fallback latency for search routes")
-                        .tag("route", routeType)
-                        .register(meterRegistry)));
+                .doFinally(signal -> sample.stop(latencyTimer(routeType)));
     }
 
     private Mono<ResponseEntity<String>> routeFallback(String routeType, MultiValueMap<String, String> queryParams) {
@@ -117,15 +119,32 @@ public class SearchFallbackController {
     }
 
     private WebClient productClient() {
-        return loadBalancedWebClientBuilder.baseUrl(productServiceBaseUrl).build();
+        WebClient local = productClient;
+        if (local != null) {
+            return local;
+        }
+        synchronized (this) {
+            if (productClient == null) {
+                productClient = loadBalancedWebClientBuilder.baseUrl(productServiceBaseUrl).build();
+            }
+            return productClient;
+        }
     }
 
     private Counter counter(String routeType, String result) {
-        return Counter.builder(FALLBACK_METRIC_COUNT)
+        String counterKey = routeType + ':' + result;
+        return fallbackCounters.computeIfAbsent(counterKey, key -> Counter.builder(FALLBACK_METRIC_COUNT)
                 .description("Gateway fallback count for search routes")
                 .tag("route", routeType)
                 .tag("result", result)
-                .register(meterRegistry);
+                .register(meterRegistry));
+    }
+
+    private Timer latencyTimer(String routeType) {
+        return fallbackLatencyTimers.computeIfAbsent(routeType, key -> Timer.builder(FALLBACK_METRIC_LATENCY)
+                .description("Gateway fallback latency for search routes")
+                .tag("route", routeType)
+                .register(meterRegistry));
     }
 
     private String resolveOriginalPath(ServerWebExchange exchange) {

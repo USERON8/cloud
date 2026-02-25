@@ -127,8 +127,8 @@ alipay:
   merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}
   alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
-  notify-url: ${ALIPAY_NOTIFY_URL:http://127.0.0.1:8084/api/v1/payment/alipay/notify}
-  return-url: ${ALIPAY_RETURN_URL:http://127.0.0.1:3000/payment/success}
+  notify-url: ${ALIPAY_NOTIFY_URL:${CPOLAR_PUBLIC_BASE_URL:http://127.0.0.1:8086}/api/v1/payment/alipay/notify}
+  return-url: ${ALIPAY_RETURN_URL:${CPOLAR_FRONTEND_BASE_URL:http://127.0.0.1:3000}/payment/success}
   sign-type: RSA2
   charset: UTF-8
   format: json
@@ -185,6 +185,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 
