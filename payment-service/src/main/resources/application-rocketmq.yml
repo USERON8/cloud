@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   cloud:
     function:
       definition: orderCreatedConsumer;refundProcessConsumer
@@ -12,7 +12,7 @@ spring:
       # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
           # Comment sanitized for UTF-8 compatibility.
           paymentSuccessProducer-out-0:
@@ -75,3 +75,4 @@ spring:
           destination: refund-process
           content-type: application/json
           group: payment-refund-process-consumer-group
+

@@ -4,11 +4,11 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 6
-      timeout: 5000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:6}
+      timeout: ${REDIS_TIMEOUT:5000ms}
       lettuce:
         pool:
           max-active: 16

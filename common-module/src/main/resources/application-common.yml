@@ -1,4 +1,4 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# Comment sanitized for UTF-8 compatibility.
 # Comment sanitized for UTF-8 compatibility.
 
 server:
@@ -19,7 +19,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: ${NACOS_NAMESPACE:public}
@@ -34,7 +34,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: ${NACOS_NAMESPACE:public}
@@ -59,7 +59,7 @@ spring:
     stream:
       rocketmq:
         binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
 
   # Comment sanitized for UTF-8 compatibility.
   config:
@@ -145,9 +145,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 鐎圭偘缍嬬猾璇插灙鐞?
+    swagger-model-name: 閻庡湱鍋樼紞瀣尵鐠囨彃鐏欓悶?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 瀵邦喗婀囬崝鈥抽挬閸?API 閺傚洦銆?
+    footer-custom-content: "Cloud 鐎甸偊鍠楀﹢鍥礉閳ユ娊鎸柛?API 闁哄倸娲﹂妴?
 
 # Comment sanitized for UTF-8 compatibility.
 cache:
@@ -197,5 +197,6 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+
 
 

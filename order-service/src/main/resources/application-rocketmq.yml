@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   cloud:
     function:
       definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
@@ -12,7 +12,7 @@ spring:
       # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
           # Comment sanitized for UTF-8 compatibility.
           orderCreatedProducer-out-0:
@@ -211,3 +211,4 @@ spring:
           destination: refund-cancelled
           content-type: application/json
           group: order-refund-cancelled-notification-group
+

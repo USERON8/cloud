@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8085}
   tomcat:
     threads:
@@ -18,7 +18,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: nacos
         password: nacos
         namespace: public
@@ -33,7 +33,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: nacos
         password: nacos
         namespace: public
@@ -62,14 +62,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
-          issuer-uri: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
 # Comment sanitized for UTF-8 compatibility.
 app:
   jwt:
-    issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
+    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
 # Comment sanitized for UTF-8 compatibility.
 unified:
@@ -172,6 +172,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

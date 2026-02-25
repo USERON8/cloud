@@ -70,7 +70,7 @@ services:
       NACOS_SERVER_IP: 172.28.0.30
 
       SPRING_DATASOURCE_PLATFORM: mysql
-      MYSQL_SERVICE_HOST: 172.28.0.10
+      MYSQL_SERVICE_HOST: mysql
       MYSQL_SERVICE_PORT: 3306
       MYSQL_SERVICE_DB_NAME: nacos_config
       MYSQL_SERVICE_USER: nacos
@@ -141,7 +141,7 @@ services:
         source: ./docker-compose/rocketmq/namesrv/store
         target: /home/rocketmq/namesrv/store
     environment:
-      - NAMESRV_ADDR=172.28.0.40:9876
+      - NAMESRV_ADDR=namesrv:9876
     command: sh mqnamesrv
   # ASCII comment sanitized for compatibility.
   broker:
@@ -169,9 +169,9 @@ services:
         source: ./docker-compose/rocketmq/broker/conf
         target: /home/rocketmq/conf
     environment:
-      - NAMESRV_ADDR=172.28.0.40:9876
+      - NAMESRV_ADDR=namesrv:9876
     # ASCII comment sanitized for compatibility.
-    command: sh mqbroker -n 172.28.0.40:9876 --enable-proxy -c /home/rocketmq/conf/broker.conf
+    command: sh mqbroker -n namesrv:9876 --enable-proxy -c /home/rocketmq/conf/broker.conf
 
   # ASCII comment sanitized for compatibility.
   rmq-console:
@@ -185,7 +185,7 @@ services:
     ports:
       - "${PORT_RMQ_DASHBOARD:-38082}:8082"
     environment:
-      JAVA_OPTS: -Drocketmq.namesrv.addr=172.28.0.40:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+      JAVA_OPTS: -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
 
   # ASCII comment sanitized for compatibility.
   nginx:

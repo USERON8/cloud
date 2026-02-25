@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
@@ -19,7 +19,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -34,7 +34,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -48,7 +48,7 @@ spring:
           max-attempts: 1
       rocketmq:
         binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
           log-in-0:
             consumer:
@@ -76,7 +76,7 @@ spring:
             client-secret: ${WEB_CLIENT_SECRET:WebClient@2024#Secure}
             client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
-            redirect-uri: http://127.0.0.1:80/authorized
+            redirect-uri: ${WEB_CLIENT_REDIRECT_URI:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/authorized}
             scope: openid,profile,read,write,user.read,user.write,order.read,order.write
             client-name: Web Client
           github:
@@ -91,10 +91,10 @@ spring:
             scope: internal_api,service.read,service.write
         provider:
           custom-authorization-server:
-            token-uri: ${AUTH_TOKEN_URI:http://127.0.0.1:8081/oauth2/token}
+            token-uri: ${AUTH_TOKEN_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/oauth2/token}
       resourceserver:
         jwt:
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
 
   # Comment sanitized for UTF-8 compatibility.
   autoconfigure:
@@ -119,7 +119,7 @@ logging:
 app:
   jwt:
     test-mode: true
-    issuer: ${AUTH_ISSUER_URI:http://127.0.0.1:8081}
+    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
     access-token-validity: PT2H
     test-token-validity: P365D
     keys:
@@ -205,6 +205,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

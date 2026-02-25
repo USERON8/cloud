@@ -3,18 +3,18 @@
 spring:
   # Comment sanitized for UTF-8 compatibility.
   elasticsearch:
-    uris: http://127.0.0.1:9200
+    uris: ${ELASTICSEARCH_URIS:http://127.0.0.1:19200}
     username:
     password:
 
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 7
-      timeout: 6000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:7}
+      timeout: ${REDIS_TIMEOUT:6000ms}
       lettuce:
         pool:
           max-active: 16

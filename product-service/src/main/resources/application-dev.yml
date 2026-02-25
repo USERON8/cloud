@@ -4,9 +4,9 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       pool-name: ProductHikariCP
@@ -22,11 +22,11 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 3
-      timeout: 6000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:3}
+      timeout: ${REDIS_TIMEOUT:6000ms}
       lettuce:
         pool:
           max-active: 16

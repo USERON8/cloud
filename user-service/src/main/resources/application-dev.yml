@@ -4,9 +4,9 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
-    username: root
-    password: root
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -17,11 +17,11 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 2
-      timeout: 10000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:2}
+      timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
           max-active: 16
@@ -31,11 +31,11 @@ spring:
 
 # Comment sanitized for UTF-8 compatibility.
 minio:
-  endpoint: http://127.0.0.1:9000
-  access-key: minioadmin
-  secret-key: minioadmin
+  endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:19000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: user-avatars
-  public-endpoint: http://127.0.0.1:9000
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://127.0.0.1:19000}
 
 # Comment sanitized for UTF-8 compatibility.
 logging:

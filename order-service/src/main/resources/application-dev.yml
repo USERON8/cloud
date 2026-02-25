@@ -1,12 +1,12 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# Comment sanitized for UTF-8 compatibility.
 
 spring:
   # Comment sanitized for UTF-8 compatibility.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
-    username: root
-    password: root
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -17,11 +17,11 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 4
-      timeout: 10000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:4}
+      timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
           max-active: 16
@@ -54,5 +54,6 @@ knife4j:
       resourceserver:
         jwt:
           # Comment sanitized for UTF-8 compatibility.
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
+
 

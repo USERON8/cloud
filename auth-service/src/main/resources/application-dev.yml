@@ -4,11 +4,11 @@ spring:
   # Comment sanitized for UTF-8 compatibility.
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password: root
-      database: 0
-      timeout: 10000
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:10000}
       lettuce:
         pool:
           max-active: 16
@@ -29,7 +29,7 @@ logging:
 app:
   jwt:
     test-mode: true
-    issuer: http://127.0.0.1:8081
+    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
 # Comment sanitized for UTF-8 compatibility.
 knife4j:
