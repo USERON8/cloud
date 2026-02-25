@@ -14,6 +14,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
@@ -52,10 +53,11 @@ public class SearchFallbackController {
     private String fallbackSuggestionsPath;
 
     @GetMapping("/gateway/fallback/search")
-    public Mono<ResponseEntity<String>> searchFallback(ServerWebExchange exchange) {
+    public Mono<ResponseEntity<String>> searchFallback(ServerWebExchange exchange,
+                                                       @RequestParam(value = "route", required = false) String explicitRoute) {
         String originalPath = resolveOriginalPath(exchange);
         MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>(exchange.getRequest().getQueryParams());
-        String routeType = resolveRouteType(originalPath);
+        String routeType = resolveRouteType(originalPath, explicitRoute);
         Timer.Sample sample = Timer.start(meterRegistry);
 
         return routeFallback(routeType, queryParams)
@@ -135,7 +137,13 @@ public class SearchFallbackController {
         return first.map(URI::getPath).orElse(exchange.getRequest().getPath().value());
     }
 
-    private String resolveRouteType(String originalPath) {
+    private String resolveRouteType(String originalPath, String explicitRoute) {
+        if (StringUtils.hasText(explicitRoute)) {
+            String normalized = explicitRoute.trim().toLowerCase();
+            if ("suggestions".equals(normalized) || "search".equals(normalized) || "smart-search".equals(normalized)) {
+                return normalized;
+            }
+        }
         if (originalPath.endsWith("/suggestions")) {
             return "suggestions";
         }

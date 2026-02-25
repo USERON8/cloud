@@ -7,8 +7,11 @@
 - `acceptance-cases.js`：场景定义
 - `gateway-route-only.js`：仅验证网关关键路由可达性（不允许 404 / 5xx）
 - `order-create-only.js`：仅压测下单接口
+- `search-chain.js`：搜索主链 + 网关降级链压测（含 P95/超时率阈值）
 - `run-acceptance.ps1`：PowerShell 启动
 - `run-acceptance.sh`：Shell 启动
+- `run-search-chain.ps1`：PowerShell 启动搜索链路压测
+- `run-search-chain.sh`：Shell 启动搜索链路压测
 
 ## 快速运行
 
@@ -21,6 +24,16 @@ powershell -File tests/perf/k6/run-acceptance.ps1
 ```
 
 默认会通过 `docker/monitoring-compose.yml` 的 `k6` 服务执行。
+
+## 搜索链路运行
+
+```bash
+# PowerShell
+powershell -File tests/perf/k6/run-search-chain.ps1
+
+# Shell
+./tests/perf/k6/run-search-chain.sh
+```
 
 ## 单场景运行
 
@@ -60,3 +73,9 @@ docker compose -f docker/monitoring-compose.yml --profile loadtest run --rm \
 - `HTTP_FAILED_RATE_THRESHOLD`（HTTP 失败率阈值，默认 `0.05`）
 - `ROUTE_VUS`、`ROUTE_DURATION`（`gateway-route-only.js`）
 - `ORDER_VUS`、`ORDER_DURATION`（`order-create-only.js`）
+- `SEARCH_MAIN_VUS`、`SEARCH_MAIN_DURATION`
+- `SEARCH_MAIN_TIMEOUT_MS`、`SEARCH_MAIN_P95_THRESHOLD_MS`
+- `SEARCH_MAIN_TIMEOUT_RATE_THRESHOLD`、`SEARCH_MAIN_ERROR_RATE_THRESHOLD`
+- `SEARCH_FALLBACK_VUS`、`SEARCH_FALLBACK_DURATION`、`SEARCH_FALLBACK_START_TIME`
+- `SEARCH_FALLBACK_TIMEOUT_MS`、`SEARCH_FALLBACK_P95_THRESHOLD_MS`
+- `SEARCH_FALLBACK_TIMEOUT_RATE_THRESHOLD`、`SEARCH_FALLBACK_ERROR_RATE_THRESHOLD`
