@@ -6,7 +6,7 @@
 
 | 模块 | 端口 | 说明 |
 | --- | --- | --- |
-| `gateway` | `80` | 统一网关，转发 `/api/**`、`/auth/**` |
+| `gateway` | `8080` | 统一网关，转发 `/api/**`、`/auth/**` |
 | `auth-service` | `8081` | OAuth2/JWT 认证与 GitHub 登录 |
 | `user-service` | `8082` | 用户、商家、管理员、资料与地址 |
 | `order-service` | `8083` | 订单与退款 |
@@ -18,10 +18,12 @@
 
 ## 快速启动
 
-1. 启动基础依赖：
+1. 启动基础依赖（含端口占用清理）：
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d mysql redis nacos namesrv broker nginx minio elasticsearch
+powershell -File scripts/dev/start-containers.ps1
+# Linux/macOS:
+# bash scripts/dev/start-containers.sh
 ```
 
 2. 初始化数据库（先 `init` 再 `test`，可选）：见 `db/README.md`。
@@ -32,14 +34,12 @@ docker compose -f docker/docker-compose.yml up -d mysql redis nacos namesrv brok
 mvn -T 1C clean package -DskipTests
 ```
 
-4. 启动后端服务（任选其一）：
+4. 启动后端服务（含端口占用清理）：
 
 ```bash
-# 方式1：快速拉起主链路
-powershell -File .tmp/acceptance/start-services.ps1
-
-# 方式2：按模块单独启动
-mvn -pl gateway spring-boot:run
+powershell -File scripts/dev/start-services.ps1
+# Linux/macOS:
+# bash scripts/dev/start-services.sh
 ```
 
 5. 构建前端并部署到 Nginx 静态目录：
@@ -57,7 +57,11 @@ pnpm --dir my-shop-web build
 - 网关 API 文档：`http://127.0.0.1:18080/doc.html`
 - Nacos：`http://127.0.0.1:18080/nacos`
 - RocketMQ Dashboard：`http://127.0.0.1:38082`
-- Kibana：`http://127.0.0.1:5601`
+- MinIO Console：`http://127.0.0.1:19001`
+- Elasticsearch：`http://127.0.0.1:19200`
+- Kibana：`http://127.0.0.1:15601`
+- Prometheus：`http://127.0.0.1:19099`
+- Grafana：`http://127.0.0.1:13000`
 
 ## 目录说明
 

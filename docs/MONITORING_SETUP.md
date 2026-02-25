@@ -1,32 +1,52 @@
-﻿# Prometheus + Grafana 鎺ュ叆璇存槑
+# Prometheus + Grafana 监控接入说明
 
-## 1. 鍚姩鐩戞帶鏍?
+## 1. 启动监控组件
+
+建议使用统一启动脚本（包含端口占用清理）：
+
 ```bash
-docker compose -f docker/monitoring-compose.yml up -d prometheus grafana
+powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 ```
 
-璁块棶鍦板潃锛?
-- Prometheus: `http://localhost:9099`
-- Grafana: `http://localhost:3000`锛堥粯璁?`admin/admin`锛?
-## 2. 鎸囨爣鎶撳彇鐩爣
+也可以单独启动：
 
-Prometheus 宸查厤缃姄鍙栦互涓嬫湇鍔＄殑 `/actuator/prometheus`锛?
-- `host.docker.internal:18080`锛坓ateway锛?- `host.docker.internal:8081`锛坅uth-service锛?- `host.docker.internal:8082`锛坲ser-service锛?- `host.docker.internal:8083`锛坥rder-service锛?- `host.docker.internal:8084`锛坧roduct-service锛?- `host.docker.internal:8085`锛坰tock-service锛?- `host.docker.internal:8086`锛坧ayment-service锛?- `host.docker.internal:8087`锛坰earch-service锛?
-## 3. Grafana 鑷姩瀵煎叆
+```bash
+cd docker
+docker compose -f monitoring-compose.yml up -d prometheus grafana
+```
 
-宸查€氳繃 provisioning 鑷姩瀵煎叆锛?
-- 鏁版嵁婧愶細`Prometheus`锛坲id=`prometheus`锛?- 鐪嬫澘锛歚Cloud Trade Chain`
-- 鐪嬫澘锛歚Cloud Service Overview`
-- 鐪嬫澘锛歚Cloud Acceptance Load`
+访问地址：
+- Prometheus: `http://localhost:19099`
+- Grafana: `http://localhost:13000`（默认 `admin/admin`）
 
-閰嶇疆鏂囦欢浣嶇疆锛?
+## 2. 指标抓取目标
+
+Prometheus 已配置抓取以下服务的 `/actuator/prometheus`：
+- `host.docker.internal:8080`（gateway）
+- `host.docker.internal:8081`（auth-service）
+- `host.docker.internal:8082`（user-service）
+- `host.docker.internal:8083`（order-service）
+- `host.docker.internal:8084`（product-service）
+- `host.docker.internal:8085`（stock-service）
+- `host.docker.internal:8086`（payment-service）
+- `host.docker.internal:8087`（search-service）
+
+## 3. Grafana 自动导入
+
+通过 provisioning 自动导入：
+- 数据源：`Prometheus`（uid=`prometheus`）
+- 看板：`Cloud Trade Chain`
+- 看板：`Cloud Service Overview`
+- 看板：`Cloud Acceptance Load`
+
+配置位置：
 - `docker/monitor/grafana/provisioning/datasources/prometheus.yml`
 - `docker/monitor/grafana/provisioning/dashboards/dashboards.yml`
 - `docker/monitor/grafana/provisioning/dashboards/trade-chain.json`
 - `docker/monitor/grafana/provisioning/dashboards/cloud-overview.json`
 - `docker/monitor/grafana/provisioning/dashboards/acceptance-load.json`
 
-## 4. 鏍稿績涓氬姟鎸囨爣
+## 4. 核心业务指标
 
 - `trade_order_total{service,result}`
 - `trade_payment_total{service,result}`
@@ -34,40 +54,28 @@ Prometheus 宸查厤缃姄鍙栦互涓嬫湇鍔＄殑 `/actuator/prometheus`�
 - `trade_refund_total{service,result}`
 - `trade_message_consume_total{service,eventType,result}`
 
-## 5. 楠屾敹鍘嬫祴鎸囨爣锛坘6 -> Prometheus锛?
-`docker/monitoring-compose.yml` 宸插紑鍚細
+## 5. k6 验收压测指标（k6 -> Prometheus）
 
-- Prometheus `remote-write receiver`锛坄--web.enable-remote-write-receiver`锛?- `k6` 鍘嬫祴瀹瑰櫒锛坧rofile: `loadtest`锛?
-鍘嬫祴鑴氭湰浣嶇疆锛?
+`docker/monitoring-compose.yml` 已启用：
+- Prometheus remote-write receiver（`--web.enable-remote-write-receiver`）
+- `k6` 压测容器（profile: `loadtest`）
+
+脚本位置：
 - `tests/perf/k6/acceptance-cases.js`
 - `tests/perf/k6/run-acceptance.ps1`
 - `tests/perf/k6/run-acceptance.sh`
 
-榛樿浼氭寜 8 涓獙鏀跺満鏅€愪釜鎵ц锛屽苟鍐欏叆 Prometheus锛屾牳蹇冩寚鏍囷細
-
-- `k6_acceptance_case_total{case_id,case_name,result}`
-- `k6_acceptance_case_failed_total{case_id,case_name}`
-- `k6_acceptance_case_skipped_total{case_id,case_name}`
-- `k6_acceptance_case_duration_ms_*`
-- `k6_http_reqs_total{scenario}`
-- `k6_checks_rate{scenario}`
-
-鍚姩鍛戒护绀轰緥锛圥owerShell锛夛細
+PowerShell 示例：
 
 ```powershell
-docker compose -f docker/monitoring-compose.yml up -d prometheus grafana
+powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 $env:K6_BASE_URL = "http://host.docker.internal:18080"
 .\tests\perf\k6\run-acceptance.ps1
 ```
 
-甯哥敤鐜鍙橀噺锛堝帇娴嬫椂娉ㄥ叆锛夛細
+## 6. 验证步骤
 
-- `AUTH_TOKEN` 鎴?`AUTH_USERNAME` + `AUTH_PASSWORD`
-- `USER_ID`銆乣SHOP_ID`銆乣PRODUCT_ID`
-- `ORDER_ID`銆乣ORDER_NO`銆乣PAYMENT_ID`
-- `CASE_VUS`銆乣CASE_DURATION`銆乣CASE_STAGE_SECONDS`
-
-## 6. 楠岃瘉姝ラ
-
-1. 鎵撳紑 `http://localhost:9099/targets`锛岀‘璁?`spring-boot` 浠诲姟鐩爣涓?`UP`銆?2. 璁块棶浠讳竴鏈嶅姟 `http://localhost:{port}/actuator/prometheus`锛岀‘璁よ繑鍥炴枃鏈寚鏍囥€?3. 鎵撳紑 Grafana 鐪嬫澘锛屾鏌ヤ氦鏄撴垚鍔熺巼鍜屾秷鎭噸璇曟洸绾挎湁鏁版嵁銆?4. 鎵ц `k6` 鍚庯紝鎵撳紑 `Cloud Acceptance Load` 鐪嬫澘锛岀‘璁?8 鍦烘櫙鍚炲悙/鎴愬姛鐜?澶辫触涓庤烦杩囩粺璁℃湁鏁版嵁銆?
-
+1. 打开 `http://localhost:19099/targets`，确认 `spring-boot` 目标为 `UP`。
+2. 访问任一服务 `http://localhost:{port}/actuator/prometheus`，确认返回指标文本。
+3. 打开 Grafana 看板，确认交易成功率和消息消费指标有数据。
+4. 执行 k6 后，确认 `Cloud Acceptance Load` 看板出现场景指标。

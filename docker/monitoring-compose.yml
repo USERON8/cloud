@@ -6,7 +6,7 @@ services:
     image: bitnami/prometheus:3.5.0-debian-12-r3
     container_name: cloud-prometheus
     ports:
-      - "9099:9090"
+      - "${PORT_PROMETHEUS_HTTP:-19099}:9090"
     volumes:
       - type: bind
         source: ./monitor/prometheus/config
@@ -32,7 +32,7 @@ services:
     depends_on:
       - prometheus
     ports:
-      - "3000:3000"
+      - "${PORT_GRAFANA_HTTP:-13000}:3000"
     volumes:
       - type: bind
         source: ./monitor/grafana/data

@@ -25,7 +25,7 @@ services:
         source: ./docker-compose/mysql/init
         target: /docker-entrypoint-initdb.d
     ports:
-      - "3306:3306"
+      - "${PORT_MYSQL:-13306}:3306"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
       interval: 5s
@@ -51,7 +51,7 @@ services:
         source: ./docker-compose/redis/logs
         target: /var/log/redis
     ports:
-      - "6379:6379"
+      - "${PORT_REDIS:-16379}:6379"
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli -a root ping | grep PONG" ]
       interval: 5s
@@ -103,9 +103,9 @@ services:
       NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
 
     ports:
-      - "8848:8848"
-      - "9090:9090"
-      - "9848:9848"
+      - "${PORT_NACOS_HTTP:-18848}:8848"
+      - "${PORT_NACOS_GRPC:-19090}:9090"
+      - "${PORT_NACOS_RAFT:-19848}:9848"
     volumes:
       - type: bind
         source: ./docker-compose/nacos/logs
@@ -132,7 +132,7 @@ services:
       service_net:
         ipv4_address: 172.28.0.40
     ports:
-      - "39876:9876"  # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_NAMESRV:-19876}:9876"  # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/namesrv/logs
@@ -153,11 +153,11 @@ services:
     depends_on:
       - namesrv
     ports:
-      - "30909:30909"  # ASCII comment sanitized for compatibility.
-      - "30911:30911"  # ASCII comment sanitized for compatibility.
-      - "30912:30912"  # ASCII comment sanitized for compatibility.
-      - "38080:8080"   # ASCII comment sanitized for compatibility.
-      - "38081:8081"   # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_BROKER_MAIN:-30909}:30909"  # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_BROKER_HA:-30911}:30911"  # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_BROKER_FAST_REPLY:-30912}:30912"  # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_PROXY_REMOTING:-38080}:8080"   # ASCII comment sanitized for compatibility.
+      - "${PORT_RMQ_PROXY_HTTP2:-38081}:8081"   # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/broker/logs
@@ -183,7 +183,7 @@ services:
     depends_on:
       - namesrv
     ports:
-      - "38082:8082"
+      - "${PORT_RMQ_DASHBOARD:-38082}:8082"
     environment:
       JAVA_OPTS: -Drocketmq.namesrv.addr=172.28.0.40:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
 
@@ -195,8 +195,8 @@ services:
       service_net:
         ipv4_address: 172.28.0.70
     ports:
-      - "18080:80"      # ASCII comment sanitized for compatibility.
-      - "18443:443"    # ASCII comment sanitized for compatibility.
+      - "${PORT_NGINX_HTTP:-18080}:80"      # ASCII comment sanitized for compatibility.
+      - "${PORT_NGINX_HTTPS:-18443}:443"    # ASCII comment sanitized for compatibility.
     volumes:
       - type: bind
         source: ./docker-compose/nginx/config/nginx.conf
@@ -217,8 +217,8 @@ services:
       service_net:
         ipv4_address: 172.28.0.80
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${PORT_MINIO_API:-19000}:9000"
+      - "${PORT_MINIO_CONSOLE:-19001}:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -250,8 +250,8 @@ services:
         source: ./docker-compose/elasticsearch/plugins
         target: /usr/share/elasticsearch/plugins
     ports:
-      - "9200:9200"  # ASCII comment sanitized for compatibility.
-      - "9300:9300"  # ASCII comment sanitized for compatibility.
+      - "${PORT_ES_HTTP:-19200}:9200"  # ASCII comment sanitized for compatibility.
+      - "${PORT_ES_TRANSPORT:-19300}:9300"  # ASCII comment sanitized for compatibility.
     ulimits: # ASCII comment sanitized for compatibility.
       memlock:
         soft: -1
@@ -271,7 +271,7 @@ services:
       service_net:
         ipv4_address: 172.28.0.100
     ports:
-      - "5601:5601"
+      - "${PORT_KIBANA_HTTP:-15601}:5601"
     environment:
       # ASCII comment sanitized for compatibility.
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
@@ -320,8 +320,8 @@ services:
       service_net:
         ipv4_address: 172.28.0.110
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "${PORT_LOGSTASH_BEATS:-15044}:5044"
+      - "${PORT_LOGSTASH_API:-19600}:9600"
     environment:
       MYSQL_HOST: cloud-mysql
       MYSQL_PORT: 3306
