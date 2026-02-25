@@ -6,10 +6,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   createProduct,
   listProducts,
-  listSearchHotKeywords,
-  listSearchKeywordRecommendations,
-  listSearchSuggestions,
-  smartSearchProducts,
+  listSearchHotKeywordsWithFallback,
+  listSearchKeywordRecommendationsWithFallback,
+  listSearchSuggestionsWithFallback,
+  smartSearchProductsWithFallback,
   updateProduct,
   updateProductStatus
 } from '../api/product'
@@ -172,8 +172,8 @@ async function refreshKeywordRecommendations(seedKeyword = ''): Promise<void> {
     return
   }
   const [hotResult, recommendationResult] = await Promise.allSettled([
-    listSearchHotKeywords(8),
-    listSearchKeywordRecommendations(seedKeyword, 10)
+    listSearchHotKeywordsWithFallback(8),
+    listSearchKeywordRecommendationsWithFallback(seedKeyword, 10)
   ])
 
   hotKeywords.value = hotResult.status === 'fulfilled' ? hotResult.value : []
@@ -192,7 +192,7 @@ async function loadProducts(): Promise<void> {
       rows.value = result.records
       total.value = result.total
     } else {
-      const searchResult = await smartSearchProducts({
+      const searchResult = await smartSearchProductsWithFallback({
         keyword: params.name || undefined,
         page: params.page,
         size: params.size,
@@ -254,7 +254,7 @@ function fetchSuggestions(queryString: string, callback: (items: SearchSuggestio
 
   suggestTimer.value = window.setTimeout(async () => {
     try {
-      const suggestions = await listSearchSuggestions(normalizedQuery, 10)
+      const suggestions = await listSearchSuggestionsWithFallback(normalizedQuery, 10)
       callback(suggestions.map((item) => ({ value: item })))
     } catch {
       callback([])
