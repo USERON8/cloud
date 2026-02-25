@@ -2,6 +2,10 @@ package com.cloud.common.config;
 
 import com.cloud.common.security.JwtAuthorityUtils;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +14,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,9 +23,16 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 public abstract class BaseResourceServerConfig {
@@ -29,6 +42,12 @@ public abstract class BaseResourceServerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String issuerUri;
+
+    @Value("${app.security.testenv-bypass-enabled:false}")
+    private boolean securityTestMode;
+
+    @Value("${app.security.test-token-value:TEST_ENV_PERMANENT_TOKEN}")
+    private String securityTestTokenValue;
 
     @Bean
     @Order(100)
@@ -45,6 +64,13 @@ public abstract class BaseResourceServerConfig {
 
         if (isStatelessSession()) {
             http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        }
+
+        if (securityTestMode) {
+            log.warn("Security test mode is enabled. JWT validation is bypassed and all endpoints are permitAll.");
+            http.addFilterBefore(testAuthenticationBypassFilter(), UsernamePasswordAuthenticationFilter.class);
+            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+            return http.build();
         }
 
         http.authorizeHttpRequests(authz -> {
@@ -122,4 +148,47 @@ public abstract class BaseResourceServerConfig {
     protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
         return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, true, null);
     }
+
+    private OncePerRequestFilter testAuthenticationBypassFilter() {
+        List<SimpleGrantedAuthority> authorities = List.of(
+                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                new SimpleGrantedAuthority("ROLE_MERCHANT"),
+                new SimpleGrantedAuthority("ROLE_USER"),
+                new SimpleGrantedAuthority("SCOPE_internal_api"),
+                new SimpleGrantedAuthority("SCOPE_user:read"),
+                new SimpleGrantedAuthority("SCOPE_user:write"),
+                new SimpleGrantedAuthority("SCOPE_merchant:read"),
+                new SimpleGrantedAuthority("SCOPE_merchant:write"),
+                new SimpleGrantedAuthority("SCOPE_admin:read"),
+                new SimpleGrantedAuthority("SCOPE_admin:write")
+        );
+
+        Jwt testJwt = Jwt.withTokenValue(securityTestTokenValue)
+                .header("alg", "none")
+                .issuer("test-env")
+                .subject("test-user")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.parse("2099-12-31T23:59:59Z"))
+                .claim("user_id", "999999")
+                .claim("username", "test-user")
+                .claim("user_type", "ADMIN")
+                .claim("scope", "internal_api user:read user:write merchant:read merchant:write admin:read admin:write")
+                .build();
+
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            FilterChain filterChain) throws ServletException, IOException {
+                JwtAuthenticationToken authentication = new JwtAuthenticationToken(testJwt, authorities, "test-user");
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                try {
+                    filterChain.doFilter(request, response);
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
+            }
+        };
+    }
 }
+

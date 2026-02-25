@@ -143,6 +143,9 @@ cloud:
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
 app:
+  security:
+    testenv-bypass-enabled: ${APP_SECURITY_TESTENV_BYPASS_ENABLED:false}
+    test-token-value: ${APP_SECURITY_TEST_TOKEN_VALUE:TEST_ENV_PERMANENT_TOKEN}
   async:
     enabled: ${APP_ASYNC_ENABLED:true}
     common:
@@ -203,6 +206,7 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+
 
 
 

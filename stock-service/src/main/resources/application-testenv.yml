@@ -1,0 +1,4 @@
+﻿app:
+  security:
+    testenv-bypass-enabled: true
+
