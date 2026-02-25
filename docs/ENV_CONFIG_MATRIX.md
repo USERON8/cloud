@@ -23,11 +23,13 @@
 
 | 变量 | 默认值 | 用途 |
 |---|---|---|
-| `NACOS_SERVER_ADDR` | `localhost:8848` | 配置中心与服务发现 |
-| `ROCKETMQ_NAME_SERVER` | `127.0.0.1:39876` | 消息中间件地址 |
+| `NACOS_SERVER_ADDR` | `127.0.0.1:18848` | 配置中心与服务发现（bootstrap） |
+| `ROCKETMQ_NAME_SERVER` | `127.0.0.1:19876` | 消息中间件地址 |
 | `AUTH_JWK_SET_URI` | `http://127.0.0.1:8081/.well-known/jwks.json` | 资源服务 JWT 验签 |
 | `AUTH_ISSUER_URI` | `http://127.0.0.1:8081` | JWT issuer 校验 |
 | `SERVER_PORT` | 各服务默认端口 | 服务端口覆盖 |
+
+说明：`DB_*`、`REDIS_*`、`ELASTICSEARCH_URIS`、`MINIO_*` 等交互参数由 Nacos `common.yaml` 下发，不再依赖启动脚本外部注入。
 
 ## 交易链路消息绑定（必须生效）
 

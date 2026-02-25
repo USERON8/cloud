@@ -14,52 +14,6 @@ $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
 
-function Import-DotEnv {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) { return }
-    Get-Content $Path | ForEach-Object {
-        $line = $_.Trim()
-        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith("#")) { return }
-        $parts = $line.Split("=", 2)
-        if ($parts.Length -ne 2) { return }
-        $key = $parts[0].Trim()
-        $value = $parts[1].Trim()
-        if (-not [string]::IsNullOrWhiteSpace($key) -and -not (Test-Path "Env:$key")) {
-            [Environment]::SetEnvironmentVariable($key, $value, "Process")
-        }
-    }
-}
-
-Import-DotEnv -Path (Join-Path $root "docker\.env")
-if (-not $env:NACOS_SERVER_ADDR) {
-    $nacosHost = if ($env:NACOS_HOST) { $env:NACOS_HOST } else { "127.0.0.1" }
-    $nacosPort = if ($env:NACOS_PORT) { $env:NACOS_PORT } else { "18848" }
-    $env:NACOS_SERVER_ADDR = "$nacosHost`:$nacosPort"
-}
-if (-not $env:ROCKETMQ_NAME_SERVER) {
-    $mqHost = if ($env:ROCKETMQ_NAMESRV_HOST) { $env:ROCKETMQ_NAMESRV_HOST } else { "127.0.0.1" }
-    $mqPort = if ($env:ROCKETMQ_NAMESRV_PORT) { $env:ROCKETMQ_NAMESRV_PORT } else { "19876" }
-    $env:ROCKETMQ_NAME_SERVER = "$mqHost`:$mqPort"
-}
-if (-not $env:AUTH_HOST) { $env:AUTH_HOST = "127.0.0.1" }
-if (-not $env:AUTH_PORT) { $env:AUTH_PORT = "8081" }
-if (-not $env:AUTH_ISSUER_URI) { $env:AUTH_ISSUER_URI = "http://$($env:AUTH_HOST):$($env:AUTH_PORT)" }
-if (-not $env:AUTH_JWK_SET_URI) { $env:AUTH_JWK_SET_URI = "http://$($env:AUTH_HOST):$($env:AUTH_PORT)/.well-known/jwks.json" }
-if (-not $env:AUTH_TOKEN_URI) { $env:AUTH_TOKEN_URI = "http://$($env:AUTH_HOST):$($env:AUTH_PORT)/oauth2/token" }
-if (-not $env:DB_HOST) { $env:DB_HOST = "127.0.0.1" }
-if (-not $env:DB_PORT) { $env:DB_PORT = if ($env:PORT_MYSQL) { $env:PORT_MYSQL } else { "13306" } }
-if (-not $env:REDIS_HOST) { $env:REDIS_HOST = "127.0.0.1" }
-if (-not $env:REDIS_PORT) { $env:REDIS_PORT = if ($env:PORT_REDIS) { $env:PORT_REDIS } else { "16379" } }
-if (-not $env:ELASTICSEARCH_URIS) {
-    $esPort = if ($env:PORT_ES_HTTP) { $env:PORT_ES_HTTP } else { "19200" }
-    $env:ELASTICSEARCH_URIS = "http://127.0.0.1:$esPort"
-}
-if (-not $env:MINIO_ENDPOINT) {
-    $minioPort = if ($env:PORT_MINIO_API) { $env:PORT_MINIO_API } else { "19000" }
-    $env:MINIO_ENDPOINT = "http://127.0.0.1:$minioPort"
-}
-if (-not $env:MINIO_PUBLIC_ENDPOINT) { $env:MINIO_PUBLIC_ENDPOINT = $env:MINIO_ENDPOINT }
-
 $servicePorts = 8080..8087
 if ($killPorts) {
     foreach ($port in $servicePorts) {

@@ -5,39 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
 
-import_dotenv() {
-  local file="$1"
-  [ -f "$file" ] || return 0
-  while IFS= read -r line; do
-    line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-    [ -z "$line" ] && continue
-    [[ "$line" == \#* ]] && continue
-    if [[ "$line" == *=* ]]; then
-      key="${line%%=*}"
-      value="${line#*=}"
-      if [ -z "${!key:-}" ]; then
-        export "$key=$value"
-      fi
-    fi
-  done < "$file"
-}
-
-import_dotenv "$ROOT_DIR/docker/.env"
-export NACOS_SERVER_ADDR="${NACOS_SERVER_ADDR:-${NACOS_HOST:-127.0.0.1}:${NACOS_PORT:-18848}}"
-export ROCKETMQ_NAME_SERVER="${ROCKETMQ_NAME_SERVER:-${ROCKETMQ_NAMESRV_HOST:-127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:-19876}}"
-export AUTH_HOST="${AUTH_HOST:-127.0.0.1}"
-export AUTH_PORT="${AUTH_PORT:-8081}"
-export AUTH_ISSUER_URI="${AUTH_ISSUER_URI:-http://${AUTH_HOST}:${AUTH_PORT}}"
-export AUTH_JWK_SET_URI="${AUTH_JWK_SET_URI:-http://${AUTH_HOST}:${AUTH_PORT}/.well-known/jwks.json}"
-export AUTH_TOKEN_URI="${AUTH_TOKEN_URI:-http://${AUTH_HOST}:${AUTH_PORT}/oauth2/token}"
-export DB_HOST="${DB_HOST:-127.0.0.1}"
-export DB_PORT="${DB_PORT:-${PORT_MYSQL:-13306}}"
-export REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
-export REDIS_PORT="${REDIS_PORT:-${PORT_REDIS:-16379}}"
-export ELASTICSEARCH_URIS="${ELASTICSEARCH_URIS:-http://127.0.0.1:${PORT_ES_HTTP:-19200}}"
-export MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://127.0.0.1:${PORT_MINIO_API:-19000}}"
-export MINIO_PUBLIC_ENDPOINT="${MINIO_PUBLIC_ENDPOINT:-$MINIO_ENDPOINT}"
-
 KILL_PORTS=1
 DRY_RUN=0
 for arg in "$@"; do

@@ -42,7 +42,7 @@ powershell -File scripts/dev/start-services.ps1
 # bash scripts/dev/start-services.sh
 ```
 
-说明：`start-services` 会自动读取 `docker/.env` 并注入 `NACOS_SERVER_ADDR`、`ROCKETMQ_NAME_SERVER`、`DB_HOST/DB_PORT`、`REDIS_HOST/REDIS_PORT`、`ELASTICSEARCH_URIS` 等交互参数，避免服务间通过写死端口互连。
+说明：服务交互参数统一由 Nacos `common.yaml` 配置中心下发，不依赖启动脚本外部注入。
 
 5. 构建前端并部署到 Nginx 静态目录：
 

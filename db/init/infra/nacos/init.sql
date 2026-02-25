@@ -62,12 +62,12 @@ LOCK TABLES `config_info` WRITE;
     DISABLE KEYS */;
 INSERT INTO `config_info`
 VALUES (1, 'common', 'DEFAULT_GROUP',
-        'spring:\r\n  cloud:\r\n    nacos:\r\n      discovery:\r\n        server-addr: 127.0.0.1:8848\r\n        username: nacos\r\n        password: nacos\r\n      config:\r\n        server-addr: 127.0.0.1:8848\r\n        file-extension: yaml\r\n        prefix: gateway\r\n        group: DEFAULT_GROUP\r\n        username: nacos\r\n        password: nacos',
-        '21332872d9ea7eb086dc02cdf7797965', '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos_namespace_migrate',
+        'DB_HOST: 127.0.0.1\r\nDB_PORT: 13306\r\nDB_USERNAME: root\r\nDB_PASSWORD: root\r\nREDIS_HOST: 127.0.0.1\r\nREDIS_PORT: 16379\r\nREDIS_PASSWORD: root\r\nROCKETMQ_NAMESRV_HOST: 127.0.0.1\r\nROCKETMQ_NAMESRV_PORT: 19876\r\nAUTH_HOST: 127.0.0.1\r\nAUTH_PORT: 8081\r\nELASTICSEARCH_URIS: http://127.0.0.1:19200\r\nMINIO_ENDPOINT: http://127.0.0.1:19000\r\nMINIO_PUBLIC_ENDPOINT: http://127.0.0.1:19000',
+        NULL, '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos_namespace_migrate',
         '192.168.43.215', '', '', NULL, NULL, NULL, 'yaml', NULL, ''),
        (2, 'common', 'DEFAULT_GROUP',
-        'spring:\r\n  cloud:\r\n    nacos:\r\n      discovery:\r\n        server-addr: 127.0.0.1:8848\r\n        username: nacos\r\n        password: nacos\r\n      config:\r\n        server-addr: 127.0.0.1:8848\r\n        file-extension: yaml\r\n        prefix: gateway\r\n        group: DEFAULT_GROUP\r\n        username: nacos\r\n        password: nacos',
-        '21332872d9ea7eb086dc02cdf7797965', '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos', '192.168.43.215', '',
+        'DB_HOST: 127.0.0.1\r\nDB_PORT: 13306\r\nDB_USERNAME: root\r\nDB_PASSWORD: root\r\nREDIS_HOST: 127.0.0.1\r\nREDIS_PORT: 16379\r\nREDIS_PASSWORD: root\r\nROCKETMQ_NAMESRV_HOST: 127.0.0.1\r\nROCKETMQ_NAMESRV_PORT: 19876\r\nAUTH_HOST: 127.0.0.1\r\nAUTH_PORT: 8081\r\nELASTICSEARCH_URIS: http://127.0.0.1:19200\r\nMINIO_ENDPOINT: http://127.0.0.1:19000\r\nMINIO_PUBLIC_ENDPOINT: http://127.0.0.1:19000',
+        NULL, '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos', '192.168.43.215', '',
         'public', NULL, NULL, NULL, 'yaml', NULL, '');
 /*!40000 ALTER TABLE `config_info`
     ENABLE KEYS */;
