@@ -8,10 +8,13 @@
 - `gateway-route-only.js`：仅验证网关关键路由可达性（不允许 404 / 5xx）
 - `order-create-only.js`：仅压测下单接口
 - `search-chain.js`：搜索主链 + 网关降级链压测（含 P95/超时率阈值）
+- `all-services-smoke.js`：全服务接口与健康检查 smoke 压测
 - `run-acceptance.ps1`：PowerShell 启动
 - `run-acceptance.sh`：Shell 启动
 - `run-search-chain.ps1`：PowerShell 启动搜索链路压测
 - `run-search-chain.sh`：Shell 启动搜索链路压测
+- `run-all-services-smoke.ps1`：PowerShell 启动全服务 smoke 压测
+- `run-all-services-smoke.sh`：Shell 启动全服务 smoke 压测
 
 ## 快速运行
 
@@ -33,6 +36,16 @@ powershell -File tests/perf/k6/run-search-chain.ps1
 
 # Shell
 ./tests/perf/k6/run-search-chain.sh
+```
+
+## 全服务 smoke 运行
+
+```bash
+# PowerShell
+powershell -File tests/perf/k6/run-all-services-smoke.ps1
+
+# Shell
+./tests/perf/k6/run-all-services-smoke.sh
 ```
 
 ## 单场景运行
@@ -79,3 +92,6 @@ docker compose -f docker/monitoring-compose.yml --profile loadtest run --rm \
 - `SEARCH_FALLBACK_VUS`、`SEARCH_FALLBACK_DURATION`、`SEARCH_FALLBACK_START_TIME`
 - `SEARCH_FALLBACK_TIMEOUT_MS`、`SEARCH_FALLBACK_P95_THRESHOLD_MS`
 - `SEARCH_FALLBACK_TIMEOUT_RATE_THRESHOLD`、`SEARCH_FALLBACK_ERROR_RATE_THRESHOLD`
+- `SMOKE_VUS`、`SMOKE_DURATION`、`SMOKE_SLEEP_SECONDS`
+- `SMOKE_P95_THRESHOLD_MS`、`SMOKE_ERROR_RATE_THRESHOLD`
+- `SERVICE_TARGETS`（逗号分隔 URL，覆盖默认 smoke 目标）
