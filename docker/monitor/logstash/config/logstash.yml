@@ -1,2 +1,6 @@
 http.host: "0.0.0.0"
 path.config: /usr/share/logstash/pipeline
+path.data: /usr/share/logstash/data
+pipeline.ordered: auto
+queue.type: persisted
+queue.max_bytes: 512mb

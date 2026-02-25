@@ -306,9 +306,14 @@ services:
       start_period: 60s
 
   logstash:
-    image: logstash:9.1.2
+    build:
+      context: ./monitor/logstash
+      dockerfile: Dockerfile
+    image: cloud/logstash-sync:9.1.2
     container_name: cloud-logstash-sync
     depends_on:
+      mysql:
+        condition: service_healthy
       elasticsearch:
         condition: service_started
     networks:
@@ -317,6 +322,14 @@ services:
     ports:
       - "5044:5044"
       - "9600:9600"
+    environment:
+      MYSQL_HOST: cloud-mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      ES_HOST: elasticsearch
+      ES_PORT: 9200
     volumes:
       - type: bind
         source: ./monitor/logstash/config/logstash.yml
@@ -327,6 +340,9 @@ services:
       - type: bind
         source: ./monitor/logstash/logs
         target: /usr/share/logstash/logs
+      - type: bind
+        source: ./monitor/logstash/drivers
+        target: /usr/share/logstash/drivers
 # ASCII comment sanitized for compatibility.
 networks:
   service_net:
