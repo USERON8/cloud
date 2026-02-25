@@ -145,7 +145,7 @@ public class MessageUtils {
 
 
     public static void logMessageProcessError(Object payload, String traceId, String error) {
-        log.error("鉂?娑堟伅澶勭悊澶辫触 - TraceId: {}, Payload: {}, Error: {}",
+        log.error("? - TraceId: {}, Payload: {}, Error: {}",
                 traceId, payload.getClass().getSimpleName(), error);
     }
 }

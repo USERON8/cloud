@@ -119,7 +119,7 @@ public class ElasticsearchOptimizedService {
                     .build();
 
         } catch (Exception e) {
-            log.error("閺呴缚鍏橀崯鍡楁惂閹兼粎鍌ㄦ径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage(), e);
+            log.error("E messagerror", keyword, e.getMessage(), e);
             return SearchResult.empty(from, size);
         }
     }
@@ -132,7 +132,7 @@ public class ElasticsearchOptimizedService {
     @Transactional(readOnly = true)
     public List<String> getSearchSuggestions(String keyword, int limit) {
         try {
-            log.debug("閼惧嘲褰囬幖婊呭偍瀵ら缚顔?- 閸忔娊鏁拠? {}, 闂勬劕鍩? {}", keyword, limit);
+            log.debug("D messageebug", keyword, limit);
 
             
             Query query = Query.of(q -> q
@@ -175,12 +175,12 @@ public class ElasticsearchOptimizedService {
             }
 
             List<String> result = suggestions.stream().limit(limit).collect(Collectors.toList());
-            log.debug("閹兼粎鍌ㄥ楦款唴鐎瑰本鍨?- 閸忔娊鏁拠? {}, 瀵ら缚顔呴弫? {}", keyword, result.size());
+            log.debug("D messageebug", keyword, result.size());
 
             return result;
 
         } catch (Exception e) {
-            log.error("閼惧嘲褰囬幖婊呭偍瀵ら缚顔呮径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage(), e);
+            log.error("E messagerror", keyword, e.getMessage(), e);
             return List.of();
         }
     }
@@ -192,7 +192,7 @@ public class ElasticsearchOptimizedService {
     @Transactional(readOnly = true)
     public List<String> getHotSearchKeywords(int limit) {
         try {
-            log.debug("閼惧嘲褰囬悜顓㈡，閹兼粎鍌ㄧ拠?- 闂勬劕鍩? {}", limit);
+            log.debug("D messageebug", limit);
             int safeLimit = limit <= 0 ? 10 : Math.min(limit, 100);
             Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, safeLimit - 1L);
             if (hotKeywords == null || hotKeywords.isEmpty()) {
@@ -201,10 +201,10 @@ public class ElasticsearchOptimizedService {
             List<String> result = hotKeywords.stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-            log.debug("閻戭參妫幖婊呭偍鐠囧秷骞忛崣鏍х暚閹?- 閺佷即鍣? {}", result.size());
+            log.debug("D messageebug", result.size());
             return result;
         } catch (Exception e) {
-            log.error("閼惧嘲褰囬悜顓㈡，閹兼粎鍌ㄧ拠宥呫亼鐠?- 闁挎瑨顕? {}", e.getMessage(), e);
+            log.error("E messagerror", e.getMessage(), e);
             return List.of();
         }
     }
@@ -240,7 +240,7 @@ public class ElasticsearchOptimizedService {
         
         if (minPrice != null && maxPrice != null) {
             
-            log.debug("娴犻攱鐗告潻鍥ㄦ姢: {} - {}", minPrice, maxPrice);
+            log.debug("D messageebug", minPrice, maxPrice);
         }
 
         
@@ -390,7 +390,7 @@ public class ElasticsearchOptimizedService {
                 redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
                 redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
             } catch (Exception e) {
-                log.warn("鐠佹澘缍嶉悜顓㈡，閹兼粎鍌ㄦ径杈Е - 閸忔娊鏁拠? {}, 闁挎瑨顕? {}", keyword, e.getMessage());
+                log.warn("W messagearn", keyword, e.getMessage());
             }
         }
     }
@@ -409,7 +409,7 @@ public class ElasticsearchOptimizedService {
             return true;
 
         } catch (Exception e) {
-            log.error("缁便垹绱╅弬鍥ㄣ€傛径杈Е - 缁便垹绱? {}, ID: {}", indexName, documentId, e);
+            log.error("- ? {}, ID: {}", indexName, documentId, e);
             return false;
         }
     }
@@ -441,7 +441,7 @@ public class ElasticsearchOptimizedService {
             var response = elasticsearchClient.bulk(bulkRequest.build());
 
             if (response.errors()) {
-                log.warn("閹靛綊鍣虹槐銏犵穿闁劌鍨庢径杈Е - 缁便垹绱? {}, 閺傚洦銆傞弫? {}", indexName, documents.size());
+                log.warn("W messagearn", indexName, documents.size());
                 return documents.size() - response.items().size();
             } else {
                 
@@ -449,7 +449,7 @@ public class ElasticsearchOptimizedService {
             }
 
         } catch (Exception e) {
-            log.error("閹靛綊鍣虹槐銏犵穿婢惰精瑙?- 缁便垹绱? {}, 閺傚洦銆傞弫? {}", indexName, documents.size(), e);
+            log.error("E messagerror", indexName, documents.size(), e);
             return 0;
         }
     }

@@ -34,7 +34,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(AuthenticationException.class)
     public Result<String> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
-        log.warn("璁よ瘉寮傚父 - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
+        log.warn("- uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
         return Result.error(ResultCode.AUTHENTICATION_FAILED);
     }
 
@@ -47,7 +47,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         String errorCode = error.getErrorCode();
         String errorMessage = error.getDescription();
 
-        log.warn("OAuth2璁よ瘉寮傚父 - uri: {}, errorCode: {}, errorMessage: {}", request.getRequestURI(), errorCode, errorMessage);
+        log.warn("OAuth2 - uri: {}, errorCode: {}, errorMessage: {}", request.getRequestURI(), errorCode, errorMessage);
 
         
         return switch (errorCode) {
@@ -67,7 +67,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(AccessDeniedException.class)
     public Result<String> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("璁块棶琚嫆缁?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.ACCESS_DENIED);
     }
 
@@ -76,7 +76,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtEncodingException.class)
     public Result<String> handleJwtEncodingException(org.springframework.security.oauth2.jwt.JwtEncodingException e, HttpServletRequest request) {
-        log.error("JWT缂栫爜澶辫触 - uri: {}, message: {}", request.getRequestURI(), e.getMessage(), e);
+        log.error("JWT - uri: {}, message: {}", request.getRequestURI(), e.getMessage(), e);
         return Result.error(ResultCode.JWT_GENERATION_FAILED);
     }
 
@@ -85,7 +85,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtValidationException.class)
     public Result<String> handleJwtValidationException(org.springframework.security.oauth2.jwt.JwtValidationException e, HttpServletRequest request) {
-        log.warn("JWT楠岃瘉澶辫触 - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("JWT - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.JWT_TOKEN_INVALID);
     }
 
@@ -103,7 +103,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
     public Result<String> handleDisabledException(org.springframework.security.authentication.DisabledException e, HttpServletRequest request) {
-        log.warn("璐︽埛宸茬鐢?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.USER_DISABLED);
     }
 
@@ -112,7 +112,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.authentication.LockedException.class)
     public Result<String> handleLockedException(org.springframework.security.authentication.LockedException e, HttpServletRequest request) {
-        log.warn("璐︽埛宸查攣瀹?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.ACCOUNT_LOCKED);
     }
 
@@ -121,7 +121,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.authentication.CredentialsExpiredException.class)
     public Result<String> handleCredentialsExpiredException(org.springframework.security.authentication.CredentialsExpiredException e, HttpServletRequest request) {
-        log.warn("鍑瘉宸茶繃鏈?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.CREDENTIALS_EXPIRED);
     }
 
@@ -130,7 +130,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
     @ExceptionHandler(org.springframework.security.authentication.AccountExpiredException.class)
     public Result<String> handleAccountExpiredException(org.springframework.security.authentication.AccountExpiredException e, HttpServletRequest request) {
-        log.warn("璐︽埛宸茶繃鏈?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
+        log.warn("?- uri: {}, message: {}", request.getRequestURI(), e.getMessage());
         return Result.error(ResultCode.ACCOUNT_EXPIRED);
     }
 

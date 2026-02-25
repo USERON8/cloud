@@ -66,14 +66,14 @@ public class OrderMessageProducer {
                 
 
             } else {
-                log.error("鉂?璁㈠崟鍒涘缓浜嬩欢鍙戦€佸け璐? orderId={}, orderNo={}",
+                log.error("?? orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo());
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€佽鍗曞垱寤轰簨浠跺紓甯? orderId={}, orderNo={}",
+            log.error("?? orderId={}, orderNo={}",
                     event.getOrderId(), event.getOrderNo(), e);
             return false;
         }
@@ -111,14 +111,14 @@ public class OrderMessageProducer {
                 
 
             } else {
-                log.error("鉂?璁㈠崟鍙栨秷浜嬩欢鍙戦€佸け璐? orderId={}, orderNo={}",
+                log.error("?? orderId={}, orderNo={}",
                         orderId, orderNo);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€佽鍗曞彇娑堜簨浠跺紓甯? orderId={}, orderNo={}",
+            log.error("?? orderId={}, orderNo={}",
                     orderId, orderNo, e);
             return false;
         }
@@ -163,14 +163,14 @@ public class OrderMessageProducer {
                 
 
             } else {
-                log.error("鉂?搴撳瓨鎭㈠浜嬩欢鍙戦€佸け璐? orderId={}, refundNo={}",
+                log.error("?? orderId={}, refundNo={}",
                         orderId, refundNo);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€佸簱瀛樻仮澶嶄簨浠跺紓甯? orderId={}, refundNo={}",
+            log.error("?? orderId={}, refundNo={}",
                     orderId, refundNo, e);
             return false;
         }

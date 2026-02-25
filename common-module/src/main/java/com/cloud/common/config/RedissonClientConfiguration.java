@@ -232,7 +232,7 @@ public class RedissonClientConfiguration {
             }
             return value;
         } catch (NumberFormatException e) {
-            log.warn("鈿狅笍 瑙ｆ瀽瓒呮椂鏃堕棿澶辫触: {}, 浣跨敤榛樿鍊?000ms", timeoutStr);
+            log.warn(": {}, ?000ms", timeoutStr);
             return 3000;
         }
     }

@@ -30,7 +30,7 @@ public class OrderCacheWarmupStrategy implements com.cloud.common.cache.warmup.C
             return warmedUpCount;
 
         } catch (Exception e) {
-            log.error("璁㈠崟缂撳瓨棰勭儹澶辫触", e);
+            log.error("E messagerror", e);
             return warmedUpCount;
         }
     }
@@ -54,7 +54,7 @@ public class OrderCacheWarmupStrategy implements com.cloud.common.cache.warmup.C
                 cache.put(order.getId(), order);
                 count++;
             } catch (Exception e) {
-                log.warn("棰勭儹寰呮敮浠樿鍗?{} 澶辫触: {}", order.getId(), e.getMessage());
+                log.warn("W messagearn", order.getId(), e.getMessage());
             }
         }
 
@@ -86,7 +86,7 @@ public class OrderCacheWarmupStrategy implements com.cloud.common.cache.warmup.C
                     count++;
                 }
             } catch (Exception e) {
-                log.warn("棰勭儹澶勭悊涓鍗?{} 澶辫触: {}", order.getId(), e.getMessage());
+                log.warn("W messagearn", order.getId(), e.getMessage());
             }
         }
 

@@ -178,7 +178,7 @@ public class RedisOAuth2Config {
                 }
 
             } catch (Exception e) {
-                log.error("馃毃 Redis杩炴帴楠岃瘉澶辫触", e);
+                log.error("Redis", e);
                 throw new IllegalStateException("Redis杩炴帴楠岃瘉澶辫触", e);
             }
         }
@@ -229,7 +229,7 @@ public class RedisOAuth2Config {
                 boolean healthy = testValue.equals(result);
 
                 if (healthy) {
-                    log.debug("鉁?Redis鍋ュ悍妫€鏌ラ€氳繃");
+                    log.debug("?Redis");
                 } else {
                     log.warn("Redis health check failed: inconsistent read/write verification result");
                 }

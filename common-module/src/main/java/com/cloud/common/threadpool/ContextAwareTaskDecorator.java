@@ -37,7 +37,7 @@ public class ContextAwareTaskDecorator implements TaskDecorator {
                 
                 String traceId = MDC.get("traceId");
                 String userId = MDC.get("userId");
-                log.error("寮傛浠诲姟鎵ц寮傚父 - traceId: {}, userId: {}, error: {}",
+                log.error("- traceId: {}, userId: {}, error: {}",
                         traceId, userId, e.getMessage(), e);
                 throw e;
             } finally {

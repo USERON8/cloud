@@ -120,7 +120,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             
             CacheObject localCacheObj = localCache.getIfPresent(key);
             if (localCacheObj != null && localCacheObj.isValid()) {
-                log.debug("缂撳瓨L1鍛戒腑: cacheName={}, key={}", name, key);
+                log.debug("L1: cacheName={}, key={}", name, key);
 
                 
                 if (metricsCollector != null) {
@@ -139,7 +139,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             if (redisCacheObj != null && redisCacheObj.isValid()) {
                 
                 localCache.put(key, redisCacheObj);
-                log.debug("缂撳瓨L2鍛戒腑骞跺洖濉? cacheName={}, key={}", name, key);
+                log.debug("L2? cacheName={}, key={}", name, key);
 
                 
                 if (metricsCollector != null) {
@@ -154,7 +154,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             
             if (redisCacheObj != null && redisCacheObj.isExpired()) {
                 redisTemplate.delete(cacheKey);
-                log.debug("娓呯悊杩囨湡缂撳瓨: cacheName={}, key={}", name, key);
+                log.debug(": cacheName={}, key={}", name, key);
             }
 
             
@@ -165,7 +165,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             }
 
         } catch (Exception e) {
-            log.warn("缂撳瓨鏌ヨ寮傚父: cacheName={}, key={}, error={}", name, key, e.getMessage());
+            log.warn(": cacheName={}, key={}, error={}", name, key, e.getMessage());
         }
 
         return null; 
@@ -221,10 +221,10 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             
             
 
-            log.debug("缂撳瓨鏇存柊鎴愬姛: cacheName={}, key={}", name, key);
+            log.debug(": cacheName={}, key={}", name, key);
 
         } catch (Exception e) {
-            log.error("缂撳瓨鍐欏叆寮傚父: cacheName={}, key={}, error={}", name, key, e.getMessage(), e);
+            log.error(": cacheName={}, key={}, error={}", name, key, e.getMessage(), e);
         }
     }
 
@@ -247,10 +247,10 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             
             
 
-            log.debug("缂撳瓨鍒犻櫎鎴愬姛: cacheName={}, key={}", name, key);
+            log.debug(": cacheName={}, key={}", name, key);
 
         } catch (Exception e) {
-            log.error("缂撳瓨鍒犻櫎寮傚父: cacheName={}, key={}, error={}", name, key, e.getMessage(), e);
+            log.error(": cacheName={}, key={}, error={}", name, key, e.getMessage(), e);
         }
     }
 
@@ -273,7 +273,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
             
 
         } catch (Exception e) {
-            log.error("缂撳瓨娓呯┖寮傚父: cacheName={}, error={}", name, e.getMessage(), e);
+            log.error(": cacheName={}, error={}", name, e.getMessage(), e);
         }
     }
 
@@ -294,17 +294,17 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
                 case DELETE:
                     
                     localCache.invalidate(message.getKey());
-                    log.debug("鏀跺埌缂撳瓨娑堟伅-娓呴櫎鏈湴缂撳瓨: cacheName={}, key={}, operation={}",
+                    log.debug("-: cacheName={}, key={}, operation={}",
                             message.getCacheName(), message.getKey(), message.getOperationType());
                     break;
                 case CLEAR:
                     
                     localCache.invalidateAll();
-                    log.debug("鏀跺埌缂撳瓨娑堟伅-娓呯┖鏈湴缂撳瓨: cacheName={}", message.getCacheName());
+                    log.debug("-: cacheName={}", message.getCacheName());
                     break;
             }
         } catch (Exception e) {
-            log.error("澶勭悊缂撳瓨娑堟伅寮傚父: message={}, error={}", message, e.getMessage(), e);
+            log.error(": message={}, error={}", message, e.getMessage(), e);
         }
     }
 
@@ -327,7 +327,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
         try {
             redisTemplate.convertAndSend(messageTopic, message);
         } catch (Exception e) {
-            log.error("鍙戝竷缂撳瓨娑堟伅寮傚父: message={}, error={}", message, e.getMessage());
+            log.error(": message={}, error={}", message, e.getMessage());
         }
     }
 

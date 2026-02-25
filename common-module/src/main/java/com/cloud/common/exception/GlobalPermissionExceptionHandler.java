@@ -30,7 +30,7 @@ public class GlobalPermissionExceptionHandler {
     @ExceptionHandler(PermissionException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handlePermissionException(PermissionException ex) {
-        log.warn("鏉冮檺寮傚父: {} - {}", ex.getCode(), ex.getMessage());
+        log.warn("W messagearn", ex.getCode(), ex.getMessage());
 
         return Result.error(translateErrorCode(ex.getCode()), ex.getMessage());
     }
@@ -44,7 +44,7 @@ public class GlobalPermissionExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleAuthenticationException(AuthenticationException ex) {
-        log.warn("璁よ瘉寮傚父: {}", ex.getMessage());
+        log.warn("W messagearn", ex.getMessage());
 
         return Result.error(401, "Authentication failed: " + ex.getMessage());
     }
@@ -58,7 +58,7 @@ public class GlobalPermissionExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handleAccessDeniedException(AccessDeniedException ex) {
-        log.warn("璁块棶鎷掔粷寮傚父: {}", ex.getMessage());
+        log.warn("W messagearn", ex.getMessage());
 
         return Result.error(403, "璁块棶琚嫆缁濓細" + ex.getMessage());
     }
@@ -72,7 +72,7 @@ public class GlobalPermissionExceptionHandler {
     @ExceptionHandler(SecurityException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handleSecurityException(SecurityException ex) {
-        log.warn("瀹夊叏寮傚父: {}", ex.getMessage());
+        log.warn("W messagearn", ex.getMessage());
 
         return Result.error(403, "瀹夊叏妫€鏌ュけ璐ワ細" + ex.getMessage());
     }
@@ -86,7 +86,7 @@ public class GlobalPermissionExceptionHandler {
     @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleJwtException(org.springframework.security.oauth2.jwt.JwtException ex) {
-        log.warn("JWT寮傚父: {}", ex.getMessage());
+        log.warn("JWT: {}", ex.getMessage());
 
         return Result.error(401, "Invalid JWT token: " + ex.getMessage());
     }

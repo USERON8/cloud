@@ -25,7 +25,7 @@ public class PaymentGlobalExceptionHandler extends com.cloud.common.exception.Gl
     @ExceptionHandler(PaymentServiceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<String> handlePaymentServiceException(PaymentServiceException ex) {
-        log.warn("鏀粯鏈嶅姟寮傚父: {}", ex.getMessage());
+        log.warn("W messagearn", ex.getMessage());
         return Result.error(ex.getCode(), ex.getMessage());
     }
 
@@ -36,7 +36,7 @@ public class PaymentGlobalExceptionHandler extends com.cloud.common.exception.Gl
     @ExceptionHandler(InsufficientBalanceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<String> handleInsufficientBalanceException(InsufficientBalanceException ex) {
-        log.warn("浣欓涓嶈冻寮傚父: {}", ex.getMessage());
+        log.warn("W messagearn", ex.getMessage());
         return Result.error(ex.getCode(), ex.getMessage());
     }
 }

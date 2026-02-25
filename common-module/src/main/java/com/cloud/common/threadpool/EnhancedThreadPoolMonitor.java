@@ -157,7 +157,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
                 
                 double usageDiff = Math.abs(currentInfo.getPoolUsageRate() - lastInfo.getPoolUsageRate());
                 if (usageDiff > 20) { 
-                    log.warn("鈿狅笍 绾跨▼姹?{} 浣跨敤鐜囧ぇ骞呭彉鍖? {:.1f}% -> {:.1f}%",
+                    log.warn("?{} ? {:.1f}% -> {:.1f}%",
                             name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
                 }
             }
@@ -172,10 +172,10 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         String newIcon = getStatusIcon(newStatus);
 
         if ("CRITICAL".equals(newStatus)) {
-            log.error("馃毃 绾跨▼姹?{} 鐘舵€佹伓鍖? {} {} -> {} {}",
+            log.error("E messagerror",
                     poolName, oldIcon, oldStatus, newIcon, newStatus);
         } else if ("WARNING".equals(newStatus)) {
-            log.warn("鈿狅笍 绾跨▼姹?{} 鐘舵€佽鍛? {} {} -> {} {}",
+            log.warn("W messagearn",
                     poolName, oldIcon, oldStatus, newIcon, newStatus);
         } else if ("HEALTHY".equals(newStatus) && !"HEALTHY".equals(oldStatus)) {
             

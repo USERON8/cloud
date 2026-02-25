@@ -42,7 +42,7 @@ public abstract class RedissonConfig {
         try {
             return Integer.parseInt(cleanValue);
         } catch (NumberFormatException e) {
-            log.warn("瑙ｆ瀽鏁存暟閰嶇疆澶辫触锛屼娇鐢ㄩ粯璁ゅ€? {} -> {}", value, defaultValue);
+            log.warn("W messagearn", value, defaultValue);
             return defaultValue;
         }
     }
@@ -53,7 +53,7 @@ public abstract class RedissonConfig {
         try {
             return Long.parseLong(cleanValue);
         } catch (NumberFormatException e) {
-            log.warn("瑙ｆ瀽闀挎暣鏁伴厤缃け璐ワ紝浣跨敤榛樿鍊? {} -> {}", value, defaultValue);
+            log.warn("W messagearn", value, defaultValue);
             return defaultValue;
         }
     }

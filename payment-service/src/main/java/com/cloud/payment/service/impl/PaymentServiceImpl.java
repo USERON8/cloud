@@ -43,7 +43,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
             
             return exists;
         } catch (Exception e) {
-            log.error("妫€鏌ユ敮浠樿褰曟槸鍚﹀瓨鍦ㄥけ璐?- 璁㈠崟ID: {}", orderId, e);
+            log.error("?- ID: {}", orderId, e);
             return false;
         }
     }
@@ -58,7 +58,7 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment>
         try {
 
         } catch (Exception e) {
-            log.warn("鍙戦€佹敮浠橀€€娆炬棩蹇楀け璐?- 鏀粯ID: {}, 閫€娆綢D: {}, 璁㈠崟ID: {}",
+            log.warn("?- ID: {}, D: {}, ID: {}",
                     paymentId, refundId, orderId, e);
         }
     }

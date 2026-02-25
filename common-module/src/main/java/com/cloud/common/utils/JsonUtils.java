@@ -59,7 +59,7 @@ public class JsonUtils {
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            log.error("瀵硅薄搴忓垪鍖栦负JSON澶辫触: {}", e.getMessage(), e);
+            log.error("JSON: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -79,7 +79,7 @@ public class JsonUtils {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (Exception e) {
-            log.error("JSON鍙嶅簭鍒楀寲澶辫触: {}", e.getMessage(), e);
+            log.error("JSON: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -99,7 +99,7 @@ public class JsonUtils {
         try {
             return objectMapper.readValue(json, typeReference);
         } catch (Exception e) {
-            log.error("JSON鍙嶅簭鍒楀寲澶辫触: {}", e.getMessage(), e);
+            log.error("JSON: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -121,7 +121,7 @@ public class JsonUtils {
             String json = toJson(source);
             return fromJson(json, clazz);
         } catch (Exception e) {
-            log.error("瀵硅薄杞崲澶辫触: {}", e.getMessage(), e);
+            log.error("E messagerror", e.getMessage(), e);
             return null;
         }
     }
@@ -139,7 +139,7 @@ public class JsonUtils {
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            log.error("瀵硅薄搴忓垪鍖栦负缇庡寲JSON澶辫触: {}", e.getMessage(), e);
+            log.error("JSON: {}", e.getMessage(), e);
             return null;
         }
     }

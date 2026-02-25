@@ -213,7 +213,7 @@ public class PermissionCheckService {
             try {
                 return userFeignClient.findByUsername(username);
             } catch (Exception e) {
-                log.error("鑾峰彇鐢ㄦ埛淇℃伅澶辫触: username={}", username, e);
+                log.error(": username={}", username, e);
                 return null;
             }
         }

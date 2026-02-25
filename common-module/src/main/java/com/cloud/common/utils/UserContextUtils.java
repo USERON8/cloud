@@ -267,7 +267,7 @@ public class UserContextUtils {
                 return StringUtils.hasText(value) && !"null".equals(value) ? value : null;
             }
         } catch (Exception e) {
-            log.debug("鑾峰彇HTTP璇锋眰澶?{} 鏃跺彂鐢熷紓甯? {}", headerName, e.getMessage());
+            log.debug("HTTP?{} ? {}", headerName, e.getMessage());
         }
         return null;
     }

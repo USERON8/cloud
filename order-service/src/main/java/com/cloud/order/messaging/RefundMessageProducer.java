@@ -53,14 +53,14 @@ public class RefundMessageProducer {
                 
 
             } else {
-                log.error("鉂?閫€娆惧垱寤轰簨浠跺彂閫佸け璐? refundId={}, refundNo={}",
+                log.error("?? refundId={}, refundNo={}",
                         refund.getId(), refund.getRefundNo());
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€侀€€娆惧垱寤轰簨浠跺紓甯? refundId={}, refundNo={}",
+            log.error("?? refundId={}, refundNo={}",
                     refund.getId(), refund.getRefundNo(), e);
             return false;
         }
@@ -98,7 +98,7 @@ public class RefundMessageProducer {
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€侀€€娆惧鏍镐簨浠跺紓甯? refundId={}", refund.getId(), e);
+            log.error("?? refundId={}", refund.getId(), e);
             return false;
         }
     }
@@ -129,13 +129,13 @@ public class RefundMessageProducer {
                 
 
             } else {
-                log.error("鉂?閫€娆惧鐞嗕簨浠跺彂閫佸け璐? refundId={}", refund.getId());
+                log.error("?? refundId={}", refund.getId());
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€侀€€娆惧鐞嗕簨浠跺紓甯? refundId={}", refund.getId(), e);
+            log.error("?? refundId={}", refund.getId(), e);
             return false;
         }
     }
@@ -168,7 +168,7 @@ public class RefundMessageProducer {
             return result;
 
         } catch (Exception e) {
-            log.error("鉂?鍙戦€侀€€娆惧彇娑堜簨浠跺紓甯? refundId={}", refund.getId(), e);
+            log.error("?? refundId={}", refund.getId(), e);
             return false;
         }
     }

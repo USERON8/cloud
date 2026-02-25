@@ -52,10 +52,10 @@ public class UserInfoService {
             userInfo.put("isMerchant", UserContextUtils.isMerchant());
             userInfo.put("isAdmin", UserContextUtils.isAdmin());
 
-            log.debug("鎴愬姛鑾峰彇鐢ㄦ埛鍩烘湰淇℃伅锛岀敤鎴稩D: {}", userInfo.get("userId"));
+            log.debug("D: {}", userInfo.get("userId"));
 
         } catch (Exception e) {
-            log.error("鑾峰彇鐢ㄦ埛鍩烘湰淇℃伅澶辫触", e);
+            log.error("E messagerror", e);
             userInfo.put("error", "鑾峰彇鐢ㄦ埛淇℃伅澶辫触: " + e.getMessage());
         }
 
@@ -92,10 +92,10 @@ public class UserInfoService {
                 sensitiveInfo.put("maskedPhone", null);
             }
 
-            log.debug("鎴愬姛鑾峰彇鐢ㄦ埛鏁忔劅淇℃伅锛岀敤鎴稩D: {}", UserContextUtils.getCurrentUserId());
+            log.debug("D: {}", UserContextUtils.getCurrentUserId());
 
         } catch (Exception e) {
-            log.error("鑾峰彇鐢ㄦ埛鏁忔劅淇℃伅澶辫触", e);
+            log.error("E messagerror", e);
             sensitiveInfo.put("error", "鑾峰彇鏁忔劅淇℃伅澶辫触: " + e.getMessage());
         }
 
@@ -125,7 +125,7 @@ public class UserInfoService {
         fullInfo.put("timestamp", System.currentTimeMillis());
         fullInfo.put("source", "UserInfoService");
 
-        log.debug("鎴愬姛鑾峰彇鐢ㄦ埛瀹屾暣淇℃伅锛岀敤鎴稩D: {}", fullInfo.get("userId"));
+        log.debug("D: {}", fullInfo.get("userId"));
 
         return fullInfo;
     }
@@ -177,10 +177,10 @@ public class UserInfoService {
             commonPermissions.put("canAdminWrite", UserContextUtils.hasScope("admin:write"));
             permissionSummary.put("commonPermissions", commonPermissions);
 
-            log.debug("鎴愬姛鑾峰彇鐢ㄦ埛鏉冮檺鎽樿锛岀敤鎴稩D: {}, 鏉冮檺鏁伴噺: {}", userId, scopes.size());
+            log.debug("D: {}, : {}", userId, scopes.size());
 
         } catch (Exception e) {
-            log.error("鑾峰彇鐢ㄦ埛鏉冮檺鎽樿澶辫触", e);
+            log.error("E messagerror", e);
             permissionSummary.put("error", "鑾峰彇鏉冮檺淇℃伅澶辫触: " + e.getMessage());
         }
 
@@ -200,7 +200,7 @@ public class UserInfoService {
             }
             return UserContextUtils.hasScope(permission);
         } catch (Exception e) {
-            log.error("妫€鏌ユ潈闄愬け璐ワ紝鏉冮檺: {}", permission, e);
+            log.error("E messagerror", permission, e);
             return false;
         }
     }
@@ -218,7 +218,7 @@ public class UserInfoService {
             }
             return UserContextUtils.hasAnyScope(permissions);
         } catch (Exception e) {
-            log.error("妫€鏌ヤ换鎰忔潈闄愬け璐ワ紝鏉冮檺: {}", java.util.Arrays.toString(permissions), e);
+            log.error("E messagerror", java.util.Arrays.toString(permissions), e);
             return false;
         }
     }
@@ -233,7 +233,7 @@ public class UserInfoService {
         try {
             return UserContextUtils.isUserType(userType);
         } catch (Exception e) {
-            log.error("妫€鏌ョ敤鎴风被鍨嬪け璐ワ紝绫诲瀷: {}", userType, e);
+            log.error("E messagerror", userType, e);
             return false;
         }
     }

@@ -100,7 +100,7 @@ public class MybatisPlusConfig {
 
         @Override
         public void insertFill(MetaObject metaObject) {
-            log.debug("寮€濮嬫彃鍏ュ～鍏?- 瀹炰綋绫? {}", metaObject.getOriginalObject().getClass().getSimpleName());
+            log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
 
             LocalDateTime now = LocalDateTime.now();
             Long currentUserId = getCurrentUserId();
@@ -123,7 +123,7 @@ public class MybatisPlusConfig {
             
             fillField(metaObject, new String[]{"deleted", "is_deleted"}, Integer.class, 0);
 
-            log.debug("鎻掑叆濉厖瀹屾垚 - createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
+            log.debug("- createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
         }
 
         
@@ -133,7 +133,7 @@ public class MybatisPlusConfig {
 
         @Override
         public void updateFill(MetaObject metaObject) {
-            log.debug("寮€濮嬫洿鏂板～鍏?- 瀹炰綋绫? {}", metaObject.getOriginalObject().getClass().getSimpleName());
+            log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
 
             LocalDateTime now = LocalDateTime.now();
             Long currentUserId = getCurrentUserId();
@@ -144,7 +144,7 @@ public class MybatisPlusConfig {
             
             updateField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
 
-            log.debug("鏇存柊濉厖瀹屾垚 - updatedAt: {}, userId: {}", now, currentUserId);
+            log.debug("- updatedAt: {}, userId: {}", now, currentUserId);
         }
 
         
@@ -154,7 +154,7 @@ public class MybatisPlusConfig {
             for (String fieldName : fieldNames) {
                 if (metaObject.hasGetter(fieldName)) {
                     this.strictInsertFill(metaObject, fieldName, fieldType, value);
-                    log.debug("濉厖瀛楁: {} = {}", fieldName, value);
+                    log.debug("D messageebug", fieldName, value);
                     break; 
                 }
             }
@@ -174,7 +174,7 @@ public class MybatisPlusConfig {
             for (String fieldName : fieldNames) {
                 if (metaObject.hasGetter(fieldName)) {
                     this.strictUpdateFill(metaObject, fieldName, fieldType, value);
-                    log.debug("鏇存柊瀛楁: {} = {}", fieldName, value);
+                    log.debug("D messageebug", fieldName, value);
                     break; 
                 }
             }
@@ -198,7 +198,7 @@ public class MybatisPlusConfig {
                 Long userId = SecurityUtils.getCurrentUserId();
                 return userId != null ? userId : 0L;
             } catch (Exception e) {
-                log.debug("鑾峰彇褰撳墠鐢ㄦ埛ID澶辫触锛屼娇鐢ㄧ郴缁熺敤鎴稩D: {}", e.getMessage());
+                log.debug("IDD: {}", e.getMessage());
                 return 0L; 
             }
         }

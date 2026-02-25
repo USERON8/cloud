@@ -69,7 +69,7 @@ public class RateLimitManager {
             return result;
 
         } catch (Exception e) {
-            log.error("闄愭祦妫€鏌ュ紓甯? key: {}, identifier: {}", key, identifier, e);
+            log.error("? key: {}, identifier: {}", key, identifier, e);
             
             return RateLimitResult.allow(Long.MAX_VALUE, 0);
         }

@@ -100,7 +100,7 @@ public class CacheConfigFactory {
                             
                         }
                     } catch (Exception e) {
-                        log.warn("璁剧疆缂撳瓨鎸囨爣鏀堕泦鍣ㄥけ璐? {}", e.getMessage());
+                        log.warn("W messagearn", e.getMessage());
                     }
                 }
                 return bean;
@@ -155,7 +155,7 @@ public class CacheConfigFactory {
 
         template.afterPropertiesSet();
 
-        log.debug("閰嶇疆缂撳瓨RedisTemplate: keySerializer=String, valueSerializer=Jackson2Json");
+        log.debug("RedisTemplate: keySerializer=String, valueSerializer=Jackson2Json");
 
         return template;
     }
@@ -260,7 +260,7 @@ public class CacheConfigFactory {
             int random = (int) (Math.random() * 10000);
             String nodeId = String.format("node-%d-%d", timestamp, random);
 
-            log.warn("鏃犳硶鑾峰彇涓绘満鍚嶏紝浣跨敤闅忔満鑺傜偣ID: {}", nodeId);
+            log.warn("ID: {}", nodeId);
             return nodeId;
         }
     }

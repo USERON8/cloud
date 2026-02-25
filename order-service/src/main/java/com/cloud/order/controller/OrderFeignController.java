@@ -38,7 +38,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return orderVO;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鏍规嵁璁㈠崟ID鏌ヨ璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign ID: orderId={}", orderId, e);
             return null;
         }
     }
@@ -58,7 +58,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return orderDTO;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鍒涘缓璁㈠崟澶辫触: userId={}", orderCreateDTO.getUserId(), e);
+            log.error("[Feign : userId={}", orderCreateDTO.getUserId(), e);
             return null;
         }
     }
@@ -78,7 +78,7 @@ public class OrderFeignController implements OrderFeignClient {
             orderDTO.setId(orderId);
             return orderService.updateOrder(orderDTO);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鏇存柊璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -96,7 +96,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.deleteOrder(orderId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鍒犻櫎璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -115,7 +115,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.updateOrderStatusForFeign(orderId, status);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鏇存柊璁㈠崟鐘舵€佸け璐? orderId={}, status={}", orderId, status, e);
+            log.error("[Feign ? orderId={}, status={}", orderId, status, e);
             return false;
         }
     }
@@ -133,7 +133,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.payOrder(orderId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鏀粯璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -151,7 +151,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.shipOrder(orderId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鍙戣揣璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -169,7 +169,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.completeOrderForFeign(orderId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 瀹屾垚璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -188,7 +188,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.cancelOrderWithReason(orderId, cancelReason);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鍙栨秷璁㈠崟澶辫触: orderId={}", orderId, e);
+            log.error("[Feign : orderId={}", orderId, e);
             return false;
         }
     }
@@ -206,7 +206,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.getOrdersByUserId(userId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鏌ヨ鐢ㄦ埛璁㈠崟鍒楄〃澶辫触: userId={}", userId, e);
+            log.error("[Feign : userId={}", userId, e);
             return List.of();
         }
     }
@@ -224,7 +224,7 @@ public class OrderFeignController implements OrderFeignClient {
         try {
             return orderService.isOrderPaid(orderId);
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 妫€鏌ヨ鍗曟敮浠樼姸鎬佸け璐? orderId={}", orderId, e);
+            log.error("[Feign ? orderId={}", orderId, e);
             return false;
         }
     }
@@ -251,7 +251,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return successCount;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鎵归噺鍒犻櫎璁㈠崟澶辫触: orderIds={}", orderIds, e);
+            log.error("[Feign : orderIds={}", orderIds, e);
             return 0;
         }
     }
@@ -277,7 +277,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return successCount;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鎵归噺鍙栨秷璁㈠崟澶辫触: orderIds={}", orderIds, e);
+            log.error("[Feign : orderIds={}", orderIds, e);
             return 0;
         }
     }
@@ -302,7 +302,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return successCount;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鎵归噺鏀粯璁㈠崟澶辫触: orderIds={}", orderIds, e);
+            log.error("[Feign : orderIds={}", orderIds, e);
             return 0;
         }
     }
@@ -327,7 +327,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return successCount;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鎵归噺鍙戣揣璁㈠崟澶辫触: orderIds={}", orderIds, e);
+            log.error("[Feign : orderIds={}", orderIds, e);
             return 0;
         }
     }
@@ -352,7 +352,7 @@ public class OrderFeignController implements OrderFeignClient {
             
             return successCount;
         } catch (Exception e) {
-            log.error("[璁㈠崟Feign鎺у埗鍣╙ 鎵归噺瀹屾垚璁㈠崟澶辫触: orderIds={}", orderIds, e);
+            log.error("[Feign : orderIds={}", orderIds, e);
             return 0;
         }
     }

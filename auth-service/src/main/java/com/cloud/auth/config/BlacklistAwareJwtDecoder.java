@@ -35,7 +35,7 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
 
         
         if (tokenBlacklistService.isBlacklisted(jwt)) {
-            log.warn("妫€娴嬪埌榛戝悕鍗旿WT浠ょ墝: subject={}, jti={}",
+            log.warn("WT: subject={}, jti={}",
                     jwt.getSubject(), jwt.getClaimAsString("jti"));
             throw new JwtValidationException("JWT token has been revoked",
                     OAuth2TokenValidatorResult.failure(new OAuth2Error("blacklisted", "Token is blacklisted", null)).getErrors());
@@ -57,7 +57,7 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
         @Override
         public OAuth2TokenValidatorResult validate(Jwt jwt) {
             if (tokenBlacklistService.isBlacklisted(jwt)) {
-                log.debug("JWT浠ょ墝楠岃瘉澶辫触锛氫护鐗屽湪榛戝悕鍗曚腑, subject={}", jwt.getSubject());
+                log.debug("JWT, subject={}", jwt.getSubject());
                 return OAuth2TokenValidatorResult.failure(new OAuth2Error("blacklisted", "Token is blacklisted", null));
             }
 

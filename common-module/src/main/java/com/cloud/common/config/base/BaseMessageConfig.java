@@ -111,7 +111,7 @@ public abstract class BaseMessageConfig {
 
                 }
                 if (logHeaders) {
-                    log.debug("娑堟伅澶? {}", headers);
+                    log.debug("D messageebug", headers);
                 }
             }
 
@@ -123,13 +123,13 @@ public abstract class BaseMessageConfig {
 
                 }
             } else {
-                log.error("鉂?娑堟伅鍙戦€佸け璐?- 缁戝畾: {}, 浜嬩欢绫诲瀷: {}, 杩借釜ID: {}",
+                log.error("??- : {}, : {}, ID: {}",
                         bindingName, eventType, traceId);
             }
 
             return sent;
         } catch (Exception e) {
-            log.error("鉂?鍙戦€佹秷鎭椂鍙戠敓寮傚父 - 缁戝畾: {}, 閿欒: {}", bindingName, e.getMessage(), e);
+            log.error("E messagerror", bindingName, e.getMessage(), e);
             return false;
         }
     }
@@ -186,7 +186,7 @@ public abstract class BaseMessageConfig {
 
 
     protected void logMessageProcessError(String eventType, String traceId, String error) {
-        log.error("鉂?娑堟伅澶勭悊澶辫触 - 浜嬩欢绫诲瀷: {}, 杩借釜ID: {}, 鏈嶅姟: {}, 閿欒: {}",
+        log.error("? - : {}, ID: {}, : {}, : {}",
                 eventType, traceId, getServiceName(), error);
     }
 
@@ -210,6 +210,6 @@ public abstract class BaseMessageConfig {
 
     protected void markMessageProcessed(String traceId) {
         
-        log.debug("鏍囪娑堟伅宸插鐞?- 杩借釜ID: {}", traceId);
+        log.debug("?- ID: {}", traceId);
     }
 }

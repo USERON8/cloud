@@ -291,7 +291,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
                     memoryUsageRatio * 100, activeConnections.get());
 
         } catch (Exception e) {
-            log.error("璁板綍绯荤粺鎸囨爣寮傚父", e);
+            log.error("E messagerror", e);
         }
     }
 
@@ -307,7 +307,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
                     metrics.getLastRequestTime().isBefore(cutoffTime);
         });
 
-        log.debug("娓呯悊杩囨湡鎸囨爣瀹屾垚锛屽綋鍓嶇鐐规暟閲? {}", endpointMetrics.size());
+        log.debug("D messageebug", endpointMetrics.size());
     }
 
     
@@ -344,7 +344,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
 
     private void triggerAlert(String alertType, String message) {
         
-        log.warn("鎬ц兘鎶ヨ - {}: {}", alertType, message);
+        log.warn("W messagearn", alertType, message);
 
         
         try {
@@ -358,7 +358,7 @@ public class PerformanceMonitor implements MeterBinder, HealthIndicator {
             redisTemplate.expire(alertKey, Duration.ofDays(7));
 
         } catch (Exception e) {
-            log.error("璁板綍鎶ヨ淇℃伅澶辫触", e);
+            log.error("E messagerror", e);
         }
     }
 
