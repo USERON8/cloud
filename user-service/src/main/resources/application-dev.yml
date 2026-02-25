@@ -1,7 +1,4 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
@@ -13,8 +10,6 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-  
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -28,16 +23,12 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 2
-
-# UTF-8 注释已修复并统一。
 minio:
   endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:19000}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: user-avatars
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://127.0.0.1:19000}
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.user: debug
@@ -45,17 +36,14 @@ logging:
     org.springframework.web: debug
     org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 
 

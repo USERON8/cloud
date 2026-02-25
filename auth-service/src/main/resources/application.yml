@@ -14,8 +14,6 @@ spring:
     active: dev
   main:
     allow-circular-references: true
-
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -40,8 +38,6 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-
-    # UTF-8 注释已修复并统一。
     stream:
       default:
         consumer:
@@ -61,12 +57,8 @@ spring:
           destination: LOG_AUTH_TOPIC
           content-type: application/json
           group: auth-log-group
-
-  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
-
-  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       client:
@@ -95,16 +87,12 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
-
-  # UTF-8 注释已修复并统一。
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -114,8 +102,6 @@ logging:
     com.cloud.auth: debug
     org.springframework.security: debug
     org.springframework.web: warn
-
-# UTF-8 注释已修复并统一。
 app:
   jwt:
     test-mode: true
@@ -144,8 +130,6 @@ app:
       internal:
         id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
         secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:ClientService@2024#Secure}}
-
-# UTF-8 注释已修复并统一。
 springdoc:
   api-docs:
     enabled: true
@@ -161,8 +145,6 @@ springdoc:
     - group: 'oauth2'
       paths-to-match: '/oauth2/**'
   default-flat-param-object: true
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -172,8 +154,6 @@ knife4j:
     language: ZH_CN
   insight:
     service-name: ${spring.application.name}
-
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -205,6 +185,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

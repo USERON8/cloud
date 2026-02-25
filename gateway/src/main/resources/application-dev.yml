@@ -1,7 +1,4 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -15,8 +12,6 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 2
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.gateway: debug
@@ -24,17 +19,14 @@ logging:
     org.springframework.security: debug
     org.springframework.web: debug
     com.alibaba.nacos: warn
-
-# UTF-8 注释已修复并统一。
 app:
   security:
     enable-test-api: true
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 
 

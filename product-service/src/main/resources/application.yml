@@ -12,8 +12,6 @@ spring:
     name: product-service
   profiles:
     active: dev
-
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -38,13 +36,8 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-
-
-  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
-
-  # UTF-8 注释已修复并统一。
   cache:
     type: caffeine
     caffeine:
@@ -55,8 +48,6 @@ spring:
       - categoryCache
       - brandCache
       - productStatsCache
-
-  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -64,25 +55,16 @@ spring:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
-
-# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-
-# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # UTF-8 注释已修复并统一。
       debug: false
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -93,8 +75,6 @@ logging:
     com.baomidou.mybatisplus: DEBUG
     org.springframework.cache: DEBUG
     org.springframework.data.redis: DEBUG
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -113,8 +93,6 @@ mybatis-plus:
       select-strategy: not_null
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cloud.product.module.entity
-
-# UTF-8 注释已修复并统一。
 cache:
   multi-level:
     local:
@@ -130,8 +108,6 @@ cache:
       key-prefix: "product:"
       enable-key-prefix: true
       use-key-prefix: true
-
-# UTF-8 注释已修复并统一。
 springdoc:
   api-docs:
     enabled: true
@@ -151,8 +127,6 @@ springdoc:
     license:
       name: MIT License
       url: https://opensource.org/licenses/MIT
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -162,8 +136,6 @@ knife4j:
     language: ZH_CN
   insight:
     service-name: ${spring.application.name}
-
-# UTF-8 注释已修复并统一。
 product:
   async:
     enabled: true
@@ -179,8 +151,6 @@ product:
       warmup:
         enabled: true
         max-size: 500
-
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -200,6 +170,7 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+
 
 
 

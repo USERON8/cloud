@@ -1,7 +1,4 @@
-﻿# UTF-8 注释已修复并统一。
-# UTF-8 注释已修复并统一。
-
-server:
+﻿server:
   shutdown: graceful
   tomcat:
     threads:
@@ -11,11 +8,8 @@ server:
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
 spring:
-  # UTF-8 注释已修复并统一。
   main:
     allow-bean-definition-overriding: true
-  
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -40,8 +34,6 @@ spring:
         namespace: ${NACOS_NAMESPACE:public}
         file-extension: yaml
         group: ${NACOS_GROUP:DEFAULT_GROUP}
-    
-    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -54,18 +46,12 @@ spring:
           enabled: true
         response:
           enabled: true
-    
-    # UTF-8 注释已修复并统一。
     stream:
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
-
-  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
-
-  # UTF-8 注释已修复并统一。
   datasource:
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${DB_USERNAME:root}
@@ -76,8 +62,6 @@ spring:
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
-
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -86,14 +70,12 @@ spring:
       timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
-          max-active: ${REDIS_MAX_ACTIVE:50}      # UTF-8 注释已修复并统一。
-          max-wait: ${REDIS_MAX_WAIT:3000ms}      # UTF-8 注释已修复并统一。
-          max-idle: ${REDIS_MAX_IDLE:20}          # UTF-8 注释已修复并统一。
-          min-idle: ${REDIS_MIN_IDLE:5}           # UTF-8 注释已修复并统一。
-          time-between-eviction-runs: 60000       # UTF-8 注释已修复并统一。
+          max-active: ${REDIS_MAX_ACTIVE:50}
+          max-wait: ${REDIS_MAX_WAIT:3000ms}
+          max-idle: ${REDIS_MAX_IDLE:20}
+          min-idle: ${REDIS_MIN_IDLE:5}
+          time-between-eviction-runs: 60000
         shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: ${LOG_PATH:D:/logs}/${spring.application.name}
@@ -103,8 +85,6 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SECURITY:warn}
     org.springframework.web: ${LOG_LEVEL_WEB:warn}
     org.springframework.cloud: ${LOG_LEVEL_CLOUD_FRAMEWORK:warn}
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   configuration:
@@ -118,12 +98,9 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
-      # UTF-8 注释已修复并统一。
       insert-strategy: not_null
       update-strategy: not_null
       select-strategy: not_empty
-
-# UTF-8 注释已修复并统一。
 springdoc:
   api-docs:
     enabled: ${API_DOCS_ENABLED:true}
@@ -134,8 +111,6 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   default-flat-param-object: true
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: ${KNIFE4J_ENABLED:true}
   production: ${KNIFE4J_PRODUCTION:false}
@@ -148,21 +123,17 @@ knife4j:
     swagger-model-name: 閻庡湱鍋樼紞瀣尵鐠囨彃鐏欓悶?
     enable-footer-custom: true
     footer-custom-content: "Cloud 鐎甸偊鍠楀﹢鍥礉閳ユ娊鎸柛?API 闁哄倸娲﹂妴?
-
-# UTF-8 注释已修复并统一。
 cache:
-  multi-level: ${CACHE_MULTI_LEVEL:true}  # UTF-8 注释已修复并统一。
-  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}  # UTF-8 注释已修复并统一。
+  multi-level: ${CACHE_MULTI_LEVEL:true}
+  consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}
   ttl:
-    user: ${CACHE_TTL_USER:1800}        # UTF-8 注释已修复并统一。
-    product: ${CACHE_TTL_PRODUCT:2700}  # UTF-8 注释已修复并统一。
-    stock: ${CACHE_TTL_STOCK:300}       # UTF-8 注释已修复并统一。
-    order: ${CACHE_TTL_ORDER:900}       # UTF-8 注释已修复并统一。
-    payment: ${CACHE_TTL_PAYMENT:600}   # UTF-8 注释已修复并统一。
-    search: ${CACHE_TTL_SEARCH:1200}    # UTF-8 注释已修复并统一。
-    auth: ${CACHE_TTL_AUTH:3600}        # UTF-8 注释已修复并统一。
-
-# UTF-8 注释已修复并统一。
+    user: ${CACHE_TTL_USER:1800}
+    product: ${CACHE_TTL_PRODUCT:2700}
+    stock: ${CACHE_TTL_STOCK:300}
+    order: ${CACHE_TTL_ORDER:900}
+    payment: ${CACHE_TTL_PAYMENT:600}
+    search: ${CACHE_TTL_SEARCH:1200}
+    auth: ${CACHE_TTL_AUTH:3600}
 cloud:
   distributed-lock:
     enabled: ${DISTRIBUTED_LOCK_ENABLED:true}
@@ -171,8 +142,6 @@ cloud:
     key-prefix: ${DISTRIBUTED_LOCK_PREFIX:distributed-lock}
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
-
-# UTF-8 注释已修复并统一。
 app:
   deploy:
     # admin-service/log-service are singleton by default; others are multi-instance.
@@ -183,8 +152,6 @@ app:
   message:
     idempotent-enabled: ${MESSAGE_IDEMPOTENT_ENABLED:true}
     idempotent-expire-seconds: ${MESSAGE_IDEMPOTENT_EXPIRE_SECONDS:86400}
-
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -197,6 +164,7 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+
 
 
 

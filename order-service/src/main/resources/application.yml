@@ -13,8 +13,6 @@ spring:
   profiles:
     active: dev
     include: rocketmq
-
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -39,7 +37,6 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -52,8 +49,6 @@ spring:
           enabled: true
         response:
           enabled: true
-
-    # UTF-8 注释已修复并统一。
     stream:
       rocketmq:
         binder:
@@ -93,12 +88,8 @@ spring:
           producer:
             maxRequestSize: 4194304
             sync: true
-
-  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
-
-  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -106,25 +97,16 @@ spring:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
-
-# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-
-# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # UTF-8 注释已修复并统一。
       debug: false
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -133,8 +115,6 @@ logging:
     com.cloud: info
     org.springframework.security: warn
     org.springframework.web: warn
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.order.module.entity
@@ -149,8 +129,6 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
-
-# UTF-8 注释已修复并统一。
 order:
   async:
     enabled: true
@@ -158,8 +136,6 @@ order:
     enabled: true
   statistics:
     enabled: true
-
-# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -171,8 +147,6 @@ springdoc:
     - group: 'order'
       paths-to-match: '/**'
       packages-to-scan: com.cloud.order.controller
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -180,7 +154,6 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -212,6 +185,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

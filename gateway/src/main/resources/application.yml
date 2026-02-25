@@ -16,8 +16,6 @@ spring:
   main:
     allow-bean-definition-overriding: true
     web-application-type: reactive
-
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -44,14 +42,12 @@ spring:
         group: DEFAULT_GROUP
         import-check:
           enabled: false
-
-    # UTF-8 注释已修复并统一。
     gateway:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Expose-Headers, RETAIN_FIRST
       discovery:
         locator:
-          enabled: false  # UTF-8 注释已修复并统一。
+          enabled: false
           lower-case-service-id: true
       csrf:
         enabled: true
@@ -61,13 +57,9 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
-
-  # UTF-8 注释已修复并统一。
   web:
     resources:
       static-locations: classpath:/static/
-
-  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -82,8 +74,6 @@ spring:
       cache-control: true
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -93,8 +83,6 @@ logging:
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
-
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -114,7 +102,7 @@ management:
       enabled: true
   health:
     redis:
-      enabled: false  # UTF-8 注释已修复并统一。
+      enabled: false
     nacos:
       enabled: true
   info:
@@ -124,8 +112,6 @@ management:
       enabled: true
     os:
       enabled: true
-
-# UTF-8 注释已修复并统一。
 app:
   security:
     enable-test-api: false
@@ -160,8 +146,6 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /doc.html
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -204,6 +188,7 @@ knife4j:
         search-service:
           group-name: search-service
           api-docs-path: /v3/api-docs
+
 
 
 

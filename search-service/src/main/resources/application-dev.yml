@@ -1,13 +1,8 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://127.0.0.1:19200}
     username:
     password:
-
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -21,8 +16,6 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 2
-
-# UTF-8 注释已修复并统一。
 cache:
   multi-level:
     enabled: true
@@ -35,8 +28,6 @@ cache:
       type: redis
       redis:
         time-to-live: 30m
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.search: debug
@@ -45,12 +36,11 @@ logging:
     org.springframework.cloud.openfeign: debug
     org.elasticsearch: debug
     com.alibaba.nacos: warn
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 
 

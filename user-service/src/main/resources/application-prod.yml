@@ -1,7 +1,4 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://prod-mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
@@ -14,8 +11,6 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
       leak-detection-threshold: 60000
-  
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -29,16 +24,12 @@ spring:
           max-wait: -1ms
           max-idle: 16
           min-idle: 4
-
-# UTF-8 注释已修复并统一。
 minio:
   endpoint: ${MINIO_ENDPOINT:http://prod-minio:9000}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: user-avatars
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://prod-minio:9000}
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.user: info
@@ -47,13 +38,9 @@ logging:
     org.springframework.cloud.openfeign: warn
     com.alibaba.nacos: warn
     root: warn
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: false
   production: true
@@ -61,4 +48,5 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+
 

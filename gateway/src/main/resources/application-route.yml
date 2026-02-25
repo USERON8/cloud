@@ -161,10 +161,9 @@
             - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
           filters:
             - StripPrefix=1
-
-      # UTF-8 注释已修复并统一。
       discovery:
         locator:
-          enabled: false  # UTF-8 注释已修复并统一。
+          enabled: false
           lower-case-service-id: true
+
 

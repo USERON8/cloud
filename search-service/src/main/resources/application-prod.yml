@@ -1,15 +1,10 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://prod-elasticsearch:9200}
     username: ${ELASTICSEARCH_USERNAME:}
     password: ${ELASTICSEARCH_PASSWORD:}
     connection-timeout: 10s
     socket-timeout: 30s
-  
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -23,8 +18,6 @@ spring:
           max-wait: 6000ms
           max-idle: 20
           min-idle: 10
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.search: info
@@ -34,8 +27,6 @@ logging:
     org.elasticsearch: warn
     com.alibaba.nacos: warn
     root: warn
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: false
   production: true
@@ -43,4 +34,5 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+
 

@@ -1,7 +1,4 @@
-﻿# UTF-8 注释已修复并统一。
-
-spring:
-  # UTF-8 注释已修复并统一。
+﻿spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -13,8 +10,6 @@ spring:
       idle-timeout: 300000
       connection-timeout: 30000
       max-lifetime: 1800000
-  
-  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -28,8 +23,6 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 2
-
-# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.stock: debug
@@ -37,17 +30,14 @@ logging:
     org.springframework.web: debug
     org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 
 
