@@ -39,29 +39,6 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # Comment sanitized for UTF-8 compatibility.
-    stream:
-      rocketmq:
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
-      bindings:
-        productLog-out-0:
-          destination: LOG_PRODUCT_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
-        # Comment sanitized for UTF-8 compatibility.
-        logProducer-out-0:
-          destination: LOG_COLLECTION_TOPIC
-          content-type: application/json
-          producer:
-            partition-count: 4
-        search-producer-out-0:
-          destination: SEARCH_EVENTS_TOPIC
-          content-type: application/json
-          group: product-search-producer-group
-          producer:
-            partition-count: 4
 
   # Comment sanitized for UTF-8 compatibility.
   config:
@@ -191,8 +168,6 @@ product:
   async:
     enabled: true
   statistics:
-    enabled: true
-  search:
     enabled: true
   config:
     page:

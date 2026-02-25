@@ -13,8 +13,8 @@
 | gateway | `dev` | `route` | Nacos, Redis(可选), Auth JWK | 网关路由文件在 `application-route.yml` |
 | auth-service | `dev` | - | Nacos, RocketMQ, JWT Key | 提供 OAuth2/JWK |
 | user-service | `dev` | - | Nacos, MySQL, Redis, RocketMQ | 用户查询与管理 |
-| product-service | `dev` | - | Nacos, MySQL, Redis, RocketMQ | 发送商品搜索同步事件 |
-| search-service | `dev` | - | Nacos, Elasticsearch, Redis, RocketMQ | 消费 `SEARCH_EVENTS_TOPIC` |
+| product-service | `dev` | - | Nacos, MySQL, Redis | 商品主数据服务 |
+| search-service | `dev` | - | Nacos, Elasticsearch, Redis | 纯搜索查询服务 |
 | order-service | `dev` | `rocketmq` | Nacos, MySQL, Redis, RocketMQ | 下单后发布 `order-created` |
 | payment-service | `dev` | `rocketmq` | Nacos, MySQL, Redis, RocketMQ | 消费 `order-created`，支付成功后发布 `payment-success` |
 | stock-service | `dev` | `rocketmq` | Nacos, MySQL, Redis, RocketMQ | 预占/确认扣减/回滚 |
@@ -35,7 +35,6 @@
 - `payment-service`: `orderCreatedConsumer-in-0`、`paymentSuccessProducer-out-0`
 - `stock-service`: `orderCreatedConsumer-in-0`、`paymentSuccessConsumer-in-0`、`stockFreezeFailedProducer-out-0`
 
-## 商品搜索同步消息绑定（必须生效）
+## 商品搜索同步
 
-- `product-service`: `search-producer-out-0`（topic=`SEARCH_EVENTS_TOPIC`）
-- `search-service`: `searchConsumer-in-0`（subscription=`PRODUCT_CREATED||PRODUCT_UPDATED||PRODUCT_DELETED`）
+- 商品搜索索引同步由 Logstash 执行（MySQL -> Elasticsearch），不再使用 RocketMQ 事件同步。

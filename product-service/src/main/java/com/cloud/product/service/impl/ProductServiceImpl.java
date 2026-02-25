@@ -13,7 +13,6 @@ import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.converter.ProductConverter;
 import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.mapper.ProductMapper;
-import com.cloud.product.messaging.ProductSearchSyncProducer;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Product;
@@ -42,7 +41,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private final ProductConverter productConverter;
     private final ShopService shopService;
     private final CategoryService categoryService;
-    private final ProductSearchSyncProducer productSearchSyncProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -64,8 +62,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             throw new BusinessException("Create product failed");
         }
 
-        Product persisted = requireExistingProduct(product.getId());
-        publishProductCreatedEventOrThrow(persisted);
         return product.getId();
     }
 
@@ -96,8 +92,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             return false;
         }
 
-        Product persisted = requireExistingProduct(id);
-        publishProductUpdatedEventOrThrow(persisted);
         return true;
     }
 
@@ -116,7 +110,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!deleted) {
             return false;
         }
-        publishProductDeletedEventOrThrow(id);
         return true;
     }
 
@@ -136,11 +129,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             return false;
         }
 
-        for (Product product : existingProducts) {
-            if (product != null && product.getId() != null) {
-                publishProductDeletedEventOrThrow(product.getId());
-            }
-        }
         return true;
     }
 
@@ -278,9 +266,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id).set(Product::getStock, stock);
         boolean updated = update(updateWrapper);
-        if (updated) {
-            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
-        }
         return updated;
     }
 
@@ -301,9 +286,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         updateWrapper.eq(Product::getId, id)
                 .setSql("stock_quantity = stock_quantity + " + amount);
         boolean updated = update(updateWrapper);
-        if (updated) {
-            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
-        }
         return updated;
     }
 
@@ -330,7 +312,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             throw new ProductServiceException.StockInsufficientException(id, amount, available);
         }
 
-        publishProductUpdatedEventOrThrow(requireExistingProduct(id));
         return true;
     }
 
@@ -438,45 +419,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return productConverter.voListToDTOList(productConverter.toVOList(list(wrapper)));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Integer syncProductsToSearch(Integer pageSize, Integer status) {
-        int size = (pageSize == null || pageSize <= 0) ? 200 : Math.min(pageSize, 1000);
-        long current = 1L;
-        int sentCount = 0;
-
-        while (true) {
-            Page<Product> page = new Page<>(current, size);
-            LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-            if (status != null) {
-                wrapper.eq(Product::getStatus, status);
-            }
-            wrapper.orderByAsc(Product::getId);
-
-            Page<Product> result = page(page, wrapper);
-            List<Product> records = result.getRecords();
-            if (CollectionUtils.isEmpty(records)) {
-                break;
-            }
-
-            for (Product product : records) {
-                if (product == null || product.getId() == null) {
-                    continue;
-                }
-                publishProductUpdatedEventOrThrow(product);
-                sentCount++;
-            }
-
-            if (current >= result.getPages()) {
-                break;
-            }
-            current++;
-        }
-
-        log.info("Product full sync events sent: count={}, pageSize={}, status={}", sentCount, size, status);
-        return sentCount;
-    }
-
     private void validateId(Long id) {
         if (id == null || id <= 0) {
             throw new BusinessException("Invalid id");
@@ -573,9 +515,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id).set(Product::getStatus, status);
         boolean updated = update(updateWrapper);
-        if (updated) {
-            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
-        }
         return updated;
     }
 
@@ -594,9 +533,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             return false;
         }
 
-        for (Long id : ids) {
-            publishProductUpdatedEventOrThrow(requireExistingProduct(id));
-        }
         return true;
     }
 
@@ -677,21 +613,4 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
     }
 
-    private void publishProductCreatedEventOrThrow(Product product) {
-        if (!productSearchSyncProducer.sendProductCreated(product)) {
-            throw new BusinessException("Send product-created search sync event failed");
-        }
-    }
-
-    private void publishProductUpdatedEventOrThrow(Product product) {
-        if (!productSearchSyncProducer.sendProductUpdated(product)) {
-            throw new BusinessException("Send product-updated search sync event failed");
-        }
-    }
-
-    private void publishProductDeletedEventOrThrow(Long productId) {
-        if (!productSearchSyncProducer.sendProductDeleted(productId)) {
-            throw new BusinessException("Send product-deleted search sync event failed");
-        }
-    }
 }

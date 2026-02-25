@@ -263,19 +263,6 @@ public class ProductController {
         return Result.success(String.format("Batch update done: %d/%d", successCount, productList.size()), successCount);
     }
 
-    @PostMapping("/search-sync/full")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Full sync to search index", description = "Publish full product data from MySQL to search-service")
-    public Result<Integer> fullSyncToSearch(
-            @Parameter(description = "Page size per batch, max 1000")
-            @RequestParam(defaultValue = "200") Integer pageSize,
-            @Parameter(description = "Optional product status filter")
-            @RequestParam(required = false) Integer status) {
-
-        Integer syncCount = productService.syncProductsToSearch(pageSize, status);
-        return Result.success("Full sync events sent", syncCount);
-    }
-
     @Data
     public static class ProductUpdateRequest {
         private Long id;

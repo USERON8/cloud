@@ -86,19 +86,4 @@ public class AsyncConfig extends BaseAsyncConfig {
 
 
 
-    @Bean("productSearchExecutor")
-    @ConditionalOnProperty(name = "product.search.enabled", havingValue = "true", matchIfMissing = true)
-    public Executor productSearchExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
-                1,
-                2,
-                300,
-                "product-search-"
-        );
-        executor.initialize();
-
-        
-
-        return executor;
-    }
 }

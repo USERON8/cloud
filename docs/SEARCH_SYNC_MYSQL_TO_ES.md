@@ -1,34 +1,30 @@
-﻿# MySQL -> Search ES 全量同步说明
+# MySQL -> Elasticsearch Sync (Logstash)
 
-## 目标
+## Goal
 
-将 `product-service` 的 MySQL 商品数据全量同步到 `search-service` 的 Elasticsearch 索引。
+Synchronize product data from MySQL `product_db` into Elasticsearch `product_index` through Logstash.
 
-## 同步机制
+## Current Flow
 
-1. 在 `product-service` 分页读取 MySQL `products`。
-2. 每条商品发布一条 `PRODUCT_UPDATED` 搜索同步事件到 `SEARCH_EVENTS_TOPIC`。
-3. `search-service` 消费事件并执行 ES `upsert`。
+1. `product-service` writes product data to MySQL only.
+2. `logstash` reads incremental rows from MySQL with JDBC.
+3. `logstash` upserts documents into Elasticsearch `product_index`.
 
-## 新增接口
+## Removed Legacy Flow
 
-- `POST /api/product/search-sync/full`
-- 权限：`ROLE_ADMIN`
-- 参数：
-  - `pageSize`（可选，默认 `200`，最大 `1000`）
-  - `status`（可选，按商品状态过滤）
+The previous MQ-based search sync producer/consumer flow has been removed:
 
-## 调用示例
+- Removed producer endpoint: `POST /api/product/search-sync/full`
+- Removed `SEARCH_EVENTS_TOPIC` producer/consumer chain
+- Removed search-service event consumer for product sync
+
+## Operation Notes
+
+- Ensure `docker/monitor/logstash/drivers/mysql-connector-j-9.3.0.jar` exists.
+- Start sync container:
 
 ```bash
-curl -X POST "http://localhost:80/api/product/search-sync/full?pageSize=200&status=1" \
-  -H "Authorization: Bearer <ADMIN_TOKEN>"
+docker compose -f docker/docker-compose.yml up -d --build logstash
 ```
 
-返回 `data` 为本次发送到搜索同步通道的事件总数。
-
-## 建议执行顺序
-
-1. 先执行搜索索引重建：`POST /api/search/rebuild-index`
-2. 再执行本接口做 MySQL 全量回灌。
-3. 在 Grafana / Prometheus 观察 `trade_message_consume_total{service="search-service"...}` 以及搜索结果抽样校验。
+- Verify Elasticsearch documents in `product_index`.
