@@ -8,6 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 cd "$ROOT_DIR"
+. "$SCRIPT_DIR/lib/preflight.sh"
+k6_preflight "all"
 
 echo "[k6] starting acceptance load run..."
 echo "[k6] BASE_URL=$BASE_URL"

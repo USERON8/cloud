@@ -6,6 +6,9 @@ PROFILE="${2:-loadtest}"
 
 ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/lib/preflight.sh"
+k6_preflight "all"
 
 echo "[k6] starting all-services smoke run..."
 echo "[k6] BASE_URL=${BASE_URL}"
