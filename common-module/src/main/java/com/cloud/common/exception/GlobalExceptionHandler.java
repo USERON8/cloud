@@ -1,14 +1,12 @@
 package com.cloud.common.exception;
 
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.i18n.ApiMessageResolver;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
@@ -25,9 +23,6 @@ import java.util.stream.Collectors;
 @Hidden
 @RestControllerAdvice(basePackages = "com.cloud")
 public class GlobalExceptionHandler {
-
-    @Autowired
-    private ApiMessageResolver apiMessageResolver;
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public Result<String> handleUsernameNotFoundException(UsernameNotFoundException e, HttpServletRequest request) {
@@ -92,11 +87,7 @@ public class GlobalExceptionHandler {
 
         String errorMessage = String.join(", ", errors);
         log.warn("Request body validation failed - uri: {}, errors: {}", request.getRequestURI(), errorMessage);
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Parameter validation failed: ",
-                "Parameter validation failed: ",
-                errorMessage
-        ));
+        return Result.paramError("Parameter validation failed: " + errorMessage);
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
@@ -124,11 +115,7 @@ public class GlobalExceptionHandler {
 
         String errorMessage = errors.isEmpty() ? e.getMessage() : String.join(", ", errors);
         log.warn("Method parameter validation failed - uri: {}, errors: {}", request.getRequestURI(), errorMessage);
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Parameter validation failed: ",
-                "Parameter validation failed: ",
-                errorMessage
-        ));
+        return Result.paramError("Parameter validation failed: " + errorMessage);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -140,21 +127,13 @@ public class GlobalExceptionHandler {
 
         String errorMessage = String.join(", ", errors);
         log.warn("Constraint validation failed - uri: {}, errors: {}", request.getRequestURI(), errorMessage);
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Parameter validation failed: ",
-                "Parameter validation failed: ",
-                errorMessage
-        ));
+        return Result.paramError("Parameter validation failed: " + errorMessage);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<String> handleIllegalArgumentException(IllegalArgumentException e, HttpServletRequest request) {
         log.warn("Illegal argument - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Invalid argument: ",
-                "Invalid argument: ",
-                e.getMessage()
-        ));
+        return Result.paramError("Invalid argument: " + e.getMessage());
     }
 
     @ExceptionHandler(NullPointerException.class)
@@ -184,26 +163,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(com.fasterxml.jackson.core.JsonProcessingException.class)
     public Result<String> handleJsonProcessingException(com.fasterxml.jackson.core.JsonProcessingException e, HttpServletRequest request) {
         log.warn("Invalid JSON payload - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
-        return Result.error(apiMessageResolver.message("Invalid JSON payload format", "JSON payload format is invalid"));
+        return Result.error("Invalid JSON payload format");
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public Result<String> handleHttpMessageNotReadableException(org.springframework.http.converter.HttpMessageNotReadableException e, HttpServletRequest request) {
         log.warn("Unreadable HTTP message - uri: {}, message: {}", request.getRequestURI(), e.getMessage());
-        return Result.error(apiMessageResolver.message(
-                "Invalid request body format, please check the payload",
-                "Invalid request body format, please check the payload"
-        ));
+        return Result.error("Invalid request body format, please check the payload");
     }
 
     @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
     public Result<String> handleMissingServletRequestParameterException(org.springframework.web.bind.MissingServletRequestParameterException e, HttpServletRequest request) {
         log.warn("Missing request parameter - uri: {}, parameter: {}", request.getRequestURI(), e.getParameterName());
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Missing required parameter: ",
-                "Missing required parameter: ",
-                e.getParameterName()
-        ));
+        return Result.paramError("Missing required parameter: " + e.getParameterName());
     }
 
     @ExceptionHandler(org.springframework.validation.BindException.class)
@@ -221,11 +193,7 @@ public class GlobalExceptionHandler {
 
         String errorMessage = String.join(", ", errors);
         log.warn("Bind validation failed - uri: {}, errors: {}", request.getRequestURI(), errorMessage);
-        return Result.paramError(apiMessageResolver.messageWithDetail(
-                "Parameter binding failed: ",
-                "Parameter binding failed: ",
-                errorMessage
-        ));
+        return Result.paramError("Parameter binding failed: " + errorMessage);
     }
 
     @ExceptionHandler(OAuth2Exception.class)

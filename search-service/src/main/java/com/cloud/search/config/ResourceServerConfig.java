@@ -1,98 +1,46 @@
 package com.cloud.search.config;
 
-import com.cloud.common.security.JwtBlacklistTokenValidator;
-import com.cloud.common.security.JwtAuthorityUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import com.cloud.common.config.BaseResourceServerConfig;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
-import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
-import org.springframework.security.web.SecurityFilterChain;
 
-
-@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
-public class ResourceServerConfig {
+public class ResourceServerConfig extends BaseResourceServerConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
-    private String jwkSetUri;
+    @Override
+    protected boolean isStatelessSession() {
+        return true;
+    }
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
-    private String jwtIssuer;
+    @Override
+    protected boolean useBearerTokenHandlers() {
+        return true;
+    }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers(
-                            "/actuator/**",
-                            "/swagger-ui/**",
-                            "/v3/api-docs/**",
-                            "/swagger-ui.html",
-                            "/doc.html",
-                            "/webjars/**",
-                            "/favicon.ico"
-                    ).permitAll();
-
-                    auth.requestMatchers("/internal/**")
-                            .hasAuthority("SCOPE_internal_api");
-
-                    auth.requestMatchers("/api/search/rebuild-index")
-                            .hasAnyAuthority("ROLE_ADMIN", "SCOPE_admin:write");
-
-                    auth.requestMatchers("/api/search/**", "/api/search/shops/**")
-                            .permitAll();
-
-                    auth.anyRequest().authenticated();
-                })
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .decoder(jwtDecoder)
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+    @Override
+    protected void configurePublicEndpoints(
+            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
+        authz.requestMatchers(
+                        "/actuator/**",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/doc.html",
+                        "/webjars/**",
+                        "/favicon.ico"
                 )
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
-                        .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
-                )
-                .build();
+                .permitAll();
     }
 
-    @Bean
-    public OAuth2TokenValidator<Jwt> blacklistTokenValidator(RedisTemplate<String, Object> redisTemplate) {
-        return new JwtBlacklistTokenValidator(redisTemplate);
-    }
-
-    @Bean
-    public JwtDecoder jwtDecoder(OAuth2TokenValidator<Jwt> blacklistTokenValidator) {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                .jwsAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-                .build();
-
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(jwtIssuer);
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, blacklistTokenValidator));
-
-        return decoder;
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, true, null);
+    @Override
+    protected void configureServiceEndpoints(
+            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
+        authz.requestMatchers("/internal/**").hasAuthority("SCOPE_internal_api")
+                .requestMatchers("/api/search/rebuild-index").hasAnyAuthority("ROLE_ADMIN", "SCOPE_admin:write")
+                .requestMatchers("/api/search/**", "/api/search/shops/**").permitAll();
     }
 }
