@@ -9,189 +9,111 @@
           error-channel-enabled: true
         consumer:
           max-attempts: 1
-      # UTF-8 注释已修复并统一。
       rocketmq:
+        defaults:
+          producer: &orderProducerDefaults
+            group: order-producer-group
+            sync: false
+            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+          consumer: &orderConsumerDefaults
+            orderly: false
+            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+            delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+            suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
-          # UTF-8 注释已修复并统一。
           orderCreatedProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false  # UTF-8 注释已修复并统一。
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderProducerDefaults
           orderCancelledProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderProducerDefaults
           refundCreatedProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *orderProducerDefaults
 
           refundAuditedProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *orderProducerDefaults
 
           refundProcessProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *orderProducerDefaults
 
           refundCancelledProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderProducerDefaults
           stockRestoreProducer-out-0:
             producer:
-              group: order-producer-group
-              sync: false
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderProducerDefaults
           paymentSuccessConsumer-in-0:
             consumer:
-              # UTF-8 注释已修复并统一。
               subscription: 'PAYMENT_SUCCESS'
-              # UTF-8 注释已修复并统一。
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderConsumerDefaults
           stockFreezeFailedConsumer-in-0:
             consumer:
               subscription: 'STOCK_FREEZE_FAILED'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderConsumerDefaults
           refundCompletedConsumer-in-0:
             consumer:
               subscription: 'REFUND_COMPLETED'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-
-          # UTF-8 注释已修复并统一。
+              <<: *orderConsumerDefaults
           refundCreatedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CREATED'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+              <<: *orderConsumerDefaults
 
           refundAuditedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_AUDITED'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+              <<: *orderConsumerDefaults
 
           refundProcessNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_PROCESS'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+              <<: *orderConsumerDefaults
 
           refundCancelledNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CANCELLED'
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-
-      # UTF-8 注释已修复并统一。
+              <<: *orderConsumerDefaults
       bindings:
-        # UTF-8 注释已修复并统一。
         orderCreatedProducer-out-0:
           destination: order-created
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         orderCancelledProducer-out-0:
           destination: order-cancelled
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         refundCreatedProducer-out-0:
           destination: refund-created
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         refundAuditedProducer-out-0:
           destination: refund-audited
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         refundProcessProducer-out-0:
           destination: refund-process
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         refundCancelledProducer-out-0:
           destination: refund-cancelled
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         stockRestoreProducer-out-0:
           destination: stock-restore
           content-type: application/json
-
-        # UTF-8 注释已修复并统一。
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
           group: order-payment-success-consumer-group
-
-        # UTF-8 注释已修复并统一。
         stockFreezeFailedConsumer-in-0:
           destination: stock-freeze-failed
           content-type: application/json
           group: order-stock-freeze-failed-consumer-group
-
-        # UTF-8 注释已修复并统一。
         refundCompletedConsumer-in-0:
           destination: refund-completed
           content-type: application/json
           group: order-refund-completed-consumer-group
-
-        # UTF-8 注释已修复并统一。
         refundCreatedNotificationConsumer-in-0:
           destination: refund-created
           content-type: application/json
@@ -211,5 +133,6 @@
           destination: refund-cancelled
           content-type: application/json
           group: order-refund-cancelled-notification-group
+
 
 

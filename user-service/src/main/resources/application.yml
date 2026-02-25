@@ -14,8 +14,6 @@ spring:
     active: dev
   main:
     allow-bean-definition-overriding: true
-
-  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -40,8 +38,6 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-
-    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -54,34 +50,30 @@ spring:
           enabled: true
         response:
           enabled: true
-
-    # UTF-8 注释已修复并统一。
     stream:
       default:
         producer:
           partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
           error-channel-enabled: true
       rocketmq:
+        defaults:
+          producer: &userProducerDefaults
+            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
           user-producer-out-0:
             producer:
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *userProducerDefaults
           userLog-out-0:
             producer:
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *userProducerDefaults
           logProducer-out-0:
             producer:
-              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+              <<: *userProducerDefaults
       bindings:
-        # UTF-8 注释已修复并统一。
         user-producer-out-0:
           destination: user-events
           content-type: application/json
@@ -91,25 +83,18 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        # UTF-8 注释已修复并统一。
         logProducer-out-0:
           destination: LOG_COLLECTION_TOPIC
           content-type: application/json
           producer:
             partition-count: 4
-
-  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
-
-  # UTF-8 注释已修复并统一。
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-
-  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -117,33 +102,22 @@ spring:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
-
-  # UTF-8 注释已修复并统一。
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
-
-# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-
-# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # UTF-8 注释已修复并统一。
       debug: false
-
-# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -152,8 +126,6 @@ logging:
     com.cloud: info
     org.springframework.security: warn
     org.springframework.web: warn
-
-# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.user.module.entity
@@ -168,8 +140,6 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
-
-# UTF-8 注释已修复并统一。
 user:
   async:
     enabled: true
@@ -177,8 +147,6 @@ user:
     enabled: true
   statistics:
     enabled: true
-
-# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -196,8 +164,6 @@ springdoc:
     - group: 'admin'
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller
-
-# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -205,8 +171,6 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-
-# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -227,6 +191,7 @@ management:
   health:
     elasticsearch:
       enabled: false
+
 
 
 
