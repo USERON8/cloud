@@ -43,9 +43,19 @@ spring:
 
     # Comment sanitized for UTF-8 compatibility.
     stream:
+      default:
+        consumer:
+          max-attempts: 1
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+        bindings:
+          log-in-0:
+            consumer:
+              orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
       bindings:
         log-in-0:
           destination: LOG_AUTH_TOPIC

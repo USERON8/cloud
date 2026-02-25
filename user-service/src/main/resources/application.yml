@@ -57,9 +57,29 @@ spring:
 
     # Comment sanitized for UTF-8 compatibility.
     stream:
+      default:
+        producer:
+          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
+          error-channel-enabled: true
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:39876}
+        bindings:
+          user-producer-out-0:
+            producer:
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+          userLog-out-0:
+            producer:
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+          logProducer-out-0:
+            producer:
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
       bindings:
         # Comment sanitized for UTF-8 compatibility.
         user-producer-out-0:

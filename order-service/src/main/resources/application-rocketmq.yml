@@ -3,6 +3,12 @@ spring:
     function:
       definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
     stream:
+      default:
+        producer:
+          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
+          error-channel-enabled: true
+        consumer:
+          max-attempts: 1
       # Comment sanitized for UTF-8 compatibility.
       rocketmq:
         binder:
@@ -13,39 +19,60 @@ spring:
             producer:
               group: order-producer-group
               sync: false  # Comment sanitized for UTF-8 compatibility.
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           # Comment sanitized for UTF-8 compatibility.
           orderCancelledProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           # Comment sanitized for UTF-8 compatibility.
           refundCreatedProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           refundAuditedProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           refundProcessProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           refundCancelledProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           # Comment sanitized for UTF-8 compatibility.
           stockRestoreProducer-out-0:
             producer:
               group: order-producer-group
               sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
           # Comment sanitized for UTF-8 compatibility.
           paymentSuccessConsumer-in-0:
@@ -54,39 +81,60 @@ spring:
               subscription: 'PAYMENT_SUCCESS'
               # Comment sanitized for UTF-8 compatibility.
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           # Comment sanitized for UTF-8 compatibility.
           stockFreezeFailedConsumer-in-0:
             consumer:
               subscription: 'STOCK_FREEZE_FAILED'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           # Comment sanitized for UTF-8 compatibility.
           refundCompletedConsumer-in-0:
             consumer:
               subscription: 'REFUND_COMPLETED'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           # Comment sanitized for UTF-8 compatibility.
           refundCreatedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CREATED'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           refundAuditedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_AUDITED'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           refundProcessNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_PROCESS'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
           refundCancelledNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CANCELLED'
               orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
       # Comment sanitized for UTF-8 compatibility.
       bindings:
