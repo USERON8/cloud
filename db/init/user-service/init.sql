@@ -105,3 +105,24 @@ CREATE TABLE IF NOT EXISTS merchant_auth
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS test_access_token
+(
+    id            BIGINT UNSIGNED PRIMARY KEY,
+    token_value   VARCHAR(1024) NOT NULL UNIQUE,
+    token_owner   VARCHAR(64)   NOT NULL DEFAULT 'test-user',
+    expires_at    DATETIME      NOT NULL,
+    is_active     TINYINT       NOT NULL DEFAULT 1,
+    created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+INSERT INTO test_access_token (id, token_value, token_owner, expires_at, is_active)
+VALUES (1, 'TEST_ENV_PERMANENT_TOKEN', 'test-user', '2099-12-31 23:59:59', 1)
+ON DUPLICATE KEY UPDATE
+    token_value = VALUES(token_value),
+    token_owner = VALUES(token_owner),
+    expires_at = VALUES(expires_at),
+    is_active = VALUES(is_active);

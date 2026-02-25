@@ -11,6 +11,7 @@ DELETE FROM users WHERE username IN ('t_user_10001', 't_user_10002', 't_merchant
 DELETE FROM users WHERE email IN ('t_user_10001@example.com', 't_user_10002@example.com', 't_user_10003@example.com');
 DELETE FROM users WHERE phone IN ('13900000001', '13900000003');
 DELETE FROM users WHERE github_id = 91000002;
+DELETE FROM test_access_token WHERE id = 1;
 
 INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, github_id, github_username,
                    oauth_provider, oauth_provider_id, status, user_type, deleted, version)
@@ -49,3 +50,6 @@ VALUES (10001, 10001, 'BL-TEST-10001', 'https://example.com/license-10001.png',
        (10002, 10002, 'BL-TEST-10002', 'https://example.com/license-10002.png',
         'https://example.com/idf-10002.png', 'https://example.com/idb-10002.png',
         '13900020002', 'Shanghai Test Street 2', 0, NULL, 0, 0);
+
+INSERT INTO test_access_token (id, token_value, token_owner, expires_at, is_active)
+VALUES (1, 'TEST_ENV_PERMANENT_TOKEN', 'test-user', '2099-12-31 23:59:59', 1);
