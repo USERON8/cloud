@@ -11,6 +11,7 @@
         <result property="price" column="price"/>
         <result property="stockQuantity" column="stock_quantity"/>
         <result property="categoryId" column="category_id"/>
+        <result property="brandId" column="brand_id"/>
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -18,7 +19,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,shop_id,product_name,price,stock_quantity,category_id,
+        id,shop_id,product_name,price,stock_quantity,category_id,brand_id,
         status,created_at,updated_at,deleted
     </sql>
 </mapper>

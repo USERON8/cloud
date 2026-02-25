@@ -26,10 +26,10 @@ INSERT INTO brand (id, brand_name, brand_name_en, logo_url, description, country
 VALUES (40001, 'TestBrandA', 'TestBrandA', 'https://example.com/brand-a.png', 'brand a', 'CN', 2010, 1, 1, 1, 2, 1, 0, 0),
        (40002, 'TestBrandB', 'TestBrandB', 'https://example.com/brand-b.png', 'brand b', 'US', 2000, 1, 0, 1, 1, 2, 0, 0);
 
-INSERT INTO products (id, shop_id, product_name, price, stock_quantity, category_id, status, deleted, version)
-VALUES (40001, 30001, 'Test Phone A', 1999.00, 100, 30002, 1, 0, 0),
-       (40002, 30001, 'Test Laptop A', 5999.00, 50, 30003, 1, 0, 0),
-       (40003, 30002, 'Test Phone B', 2999.00, 80, 30002, 1, 0, 0);
+INSERT INTO products (id, shop_id, product_name, price, stock_quantity, category_id, brand_id, status, deleted, version)
+VALUES (40001, 30001, 'Test Phone A', 1999.00, 100, 30002, 40001, 1, 0, 0),
+       (40002, 30001, 'Test Laptop A', 5999.00, 50, 30003, 40002, 1, 0, 0),
+       (40003, 30002, 'Test Phone B', 2999.00, 80, 30002, 40002, 1, 0, 0);
 
 INSERT INTO brand_authorization (id, brand_id, brand_name, merchant_id, merchant_name, auth_type, auth_status,
                                  certificate_url, start_time, end_time, created_at, updated_at, deleted, version)

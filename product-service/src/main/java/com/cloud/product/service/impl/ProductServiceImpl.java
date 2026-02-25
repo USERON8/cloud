@@ -200,9 +200,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(readOnly = true)
     public List<ProductVO> getProductsByBrandId(Long brandId, Integer status) {
-        log.warn("Brand query is ignored because products schema has no brand_id column: brandId={}, status={}",
-                brandId, status);
-        return new ArrayList<>();
+        if (brandId == null || brandId <= 0) {
+            throw new BusinessException("Invalid brand id");
+        }
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Product::getBrandId, brandId);
+        if (status != null) {
+            wrapper.eq(Product::getStatus, status);
+        }
+        wrapper.orderByDesc(Product::getCreatedAt);
+        return productConverter.toVOList(list(wrapper));
     }
 
     @Override
@@ -365,8 +372,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(readOnly = true)
     public Long getProductCountByBrandId(Long brandId) {
-        log.warn("Brand count query is ignored because products schema has no brand_id column: brandId={}", brandId);
-        return 0L;
+        if (brandId == null || brandId <= 0) {
+            throw new BusinessException("Invalid brand id");
+        }
+        return count(new LambdaQueryWrapper<Product>().eq(Product::getBrandId, brandId));
     }
 
     @Override
@@ -508,6 +517,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (requestDTO.getCategoryId() != null) {
             product.setCategoryId(requestDTO.getCategoryId());
         }
+        if (requestDTO.getBrandId() != null) {
+            product.setBrandId(requestDTO.getBrandId());
+        }
         if (requestDTO.getStatus() != null) {
             product.setStatus(requestDTO.getStatus());
         } else if (product.getStatus() == null) {
@@ -531,8 +543,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             wrapper.eq(Product::getCategoryId, pageDTO.getCategoryId());
         }
         if (pageDTO.getBrandId() != null) {
-            log.warn("Ignore brand filter because products schema has no brand_id column: brandId={}",
-                    pageDTO.getBrandId());
+            wrapper.eq(Product::getBrandId, pageDTO.getBrandId());
         }
         if (pageDTO.getShopId() != null) {
             wrapper.eq(Product::getShopId, pageDTO.getShopId());

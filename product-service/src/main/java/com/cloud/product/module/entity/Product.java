@@ -52,7 +52,7 @@ public class Product extends BaseEntity<Product> {
 
 
 
-    @TableField(value = "brand_id", exist = false)
+    @TableField(value = "brand_id")
     private Long brandId;
 
     
