@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Configuration
 @EnableAsync
-@ConditionalOnProperty(name = "search.async.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
     
@@ -36,7 +36,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchQueryExecutor")
     public Executor searchQueryExecutor() {
-        ThreadPoolTaskExecutor executor = createQueryExecutor("search-query-");
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchQueryExecutor",
+                Math.max(4, processors),
+                processors * 4,
+                500,
+                60,
+                "search-query-"
+        );
         executor.initialize();
 
         
@@ -50,7 +58,14 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchIndexExecutor")
     public Executor searchIndexExecutor() {
-        ThreadPoolTaskExecutor executor = createWriteExecutor("search-index-");
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchIndexExecutor",
+                4,
+                16,
+                500,
+                60,
+                "search-index-"
+        );
         executor.initialize();
 
         
@@ -64,10 +79,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchESBatchExecutor")
     public Executor searchESBatchExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchESBatchExecutor",
                 4,
                 12,
                 800,
+                60,
                 "search-es-batch-"
         );
         executor.initialize();
@@ -83,10 +100,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchSuggestionExecutor")
     public Executor searchSuggestionExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchSuggestionExecutor",
                 3,
                 8,
                 200,
+                60,
                 "search-suggestion-"
         );
         executor.initialize();
@@ -103,7 +122,15 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("searchStatisticsExecutor")
     @ConditionalOnProperty(name = "search.statistics.enabled", havingValue = "true", matchIfMissing = true)
     public Executor searchStatisticsExecutor() {
-        ThreadPoolTaskExecutor executor = createCPUExecutor("search-stats-");
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchStatisticsExecutor",
+                processors,
+                processors + 1,
+                100,
+                60,
+                "search-stats-"
+        );
         executor.initialize();
 
         
@@ -117,10 +144,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchHotKeywordExecutor")
     public Executor searchHotKeywordExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchHotKeywordExecutor",
                 2,
                 4,
                 100,
+                60,
                 "search-hot-"
         );
         executor.initialize();
@@ -136,10 +165,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchCacheExecutor")
     public Executor searchCacheExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchCacheExecutor",
                 2,
                 6,
                 150,
+                60,
                 "search-cache-"
         );
         executor.initialize();
@@ -154,7 +185,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("searchCommonAsyncExecutor")
     public Executor searchCommonAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = createCommonAsyncExecutor();
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchCommonAsyncExecutor",
+                Math.max(2, processors / 2),
+                processors * 2,
+                200,
+                60,
+                "common-async-"
+        );
         executor.initialize();
 
         

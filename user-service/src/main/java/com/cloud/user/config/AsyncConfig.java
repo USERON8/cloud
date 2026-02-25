@@ -26,7 +26,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("userQueryExecutor")
     public Executor userQueryExecutor() {
-        ThreadPoolTaskExecutor executor = createQueryExecutor("user-query-");
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "userQueryExecutor",
+                Math.max(4, processors),
+                processors * 4,
+                500,
+                60,
+                "user-query-"
+        );
         executor.initialize();
 
         
@@ -40,7 +48,14 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("userOperationExecutor")
     public Executor userOperationExecutor() {
-        ThreadPoolTaskExecutor executor = createWriteExecutor("user-operation-");
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "userOperationExecutor",
+                4,
+                16,
+                500,
+                60,
+                "user-operation-"
+        );
         executor.initialize();
 
         
@@ -55,10 +70,12 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("userNotificationExecutor")
     public Executor userNotificationExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "userNotificationExecutor",
                 Math.max(4, processors),
                 Math.max(8, processors * 2),
                 800,
+                60,
                 "user-notification-"
         );
         executor.initialize();
@@ -74,7 +91,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("userStatisticsExecutor")
     public Executor userStatisticsExecutor() {
-        ThreadPoolTaskExecutor executor = createCPUExecutor("user-statistics-");
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "userStatisticsExecutor",
+                processors,
+                processors + 1,
+                100,
+                60,
+                "user-statistics-"
+        );
         executor.initialize();
 
         
@@ -88,7 +113,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("userCommonAsyncExecutor")
     public Executor userCommonAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = createCommonAsyncExecutor();
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "userCommonAsyncExecutor",
+                Math.max(2, processors / 2),
+                processors * 2,
+                200,
+                60,
+                "common-async-"
+        );
         executor.initialize();
 
         

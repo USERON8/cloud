@@ -9,6 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Consumer;
 
 
 
@@ -261,5 +262,74 @@ public class BaseAsyncConfig {
     protected ThreadPoolTaskExecutor initializeExecutor(ThreadPoolTaskExecutor executor) {
         executor.initialize();
         return executor;
+    }
+
+    protected ThreadPoolTaskExecutor createConfiguredExecutor(String executorKey,
+                                                              int corePoolSize,
+                                                              int maxPoolSize,
+                                                              int queueCapacity,
+                                                              int keepAliveSeconds,
+                                                              String threadNamePrefix) {
+        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+                corePoolSize,
+                maxPoolSize,
+                queueCapacity,
+                threadNamePrefix
+        );
+        executor.setKeepAliveSeconds(keepAliveSeconds);
+        applyExecutorOverrides(executor, executorKey);
+        return executor;
+    }
+
+    protected ThreadPoolTaskExecutor createConfiguredExecutor(String executorKey,
+                                                              int corePoolSize,
+                                                              int maxPoolSize,
+                                                              int queueCapacity,
+                                                              int keepAliveSeconds,
+                                                              String threadNamePrefix,
+                                                              Consumer<ThreadPoolTaskExecutor> customizer) {
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                executorKey,
+                corePoolSize,
+                maxPoolSize,
+                queueCapacity,
+                keepAliveSeconds,
+                threadNamePrefix
+        );
+        if (customizer != null) {
+            customizer.accept(executor);
+        }
+        return executor;
+    }
+
+    private void applyExecutorOverrides(ThreadPoolTaskExecutor executor, String executorKey) {
+        if (asyncProperties == null || asyncProperties.getExecutors() == null || executorKey == null || executorKey.isBlank()) {
+            return;
+        }
+        AsyncProperties.ThreadPoolConfig override = asyncProperties.getExecutors().get(executorKey);
+        if (override == null) {
+            return;
+        }
+
+        if (override.getCorePoolSize() > 0) {
+            executor.setCorePoolSize(override.getCorePoolSize());
+        }
+        if (override.getMaxPoolSize() > 0) {
+            executor.setMaxPoolSize(override.getMaxPoolSize());
+        }
+        if (override.getQueueCapacity() >= 0) {
+            executor.setQueueCapacity(override.getQueueCapacity());
+        }
+        if (override.getKeepAliveSeconds() > 0) {
+            executor.setKeepAliveSeconds(override.getKeepAliveSeconds());
+        }
+        if (override.getThreadNamePrefix() != null && !override.getThreadNamePrefix().isBlank()) {
+            executor.setThreadNamePrefix(override.getThreadNamePrefix());
+        }
+
+        executor.setAllowCoreThreadTimeOut(override.isAllowCoreThreadTimeOut());
+        executor.setRejectedExecutionHandler(getRejectedExecutionHandler(override.getRejectedExecutionHandler()));
+        executor.setWaitForTasksToCompleteOnShutdown(override.isWaitForTasksToCompleteOnShutdown());
+        executor.setAwaitTerminationSeconds(Math.max(1, override.getAwaitTerminationSeconds()));
     }
 }

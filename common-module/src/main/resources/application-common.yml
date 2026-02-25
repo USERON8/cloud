@@ -143,6 +143,45 @@ cloud:
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
 app:
+  async:
+    enabled: ${APP_ASYNC_ENABLED:true}
+    common:
+      monitoring-enabled: ${APP_ASYNC_MONITORING_ENABLED:true}
+      monitoring-interval-seconds: ${APP_ASYNC_MONITORING_INTERVAL_SECONDS:30}
+      task-decorator: ${APP_ASYNC_TASK_DECORATOR:true}
+      log-slow-tasks: ${APP_ASYNC_LOG_SLOW_TASKS:true}
+      slow-task-threshold-ms: ${APP_ASYNC_SLOW_TASK_THRESHOLD_MS:3000}
+    executors:
+      gatewayRouteExecutor:
+        core-pool-size: ${ASYNC_GATEWAY_ROUTE_CORE:4}
+        max-pool-size: ${ASYNC_GATEWAY_ROUTE_MAX:16}
+        queue-capacity: ${ASYNC_GATEWAY_ROUTE_QUEUE:500}
+        keep-alive-seconds: ${ASYNC_GATEWAY_ROUTE_KEEP_ALIVE:60}
+        thread-name-prefix: ${ASYNC_GATEWAY_ROUTE_PREFIX:gateway-route-}
+      searchQueryExecutor:
+        core-pool-size: ${ASYNC_SEARCH_QUERY_CORE:4}
+        max-pool-size: ${ASYNC_SEARCH_QUERY_MAX:16}
+        queue-capacity: ${ASYNC_SEARCH_QUERY_QUEUE:500}
+        keep-alive-seconds: ${ASYNC_SEARCH_QUERY_KEEP_ALIVE:60}
+        thread-name-prefix: ${ASYNC_SEARCH_QUERY_PREFIX:search-query-}
+      searchSuggestionExecutor:
+        core-pool-size: ${ASYNC_SEARCH_SUGGEST_CORE:3}
+        max-pool-size: ${ASYNC_SEARCH_SUGGEST_MAX:8}
+        queue-capacity: ${ASYNC_SEARCH_SUGGEST_QUEUE:200}
+        keep-alive-seconds: ${ASYNC_SEARCH_SUGGEST_KEEP_ALIVE:60}
+        thread-name-prefix: ${ASYNC_SEARCH_SUGGEST_PREFIX:search-suggestion-}
+      searchCacheExecutor:
+        core-pool-size: ${ASYNC_SEARCH_CACHE_CORE:2}
+        max-pool-size: ${ASYNC_SEARCH_CACHE_MAX:6}
+        queue-capacity: ${ASYNC_SEARCH_CACHE_QUEUE:150}
+        keep-alive-seconds: ${ASYNC_SEARCH_CACHE_KEEP_ALIVE:60}
+        thread-name-prefix: ${ASYNC_SEARCH_CACHE_PREFIX:search-cache-}
+      stockOperationExecutor:
+        core-pool-size: ${ASYNC_STOCK_OPERATION_CORE:4}
+        max-pool-size: ${ASYNC_STOCK_OPERATION_MAX:16}
+        queue-capacity: ${ASYNC_STOCK_OPERATION_QUEUE:300}
+        keep-alive-seconds: ${ASYNC_STOCK_OPERATION_KEEP_ALIVE:60}
+        thread-name-prefix: ${ASYNC_STOCK_OPERATION_PREFIX:stock-operation-}
   deploy:
     # admin-service/log-service are singleton by default; others are multi-instance.
     singleton-services: ${APP_SINGLETON_SERVICES:admin-service,log-service}

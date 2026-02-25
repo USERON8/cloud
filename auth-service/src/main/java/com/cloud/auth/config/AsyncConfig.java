@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Configuration
 @EnableAsync
-@ConditionalOnProperty(name = "auth.async.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
     
@@ -36,10 +36,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("authAsyncExecutor")
     public Executor authAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authAsyncExecutor",
                 3,
                 8,
                 300,
+                60,
                 "auth-async-"
         );
         executor.initialize();
@@ -55,7 +57,14 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("authTokenExecutor")
     public Executor authTokenExecutor() {
-        ThreadPoolTaskExecutor executor = createQueryExecutor("auth-token-");
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authTokenExecutor",
+                4,
+                16,
+                500,
+                60,
+                "auth-token-"
+        );
         executor.initialize();
 
         
@@ -69,10 +78,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("authSecurityLogExecutor")
     public Executor authSecurityLogExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authSecurityLogExecutor",
                 2,
                 6,
                 500,
+                60,
                 "auth-security-log-"
         );
         executor.initialize();
@@ -89,7 +100,15 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("authOAuth2Executor")
     @ConditionalOnProperty(name = "auth.oauth2.enabled", havingValue = "true", matchIfMissing = true)
     public Executor authOAuth2Executor() {
-        ThreadPoolTaskExecutor executor = createIOExecutor("auth-oauth2-");
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authOAuth2Executor",
+                processors * 2,
+                processors * 4,
+                300,
+                60,
+                "auth-oauth2-"
+        );
         executor.initialize();
 
         
@@ -103,10 +122,12 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("authSessionExecutor")
     public Executor authSessionExecutor() {
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authSessionExecutor",
                 2,
                 5,
                 200,
+                60,
                 "auth-session-"
         );
         executor.initialize();
@@ -121,7 +142,15 @@ public class AsyncConfig extends BaseAsyncConfig {
 
     @Bean("authCommonAsyncExecutor")
     public Executor authCommonAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = createCommonAsyncExecutor();
+        int processors = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "authCommonAsyncExecutor",
+                Math.max(2, processors / 2),
+                processors * 2,
+                200,
+                60,
+                "common-async-"
+        );
         executor.initialize();
 
         

@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 
 
@@ -45,6 +48,12 @@ public class AsyncProperties {
 
 
     private ThreadPoolConfig cpuExecutor = new ThreadPoolConfig(4, 5, 100, 60);
+
+    /**
+     * Executor overrides keyed by Spring bean name, for example:
+     * app.async.executors.searchQueryExecutor.core-pool-size=8
+     */
+    private Map<String, ThreadPoolConfig> executors = new HashMap<>();
 
     
 

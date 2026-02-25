@@ -29,10 +29,12 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("stockQueryExecutor")
     public Executor stockQueryExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "stockQueryExecutor",
                 Math.max(8, processors * 2),
                 Math.max(16, processors * 6),
                 1000,
+                60,
                 "stock-query-"
         );
         executor.initialize();
@@ -49,10 +51,12 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("stockOperationExecutor")
     public Executor stockOperationExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "stockOperationExecutor",
                 Math.max(4, processors),
                 Math.max(8, processors * 2),
                 300,
+                60,
                 "stock-operation-"
         );
         executor.initialize();
@@ -69,10 +73,12 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Bean("stockCommonExecutor")
     public Executor stockCommonExecutor() {
         int processors = Runtime.getRuntime().availableProcessors();
-        ThreadPoolTaskExecutor executor = createThreadPoolTaskExecutor(
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "stockCommonExecutor",
                 Math.max(2, processors / 2),
                 processors * 2,
                 200,
+                60,
                 "stock-common-async-"
         );
         executor.initialize();
