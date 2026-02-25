@@ -1,10 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createProduct, listProducts, updateProduct, updateProductStatus } from '../api/product'
-import type { ProductItem, ProductUpsertPayload } from '../types/domain'
+import {
+  createProduct,
+  listProducts,
+  listSearchHotKeywords,
+  listSearchKeywordRecommendations,
+  listSearchSuggestions,
+  smartSearchProducts,
+  updateProduct,
+  updateProductStatus
+} from '../api/product'
+import type { ProductItem, ProductUpsertPayload, SearchProductDocument } from '../types/domain'
 import { useRole } from '../auth/permission'
 import { sessionState } from '../auth/session'
 
@@ -18,6 +27,10 @@ interface ProductFormModel {
   status: number
   description: string
   imageUrl: string
+}
+
+interface SearchSuggestionItem {
+  value: string
 }
 
 const route = useRoute()
@@ -38,6 +51,11 @@ const isMerchantOnly = computed(() => isMerchant.value && !isAdmin.value)
 const currentMerchantId = computed(() =>
   typeof sessionState.user?.id === 'number' ? sessionState.user.id : null
 )
+
+const hotKeywords = ref<string[]>([])
+const recommendedKeywords = ref<string[]>([])
+const blurTimer = ref<number | null>(null)
+const suggestTimer = ref<number | null>(null)
 
 const dialogVisible = ref(false)
 const formSubmitting = ref(false)
@@ -80,6 +98,21 @@ const rules: FormRules<ProductFormModel> = {
 }
 
 const dialogTitle = computed(() => (editingId.value ? 'Edit Product' : 'Create Product'))
+
+function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
+  return {
+    id: typeof item.productId === 'number' ? item.productId : 0,
+    shopId: item.shopId,
+    name: item.productName || 'Unnamed Product',
+    price: item.price,
+    stockQuantity: item.stockQuantity,
+    categoryId: item.categoryId,
+    brandId: item.brandId,
+    status: item.status,
+    description: item.description,
+    imageUrl: item.imageUrl
+  }
+}
 
 function resetForm(): void {
   editingId.value = null
@@ -134,16 +167,43 @@ function statusType(status?: number): 'success' | 'info' | 'warning' {
   return 'warning'
 }
 
+async function refreshKeywordRecommendations(seedKeyword = ''): Promise<void> {
+  if (isManagementMode.value) {
+    return
+  }
+  const [hotResult, recommendationResult] = await Promise.allSettled([
+    listSearchHotKeywords(8),
+    listSearchKeywordRecommendations(seedKeyword, 10)
+  ])
+
+  hotKeywords.value = hotResult.status === 'fulfilled' ? hotResult.value : []
+  recommendedKeywords.value = recommendationResult.status === 'fulfilled' ? recommendationResult.value : []
+}
+
 async function loadProducts(): Promise<void> {
   loading.value = true
   try {
-    const result = await listProducts({
-      page: params.page,
-      size: params.size,
-      name: params.name || undefined
-    })
-    rows.value = result.records
-    total.value = result.total
+    if (isManagementMode.value) {
+      const result = await listProducts({
+        page: params.page,
+        size: params.size,
+        name: params.name || undefined
+      })
+      rows.value = result.records
+      total.value = result.total
+    } else {
+      const searchResult = await smartSearchProducts({
+        keyword: params.name || undefined,
+        page: params.page,
+        size: params.size,
+        sortField: 'score',
+        sortOrder: 'desc'
+      })
+
+      rows.value = searchResult.documents.map(mapSearchDocumentToProduct)
+      total.value = searchResult.total
+      await refreshKeywordRecommendations(params.name)
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load products'
     ElMessage.error(message)
@@ -155,6 +215,51 @@ async function loadProducts(): Promise<void> {
 function onSearch(): void {
   params.page = 1
   void loadProducts()
+}
+
+function onSearchFocus(): void {
+  if (blurTimer.value != null) {
+    window.clearTimeout(blurTimer.value)
+    blurTimer.value = null
+  }
+  void refreshKeywordRecommendations(params.name)
+}
+
+function onSearchBlur(): void {
+  blurTimer.value = window.setTimeout(() => {
+    blurTimer.value = null
+  }, 180)
+}
+
+function onKeywordClick(keyword: string): void {
+  params.name = keyword
+  onSearch()
+}
+
+function onSuggestionSelect(item: SearchSuggestionItem): void {
+  params.name = item.value
+  onSearch()
+}
+
+function fetchSuggestions(queryString: string, callback: (items: SearchSuggestionItem[]) => void): void {
+  const normalizedQuery = queryString.trim()
+  if (!normalizedQuery) {
+    callback(recommendedKeywords.value.map((item) => ({ value: item })))
+    return
+  }
+
+  if (suggestTimer.value != null) {
+    window.clearTimeout(suggestTimer.value)
+  }
+
+  suggestTimer.value = window.setTimeout(async () => {
+    try {
+      const suggestions = await listSearchSuggestions(normalizedQuery, 10)
+      callback(suggestions.map((item) => ({ value: item })))
+    } catch {
+      callback([])
+    }
+  }, 180)
 }
 
 function onCreate(): void {
@@ -275,6 +380,15 @@ function onDialogClosed(): void {
 onMounted(() => {
   void loadProducts()
 })
+
+onBeforeUnmount(() => {
+  if (blurTimer.value != null) {
+    window.clearTimeout(blurTimer.value)
+  }
+  if (suggestTimer.value != null) {
+    window.clearTimeout(suggestTimer.value)
+  }
+})
 </script>
 
 <template>
@@ -282,7 +396,16 @@ onMounted(() => {
     <div class="header">
       <h3>{{ isManagementMode ? 'Product Management' : 'Product Catalog' }}</h3>
       <div class="search-row">
-        <el-input v-model="params.name" clearable placeholder="Search product name" @keyup.enter="onSearch" />
+        <el-autocomplete
+          v-model="params.name"
+          clearable
+          placeholder="Search products, categories, or brands"
+          :fetch-suggestions="fetchSuggestions"
+          @focus="onSearchFocus"
+          @blur="onSearchBlur"
+          @select="onSuggestionSelect"
+          @keyup.enter="onSearch"
+        />
         <el-button round type="primary" @click="onSearch">Search</el-button>
         <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/catalog/manage">
           <el-button round type="success">Open Management</el-button>
@@ -291,6 +414,38 @@ onMounted(() => {
           <el-button round>Back to Catalog</el-button>
         </router-link>
         <el-button v-if="canManageProducts" round type="success" @click="onCreate">New Product</el-button>
+      </div>
+    </div>
+
+    <div v-if="!isManagementMode" class="keyword-board">
+      <div class="keyword-block">
+        <span class="keyword-title">Trending</span>
+        <div class="keyword-list">
+          <el-tag
+            v-for="keyword in hotKeywords"
+            :key="`hot-${keyword}`"
+            class="keyword-chip"
+            effect="light"
+            @click="onKeywordClick(keyword)"
+          >
+            {{ keyword }}
+          </el-tag>
+        </div>
+      </div>
+      <div class="keyword-block">
+        <span class="keyword-title">Recommended</span>
+        <div class="keyword-list">
+          <el-tag
+            v-for="keyword in recommendedKeywords"
+            :key="`rec-${keyword}`"
+            class="keyword-chip"
+            type="success"
+            effect="plain"
+            @click="onKeywordClick(keyword)"
+          >
+            {{ keyword }}
+          </el-tag>
+        </div>
       </div>
     </div>
 
@@ -407,7 +562,40 @@ onMounted(() => {
 .search-row {
   display: flex;
   gap: 8px;
-  width: min(760px, 100%);
+  width: min(880px, 100%);
+}
+
+.search-row :deep(.el-autocomplete) {
+  flex: 1;
+}
+
+.keyword-board {
+  margin-bottom: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.keyword-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.keyword-title {
+  color: var(--text-muted);
+  min-width: 88px;
+  font-size: 0.82rem;
+}
+
+.keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.keyword-chip {
+  cursor: pointer;
 }
 
 .inline-link {
@@ -445,6 +633,10 @@ onMounted(() => {
   .search-row {
     width: 100%;
     flex-wrap: wrap;
+  }
+
+  .keyword-title {
+    min-width: auto;
   }
 
   .pager {

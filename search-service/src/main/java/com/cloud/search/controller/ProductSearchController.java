@@ -63,7 +63,8 @@ public class ProductSearchController {
             @Parameter(description = "Keyword") @RequestParam String keyword,
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
 
-        List<String> suggestions = productSearchService.getSearchSuggestions(keyword, size);
+        int safeSize = size == null ? 10 : size;
+        List<String> suggestions = elasticsearchOptimizedService.getSearchSuggestions(keyword, safeSize);
         return Result.success("Get suggestions success", suggestions);
     }
 
@@ -72,8 +73,20 @@ public class ProductSearchController {
     public Result<List<String>> getHotSearchKeywords(
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
 
-        List<String> hotKeywords = productSearchService.getHotSearchKeywords(size);
+        int safeSize = size == null ? 10 : size;
+        List<String> hotKeywords = elasticsearchOptimizedService.getHotSearchKeywords(safeSize);
         return Result.success("Get hot keywords success", hotKeywords);
+    }
+
+    @Operation(summary = "Keyword recommendations", description = "Get recommended keywords for search bar")
+    @GetMapping("/keyword-recommendations")
+    public Result<List<String>> getKeywordRecommendations(
+            @Parameter(description = "Keyword prefix") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
+
+        int safeSize = size == null ? 10 : size;
+        List<String> keywords = elasticsearchOptimizedService.getKeywordRecommendations(keyword, safeSize);
+        return Result.success("Get keyword recommendations success", keywords);
     }
 
     @Operation(summary = "Basic search", description = "Search products by keyword and pagination")

@@ -60,6 +60,27 @@ export interface ProductUpsertPayload {
   imageUrl?: string
 }
 
+export interface SearchProductDocument {
+  productId?: number
+  shopId?: number
+  productName?: string
+  price?: number
+  stockQuantity?: number
+  categoryId?: number
+  brandId?: number
+  status?: number
+  description?: string
+  imageUrl?: string
+}
+
+export interface SmartSearchResult {
+  documents: SearchProductDocument[]
+  total: number
+  from: number
+  size: number
+  aggregations?: Record<string, unknown>
+}
+
 export interface OrderItem {
   id: number
   orderNo: string
