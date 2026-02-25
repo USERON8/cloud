@@ -49,10 +49,7 @@ public class BaseAsyncConfig {
                     "async-default-"
             );
         }
-        executor.initialize();
-        
-
-        return executor;
+        return initializeExecutor(executor);
     }
 
     
@@ -69,10 +66,7 @@ public class BaseAsyncConfig {
         } else {
             executor = createThreadPoolTaskExecutor(3, 8, 100, "async-message-");
         }
-        executor.initialize();
-        
-
-        return executor;
+        return initializeExecutor(executor);
     }
 
     
@@ -89,10 +83,7 @@ public class BaseAsyncConfig {
         } else {
             executor = createThreadPoolTaskExecutor(2, 6, 200, "batch-process-");
         }
-        executor.initialize();
-        
-
-        return executor;
+        return initializeExecutor(executor);
     }
 
     
@@ -265,5 +256,10 @@ public class BaseAsyncConfig {
             return asyncProperties.getCommon().isTaskDecorator();
         }
         return true; 
+    }
+
+    protected ThreadPoolTaskExecutor initializeExecutor(ThreadPoolTaskExecutor executor) {
+        executor.initialize();
+        return executor;
     }
 }

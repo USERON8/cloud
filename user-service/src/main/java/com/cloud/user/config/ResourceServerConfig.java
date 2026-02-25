@@ -1,5 +1,6 @@
 package com.cloud.user.config;
 
+import com.cloud.common.security.JwtAuthorityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,8 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,15 +17,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
 
 @Slf4j
 @Configuration
@@ -106,84 +99,29 @@ public class ResourceServerConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter roleClaimConverter = new JwtGrantedAuthoritiesConverter();
-        roleClaimConverter.setAuthorityPrefix("ROLE_");
-        roleClaimConverter.setAuthoritiesClaimName("authorities");
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Set<GrantedAuthority> authorities = new HashSet<>(extractScopeAuthorities(jwt));
-
-            Collection<GrantedAuthority> roleAuthorities = roleClaimConverter.convert(jwt);
-            if (roleAuthorities != null) {
-                authorities.addAll(roleAuthorities);
-            }
-
+        return JwtAuthorityUtils.buildJwtAuthenticationConverter(false, true, (authorities, jwt) -> {
             String userType = jwt.getClaimAsString("user_type");
-            if (userType != null && !userType.isBlank()) {
-                String normalizedUserType = userType.trim().toUpperCase(Locale.ROOT);
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + normalizedUserType));
-
-                switch (normalizedUserType) {
-                    case "ADMIN" -> {
-                        addScopeAuthority(authorities, "admin:read");
-                        addScopeAuthority(authorities, "admin:write");
-                    }
-                    case "MERCHANT" -> {
-                        addScopeAuthority(authorities, "merchant:read");
-                        addScopeAuthority(authorities, "merchant:write");
-                        addScopeAuthority(authorities, "user:read");
-                    }
-                    case "USER" -> {
-                        addScopeAuthority(authorities, "user:read");
-                        addScopeAuthority(authorities, "user:write");
-                    }
-                    default -> {
-                    }
+            if (userType == null || userType.isBlank()) {
+                return;
+            }
+            String normalizedUserType = userType.trim().toUpperCase(Locale.ROOT);
+            switch (normalizedUserType) {
+                case "ADMIN" -> {
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_admin:read"));
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_admin:write"));
+                }
+                case "MERCHANT" -> {
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_merchant:read"));
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_merchant:write"));
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_user:read"));
+                }
+                case "USER" -> {
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_user:read"));
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_user:write"));
+                }
+                default -> {
                 }
             }
-
-            return authorities;
         });
-
-        return converter;
-    }
-
-    private static Set<GrantedAuthority> extractScopeAuthorities(Jwt jwt) {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scope"));
-        normalizeAndAddScopeAuthorities(authorities, jwt.getClaim("scp"));
-        return authorities;
-    }
-
-    private static void normalizeAndAddScopeAuthorities(Set<GrantedAuthority> authorities, Object scopeClaim) {
-        if (scopeClaim == null) {
-            return;
-        }
-        if (scopeClaim instanceof String scopeString) {
-            Arrays.stream(scopeString.split("\\s+"))
-                    .map(String::trim)
-                    .filter(scope -> !scope.isEmpty())
-                    .map(ResourceServerConfig::normalizeScope)
-                    .forEach(scope -> addScopeAuthority(authorities, scope));
-            return;
-        }
-        if (scopeClaim instanceof Collection<?> scopes) {
-            scopes.stream()
-                    .filter(Objects::nonNull)
-                    .map(Object::toString)
-                    .map(String::trim)
-                    .filter(scope -> !scope.isEmpty())
-                    .map(ResourceServerConfig::normalizeScope)
-                    .forEach(scope -> addScopeAuthority(authorities, scope));
-        }
-    }
-
-    private static String normalizeScope(String scope) {
-        return scope.replace('.', ':');
-    }
-
-    private static void addScopeAuthority(Set<GrantedAuthority> authorities, String scope) {
-        authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope));
     }
 }

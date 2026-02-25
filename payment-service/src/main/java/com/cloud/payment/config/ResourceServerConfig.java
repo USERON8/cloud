@@ -1,6 +1,7 @@
 package com.cloud.payment.config;
 
 import com.cloud.common.security.JwtBlacklistTokenValidator;
+import com.cloud.common.security.JwtAuthorityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,14 +17,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.SecurityFilterChain;
-
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
 
 @Slf4j
 @Configuration
@@ -95,19 +89,6 @@ public class ResourceServerConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
-        scopeConverter.setAuthorityPrefix("SCOPE_");
-        scopeConverter.setAuthoritiesClaimName("scope");
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Collection<GrantedAuthority> authorities = new LinkedHashSet<>(scopeConverter.convert(jwt));
-            String userType = jwt.getClaimAsString("user_type");
-            if (userType != null && !userType.isBlank()) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + userType.toUpperCase(Locale.ROOT)));
-            }
-            return authorities;
-        });
-        return converter;
+        return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, false, null);
     }
 }
