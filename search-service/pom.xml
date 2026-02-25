@@ -12,7 +12,7 @@
     <artifactId>search-service</artifactId>
 
     <dependencies>
-        <!-- Spring Bootéç¨¿ç¸¾ç¼å‹ªæ¬¢ -->
+        <!-- Spring BootºËÐÄ×é¼þ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -38,7 +38,8 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Spring Cloud Alibabaç¼å‹ªæ¬¢ -->
+
+        <!-- Spring Cloud Alibaba×é¼þ -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -48,7 +49,7 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!-- å®¸ãƒ¥å¿ç»«?-->
+        <!-- ¹¤¾ßÀà -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -66,7 +67,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- APIé‚å›¨ã€‚ -->
+        <!-- APIÎÄµµ -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
@@ -77,17 +78,17 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
             <exclusions>
-                <!-- éŽºæŽ—æ«ŽMinioé©ç¨¿å§æ¸šæ¿Šç¦†é”›å°earch-serviceæ¶“å¶‰æ¸¶ç‘•ä½¹æžƒæµ è·ºç“¨éŒîŸ’ç´š -->
+                <!-- ÅÅ³ýMinioÏà¹ØÒÀÀµ£¨search-service²»ÐèÒªÎÄ¼þ´æ´¢£© -->
                 <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
-                <!-- éŽºæŽ—æ«Žé–¿æ¬’î‡¤æ¾¶å‹­æ‚Šå¨‰ã„¨Ð’ -->
+                <!-- ÅÅ³ý´íÎó´¦Àí×¢½â -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
-                <!-- search-serviceéƒçŠ»æ¸¶MySQLé”›å±¾å¸“é—„î—³yBatis-Plusé©ç¨¿å§æ¸šæ¿Šç¦† -->
+                <!-- search-serviceÎÞÐèMySQL£¬ÅÅ³ýMyBatis-PlusÏà¹ØÒÀÀµ -->
                 <exclusion>
                     <groupId>com.baomidou</groupId>
                     <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -110,7 +111,8 @@
                 </exclusion>
             </exclusions>
         </dependency>
-</dependencies>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
