@@ -29,6 +29,12 @@ public interface ProductSearchService {
 
     SearchResult<ProductDocument> searchByShop(Long shopId, Integer page, Integer size);
 
+    SearchResult<ProductDocument> getRecommendedProducts(Integer page, Integer size);
+
+    SearchResult<ProductDocument> getNewProducts(Integer page, Integer size);
+
+    SearchResult<ProductDocument> getHotProducts(Integer page, Integer size);
+
     SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
                                                  BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
                                                  String sortBy, String sortOrder, Integer page, Integer size);

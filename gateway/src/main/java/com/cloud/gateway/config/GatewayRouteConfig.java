@@ -47,9 +47,6 @@ public class GatewayRouteConfig {
                 .route("code-stock-service-api", r -> r
                         .path("/api/stocks/**")
                         .uri("lb://stock-service"))
-                .route("code-search-service-api", r -> r
-                        .path("/api/search", "/api/search/**")
-                        .uri("lb://search-service"))
                 .route("code-auth-service-doc", r -> r
                         .path("/auth-service/doc.html", "/auth-service/webjars/**", "/auth-service/swagger-ui/**", "/auth-service/v3/api-docs/**", "/auth-service/swagger-resources/**")
                         .filters(f -> f.stripPrefix(1))

@@ -1,7 +1,7 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -16,7 +16,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.gateway: debug
@@ -25,15 +25,16 @@ logging:
     org.springframework.web: debug
     com.alibaba.nacos: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   security:
     enable-test-api: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 

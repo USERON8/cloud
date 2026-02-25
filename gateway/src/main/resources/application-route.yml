@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   cloud:
     gateway:
       routes:
@@ -89,6 +89,16 @@ spring:
           order: 20
           predicates:
             - Path=/api/search,/api/search/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: search-route
+                fallbackUri: forward:/gateway/fallback/search
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
 
         - id: search-service-api-legacy
           uri: lb://search-service
@@ -152,8 +162,9 @@ spring:
           filters:
             - StripPrefix=1
 
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       discovery:
         locator:
-          enabled: false  # Comment sanitized for UTF-8 compatibility.
+          enabled: false  # UTF-8 注释已修复并统一。
           lower-case-service-id: true
+

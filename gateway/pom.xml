@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+ï»¿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -36,13 +36,13 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
-        <!-- JWT Ö§³Ö -->
+        <!-- JWT æ”¯æŒ -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
 
-        <!-- Spring Cloud Gateway ºËÐÄÒÀÀµ -->
+        <!-- Spring Cloud Gateway æ ¸å¿ƒä¾èµ– -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-gateway-server-webflux</artifactId>
@@ -52,12 +52,16 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
             <version>1.53.0</version>
         </dependency>
 
-        <!-- Spring Cloud Alibaba×é¼þ -->
+        <!-- Spring Cloud Alibabaç»„ä»¶ -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -119,7 +123,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <excludes> <!-- Ìí¼ÓÅÅ³ýÅäÖÃ -->
+                    <excludes> <!-- æ·»åŠ æŽ’é™¤é…ç½® -->
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
@@ -130,3 +134,4 @@
         </plugins>
     </build>
 </project>
+

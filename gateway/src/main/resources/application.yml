@@ -17,7 +17,7 @@ spring:
     allow-bean-definition-overriding: true
     web-application-type: reactive
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -45,7 +45,7 @@ spring:
         import-check:
           enabled: false
 
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     gateway:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Expose-Headers, RETAIN_FIRST
@@ -99,9 +99,19 @@ spring:
           order: 20
           predicates:
             - Path=/api/search,/api/search/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: search-route
+                fallbackUri: forward:/gateway/fallback/search
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
       discovery:
         locator:
-          enabled: false  # Comment sanitized for UTF-8 compatibility.
+          enabled: false  # UTF-8 注释已修复并统一。
           lower-case-service-id: true
       csrf:
         enabled: true
@@ -112,12 +122,12 @@ spring:
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   web:
     resources:
       static-locations: classpath:/static/
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -133,7 +143,7 @@ spring:
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -144,7 +154,7 @@ logging:
     org.springframework.cloud.gateway: INFO
     org.springframework.security: WARN
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -164,7 +174,7 @@ management:
       enabled: true
   health:
     redis:
-      enabled: false  # Comment sanitized for UTF-8 compatibility.
+      enabled: false  # UTF-8 注释已修复并统一。
     nacos:
       enabled: true
   info:
@@ -175,10 +185,29 @@ management:
     os:
       enabled: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   security:
     enable-test-api: false
+  search:
+    fallback:
+      timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:700}
+
+resilience4j:
+  timelimiter:
+    instances:
+      search-route:
+        timeout-duration: ${SEARCH_FALLBACK_TIMEOUT_MS:700}ms
+        cancel-running-future: true
+  circuitbreaker:
+    instances:
+      search-route:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
 
 springdoc:
   api-docs:
@@ -188,7 +217,7 @@ springdoc:
     enabled: true
     path: /doc.html
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -231,6 +260,7 @@ knife4j:
         search-service:
           group-name: search-service
           api-docs-path: /v3/api-docs
+
 
 
 

@@ -69,7 +69,7 @@ public class RateLimitManager {
             return result;
 
         } catch (Exception e) {
-            log.error("? key: {}, identifier: {}", key, identifier, e);
+            log.error("Rate limit check failed: key={}, identifier={}", key, identifier, e);
             
             return RateLimitResult.allow(Long.MAX_VALUE, 0);
         }
@@ -119,7 +119,10 @@ public class RateLimitManager {
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
         } else {
-            return RateLimitResult.reject(resetTime, "鍥哄畾绐楀彛闄愭祦锛氳秴鍑?" + rule.getPermits() + " 娆?" + rule.getWindow().getSeconds() + "s 闄愬埗");
+            return RateLimitResult.reject(
+                    resetTime,
+                    "Fixed window limit exceeded: " + rule.getPermits() + " requests/" + rule.getWindow().getSeconds() + "s"
+            );
         }
     }
 
@@ -139,14 +142,14 @@ public class RateLimitManager {
                 local limit = tonumber(ARGV[3])
                 local window_size = tonumber(ARGV[4])
                 
-                -- ASCII comment sanitized for compatibility.
+                -- 兼容性注释已标准化。
                 redis.call('ZREMRANGEBYSCORE', key, 0, window_start)
                 
-                -- ASCII comment sanitized for compatibility.
+                -- 兼容性注释已标准化。
                 local current_count = redis.call('ZCARD', key)
                 
                 if current_count < limit then
-                    -- ASCII comment sanitized for compatibility.
+                    -- 兼容性注释已标准化。
                     redis.call('ZADD', key, now, now .. ':' .. math.random())
                     redis.call('EXPIRE', key, window_size)
                     return {1, limit - current_count - 1, window_size}
@@ -171,7 +174,10 @@ public class RateLimitManager {
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
         } else {
-            return RateLimitResult.reject(resetTime, "婊戝姩绐楀彛闄愭祦锛氳秴鍑?" + rule.getPermits() + " 娆?" + rule.getWindow().getSeconds() + "s 闄愬埗");
+            return RateLimitResult.reject(
+                    resetTime,
+                    "Sliding window limit exceeded: " + rule.getPermits() + " requests/" + rule.getWindow().getSeconds() + "s"
+            );
         }
     }
 
@@ -196,7 +202,7 @@ public class RateLimitManager {
                 local tokens = tonumber(bucket[1]) or capacity
                 local last_refill = tonumber(bucket[2]) or now
                 
-                -- ASCII comment sanitized for compatibility.
+                -- 兼容性注释已标准化。
                 local time_passed = now - last_refill
                 local tokens_to_add = time_passed * refill_rate
                 tokens = math.min(capacity, tokens + tokens_to_add)
@@ -204,7 +210,7 @@ public class RateLimitManager {
                 if tokens >= 1 then
                     tokens = tokens - 1
                     redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
-                    redis.call('EXPIRE', key, 3600)  -- 1灏忔椂杩囨湡
+                    redis.call('EXPIRE', key, 3600)  -- 1 hour
                     return {1, math.floor(tokens), 0}
                 else
                     redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
@@ -228,7 +234,7 @@ public class RateLimitManager {
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
         } else {
-            return RateLimitResult.reject(resetTime, "浠ょ墝妗堕檺娴侊細浠ょ墝涓嶈冻锛岃绛夊緟 " + resetTime + " 绉掑悗閲嶈瘯");
+            return RateLimitResult.reject(resetTime, "Token bucket is empty, please retry in " + resetTime + " seconds");
         }
     }
 
@@ -253,7 +259,7 @@ public class RateLimitManager {
                 local volume = tonumber(bucket[1]) or 0
                 local last_leak = tonumber(bucket[2]) or now
                 
-                -- ASCII comment sanitized for compatibility.
+                -- 兼容性注释已标准化。
                 local time_passed = now - last_leak
                 local leaked = time_passed * leak_rate
                 volume = math.max(0, volume - leaked)
@@ -285,7 +291,7 @@ public class RateLimitManager {
         if (allowed) {
             return RateLimitResult.allow(remaining, resetTime);
         } else {
-            return RateLimitResult.reject(resetTime, "婕忔《闄愭祦锛氭《宸叉弧锛岃绛夊緟 " + resetTime + " 绉掑悗閲嶈瘯");
+            return RateLimitResult.reject(resetTime, "Leaky bucket is full, please retry in " + resetTime + " seconds");
         }
     }
 
@@ -352,22 +358,22 @@ public class RateLimitManager {
 
     public void initDefaultRules() {
         
-        registerRule("api:access", 100, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API鎺ュ彛璁块棶闄愭祦");
+        registerRule("api:access", 100, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API access limit");
 
         
-        registerRule("api:test", 200, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API娴嬭瘯鎺ュ彛璁块棶闄愭祦");
+        registerRule("api:test", 200, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API test limit");
 
         
-        registerRule("auth:login", 5, Duration.ofMinutes(1), RateLimitType.FIXED_WINDOW, "鐧诲綍鎺ュ彛闄愭祦");
+        registerRule("auth:login", 5, Duration.ofMinutes(1), RateLimitType.FIXED_WINDOW, "Login attempt limit");
 
         
-        registerRule("auth:register", 3, Duration.ofHours(1), RateLimitType.FIXED_WINDOW, "娉ㄥ唽鎺ュ彛闄愭祦");
+        registerRule("auth:register", 3, Duration.ofHours(1), RateLimitType.FIXED_WINDOW, "Registration limit");
 
         
         registerRule("sms:send", 1, Duration.ofMinutes(1), RateLimitType.LEAKY_BUCKET, "SMS send rate limit");
 
         
-        registerRule("file:upload", 10, Duration.ofHours(1), RateLimitType.TOKEN_BUCKET, "鏂囦欢涓婁紶闄愭祦");
+        registerRule("file:upload", 10, Duration.ofHours(1), RateLimitType.TOKEN_BUCKET, "File upload limit");
 
     }
 
@@ -481,7 +487,7 @@ public class RateLimitManager {
         }
 
         public static RateLimitResult allow(long remaining, long resetTime) {
-            return new RateLimitResult(true, remaining, resetTime, "鍏佽璁块棶");
+            return new RateLimitResult(true, remaining, resetTime, "閸忎浇顔忕拋鍧楁６");
         }
 
         public static RateLimitResult reject(long resetTime, String reason) {
@@ -506,3 +512,4 @@ public class RateLimitManager {
         }
     }
 }
+

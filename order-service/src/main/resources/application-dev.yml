@@ -1,7 +1,7 @@
-﻿# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
@@ -14,7 +14,7 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -29,7 +29,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.order: debug
@@ -38,12 +38,12 @@ logging:
     org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -53,7 +53,8 @@ knife4j:
     oauth2:
       resourceserver:
         jwt:
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
+
 
 

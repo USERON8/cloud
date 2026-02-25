@@ -31,7 +31,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -214,6 +216,45 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
         wrapper.orderByDesc(Product::getCreatedAt);
         return productConverter.toVOList(list(wrapper));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getProductSuggestions(String keyword, Integer size) {
+        if (!StringUtils.hasText(keyword)) {
+            return new ArrayList<>();
+        }
+
+        int safeSize = size == null || size <= 0 ? 10 : Math.min(size, 50);
+        String normalizedKeyword = keyword.trim();
+
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(Product::getName)
+                .like(Product::getName, normalizedKeyword)
+                .eq(Product::getStatus, 1)
+                .orderByDesc(Product::getCreatedAt)
+                .last("LIMIT " + (safeSize * 3));
+
+        List<Product> products = list(wrapper);
+        if (CollectionUtils.isEmpty(products)) {
+            return new ArrayList<>();
+        }
+
+        Set<String> deduplicated = new LinkedHashSet<>();
+        for (Product product : products) {
+            if (!StringUtils.hasText(product.getName())) {
+                continue;
+            }
+            String suggestion = product.getName().trim();
+            if (suggestion.length() > 60) {
+                suggestion = suggestion.substring(0, 60);
+            }
+            deduplicated.add(suggestion);
+            if (deduplicated.size() >= safeSize) {
+                break;
+            }
+        }
+        return new ArrayList<>(deduplicated);
     }
 
     @Override

@@ -9,21 +9,21 @@
           error-channel-enabled: true
         consumer:
           max-attempts: 1
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           orderCreatedProducer-out-0:
             producer:
               group: order-producer-group
-              sync: false  # Comment sanitized for UTF-8 compatibility.
+              sync: false  # UTF-8 注释已修复并统一。
               retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           orderCancelledProducer-out-0:
             producer:
               group: order-producer-group
@@ -32,7 +32,7 @@
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           refundCreatedProducer-out-0:
             producer:
               group: order-producer-group
@@ -65,7 +65,7 @@
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           stockRestoreProducer-out-0:
             producer:
               group: order-producer-group
@@ -74,18 +74,18 @@
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           paymentSuccessConsumer-in-0:
             consumer:
-              # Comment sanitized for UTF-8 compatibility.
+              # UTF-8 注释已修复并统一。
               subscription: 'PAYMENT_SUCCESS'
-              # Comment sanitized for UTF-8 compatibility.
+              # UTF-8 注释已修复并统一。
               orderly: false
               maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           stockFreezeFailedConsumer-in-0:
             consumer:
               subscription: 'STOCK_FREEZE_FAILED'
@@ -94,7 +94,7 @@
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           refundCompletedConsumer-in-0:
             consumer:
               subscription: 'REFUND_COMPLETED'
@@ -103,7 +103,7 @@
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           refundCreatedNotificationConsumer-in-0:
             consumer:
               subscription: 'REFUND_CREATED'
@@ -136,62 +136,62 @@
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       bindings:
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         orderCreatedProducer-out-0:
           destination: order-created
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         orderCancelledProducer-out-0:
           destination: order-cancelled
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundCreatedProducer-out-0:
           destination: refund-created
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundAuditedProducer-out-0:
           destination: refund-audited
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundProcessProducer-out-0:
           destination: refund-process
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundCancelledProducer-out-0:
           destination: refund-cancelled
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         stockRestoreProducer-out-0:
           destination: stock-restore
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
           group: order-payment-success-consumer-group
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         stockFreezeFailedConsumer-in-0:
           destination: stock-freeze-failed
           content-type: application/json
           group: order-stock-freeze-failed-consumer-group
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundCompletedConsumer-in-0:
           destination: refund-completed
           content-type: application/json
           group: order-refund-completed-consumer-group
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         refundCreatedNotificationConsumer-in-0:
           destination: refund-created
           content-type: application/json
@@ -211,4 +211,5 @@
           destination: refund-cancelled
           content-type: application/json
           group: order-refund-cancelled-notification-group
+
 

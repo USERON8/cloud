@@ -87,6 +87,7 @@ public class ResourceServerConfig {
                                     "/favicon.ico",
                                     "/csrf",
                                     "/error",
+                                    "/gateway/fallback/search",
                                     "/static/**",
                                     "/public/**"
                             ).permitAll()

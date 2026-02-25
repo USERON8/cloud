@@ -7,9 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -42,7 +44,18 @@ class ElasticsearchOptimizedServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ElasticsearchOptimizedService(elasticsearchClient, redisTemplate, new ObjectMapper());
+        service = new ElasticsearchOptimizedService(elasticsearchClient, redisTemplate, new ObjectMapper(), new SimpleMeterRegistry());
+        ReflectionTestUtils.setField(service, "defaultSearchSize", 20);
+        ReflectionTestUtils.setField(service, "defaultKeywordSize", 10);
+        ReflectionTestUtils.setField(service, "maxSearchSize", 100);
+        ReflectionTestUtils.setField(service, "smartSearchL2TtlSeconds", 120L);
+        ReflectionTestUtils.setField(service, "suggestionL2TtlSeconds", 120L);
+        ReflectionTestUtils.setField(service, "hotKeywordsL2TtlSeconds", 30L);
+        ReflectionTestUtils.setField(service, "recommendationL2TtlSeconds", 60L);
+        ReflectionTestUtils.setField(service, "smartSearchL1TtlMillis", 30000L);
+        ReflectionTestUtils.setField(service, "suggestionL1TtlMillis", 20000L);
+        ReflectionTestUtils.setField(service, "hotKeywordsL1TtlMillis", 15000L);
+        ReflectionTestUtils.setField(service, "recommendationL1TtlMillis", 20000L);
     }
 
     @Test

@@ -36,6 +36,8 @@ public interface ProductService extends IService<Product> {
 
     List<ProductVO> searchProductsByName(String name, Integer status);
 
+    List<String> getProductSuggestions(String keyword, Integer size);
+
     Boolean enableProduct(Long id)
             throws ProductServiceException.ProductNotFoundException,
             ProductServiceException.ProductStatusException,

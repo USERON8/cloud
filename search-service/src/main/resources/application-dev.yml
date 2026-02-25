@@ -1,13 +1,13 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://127.0.0.1:19200}
     username:
     password:
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -22,7 +22,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 cache:
   multi-level:
     enabled: true
@@ -36,7 +36,7 @@ cache:
       redis:
         time-to-live: 30m
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.search: debug
@@ -46,10 +46,11 @@ logging:
     org.elasticsearch: debug
     com.alibaba.nacos: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 

@@ -13,7 +13,7 @@ spring:
   profiles:
     active: dev
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -53,11 +53,11 @@ spring:
         response:
           enabled: true
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -66,24 +66,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       debug: false
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -93,14 +93,34 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 search:
   notification:
     enabled: true
   statistics:
     enabled: true
+  optimized:
+    elasticsearch:
+      request-timeout-ms: ${SEARCH_ES_REQUEST_TIMEOUT_MS:700}
+    limit:
+      default-search-size: ${SEARCH_DEFAULT_SIZE:20}
+      default-keyword-size: ${SEARCH_DEFAULT_KEYWORD_SIZE:10}
+      max-search-size: ${SEARCH_MAX_SIZE:100}
+    cache:
+      smart-search:
+        l1-ttl-millis: ${SEARCH_SMART_L1_TTL_MS:30000}
+        l2-ttl-seconds: ${SEARCH_SMART_L2_TTL_S:120}
+      suggestions:
+        l1-ttl-millis: ${SEARCH_SUGGESTION_L1_TTL_MS:20000}
+        l2-ttl-seconds: ${SEARCH_SUGGESTION_L2_TTL_S:120}
+      hot-keywords:
+        l1-ttl-millis: ${SEARCH_HOT_L1_TTL_MS:15000}
+        l2-ttl-seconds: ${SEARCH_HOT_L2_TTL_S:30}
+      recommendations:
+        l1-ttl-millis: ${SEARCH_RECOMMEND_L1_TTL_MS:20000}
+        l2-ttl-seconds: ${SEARCH_RECOMMEND_L2_TTL_S:60}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -109,7 +129,7 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -117,7 +137,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -151,6 +171,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

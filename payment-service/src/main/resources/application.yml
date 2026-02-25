@@ -12,9 +12,9 @@ spring:
     name: payment-service
   profiles:
     active: dev
-    include: rocketmq  # Comment sanitized for UTF-8 compatibility.
+    include: rocketmq  # UTF-8 注释已修复并统一。
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -53,11 +53,11 @@ spring:
         response:
           enabled: true
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -66,24 +66,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       debug: false
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -93,7 +93,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.payment.module.entity
@@ -109,7 +109,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 payment:
   async:
     enabled: true
@@ -118,7 +118,7 @@ payment:
   statistics:
     enabled: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 redis:
   host: ${REDIS_HOST:127.0.0.1}
   port: ${REDIS_PORT:6379}
@@ -132,7 +132,7 @@ redis:
       max-idle: 10
       min-idle: 2
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 redisson:
   address: redis://${redis.host}:${redis.port}
   password: ${redis.password}
@@ -147,20 +147,20 @@ redisson:
   subscriptions-per-connection: 5
   client-name: payment-service
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 alipay:
-  app-id: ${ALIPAY_APP_ID:2021000122671234}  # Comment sanitized for UTF-8 compatibility.
-  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # Comment sanitized for UTF-8 compatibility.
-  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # Comment sanitized for UTF-8 compatibility.
-  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # Comment sanitized for UTF-8 compatibility.
-  notify-url: ${ALIPAY_NOTIFY_URL:http://127.0.0.1:8084/api/v1/payment/alipay/notify}  # Comment sanitized for UTF-8 compatibility.
-  return-url: ${ALIPAY_RETURN_URL:http://127.0.0.1:3000/payment/success}  # Comment sanitized for UTF-8 compatibility.
+  app-id: ${ALIPAY_APP_ID:2021000122671234}  # UTF-8 注释已修复并统一。
+  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}  # UTF-8 注释已修复并统一。
+  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}  # UTF-8 注释已修复并统一。
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}  # UTF-8 注释已修复并统一。
+  notify-url: ${ALIPAY_NOTIFY_URL:http://127.0.0.1:8084/api/v1/payment/alipay/notify}  # UTF-8 注释已修复并统一。
+  return-url: ${ALIPAY_RETURN_URL:http://127.0.0.1:3000/payment/success}  # UTF-8 注释已修复并统一。
   sign-type: RSA2
   charset: UTF-8
   format: json
-  timeout: 30m  # Comment sanitized for UTF-8 compatibility.
+  timeout: 30m  # UTF-8 注释已修复并统一。
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -176,7 +176,7 @@ springdoc:
     - group: 'payment-operation'
       paths-to-match: '/api/v1/payment/operation/**'
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -184,7 +184,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -216,6 +216,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 

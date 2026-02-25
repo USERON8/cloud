@@ -5,19 +5,14 @@ import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
-import com.cloud.search.mapper.SearchRequestMapper;
-import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ElasticsearchOptimizedService;
-import com.cloud.search.service.ProductSearchService;
+import com.cloud.search.service.SearchFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,23 +32,18 @@ import java.util.List;
 @Validated
 public class ProductSearchController {
 
-    private final ProductSearchService productSearchService;
-    private final ProductDocumentRepository productDocumentRepository;
-    private final ElasticsearchOptimizedService elasticsearchOptimizedService;
-    private final SearchRequestMapper searchRequestMapper;
+    private final SearchFacadeService searchFacadeService;
 
     @Operation(summary = "Complex search", description = "Run full search by request payload")
     @PostMapping("/complex-search")
     public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
-        SearchResult<ProductDocument> result = productSearchService.searchProducts(request);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.searchProducts(request));
     }
 
     @Operation(summary = "Get filter data", description = "Return available filter data for current search")
     @PostMapping("/filters")
     public Result<SearchResult<ProductDocument>> getProductFilters(@Valid @RequestBody ProductSearchRequest request) {
-        SearchResult<ProductDocument> result = productSearchService.getProductFilters(request);
-        return Result.success("Get filters success", result);
+        return Result.success("Get filters success", searchFacadeService.getProductFilters(request));
     }
 
     @Operation(summary = "Search suggestions", description = "Get search suggestions by keyword")
@@ -61,20 +51,14 @@ public class ProductSearchController {
     public Result<List<String>> getSearchSuggestions(
             @Parameter(description = "Keyword") @RequestParam String keyword,
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
-
-        int safeSize = size == null ? 10 : size;
-        List<String> suggestions = elasticsearchOptimizedService.getSearchSuggestions(keyword, safeSize);
-        return Result.success("Get suggestions success", suggestions);
+        return Result.success("Get suggestions success", searchFacadeService.getSearchSuggestions(keyword, size));
     }
 
     @Operation(summary = "Hot keywords", description = "Get hot keywords")
     @GetMapping("/hot-keywords")
     public Result<List<String>> getHotSearchKeywords(
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
-
-        int safeSize = size == null ? 10 : size;
-        List<String> hotKeywords = elasticsearchOptimizedService.getHotSearchKeywords(safeSize);
-        return Result.success("Get hot keywords success", hotKeywords);
+        return Result.success("Get hot keywords success", searchFacadeService.getHotSearchKeywords(size));
     }
 
     @Operation(summary = "Keyword recommendations", description = "Get recommended keywords for search bar")
@@ -82,10 +66,7 @@ public class ProductSearchController {
     public Result<List<String>> getKeywordRecommendations(
             @Parameter(description = "Keyword prefix") @RequestParam(required = false) String keyword,
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
-
-        int safeSize = size == null ? 10 : size;
-        List<String> keywords = elasticsearchOptimizedService.getKeywordRecommendations(keyword, safeSize);
-        return Result.success("Get keyword recommendations success", keywords);
+        return Result.success("Get keyword recommendations success", searchFacadeService.getKeywordRecommendations(keyword, size));
     }
 
     @Operation(summary = "Basic search", description = "Search products by keyword and pagination")
@@ -96,11 +77,7 @@ public class ProductSearchController {
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "hotScore") String sortBy,
             @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String sortDir) {
-
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        Page<ProductDocument> result = productDocumentRepository.searchByKeyword(keyword, pageable);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.searchByKeyword(keyword, page, size, sortBy, sortDir));
     }
 
     @Operation(summary = "Search by category", description = "Search products by category and optional keyword")
@@ -110,14 +87,7 @@ public class ProductSearchController {
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "hotScore"));
-        Page<ProductDocument> result =
-                (keyword != null && !keyword.trim().isEmpty())
-                        ? productDocumentRepository.searchByKeywordAndCategory(keyword, categoryId, pageable)
-                        : productDocumentRepository.findByCategoryId(categoryId, pageable);
-
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.searchByCategory(categoryId, keyword, page, size));
     }
 
     @Operation(summary = "Search by shop", description = "Search products by shop and optional keyword")
@@ -127,14 +97,7 @@ public class ProductSearchController {
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "hotScore"));
-        Page<ProductDocument> result =
-                (keyword != null && !keyword.trim().isEmpty())
-                        ? productDocumentRepository.searchByKeywordAndShop(keyword, shopId, pageable)
-                        : productDocumentRepository.findByShopId(shopId, pageable);
-
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.searchByShop(shopId, keyword, page, size));
     }
 
     @Operation(summary = "Advanced search", description = "Search by keyword and price range")
@@ -145,12 +108,7 @@ public class ProductSearchController {
             @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "hotScore"));
-        BigDecimal min = minPrice != null ? minPrice : BigDecimal.ZERO;
-        BigDecimal max = maxPrice != null ? maxPrice : new BigDecimal("999999");
-        Page<ProductDocument> result = productDocumentRepository.advancedSearch(keyword, min, max, pageable);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.advancedSearch(keyword, minPrice, maxPrice, page, size));
     }
 
     @Operation(summary = "Smart search", description = "Search via optimized Elasticsearch query")
@@ -164,11 +122,9 @@ public class ProductSearchController {
             @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
             @Parameter(description = "Page number, starts from 1") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        int from = (page - 1) * size;
-        ElasticsearchOptimizedService.SearchResult result = elasticsearchOptimizedService
-                .smartProductSearch(keyword, categoryId, minPrice, maxPrice, sortField, sortOrder, from, size);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.smartSearch(
+                keyword, categoryId, minPrice, maxPrice, sortField, sortOrder, page, size
+        ));
     }
 
     @Operation(summary = "Recommended products", description = "Get recommended products")
@@ -176,10 +132,7 @@ public class ProductSearchController {
     public Result<Page<ProductDocument>> getRecommendedProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "hotScore"));
-        Page<ProductDocument> result = productDocumentRepository.findByRecommendedTrue(pageable);
-        return Result.success("Query recommended products success", result);
+        return Result.success("Query recommended products success", searchFacadeService.getRecommendedProducts(page, size));
     }
 
     @Operation(summary = "New products", description = "Get new products")
@@ -187,10 +140,7 @@ public class ProductSearchController {
     public Result<Page<ProductDocument>> getNewProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<ProductDocument> result = productDocumentRepository.findByIsNewTrue(pageable);
-        return Result.success("Query new products success", result);
+        return Result.success("Query new products success", searchFacadeService.getNewProducts(page, size));
     }
 
     @Operation(summary = "Hot products", description = "Get hot products")
@@ -198,10 +148,7 @@ public class ProductSearchController {
     public Result<Page<ProductDocument>> getHotProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "salesCount"));
-        Page<ProductDocument> result = productDocumentRepository.findByIsHotTrue(pageable);
-        return Result.success("Query hot products success", result);
+        return Result.success("Query hot products success", searchFacadeService.getHotProducts(page, size));
     }
 
     @Operation(summary = "Basic API search", description = "Basic paged search API")
@@ -210,17 +157,13 @@ public class ProductSearchController {
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.basicSearch(keyword, page, size);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.basicSearch(keyword, page, size));
     }
 
     @Operation(summary = "Filter search", description = "Search products with filter payload")
     @PostMapping("/filter")
     public Result<SearchResult<ProductDocument>> filterSearch(@Valid @RequestBody ProductFilterRequest request) {
-        ProductSearchRequest searchRequest = searchRequestMapper.toSearchRequest(request);
-        SearchResult<ProductDocument> result = productSearchService.filterSearch(searchRequest);
-        return Result.success("Search success", result);
+        return Result.success("Search success", searchFacadeService.filterSearch(request));
     }
 
     @Operation(summary = "Filter by category", description = "Filter products by category")
@@ -229,9 +172,7 @@ public class ProductSearchController {
             @Parameter(description = "Category id") @PathVariable Long categoryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.searchByCategory(categoryId, page, size);
-        return Result.success("Filter success", result);
+        return Result.success("Filter success", searchFacadeService.searchByCategoryFilter(categoryId, page, size));
     }
 
     @Operation(summary = "Filter by brand", description = "Filter products by brand")
@@ -240,9 +181,7 @@ public class ProductSearchController {
             @Parameter(description = "Brand id") @PathVariable Long brandId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.searchByBrand(brandId, page, size);
-        return Result.success("Filter success", result);
+        return Result.success("Filter success", searchFacadeService.searchByBrandFilter(brandId, page, size));
     }
 
     @Operation(summary = "Filter by price", description = "Filter products by price range")
@@ -252,9 +191,7 @@ public class ProductSearchController {
             @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.searchByPriceRange(minPrice, maxPrice, page, size);
-        return Result.success("Filter success", result);
+        return Result.success("Filter success", searchFacadeService.searchByPriceFilter(minPrice, maxPrice, page, size));
     }
 
     @Operation(summary = "Filter by shop", description = "Filter products by shop")
@@ -263,9 +200,7 @@ public class ProductSearchController {
             @Parameter(description = "Shop id") @PathVariable Long shopId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.searchByShop(shopId, page, size);
-        return Result.success("Filter success", result);
+        return Result.success("Filter success", searchFacadeService.searchByShopFilter(shopId, page, size));
     }
 
     @Operation(summary = "Combined filter", description = "Filter with multiple conditions")
@@ -281,19 +216,9 @@ public class ProductSearchController {
             @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-
-        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
-                keyword,
-                categoryId,
-                brandId,
-                minPrice,
-                maxPrice,
-                shopId,
-                sortBy,
-                sortOrder,
-                page,
-                size
-        );
-        return Result.success("Filter success", result);
+        return Result.success("Filter success", searchFacadeService.combinedSearch(
+                keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size
+        ));
     }
 }
+

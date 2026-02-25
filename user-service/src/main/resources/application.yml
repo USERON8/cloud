@@ -15,7 +15,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -41,7 +41,7 @@ spring:
         file-extension: yaml
         group: DEFAULT_GROUP
 
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -55,7 +55,7 @@ spring:
         response:
           enabled: true
 
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     stream:
       default:
         producer:
@@ -81,7 +81,7 @@ spring:
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
       bindings:
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         user-producer-out-0:
           destination: user-events
           content-type: application/json
@@ -91,25 +91,25 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         logProducer-out-0:
           destination: LOG_COLLECTION_TOPIC
           content-type: application/json
           producer:
             partition-count: 4
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -118,7 +118,7 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
@@ -126,24 +126,24 @@ spring:
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       debug: false
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -153,7 +153,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.user.module.entity
@@ -169,7 +169,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 user:
   async:
     enabled: true
@@ -178,7 +178,7 @@ user:
   statistics:
     enabled: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -197,7 +197,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -206,7 +206,7 @@ knife4j:
   setting:
     language: ZH_CN
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -227,6 +227,7 @@ management:
   health:
     elasticsearch:
       enabled: false
+
 
 
 

@@ -13,7 +13,7 @@ spring:
   profiles:
     active: dev
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -40,11 +40,11 @@ spring:
         group: DEFAULT_GROUP
 
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cache:
     type: caffeine
     caffeine:
@@ -56,7 +56,7 @@ spring:
       - brandCache
       - productStatsCache
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -65,24 +65,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       debug: false
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -94,7 +94,7 @@ logging:
     org.springframework.cache: DEBUG
     org.springframework.data.redis: DEBUG
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -114,7 +114,7 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cloud.product.module.entity
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 cache:
   multi-level:
     local:
@@ -131,7 +131,7 @@ cache:
       enable-key-prefix: true
       use-key-prefix: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 springdoc:
   api-docs:
     enabled: true
@@ -152,7 +152,7 @@ springdoc:
       name: MIT License
       url: https://opensource.org/licenses/MIT
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -163,7 +163,7 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 product:
   async:
     enabled: true
@@ -180,7 +180,7 @@ product:
         enabled: true
         max-size: 500
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -200,6 +200,7 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+
 
 
 

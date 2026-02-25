@@ -197,6 +197,36 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
     @Transactional(readOnly = true)
+    public SearchResult<ProductDocument> getRecommendedProducts(Integer page, Integer size) {
+        long start = System.currentTimeMillis();
+        Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
+        Page<ProductDocument> resultPage = productDocumentRepository.findByRecommendedTrue(pageable);
+        long took = System.currentTimeMillis() - start;
+        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SearchResult<ProductDocument> getNewProducts(Integer page, Integer size) {
+        long start = System.currentTimeMillis();
+        Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ProductDocument> resultPage = productDocumentRepository.findByIsNewTrue(pageable);
+        long took = System.currentTimeMillis() - start;
+        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SearchResult<ProductDocument> getHotProducts(Integer page, Integer size) {
+        long start = System.currentTimeMillis();
+        Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "salesCount"));
+        Page<ProductDocument> resultPage = productDocumentRepository.findByIsHotTrue(pageable);
+        long took = System.currentTimeMillis() - start;
+        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
                                                         BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
                                                         String sortBy, String sortOrder, Integer page, Integer size) {

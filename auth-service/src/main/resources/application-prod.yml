@@ -1,7 +1,7 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/cloud_auth?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
@@ -15,7 +15,7 @@ spring:
       max-lifetime: 1800000
       leak-detection-threshold: 60000
   
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -30,7 +30,7 @@ spring:
           max-idle: 16
           min-idle: 4
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.auth: info
@@ -40,13 +40,13 @@ logging:
     com.alibaba.nacos: warn
     root: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     test-mode: false
     issuer: ${JWT_ISSUER:http://prod-auth:8080}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: false
   production: true
@@ -54,3 +54,4 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+

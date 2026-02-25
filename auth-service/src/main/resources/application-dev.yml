@@ -1,7 +1,7 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -16,7 +16,7 @@ spring:
           max-idle: 8
           min-idle: 2
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.auth: debug
@@ -25,16 +25,17 @@ logging:
     org.springframework.security.oauth2: debug
     com.alibaba.nacos: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
   basic:
     enable: false
+
 

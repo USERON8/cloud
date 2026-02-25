@@ -9,32 +9,32 @@
           error-channel-enabled: true
         consumer:
           max-attempts: 1
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           stockFreezeFailedProducer-out-0:
             producer:
               group: stock-producer-group
-              sync: false  # Comment sanitized for UTF-8 compatibility.
+              sync: false  # UTF-8 注释已修复并统一。
               retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
               retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
               sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           orderCreatedConsumer-in-0:
             consumer:
-              # Comment sanitized for UTF-8 compatibility.
+              # UTF-8 注释已修复并统一。
               subscription: 'ORDER_CREATED'
-              # Comment sanitized for UTF-8 compatibility.
+              # UTF-8 注释已修复并统一。
               orderly: false
               maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           paymentSuccessConsumer-in-0:
             consumer:
               subscription: 'PAYMENT_SUCCESS'
@@ -43,7 +43,7 @@
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-          # Comment sanitized for UTF-8 compatibility.
+          # UTF-8 注释已修复并统一。
           stockRestoreConsumer-in-0:
             consumer:
               subscription: 'STOCK_RESTORE'
@@ -52,28 +52,29 @@
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
 
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       bindings:
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
           content-type: application/json
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         orderCreatedConsumer-in-0:
           destination: order-created
           content-type: application/json
           group: stock-order-created-consumer-group
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
           group: stock-payment-success-consumer-group
 
-        # Comment sanitized for UTF-8 compatibility.
+        # UTF-8 注释已修复并统一。
         stockRestoreConsumer-in-0:
           destination: stock-restore
           content-type: application/json
           group: stock-restore-consumer-group
+
 

@@ -65,6 +65,16 @@ pnpm --dir my-shop-web build
 - Prometheus：`http://127.0.0.1:19099`
 - Grafana：`http://127.0.0.1:13000`
 
+## 搜索接入策略
+
+- 前端统一调用网关搜索入口：`/api/search/**`。
+- 网关对以下接口启用 700ms 超时降级：`/api/search/smart-search`、`/api/search/search`、`/api/search/suggestions`。
+- 当 `search-service` 超时或异常时，网关自动回退到 `product-service` 只读接口，不需要前端做多服务兜底。
+- 关键词推荐建议优先调用：
+  - `/api/search/suggestions`
+  - `/api/search/hot-keywords`
+  - `/api/search/keyword-recommendations`
+
 ## 目录说明
 
 - `db/`：初始化、测试数据与归档 SQL

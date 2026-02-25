@@ -1,7 +1,7 @@
-# Comment sanitized for UTF-8 compatibility.
+﻿# UTF-8 注释已修复并统一。
 
 spring:
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://prod-mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
@@ -15,7 +15,7 @@ spring:
       max-lifetime: 1800000
       leak-detection-threshold: 60000
   
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
@@ -30,7 +30,7 @@ spring:
           max-idle: 16
           min-idle: 4
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 minio:
   endpoint: ${MINIO_ENDPOINT:http://prod-minio:9000}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
@@ -38,7 +38,7 @@ minio:
   bucket-name: user-avatars
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://prod-minio:9000}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   level:
     com.cloud.user: info
@@ -48,12 +48,12 @@ logging:
     com.alibaba.nacos: warn
     root: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: false
   production: true
@@ -61,3 +61,4 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+

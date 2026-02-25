@@ -63,12 +63,20 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyAuthority('SCOPE_product:read','SCOPE_user:read','SCOPE_read') or hasAnyRole('USER','MERCHANT','ADMIN')")
     @Operation(summary = "Search products", description = "Search products by name")
     public Result<List<ProductVO>> findByName(
             @Parameter(description = "Name") @RequestParam @NotNull String name) {
 
         return Result.success("Query success", productService.searchProductsByName(name, null));
+    }
+
+    @GetMapping("/suggestions")
+    @Operation(summary = "Get product suggestions", description = "Get product keyword suggestions for fallback search")
+    public Result<List<String>> getSuggestions(
+            @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
+
+        return Result.success("Query success", productService.getProductSuggestions(keyword, size));
     }
 
     @GetMapping("/{id}")

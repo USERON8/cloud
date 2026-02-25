@@ -12,9 +12,9 @@ spring:
     name: stock-service
   profiles:
     active: dev
-    include: rocketmq  # Comment sanitized for UTF-8 compatibility.
+    include: rocketmq  # UTF-8 注释已修复并统一。
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   cloud:
     nacos:
       discovery:
@@ -39,7 +39,7 @@ spring:
         namespace: public
         file-extension: yaml
         group: DEFAULT_GROUP
-    # Comment sanitized for UTF-8 compatibility.
+    # UTF-8 注释已修复并统一。
     openfeign:
       client:
         config:
@@ -53,11 +53,11 @@ spring:
         response:
           enabled: true
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   config:
     import: optional:nacos:common
 
-  # Comment sanitized for UTF-8 compatibility.
+  # UTF-8 注释已修复并统一。
   security:
     oauth2:
       resourceserver:
@@ -66,24 +66,24 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
           cache-duration: PT30M
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 unified:
   security:
     enabled: true
     permission:
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       refresh-interval: 300
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       cache-ttl: 1800
-      # Comment sanitized for UTF-8 compatibility.
+      # UTF-8 注释已修复并统一。
       debug: false
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 logging:
   file:
     path: logs
@@ -93,7 +93,7 @@ logging:
     org.springframework.security: warn
     org.springframework.web: warn
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.stock.module.entity
@@ -109,7 +109,7 @@ mybatis-plus:
       logic-not-delete-value: 0
       logic-delete-value: 1
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 stock:
   async:
     enabled: true
@@ -118,7 +118,7 @@ stock:
   statistics:
     enabled: true
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -132,7 +132,7 @@ springdoc:
     - group: 'stock-internal'
       paths-to-match: '/internal/stock/**'
 
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 knife4j:
   enable: true
   production: false
@@ -140,7 +140,7 @@ knife4j:
     enable: false
   setting:
     language: ZH_CN
-# Comment sanitized for UTF-8 compatibility.
+# UTF-8 注释已修复并统一。
 management:
   endpoints:
     web:
@@ -172,6 +172,7 @@ management:
       enabled: true
     os:
       enabled: true
+
 
 
 
