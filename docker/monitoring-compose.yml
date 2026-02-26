@@ -63,7 +63,7 @@ services:
     environment:
       - BASE_URL=${K6_BASE_URL:-http://host.docker.internal:18080}
       - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
-      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=false
       - K6_PROMETHEUS_RW_STALE_MARKERS=true
       - AUTH_TOKEN=${AUTH_TOKEN:-}
       - AUTH_USER_ID=${AUTH_USER_ID:-}

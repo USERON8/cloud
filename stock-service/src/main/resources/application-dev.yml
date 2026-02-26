@@ -1,9 +1,15 @@
 ﻿spring:
+  redis:
+    host: 127.0.0.1
+    port: 16379
+    password: root
+    database: 5
+    timeout: 5000ms
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    url: jdbc:mysql://127.0.0.1:13306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -12,11 +18,11 @@
       max-lifetime: 1800000
   data:
     redis:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
-      database: ${REDIS_DATABASE:5}
-      password: ${REDIS_PASSWORD:root}
-      timeout: ${REDIS_TIMEOUT:5000ms}
+      host: 127.0.0.1
+      port: 16379
+      database: 5
+      password: root
+      timeout: 5000ms
       lettuce:
         pool:
           max-active: 16
@@ -38,6 +44,9 @@ knife4j:
   production: false
   basic:
     enable: false
+
+
+
 
 
 

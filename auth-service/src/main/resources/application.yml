@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
@@ -32,12 +32,13 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
+        enabled: false
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        import-check:
+          enabled: false
     stream:
       default:
         consumer:
@@ -57,8 +58,6 @@ spring:
           destination: LOG_AUTH_TOPIC
           content-type: application/json
           group: auth-log-group
-  config:
-    import: optional:nacos:common
   security:
     oauth2:
       client:
@@ -185,13 +184,3 @@ management:
       enabled: true
     os:
       enabled: true
-
-
-
-
-
-
-
-
-
-

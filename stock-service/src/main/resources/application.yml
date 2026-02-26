@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8085}
   tomcat:
     threads:
@@ -31,12 +31,13 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
+        enabled: false
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
         username: nacos
         password: nacos
         namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        import-check:
+          enabled: false
     openfeign:
       client:
         config:
@@ -49,8 +50,6 @@ spring:
           enabled: true
         response:
           enabled: true
-  config:
-    import: optional:nacos:common
   security:
     oauth2:
       resourceserver:
@@ -147,12 +146,3 @@ management:
       enabled: true
     os:
       enabled: true
-
-
-
-
-
-
-
-
-

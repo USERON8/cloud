@@ -1,11 +1,17 @@
 ﻿spring:
+  redis:
+    host: 127.0.0.1
+    port: 16379
+    password: root
+    database: 6
+    timeout: 5000ms
   data:
     redis:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:root}
-      database: ${REDIS_DATABASE:6}
-      timeout: ${REDIS_TIMEOUT:5000ms}
+      host: 127.0.0.1
+      port: 16379
+      password: root
+      database: 6
+      timeout: 5000ms
       lettuce:
         pool:
           max-active: 16
@@ -27,6 +33,9 @@ knife4j:
   production: false
   basic:
     enable: false
+
+
+
 
 
 

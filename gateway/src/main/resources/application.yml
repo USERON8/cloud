@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8080}
   tomcat:
     threads:
@@ -34,6 +34,7 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
+        enabled: false
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
         username: nacos
         password: nacos
@@ -43,14 +44,16 @@ spring:
         import-check:
           enabled: false
     gateway:
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Expose-Headers, RETAIN_FIRST
-      discovery:
-        locator:
-          enabled: false
-          lower-case-service-id: true
-      csrf:
-        enabled: true
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Expose-Headers, RETAIN_FIRST
+          discovery:
+            locator:
+              enabled: false
+              lower-case-service-id: true
+          csrf:
+            enabled: true
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -188,14 +191,3 @@ knife4j:
         search-service:
           group-name: search-service
           api-docs-path: /v3/api-docs
-
-
-
-
-
-
-
-
-
-
-

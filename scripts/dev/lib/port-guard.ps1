@@ -10,19 +10,19 @@ function Get-PortOwners {
     try {
         $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop |
                 Select-Object -ExpandProperty OwningProcess -Unique
-        foreach ($pid in $connections) {
+        foreach ($procId in $connections) {
             try {
-                $proc = Get-Process -Id $pid -ErrorAction Stop
+                $proc = Get-Process -Id $procId -ErrorAction Stop
                 $owners += [pscustomobject]@{
                     Port        = $Port
-                    Pid         = $pid
+                    Pid         = $procId
                     ProcessName = $proc.ProcessName
                     Source      = "Get-NetTCPConnection"
                 }
             } catch {
                 $owners += [pscustomobject]@{
                     Port        = $Port
-                    Pid         = $pid
+                    Pid         = $procId
                     ProcessName = "unknown"
                     Source      = "Get-NetTCPConnection"
                 }
@@ -42,19 +42,19 @@ function Get-PortOwners {
             if ($text -notmatch "LISTENING\s+(\d+)$") {
                 continue
             }
-            $pid = [int]$matches[1]
+            $procId = [int]$matches[1]
             try {
-                $proc = Get-Process -Id $pid -ErrorAction Stop
+                $proc = Get-Process -Id $procId -ErrorAction Stop
                 $owners += [pscustomobject]@{
                     Port        = $Port
-                    Pid         = $pid
+                    Pid         = $procId
                     ProcessName = $proc.ProcessName
                     Source      = "netstat"
                 }
             } catch {
                 $owners += [pscustomobject]@{
                     Port        = $Port
-                    Pid         = $pid
+                    Pid         = $procId
                     ProcessName = "unknown"
                     Source      = "netstat"
                 }

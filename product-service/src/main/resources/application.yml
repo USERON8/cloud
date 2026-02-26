@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8084}
   tomcat:
     threads:
@@ -30,14 +30,13 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
+        enabled: false
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
         username: nacos
         password: nacos
         namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
-  config:
-    import: optional:nacos:common
+        import-check:
+          enabled: false
   cache:
     type: caffeine
     caffeine:
@@ -170,12 +169,3 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-
-
-
-
-
-
-
-
-

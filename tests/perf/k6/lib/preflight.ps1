@@ -2,13 +2,13 @@ Set-StrictMode -Version Latest
 
 function Test-TcpPortOpen {
     param(
-        [Parameter(Mandatory = $true)][string]$Host,
+        [Parameter(Mandatory = $true)][string]$HostName,
         [Parameter(Mandatory = $true)][int]$Port,
         [int]$TimeoutMs = 1500
     )
     try {
         $client = New-Object System.Net.Sockets.TcpClient
-        $async = $client.BeginConnect($Host, $Port, $null, $null)
+        $async = $client.BeginConnect($HostName, $Port, $null, $null)
         if (-not $async.AsyncWaitHandle.WaitOne($TimeoutMs, $false)) {
             $client.Close()
             return $false
@@ -64,7 +64,7 @@ function Assert-K6Preflight {
 
     $closedPorts = @()
     foreach ($port in $requiredPorts) {
-        if (-not (Test-TcpPortOpen -Host "127.0.0.1" -Port $port)) {
+        if (-not (Test-TcpPortOpen -HostName "127.0.0.1" -Port $port)) {
             $closedPorts += $port
         }
     }

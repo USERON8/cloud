@@ -9,6 +9,10 @@ const SMOKE_DURATION = __ENV.SMOKE_DURATION || "60s";
 const SMOKE_SLEEP_SECONDS = Number(__ENV.SMOKE_SLEEP_SECONDS || 0.2);
 const SMOKE_P95_THRESHOLD_MS = Number(__ENV.SMOKE_P95_THRESHOLD_MS || 1200);
 const SMOKE_ERROR_RATE_THRESHOLD = Number(__ENV.SMOKE_ERROR_RATE_THRESHOLD || 0.05);
+const REACHABLE_RESPONSE_CALLBACK = http.expectedStatuses({ min: 200, max: 499 });
+const AUTH_USERNAME = String(__ENV.AUTH_USERNAME || "").trim();
+const AUTH_PASSWORD = String(__ENV.AUTH_PASSWORD || "").trim();
+const AUTH_USER_TYPE = String(__ENV.AUTH_USER_TYPE || "USER").trim();
 
 const smokeLatency = new Trend("services_smoke_latency_ms", true);
 const smokeErrorRate = new Rate("services_smoke_error_rate");
@@ -35,12 +39,13 @@ const defaultTargets = [
   `${origin.scheme}://${origin.host}:8085/actuator/health`,
   `${origin.scheme}://${origin.host}:8086/actuator/health`,
   `${origin.scheme}://${origin.host}:8087/actuator/health`,
-  `${BASE_URL}/api/query/users?username=admin`,
-  `${BASE_URL}/api/product?page=1&size=2`,
-  `${BASE_URL}/api/orders?page=1&size=2`,
-  `${BASE_URL}/api/payments?page=1&size=2`,
-  `${BASE_URL}/api/stocks?page=1&size=2`,
-  `${BASE_URL}/api/search/basic?keyword=demo&page=0&size=2`,
+  `${BASE_URL}/auth-service/v3/api-docs`,
+  `${BASE_URL}/user-service/v3/api-docs`,
+  `${BASE_URL}/order-service/v3/api-docs`,
+  `${BASE_URL}/payment-service/v3/api-docs`,
+  `${BASE_URL}/stock-service/v3/api-docs`,
+  `${origin.scheme}://${origin.host}:8084/api/product/search?name=demo`,
+  `${origin.scheme}://${origin.host}:8087/api/search/basic?keyword=demo&page=0&size=2`,
 ];
 
 const targetRaw = String(__ENV.SERVICE_TARGETS || "").trim();
@@ -64,8 +69,106 @@ export const options = {
   },
 };
 
-export default function run() {
-  const requests = targets.map((url) => ["GET", url, null, { timeout: REQUEST_TIMEOUT }]);
+function readTokenFromResponse(response) {
+  if (!response || response.status < 200 || response.status >= 300) {
+    return "";
+  }
+  try {
+    const payload = response.json();
+    return (
+      payload?.data?.access_token ||
+      payload?.data?.accessToken ||
+      payload?.data?.token ||
+      ""
+    );
+  } catch (error) {
+    return "";
+  }
+}
+
+function buildRegisterPayload(username, password, userType) {
+  const timestamp = Date.now().toString();
+  return JSON.stringify({
+    username,
+    password,
+    phone: `13${timestamp.slice(-9)}`,
+    nickname: `k6_${timestamp.slice(-6)}`,
+    userType: userType || "USER",
+  });
+}
+
+function loginWithCredentials(username, password, userType) {
+  const loginPayload = JSON.stringify({
+    username,
+    password,
+    userType: userType || "USER",
+  });
+  const loginResp = http.post(`${BASE_URL}/auth/sessions`, loginPayload, {
+    timeout: REQUEST_TIMEOUT,
+    headers: { "Content-Type": "application/json" },
+    responseCallback: REACHABLE_RESPONSE_CALLBACK,
+  });
+  return readTokenFromResponse(loginResp);
+}
+
+export function setup() {
+  const presetToken = String(__ENV.AUTH_TOKEN || "").trim();
+  if (presetToken) {
+    return { token: presetToken };
+  }
+
+  if (!AUTH_USERNAME || !AUTH_PASSWORD) {
+    return { token: "" };
+  }
+
+  let token = loginWithCredentials(AUTH_USERNAME, AUTH_PASSWORD, AUTH_USER_TYPE);
+  if (token) {
+    return { token };
+  }
+
+  const registerResp = http.post(
+    `${BASE_URL}/auth/users/register`,
+    buildRegisterPayload(AUTH_USERNAME, AUTH_PASSWORD, AUTH_USER_TYPE),
+    {
+      timeout: REQUEST_TIMEOUT,
+      headers: { "Content-Type": "application/json" },
+      responseCallback: REACHABLE_RESPONSE_CALLBACK,
+    }
+  );
+
+  token = readTokenFromResponse(registerResp);
+  if (token) {
+    return { token };
+  }
+
+  const retryResp = http.post(`${BASE_URL}/auth/sessions`, JSON.stringify({
+    username: AUTH_USERNAME,
+    password: AUTH_PASSWORD,
+    userType: AUTH_USER_TYPE,
+  }), {
+    timeout: REQUEST_TIMEOUT,
+    headers: { "Content-Type": "application/json" },
+    responseCallback: REACHABLE_RESPONSE_CALLBACK,
+  });
+
+  return { token: readTokenFromResponse(retryResp) };
+}
+
+export default function run(data) {
+  const bearerToken = String(data?.token || "").trim();
+  const requests = targets.map((url) => [
+    "GET",
+    url,
+    null,
+    {
+      timeout: REQUEST_TIMEOUT,
+      responseCallback: REACHABLE_RESPONSE_CALLBACK,
+      headers:
+        bearerToken && url.includes("/api/")
+          ? { Authorization: `Bearer ${bearerToken}` }
+          : undefined,
+    },
+  ]);
   const responses = http.batch(requests);
 
   responses.forEach((response, idx) => {

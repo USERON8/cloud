@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8082}
   tomcat:
     threads:
@@ -32,12 +32,13 @@ spring:
           traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
           singleton: ${SERVICE_SINGLETON:false}
       config:
+        enabled: false
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
         username: nacos
         password: nacos
         namespace: public
-        file-extension: yaml
-        group: DEFAULT_GROUP
+        import-check:
+          enabled: false
     openfeign:
       client:
         config:
@@ -88,8 +89,6 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-  config:
-    import: optional:nacos:common
   servlet:
     multipart:
       max-file-size: 10MB
@@ -191,12 +190,3 @@ management:
   health:
     elasticsearch:
       enabled: false
-
-
-
-
-
-
-
-
-

@@ -1,169 +1,170 @@
 ﻿spring:
   cloud:
     gateway:
-      routes:
-        - id: oauth2-endpoints
-          uri: lb://auth-service
-          order: 10
-          predicates:
-            - Path=/oauth2/**
-          filters:
-            - PreserveHostHeader
+      server:
+        webflux:
+          routes:
+            - id: oauth2-endpoints
+              uri: lb://auth-service
+              order: 10
+              predicates:
+                - Path=/oauth2/**
+              filters:
+                - PreserveHostHeader
 
-        - id: oidc-endpoints
-          uri: lb://auth-service
-          order: 10
-          predicates:
-            - Path=/.well-known/**,/connect/**,/userinfo
-          filters:
-            - PreserveHostHeader
+            - id: oidc-endpoints
+              uri: lb://auth-service
+              order: 10
+              predicates:
+                - Path=/.well-known/**,/connect/**,/userinfo
+              filters:
+                - PreserveHostHeader
 
-        - id: auth-service-api
-          uri: lb://auth-service
-          order: 10
-          predicates:
-            - Path=/auth/**
+            - id: auth-service-api
+              uri: lb://auth-service
+              order: 10
+              predicates:
+                - Path=/auth/**
 
-        - id: user-service-api-v2
-          uri: lb://user-service
-          order: 20
-          predicates:
-            - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/user/profile/**,/api/user/notification/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
+            - id: user-service-api-v2
+              uri: lb://user-service
+              order: 20
+              predicates:
+                - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/user/profile/**,/api/user/notification/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
 
-        - id: user-service-api-legacy
-          uri: lb://user-service
-          order: 25
-          predicates:
-            - Path=/users/**,/merchant/**,/admin/**
+            - id: user-service-api-legacy
+              uri: lb://user-service
+              order: 25
+              predicates:
+                - Path=/users/**,/merchant/**,/admin/**
 
-        - id: product-service-api-v2
-          uri: lb://product-service
-          order: 20
-          predicates:
-            - Path=/api/product,/api/product/**,/api/category,/api/category/**
+            - id: product-service-api-v2
+              uri: lb://product-service
+              order: 20
+              predicates:
+                - Path=/api/product,/api/product/**,/api/category,/api/category/**
 
-        - id: product-service-api-legacy
-          uri: lb://product-service
-          order: 25
-          predicates:
-            - Path=/product/**,/category/**,/brand/**
+            - id: product-service-api-legacy
+              uri: lb://product-service
+              order: 25
+              predicates:
+                - Path=/product/**,/category/**,/brand/**
 
-        - id: order-service-api-v2
-          uri: lb://order-service
-          order: 20
-          predicates:
-            - Path=/api/orders/**,/api/v1/refund/**
+            - id: order-service-api-v2
+              uri: lb://order-service
+              order: 20
+              predicates:
+                - Path=/api/orders/**,/api/v1/refund/**
 
-        - id: order-service-api-legacy
-          uri: lb://order-service
-          order: 25
-          predicates:
-            - Path=/order/**,/cart/**
+            - id: order-service-api-legacy
+              uri: lb://order-service
+              order: 25
+              predicates:
+                - Path=/order/**,/cart/**
 
-        - id: payment-service-api-v2
-          uri: lb://payment-service
-          order: 20
-          predicates:
-            - Path=/api/payments/**,/api/v1/payment/alipay/**
+            - id: payment-service-api-v2
+              uri: lb://payment-service
+              order: 20
+              predicates:
+                - Path=/api/payments/**,/api/v1/payment/alipay/**
 
-        - id: payment-service-api-legacy
-          uri: lb://payment-service
-          order: 25
-          predicates:
-            - Path=/payment/**
+            - id: payment-service-api-legacy
+              uri: lb://payment-service
+              order: 25
+              predicates:
+                - Path=/payment/**
 
-        - id: stock-service-api-v2
-          uri: lb://stock-service
-          order: 20
-          predicates:
-            - Path=/api/stocks/**
+            - id: stock-service-api-v2
+              uri: lb://stock-service
+              order: 20
+              predicates:
+                - Path=/api/stocks/**
 
-        - id: stock-service-api-legacy
-          uri: lb://stock-service
-          order: 25
-          predicates:
-            - Path=/stock/**
+            - id: stock-service-api-legacy
+              uri: lb://stock-service
+              order: 25
+              predicates:
+                - Path=/stock/**
 
-        - id: search-service-api-v2
-          uri: lb://search-service
-          order: 20
-          predicates:
-            - Path=/api/search,/api/search/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: search-route
-                fallbackUri: forward:/gateway/fallback/search
-                statusCodes:
-                  - 500
-                  - 502
-                  - 503
-                  - 504
+            - id: search-service-api-v2
+              uri: lb://search-service
+              order: 20
+              predicates:
+                - Path=/api/search,/api/search/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: search-route
+                    fallbackUri: forward:/gateway/fallback/search
+                    statusCodes:
+                      - 500
+                      - 502
+                      - 503
+                      - 504
 
-        - id: search-service-api-legacy
-          uri: lb://search-service
-          order: 25
-          predicates:
-            - Path=/search/**
+            - id: search-service-api-legacy
+              uri: lb://search-service
+              order: 25
+              predicates:
+                - Path=/search/**
 
-        - id: auth-service-doc
-          uri: lb://auth-service
-          order: 50
-          predicates:
-            - Path=/auth-service/doc.html,/auth-service/webjars/**,/auth-service/swagger-ui/**,/auth-service/v3/api-docs/**,/auth-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: auth-service-doc
+              uri: lb://auth-service
+              order: 50
+              predicates:
+                - Path=/auth-service/doc.html,/auth-service/webjars/**,/auth-service/swagger-ui/**,/auth-service/v3/api-docs/**,/auth-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: user-service-doc
-          uri: lb://user-service
-          order: 50
-          predicates:
-            - Path=/user-service/doc.html,/user-service/webjars/**,/user-service/swagger-ui/**,/user-service/v3/api-docs/**,/user-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: user-service-doc
+              uri: lb://user-service
+              order: 50
+              predicates:
+                - Path=/user-service/doc.html,/user-service/webjars/**,/user-service/swagger-ui/**,/user-service/v3/api-docs/**,/user-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: product-service-doc
-          uri: lb://product-service
-          order: 50
-          predicates:
-            - Path=/product-service/doc.html,/product-service/webjars/**,/product-service/swagger-ui/**,/product-service/v3/api-docs/**,/product-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: product-service-doc
+              uri: lb://product-service
+              order: 50
+              predicates:
+                - Path=/product-service/doc.html,/product-service/webjars/**,/product-service/swagger-ui/**,/product-service/v3/api-docs/**,/product-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: order-service-doc
-          uri: lb://order-service
-          order: 50
-          predicates:
-            - Path=/order-service/doc.html,/order-service/webjars/**,/order-service/swagger-ui/**,/order-service/v3/api-docs/**,/order-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: order-service-doc
+              uri: lb://order-service
+              order: 50
+              predicates:
+                - Path=/order-service/doc.html,/order-service/webjars/**,/order-service/swagger-ui/**,/order-service/v3/api-docs/**,/order-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: payment-service-doc
-          uri: lb://payment-service
-          order: 50
-          predicates:
-            - Path=/payment-service/doc.html,/payment-service/webjars/**,/payment-service/swagger-ui/**,/payment-service/v3/api-docs/**,/payment-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: payment-service-doc
+              uri: lb://payment-service
+              order: 50
+              predicates:
+                - Path=/payment-service/doc.html,/payment-service/webjars/**,/payment-service/swagger-ui/**,/payment-service/v3/api-docs/**,/payment-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: stock-service-doc
-          uri: lb://stock-service
-          order: 50
-          predicates:
-            - Path=/stock-service/doc.html,/stock-service/webjars/**,/stock-service/swagger-ui/**,/stock-service/v3/api-docs/**,/stock-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
+            - id: stock-service-doc
+              uri: lb://stock-service
+              order: 50
+              predicates:
+                - Path=/stock-service/doc.html,/stock-service/webjars/**,/stock-service/swagger-ui/**,/stock-service/v3/api-docs/**,/stock-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-        - id: search-service-doc
-          uri: lb://search-service
-          order: 50
-          predicates:
-            - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
-          filters:
-            - StripPrefix=1
-      discovery:
-        locator:
-          enabled: false
-          lower-case-service-id: true
+            - id: search-service-doc
+              uri: lb://search-service
+              order: 50
+              predicates:
+                - Path=/search-service/doc.html,/search-service/webjars/**,/search-service/swagger-ui/**,/search-service/v3/api-docs/**,/search-service/swagger-resources/**
+              filters:
+                - StripPrefix=1
 
-
+          discovery:
+            locator:
+              enabled: false
+              lower-case-service-id: true
