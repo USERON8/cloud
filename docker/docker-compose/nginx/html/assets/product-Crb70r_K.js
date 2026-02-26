@@ -1,1 +1,0 @@
-import{t as e}from"./http-D8xhHfNR.js";function t(t={}){return e.get(`/api/product`,{params:t})}function n(t,n){return e.patch(`/api/product/${t}/status`,null,{params:{status:n}})}function r(t){return e.post(`/api/product`,t)}function i(t,n){return e.put(`/api/product/${t}`,n)}export{n as i,t as n,i as r,r as t};

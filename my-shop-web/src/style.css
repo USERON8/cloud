@@ -7,6 +7,7 @@
   --text-muted: #687288;
   --accent: #246bff;
   --shadow-soft: 0 18px 40px rgba(37, 52, 85, 0.12);
+  --radius-lg: 22px;
   font-family: 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif;
   line-height: 1.4;
   font-weight: 400;
@@ -31,6 +32,8 @@ body,
 
 body {
   margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
   color: var(--text-main);
   background:
     radial-gradient(circle at 12% -10%, rgba(255, 255, 255, 0.85) 0%, transparent 42%),
@@ -43,7 +46,7 @@ body {
   border: 1px solid var(--panel-border);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
 }
 

@@ -28,7 +28,7 @@ onMounted(async () => {
     const payload = decodePayload(raw)
     setSessionFromLogin(payload)
     ElMessage.success('GitHub authentication succeeded.')
-    await router.replace('/home')
+    await router.replace('/app/home')
   } catch (error) {
     failed.value = true
     const message = error instanceof Error ? error.message : 'Failed to process GitHub login result'

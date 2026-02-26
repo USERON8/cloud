@@ -63,6 +63,7 @@ export interface ProductUpsertPayload {
 export interface SearchProductDocument {
   productId?: number
   shopId?: number
+  shopName?: string
   productName?: string
   price?: number
   stockQuantity?: number

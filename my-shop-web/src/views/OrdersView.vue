@@ -409,16 +409,31 @@ onMounted(() => {
 <template>
   <section class="glass-card panel">
     <div class="header">
-      <h3>{{ isManagementMode ? 'Order Management' : 'Orders' }}</h3>
+      <h3>
+        <span class="title-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h10l3 3v11H6V5Zm10 0v3h3M9 12h6M9 15h6" /></svg>
+          {{ isManagementMode ? 'Order Management' : 'Orders' }}
+        </span>
+      </h3>
       <div class="header-actions">
-        <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/orders/manage">
+        <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/app/orders/manage">
           <el-button round type="success">Open Management</el-button>
         </router-link>
-        <router-link v-if="isManagementMode" class="inline-link" to="/orders">
+        <router-link v-if="isManagementMode" class="inline-link" to="/app/orders">
           <el-button round>Back to Orders</el-button>
         </router-link>
-        <el-button :loading="exportLoading" round @click="exportCsv">Export CSV</el-button>
-        <el-button :loading="loading" round @click="loadOrders">Refresh</el-button>
+        <el-button :loading="exportLoading" round @click="exportCsv">
+          <span class="btn-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M8 10l4 4 4-4M5 18h14" /></svg>
+            Export CSV
+          </span>
+        </el-button>
+        <el-button :loading="loading" round @click="loadOrders">
+          <span class="btn-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6v5h-5M5 18v-5h5M19 11a7 7 0 0 0-12-3M5 13a7 7 0 0 0 12 3" /></svg>
+            Refresh
+          </span>
+        </el-button>
       </div>
     </div>
 
@@ -539,7 +554,7 @@ onMounted(() => {
 
 <style scoped>
 .panel {
-  padding: 16px;
+  padding: clamp(0.9rem, 1.2vw, 1.1rem);
 }
 
 .header {
@@ -552,11 +567,14 @@ onMounted(() => {
 
 .header h3 {
   margin: 0;
+  font-size: clamp(1.02rem, 1.25vw, 1.28rem);
 }
 
 .header-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .inline-link {
@@ -568,6 +586,7 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
+  align-items: center;
 }
 
 .batch-actions {
@@ -575,12 +594,36 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
+  align-items: center;
 }
 
 .pager {
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
+}
+
+.title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.title-wrap svg,
+.btn-wrap svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.btn-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 @media (max-width: 900px) {

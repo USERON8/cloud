@@ -1,0 +1,1 @@
+import{t as e}from"./http-CgWw7_UJ.js";function t(t){return e.post(`/auth/sessions`,t)}function n(){return e.delete(`/auth/sessions`)}export{n,t};

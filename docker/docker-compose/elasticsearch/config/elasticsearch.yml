@@ -8,8 +8,19 @@ network.host: 0.0.0.0
 http.port: 9200
 transport.port: 9300
 discovery.type: single-node
-xpack.security.enabled: false-
+xpack.security.enabled: false
 # gateway.recover_after_nodes: 1
 http.cors.enabled: true
 http.cors.allow-origin: "*"
 http.cors.allow-credentials: true
+
+# Query/index tuning for single-node local development.
+indices.query.bool.max_clause_count: 4096
+search.max_buckets: 200000
+indices.memory.index_buffer_size: 20%
+indices.fielddata.cache.size: 20%
+thread_pool.search.queue_size: 2000
+thread_pool.write.queue_size: 1000
+cluster.routing.allocation.disk.watermark.low: 92%
+cluster.routing.allocation.disk.watermark.high: 95%
+cluster.routing.allocation.disk.watermark.flood_stage: 97%

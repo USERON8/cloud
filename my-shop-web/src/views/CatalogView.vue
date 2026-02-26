@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -378,8 +378,22 @@ function onDialogClosed(): void {
 }
 
 onMounted(() => {
+  if (typeof route.query.keyword === 'string' && route.query.keyword.trim()) {
+    params.name = route.query.keyword.trim()
+  }
   void loadProducts()
 })
+
+watch(
+  () => route.query.keyword,
+  (value) => {
+    if (typeof value === 'string' && value.trim() !== params.name) {
+      params.name = value.trim()
+      params.page = 1
+      void loadProducts()
+    }
+  }
+)
 
 onBeforeUnmount(() => {
   if (blurTimer.value != null) {
@@ -394,7 +408,14 @@ onBeforeUnmount(() => {
 <template>
   <section class="glass-card panel">
     <div class="header">
-      <h3>{{ isManagementMode ? 'Product Management' : 'Product Catalog' }}</h3>
+      <h3>
+        <span class="title-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7.5 12 4l8 3.5-8 3.5L4 7.5Zm0 3.5 8 3.5 8-3.5M4 14.5 12 18l8-3.5" />
+          </svg>
+          {{ isManagementMode ? 'Product Management' : 'Product Catalog' }}
+        </span>
+      </h3>
       <div class="search-row">
         <el-autocomplete
           v-model="params.name"
@@ -406,11 +427,16 @@ onBeforeUnmount(() => {
           @select="onSuggestionSelect"
           @keyup.enter="onSearch"
         />
-        <el-button round type="primary" @click="onSearch">Search</el-button>
-        <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/catalog/manage">
+        <el-button round type="primary" @click="onSearch">
+          <span class="btn-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5.4 12.4L20 20" /></svg>
+            Search
+          </span>
+        </el-button>
+        <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/app/catalog/manage">
           <el-button round type="success">Open Management</el-button>
         </router-link>
-        <router-link v-if="isManagementMode" class="inline-link" to="/catalog">
+        <router-link v-if="isManagementMode" class="inline-link" to="/app/catalog">
           <el-button round>Back to Catalog</el-button>
         </router-link>
         <el-button v-if="canManageProducts" round type="success" @click="onCreate">New Product</el-button>
@@ -544,7 +570,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .panel {
-  padding: 16px;
+  padding: clamp(0.9rem, 1.2vw, 1.1rem);
 }
 
 .header {
@@ -557,12 +583,15 @@ onBeforeUnmount(() => {
 
 .header h3 {
   margin: 0;
+  font-size: clamp(1.02rem, 1.25vw, 1.28rem);
 }
 
 .search-row {
   display: flex;
   gap: 8px;
   width: min(880px, 100%);
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .search-row :deep(.el-autocomplete) {
@@ -596,6 +625,29 @@ onBeforeUnmount(() => {
 
 .keyword-chip {
   cursor: pointer;
+}
+
+.title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.title-wrap svg,
+.btn-wrap svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.btn-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .inline-link {

@@ -3,6 +3,18 @@
   mysql:
     image: mysql:9.3.0
     container_name: cloud-mysql
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=600
+      - --innodb_buffer_pool_size=512M
+      - --innodb_buffer_pool_instances=2
+      - --innodb_log_buffer_size=64M
+      - --innodb_flush_log_at_trx_commit=2
+      - --thread_cache_size=64
+      - --table_open_cache=2048
+      - --skip-log-bin
     networks:
       service_net:
         ipv4_address: 172.28.0.10
@@ -124,7 +136,7 @@
       interval: 10s
       timeout: 5s
       retries: 12
-  # 兼容性注释已标准化。
+  # 兼容性注释已标准化。 
   namesrv:
     image: apache/rocketmq:5.3.2
     container_name: cloud-rmq-namesrv
@@ -241,11 +253,14 @@
       - bootstrap.memory_lock=true  # 兼容性注释已标准化。
       - xpack.security.enabled=false  # 兼容性注释已标准化。
       - http.cors.enabled=true
-      - http.cors.allow-origin=" *"
+      - http.cors.allow-origin="*"
     volumes:
       - type: bind
         source: ./docker-compose/elasticsearch/data
         target: /usr/share/elasticsearch/data
+      - type: bind
+        source: ./docker-compose/elasticsearch/config/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
       - type: bind
         source: ./docker-compose/elasticsearch/plugins
         target: /usr/share/elasticsearch/plugins

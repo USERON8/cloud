@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 async function goHome(): Promise<void> {
-  await router.replace('/home')
+  await router.replace('/market')
 }
 </script>
 

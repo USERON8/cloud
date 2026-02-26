@@ -6,6 +6,16 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/',
+      redirect: '/market'
+    },
+    {
+      path: '/market',
+      name: 'market',
+      component: () => import('../views/MarketplaceView.vue'),
+      meta: { title: 'Marketplace', public: true }
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
@@ -30,49 +40,55 @@ const router = createRouter({
       meta: { title: 'GitHub Error', public: true }
     },
     {
-      path: '/',
+      path: '/app',
       component: () => import('../views/AppLayout.vue'),
       meta: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] },
       children: [
-        { path: '', redirect: '/home' },
+        { path: '', redirect: '/app/home' },
         {
-          path: '/home',
+          path: 'home',
           name: 'home',
           component: () => import('../views/HomeView.vue'),
           meta: { title: 'Dashboard', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
         },
         {
-          path: '/catalog',
+          path: 'catalog',
           name: 'catalog',
           component: () => import('../views/CatalogView.vue'),
           meta: { title: 'Products', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[], manageProduct: false }
         },
         {
-          path: '/catalog/manage',
+          path: 'catalog/manage',
           name: 'catalog-manage',
           component: () => import('../views/CatalogView.vue'),
           meta: { title: 'Product Admin', roles: ['MERCHANT', 'ADMIN'] as UserRole[], manageProduct: true }
         },
         {
-          path: '/orders',
+          path: 'orders',
           name: 'orders',
           component: () => import('../views/OrdersView.vue'),
           meta: { title: 'Orders', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[], manageOrder: false }
         },
         {
-          path: '/orders/manage',
+          path: 'orders/manage',
           name: 'orders-manage',
           component: () => import('../views/OrdersView.vue'),
           meta: { title: 'Order Admin', roles: ['MERCHANT', 'ADMIN'] as UserRole[], manageOrder: true }
         },
         {
-          path: '/profile',
+          path: 'profile',
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),
           meta: { title: 'Profile', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
         }
       ]
-    }
+    },
+    { path: '/home', redirect: '/app/home' },
+    { path: '/catalog', redirect: '/app/catalog' },
+    { path: '/catalog/manage', redirect: '/app/catalog/manage' },
+    { path: '/orders', redirect: '/app/orders' },
+    { path: '/orders/manage', redirect: '/app/orders/manage' },
+    { path: '/profile', redirect: '/app/profile' }
   ]
 })
 
@@ -93,7 +109,7 @@ router.beforeEach((to) => {
   }
 
   if (to.path === '/login' && loggedIn) {
-    return { path: '/home' }
+    return { path: '/app/home' }
   }
 
   if (loggedIn && roleMeta && roleMeta.length > 0 && !hasAnyRole(...roleMeta)) {

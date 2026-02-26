@@ -87,6 +87,17 @@ export function clearSession(): void {
   localStorage.removeItem(USER_KEY)
 }
 
+export function patchSessionUser(patch: Partial<UserInfo>): void {
+  if (!sessionState.user) {
+    sessionState.user = {}
+  }
+  sessionState.user = {
+    ...sessionState.user,
+    ...patch
+  }
+  persist()
+}
+
 export function getAccessToken(): string {
   return sessionState.accessToken
 }
