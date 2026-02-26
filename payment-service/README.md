@@ -32,6 +32,9 @@ export CPOLAR_FRONTEND_BASE_URL=https://xxxxxx.cpolar.cn
 # export ALIPAY_NOTIFY_URL=https://xxxxxx.cpolar.cn/api/v1/payment/alipay/notify
 # export ALIPAY_RETURN_URL=https://xxxxxx.cpolar.cn/payment/success
 
+# 接口内容加密（可选）
+# export ALIPAY_APP_ENCRYPT_KEY=你的appEncryptKey
+
 mvn -pl payment-service spring-boot:run
 ```
 

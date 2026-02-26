@@ -128,6 +128,7 @@ alipay:
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
   notify-url: ${ALIPAY_NOTIFY_URL:${CPOLAR_PUBLIC_BASE_URL:http://127.0.0.1:8086}/api/v1/payment/alipay/notify}
   return-url: ${ALIPAY_RETURN_URL:${CPOLAR_FRONTEND_BASE_URL:http://127.0.0.1:3000}/payment/success}
+  app-encrypt-key: ${ALIPAY_APP_ENCRYPT_KEY:}
   sign-type: RSA2
   charset: UTF-8
   format: json

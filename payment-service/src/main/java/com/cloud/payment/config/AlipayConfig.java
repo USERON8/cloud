@@ -7,6 +7,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 @Configuration
@@ -32,6 +33,8 @@ public class AlipayConfig {
 
     private String returnUrl;
 
+    private String appEncryptKey;
+
     private String signType = "RSA2";
 
     private String charset = "UTF-8";
@@ -42,6 +45,19 @@ public class AlipayConfig {
 
     @Bean
     public AlipayClient alipayClient() {
+        if (StringUtils.hasText(appEncryptKey)) {
+            return new DefaultAlipayClient(
+                    gatewayUrl,
+                    appId,
+                    merchantPrivateKey,
+                    format,
+                    charset,
+                    alipayPublicKey,
+                    signType,
+                    appEncryptKey
+            );
+        }
+
         return new DefaultAlipayClient(
                 gatewayUrl,
                 appId,
