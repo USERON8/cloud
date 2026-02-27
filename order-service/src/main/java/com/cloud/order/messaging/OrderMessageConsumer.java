@@ -67,13 +67,14 @@ public class OrderMessageConsumer {
                 );
 
                 if (success) {
+                    messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                     recordMessageMetric("PAYMENT_SUCCESS", "success");
                 } else {
+                    messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                     log.error("Order payment status update failed: orderId={}, orderNo={}", event.getOrderId(), event.getOrderNo());
                     recordMessageMetric("PAYMENT_SUCCESS", "failed");
                 }
             } catch (Exception e) {
-                messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, event.getEventId());
                 log.error("Handle payment-success event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
                 recordMessageMetric("PAYMENT_SUCCESS", "retry");
@@ -108,15 +109,16 @@ public class OrderMessageConsumer {
                 );
 
                 if (success) {
+                    messageIdempotencyService.markSuccess(STOCK_FREEZE_FAILED_NAMESPACE, eventId);
                     recordMessageMetric("STOCK_FREEZE_FAILED", "success");
 
                 } else {
+                    messageIdempotencyService.markSuccess(STOCK_FREEZE_FAILED_NAMESPACE, eventId);
                     log.error("Order cancel failed after stock-freeze-failed: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     recordMessageMetric("STOCK_FREEZE_FAILED", "failed");
                 }
             } catch (Exception e) {
-                messageIdempotencyService.release(STOCK_FREEZE_FAILED_NAMESPACE, event.getEventId());
                 log.error("Handle stock-freeze-failed event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
                 recordMessageMetric("STOCK_FREEZE_FAILED", "retry");
@@ -155,6 +157,7 @@ public class OrderMessageConsumer {
                 List<OrderItem> orderItems = orderItemService.list(wrapper);
 
                 if (orderItems == null || orderItems.isEmpty()) {
+                    messageIdempotencyService.markSuccess(REFUND_COMPLETED_NAMESPACE, eventId);
                     log.warn("No order items found, skip stock restore event: orderId={}", orderId);
                     recordMessageMetric("REFUND_COMPLETED", "failed");
                     recordRefundMetric("failed");
@@ -194,9 +197,9 @@ public class OrderMessageConsumer {
                     log.warn("Order not found when update refund status: orderId={}", orderId);
                     recordRefundMetric("failed");
                 }
+                messageIdempotencyService.markSuccess(REFUND_COMPLETED_NAMESPACE, eventId);
 
             } catch (Exception e) {
-                messageIdempotencyService.release(REFUND_COMPLETED_NAMESPACE, (String) event.get("eventId"));
                 log.error("Handle refund-completed event failed: orderId={}, refundNo={}", orderId, refundNo, e);
                 recordMessageMetric("REFUND_COMPLETED", "retry");
                 recordRefundMetric("failed");

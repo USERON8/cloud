@@ -1,11 +1,6 @@
 import { reactive } from 'vue'
 import type { LoginResponse, UserInfo } from '../types/domain'
 
-const ACCESS_TOKEN_KEY = 'shop.access_token'
-const REFRESH_TOKEN_KEY = 'shop.refresh_token'
-const TOKEN_TYPE_KEY = 'shop.token_type'
-const EXPIRES_AT_KEY = 'shop.expires_at'
-const SCOPE_KEY = 'shop.scope'
 const USER_KEY = 'shop.user'
 
 interface SessionState {
@@ -27,23 +22,13 @@ export const sessionState = reactive<SessionState>({
 })
 
 function persist(): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, sessionState.accessToken)
-  localStorage.setItem(REFRESH_TOKEN_KEY, sessionState.refreshToken)
-  localStorage.setItem(TOKEN_TYPE_KEY, sessionState.tokenType || 'Bearer')
-  localStorage.setItem(EXPIRES_AT_KEY, String(sessionState.expiresAt || 0))
-  localStorage.setItem(SCOPE_KEY, sessionState.scope || '')
   localStorage.setItem(USER_KEY, sessionState.user ? JSON.stringify(sessionState.user) : '')
 }
 
 export function hydrateSessionFromStorage(): void {
-  if (sessionState.accessToken) {
+  if (sessionState.user) {
     return
   }
-  sessionState.accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) || ''
-  sessionState.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY) || ''
-  sessionState.tokenType = localStorage.getItem(TOKEN_TYPE_KEY) || 'Bearer'
-  sessionState.expiresAt = Number(localStorage.getItem(EXPIRES_AT_KEY) || 0)
-  sessionState.scope = localStorage.getItem(SCOPE_KEY) || ''
 
   const serializedUser = localStorage.getItem(USER_KEY)
   if (serializedUser) {
@@ -79,11 +64,6 @@ export function clearSession(): void {
   sessionState.expiresAt = 0
   sessionState.scope = ''
   sessionState.user = null
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-  localStorage.removeItem(TOKEN_TYPE_KEY)
-  localStorage.removeItem(EXPIRES_AT_KEY)
-  localStorage.removeItem(SCOPE_KEY)
   localStorage.removeItem(USER_KEY)
 }
 
@@ -100,10 +80,6 @@ export function patchSessionUser(patch: Partial<UserInfo>): void {
 
 export function getAccessToken(): string {
   return sessionState.accessToken
-}
-
-export function getRefreshToken(): string {
-  return sessionState.refreshToken
 }
 
 export function isAuthenticated(): boolean {

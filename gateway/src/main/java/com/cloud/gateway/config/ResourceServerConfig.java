@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ public class ResourceServerConfig {
     private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
 
     private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
+    private final Environment environment;
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
@@ -46,9 +48,15 @@ public class ResourceServerConfig {
     @Value("${app.security.testenv-bypass-enabled:false}")
     private boolean securityTestMode;
 
+    @Value("${app.security.public-actuator-enabled:false}")
+    private boolean publicActuatorEnabled;
+
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         if (securityTestMode) {
+            if (isProtectedProfile()) {
+                throw new IllegalStateException("app.security.testenv-bypass-enabled cannot be true in protected profiles");
+            }
             log.warn("Gateway security test mode is enabled. JWT validation is bypassed and all exchanges are permitAll.");
             http
                     .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -75,7 +83,7 @@ public class ResourceServerConfig {
                             .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return").permitAll()
                             .pathMatchers("/auth/oauth2/github/**").permitAll()
                             .pathMatchers("/login/**").permitAll()
-                            .pathMatchers("/actuator/**", "/health/**", "/metrics/**").permitAll()
+                            .pathMatchers("/health/**", "/metrics/**").permitAll()
                             .pathMatchers(
                                     "/doc.html",
                                     "/doc.html/**",
@@ -112,6 +120,10 @@ public class ResourceServerConfig {
                                     "/stock-service/doc.html", "/stock-service/doc.html/**",
                                     "/search-service/doc.html", "/search-service/doc.html/**"
                             ).permitAll();
+
+                    if (publicActuatorEnabled) {
+                        authExchanges = authExchanges.pathMatchers("/actuator/**").permitAll();
+                    }
 
                     if (enableTestApi) {
                         authExchanges = authExchanges.pathMatchers("/test/**").permitAll();
@@ -190,7 +202,7 @@ public class ResourceServerConfig {
                         })
                         .onErrorResume(ex -> {
                             log.error("Gateway blacklist validation failed", ex);
-                            return Mono.just(jwt);
+                            return Mono.error(new BadJwtException("Gateway blacklist validation unavailable"));
                         }));
     }
 
@@ -200,6 +212,15 @@ public class ResourceServerConfig {
             return jti;
         }
         return String.valueOf(tokenValue.hashCode());
+    }
+
+    private boolean isProtectedProfile() {
+        for (String profile : environment.getActiveProfiles()) {
+            if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

@@ -37,6 +37,12 @@ public class SecurityFilterChainConfig {
     @Value("${app.oauth2.github.redirect.error-url:http://127.0.0.1:3000/auth/error}")
     private String githubErrorRedirectUrl;
 
+    @Value("${app.security.public-actuator-enabled:false}")
+    private boolean publicActuatorEnabled;
+
+    @Value("${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
+    private String corsAllowedOriginPatterns;
+
     public SecurityFilterChainConfig(
             JwtDecoder jwtDecoder,
             @Qualifier("enhancedJwtAuthenticationConverter") JwtAuthenticationConverter jwtAuthenticationConverter,
@@ -115,12 +121,14 @@ public class SecurityFilterChainConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        String[] publicCommon = publicActuatorEnabled
+                ? new String[]{"/actuator/**"}
+                : new String[]{};
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/actuator/**",
                                 "/health/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -134,6 +142,7 @@ public class SecurityFilterChainConfig {
                                 "/login/oauth2/**",
                                 "/auth/oauth2/github/**"
                         ).permitAll()
+                        .requestMatchers(publicCommon).permitAll()
                         .anyRequest().denyAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -154,8 +163,12 @@ public class SecurityFilterChainConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("http://127.0.0.1:*");
-        configuration.addAllowedOriginPattern("https://127.0.0.1:*");
+        for (String pattern : corsAllowedOriginPatterns.split(",")) {
+            String trimmed = pattern == null ? "" : pattern.trim();
+            if (!trimmed.isEmpty()) {
+                configuration.addAllowedOriginPattern(trimmed);
+            }
+        }
         configuration.addAllowedMethod("GET");
         configuration.addAllowedMethod("POST");
         configuration.addAllowedMethod("PUT");

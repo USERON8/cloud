@@ -19,10 +19,10 @@
       service_net:
         ipv4_address: 172.28.0.10
     environment:
-      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: nacos_config
-      MYSQL_USER: nacos
-      MYSQL_PASSWORD: "nacos"
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
     volumes:
       - type: bind
         source: ./docker-compose/mysql/data
@@ -103,8 +103,8 @@
       NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # 兼容性注释已标准化。
 
       # 兼容性注释已标准化。
-      NACOS_SECURITY_ADMIN_USER: root  # 兼容性注释已标准化。
-      NACOS_SECURITY_ADMIN_PASSWORD: root
+      NACOS_SECURITY_ADMIN_USER: ${NACOS_SECURITY_ADMIN_USER:?NACOS_SECURITY_ADMIN_USER is required}  # 兼容性注释已标准化。
+      NACOS_SECURITY_ADMIN_PASSWORD: ${NACOS_SECURITY_ADMIN_PASSWORD:?NACOS_SECURITY_ADMIN_PASSWORD is required}
 
       # 兼容性注释已标准化。
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
@@ -232,8 +232,8 @@
       - "${PORT_MINIO_API:-19000}:9000"
       - "${PORT_MINIO_CONSOLE:-19001}:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
     command: server /data --console-address ":9001"
     volumes:
       - type: bind
@@ -338,8 +338,8 @@
       MYSQL_HOST: cloud-mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: product_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_USER: ${LOGSTASH_MYSQL_USER:?LOGSTASH_MYSQL_USER is required}
+      MYSQL_PASSWORD: ${LOGSTASH_MYSQL_PASSWORD:?LOGSTASH_MYSQL_PASSWORD is required}
       ES_HOST: elasticsearch
       ES_PORT: 9200
     volumes:

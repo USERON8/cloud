@@ -53,6 +53,7 @@ public class PaymentMessageConsumer {
                 }
 
                 if (paymentService.isPaymentRecordExists(event.getOrderId())) {
+                    messageIdempotencyService.markSuccess(ORDER_CREATED_NAMESPACE, eventId);
                     log.warn("Payment record already exists, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     recordMessageMetric("ORDER_CREATED", "success");
@@ -74,10 +75,10 @@ public class PaymentMessageConsumer {
                     throw new RuntimeException("Create payment failed");
                 }
                 paymentOrderContextStore.saveOrderContext(event);
+                messageIdempotencyService.markSuccess(ORDER_CREATED_NAMESPACE, eventId);
                 recordMessageMetric("ORDER_CREATED", "success");
 
             } catch (Exception e) {
-                messageIdempotencyService.release(ORDER_CREATED_NAMESPACE, event.getEventId());
                 log.error("Handle order-created event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
                 recordMessageMetric("ORDER_CREATED", "retry");
@@ -124,16 +125,17 @@ public class PaymentMessageConsumer {
                 );
 
                 if (sent) {
+                    messageIdempotencyService.markSuccess(REFUND_PROCESS_NAMESPACE, eventId);
                     recordMessageMetric("REFUND_PROCESS", "success");
                     recordRefundMetric("success");
                 } else {
+                    messageIdempotencyService.markSuccess(REFUND_PROCESS_NAMESPACE, eventId);
                     log.error("Refund-completed event send failed: refundId={}, refundNo={}", refundId, refundNo);
                     recordMessageMetric("REFUND_PROCESS", "failed");
                     recordRefundMetric("failed");
                 }
 
             } catch (Exception e) {
-                messageIdempotencyService.release(REFUND_PROCESS_NAMESPACE, (String) event.get("eventId"));
                 log.error("Handle refund-process event failed: refundId={}, refundNo={}, orderId={}",
                         refundId, refundNo, orderId, e);
                 recordMessageMetric("REFUND_PROCESS", "retry");

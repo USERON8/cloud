@@ -2,7 +2,6 @@ import axios, { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from
 import {
   clearSession,
   getAccessToken,
-  getRefreshToken,
   setSessionFromLogin
 } from '../auth/session'
 import { BusinessError, SUCCESS_CODE, type ResultEnvelope } from '../types/api'
@@ -13,12 +12,14 @@ const apiTimeout = Number(import.meta.env.VITE_API_TIMEOUT || 10000)
 
 const http = axios.create({
   baseURL: apiBaseUrl,
-  timeout: apiTimeout
+  timeout: apiTimeout,
+  withCredentials: true
 })
 
 const refreshClient = axios.create({
   baseURL: apiBaseUrl,
-  timeout: apiTimeout
+  timeout: apiTimeout,
+  withCredentials: true
 })
 
 let refreshPromise: Promise<string | null> | null = null
@@ -56,14 +57,7 @@ function shouldSkipRefresh(url?: string): boolean {
 }
 
 async function performTokenRefresh(): Promise<string | null> {
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) {
-    return null
-  }
-
-  const response = await refreshClient.post<unknown>('/auth/tokens/refresh', null, {
-    params: { refresh_token: refreshToken }
-  })
+  const response = await refreshClient.post<unknown>('/auth/tokens/refresh')
   const loginPayload = unwrapPayload<LoginResponse>(response.data)
   if (!loginPayload?.access_token) {
     return null
@@ -82,6 +76,14 @@ async function getOrCreateRefreshPromise(): Promise<string | null> {
       })
   }
   return refreshPromise
+}
+
+export async function ensureAuthenticatedSession(): Promise<boolean> {
+  if (getAccessToken()) {
+    return true
+  }
+  const token = await getOrCreateRefreshPromise()
+  return Boolean(token)
 }
 
 function normalizeError(error: unknown): Error {
@@ -124,8 +126,7 @@ http.interceptors.response.use(
       requestConfig &&
       status === 401 &&
       !requestConfig._retry &&
-      !shouldSkipRefresh(requestConfig.url) &&
-      getRefreshToken()
+      !shouldSkipRefresh(requestConfig.url)
     ) {
       requestConfig._retry = true
       const token = await getOrCreateRefreshPromise()

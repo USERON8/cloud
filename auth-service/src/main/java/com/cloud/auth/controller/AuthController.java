@@ -15,13 +15,19 @@ import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +38,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -46,26 +56,41 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final OAuth2ResponseUtil oauth2ResponseUtil;
 
+    @Value("${app.security.session-cookie.refresh-token-name:shop_rt}")
+    private String refreshTokenCookieName;
+
+    @Value("${app.security.session-cookie.path:/}")
+    private String sessionCookiePath;
+
+    @Value("${app.security.session-cookie.secure:false}")
+    private boolean sessionCookieSecure;
+
+    @Value("${app.security.session-cookie.same-site:Lax}")
+    private String sessionCookieSameSite;
+
     @PostMapping("/users/register")
     @Operation(summary = "Register user")
     public Result<LoginResponseDTO> register(
             @RequestBody @Valid @NotNull(message = "Register request cannot be null")
-            RegisterRequestDTO registerRequestDTO) {
+            RegisterRequestDTO registerRequestDTO,
+            HttpServletResponse response) {
         UserDTO registeredUser = userFeignClient.register(registerRequestDTO);
         if (registeredUser == null) {
             throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
         }
 
         OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(registeredUser, null);
-        LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
-        return Result.success(response);
+        writeRefreshTokenCookie(response, authorization);
+        LoginResponseDTO loginResponse = oauth2ResponseUtil.buildLoginResponse(authorization, registeredUser);
+        return Result.success(loginResponse);
     }
 
     @PostMapping("/sessions")
     @Operation(summary = "Login user")
     public Result<LoginResponseDTO> login(
             @RequestBody @Valid @NotNull(message = "Login request cannot be null")
-            LoginRequestDTO loginRequestDTO) {
+            LoginRequestDTO loginRequestDTO,
+            HttpServletResponse response) {
         validateLoginRequest(loginRequestDTO);
         String username = loginRequestDTO.getUsername();
 
@@ -94,13 +119,14 @@ public class AuthController {
         }
 
         OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(user, null);
-        LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(authorization, user);
-        return Result.success(response);
+        writeRefreshTokenCookie(response, authorization);
+        LoginResponseDTO loginResponse = oauth2ResponseUtil.buildLoginResponse(authorization, user);
+        return Result.success(loginResponse);
     }
 
     @DeleteMapping("/sessions")
     @Operation(summary = "Logout current session")
-    public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
+    public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new ValidationException(
@@ -115,6 +141,7 @@ public class AuthController {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
 
+        clearRefreshTokenCookie(response);
         return Result.success("Logout successful", null);
     }
 
@@ -163,12 +190,18 @@ public class AuthController {
     @PostMapping("/tokens/refresh")
     @Operation(summary = "Refresh access token")
     public Result<LoginResponseDTO> refreshToken(
-            @RequestParam("refresh_token") String refreshToken) {
-        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            @RequestParam(value = "refresh_token", required = false) String refreshToken,
+            jakarta.servlet.http.HttpServletRequest request,
+            HttpServletResponse response) {
+        String effectiveRefreshToken = refreshToken;
+        if (effectiveRefreshToken == null || effectiveRefreshToken.trim().isEmpty()) {
+            effectiveRefreshToken = readCookie(request, refreshTokenCookieName).orElse(null);
+        }
+        if (effectiveRefreshToken == null || effectiveRefreshToken.trim().isEmpty()) {
             throw new ValidationException("refresh_token", refreshToken, "refresh_token cannot be blank");
         }
 
-        OAuth2Authorization existingAuth = tokenManagementService.findByToken(refreshToken);
+        OAuth2Authorization existingAuth = tokenManagementService.findByToken(effectiveRefreshToken);
         if (existingAuth == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
@@ -179,11 +212,12 @@ public class AuthController {
             throw new ResourceNotFoundException("User", username);
         }
 
-        tokenManagementService.revokeToken(refreshToken);
+        tokenManagementService.revokeToken(effectiveRefreshToken);
         OAuth2Authorization newAuth =
                 tokenManagementService.generateTokensForUser(user, existingAuth.getAuthorizedScopes());
-        LoginResponseDTO response = oauth2ResponseUtil.buildLoginResponse(newAuth, user);
-        return Result.success(response);
+        writeRefreshTokenCookie(response, newAuth);
+        LoginResponseDTO loginResponse = oauth2ResponseUtil.buildLoginResponse(newAuth, user);
+        return Result.success(loginResponse);
     }
 
     private void validateLoginRequest(LoginRequestDTO loginRequestDTO) {
@@ -193,5 +227,54 @@ public class AuthController {
         if (loginRequestDTO.getPassword() == null || loginRequestDTO.getPassword().trim().isEmpty()) {
             throw new ValidationException("password", loginRequestDTO.getPassword(), "password cannot be blank");
         }
+    }
+
+    private void writeRefreshTokenCookie(HttpServletResponse response, OAuth2Authorization authorization) {
+        OAuth2Authorization.Token<OAuth2RefreshToken> refreshTokenHolder = authorization.getRefreshToken();
+        if (refreshTokenHolder == null || refreshTokenHolder.getToken() == null) {
+            return;
+        }
+        long maxAgeSeconds = resolveRefreshTokenMaxAgeSeconds(refreshTokenHolder.getToken());
+        ResponseCookie cookie = ResponseCookie.from(refreshTokenCookieName, refreshTokenHolder.getToken().getTokenValue())
+                .httpOnly(true)
+                .secure(sessionCookieSecure)
+                .path(sessionCookiePath)
+                .sameSite(sessionCookieSameSite)
+                .maxAge(maxAgeSeconds)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(refreshTokenCookieName, "")
+                .httpOnly(true)
+                .secure(sessionCookieSecure)
+                .path(sessionCookiePath)
+                .sameSite(sessionCookieSameSite)
+                .maxAge(Duration.ZERO)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private Optional<String> readCookie(jakarta.servlet.http.HttpServletRequest request, String cookieName) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookieName == null || cookieName.isBlank()) {
+            return Optional.empty();
+        }
+        for (Cookie cookie : cookies) {
+            if (cookieName.equals(cookie.getName())) {
+                return Optional.ofNullable(cookie.getValue());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private long resolveRefreshTokenMaxAgeSeconds(OAuth2RefreshToken refreshToken) {
+        Instant expiresAt = refreshToken.getExpiresAt();
+        if (expiresAt == null) {
+            return -1;
+        }
+        long ttl = Duration.between(Instant.now(), expiresAt).getSeconds();
+        return Math.max(ttl, 0);
     }
 }

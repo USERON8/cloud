@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -49,6 +50,17 @@ public abstract class BaseResourceServerConfig {
     @Value("${app.security.test-token-value:TEST_ENV_PERMANENT_TOKEN}")
     private String securityTestTokenValue;
 
+    @Value("${app.security.public-actuator-enabled:false}")
+    private boolean publicActuatorEnabled;
+
+    @Value("${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
+    private String corsAllowedOriginPatterns;
+    private final Environment environment;
+
+    protected BaseResourceServerConfig(Environment environment) {
+        this.environment = environment;
+    }
+
     @Bean
     @Order(100)
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
@@ -56,7 +68,12 @@ public abstract class BaseResourceServerConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
                     config.setAllowCredentials(true);
-                    config.addAllowedOriginPattern("*");
+                    for (String pattern : corsAllowedOriginPatterns.split(",")) {
+                        String trimmed = pattern == null ? "" : pattern.trim();
+                        if (!trimmed.isEmpty()) {
+                            config.addAllowedOriginPattern(trimmed);
+                        }
+                    }
                     config.addAllowedHeader("*");
                     config.addAllowedMethod("*");
                     return config;
@@ -67,6 +84,9 @@ public abstract class BaseResourceServerConfig {
         }
 
         if (securityTestMode) {
+            if (isProtectedProfile()) {
+                throw new IllegalStateException("app.security.testenv-bypass-enabled cannot be true in protected profiles");
+            }
             log.warn("Security test mode is enabled. JWT validation is bypassed and all endpoints are permitAll.");
             http.addFilterBefore(testAuthenticationBypassFilter(), UsernamePasswordAuthenticationFilter.class);
             http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
@@ -112,7 +132,10 @@ public abstract class BaseResourceServerConfig {
 
     protected void configurePublicEndpoints(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers("/actuator/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+        if (publicActuatorEnabled) {
+            authz.requestMatchers("/actuator/**").permitAll();
+        }
+        authz.requestMatchers("/webjars/**", "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll();
     }
 
@@ -147,6 +170,15 @@ public abstract class BaseResourceServerConfig {
 
     protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
         return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, true, null);
+    }
+
+    private boolean isProtectedProfile() {
+        for (String profile : environment.getActiveProfiles()) {
+            if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private OncePerRequestFilter testAuthenticationBypassFilter() {

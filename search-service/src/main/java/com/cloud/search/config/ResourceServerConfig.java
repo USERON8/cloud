@@ -2,6 +2,7 @@ package com.cloud.search.config;
 
 import com.cloud.common.config.BaseResourceServerConfig;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -10,6 +11,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 public class ResourceServerConfig extends BaseResourceServerConfig {
+    public ResourceServerConfig(Environment environment) {
+        super(environment);
+    }
 
     @Override
     protected boolean isStatelessSession() {

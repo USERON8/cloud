@@ -64,7 +64,7 @@ spring:
         registration:
           web-client:
             client-id: web-client
-            client-secret: ${WEB_CLIENT_SECRET:WebClient@2024#Secure}
+            client-secret: ${WEB_CLIENT_SECRET}
             client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
             redirect-uri: ${WEB_CLIENT_REDIRECT_URI:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/authorized}
@@ -77,7 +77,7 @@ spring:
           client-service:
             provider: custom-authorization-server
             client-id: client-service
-            client-secret: ${CLIENT_SERVICE_SECRET:ClientService@2024#Secure}
+            client-secret: ${CLIENT_SERVICE_SECRET}
             authorization-grant-type: client_credentials
             scope: internal_api,service.read,service.write
         provider:
@@ -102,6 +102,14 @@ logging:
     org.springframework.security: debug
     org.springframework.web: warn
 app:
+  security:
+    cors:
+      allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
+    session-cookie:
+      refresh-token-name: ${APP_SECURITY_SESSION_COOKIE_REFRESH_TOKEN_NAME:shop_rt}
+      path: ${APP_SECURITY_SESSION_COOKIE_PATH:/}
+      secure: ${APP_SECURITY_SESSION_COOKIE_SECURE:false}
+      same-site: ${APP_SECURITY_SESSION_COOKIE_SAME_SITE:Lax}
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
@@ -111,7 +119,7 @@ app:
       private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
       public-key-base64: ${APP_JWT_PUBLIC_KEY_BASE64:}
       key-id: ${APP_JWT_KEY_ID:auth-service-key}
-      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:true}
+      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:false}
   oauth2:
     github:
       redirect:
@@ -120,15 +128,15 @@ app:
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
-        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:${WEB_CLIENT_SECRET:WebClient@2024#Secure}}
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:${WEB_CLIENT_SECRET}}
       mobile:
         id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
       service:
         id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}
-        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:ServiceClient@2024#Secure}
+        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET}
       internal:
         id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
-        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:ClientService@2024#Secure}}
+        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
 springdoc:
   api-docs:
     enabled: true

@@ -45,27 +45,21 @@ public class AlipayConfig {
 
     @Bean
     public AlipayClient alipayClient() {
-        if (StringUtils.hasText(appEncryptKey)) {
-            return new DefaultAlipayClient(
-                    gatewayUrl,
-                    appId,
-                    merchantPrivateKey,
-                    format,
-                    charset,
-                    alipayPublicKey,
-                    signType,
-                    appEncryptKey
-            );
+        try {
+            com.alipay.api.AlipayConfig sdkConfig = new com.alipay.api.AlipayConfig();
+            sdkConfig.setServerUrl(gatewayUrl);
+            sdkConfig.setAppId(appId);
+            sdkConfig.setPrivateKey(merchantPrivateKey);
+            sdkConfig.setFormat(format);
+            sdkConfig.setCharset(charset);
+            sdkConfig.setAlipayPublicKey(alipayPublicKey);
+            sdkConfig.setSignType(signType);
+            if (StringUtils.hasText(appEncryptKey)) {
+                sdkConfig.setEncryptKey(appEncryptKey);
+            }
+            return new DefaultAlipayClient(sdkConfig);
+        } catch (com.alipay.api.AlipayApiException ex) {
+            throw new IllegalStateException("Failed to initialize AlipayClient", ex);
         }
-
-        return new DefaultAlipayClient(
-                gatewayUrl,
-                appId,
-                merchantPrivateKey,
-                format,
-                charset,
-                alipayPublicKey,
-                signType
-        );
     }
 }

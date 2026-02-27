@@ -48,9 +48,9 @@ public class RefundNotificationConsumer {
                             String.format("Order %s has a new refund request. refundNo=%s", orderNo, refundNo)
                     );
                 }
+                messageIdempotencyService.markSuccess(NS_REFUND_CREATED, eventId);
                 
             } catch (Exception ex) {
-                messageIdempotencyService.release(NS_REFUND_CREATED, eventId);
                 log.error("Handle refund-created notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-created notification failed", ex);
             }
@@ -79,10 +79,10 @@ public class RefundNotificationConsumer {
                             : String.format("Your refund request has been rejected. refundNo=%s", refundNo);
                     sendNotification("USER", userId, title, content);
                 }
+                messageIdempotencyService.markSuccess(NS_REFUND_AUDITED, eventId);
                 
 
             } catch (Exception ex) {
-                messageIdempotencyService.release(NS_REFUND_AUDITED, eventId);
                 log.error("Handle refund-audited notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-audited notification failed", ex);
             }
@@ -110,9 +110,9 @@ public class RefundNotificationConsumer {
                             String.format("Your refund is in processing. refundNo=%s", refundNo)
                     );
                 }
+                messageIdempotencyService.markSuccess(NS_REFUND_PROCESS, eventId);
                 
             } catch (Exception ex) {
-                messageIdempotencyService.release(NS_REFUND_PROCESS, eventId);
                 log.error("Handle refund-process notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-process notification failed", ex);
             }
@@ -140,9 +140,9 @@ public class RefundNotificationConsumer {
                             String.format("User cancelled refund request. refundNo=%s", refundNo)
                     );
                 }
+                messageIdempotencyService.markSuccess(NS_REFUND_CANCELLED, eventId);
                 
             } catch (Exception ex) {
-                messageIdempotencyService.release(NS_REFUND_CANCELLED, eventId);
                 log.error("Handle refund-cancelled notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-cancelled notification failed", ex);
             }

@@ -60,6 +60,7 @@ public class StockMessageConsumer {
                 }
 
                 if (stockService.isStockFrozen(event.getOrderId())) {
+                    messageIdempotencyService.markSuccess(ORDER_CREATED_NAMESPACE, eventId);
                     log.warn("Order stock already frozen, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     return;
@@ -97,6 +98,7 @@ public class StockMessageConsumer {
                     markOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                     clearOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
+                    messageIdempotencyService.markSuccess(ORDER_CREATED_NAMESPACE, eventId);
                     recordStockFreezeMetric("success");
                     recordMessageMetric("ORDER_CREATED", "success");
 
@@ -121,12 +123,12 @@ public class StockMessageConsumer {
                     }
                     clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
                     markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, event.getOrderId());
+                    messageIdempotencyService.markSuccess(ORDER_CREATED_NAMESPACE, eventId);
                     recordStockFreezeMetric("failed");
                     recordMessageMetric("ORDER_CREATED", "failed");
                 }
 
             } catch (Exception e) {
-                messageIdempotencyService.release(ORDER_CREATED_NAMESPACE, event.getEventId());
                 log.error("Handle order-created event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
 
@@ -164,6 +166,7 @@ public class StockMessageConsumer {
                 }
 
                 if (stockService.isStockDeducted(event.getOrderId())) {
+                    messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                     log.warn("Order stock already deducted, skip: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     return;
@@ -171,6 +174,7 @@ public class StockMessageConsumer {
 
                 Map<Long, Integer> productQuantityMap = event.getProductQuantityMap();
                 if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                     log.warn("Payment-success event has empty product map, skip deduction: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
                     recordMessageMetric("PAYMENT_SUCCESS", "failed");
@@ -194,11 +198,11 @@ public class StockMessageConsumer {
 
                 markOrderState(ORDER_CONFIRMED_KEY_PREFIX, event.getOrderId());
                 clearOrderState(ORDER_RESERVED_KEY_PREFIX, event.getOrderId());
+                messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                 recordMessageMetric("PAYMENT_SUCCESS", "success");
 
 
             } catch (Exception e) {
-                messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, event.getEventId());
                 log.error("Handle payment-success event failed: orderId={}, orderNo={}",
                         event.getOrderId(), event.getOrderNo(), e);
                 recordMessageMetric("PAYMENT_SUCCESS", "retry");
@@ -233,6 +237,7 @@ public class StockMessageConsumer {
                 }
 
                 if (productQuantityMap == null || productQuantityMap.isEmpty()) {
+                    messageIdempotencyService.markSuccess(STOCK_RESTORE_NAMESPACE, eventId);
                     log.warn("No products to restore: orderId={}, refundNo={}", orderId, refundNo);
                     recordMessageMetric("STOCK_RESTORE", "failed");
                     recordRefundMetric("failed");
@@ -264,10 +269,12 @@ public class StockMessageConsumer {
                     clearOrderState(ORDER_RESERVED_KEY_PREFIX, orderId);
                     clearOrderState(ORDER_CONFIRMED_KEY_PREFIX, orderId);
                     markOrderState(ORDER_ROLLED_BACK_KEY_PREFIX, orderId);
+                    messageIdempotencyService.markSuccess(STOCK_RESTORE_NAMESPACE, eventId);
                     recordMessageMetric("STOCK_RESTORE", "success");
                     recordRefundMetric("success");
 
                 } else {
+                    messageIdempotencyService.markSuccess(STOCK_RESTORE_NAMESPACE, eventId);
                     log.error("Stock restore partial failed: orderId={}, refundNo={}, details={}",
                             orderId, refundNo, failureDetails);
                     recordMessageMetric("STOCK_RESTORE", "failed");
@@ -275,7 +282,6 @@ public class StockMessageConsumer {
                 }
 
             } catch (Exception e) {
-                messageIdempotencyService.release(STOCK_RESTORE_NAMESPACE, (String) event.get("eventId"));
                 log.error("Handle stock-restore event failed: orderId={}, refundNo={}", orderId, refundNo, e);
                 recordMessageMetric("STOCK_RESTORE", "retry");
                 recordRefundMetric("failed");
