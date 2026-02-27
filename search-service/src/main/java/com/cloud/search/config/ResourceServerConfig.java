@@ -26,21 +26,6 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
     }
 
     @Override
-    protected void configurePublicEndpoints(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers(
-                        "/actuator/**",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/swagger-ui.html",
-                        "/doc.html",
-                        "/webjars/**",
-                        "/favicon.ico"
-                )
-                .permitAll();
-    }
-
-    @Override
     protected void configureServiceEndpoints(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         authz.requestMatchers("/internal/**").hasAuthority("SCOPE_internal_api")

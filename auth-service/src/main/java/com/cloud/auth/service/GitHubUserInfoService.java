@@ -20,7 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -141,7 +141,7 @@ public class GitHubUserInfoService {
     public LoginResponseDTO getUserInfoAndGenerateToken(
             Principal principal,
             OAuth2AuthorizedClientService authorizedClientService,
-            JwtEncoder jwtEncoder,
+            OAuth2TokenManagementService tokenManagementService,
             OAuth2ResponseUtil oauth2ResponseUtil) {
         if (principal == null) {
             throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "Not authenticated");
@@ -158,7 +158,8 @@ public class GitHubUserInfoService {
             throw new SystemException("Failed to get user info");
         }
 
-        return oauth2ResponseUtil.buildSimpleLoginResponse(userDTO, jwtEncoder);
+        OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(userDTO, null);
+        return oauth2ResponseUtil.buildLoginResponse(authorization, userDTO);
     }
 
     public boolean checkAuthStatus(

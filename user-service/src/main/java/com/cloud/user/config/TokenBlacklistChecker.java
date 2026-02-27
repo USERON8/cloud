@@ -36,7 +36,9 @@ public class TokenBlacklistChecker implements OAuth2TokenValidator<Jwt> {
             return OAuth2TokenValidatorResult.success();
         } catch (Exception e) {
             log.error("Failed to check JWT blacklist status", e);
-            return OAuth2TokenValidatorResult.success();
+            return OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error("blacklist_unavailable", "JWT blacklist validation unavailable", null)
+            );
         }
     }
 

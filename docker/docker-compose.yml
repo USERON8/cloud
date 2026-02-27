@@ -51,7 +51,9 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.20
-    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     volumes:
       - type: bind
         source: ./docker-compose/redis/data
@@ -65,7 +67,7 @@
     ports:
       - "${PORT_REDIS:-16379}:6379"
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a root ping | grep PONG" ]
+      test: [ "CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG" ]
       interval: 5s
       timeout: 5s
       retries: 5

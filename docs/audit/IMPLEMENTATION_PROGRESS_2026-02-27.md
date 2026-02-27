@@ -55,3 +55,11 @@
 - Result: `BUILD SUCCESS`
 - Command executed: `pnpm build` (in `my-shop-web`)
 - Result: `vue-tsc` + `vite build` success
+
+## Audit Round 2 (Full Re-audit)
+- Re-ran full regression:
+  - `mvn -T 1C -DskipITs test` -> `BUILD SUCCESS`
+  - `pnpm build` (`my-shop-web`) -> success
+- Generated refreshed audit artifacts:
+  - `docs/audit/AUDIT_REPORT_2026-02-27-R2.md`
+  - `docs/audit/RISK_REGISTER_2026-02-27-R2.md`

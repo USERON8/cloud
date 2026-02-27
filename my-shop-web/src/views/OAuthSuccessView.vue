@@ -1,32 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { setSessionFromLogin } from '../auth/session'
-import type { LoginResponse } from '../types/domain'
+import { ensureAuthenticatedSession } from '../api/http'
 
-const route = useRoute()
 const router = useRouter()
 const processing = ref(true)
 const failed = ref(false)
 
-function decodePayload(raw: string): LoginResponse {
-  const normalized = raw.replace(/\+/g, '%20')
-  const decoded = decodeURIComponent(normalized)
-  return JSON.parse(decoded) as LoginResponse
-}
-
 onMounted(async () => {
-  const raw = route.query.data
-  if (typeof raw !== 'string' || raw.length === 0) {
-    failed.value = true
-    processing.value = false
-    return
-  }
-
   try {
-    const payload = decodePayload(raw)
-    setSessionFromLogin(payload)
+    const restored = await ensureAuthenticatedSession()
+    if (!restored) {
+      failed.value = true
+      return
+    }
     ElMessage.success('GitHub authentication succeeded.')
     await router.replace('/app/home')
   } catch (error) {
