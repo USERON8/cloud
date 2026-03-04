@@ -244,7 +244,10 @@
         target: /home/minio/data
   # 兼容性注释已标准化。
   elasticsearch:
-    image: elasticsearch:8.15.3
+    build:
+      context: ./docker-compose/elasticsearch
+      dockerfile: Dockerfile
+    image: cloud/elasticsearch:8.15.3-pinyin
     container_name: cloud-es-search
     networks:
       service_net:

@@ -51,6 +51,7 @@ logs/
 # ===== Docker & Data =====
 # Elasticsearch
 docker/docker-compose/elasticsearch/data/
+docker/docker-compose/elasticsearch/data-v8/
 # MySQL
 docker/docker-compose/mysql/data/
 # Redis
@@ -59,6 +60,10 @@ docker/docker-compose/redis/data/
 docker/docker-compose/rocketmq/data/
 # Minio
 docker/docker-compose/minio/data/
+
+# Jenkins runtime
+docker/docker-compose/jenkins/home/*
+!docker/docker-compose/jenkins/home/.gitkeep
 
 # ===== Application =====
 # Spring Boot
