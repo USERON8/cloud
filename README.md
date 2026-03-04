@@ -28,6 +28,11 @@ powershell -File scripts/dev/start-containers.ps1
 
 2. 初始化数据库（先 `init` 再 `test`，可选）：见 `db/README.md`。
 
+   说明（当前封闭开发期默认策略）：
+   - MySQL 容器每次启动都会清空 `/var/lib/mysql` 后重建。
+   - 启动时会自动顺序执行 `db/init/**/*.sql` 与 `db/test/**/*.sql`。
+   - 不保留历史数据，不做迁移兼容。
+
 3. 构建后端：
 
 ```bash
@@ -85,6 +90,31 @@ pnpm --dir my-shop-web build
   - token 值：`TEST_ENV_PERMANENT_TOKEN`
   - 存储表：`user_db.test_access_token`
   - 过期时间：`2099-12-31 23:59:59`
+
+## Druid / SkyWalking / xxl-job
+
+- Druid：
+  - 已切换为 `com.alibaba.druid.pool.DruidDataSource`。
+  - 常用环境变量：`DB_POOL_SIZE`、`DB_MIN_IDLE`、`DB_CONNECTION_TIMEOUT`。
+- SkyWalking：
+  - 启动脚本支持可选 `javaagent` 注入。
+  - 设置 `SKYWALKING_AGENT_PATH`（agent jar 路径）后自动启用。
+  - 可选设置 `SKYWALKING_COLLECTOR_BACKEND_SERVICE`（默认 `127.0.0.1:11800`）。
+- xxl-job：
+  - 已内置执行器自动配置，默认关闭。
+  - 通过 `XXL_JOB_ENABLED=true` 启用。
+  - 常用参数：`XXL_JOB_ADMIN_ADDRESSES`、`XXL_JOB_APPNAME`、`XXL_JOB_ACCESS_TOKEN`、`XXL_JOB_PORT`。
+
+## MySQL 索引规范
+
+- 命名规范：
+  - 唯一索引：`uk_<table>_<cols>`
+  - 普通索引：`idx_<table>_<cols>`
+- 设计规范：
+  - 组合索引按“高选择性等值列 -> 状态/逻辑删除列 -> 排序列”顺序。
+  - 逻辑删除表（`deleted`/`is_deleted`）的高频查询索引需包含删除标记列。
+  - 避免重复/冗余索引，避免仅为低区分度单列（如 `status`）单独建索引。
+- 当前仓库 `db/init/*/init.sql` 已按以上规范统一。
 
 ## 目录说明
 

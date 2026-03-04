@@ -5,7 +5,7 @@ USE order_db;
 CREATE TABLE IF NOT EXISTS orders
 (
     id            BIGINT UNSIGNED PRIMARY KEY,
-    order_no      VARCHAR(64)     NULL UNIQUE,
+    order_no      VARCHAR(64)     NULL,
     user_id       BIGINT UNSIGNED NOT NULL,
     total_amount  DECIMAL(10, 2)  NOT NULL,
     pay_amount    DECIMAL(10, 2)  NOT NULL,
@@ -23,8 +23,10 @@ CREATE TABLE IF NOT EXISTS orders
     updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted       TINYINT         NOT NULL DEFAULT 0,
     version       INT             NOT NULL DEFAULT 0,
-    INDEX idx_order_user_status (user_id, status),
-    INDEX idx_order_status (status)
+    UNIQUE KEY uk_orders_order_no (order_no),
+    INDEX idx_orders_user_status_deleted_created_at (user_id, status, deleted, created_at),
+    INDEX idx_orders_shop_status_deleted_created_at (shop_id, status, deleted, created_at),
+    INDEX idx_orders_status_deleted_created_at (status, deleted, created_at)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -43,8 +45,8 @@ CREATE TABLE IF NOT EXISTS order_item
     updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT         NOT NULL DEFAULT 0,
     version          INT             NOT NULL DEFAULT 0,
-    INDEX idx_order_item_order (order_id),
-    INDEX idx_order_item_product (product_id)
+    INDEX idx_order_item_order_id_deleted (order_id, deleted),
+    INDEX idx_order_item_product_id_deleted (product_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -52,7 +54,7 @@ CREATE TABLE IF NOT EXISTS order_item
 CREATE TABLE IF NOT EXISTS refunds
 (
     id                    BIGINT UNSIGNED PRIMARY KEY,
-    refund_no             VARCHAR(64)     NOT NULL UNIQUE,
+    refund_no             VARCHAR(64)     NOT NULL,
     order_id              BIGINT UNSIGNED NOT NULL,
     order_no              VARCHAR(64)     NOT NULL,
     user_id               BIGINT UNSIGNED NOT NULL,
@@ -73,9 +75,10 @@ CREATE TABLE IF NOT EXISTS refunds
     created_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_deleted            TINYINT         NOT NULL DEFAULT 0,
-    INDEX idx_refund_order_id (order_id),
-    INDEX idx_refund_user_id (user_id),
-    INDEX idx_refund_status (status)
+    UNIQUE KEY uk_refunds_refund_no (refund_no),
+    INDEX idx_refunds_order_id_is_deleted (order_id, is_deleted),
+    INDEX idx_refunds_user_status_is_deleted (user_id, status, is_deleted),
+    INDEX idx_refunds_order_no_is_deleted (order_no, is_deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

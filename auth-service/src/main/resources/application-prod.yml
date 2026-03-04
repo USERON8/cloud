@@ -1,5 +1,6 @@
 ﻿spring:
   datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/cloud_auth?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}

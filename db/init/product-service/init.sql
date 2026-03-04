@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS category
     updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted    TINYINT         NOT NULL DEFAULT 0,
     version    INT             NOT NULL DEFAULT 0,
-    INDEX idx_category_parent_status (parent_id, status)
+    INDEX idx_category_parent_status_deleted (parent_id, status, deleted),
+    INDEX idx_category_level_status_deleted (level, status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -35,8 +36,8 @@ CREATE TABLE IF NOT EXISTS merchant_shop
     updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted       TINYINT         NOT NULL DEFAULT 0,
     version       INT             NOT NULL DEFAULT 0,
-    INDEX idx_merchant_shop_merchant (merchant_id),
-    INDEX idx_merchant_shop_status (status)
+    INDEX idx_merchant_shop_merchant_deleted (merchant_id, deleted),
+    INDEX idx_merchant_shop_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -55,9 +56,10 @@ CREATE TABLE IF NOT EXISTS products
     updated_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted        TINYINT         NOT NULL DEFAULT 0,
     version        INT             NOT NULL DEFAULT 0,
-    INDEX idx_products_shop_status (shop_id, status),
-    INDEX idx_products_category_status (category_id, status),
-    INDEX idx_products_brand_status (brand_id, status)
+    INDEX idx_products_shop_status_deleted_created_at (shop_id, status, deleted, created_at),
+    INDEX idx_products_category_status_deleted (category_id, status, deleted),
+    INDEX idx_products_brand_status_deleted (brand_id, status, deleted),
+    INDEX idx_products_name_deleted (product_name, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -84,8 +86,8 @@ CREATE TABLE IF NOT EXISTS brand
     updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT       NOT NULL DEFAULT 0,
     version          INT           NOT NULL DEFAULT 0,
-    INDEX idx_brand_name (brand_name),
-    INDEX idx_brand_status (status)
+    INDEX idx_brand_name_deleted (brand_name, deleted),
+    INDEX idx_brand_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -111,9 +113,9 @@ CREATE TABLE IF NOT EXISTS brand_authorization
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted         TINYINT         NOT NULL DEFAULT 0,
     version         INT             NOT NULL DEFAULT 0,
-    INDEX idx_brand_auth_brand (brand_id),
-    INDEX idx_brand_auth_merchant (merchant_id),
-    INDEX idx_brand_auth_status (auth_status)
+    INDEX idx_brand_auth_brand_deleted (brand_id, deleted),
+    INDEX idx_brand_auth_merchant_deleted (merchant_id, deleted),
+    INDEX idx_brand_auth_status_deleted (auth_status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -133,8 +135,8 @@ CREATE TABLE IF NOT EXISTS attribute_template
     updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted       TINYINT         NOT NULL DEFAULT 0,
     version       INT             NOT NULL DEFAULT 0,
-    INDEX idx_attr_tpl_category (category_id),
-    INDEX idx_attr_tpl_status (status)
+    INDEX idx_attr_tpl_category_deleted (category_id, deleted),
+    INDEX idx_attr_tpl_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -160,8 +162,8 @@ CREATE TABLE IF NOT EXISTS product_audit
     updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT         NOT NULL DEFAULT 0,
     version          INT             NOT NULL DEFAULT 0,
-    INDEX idx_product_audit_product (product_id),
-    INDEX idx_product_audit_status (audit_status)
+    INDEX idx_product_audit_product_deleted (product_id, deleted),
+    INDEX idx_product_audit_status_submit_time_deleted (audit_status, submit_time, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -195,8 +197,9 @@ CREATE TABLE IF NOT EXISTS product_review
     updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT         NOT NULL DEFAULT 0,
     version          INT             NOT NULL DEFAULT 0,
-    INDEX idx_product_review_product (product_id),
-    INDEX idx_product_review_order (order_id)
+    INDEX idx_product_review_product_visible_deleted (product_id, is_visible, deleted),
+    INDEX idx_product_review_order_id_deleted (order_id, deleted),
+    INDEX idx_product_review_user_id_deleted (user_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -224,7 +227,7 @@ CREATE TABLE IF NOT EXISTS product_sku
     deleted        TINYINT         NOT NULL DEFAULT 0,
     version        INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_product_sku_code (sku_code),
-    INDEX idx_product_sku_product (product_id)
+    INDEX idx_product_sku_product_status_deleted (product_id, status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -244,8 +247,8 @@ CREATE TABLE IF NOT EXISTS sku_specification
     updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted     TINYINT         NOT NULL DEFAULT 0,
     version     INT             NOT NULL DEFAULT 0,
-    INDEX idx_sku_spec_category (category_id),
-    INDEX idx_sku_spec_status (status)
+    INDEX idx_sku_spec_category_deleted (category_id, deleted),
+    INDEX idx_sku_spec_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -267,8 +270,8 @@ CREATE TABLE IF NOT EXISTS product_attribute
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    INDEX idx_product_attr_product (product_id),
-    INDEX idx_product_attr_group (attr_group)
+    INDEX idx_product_attr_product_deleted (product_id, deleted),
+    INDEX idx_product_attr_group_deleted (attr_group, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

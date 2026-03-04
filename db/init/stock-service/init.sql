@@ -5,7 +5,7 @@ USE stock_db;
 CREATE TABLE IF NOT EXISTS stock
 (
     id                  BIGINT UNSIGNED PRIMARY KEY,
-    product_id          BIGINT UNSIGNED NOT NULL UNIQUE,
+    product_id          BIGINT UNSIGNED NOT NULL,
     product_name        VARCHAR(200)    NOT NULL,
     stock_quantity      INT             NOT NULL DEFAULT 0,
     frozen_quantity     INT             NOT NULL DEFAULT 0,
@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS stock
     updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted             TINYINT         NOT NULL DEFAULT 0,
     version             INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_status (stock_status)
+    UNIQUE KEY uk_stock_product_id (product_id),
+    INDEX idx_stock_status_deleted (stock_status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS stock_in
     updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted    TINYINT         NOT NULL DEFAULT 0,
     version    INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_in_product (product_id)
+    INDEX idx_stock_in_product_id_deleted (product_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -44,8 +45,8 @@ CREATE TABLE IF NOT EXISTS stock_out
     updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted    TINYINT         NOT NULL DEFAULT 0,
     version    INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_out_product (product_id),
-    INDEX idx_stock_out_order (order_id)
+    INDEX idx_stock_out_product_id_deleted (product_id, deleted),
+    INDEX idx_stock_out_order_id_deleted (order_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -70,8 +71,8 @@ CREATE TABLE IF NOT EXISTS stock_log
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted         TINYINT         NOT NULL DEFAULT 0,
     version         INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_log_product_time (product_id, operate_time),
-    INDEX idx_stock_log_order (order_id)
+    INDEX idx_stock_log_product_operate_time_deleted (product_id, operate_time, deleted),
+    INDEX idx_stock_log_order_id_deleted (order_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS stock_log
 CREATE TABLE IF NOT EXISTS stock_count
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
-    count_no          VARCHAR(50)     NOT NULL UNIQUE,
+    count_no          VARCHAR(50)     NOT NULL,
     product_id        BIGINT UNSIGNED NOT NULL,
     product_name      VARCHAR(200)    NULL,
     expected_quantity INT             NOT NULL,
@@ -97,8 +98,9 @@ CREATE TABLE IF NOT EXISTS stock_count
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_count_product_time (product_id, count_time),
-    INDEX idx_stock_count_status (status)
+    UNIQUE KEY uk_stock_count_count_no (count_no),
+    INDEX idx_stock_count_product_count_time_deleted (product_id, count_time, deleted),
+    INDEX idx_stock_count_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

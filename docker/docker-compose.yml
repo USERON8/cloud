@@ -396,7 +396,7 @@
         read_only: true
 
   skywalking-oap:
-    image: apache/skywalking-oap-server:10.1.0
+    image: apache/skywalking-oap-server:10.3.0
     container_name: cloud-skywalking-oap
     depends_on:
       elasticsearch:
@@ -413,7 +413,7 @@
       SW_TELEMETRY: prometheus
 
   skywalking-ui:
-    image: apache/skywalking-ui:10.1.0
+    image: apache/skywalking-ui:10.3.0
     container_name: cloud-skywalking-ui
     depends_on:
       - skywalking-oap

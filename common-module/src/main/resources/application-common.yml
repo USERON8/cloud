@@ -56,12 +56,25 @@ spring:
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
-    hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:20}
-      minimum-idle: ${DB_MIN_IDLE:5}
-      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
-      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+    druid:
+      initial-size: ${DB_INITIAL_SIZE:5}
+      min-idle: ${DB_MIN_IDLE:5}
+      max-active: ${DB_POOL_SIZE:20}
+      max-wait: ${DB_CONNECTION_TIMEOUT:30000}
+      time-between-eviction-runs-millis: ${DB_EVICTION_INTERVAL:60000}
+      min-evictable-idle-time-millis: ${DB_MIN_EVICTABLE_IDLE:300000}
+      max-evictable-idle-time-millis: ${DB_MAX_EVICTABLE_IDLE:1800000}
+      validation-query: ${DB_VALIDATION_QUERY:SELECT 1}
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      keep-alive: true
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      stat-view-servlet:
+        enabled: false
+      web-stat-filter:
+        enabled: false
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -143,9 +156,23 @@ cloud:
     monitor-enabled: ${DISTRIBUTED_LOCK_MONITOR:true}
     log-enabled: ${DISTRIBUTED_LOCK_LOG:true}
 app:
+  skywalking:
+    enabled: ${SKYWALKING_ENABLED:false}
+    agent-path: ${SKYWALKING_AGENT_PATH:}
+    collector-backend-service: ${SKYWALKING_COLLECTOR_BACKEND_SERVICE:127.0.0.1:11800}
   security:
     testenv-bypass-enabled: ${APP_SECURITY_TESTENV_BYPASS_ENABLED:false}
     test-token-value: ${APP_SECURITY_TEST_TOKEN_VALUE:TEST_ENV_PERMANENT_TOKEN}
+  xxl:
+    job:
+      enabled: ${XXL_JOB_ENABLED:false}
+      admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18080/xxl-job-admin}
+      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
+      ip: ${XXL_JOB_IP:}
+      port: ${XXL_JOB_PORT:9999}
+      access-token: ${XXL_JOB_ACCESS_TOKEN:}
+      log-path: ${XXL_JOB_LOG_PATH:./logs/xxl-job}
+      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
   async:
     enabled: ${APP_ASYNC_ENABLED:true}
     common:

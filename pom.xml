@@ -73,6 +73,9 @@
         <kotlin.version>1.9.24</kotlin.version>
         <alipay-sdk.version>4.40.452.ALL</alipay-sdk.version>
         <poi.version>5.4.0</poi.version>
+        <druid.version>1.2.24</druid.version>
+        <skywalking.version>9.5.0</skywalking.version>
+        <xxl-job.version>2.4.1</xxl-job.version>
 
         <!-- 娴嬭瘯鐩稿叧鐗堟湰 -->
         <junit.version>5.10.3</junit.version>
@@ -189,6 +192,26 @@
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi-ooxml</artifactId>
                 <version>${poi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-3-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-trace</artifactId>
+                <version>${skywalking.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-logback-1.x</artifactId>
+                <version>${skywalking.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xuxueli</groupId>
+                <artifactId>xxl-job-core</artifactId>
+                <version>${xxl-job.version}</version>
             </dependency>
 
             <!-- API鏂囨。鐗堟湰绠＄悊 -->
