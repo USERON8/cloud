@@ -76,6 +76,7 @@
         <druid.version>1.2.24</druid.version>
         <skywalking.version>9.5.0</skywalking.version>
         <xxl-job.version>2.4.1</xxl-job.version>
+        <sentinel.version>1.8.8</sentinel.version>
 
         <!-- 娴嬭瘯鐩稿叧鐗堟湰 -->
         <junit.version>5.10.3</junit.version>
@@ -212,6 +213,11 @@
                 <groupId>com.xuxueli</groupId>
                 <artifactId>xxl-job-core</artifactId>
                 <version>${xxl-job.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.csp</groupId>
+                <artifactId>sentinel-spring-cloud-gateway-adapter</artifactId>
+                <version>${sentinel.version}</version>
             </dependency>
 
             <!-- API鏂囨。鐗堟湰绠＄悊 -->

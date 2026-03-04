@@ -450,6 +450,19 @@
         target: /var/run/docker.sock
     restart: unless-stopped
 
+  sentinel-dashboard:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: cloud-sentinel-dashboard
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.132
+    ports:
+      - "${PORT_SENTINEL_DASHBOARD_HTTP:-18718}:8858"
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858 -Dproject.name=sentinel-dashboard"
+    restart: unless-stopped
+
   xxl-job-admin:
     image: xuxueli/xxl-job-admin:2.4.1
     container_name: cloud-xxl-job-admin

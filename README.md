@@ -105,6 +105,19 @@ pnpm --dir my-shop-web build
   - 通过 `XXL_JOB_ENABLED=true` 启用。
   - 常用参数：`XXL_JOB_ADMIN_ADDRESSES`、`XXL_JOB_APPNAME`、`XXL_JOB_ACCESS_TOKEN`、`XXL_JOB_PORT`。
 
+## Sentinel 断路器（网关）
+
+- 已在 `gateway` 引入 Sentinel 并加载网关规则，默认保护以下路由：
+  - `user-service-api-v2`
+  - `product-service-api-v2`
+  - `order-service-api-v2`
+  - `payment-service-api-v2`
+  - `stock-service-api-v2`
+  - `search-service-api-v2`
+- 默认阈值：`80 QPS / 1s`（可通过环境变量覆盖）。
+- 触发规则后返回 `429`，响应体为统一 JSON 错误结构。
+- 本地控制台：`docker compose` 已新增 `sentinel-dashboard`，访问 `http://127.0.0.1:18718`。
+
 ## MySQL 索引规范
 
 - 命名规范：
