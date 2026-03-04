@@ -2,6 +2,36 @@ DROP DATABASE IF EXISTS order_db;
 CREATE DATABASE IF NOT EXISTS order_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE order_db;
 
+-- Legacy compatibility table for existing order-service mappers/tasks.
+-- Keep this table during transition until all legacy "orders" references are migrated to order_main/order_sub.
+CREATE TABLE IF NOT EXISTS orders
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    order_no         VARCHAR(64)     NOT NULL,
+    user_id          BIGINT UNSIGNED NOT NULL,
+    total_amount     DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    pay_amount       DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    status           INT             NOT NULL DEFAULT 0,
+    refund_status    INT             NOT NULL DEFAULT 0,
+    address_id       BIGINT UNSIGNED NULL,
+    pay_time         DATETIME        NULL,
+    ship_time        DATETIME        NULL,
+    complete_time    DATETIME        NULL,
+    cancel_time      DATETIME        NULL,
+    cancel_reason    VARCHAR(255)    NULL,
+    remark           VARCHAR(255)    NULL,
+    shop_id          BIGINT UNSIGNED NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_orders_order_no (order_no),
+    INDEX idx_orders_user_status_deleted (user_id, status, deleted),
+    INDEX idx_orders_status_created_deleted (status, created_at, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS order_main
 (
     id               BIGINT UNSIGNED PRIMARY KEY,
