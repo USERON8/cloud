@@ -1,0 +1,43 @@
+package com.cloud.order.v2.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.cloud.common.domain.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.math.BigDecimal;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("cart_item")
+public class CartItemV2 extends BaseEntity<CartItemV2> {
+
+    @TableField("cart_id")
+    private Long cartId;
+
+    @TableField("user_id")
+    private Long userId;
+
+    @TableField("spu_id")
+    private Long spuId;
+
+    @TableField("sku_id")
+    private Long skuId;
+
+    @TableField("sku_name")
+    private String skuName;
+
+    @TableField("quantity")
+    private Integer quantity;
+
+    @TableField("unit_price")
+    private BigDecimal unitPrice;
+
+    @TableField("selected")
+    private Integer selected;
+
+    @TableField("checked_out")
+    private Integer checkedOut;
+}
+
