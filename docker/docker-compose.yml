@@ -244,7 +244,7 @@
         target: /home/minio/data
   # 兼容性注释已标准化。
   elasticsearch:
-    image: elasticsearch:9.1.2
+    image: elasticsearch:8.15.3
     container_name: cloud-es-search
     networks:
       service_net:
@@ -259,14 +259,11 @@
       - http.cors.allow-origin="*"
     volumes:
       - type: bind
-        source: ./docker-compose/elasticsearch/data
+        source: ./docker-compose/elasticsearch/data-v8
         target: /usr/share/elasticsearch/data
       - type: bind
         source: ./docker-compose/elasticsearch/config/elasticsearch.yml
         target: /usr/share/elasticsearch/config/elasticsearch.yml
-      - type: bind
-        source: ./docker-compose/elasticsearch/plugins
-        target: /usr/share/elasticsearch/plugins
     ports:
       - "${PORT_ES_HTTP:-19200}:9200"  # 兼容性注释已标准化。
       - "${PORT_ES_TRANSPORT:-19300}:9300"  # 兼容性注释已标准化。
@@ -281,7 +278,7 @@
       retries: 12
   # Kibana
   kibana:
-    image: kibana:9.1.2
+    image: kibana:8.15.3
     container_name: cloud-kibana-search
     depends_on:
       - elasticsearch
@@ -324,7 +321,7 @@
       start_period: 60s
 
   logstash:
-    image: logstash:9.1.2
+    image: logstash:8.15.3
     container_name: cloud-logstash-sync
     depends_on:
       mysql:
@@ -451,7 +448,7 @@
     restart: unless-stopped
 
   sentinel-dashboard:
-    image: bladex/sentinel-dashboard:1.8.8
+    image: bladex/sentinel-dashboard:1.8.6
     container_name: cloud-sentinel-dashboard
     networks:
       service_net:
@@ -464,7 +461,7 @@
     restart: unless-stopped
 
   xxl-job-admin:
-    image: xuxueli/xxl-job-admin:2.4.1
+    image: xuxueli/xxl-job-admin:2.4.0
     container_name: cloud-xxl-job-admin
     depends_on:
       mysql:
