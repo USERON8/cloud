@@ -138,3 +138,11 @@ sequenceDiagram
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
 
+## Postman Import
+
+- Collection: `docs/postman/cloud-shop.postman_collection.json`
+- Environment: `docs/postman/cloud-shop.local.postman_environment.json`
+- Recommended order:
+1. Import and activate `Cloud Shop Local` environment
+2. Import the collection
+3. Run `Auth/Login` first to auto-fill `accessToken` and `refreshToken`
