@@ -7,10 +7,10 @@ CREATE TABLE IF NOT EXISTS users
     id                BIGINT UNSIGNED PRIMARY KEY,
     username          VARCHAR(50)  NOT NULL,
     password          VARCHAR(255) NOT NULL,
-    phone             VARCHAR(20),
+    phone             VARCHAR(20)  NULL,
     nickname          VARCHAR(50)  NOT NULL,
-    avatar_url        VARCHAR(255),
-    email             VARCHAR(100),
+    avatar_url        VARCHAR(255) NULL,
+    email             VARCHAR(100) NULL,
     github_id         BIGINT UNSIGNED NULL,
     github_username   VARCHAR(100) NULL,
     oauth_provider    VARCHAR(32) NULL,
@@ -33,24 +33,70 @@ CREATE TABLE IF NOT EXISTS users
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS user_profile_ext
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    user_id           BIGINT UNSIGNED NOT NULL,
+    gender            VARCHAR(16)     NULL,
+    birthday          DATE            NULL,
+    bio               VARCHAR(500)    NULL,
+    country           VARCHAR(64)     NULL,
+    province          VARCHAR(64)     NULL,
+    city              VARCHAR(64)     NULL,
+    personal_tags     JSON            NULL,
+    preferences       JSON            NULL,
+    last_login_at     DATETIME        NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_user_profile_ext_user_id (user_id),
+    INDEX idx_user_profile_ext_city_deleted (city, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS user_address
 (
-    id             BIGINT UNSIGNED PRIMARY KEY,
-    user_id        BIGINT UNSIGNED NOT NULL,
-    consignee      VARCHAR(50)     NOT NULL,
-    phone          VARCHAR(20)     NOT NULL,
-    province       VARCHAR(20)     NOT NULL,
-    city           VARCHAR(20)     NOT NULL,
-    district       VARCHAR(20)     NOT NULL,
-    street         VARCHAR(100)    NOT NULL,
-    detail_address VARCHAR(255)    NOT NULL,
-    is_default     TINYINT         NOT NULL DEFAULT 0,
-    created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted        TINYINT         NOT NULL DEFAULT 0,
-    version        INT             NOT NULL DEFAULT 0,
-    INDEX idx_user_address_user_id_deleted (user_id, deleted),
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    user_id          BIGINT UNSIGNED NOT NULL,
+    address_tag      VARCHAR(32)     NULL,
+    receiver_name    VARCHAR(50)     NOT NULL,
+    receiver_phone   VARCHAR(20)     NOT NULL,
+    country          VARCHAR(64)     NOT NULL DEFAULT 'China',
+    province         VARCHAR(64)     NOT NULL,
+    city             VARCHAR(64)     NOT NULL,
+    district         VARCHAR(64)     NOT NULL,
+    street           VARCHAR(100)    NOT NULL,
+    detail_address   VARCHAR(255)    NOT NULL,
+    postal_code      VARCHAR(16)     NULL,
+    longitude        DECIMAL(11, 7)  NULL,
+    latitude         DECIMAL(11, 7)  NULL,
+    is_default       TINYINT         NOT NULL DEFAULT 0,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_user_address_user_deleted (user_id, deleted),
     INDEX idx_user_address_user_default_deleted (user_id, is_default, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_favorite
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    user_id          BIGINT UNSIGNED NOT NULL,
+    spu_id           BIGINT UNSIGNED NOT NULL,
+    sku_id           BIGINT UNSIGNED NULL,
+    favorite_status  VARCHAR(16)     NOT NULL DEFAULT 'ACTIVE',
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_user_favorite_user_spu_sku (user_id, spu_id, sku_id),
+    INDEX idx_user_favorite_user_status_deleted (user_id, favorite_status, deleted),
+    INDEX idx_user_favorite_spu_deleted (spu_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -61,7 +107,7 @@ CREATE TABLE IF NOT EXISTS admin
     username   VARCHAR(50)  NOT NULL,
     password   VARCHAR(255) NOT NULL,
     real_name  VARCHAR(50)  NOT NULL,
-    phone      VARCHAR(20),
+    phone      VARCHAR(20)  NULL,
     role       VARCHAR(20)  NOT NULL DEFAULT 'ADMIN',
     status     TINYINT      NOT NULL DEFAULT 1,
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -81,7 +127,7 @@ CREATE TABLE IF NOT EXISTS merchant
     username      VARCHAR(50)  NOT NULL,
     password      VARCHAR(255) NOT NULL,
     merchant_name VARCHAR(100) NOT NULL,
-    phone         VARCHAR(20),
+    phone         VARCHAR(20)  NULL,
     status        TINYINT      NOT NULL DEFAULT 1,
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -104,13 +150,169 @@ CREATE TABLE IF NOT EXISTS merchant_auth
     contact_phone           VARCHAR(20)     NOT NULL,
     contact_address         VARCHAR(255)    NOT NULL,
     auth_status             TINYINT         NOT NULL DEFAULT 0,
-    auth_remark             VARCHAR(255),
+    auth_remark             VARCHAR(255)    NULL,
     created_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted                 TINYINT         NOT NULL DEFAULT 0,
     version                 INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_merchant_auth_merchant_id (merchant_id),
     INDEX idx_merchant_auth_status_deleted (auth_status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_menu
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    menu_name         VARCHAR(64)     NOT NULL,
+    menu_code         VARCHAR(64)     NOT NULL,
+    parent_id         BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    menu_type         VARCHAR(16)     NOT NULL DEFAULT 'MENU',
+    route_path        VARCHAR(255)    NULL,
+    sort_order        INT             NOT NULL DEFAULT 0,
+    visible           TINYINT         NOT NULL DEFAULT 1,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_menu_code (menu_code),
+    INDEX idx_sys_menu_parent_deleted (parent_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_role
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    role_name          VARCHAR(64)    NOT NULL,
+    role_code          VARCHAR(64)    NOT NULL,
+    role_status        TINYINT        NOT NULL DEFAULT 1,
+    created_at         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted            TINYINT        NOT NULL DEFAULT 0,
+    version            INT            NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_role_code (role_code)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_permission
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    permission_name   VARCHAR(64)     NOT NULL,
+    permission_code   VARCHAR(128)    NOT NULL,
+    http_method       VARCHAR(16)     NULL,
+    api_path          VARCHAR(255)    NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_permission_code (permission_code)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_user_role
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    user_id           BIGINT UNSIGNED NOT NULL,
+    role_id           BIGINT UNSIGNED NOT NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_user_role_user_role (user_id, role_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_role_permission
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    role_id           BIGINT UNSIGNED NOT NULL,
+    permission_id     BIGINT UNSIGNED NOT NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_role_permission_role_permission (role_id, permission_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sys_role_menu
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    role_id           BIGINT UNSIGNED NOT NULL,
+    menu_id           BIGINT UNSIGNED NOT NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_sys_role_menu_role_menu (role_id, menu_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS operation_audit_log
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    operator_id       BIGINT UNSIGNED NOT NULL,
+    operator_role     VARCHAR(32)     NOT NULL,
+    action            VARCHAR(128)    NOT NULL,
+    target_type       VARCHAR(64)     NOT NULL,
+    target_id         VARCHAR(64)     NOT NULL,
+    trace_id          VARCHAR(64)     NULL,
+    request_uri       VARCHAR(255)    NULL,
+    request_method    VARCHAR(16)     NULL,
+    request_payload   TEXT            NULL,
+    result_code       INT             NOT NULL DEFAULT 0,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    INDEX idx_operation_audit_operator_created_deleted (operator_id, created_at, deleted),
+    INDEX idx_operation_audit_target_deleted (target_type, target_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS outbox_event
+(
+    id                 BIGINT UNSIGNED PRIMARY KEY,
+    event_id           VARCHAR(64)     NOT NULL,
+    aggregate_type     VARCHAR(64)     NOT NULL,
+    aggregate_id       VARCHAR(64)     NOT NULL,
+    event_type         VARCHAR(64)     NOT NULL,
+    payload            JSON            NOT NULL,
+    status             VARCHAR(16)     NOT NULL DEFAULT 'NEW',
+    retry_count        INT             NOT NULL DEFAULT 0,
+    next_retry_at      DATETIME        NULL,
+    created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted            TINYINT         NOT NULL DEFAULT 0,
+    version            INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_outbox_event_id (event_id),
+    INDEX idx_outbox_status_next_retry_deleted (status, next_retry_at, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS inbox_consume_log
+(
+    id                 BIGINT UNSIGNED PRIMARY KEY,
+    event_id           VARCHAR(64)     NOT NULL,
+    consumer_group     VARCHAR(64)     NOT NULL,
+    event_type         VARCHAR(64)     NOT NULL,
+    consume_status     VARCHAR(16)     NOT NULL DEFAULT 'SUCCESS',
+    error_message      VARCHAR(1000)   NULL,
+    consumed_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted            TINYINT         NOT NULL DEFAULT 0,
+    version            INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_inbox_event_group (event_id, consumer_group),
+    INDEX idx_inbox_event_type_deleted (event_type, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
