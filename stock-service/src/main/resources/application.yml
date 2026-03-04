@@ -13,6 +13,8 @@ spring:
   profiles:
     active: dev
     include: rocketmq
+  datasource:
+    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   cloud:
     nacos:
       discovery:

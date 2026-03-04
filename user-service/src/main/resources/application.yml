@@ -12,6 +12,8 @@ spring:
     name: user-service
   profiles:
     active: dev
+  datasource:
+    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   main:
     allow-bean-definition-overriding: true
   cloud:
