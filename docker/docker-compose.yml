@@ -3,18 +3,9 @@
   mysql:
     image: mysql:9.3.0
     container_name: cloud-mysql
-    command:
-      - mysqld
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --max_connections=600
-      - --innodb_buffer_pool_size=512M
-      - --innodb_buffer_pool_instances=2
-      - --innodb_log_buffer_size=64M
-      - --innodb_flush_log_at_trx_commit=2
-      - --thread_cache_size=64
-      - --table_open_cache=2048
-      - --skip-log-bin
+    entrypoint:
+      - /bin/bash
+      - /opt/mysql/scripts/reset-and-bootstrap.sh
     networks:
       service_net:
         ipv4_address: 172.28.0.10
@@ -34,8 +25,17 @@
         source: ./docker-compose/mysql/logs
         target: /var/log/mysql
       - type: bind
-        source: ./docker-compose/mysql/init
+        source: ./docker-compose/mysql/bootstrap
         target: /docker-entrypoint-initdb.d
+      - type: bind
+        source: ./docker-compose/mysql/scripts
+        target: /opt/mysql/scripts
+      - type: bind
+        source: ../db/init
+        target: /bootstrap/db/init
+      - type: bind
+        source: ../db/test
+        target: /bootstrap/db/test
     ports:
       - "${PORT_MYSQL:-13306}:3306"
     healthcheck:
@@ -138,6 +138,7 @@
       interval: 10s
       timeout: 5s
       retries: 12
+
   # 兼容性注释已标准化。 
   namesrv:
     image: apache/rocketmq:5.3.2
