@@ -424,6 +424,31 @@
       - "${PORT_SKYWALKING_UI:-13001}:8080"
     environment:
       SW_OAP_ADDRESS: http://skywalking-oap:12800
+
+  jenkins:
+    image: jenkins/jenkins:jdk17
+    container_name: cloud-jenkins
+    user: root
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.130
+    ports:
+      - "${PORT_JENKINS_HTTP:-18088}:8080"
+      - "${PORT_JENKINS_AGENT:-15000}:50000"
+    environment:
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      TZ: Asia/Shanghai
+    volumes:
+      - type: bind
+        source: ./docker-compose/jenkins/home
+        target: /var/jenkins_home
+      - type: bind
+        source: ../
+        target: /workspace/cloud
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    restart: unless-stopped
 # 兼容性注释已标准化。
 networks:
   service_net:
