@@ -139,6 +139,95 @@ pnpm --dir my-shop-web build
 - Feign 调用已自动注入上述请求头（业务代码无需手工传）。
 - 统一环境变量：`INTERNAL_API_KEY`（示例见 `docker/.env`）。
 
+## 架构图（Mermaid）
+
+### 1) 系统拓扑
+
+```mermaid
+flowchart LR
+    U[User / Admin] --> N[Nginx]
+    N --> G[gateway]
+    G --> A[auth-service]
+    G --> US[user-service]
+    G --> OS[order-service]
+    G --> PS[product-service]
+    G --> SS[stock-service]
+    G --> PAY[payment-service]
+    G --> SE[search-service]
+
+    US --> M[(MySQL)]
+    OS --> M
+    PS --> M
+    SS --> M
+    PAY --> M
+
+    OS --> R[(RocketMQ)]
+    SS --> R
+    PAY --> R
+    US --> R
+
+    OS --> RD[(Redis)]
+    G --> RD
+    US --> RD
+```
+
+### 2) 下单到履约主链路（主单/子单）
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant GW as Gateway
+    participant O as order-service
+    participant S as stock-service
+    participant P as payment-service
+    participant MQ as RocketMQ
+
+    C->>GW: POST /api/v2/orders
+    GW->>O: create mainOrder + subOrders
+    O->>S: reserve(skuId, qty)
+    S-->>O: reserved
+    O->>MQ: outbox event(order.created)
+    O-->>C: CREATED / STOCK_RESERVED
+
+    C->>GW: POST /api/v2/payments/order
+    GW->>P: create payment_order
+    P->>MQ: payment.paid
+    MQ->>O: consume payment.paid
+    O->>S: confirm reservation
+    S-->>O: stock deducted
+    O-->>C: order status -> PAID
+```
+
+### 3) 可靠消息最终一致（Outbox + Inbox）
+
+```mermaid
+flowchart TD
+    TX1[Local TX: business write] --> OB[outbox_event]
+    OB --> PUB[Publisher]
+    PUB --> MQ[RocketMQ]
+    MQ --> CON[Consumer]
+    CON --> IB[inbox_consume_log idempotent check]
+    IB --> BIZ[Apply business changes]
+    BIZ --> DONE[ACK]
+    CON -->|retry/backoff| RETRY[Retry]
+    RETRY --> CON
+```
+
+### 4) 可观测性链路
+
+```mermaid
+flowchart LR
+    APP[Services] --> SW[SkyWalking OAP]
+    SW --> SWUI[SkyWalking UI]
+
+    APP --> LS[Logstash]
+    LS --> ES[Elasticsearch]
+    ES --> KB[Kibana]
+
+    APP --> PR[Prometheus]
+    PR --> GF[Grafana]
+```
+
 ## 目录说明
 
 - `db/`：初始化、测试数据与归档 SQL
