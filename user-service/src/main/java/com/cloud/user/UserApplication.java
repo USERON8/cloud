@@ -1,5 +1,6 @@
 package com.cloud.user;
 
+import com.cloud.common.security.internal.InternalApiFeignClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +19,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
-@EnableFeignClients(basePackages = "com.cloud.api")
+@EnableFeignClients(
+        basePackages = "com.cloud.api",
+        defaultConfiguration = InternalApiFeignClientConfig.class
+)
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @ComponentScan(

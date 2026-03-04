@@ -2,6 +2,7 @@ package com.cloud.product;
 
 
 import com.cloud.common.config.base.BaseHealthCheckController;
+import com.cloud.common.security.internal.InternalApiFeignClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +19,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
-@EnableFeignClients(basePackages = "com.cloud.api")
+@EnableFeignClients(
+        basePackages = "com.cloud.api",
+        defaultConfiguration = InternalApiFeignClientConfig.class
+)
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 @EnableTransactionManagement(proxyTargetClass = true)
 @ComponentScan(

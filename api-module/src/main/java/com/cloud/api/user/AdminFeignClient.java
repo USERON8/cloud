@@ -12,7 +12,7 @@ import java.util.List;
 
 
 
-@FeignClient(name = "user-service", path = "/admin", contextId = "adminFeignClient")
+@FeignClient(name = "user-service", path = "/internal/admin", contextId = "adminFeignClient")
 public interface AdminFeignClient {
 
     

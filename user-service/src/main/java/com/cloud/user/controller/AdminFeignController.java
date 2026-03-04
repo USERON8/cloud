@@ -15,7 +15,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/admin")
+@RequestMapping({"/admin", "/internal/admin"})
 @RequiredArgsConstructor
 public class AdminFeignController implements AdminFeignClient {
 

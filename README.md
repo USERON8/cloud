@@ -116,6 +116,16 @@ pnpm --dir my-shop-web build
   - 避免重复/冗余索引，避免仅为低区分度单列（如 `status`）单独建索引。
 - 当前仓库 `db/init/*/init.sql` 已按以上规范统一。
 
+## 服务间鉴权（已采用 API Key）
+
+- 方案选择：`API Key`（未采用 mTLS）。
+- 生效范围：所有 `/internal/**` 接口。
+- 请求头：
+  - `X-Internal-Api-Key`
+  - `X-Internal-Caller`
+- Feign 调用已自动注入上述请求头（业务代码无需手工传）。
+- 统一环境变量：`INTERNAL_API_KEY`（示例见 `docker/.env`）。
+
 ## 目录说明
 
 - `db/`：初始化、测试数据与归档 SQL
