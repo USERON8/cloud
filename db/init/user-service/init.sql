@@ -320,7 +320,7 @@ CREATE TABLE IF NOT EXISTS inbox_consume_log
 CREATE TABLE IF NOT EXISTS test_access_token
 (
     id            BIGINT UNSIGNED PRIMARY KEY,
-    token_value   VARCHAR(1024) NOT NULL,
+    token_value   VARCHAR(255)  NOT NULL,
     token_owner   VARCHAR(64)   NOT NULL DEFAULT 'test-user',
     expires_at    DATETIME      NOT NULL,
     is_active     TINYINT       NOT NULL DEFAULT 1,
