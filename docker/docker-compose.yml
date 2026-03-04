@@ -374,6 +374,7 @@
       - "${PORT_LOGSTASH_BEATS:-15044}:5044"
       - "${PORT_LOGSTASH_API:-19600}:9600"
     environment:
+      TZ: Asia/Shanghai
       MYSQL_HOST: cloud-mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: product_db

@@ -14,4 +14,9 @@ exec docker-entrypoint.sh mysqld \
   --innodb_flush_log_at_trx_commit=2 \
   --thread_cache_size=64 \
   --table_open_cache=2048 \
-  --skip-log-bin
+  --server-id=1 \
+  --log-bin=/var/lib/mysql/mysql-bin \
+  --binlog_expire_logs_seconds=604800 \
+  --max_binlog_size=268435456 \
+  --binlog_format=ROW \
+  --binlog_row_image=FULL
