@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +28,11 @@ public class OrderV2Controller {
     @PostMapping("/order-main")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     public Result<OrderMainV2> createMainOrder(@RequestBody @Valid CreateMainOrderRequest request,
+                                                @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                 Authentication authentication) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new BusinessException("Idempotency-Key header is required");
+        }
         Long currentUserId = requireCurrentUserId(authentication);
         if (!isAdmin(authentication)) {
             if (request.getUserId() == null) {
@@ -36,6 +41,7 @@ public class OrderV2Controller {
                 return Result.forbidden("forbidden to create order for another user");
             }
         }
+        request.setIdempotencyKey(idempotencyKey.trim());
         return Result.success(orderV2Service.createMainOrder(request));
     }
 

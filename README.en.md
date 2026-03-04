@@ -137,6 +137,7 @@ sequenceDiagram
 - `docker/`: infrastructure configs
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
+- `docs/performance-baseline.md`: baseline for hot cache, timeout controls, async thread/queue sizing, and MySQL index rules
 
 ## Postman Import
 

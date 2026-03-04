@@ -13,6 +13,8 @@ import com.cloud.order.v2.service.OrderV2Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,6 +53,21 @@ public class OrderV2ServiceImpl implements OrderV2Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderMainV2 createMainOrder(CreateMainOrderRequest request) {
+        String idempotencyKey = request.getIdempotencyKey();
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new BusinessException("idempotency key is required");
+        }
+
+        OrderMainV2 existing = orderMainV2Mapper.selectOne(
+                new LambdaQueryWrapper<OrderMainV2>()
+                        .eq(OrderMainV2::getIdempotencyKey, idempotencyKey.trim())
+                        .eq(OrderMainV2::getDeleted, 0)
+                        .last("LIMIT 1")
+        );
+        if (existing != null) {
+            return existing;
+        }
+
         OrderMainV2 main = new OrderMainV2();
         main.setMainOrderNo("M" + System.currentTimeMillis());
         main.setUserId(request.getUserId());
@@ -58,8 +75,21 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         main.setTotalAmount(request.getTotalAmount());
         main.setPayableAmount(request.getPayableAmount());
         main.setRemark(request.getRemark());
-        main.setIdempotencyKey(request.getIdempotencyKey());
-        orderMainV2Mapper.insert(main);
+        main.setIdempotencyKey(idempotencyKey.trim());
+        try {
+            orderMainV2Mapper.insert(main);
+        } catch (DuplicateKeyException duplicateKeyException) {
+            OrderMainV2 duplicated = orderMainV2Mapper.selectOne(
+                    new LambdaQueryWrapper<OrderMainV2>()
+                            .eq(OrderMainV2::getIdempotencyKey, idempotencyKey.trim())
+                            .eq(OrderMainV2::getDeleted, 0)
+                            .last("LIMIT 1")
+            );
+            if (duplicated != null) {
+                return duplicated;
+            }
+            throw duplicateKeyException;
+        }
         return main;
     }
 
