@@ -244,10 +244,7 @@
         target: /home/minio/data
   # 兼容性注释已标准化。
   elasticsearch:
-    build:
-      context: ./docker-compose/elasticsearch
-      dockerfile: Dockerfile
-    image: cloud/elasticsearch:8.15.3-pinyin
+    image: elasticsearch:9.1.2
     container_name: cloud-es-search
     networks:
       service_net:
@@ -262,15 +259,54 @@
       - http.cors.allow-origin="*"
     volumes:
       - type: bind
+        source: ./docker-compose/elasticsearch/data
+        target: /usr/share/elasticsearch/data
+      - type: bind
+        source: ./docker-compose/elasticsearch/config/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+      - type: bind
+        source: ./docker-compose/elasticsearch/plugins
+        target: /usr/share/elasticsearch/plugins
+    ports:
+      - "${PORT_ES_HTTP:-19200}:9200"  # 兼容性注释已标准化。
+      - "${PORT_ES_TRANSPORT:-19300}:9300"  # 兼容性注释已标准化。
+    ulimits: # 兼容性注释已标准化。
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9200" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  elasticsearch-oap:
+    build:
+      context: ./docker-compose/elasticsearch
+      dockerfile: Dockerfile
+    image: cloud/elasticsearch:8.15.3-pinyin
+    container_name: cloud-es-oap
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.91
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+    volumes:
+      - type: bind
         source: ./docker-compose/elasticsearch/data-v8
         target: /usr/share/elasticsearch/data
       - type: bind
         source: ./docker-compose/elasticsearch/config/elasticsearch.yml
         target: /usr/share/elasticsearch/config/elasticsearch.yml
     ports:
-      - "${PORT_ES_HTTP:-19200}:9200"  # 兼容性注释已标准化。
-      - "${PORT_ES_TRANSPORT:-19300}:9300"  # 兼容性注释已标准化。
-    ulimits: # 兼容性注释已标准化。
+      - "${PORT_ES_OAP_HTTP:-19210}:9200"
+      - "${PORT_ES_OAP_TRANSPORT:-19310}:9300"
+    ulimits:
       memlock:
         soft: -1
         hard: -1
@@ -399,7 +435,7 @@
     image: apache/skywalking-oap-server:10.3.0
     container_name: cloud-skywalking-oap
     depends_on:
-      elasticsearch:
+      elasticsearch-oap:
         condition: service_healthy
     networks:
       service_net:
@@ -409,7 +445,7 @@
       - "${PORT_SKYWALKING_OAP_HTTP:-12800}:12800"
     environment:
       SW_STORAGE: elasticsearch
-      SW_STORAGE_ES_CLUSTER_NODES: elasticsearch:9200
+      SW_STORAGE_ES_CLUSTER_NODES: elasticsearch-oap:9200
       SW_TELEMETRY: prometheus
 
   skywalking-ui:
