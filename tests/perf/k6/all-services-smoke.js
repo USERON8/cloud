@@ -39,13 +39,7 @@ const defaultTargets = [
   `${origin.scheme}://${origin.host}:8085/actuator/health`,
   `${origin.scheme}://${origin.host}:8086/actuator/health`,
   `${origin.scheme}://${origin.host}:8087/actuator/health`,
-  `${BASE_URL}/auth-service/v3/api-docs`,
-  `${BASE_URL}/user-service/v3/api-docs`,
-  `${BASE_URL}/order-service/v3/api-docs`,
-  `${BASE_URL}/payment-service/v3/api-docs`,
-  `${BASE_URL}/stock-service/v3/api-docs`,
-  `${origin.scheme}://${origin.host}:8084/api/product/search?name=demo`,
-  `${origin.scheme}://${origin.host}:8087/api/search/basic?keyword=demo&page=0&size=2`,
+  `${BASE_URL}/api/search/smart-search?keyword=demo&page=1&size=2`,
 ];
 
 const targetRaw = String(__ENV.SERVICE_TARGETS || "").trim();

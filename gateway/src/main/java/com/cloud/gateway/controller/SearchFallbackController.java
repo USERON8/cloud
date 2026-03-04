@@ -69,9 +69,10 @@ public class SearchFallbackController {
                 .timeout(Duration.ofMillis(fallbackTimeoutMs))
                 .doOnSuccess(response -> counter(routeType, "success").increment())
                 .onErrorResume(ex -> {
-                    counter(routeType, "error").increment();
-                    log.error("Search fallback failed: path={}, query={}", originalPath, queryParams, ex);
-                    return Mono.just(errorResponse("Search fallback failed"));
+                    counter(routeType, "degraded").increment();
+                    log.warn("Search fallback degraded: path={}, query={}, reason={}",
+                            originalPath, queryParams, ex.getMessage());
+                    return Mono.just(degradedResponse(routeType, "downstream unavailable"));
                 })
                 .doFinally(signal -> sample.stop(latencyTimer(routeType)));
     }
@@ -96,8 +97,13 @@ public class SearchFallbackController {
                         .queryParam("name", keyword)
                         .build())
                 .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .toEntity(String.class);
+                .exchangeToMono(response -> response.toEntity(String.class)
+                        .map(entity -> {
+                            if (entity.getStatusCode().is2xxSuccessful() && isSuccessResult(entity.getBody())) {
+                                return entity;
+                            }
+                            return degradedResponse("search", "invalid downstream payload");
+                        }));
     }
 
     private Mono<ResponseEntity<String>> fallbackSuggestions(MultiValueMap<String, String> queryParams) {
@@ -114,8 +120,13 @@ public class SearchFallbackController {
                         .queryParam("size", size)
                         .build())
                 .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .toEntity(String.class);
+                .exchangeToMono(response -> response.toEntity(String.class)
+                        .map(entity -> {
+                            if (entity.getStatusCode().is2xxSuccessful() && isSuccessResult(entity.getBody())) {
+                                return entity;
+                            }
+                            return degradedResponse("suggestions", "invalid downstream payload");
+                        }));
     }
 
     private WebClient productClient() {
@@ -169,6 +180,9 @@ public class SearchFallbackController {
         if (originalPath.endsWith("/smart-search")) {
             return "smart-search";
         }
+        if (originalPath.endsWith("/basic")) {
+            return "search";
+        }
         if (originalPath.endsWith("/search")) {
             return "search";
         }
@@ -200,6 +214,23 @@ public class SearchFallbackController {
     private ResponseEntity<String> errorResponse(String message) {
         String json = toJson(Result.systemError(message));
         return ResponseEntity.internalServerError().contentType(MediaType.APPLICATION_JSON).body(json);
+    }
+
+    private ResponseEntity<String> degradedResponse(String routeType, String reason) {
+        String message = "Fallback degraded for " + routeType + ": " + reason;
+        String json = toJson(Result.success(message, List.of()));
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json);
+    }
+
+    private boolean isSuccessResult(String body) {
+        if (!StringUtils.hasText(body)) {
+            return false;
+        }
+        try {
+            return objectMapper.readTree(body).path("code").asInt(-1) == 200;
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     private String toJson(Object payload) {

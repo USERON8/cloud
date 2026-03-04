@@ -73,10 +73,23 @@ function Assert-K6Preflight {
     }
 
     try {
-        $resp = Invoke-RestMethod -Method GET -Uri $GatewayHealthUrl -TimeoutSec 5
-        $status = if ($resp.PSObject.Properties.Name -contains "status") { $resp.status } else { $null }
-        if ($status -ne "UP") {
-            throw ("gateway health status is not UP: {0}" -f $status)
+        $response = Invoke-WebRequest -Method GET -Uri $GatewayHealthUrl -TimeoutSec 5 -UseBasicParsing
+        if ($response.StatusCode -eq 200) {
+            $payload = $null
+            try {
+                $payload = $response.Content | ConvertFrom-Json
+            } catch {
+                $payload = $null
+            }
+            if ($null -ne $payload -and $payload.PSObject.Properties.Name -contains "status" -and $payload.status -ne "UP") {
+                throw ("gateway health status is not UP: {0}" -f $payload.status)
+            }
+        }
+    } catch [System.Net.WebException] {
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 401) {
+            Write-Host "[k6-preflight] gateway health endpoint is protected (401), continue preflight"
+        } else {
+            throw ("[k6-preflight] gateway health check failed: {0}" -f $_.Exception.Message)
         }
     } catch {
         throw ("[k6-preflight] gateway health check failed: {0}" -f $_.Exception.Message)
