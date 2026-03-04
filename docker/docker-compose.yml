@@ -394,6 +394,36 @@
         source: ../logs
         target: /workspace/service-logs/shared
         read_only: true
+
+  skywalking-oap:
+    image: apache/skywalking-oap-server:10.1.0
+    container_name: cloud-skywalking-oap
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.120
+    ports:
+      - "${PORT_SKYWALKING_OAP_GRPC:-11800}:11800"
+      - "${PORT_SKYWALKING_OAP_HTTP:-12800}:12800"
+    environment:
+      SW_STORAGE: elasticsearch
+      SW_STORAGE_ES_CLUSTER_NODES: elasticsearch:9200
+      SW_TELEMETRY: prometheus
+
+  skywalking-ui:
+    image: apache/skywalking-ui:10.1.0
+    container_name: cloud-skywalking-ui
+    depends_on:
+      - skywalking-oap
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.121
+    ports:
+      - "${PORT_SKYWALKING_UI:-13001}:8080"
+    environment:
+      SW_OAP_ADDRESS: http://skywalking-oap:12800
 # 兼容性注释已标准化。
 networks:
   service_net:

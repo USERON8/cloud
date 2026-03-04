@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,7 @@ public class ElasticsearchOptimizedService {
     private static final String SUGGESTION_CACHE_KEY_PREFIX = "search:suggest:";
     private static final String HOT_CACHE_KEY_PREFIX = "search:hot:list:";
     private static final String RECOMMEND_CACHE_KEY_PREFIX = "search:recommend:";
+    private static final String EMPTY_LIST_CACHE_MARKER = "__EMPTY__";
     private static final String METRIC_SEARCH_LATENCY = "search.request.latency";
     private static final String METRIC_ES_ERROR = "search.es.error.count";
 
@@ -209,11 +211,11 @@ public class ElasticsearchOptimizedService {
             return l1Cached;
         }
 
-        List<String> l2Cached = getStringListFromRedis(cacheKey);
-        if (!l2Cached.isEmpty()) {
-            putL1Cache(l1SuggestionsCache, cacheKey, l2Cached, suggestionL1TtlMillis);
+        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        if (l2Cached.hit()) {
+            putL1Cache(l1SuggestionsCache, cacheKey, l2Cached.value(), suggestionL1TtlMillis);
             recordTimer(sample, "suggestions", "l2-hit");
-            return l2Cached;
+            return l2Cached.value();
         }
 
         try {
@@ -272,11 +274,11 @@ public class ElasticsearchOptimizedService {
             return l1Cached;
         }
 
-        List<String> l2Cached = getStringListFromRedis(cacheKey);
-        if (!l2Cached.isEmpty()) {
-            putL1Cache(l1HotKeywordsCache, cacheKey, l2Cached, hotKeywordsL1TtlMillis);
+        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        if (l2Cached.hit()) {
+            putL1Cache(l1HotKeywordsCache, cacheKey, l2Cached.value(), hotKeywordsL1TtlMillis);
             recordTimer(sample, "hot-keywords", "l2-hit");
-            return l2Cached;
+            return l2Cached.value();
         }
 
         try {
@@ -315,11 +317,11 @@ public class ElasticsearchOptimizedService {
             return l1Cached;
         }
 
-        List<String> l2Cached = getStringListFromRedis(cacheKey);
-        if (!l2Cached.isEmpty()) {
-            putL1Cache(l1RecommendationsCache, cacheKey, l2Cached, recommendationL1TtlMillis);
+        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        if (l2Cached.hit()) {
+            putL1Cache(l1RecommendationsCache, cacheKey, l2Cached.value(), recommendationL1TtlMillis);
             recordTimer(sample, "recommendations", "l2-hit");
-            return l2Cached;
+            return l2Cached.value();
         }
 
         LinkedHashSet<String> deduplicated = new LinkedHashSet<>();
@@ -592,24 +594,31 @@ public class ElasticsearchOptimizedService {
         }
         try {
             String json = objectMapper.writeValueAsString(result);
-            redisTemplate.opsForValue().set(key, json, smartSearchL2TtlSeconds, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(key, json, addJitterTtlSeconds(smartSearchL2TtlSeconds), TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Write smart search cache failed, key={}", key, e);
         }
     }
 
-    private List<String> getStringListFromRedis(String key) {
+    private StringListCacheResult getStringListFromRedis(String key) {
         try {
             String json = redisTemplate.opsForValue().get(key);
             if (!StringUtils.hasText(json)) {
-                return List.of();
+                return StringListCacheResult.miss();
             }
             List<String> value = objectMapper.readValue(json, new TypeReference<List<String>>() {
             });
-            return value == null ? List.of() : value.stream().filter(Objects::nonNull).toList();
+            if (value == null || value.isEmpty()) {
+                return StringListCacheResult.hit(List.of());
+            }
+            List<String> normalized = value.stream()
+                    .filter(Objects::nonNull)
+                    .filter(v -> !EMPTY_LIST_CACHE_MARKER.equals(v))
+                    .toList();
+            return StringListCacheResult.hit(normalized);
         } catch (Exception e) {
             log.warn("Read string list cache failed, key={}", key, e);
-            return List.of();
+            return StringListCacheResult.miss();
         }
     }
 
@@ -618,11 +627,18 @@ public class ElasticsearchOptimizedService {
             return;
         }
         try {
-            String json = objectMapper.writeValueAsString(value);
-            redisTemplate.opsForValue().set(key, json, ttlSeconds, TimeUnit.SECONDS);
+            List<String> cacheValue = value.isEmpty() ? List.of(EMPTY_LIST_CACHE_MARKER) : value;
+            String json = objectMapper.writeValueAsString(cacheValue);
+            redisTemplate.opsForValue().set(key, json, addJitterTtlSeconds(ttlSeconds), TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Write string list cache failed, key={}", key, e);
         }
+    }
+
+    private long addJitterTtlSeconds(long ttlSeconds) {
+        long safeBase = Math.max(5, ttlSeconds);
+        long jitterUpper = Math.max(2, safeBase / 10);
+        return safeBase + ThreadLocalRandom.current().nextLong(jitterUpper);
     }
 
     private <T> T getL1Cache(Map<String, CacheEntry<T>> cache, String key) {
@@ -705,6 +721,16 @@ public class ElasticsearchOptimizedService {
     private record CacheEntry<T>(T value, long expiresAtMillis) {
         private boolean isExpired() {
             return System.currentTimeMillis() > expiresAtMillis;
+        }
+    }
+
+    private record StringListCacheResult(boolean hit, List<String> value) {
+        private static StringListCacheResult miss() {
+            return new StringListCacheResult(false, List.of());
+        }
+
+        private static StringListCacheResult hit(List<String> value) {
+            return new StringListCacheResult(true, value == null ? List.of() : value);
         }
     }
 
