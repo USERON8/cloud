@@ -98,7 +98,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "minio.access-key=test-access-key",
         "minio.secret-key=test-secret-key",
         "minio.public-endpoint=http://127.0.0.1:9000",
-        "minio.bucket-name=test-bucket"
+        "minio.bucket-name=test-bucket",
+        "cloud.security.internal-api.key=test-internal-api-key"
 })
 @Import({
         ResourceServerConfig.class,
@@ -532,7 +533,9 @@ class UserServicePermissionMatrixTest {
 
     @Test
     void normalUserShouldNotAccessInternalUserApi() throws Exception {
-        mockMvc.perform(get("/internal/user/id/100").with(userJwt("100")))
+        mockMvc.perform(get("/internal/user/id/100")
+                        .with(userJwt("100"))
+                        .with(internalApiKey()))
                 .andExpect(status().isForbidden());
     }
 
@@ -543,7 +546,9 @@ class UserServicePermissionMatrixTest {
         userDTO.setUsername("u100");
         when(userService.getUserById(100L)).thenReturn(userDTO);
 
-        mockMvc.perform(get("/internal/user/id/100").with(internalApiJwt()))
+        mockMvc.perform(get("/internal/user/id/100")
+                        .with(internalApiJwt())
+                        .with(internalApiKey()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(100));
     }
@@ -604,6 +609,14 @@ class UserServicePermissionMatrixTest {
 
     private static RequestPostProcessor internalApiJwt() {
         return jwtToken("0", "SYSTEM", "SCOPE_internal_api");
+    }
+
+    private static RequestPostProcessor internalApiKey() {
+        return request -> {
+            request.addHeader("X-Internal-Api-Key", "test-internal-api-key");
+            request.addHeader("X-Internal-Caller", "user-service-test");
+            return request;
+        };
     }
 
     private static RequestPostProcessor jwtToken(String userId, String userType, String... authorities) {
