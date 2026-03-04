@@ -174,11 +174,11 @@ public class StockMessageConsumer {
 
                 Map<Long, Integer> productQuantityMap = event.getProductQuantityMap();
                 if (productQuantityMap == null || productQuantityMap.isEmpty()) {
-                    messageIdempotencyService.markSuccess(PAYMENT_SUCCESS_NAMESPACE, eventId);
                     log.warn("Payment-success event has empty product map, skip deduction: orderId={}, orderNo={}",
                             event.getOrderId(), event.getOrderNo());
-                    recordMessageMetric("PAYMENT_SUCCESS", "failed");
-                    return;
+                    recordMessageMetric("PAYMENT_SUCCESS", "retry");
+                    messageIdempotencyService.release(PAYMENT_SUCCESS_NAMESPACE, eventId);
+                    throw new RuntimeException("Payment-success event product map is empty");
                 }
 
                 for (Map.Entry<Long, Integer> entry : productQuantityMap.entrySet()) {
@@ -274,11 +274,12 @@ public class StockMessageConsumer {
                     recordRefundMetric("success");
 
                 } else {
-                    messageIdempotencyService.markSuccess(STOCK_RESTORE_NAMESPACE, eventId);
                     log.error("Stock restore partial failed: orderId={}, refundNo={}, details={}",
                             orderId, refundNo, failureDetails);
-                    recordMessageMetric("STOCK_RESTORE", "failed");
+                    recordMessageMetric("STOCK_RESTORE", "retry");
                     recordRefundMetric("failed");
+                    messageIdempotencyService.release(STOCK_RESTORE_NAMESPACE, eventId);
+                    throw new RuntimeException("Stock restore partial failed");
                 }
 
             } catch (Exception e) {

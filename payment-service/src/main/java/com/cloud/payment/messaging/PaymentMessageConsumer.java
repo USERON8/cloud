@@ -129,10 +129,11 @@ public class PaymentMessageConsumer {
                     recordMessageMetric("REFUND_PROCESS", "success");
                     recordRefundMetric("success");
                 } else {
-                    messageIdempotencyService.markSuccess(REFUND_PROCESS_NAMESPACE, eventId);
                     log.error("Refund-completed event send failed: refundId={}, refundNo={}", refundId, refundNo);
-                    recordMessageMetric("REFUND_PROCESS", "failed");
+                    recordMessageMetric("REFUND_PROCESS", "retry");
                     recordRefundMetric("failed");
+                    messageIdempotencyService.release(REFUND_PROCESS_NAMESPACE, eventId);
+                    throw new RuntimeException("Refund-completed event send failed");
                 }
 
             } catch (Exception e) {
