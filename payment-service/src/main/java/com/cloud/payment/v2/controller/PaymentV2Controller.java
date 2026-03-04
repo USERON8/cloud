@@ -1,11 +1,13 @@
 package com.cloud.payment.v2.controller;
 
 import com.cloud.common.result.Result;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.payment.v2.entity.PaymentOrderV2;
 import com.cloud.payment.v2.entity.PaymentRefundV2;
 import com.cloud.payment.v2.service.PaymentV2Service;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,7 +18,12 @@ public class PaymentV2Controller {
     private final PaymentV2Service paymentV2Service;
 
     @PostMapping("/order")
-    public Result<PaymentOrderV2> createPaymentOrder(@RequestBody PaymentOrderV2 paymentOrder) {
+    public Result<PaymentOrderV2> createPaymentOrder(@RequestBody PaymentOrderV2 paymentOrder,
+                                                     @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new BusinessException("Idempotency-Key header is required");
+        }
+        paymentOrder.setIdempotencyKey(idempotencyKey.trim());
         return Result.success(paymentV2Service.createPaymentOrder(paymentOrder));
     }
 
@@ -26,7 +33,12 @@ public class PaymentV2Controller {
     }
 
     @PostMapping("/refund")
-    public Result<PaymentRefundV2> createRefund(@RequestBody PaymentRefundV2 paymentRefund) {
+    public Result<PaymentRefundV2> createRefund(@RequestBody PaymentRefundV2 paymentRefund,
+                                                @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new BusinessException("Idempotency-Key header is required");
+        }
+        paymentRefund.setRefundPaymentNo(idempotencyKey.trim());
         return Result.success(paymentV2Service.createRefund(paymentRefund));
     }
 
@@ -40,4 +52,3 @@ public class PaymentV2Controller {
         private String transactionNo;
     }
 }
-
