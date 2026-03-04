@@ -11,12 +11,17 @@ public interface OrderV2Service {
 
     OrderMainV2 createMainOrder(CreateMainOrderRequest request);
 
+    OrderMainV2 getMainOrder(Long mainOrderId);
+
     List<OrderSubV2> listSubOrders(Long mainOrderId);
+
+    OrderSubV2 getSubOrder(Long subOrderId);
 
     OrderSubV2 advanceSubOrderStatus(Long subOrderId, String action);
 
     AfterSaleV2 applyAfterSale(AfterSaleV2 afterSale);
 
+    AfterSaleV2 getAfterSale(Long afterSaleId);
+
     AfterSaleV2 advanceAfterSaleStatus(Long afterSaleId, String action, String remark);
 }
-

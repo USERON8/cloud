@@ -53,6 +53,7 @@ public class MybatisPlusConfigFactory {
 
         
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+        interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
@@ -79,6 +80,7 @@ public class MybatisPlusConfigFactory {
 
         
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+        interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
@@ -110,6 +112,7 @@ public class MybatisPlusConfigFactory {
 
         
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+        interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
@@ -184,6 +187,13 @@ public class MybatisPlusConfigFactory {
         public InterceptorBuilder blockAttack(boolean enable) {
             if (enable) {
                 interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+            }
+            return this;
+        }
+
+        public InterceptorBuilder illegalSql(boolean enable) {
+            if (enable) {
+                interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
             }
             return this;
         }

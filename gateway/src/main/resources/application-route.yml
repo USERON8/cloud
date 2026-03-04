@@ -25,6 +25,13 @@
               order: 10
               predicates:
                 - Path=/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.auth-rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.auth-rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.auth-rate-limit.requested-tokens}
 
             - id: user-service-api-v2
               uri: lb://user-service
@@ -34,7 +41,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
@@ -53,7 +60,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
@@ -72,7 +79,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
@@ -91,7 +98,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
@@ -110,7 +117,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
@@ -129,7 +136,7 @@
               filters:
                 - name: RequestRateLimiter
                   args:
-                    key-resolver: "#{@ipPathKeyResolver}"
+                    key-resolver: "#{@userIpPathKeyResolver}"
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}

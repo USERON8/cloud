@@ -4,6 +4,7 @@ import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -13,14 +14,34 @@ public class RateLimitConfig {
     public KeyResolver ipPathKeyResolver() {
         return exchange -> {
             ServerHttpRequest request = exchange.getRequest();
-            String ip = request.getRemoteAddress() == null
-                    ? "unknown"
-                    : request.getRemoteAddress().getAddress().getHostAddress();
+            String ip = resolveIp(request);
             String method = request.getMethod() == null ? "UNKNOWN" : request.getMethod().name();
             String path = request.getPath().pathWithinApplication().value();
             String routeBucket = extractRouteBucket(path);
             return Mono.just(ip + ":" + method + ":" + routeBucket);
         };
+    }
+
+    @Bean("userIpPathKeyResolver")
+    public KeyResolver userIpPathKeyResolver() {
+        return exchange -> {
+            ServerHttpRequest request = exchange.getRequest();
+            String principal = request.getHeaders().getFirst("X-User-Id");
+            if (!StringUtils.hasText(principal)) {
+                principal = resolveIp(request);
+            }
+            String method = request.getMethod() == null ? "UNKNOWN" : request.getMethod().name();
+            String path = request.getPath().pathWithinApplication().value();
+            String routeBucket = extractRouteBucket(path);
+            return Mono.just(principal + ":" + method + ":" + routeBucket);
+        };
+    }
+
+    private String resolveIp(ServerHttpRequest request) {
+        if (request.getRemoteAddress() == null || request.getRemoteAddress().getAddress() == null) {
+            return "unknown";
+        }
+        return request.getRemoteAddress().getAddress().getHostAddress();
     }
 
     private String extractRouteBucket(String path) {

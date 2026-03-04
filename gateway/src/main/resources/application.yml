@@ -143,6 +143,10 @@ app:
       replenish-rate: ${APP_SECURITY_RATE_LIMIT_REPLENISH_RATE:30}
       burst-capacity: ${APP_SECURITY_RATE_LIMIT_BURST_CAPACITY:60}
       requested-tokens: ${APP_SECURITY_RATE_LIMIT_REQUESTED_TOKENS:1}
+    auth-rate-limit:
+      replenish-rate: ${APP_SECURITY_AUTH_RATE_LIMIT_REPLENISH_RATE:5}
+      burst-capacity: ${APP_SECURITY_AUTH_RATE_LIMIT_BURST_CAPACITY:10}
+      requested-tokens: ${APP_SECURITY_AUTH_RATE_LIMIT_REQUESTED_TOKENS:1}
   search:
     fallback:
       timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:700}

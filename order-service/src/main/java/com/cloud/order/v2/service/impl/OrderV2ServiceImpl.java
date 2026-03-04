@@ -64,12 +64,22 @@ public class OrderV2ServiceImpl implements OrderV2Service {
     }
 
     @Override
+    public OrderMainV2 getMainOrder(Long mainOrderId) {
+        return orderMainV2Mapper.selectById(mainOrderId);
+    }
+
+    @Override
     public List<OrderSubV2> listSubOrders(Long mainOrderId) {
         return orderSubV2Mapper.selectList(
                 new LambdaQueryWrapper<OrderSubV2>()
                         .eq(OrderSubV2::getMainOrderId, mainOrderId)
                         .eq(OrderSubV2::getDeleted, 0)
         );
+    }
+
+    @Override
+    public OrderSubV2 getSubOrder(Long subOrderId) {
+        return orderSubV2Mapper.selectById(subOrderId);
     }
 
     @Override
@@ -109,6 +119,11 @@ public class OrderV2ServiceImpl implements OrderV2Service {
     }
 
     @Override
+    public AfterSaleV2 getAfterSale(Long afterSaleId) {
+        return afterSaleV2Mapper.selectById(afterSaleId);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public AfterSaleV2 advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
         AfterSaleV2 afterSale = afterSaleV2Mapper.selectById(afterSaleId);
@@ -131,4 +146,3 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         return afterSale;
     }
 }
-
