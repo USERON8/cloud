@@ -449,6 +449,33 @@
         source: /var/run/docker.sock
         target: /var/run/docker.sock
     restart: unless-stopped
+
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.1
+    container_name: cloud-xxl-job-admin
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.131
+    ports:
+      - "${PORT_XXL_JOB_ADMIN_HTTP:-18089}:8080"
+    environment:
+      PARAMS: >-
+        --spring.datasource.url=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+        --spring.datasource.username=root
+        --spring.datasource.password=root
+        --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:}
+        --spring.mail.host=
+        --spring.mail.port=
+        --spring.mail.username=
+        --spring.mail.password=
+    volumes:
+      - type: bind
+        source: ./docker-compose/xxl-job-admin/logs
+        target: /data/applogs
+    restart: unless-stopped
 # 兼容性注释已标准化。
 networks:
   service_net:
