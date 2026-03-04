@@ -1,28 +1,42 @@
 USE order_db;
 
-DELETE FROM order_item WHERE id BETWEEN 20001 AND 20020;
-DELETE FROM refunds WHERE id BETWEEN 20001 AND 20020;
-DELETE FROM orders WHERE id BETWEEN 20001 AND 20020;
+DELETE FROM inbox_consume_log;
+DELETE FROM outbox_event;
+DELETE FROM after_sale_timeline;
+DELETE FROM after_sale_evidence;
+DELETE FROM after_sale_item;
+DELETE FROM after_sale;
+DELETE FROM cart_item;
+DELETE FROM cart;
+DELETE FROM order_item;
+DELETE FROM order_sub;
+DELETE FROM order_main;
 
-INSERT INTO orders (id, order_no, user_id, total_amount, pay_amount, status, refund_status, address_id,
-                    pay_time, ship_time, complete_time, cancel_time, cancel_reason, remark, shop_id, deleted, version)
-VALUES (20001, 'ORD-T-20001', 10001, 199.00, 199.00, 1, 0, 10001,
-        NOW(), NULL, NULL, NULL, NULL, 'paid order', 30001, 0, 0),
-       (20002, 'ORD-T-20002', 10001, 299.00, 0.00, 0, 0, 10001,
-        NULL, NULL, NULL, NULL, NULL, 'pending order', 30001, 0, 0),
-       (20003, 'ORD-T-20003', 10002, 399.00, 399.00, 2, 0, 10003,
-        NOW(), NOW(), NULL, NULL, NULL, 'shipped order', 30002, 0, 0),
-       (20004, 'ORD-T-20004', 10003, 499.00, 0.00, 4, 0, 10002,
-        NULL, NULL, NULL, NOW(), 'timeout cancel', 'cancelled order', 30003, 0, 0);
+INSERT INTO order_main (id, main_order_no, user_id, order_status, total_amount, payable_amount, idempotency_key, deleted, version)
+VALUES (10001, 'M2026000001', 20001, 'CREATED', 199.00, 199.00, 'idem-main-10001', 0, 0);
 
-INSERT INTO order_item (id, order_id, product_id, product_snapshot, quantity, price, create_by, update_by, deleted, version)
-VALUES (20001, 20001, 40001, JSON_OBJECT('product_name', 'Test Product A', 'sku', 'A-1'), 1, 199.00, 10001, 10001, 0, 0),
-       (20002, 20002, 40002, JSON_OBJECT('product_name', 'Test Product B', 'sku', 'B-1'), 1, 299.00, 10001, 10001, 0, 0),
-       (20003, 20003, 40003, JSON_OBJECT('product_name', 'Test Product C', 'sku', 'C-1'), 1, 399.00, 10002, 10002, 0, 0);
+INSERT INTO order_sub (id, sub_order_no, main_order_id, merchant_id, order_status, shipping_status, after_sale_status,
+                       item_amount, shipping_fee, discount_amount, payable_amount, receiver_name, receiver_phone, receiver_address, deleted, version)
+VALUES (11001, 'S2026000001', 10001, 30001, 'CREATED', 'PENDING', 'NONE', 199.00, 0.00, 0.00, 199.00,
+        'Tester', '13800000000', 'Shanghai Pudong', 0, 0);
 
-INSERT INTO refunds (id, refund_no, order_id, order_no, user_id, merchant_id, refund_type, refund_reason,
-                     refund_description, refund_amount, refund_quantity, status, audit_time, audit_remark,
-                     logistics_company, logistics_no, refund_time, refund_channel, refund_transaction_no, is_deleted)
-VALUES (20001, 'REF-T-20001', 20003, 'ORD-T-20003', 10002, 50001, 1, 'quality issue',
-        'screen scratch', 399.00, 1, 0, NULL, NULL,
-        NULL, NULL, NULL, NULL, NULL, 0);
+INSERT INTO order_item (id, main_order_id, sub_order_id, spu_id, sku_id, sku_code, sku_name, sku_snapshot, quantity, unit_price, total_price, deleted, version)
+VALUES (12001, 10001, 11001, 40001, 41001, 'SKU-41001', 'Test SKU A',
+        JSON_OBJECT('spuName', 'Test SPU A', 'spec', 'Default'), 1, 199.00, 199.00, 0, 0);
+
+INSERT INTO cart (id, cart_no, user_id, cart_status, selected_count, total_amount, deleted, version)
+VALUES (13001, 'C2026000001', 20001, 'ACTIVE', 1, 199.00, 0, 0);
+
+INSERT INTO cart_item (id, cart_id, user_id, spu_id, sku_id, sku_name, quantity, unit_price, selected, checked_out, deleted, version)
+VALUES (13101, 13001, 20001, 40001, 41001, 'Test SKU A', 1, 199.00, 1, 0, 0, 0);
+
+INSERT INTO after_sale (id, after_sale_no, main_order_id, sub_order_id, user_id, merchant_id, after_sale_type, status,
+                        reason, description, apply_amount, approved_amount, deleted, version)
+VALUES (14001, 'AS2026000001', 10001, 11001, 20001, 30001, 'REFUND', 'APPLIED',
+        'quality issue', 'box damaged', 199.00, NULL, 0, 0);
+
+INSERT INTO after_sale_item (id, after_sale_id, order_item_id, sku_id, quantity, apply_amount, approved_amount, deleted, version)
+VALUES (14101, 14001, 12001, 41001, 1, 199.00, NULL, 0, 0);
+
+INSERT INTO after_sale_timeline (id, after_sale_id, from_status, to_status, action, operator_id, operator_role, remark, deleted, version)
+VALUES (14201, 14001, NULL, 'APPLIED', 'USER_APPLY', 20001, 'USER', 'apply success', 0, 0);
