@@ -90,7 +90,7 @@ pnpm --dir my-shop-web build
 - Headers:
 - `X-Internal-Api-Key`
 - `X-Internal-Caller`
-- Feign clients inject these headers automatically.
+- Dubbo internal RPC is now used for service-to-service calls; `/internal/**` HTTP endpoints are retained for debug/regression only.
 
 ## Architecture Diagrams (Mermaid)
 
@@ -147,3 +147,4 @@ sequenceDiagram
 1. Import and activate `Cloud Shop Local` environment
 2. Import the collection
 3. Run `Auth/Login` first to auto-fill `accessToken` and `refreshToken`
+

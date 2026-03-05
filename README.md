@@ -138,7 +138,7 @@ pnpm --dir my-shop-web build
 - 请求头：
   - `X-Internal-Api-Key`
   - `X-Internal-Caller`
-- Feign 调用已自动注入上述请求头（业务代码无需手工传）。
+- Dubbo 内部 RPC 已替代 Feign；`/internal/**` HTTP 端点仅作为调试/回归通道保留。
 - 统一环境变量：`INTERNAL_API_KEY`（示例见 `docker/.env`）。
 
 ## 架构图（Mermaid）
@@ -236,4 +236,5 @@ flowchart LR
 - `docker/`：容器与基础设施配置
 - `tests/perf/k6/`：主链路压测脚本
 - `docs/`：运维与排障文档
+
 
