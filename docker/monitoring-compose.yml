@@ -135,6 +135,21 @@ services:
     networks:
       - monitoring
 
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: cloud-redis-exporter
+    command:
+      - "--redis.addr=redis://host.docker.internal:16379"
+      - "--redis.password=root"
+      - "--web.listen-address=:9121"
+      - "--redis-only-metrics=true"
+    ports:
+      - "${PORT_REDIS_EXPORTER_HTTP:-19121}:9121"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
+
 networks:
   monitoring:
     driver: bridge

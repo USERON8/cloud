@@ -36,4 +36,9 @@ scrape_configs:
           - 'host.docker.internal:8087' # 兼容性注释已标准化。
     scrape_interval: 10s
 
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: [ 'redis-exporter:9121' ]
+    scrape_interval: 10s
+
 
