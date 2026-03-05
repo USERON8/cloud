@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+ï»¿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -12,7 +12,7 @@
     <artifactId>search-service</artifactId>
 
     <dependencies>
-        <!-- Spring BootºËÐÄ×é¼þ -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -39,7 +39,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Cloud Alibaba×é¼þ -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -49,7 +49,7 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!-- ¹¤¾ßÀà -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -67,7 +67,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- APIÎÄµµ -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
@@ -78,17 +78,17 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
             <exclusions>
-                <!-- ÅÅ³ýMinioÏà¹ØÒÀÀµ£¨search-service²»ÐèÒªÎÄ¼þ´æ´¢£© -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
-                <!-- ÅÅ³ý´íÎó´¦Àí×¢½â -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
-                <!-- search-serviceÎÞÐèMySQL£¬ÅÅ³ýMyBatis-PlusÏà¹ØÒÀÀµ -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>com.baomidou</groupId>
                     <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

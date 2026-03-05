@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -98,7 +98,7 @@
             <artifactId>common-module</artifactId>
             <version>0.0.1-SNAPSHOT</version>
             <exclusions>
-                <!-- 排除Elasticsearch相关依赖 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
@@ -107,12 +107,12 @@
                     <groupId>co.elastic.clients</groupId>
                     <artifactId>elasticsearch-java</artifactId>
                 </exclusion>
-                <!-- 排除Minio相关依赖 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
-                <!-- 排除错误处理注解 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
@@ -173,7 +173,7 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- Knife4j API文档 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>

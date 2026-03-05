@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -12,7 +12,7 @@
     <artifactId>user-service</artifactId>
 
     <dependencies>
-        <!-- Spring Boot核心组件 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -43,7 +43,7 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
-        <!-- Spring Cloud Alibaba组件 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -75,9 +75,9 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Spring Cloud组件 -->
+        <!-- Encoding-safe comment -->
 
-        <!-- 数据库相�?-->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -93,7 +93,7 @@
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-3-starter</artifactId>
         </dependency>
-        <!-- 工具�?-->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -110,12 +110,12 @@
             <version>${mapstruct.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- 项目内部模块 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
             <exclusions>
-                <!-- 排除Elasticsearch相关依赖（user-service不需要搜索功能） -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
@@ -124,7 +124,7 @@
                     <groupId>co.elastic.clients</groupId>
                     <artifactId>elasticsearch-java</artifactId>
                 </exclusion>
-                <!-- 排除错误处理注解 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
@@ -135,7 +135,7 @@
             <groupId>com.cloud</groupId>
             <artifactId>api-module</artifactId>
         </dependency>
-        <!-- 添加Kotlin反射依赖以解决NoClassDefFoundError -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
@@ -183,7 +183,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.cloud.user.UserApplication</mainClass>
-                    <excludes> <!-- 添加排除配置 -->
+                    <excludes> <!-- Encoding-safe comment -->
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>

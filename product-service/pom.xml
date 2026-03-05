@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -12,7 +12,7 @@
     <artifactId>product-service</artifactId>
 
     <dependencies>
-        <!-- Spring Boot核心组件 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -47,7 +47,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Spring Cloud组件 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
@@ -59,7 +59,7 @@
             </exclusions>
         </dependency>
 
-        <!-- Spring Cloud Alibaba组件 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -74,7 +74,7 @@
             <artifactId>dubbo-registry-nacos</artifactId>
         </dependency>
 
-        <!-- 数据库相�?-->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -87,7 +87,7 @@
         </dependency>
 
 
-        <!-- 工具�?-->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-3-starter</artifactId>
@@ -109,12 +109,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- 项目内部模块 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
             <exclusions>
-                <!-- 排除Elasticsearch相关依赖 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
@@ -123,12 +123,12 @@
                     <groupId>co.elastic.clients</groupId>
                     <artifactId>elasticsearch-java</artifactId>
                 </exclusion>
-                <!-- 排除Minio相关依赖 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <groupId>io.minio</groupId>
                     <artifactId>minio</artifactId>
                 </exclusion>
-                <!-- 排除错误处理注解 -->
+                <!-- Encoding-safe comment -->
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
@@ -140,7 +140,7 @@
             <artifactId>api-module</artifactId>
         </dependency>
 
-        <!-- API文档 -->
+        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
@@ -195,7 +195,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.cloud.product.ProductApplication</mainClass>
-                    <excludes> <!-- 添加排除配置 -->
+                    <excludes> <!-- Encoding-safe comment -->
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
