@@ -42,8 +42,22 @@ powershell -File tests/perf/k6/run-k6.ps1 -Scenario smoke -BaseUrl http://host.d
 - `K6_BASE_URL`（默认 `http://host.docker.internal:18080`）
 - `AUTH_TOKEN`
 - `AUTH_USERNAME` / `AUTH_PASSWORD` / `AUTH_USER_TYPE`
+- `USER_ID` / `MERCHANT_ID` / `SPU_ID` / `SKU_ID`
+- `PAYMENT_NO` / `REFUND_NO` / `AFTER_SALE_NO`
 - `SMOKE_VUS` / `SMOKE_DURATION` / `SMOKE_P95_THRESHOLD_MS`
 - `SEARCH_MAIN_VUS` / `SEARCH_MAIN_DURATION`
 - `SEARCH_FALLBACK_VUS` / `SEARCH_FALLBACK_DURATION`
 - `SERVICE_TARGETS`（逗号分隔 URL，覆盖默认 smoke 目标）
 - `REQUEST_TIMEOUT`
+
+## API 字段契约巡检
+
+```powershell
+powershell -ExecutionPolicy Bypass -File docs/tools/check-api-contract.ps1
+```
+
+脚本会检查 Controller 的：
+- 路径占位符与 `@PathVariable` 是否一致
+- `GET` 是否错误声明 `@RequestBody`
+- 每个接口是否存在多 `@RequestBody`
+- 外部 API 是否统一返回 `Result<T>`

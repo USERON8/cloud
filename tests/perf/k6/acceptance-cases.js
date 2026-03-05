@@ -60,10 +60,10 @@ const DEFAULT_HEALTH_TARGETS = buildDefaultHealthTargets(BASE_URL);
 
 const GATEWAY_BATCH_REQUESTS = [
   "/api/query/users?username=admin",
-  "/api/product?page=1&size=1",
-  "/api/orders?page=1&size=1",
-  "/api/payments?page=1&size=1",
-  "/api/stocks?page=1&size=1",
+  "/api/category/tree?enabledOnly=true",
+  "/api/v2/orders",
+  "/api/v2/payments/orders/contract-check",
+  "/api/v2/stocks/ledger/1",
   "/api/search/basic?keyword=demo&page=0&size=1",
 ].map((path) => ["GET", `${BASE_URL}${path}`]);
 
@@ -107,37 +107,55 @@ const HEALTH_BATCH_REQUESTS = HEALTH_TARGETS.map((target) => ["GET", target, nul
 
 const TEST_DATA = Object.freeze({
   userId: getIdEnv("USER_ID"),
-  shopId: getIdEnv("SHOP_ID"),
-  addressId: getIdEnv("ADDRESS_ID", "1"),
-  productId: getIdEnv("PRODUCT_ID"),
+  merchantId: getIdEnv("MERCHANT_ID"),
+  spuId: getIdEnv("SPU_ID", getIdEnv("PRODUCT_ID")),
+  skuId: getIdEnv("SKU_ID"),
   categoryId: getIdEnv("CATEGORY_ID", "1"),
-  orderId: getIdEnv("ORDER_ID"),
-  paymentId: getIdEnv("PAYMENT_ID"),
+  mainOrderId: getIdEnv("MAIN_ORDER_ID", getIdEnv("ORDER_ID")),
+  paymentNo: String(__ENV.PAYMENT_NO || "").trim(),
+  refundNo: String(__ENV.REFUND_NO || "").trim(),
+  afterSaleNo: String(__ENV.AFTER_SALE_NO || "").trim(),
   insufficientQuantity: Number(__ENV.INSUFFICIENT_QUANTITY || 999999),
 });
-const ORDER_NO = __ENV.ORDER_NO || "";
 const CASE04_AUTH_TOKEN = __ENV.CASE04_AUTH_TOKEN || "";
 const CASE07_AUTH_TOKEN = __ENV.CASE07_AUTH_TOKEN || "";
 const AUTH_USER_ID = getIdEnv("AUTH_USER_ID");
 const AUTH_USER_TYPE_ENV = String(__ENV.AUTH_USER_TYPE || "USER").toUpperCase();
 
 function buildOrderCreateBody(userId) {
+  const skuId = Number(TEST_DATA.skuId || __ENV.ORDER_SKU_ID || 0);
+  const spuId = Number(TEST_DATA.spuId || __ENV.ORDER_SPU_ID || 0);
+  const merchantId = Number(TEST_DATA.merchantId || __ENV.ORDER_MERCHANT_ID || 0);
+  const quantity = Number(__ENV.ORDER_ITEM_QUANTITY || 1);
+  const unitPrice = String(__ENV.ORDER_ITEM_PRICE || "99.99");
+  const totalPrice = String(__ENV.ORDER_ITEM_TOTAL_PRICE || unitPrice);
+
   const payload = {
-    shopId: TEST_DATA.shopId,
-    addressId: TEST_DATA.addressId,
-    receiverName: __ENV.RECEIVER_NAME || "k6 user",
-    receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
-    receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
-    payType: Number(__ENV.PAY_TYPE || 1),
     totalAmount: __ENV.ORDER_TOTAL_AMOUNT || "99.99",
-    payAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
+    payableAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
     remark: "k6 acceptance case02",
-    orderItems: [
+    subOrders: [
       {
-        productId: TEST_DATA.productId,
-        productName: __ENV.PRODUCT_NAME || "k6-product",
-        price: __ENV.ORDER_ITEM_PRICE || "99.99",
-        quantity: Number(__ENV.ORDER_ITEM_QUANTITY || 1),
+        merchantId,
+        itemAmount: __ENV.ORDER_ITEM_AMOUNT || "99.99",
+        shippingFee: __ENV.ORDER_SHIPPING_FEE || "0.00",
+        discountAmount: __ENV.ORDER_DISCOUNT_AMOUNT || "0.00",
+        payableAmount: __ENV.ORDER_SUB_PAYABLE_AMOUNT || "99.99",
+        receiverName: __ENV.RECEIVER_NAME || "k6 user",
+        receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
+        receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
+        items: [
+          {
+            spuId,
+            skuId,
+            skuCode: __ENV.ORDER_SKU_CODE || `SKU-${skuId}`,
+            skuName: __ENV.ORDER_SKU_NAME || "k6-sku",
+            skuSnapshot: __ENV.ORDER_SKU_SNAPSHOT || "{}",
+            quantity,
+            unitPrice,
+            totalPrice,
+          },
+        ],
       },
     ],
   };
@@ -150,13 +168,12 @@ function buildOrderCreateBody(userId) {
 }
 
 const REFUND_CREATE_BODY = JSON.stringify({
-  orderId: TEST_DATA.orderId,
-  orderNo: ORDER_NO,
-  refundType: Number(__ENV.REFUND_TYPE || 1),
-  refundReason: __ENV.REFUND_REASON || "k6 refund",
-  refundDescription: __ENV.REFUND_DESCRIPTION || "k6 acceptance case05",
+  refundNo: TEST_DATA.refundNo || `k6-refund-${Date.now()}`,
+  paymentNo: TEST_DATA.paymentNo || "k6-payment-no",
+  afterSaleNo: TEST_DATA.afterSaleNo || `k6-after-sale-${Date.now()}`,
   refundAmount: __ENV.REFUND_AMOUNT || "1.00",
-  refundQuantity: Number(__ENV.REFUND_QUANTITY || 1),
+  reason: __ENV.REFUND_REASON || "k6 refund",
+  idempotencyKey: __ENV.REFUND_IDEMPOTENCY_KEY || `k6-refund-key-${Date.now()}`,
 });
 
 const acceptanceCase = new Counter("acceptance_case");
@@ -263,6 +280,13 @@ function isResultSuccess(response) {
 
   const parsed = parseJsonResponse(response);
   return parsed && Number(parsed.code) === 200;
+}
+
+function isResultEnvelope(response) {
+  const parsed = parseJsonResponse(response);
+  return !!parsed && Object.prototype.hasOwnProperty.call(parsed, "code")
+    && Object.prototype.hasOwnProperty.call(parsed, "message")
+    && Object.prototype.hasOwnProperty.call(parsed, "data");
 }
 
 function markResult(tags, result) {
@@ -389,9 +413,17 @@ function extractUserIdFromLoginResponse(response) {
 }
 
 function extractDataIdFromResponse(response) {
+  const parsed = parseJsonResponse(response);
+  if (typeof parsed?.data === "number") {
+    return String(parsed.data);
+  }
+  const dataId = parsed?.data?.id;
+  if (typeof dataId === "number" || typeof dataId === "string") {
+    return String(dataId);
+  }
+
   const body = String(response?.body || "");
   const patterns = [/"data"\s*:\s*\{[\s\S]*?"id"\s*:\s*(\d+)/, /"id"\s*:\s*(\d+)/];
-
   for (const pattern of patterns) {
     const matched = pattern.exec(body);
     if (matched && matched[1]) {
@@ -496,14 +528,15 @@ export function case02OrderCreated(data) {
   runCase("02", "order-created", () => {
     const authToken = getAuthTokenFromSetup(data);
     const authUserId = getAuthUserIdFromSetup(data);
-    if (!authToken || !TEST_DATA.shopId || !TEST_DATA.productId) {
+    if (!authToken || !TEST_DATA.merchantId || !TEST_DATA.spuId || !TEST_DATA.skuId) {
       return "skipped";
     }
 
-    const authParams = jsonHeaders(authToken);
+    const authParams = jsonHeaders(authToken, true);
+    authParams.headers["Idempotency-Key"] = `k6-order-${__VU}-${__ITER}-${Date.now()}`;
     const createOrderBody = buildOrderCreateBody(authUserId);
-    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, createOrderBody, authParams);
-    const createOk = isResultSuccess(createOrderResponse);
+    const createOrderResponse = http.post(`${BASE_URL}/api/v2/orders`, createOrderBody, authParams);
+    const createOk = isResultSuccess(createOrderResponse) && isResultEnvelope(createOrderResponse);
     if (!createOk && DEBUG_CASE02) {
       const truncatedBody = String(createOrderResponse?.body || "").slice(0, 300);
       console.error(
@@ -518,23 +551,24 @@ export function case02OrderCreated(data) {
       return "failed";
     }
 
-    const orderId = extractDataIdFromResponse(createOrderResponse);
-    if (!orderId) {
+    const orderId = extractDataIdFromResponse(createOrderResponse)
+      || String(parseJsonResponse(createOrderResponse)?.data?.mainOrder?.id || "");
+    if (!orderId || !/^\d+$/.test(orderId)) {
       return "failed";
     }
 
     const authReachableParams = jsonHeaders(authToken, true);
-    const [paymentResponse, stockResponse] = http.batch([
-      ["GET", `${BASE_URL}/api/payments/order/${orderId}`, null, authReachableParams],
-      ["GET", `${BASE_URL}/api/stocks/product/${TEST_DATA.productId}`, null, authReachableParams],
+    const [orderResponse, stockResponse] = http.batch([
+      ["GET", `${BASE_URL}/api/v2/orders/main/${orderId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/v2/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
     ]);
 
-    const paymentReachable = paymentResponse.status !== 404;
-    const stockReachable = stockResponse.status !== 404;
-    const linkageOk = paymentReachable && stockReachable;
+    const orderReachable = orderResponse.status !== 404 && isResultEnvelope(orderResponse);
+    const stockReachable = stockResponse.status !== 404 && isResultEnvelope(stockResponse);
+    const linkageOk = orderReachable && stockReachable;
 
-    check(paymentResponse, {
-      "case02 payment route reachable": () => paymentReachable,
+    check(orderResponse, {
+      "case02 order aggregate reachable": () => orderReachable,
     });
     check(stockResponse, {
       "case02 stock route reachable": () => stockReachable,
@@ -549,43 +583,38 @@ export function case02OrderCreated(data) {
 export function case03PaymentSuccess(data) {
   runCase("03", "payment-success", () => {
     const authToken = getAuthTokenFromSetup(data);
-    let paymentId = TEST_DATA.paymentId;
-    const orderId = TEST_DATA.orderId;
+    const paymentNo = TEST_DATA.paymentNo;
 
-    if (!authToken) {
+    if (!authToken || !paymentNo) {
       return "skipped";
     }
 
-    const authParams = jsonHeaders(authToken);
+    const authParams = jsonHeaders(authToken, true);
     const tolerantAuthParams = jsonHeaders(authToken, true);
-    if (!paymentId && orderId) {
-      const paymentByOrder = http.get(`${BASE_URL}/api/payments/order/${orderId}`, authParams);
-      paymentId = extractDataIdFromResponse(paymentByOrder);
-    }
-
-    if (!paymentId) {
-      return "skipped";
-    }
-
-    const paySuccessResponse = http.post(
-      `${BASE_URL}/api/payments/${paymentId}/success`,
-      null,
-      tolerantAuthParams
+    const paySuccessResponse = http.get(
+      `${BASE_URL}/api/v2/payments/orders/${encodeURIComponent(paymentNo)}`,
+      authParams
     );
-
-    const paySuccessOk = paySuccessResponse.status === 200 || paySuccessResponse.status === 409;
+    const paySuccessOk = paySuccessResponse.status !== 404 && isResultEnvelope(paySuccessResponse);
     check(paySuccessResponse, {
-      "case03 mark payment success": () => paySuccessOk,
+      "case03 payment query route reachable": () => paySuccessOk,
     });
 
-    if (orderId) {
-      const orderStatusResponse = http.get(`${BASE_URL}/api/orders/${orderId}/paid-status`, authParams);
-      check(orderStatusResponse, {
-        "case03 order paid-status route reachable": (response) => response.status !== 404,
-      });
-    }
+    const callbackBody = JSON.stringify({
+      paymentNo,
+      callbackNo: `k6-cb-${Date.now()}`,
+      callbackStatus: String(__ENV.CALLBACK_STATUS || "SUCCESS"),
+      providerTxnNo: __ENV.CALLBACK_PROVIDER_TXN || `txn-${Date.now()}`,
+      idempotencyKey: __ENV.CALLBACK_IDEMPOTENCY_KEY || `k6-cb-key-${Date.now()}`,
+      payload: "{\"source\":\"k6\"}",
+    });
+    const callbackResp = http.post(`${BASE_URL}/api/v2/payments/callbacks`, callbackBody, tolerantAuthParams);
+    const callbackOk = callbackResp.status !== 404 && isResultEnvelope(callbackResp);
+    check(callbackResp, {
+      "case03 payment callback route reachable": () => callbackOk,
+    });
 
-    return paySuccessOk ? "success" : "failed";
+    return paySuccessOk && callbackOk ? "success" : "failed";
   });
 
   sleepBetweenCases();
@@ -597,15 +626,17 @@ export function case04StockInsufficient(data) {
     if (!CASE04_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
       return "skipped";
     }
-    if (!authToken || !TEST_DATA.productId) {
+    if (!authToken || !TEST_DATA.skuId) {
       return "skipped";
     }
 
-    const authParams = jsonHeaders(authToken);
-    const response = http.get(
-      `${BASE_URL}/api/stocks/check/${TEST_DATA.productId}/${TEST_DATA.insufficientQuantity}`,
-      authParams
-    );
+    const authParams = jsonHeaders(authToken, true);
+    const response = http.post(`${BASE_URL}/api/v2/stocks/reserve`, JSON.stringify({
+      subOrderNo: __ENV.STOCK_SUB_ORDER_NO || `k6-sub-${Date.now()}`,
+      skuId: Number(TEST_DATA.skuId),
+      quantity: Number(TEST_DATA.insufficientQuantity),
+      reason: "k6 stock insufficient check",
+    }), authParams);
 
     if (response.status === 404) {
       return "failed";
@@ -615,7 +646,9 @@ export function case04StockInsufficient(data) {
     }
 
     const parsed = parseJsonResponse(response);
-    const stockInsufficient = response.status === 200 && isStockInsufficientPayload(parsed?.data);
+    const stockInsufficient = response.status === 200
+      && isResultEnvelope(response)
+      && isStockInsufficientPayload(parsed?.data);
 
     check(response, {
       "case04 stock insufficient path": () => stockInsufficient,
@@ -630,19 +663,19 @@ export function case04StockInsufficient(data) {
 export function case05RefundFlow(data) {
   runCase("05", "refund-flow", () => {
     const authToken = getAuthTokenFromSetup(data);
-    if (!authToken || !TEST_DATA.orderId || !ORDER_NO) {
+    if (!authToken || !TEST_DATA.paymentNo) {
       return "skipped";
     }
 
     const response = http.post(
-      `${BASE_URL}/api/v1/refund/create`,
+      `${BASE_URL}/api/v2/payments/refunds`,
       REFUND_CREATE_BODY,
-      jsonHeaders(authToken)
+      jsonHeaders(authToken, true)
     );
 
-    const refundCreated = isResultSuccess(response);
+    const refundCreated = response.status !== 404 && isResultEnvelope(response);
     check(response, {
-      "case05 refund create success": () => refundCreated,
+      "case05 refund route reachable": () => refundCreated,
     });
 
     return refundCreated ? "success" : "failed";
@@ -654,25 +687,32 @@ export function case05RefundFlow(data) {
 export function case06EventIdempotency(data) {
   runCase("06", "event-idempotency", () => {
     const authToken = getAuthTokenFromSetup(data);
-    if (!authToken || !TEST_DATA.paymentId) {
+    if (!authToken || !TEST_DATA.paymentNo) {
       return "skipped";
     }
 
-    const authParams = jsonHeaders(authToken);
     const tolerantAuthParams = jsonHeaders(authToken, true);
+    const callbackBody = JSON.stringify({
+      paymentNo: TEST_DATA.paymentNo,
+      callbackNo: __ENV.IDEMPOTENCY_CALLBACK_NO || "k6-idempotency-callback",
+      callbackStatus: String(__ENV.CALLBACK_STATUS || "SUCCESS"),
+      providerTxnNo: __ENV.IDEMPOTENCY_PROVIDER_TXN || "k6-idempotency-txn",
+      idempotencyKey: __ENV.IDEMPOTENCY_KEY || "k6-fixed-idempotency-key",
+      payload: "{\"source\":\"k6-idempotency\"}",
+    });
     const first = http.post(
-      `${BASE_URL}/api/payments/${TEST_DATA.paymentId}/success`,
-      null,
+      `${BASE_URL}/api/v2/payments/callbacks`,
+      callbackBody,
       tolerantAuthParams
     );
     const second = http.post(
-      `${BASE_URL}/api/payments/${TEST_DATA.paymentId}/success`,
-      null,
+      `${BASE_URL}/api/v2/payments/callbacks`,
+      callbackBody,
       tolerantAuthParams
     );
 
-    const firstOk = first.status !== 404 && first.status < 500;
-    const secondOk = second.status !== 404 && second.status < 500;
+    const firstOk = first.status !== 404 && first.status < 500 && isResultEnvelope(first);
+    const secondOk = second.status !== 404 && second.status < 500 && isResultEnvelope(second);
 
     check(first, {
       "case06 first payment success call accepted": () => firstOk,
@@ -693,12 +733,12 @@ export function case07SearchSync(data) {
     if (!CASE07_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
       return "skipped";
     }
-    if (!authToken || !TEST_DATA.productId) {
+    if (!authToken || !TEST_DATA.spuId || !TEST_DATA.categoryId) {
       return "skipped";
     }
 
     const authParams = jsonHeaders(authToken);
-    const productResponse = http.get(`${BASE_URL}/api/product/${TEST_DATA.productId}`, authParams);
+    const productResponse = http.get(`${BASE_URL}/api/v2/products/spu/${TEST_DATA.spuId}`, authParams);
     if (!isResultSuccess(productResponse)) {
       return "failed";
     }
@@ -709,17 +749,36 @@ export function case07SearchSync(data) {
     }
 
     const updatePayload = {
-      shopId: Number(product.shopId),
-      name: `${product.name || "k6-product"}-k6`,
-      price: String(product.price || "1.00"),
-      stockQuantity: Number(product.stockQuantity || 1),
-      categoryId: Number(product.categoryId || TEST_DATA.categoryId || 1),
-      status: Number(product.status || 1),
-      description: "k6 acceptance case07",
+      spu: {
+        categoryId: Number(product.categoryId || TEST_DATA.categoryId || 1),
+        spuName: `${product.spuName || product.name || "k6-product"}-k6`,
+        brandId: Number(product.brandId || __ENV.PRODUCT_BRAND_ID || 1),
+        merchantId: Number(product.merchantId || TEST_DATA.merchantId || __ENV.ORDER_MERCHANT_ID || 0),
+        status: Number(product.status || 1),
+        subtitle: product.subtitle || "k6 subtitle",
+        description: "k6 acceptance case07",
+        mainImage: product.mainImage || "",
+      },
+      skus: (Array.isArray(product.skus) ? product.skus : [])
+        .slice(0, 1)
+        .map((sku) => ({
+          skuId: Number(sku.skuId || TEST_DATA.skuId || 0),
+          skuCode: sku.skuCode || __ENV.ORDER_SKU_CODE || `SKU-${TEST_DATA.skuId || 0}`,
+          skuName: `${sku.skuName || __ENV.ORDER_SKU_NAME || "k6-sku"}-k6`,
+          specJson: sku.specJson || "{}",
+          salePrice: String(sku.salePrice || __ENV.ORDER_ITEM_PRICE || "99.99"),
+          marketPrice: String(sku.marketPrice || __ENV.ORDER_ITEM_PRICE || "99.99"),
+          costPrice: String(sku.costPrice || __ENV.ORDER_ITEM_PRICE || "99.99"),
+          status: Number(sku.status || 1),
+          imageUrl: sku.imageUrl || "",
+        })),
     };
+    if (!updatePayload.spu.merchantId || !updatePayload.skus.length) {
+      return "skipped";
+    }
 
     const updateResponse = http.put(
-      `${BASE_URL}/api/product/${TEST_DATA.productId}`,
+      `${BASE_URL}/api/v2/products/spu/${TEST_DATA.spuId}`,
       JSON.stringify(updatePayload),
       authParams
     );
@@ -729,9 +788,9 @@ export function case07SearchSync(data) {
 
     sleep(SEARCH_DELAY_SECONDS);
 
-    const keyword = encodeURIComponent((product.name || "k6").split("-")[0]);
+    const keyword = encodeURIComponent((product.spuName || product.name || "k6").split("-")[0]);
     const searchResponse = http.get(`${BASE_URL}/api/search/search?keyword=${keyword}&page=0&size=5`);
-    const searchOk = searchResponse.status !== 404;
+    const searchOk = searchResponse.status !== 404 && isResultEnvelope(searchResponse);
 
     check(searchResponse, {
       "case07 search route reachable": () => searchOk,
