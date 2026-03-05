@@ -24,6 +24,10 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-web</artifactId>
+        </dependency>
         <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
