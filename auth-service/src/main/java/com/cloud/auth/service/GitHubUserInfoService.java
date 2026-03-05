@@ -13,19 +13,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.security.Principal;
+import java.time.Duration;
 
 @Slf4j
 @Service
@@ -38,7 +37,7 @@ public class GitHubUserInfoService {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
     private UserFeignClient userFeignClient;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webClient = WebClient.builder().build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public UserDTO getOrCreateUser(OAuth2AuthorizedClient authorizedClient) {
@@ -71,20 +70,22 @@ public class GitHubUserInfoService {
     private GitHubUserDTO fetchGitHubUserInfo(OAuth2AuthorizedClient authorizedClient) {
         try {
             String accessToken = authorizedClient.getAccessToken().getTokenValue();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + accessToken);
-            headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
-            HttpEntity<?> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> userResponse = restTemplate.exchange(
-                    GITHUB_USER_API, HttpMethod.GET, entity, String.class);
-
-            if (userResponse.getStatusCode() != HttpStatus.OK || userResponse.getBody() == null) {
-                throw new SystemException("Failed to fetch GitHub user info: " + userResponse.getStatusCode());
+            String responseBody = webClient.get()
+                    .uri(GITHUB_USER_API)
+                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
+                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
+                            .defaultIfEmpty("")
+                            .flatMap(body -> Mono.error(
+                                    new SystemException("Failed to fetch GitHub user info: " + response.statusCode() + ", body=" + body))))
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(8))
+                    .block();
+            if (responseBody == null || responseBody.isBlank()) {
+                throw new SystemException("Failed to fetch GitHub user info: empty response");
             }
-
-            JsonNode userNode = objectMapper.readTree(userResponse.getBody());
+            JsonNode userNode = objectMapper.readTree(responseBody);
             JsonNode idNode = userNode.get("id");
             JsonNode loginNode = userNode.get("login");
 
@@ -115,29 +116,39 @@ public class GitHubUserInfoService {
 
     private String fetchPrimaryEmail(String accessToken) {
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + accessToken);
-            headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
-            HttpEntity<?> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> emailResponse = restTemplate.exchange(
-                    GITHUB_USER_EMAILS_API, HttpMethod.GET, entity, String.class);
-
-            if (emailResponse.getStatusCode() == HttpStatus.OK && emailResponse.getBody() != null) {
-                JsonNode emailsNode = objectMapper.readTree(emailResponse.getBody());
-                for (JsonNode emailNode : emailsNode) {
-                    if (emailNode.has("primary") && emailNode.get("primary").asBoolean()) {
-                        return emailNode.get("email").asText();
-                    }
+            String responseBody = webClient.get()
+                    .uri(GITHUB_USER_EMAILS_API)
+                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
+                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
+                            .defaultIfEmpty("")
+                            .flatMap(body -> Mono.error(
+                                    new SystemException("Failed to fetch GitHub emails: " + response.statusCode() + ", body=" + body))))
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(8))
+                    .block();
+            if (responseBody == null || responseBody.isBlank()) {
+                return null;
+            }
+            JsonNode emailsNode = objectMapper.readTree(responseBody);
+            for (JsonNode emailNode : emailsNode) {
+                if (emailNode.has("primary") && emailNode.get("primary").asBoolean()) {
+                    return emailNode.get("email").asText();
                 }
-                if (!emailsNode.isEmpty()) {
-                    return emailsNode.get(0).get("email").asText();
-                }
+            }
+            if (!emailsNode.isEmpty()) {
+                return emailsNode.get(0).get("email").asText();
             }
         } catch (Exception e) {
             log.warn("Failed to fetch GitHub email: {}", e.getMessage());
         }
         return null;
+    }
+
+    private void applyGitHubHeaders(HttpHeaders headers, String accessToken) {
+        headers.setBearerAuth(accessToken);
+        headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
     }
 
     public LoginResponseDTO getUserInfoAndGenerateToken(
