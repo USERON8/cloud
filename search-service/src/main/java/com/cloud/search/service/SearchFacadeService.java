@@ -5,7 +5,9 @@ import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.mapper.SearchRequestMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -18,11 +20,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SearchFacadeService {
 
     private final ProductSearchService productSearchService;
     private final ElasticsearchOptimizedService elasticsearchOptimizedService;
     private final SearchRequestMapper searchRequestMapper;
+    private final ObjectMapper objectMapper;
 
     public SearchResult<ProductDocument> searchProducts(ProductSearchRequest request) {
         return productSearchService.searchProducts(request);
@@ -48,19 +52,27 @@ public class SearchFacadeService {
     }
 
     public Page<ProductDocument> searchByKeyword(String keyword, int page, int size, String sortBy, String sortDir) {
-        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 20 : size;
+        int from = safePage * safeSize;
+        ElasticsearchOptimizedService.SearchResult optimizedResult = elasticsearchOptimizedService.smartProductSearch(
                 keyword,
-                null,
-                null,
                 null,
                 null,
                 null,
                 sortBy,
                 sortDir,
-                page,
-                size
+                from,
+                safeSize
         );
-        return toPage(result, page, size, sortBy, sortDir);
+
+        List<ProductDocument> records = optimizedResult.getDocuments().stream()
+                .map(document -> objectMapper.convertValue(document, ProductDocument.class))
+                .toList();
+        long total = optimizedResult.getTotal();
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String safeSortBy = (sortBy == null || sortBy.isBlank()) ? "hotScore" : sortBy;
+        return new PageImpl<>(records, PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy)), total);
     }
 
     public Page<ProductDocument> searchByCategory(Long categoryId, String keyword, int page, int size) {

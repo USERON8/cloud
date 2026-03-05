@@ -3,6 +3,7 @@ package com.cloud.gateway.config;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -11,6 +12,7 @@ import reactor.core.publisher.Mono;
 public class RateLimitConfig {
 
     @Bean("ipPathKeyResolver")
+    @Primary
     public KeyResolver ipPathKeyResolver() {
         return exchange -> {
             ServerHttpRequest request = exchange.getRequest();
