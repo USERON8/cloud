@@ -38,6 +38,10 @@ public class ProductCacheProtectionService {
     private static final String PRODUCT_CACHE_KEY_PREFIX = "product:detail:";
     private static final String PRODUCT_CACHE_LOCK_PREFIX = "product:detail:rebuild:lock:";
     private static final String PRODUCT_CACHE_PATTERN = PRODUCT_CACHE_KEY_PREFIX + "*";
+    private static final String PRODUCT_LIST_CACHE_KEY_PREFIX = "product:list:";
+    private static final String PRODUCT_LIST_CACHE_PATTERN = PRODUCT_LIST_CACHE_KEY_PREFIX + "*";
+    private static final String PRODUCT_STATS_CACHE_KEY_PREFIX = "product:stats:";
+    private static final String PRODUCT_STATS_CACHE_PATTERN = PRODUCT_STATS_CACHE_KEY_PREFIX + "*";
     private static final String PRODUCT_ID_BLOOM_KEY = "product:id:bloom";
     private static final String NULL_CACHE_MARKER = "__NULL__";
     private static final String PRODUCT_CACHE_NAME = "productCache";
@@ -77,6 +81,18 @@ public class ProductCacheProtectionService {
 
     @Value("${product.cache.guard.null-jitter-seconds:30}")
     private long nullJitterSeconds;
+
+    @Value("${product.cache.guard.list-ttl-seconds:900}")
+    private long listTtlSeconds;
+
+    @Value("${product.cache.guard.list-jitter-seconds:180}")
+    private long listJitterSeconds;
+
+    @Value("${product.cache.guard.stats-ttl-seconds:300}")
+    private long statsTtlSeconds;
+
+    @Value("${product.cache.guard.stats-jitter-seconds:60}")
+    private long statsJitterSeconds;
 
     @Value("${product.cache.guard.lock.wait-millis:120}")
     private long lockWaitMillis;
@@ -227,6 +243,7 @@ public class ProductCacheProtectionService {
         }
         List<Long> productIds = List.of(productId);
         evictRedisProductDetail(productId);
+        evictAllRedisProductListAndStats();
         publishLocalCacheInvalidation(false, productIds);
         evictLocalProductCaches(productIds);
     }
@@ -238,14 +255,64 @@ public class ProductCacheProtectionService {
             return;
         }
         evictRedisProductDetails(validIds);
+        evictAllRedisProductListAndStats();
         publishLocalCacheInvalidation(false, validIds);
         evictLocalProductCaches(validIds);
     }
 
     public void evictAllProductCaches() {
         evictAllRedisProductDetails();
+        evictAllRedisProductListAndStats();
         publishLocalCacheInvalidation(true, List.of());
         evictAllLocalProductCaches();
+    }
+
+    public void preloadProductDetailCache(Long productId, ProductVO productVO) {
+        if (productId == null || productId <= 0 || productVO == null) {
+            return;
+        }
+        markProductExists(productId);
+        cacheValue(PRODUCT_CACHE_KEY_PREFIX + productId, productVO);
+        CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
+        if (cacheManager == null) {
+            return;
+        }
+        Cache productCache = cacheManager.getCache(PRODUCT_CACHE_NAME);
+        if (productCache != null) {
+            productCache.put(productId, productVO);
+        }
+    }
+
+    public void preloadProductListCache(String cacheKey, Object value) {
+        if (!StringUtils.hasText(cacheKey) || value == null) {
+            return;
+        }
+        String redisKey = PRODUCT_LIST_CACHE_KEY_PREFIX + cacheKey;
+        cacheObject(redisKey, value, listTtlSeconds, listJitterSeconds);
+        CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
+        if (cacheManager == null) {
+            return;
+        }
+        Cache listCache = cacheManager.getCache(PRODUCT_LIST_CACHE_NAME);
+        if (listCache != null) {
+            listCache.put(cacheKey, value);
+        }
+    }
+
+    public void preloadProductStatsCache(String cacheKey, Object value) {
+        if (!StringUtils.hasText(cacheKey) || value == null) {
+            return;
+        }
+        String redisKey = PRODUCT_STATS_CACHE_KEY_PREFIX + cacheKey;
+        cacheObject(redisKey, value, statsTtlSeconds, statsJitterSeconds);
+        CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
+        if (cacheManager == null) {
+            return;
+        }
+        Cache statsCache = cacheManager.getCache(PRODUCT_STATS_CACHE_NAME);
+        if (statsCache != null) {
+            statsCache.put(cacheKey, value);
+        }
     }
 
     public void handleLocalCacheInvalidationMessage(String payload) {
@@ -326,6 +393,16 @@ public class ProductCacheProtectionService {
         stringRedisTemplate.opsForValue().set(redisKey, NULL_CACHE_MARKER, ttl, TimeUnit.SECONDS);
     }
 
+    private void cacheObject(String redisKey, Object value, long baseTtl, long jitterTtl) {
+        try {
+            String serialized = objectMapper.writeValueAsString(value);
+            long ttl = ttlWithJitter(baseTtl, jitterTtl);
+            stringRedisTemplate.opsForValue().set(redisKey, serialized, ttl, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("Write product object cache failed, key={}", redisKey, e);
+        }
+    }
+
     private long ttlWithJitter(long base, long jitter) {
         long safeBase = Math.max(10L, base);
         long safeJitter = Math.max(1L, jitter);
@@ -398,6 +475,25 @@ public class ProductCacheProtectionService {
             );
         } catch (Exception e) {
             log.warn("Evict all product detail redis cache failed, pattern={}", PRODUCT_CACHE_PATTERN, e);
+        }
+    }
+
+    private void evictAllRedisProductListAndStats() {
+        try {
+            RedisKeyScanUtils.deleteByPattern(
+                    stringRedisTemplate,
+                    PRODUCT_LIST_CACHE_PATTERN,
+                    redisScanCount,
+                    redisPipelineBatchSize
+            );
+            RedisKeyScanUtils.deleteByPattern(
+                    stringRedisTemplate,
+                    PRODUCT_STATS_CACHE_PATTERN,
+                    redisScanCount,
+                    redisPipelineBatchSize
+            );
+        } catch (Exception e) {
+            log.warn("Evict product list/stats redis cache failed", e);
         }
     }
 

@@ -19,6 +19,8 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,6 +92,10 @@ class ProductCacheProtectionServiceTest {
         ReflectionTestUtils.setField(service, "detailJitterSeconds", 300L);
         ReflectionTestUtils.setField(service, "nullTtlSeconds", 90L);
         ReflectionTestUtils.setField(service, "nullJitterSeconds", 30L);
+        ReflectionTestUtils.setField(service, "listTtlSeconds", 900L);
+        ReflectionTestUtils.setField(service, "listJitterSeconds", 180L);
+        ReflectionTestUtils.setField(service, "statsTtlSeconds", 300L);
+        ReflectionTestUtils.setField(service, "statsJitterSeconds", 60L);
         ReflectionTestUtils.setField(service, "lockWaitMillis", 120L);
         ReflectionTestUtils.setField(service, "lockLeaseMillis", 3000L);
         ReflectionTestUtils.setField(service, "lockRetryTimes", 1);
@@ -170,5 +176,48 @@ class ProductCacheProtectionServiceTest {
         verify(productCache, never()).evict(88L);
         verify(productListCache, never()).clear();
         verify(productStatsCache, never()).clear();
+    }
+
+    @Test
+    void shouldPreloadDetailIntoRedisAndCaffeine() {
+        ProductVO vo = new ProductVO();
+        vo.setId(9L);
+        vo.setName("warmup");
+
+        service.preloadProductDetailCache(9L, vo);
+
+        verify(valueOperations).set(
+                eq("product:detail:9"),
+                any(String.class),
+                longThat(ttl -> ttl >= 1800 && ttl <= 2101),
+                eq(TimeUnit.SECONDS)
+        );
+        verify(productCache).put(9L, vo);
+    }
+
+    @Test
+    void shouldPreloadListAndStatsIntoRedisAndCaffeine() {
+        ProductVO vo = new ProductVO();
+        vo.setId(7L);
+        vo.setName("hot");
+
+        service.preloadProductListCache("hot:products", List.of(vo));
+        service.preloadProductStatsCache("home:snapshot", Map.of("enabledCount", 1));
+
+        verify(valueOperations).set(
+                eq("product:list:hot:products"),
+                any(String.class),
+                longThat(ttl -> ttl >= 900 && ttl <= 1081),
+                eq(TimeUnit.SECONDS)
+        );
+        verify(productListCache).put(eq("hot:products"), any());
+
+        verify(valueOperations).set(
+                eq("product:stats:home:snapshot"),
+                any(String.class),
+                longThat(ttl -> ttl >= 300 && ttl <= 361),
+                eq(TimeUnit.SECONDS)
+        );
+        verify(productStatsCache).put(eq("home:snapshot"), any());
     }
 }

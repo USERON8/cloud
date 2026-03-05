@@ -32,8 +32,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -259,6 +261,45 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "productListCache", key = "'hot:products'")
+    public List<ProductVO> getHotProducts() {
+        return queryEnabledProductsByUpdatedAt(50);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "productListCache", key = "'home:products'")
+    public List<ProductVO> getHomeProducts() {
+        return queryEnabledProductsByUpdatedAt(30);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "productListCache", key = "'ranking:products'")
+    public List<ProductVO> getRankingProducts() {
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Product::getStatus, 1)
+                .orderByDesc(Product::getStock)
+                .orderByDesc(Product::getUpdatedAt)
+                .last("LIMIT 50");
+        return productConverter.toVOList(list(wrapper));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "productStatsCache", key = "'home:snapshot'")
+    public Map<String, Object> getHomeSnapshot() {
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("totalCount", getTotalProductCount());
+        snapshot.put("enabledCount", getEnabledProductCount());
+        snapshot.put("hotProducts", getHotProducts());
+        snapshot.put("homeProducts", getHomeProducts());
+        snapshot.put("rankingProducts", getRankingProducts());
+        return snapshot;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean enableProduct(Long id) {
         boolean updated = updateProductStatus(id, 1);
@@ -466,6 +507,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (id == null || id <= 0) {
             throw new BusinessException("Invalid id");
         }
+    }
+
+    private List<ProductVO> queryEnabledProductsByUpdatedAt(int limit) {
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Product::getStatus, 1)
+                .orderByDesc(Product::getUpdatedAt)
+                .last("LIMIT " + Math.max(10, limit));
+        return productConverter.toVOList(list(wrapper));
     }
 
     private void validateProductRequest(ProductRequestDTO requestDTO, boolean create) {

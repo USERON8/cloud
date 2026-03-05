@@ -9,6 +9,7 @@ import com.cloud.product.exception.ProductServiceException;
 import com.cloud.product.module.dto.ProductPageDTO;
 import com.cloud.product.module.entity.Product;
 
+import java.util.Map;
 import java.util.List;
 
 public interface ProductService extends IService<Product> {
@@ -37,6 +38,14 @@ public interface ProductService extends IService<Product> {
     List<ProductVO> searchProductsByName(String name, Integer status);
 
     List<String> getProductSuggestions(String keyword, Integer size);
+
+    List<ProductVO> getHotProducts();
+
+    List<ProductVO> getHomeProducts();
+
+    List<ProductVO> getRankingProducts();
+
+    Map<String, Object> getHomeSnapshot();
 
     Boolean enableProduct(Long id)
             throws ProductServiceException.ProductNotFoundException,

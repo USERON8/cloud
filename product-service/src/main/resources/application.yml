@@ -162,6 +162,15 @@ product:
         enabled: ${PRODUCT_CACHE_PUBSUB_ENABLED:true}
         channel: ${PRODUCT_CACHE_PUBSUB_CHANNEL:product:cache:invalidate}
         node-id: ${PRODUCT_CACHE_PUBSUB_NODE_ID:}
+      list-ttl-seconds: ${PRODUCT_CACHE_LIST_TTL_SECONDS:900}
+      list-jitter-seconds: ${PRODUCT_CACHE_LIST_JITTER_SECONDS:180}
+      stats-ttl-seconds: ${PRODUCT_CACHE_STATS_TTL_SECONDS:300}
+      stats-jitter-seconds: ${PRODUCT_CACHE_STATS_JITTER_SECONDS:60}
+    warmup:
+      detail-size: ${PRODUCT_CACHE_WARMUP_DETAIL_SIZE:100}
+      hot-size: ${PRODUCT_CACHE_WARMUP_HOT_SIZE:50}
+      home-size: ${PRODUCT_CACHE_WARMUP_HOME_SIZE:30}
+      rank-size: ${PRODUCT_CACHE_WARMUP_RANK_SIZE:50}
   config:
     page:
       default-size: 10

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -77,6 +78,30 @@ public class ProductController {
             @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
 
         return Result.success("Query success", productService.getProductSuggestions(keyword, size));
+    }
+
+    @GetMapping("/hot")
+    @Operation(summary = "Get hot products", description = "Get preheated hot products for homepage")
+    public Result<List<ProductVO>> getHotProducts() {
+        return Result.success("Query success", productService.getHotProducts());
+    }
+
+    @GetMapping("/home")
+    @Operation(summary = "Get home products", description = "Get preheated homepage products")
+    public Result<List<ProductVO>> getHomeProducts() {
+        return Result.success("Query success", productService.getHomeProducts());
+    }
+
+    @GetMapping("/ranking")
+    @Operation(summary = "Get product ranking", description = "Get preheated ranking products")
+    public Result<List<ProductVO>> getRankingProducts() {
+        return Result.success("Query success", productService.getRankingProducts());
+    }
+
+    @GetMapping("/home/snapshot")
+    @Operation(summary = "Get home snapshot", description = "Get preheated homepage snapshot data")
+    public Result<Map<String, Object>> getHomeSnapshot() {
+        return Result.success("Query success", productService.getHomeSnapshot());
     }
 
     @GetMapping("/{id}")
