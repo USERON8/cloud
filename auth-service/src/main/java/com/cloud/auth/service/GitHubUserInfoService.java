@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.auth.util.OAuth2ResponseUtil;
 import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
@@ -36,7 +36,7 @@ public class GitHubUserInfoService {
     private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
     private final WebClient webClient = WebClient.builder().build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -45,18 +45,18 @@ public class GitHubUserInfoService {
             GitHubUserDTO githubUser = fetchGitHubUserInfo(authorizedClient);
             String oauthProviderId = String.valueOf(githubUser.getGithubId());
 
-            UserDTO existingUser = userFeignClient.findByGitHubId(githubUser.getGithubId());
+            UserDTO existingUser = userDubboApi.findByGitHubId(githubUser.getGithubId());
             if (existingUser == null) {
-                existingUser = userFeignClient.findByOAuthProvider(OAUTH_PROVIDER_GITHUB, oauthProviderId);
+                existingUser = userDubboApi.findByOAuthProvider(OAUTH_PROVIDER_GITHUB, oauthProviderId);
             }
 
             if (existingUser != null) {
-                userFeignClient.updateGitHubUserInfo(existingUser.getId(), githubUser);
-                UserDTO refreshedUser = userFeignClient.findById(existingUser.getId());
+                userDubboApi.updateGitHubUserInfo(existingUser.getId(), githubUser);
+                UserDTO refreshedUser = userDubboApi.findById(existingUser.getId());
                 return refreshedUser != null ? refreshedUser : existingUser;
             }
 
-            UserDTO newUser = userFeignClient.createGitHubUser(githubUser);
+            UserDTO newUser = userDubboApi.createGitHubUser(githubUser);
             if (newUser == null) {
                 throw new SystemException("Failed to create GitHub user");
             }
@@ -186,3 +186,4 @@ public class GitHubUserInfoService {
         return authorizedClient != null;
     }
 }
+

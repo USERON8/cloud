@@ -1,6 +1,6 @@
 package com.cloud.auth.config;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
 
     @Override
     public void customize(JwtEncodingContext context) {
@@ -42,7 +42,7 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             context.getClaims().claim("username", username);
 
             try {
-                UserDTO user = userFeignClient.findByUsername(username);
+                UserDTO user = userDubboApi.findByUsername(username);
                 if (user != null) {
                     String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                     context.getClaims()
@@ -60,7 +60,7 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             if (principalName != null && !principalName.isBlank()) {
                 context.getClaims().claim("username", principalName);
                 try {
-                    UserDTO user = userFeignClient.findByUsername(principalName);
+                    UserDTO user = userDubboApi.findByUsername(principalName);
                     if (user != null) {
                         String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                         context.getClaims()
@@ -76,3 +76,4 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
         }
     }
 }
+

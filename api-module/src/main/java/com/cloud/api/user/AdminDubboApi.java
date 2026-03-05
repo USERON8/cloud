@@ -4,7 +4,7 @@ import com.cloud.common.domain.dto.user.AdminDTO;
 
 import java.util.List;
 
-public interface AdminFeignClient {
+public interface AdminDubboApi {
 
     AdminDTO findById(Long id);
 
@@ -16,3 +16,4 @@ public interface AdminFeignClient {
 
     Boolean delete(Long id);
 }
+

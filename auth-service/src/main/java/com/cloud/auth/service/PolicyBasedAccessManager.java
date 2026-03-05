@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -16,7 +16,7 @@ import java.util.Map;
 public class PolicyBasedAccessManager {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
 
     public boolean checkAccess(Authentication authentication, String resource, String action, Map<String, Object> context) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -78,3 +78,4 @@ public class PolicyBasedAccessManager {
         return addressId != null;
     }
 }
+

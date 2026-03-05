@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.Collection;
 public class PermissionCheckService {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
 
     
 
@@ -213,7 +213,7 @@ public class PermissionCheckService {
             Jwt jwt = (Jwt) principal;
             String username = jwt.getSubject();
             try {
-                return userFeignClient.findByUsername(username);
+                return userDubboApi.findByUsername(username);
             } catch (Exception e) {
                 log.error(": username={}", username, e);
                 return null;
@@ -223,3 +223,4 @@ public class PermissionCheckService {
         return null;
     }
 }
+

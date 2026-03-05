@@ -4,7 +4,7 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 
-public interface UserFeignClient {
+public interface UserDubboApi {
 
     UserDTO findByUsername(String username);
 
@@ -24,3 +24,4 @@ public interface UserFeignClient {
 
     Boolean updateGitHubUserInfo(Long userId, GitHubUserDTO githubUserDTO);
 }
+

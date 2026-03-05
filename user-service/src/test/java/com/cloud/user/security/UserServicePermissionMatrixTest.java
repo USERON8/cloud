@@ -11,12 +11,12 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.config.ResourceServerConfig;
 import com.cloud.user.config.TokenBlacklistChecker;
 import com.cloud.user.controller.AdminController;
-import com.cloud.user.controller.AdminFeignController;
+import com.cloud.user.controller.AdminDubboController;
 import com.cloud.user.controller.ThreadPoolMonitorController;
 import com.cloud.user.controller.merchant.MerchantAuthController;
 import com.cloud.user.controller.merchant.MerchantController;
 import com.cloud.user.controller.user.UserAddressController;
-import com.cloud.user.controller.user.UserFeignController;
+import com.cloud.user.controller.user.UserDubboController;
 import com.cloud.user.controller.user.UserManageController;
 import com.cloud.user.controller.user.UserNotificationController;
 import com.cloud.user.controller.user.UserProfileController;
@@ -91,8 +91,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         MerchantController.class,
         MerchantAuthController.class,
         UserAddressController.class,
-        AdminFeignController.class,
-        UserFeignController.class
+        AdminDubboController.class,
+        UserDubboController.class
 }, properties = {
         "minio.endpoint=http://127.0.0.1:9000",
         "minio.access-key=test-access-key",
@@ -632,3 +632,4 @@ class UserServicePermissionMatrixTest {
                 .authorities(grantedAuthorities);
     }
 }
+

@@ -1,6 +1,6 @@
 package com.cloud.user.controller.user;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/internal/user")
 @RequiredArgsConstructor
-public class UserFeignController implements UserFeignClient {
+public class UserDubboController implements UserDubboApi {
 
     private final UserService userService;
 
@@ -76,3 +76,4 @@ public class UserFeignController implements UserFeignClient {
         return userService.updateGitHubUserInfo(userId, githubUserDTO);
     }
 }
+

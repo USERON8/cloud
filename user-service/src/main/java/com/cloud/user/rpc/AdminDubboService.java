@@ -1,6 +1,6 @@
 package com.cloud.user.rpc;
 
-import com.cloud.api.user.AdminFeignClient;
+import com.cloud.api.user.AdminDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
@@ -9,9 +9,9 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import java.util.List;
 
-@DubboService(interfaceClass = AdminFeignClient.class, timeout = 5000, retries = 0)
+@DubboService(interfaceClass = AdminDubboApi.class, timeout = 5000, retries = 0)
 @RequiredArgsConstructor
-public class AdminDubboService implements AdminFeignClient {
+public class AdminDubboService implements AdminDubboApi {
 
     private final AdminService adminService;
     private final AdminConverter adminConverter;
@@ -43,3 +43,4 @@ public class AdminDubboService implements AdminFeignClient {
         return adminService.deleteAdmin(id);
     }
 }
+

@@ -36,7 +36,7 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        // Internal Feign endpoints must return raw DTOs to keep contract compatibility.
+        // Internal Dubbo adapter endpoints must return raw DTOs to keep contract compatibility.
         String path = request.getURI().getPath();
         if (path != null && path.startsWith("/internal/")) {
             return body;
@@ -56,3 +56,4 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
         return result;
     }
 }
+

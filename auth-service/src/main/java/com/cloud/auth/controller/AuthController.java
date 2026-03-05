@@ -1,6 +1,6 @@
 package com.cloud.auth.controller;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.util.OAuth2ResponseUtil;
 import com.cloud.common.domain.dto.auth.LoginRequestDTO;
@@ -53,7 +53,7 @@ import java.util.Optional;
 public class AuthController {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
     private final OAuth2TokenManagementService tokenManagementService;
     private final PasswordEncoder passwordEncoder;
     private final OAuth2ResponseUtil oauth2ResponseUtil;
@@ -76,7 +76,7 @@ public class AuthController {
             @RequestBody @Valid @NotNull(message = "Register request cannot be null")
             RegisterRequestDTO registerRequestDTO,
             HttpServletResponse response) {
-        UserDTO registeredUser = userFeignClient.register(registerRequestDTO);
+        UserDTO registeredUser = userDubboApi.register(registerRequestDTO);
         if (registeredUser == null) {
             throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
         }
@@ -96,7 +96,7 @@ public class AuthController {
         validateLoginRequest(loginRequestDTO);
         String username = loginRequestDTO.getUsername();
 
-        UserDTO user = userFeignClient.findByUsername(username);
+        UserDTO user = userDubboApi.findByUsername(username);
         if (user == null) {
             throw new ResourceNotFoundException("User", username);
         }
@@ -112,7 +112,7 @@ public class AuthController {
             throw new BusinessException(ResultCode.USER_TYPE_MISMATCH);
         }
 
-        String storedPassword = userFeignClient.getUserPassword(username);
+        String storedPassword = userDubboApi.getUserPassword(username);
         if (storedPassword == null) {
             throw new ResourceNotFoundException("User password", username);
         }
@@ -209,7 +209,7 @@ public class AuthController {
         }
 
         String username = existingAuth.getPrincipalName();
-        UserDTO user = userFeignClient.findByUsername(username);
+        UserDTO user = userDubboApi.findByUsername(username);
         if (user == null) {
             throw new ResourceNotFoundException("User", username);
         }
@@ -280,3 +280,4 @@ public class AuthController {
         return Math.max(ttl, 0);
     }
 }
+

@@ -5,7 +5,7 @@ import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.result.Result;
 
-public interface AuthFeignClient {
+public interface AuthDubboApi {
 
     Result<LoginResponseDTO> login(LoginRequestDTO loginRequest);
 
@@ -13,3 +13,4 @@ public interface AuthFeignClient {
 
     Result<LoginResponseDTO> refreshToken(String refreshToken);
 }
+

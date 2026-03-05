@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserFeignClient;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.auth.util.OAuth2ComplianceChecker;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
@@ -31,7 +31,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P3mTd.lQBHBR8y";
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserFeignClient userFeignClient;
+    private UserDubboApi userDubboApi;
 
     @Autowired(required = false)
     private OAuth2ComplianceChecker complianceChecker;
@@ -43,7 +43,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         }
 
         try {
-            UserDTO userDTO = userFeignClient.findByUsername(username.trim());
+            UserDTO userDTO = userDubboApi.findByUsername(username.trim());
             if (userDTO == null) {
                 throw new ResourceNotFoundException("User", username);
             }
@@ -137,7 +137,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
     private String getEncodedPassword(String username) {
         try {
-            String encodedPassword = userFeignClient.getUserPassword(username);
+            String encodedPassword = userDubboApi.getUserPassword(username);
             if (encodedPassword != null && !encodedPassword.trim().isEmpty() && !"null".equals(encodedPassword)) {
                 return encodedPassword;
             }
@@ -147,3 +147,4 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         return DEFAULT_BCRYPT_PASSWORD;
     }
 }
+

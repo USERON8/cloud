@@ -1,6 +1,6 @@
 package com.cloud.user.controller;
 
-import com.cloud.api.user.AdminFeignClient;
+import com.cloud.api.user.AdminDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping({"/admin", "/internal/admin"})
 @RequiredArgsConstructor
-public class AdminFeignController implements AdminFeignClient {
+public class AdminDubboController implements AdminDubboApi {
 
     private final AdminService adminService;
     private final AdminConverter adminConverter;
@@ -54,3 +54,4 @@ public class AdminFeignController implements AdminFeignClient {
         return adminService.deleteAdmin(id);
     }
 }
+
