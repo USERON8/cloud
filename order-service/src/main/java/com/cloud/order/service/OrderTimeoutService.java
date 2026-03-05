@@ -1,59 +1,18 @@
 package com.cloud.order.service;
 
-import com.cloud.order.module.entity.Order;
-
 import java.util.List;
 
-
-
-
-
-
 public interface OrderTimeoutService {
-    
-
-
-
-
 
     int checkAndHandleTimeoutOrders();
 
-    
+    List<Long> getTimeoutSubOrderIds(Integer timeoutMinutes);
 
+    boolean cancelTimeoutOrder(Long subOrderId);
 
-
-
-
-    List<Order> getTimeoutOrders(Integer timeoutMinutes);
-
-    
-
-
-
-
-
-    boolean cancelTimeoutOrder(Long orderId);
-
-    
-
-
-
-
-
-    int batchCancelTimeoutOrders(List<Long> orderIds);
-
-    
-
-
-
+    int batchCancelTimeoutOrders(List<Long> subOrderIds);
 
     Integer getTimeoutConfig();
-
-    
-
-
-
-
 
     boolean updateTimeoutConfig(Integer timeoutMinutes);
 }

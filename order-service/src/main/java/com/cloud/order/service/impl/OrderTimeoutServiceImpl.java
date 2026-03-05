@@ -2,7 +2,6 @@ package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.BusinessException;
-import com.cloud.order.module.entity.Order;
 import com.cloud.order.service.OrderTimeoutService;
 import com.cloud.order.v2.entity.OrderMainV2;
 import com.cloud.order.v2.entity.OrderSubV2;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,66 +31,60 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
 
     @Override
     public int checkAndHandleTimeoutOrders() {
-        List<Order> timeoutOrders = getTimeoutOrders(timeoutMinutes);
-        if (timeoutOrders.isEmpty()) {
+        List<Long> timeoutSubOrderIds = getTimeoutSubOrderIds(timeoutMinutes);
+        if (timeoutSubOrderIds.isEmpty()) {
             return 0;
         }
-
-        List<Long> orderIds = timeoutOrders.stream()
-                .map(Order::getId)
-                .collect(Collectors.toList());
-        return batchCancelTimeoutOrders(orderIds);
+        return batchCancelTimeoutOrders(timeoutSubOrderIds);
     }
 
     @Override
-    public List<Order> getTimeoutOrders(Integer timeoutMinutes) {
+    public List<Long> getTimeoutSubOrderIds(Integer timeoutMinutes) {
         int effectiveTimeout = (timeoutMinutes == null || timeoutMinutes <= 0)
                 ? this.timeoutMinutes
                 : timeoutMinutes;
 
         LocalDateTime timeoutPoint = LocalDateTime.now().minusMinutes(effectiveTimeout);
-        List<OrderSubV2> timeoutSubs = orderSubV2Mapper.selectList(
+        return orderSubV2Mapper.selectList(
                 new LambdaQueryWrapper<OrderSubV2>()
                         .eq(OrderSubV2::getOrderStatus, "CREATED")
                         .lt(OrderSubV2::getCreatedAt, timeoutPoint)
                         .eq(OrderSubV2::getDeleted, 0)
                         .orderByAsc(OrderSubV2::getCreatedAt)
-        );
-
-        return timeoutSubs.stream().map(this::toLegacyOrder).collect(Collectors.toList());
+        ).stream().map(OrderSubV2::getId).toList();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean cancelTimeoutOrder(Long orderId) {
+    public boolean cancelTimeoutOrder(Long subOrderId) {
         try {
-            OrderSubV2 updated = orderV2Service.advanceSubOrderStatus(orderId, "CANCEL");
+            OrderSubV2 updated = orderV2Service.advanceSubOrderStatus(subOrderId, "CANCEL");
             if (updated == null) {
                 return false;
             }
             refreshMainOrderStatusIfAllSubsClosed(updated.getMainOrderId());
             return true;
         } catch (Exception e) {
-            log.error("Cancel timeout order failed: orderId={}", orderId, e);
+            log.error("Cancel timeout order failed: subOrderId={}", subOrderId, e);
             throw new BusinessException("Cancel timeout order failed", e);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchCancelTimeoutOrders(List<Long> orderIds) {
-        if (orderIds == null || orderIds.isEmpty()) {
+    public int batchCancelTimeoutOrders(List<Long> subOrderIds) {
+        if (subOrderIds == null || subOrderIds.isEmpty()) {
             return 0;
         }
 
         int successCount = 0;
-        for (Long orderId : orderIds) {
+        for (Long subOrderId : subOrderIds) {
             try {
-                if (cancelTimeoutOrder(orderId)) {
+                if (cancelTimeoutOrder(subOrderId)) {
                     successCount++;
                 }
             } catch (Exception e) {
-                log.warn("Skip timeout order cancel failure: orderId={}", orderId);
+                log.warn("Skip timeout order cancel failure: subOrderId={}", subOrderId);
             }
         }
         return successCount;
@@ -110,21 +102,6 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         }
         this.timeoutMinutes = timeoutMinutes;
         return true;
-    }
-
-    private Order toLegacyOrder(OrderSubV2 subOrder) {
-        OrderMainV2 mainOrder = orderMainV2Mapper.selectById(subOrder.getMainOrderId());
-        Order legacy = new Order();
-        legacy.setId(subOrder.getId());
-        legacy.setOrderNo(subOrder.getSubOrderNo());
-        legacy.setUserId(mainOrder == null ? null : mainOrder.getUserId());
-        legacy.setTotalAmount(mainOrder == null ? subOrder.getPayableAmount() : mainOrder.getTotalAmount());
-        legacy.setPayAmount(subOrder.getPayableAmount());
-        legacy.setStatus("CREATED".equals(subOrder.getOrderStatus()) ? 0 : 4);
-        legacy.setShopId(subOrder.getMerchantId());
-        legacy.setCreatedAt(subOrder.getCreatedAt());
-        legacy.setUpdatedAt(subOrder.getUpdatedAt());
-        return legacy;
     }
 
     private void refreshMainOrderStatusIfAllSubsClosed(Long mainOrderId) {

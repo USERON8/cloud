@@ -9,9 +9,7 @@
 
 ## 核心接口
 
-- 订单：`/api/orders/**`
-- 退款：`/api/v1/refund/**`
-- 内部调用：`/internal/order/**`
+- 订单与售后：`/api/v2/**`
 
 ## 本地启动
 

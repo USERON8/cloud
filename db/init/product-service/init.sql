@@ -119,6 +119,217 @@ CREATE TABLE IF NOT EXISTS product_review
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS products
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    product_name     VARCHAR(200)    NOT NULL,
+    price            DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    category_id      BIGINT UNSIGNED NULL,
+    brand_id         BIGINT UNSIGNED NULL,
+    status           INT             NOT NULL DEFAULT 1,
+    stock_quantity   INT             NOT NULL DEFAULT 0,
+    shop_id          BIGINT UNSIGNED NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_products_category_deleted (category_id, deleted),
+    INDEX idx_products_brand_deleted (brand_id, deleted),
+    INDEX idx_products_shop_deleted (shop_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_sku
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    product_id       BIGINT UNSIGNED NOT NULL,
+    sku_code         VARCHAR(100)    NOT NULL,
+    sku_name         VARCHAR(200)    NOT NULL,
+    spec_values      VARCHAR(1000)   NULL,
+    price            DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    original_price   DECIMAL(12, 2)  NULL,
+    cost_price       DECIMAL(12, 2)  NULL,
+    stock_quantity   INT             NOT NULL DEFAULT 0,
+    sales_quantity   INT             NOT NULL DEFAULT 0,
+    image_url        VARCHAR(500)    NULL,
+    weight           INT             NULL,
+    volume           INT             NULL,
+    barcode          VARCHAR(100)    NULL,
+    status           INT             NOT NULL DEFAULT 1,
+    sort_order       INT             NOT NULL DEFAULT 0,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_product_sku_code (sku_code),
+    INDEX idx_product_sku_product_deleted (product_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_attribute
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    product_id       BIGINT UNSIGNED NOT NULL,
+    attr_name        VARCHAR(100)    NOT NULL,
+    attr_value       VARCHAR(1000)   NULL,
+    attr_group       VARCHAR(100)    NULL,
+    attr_type        INT             NOT NULL DEFAULT 1,
+    is_filterable    TINYINT         NOT NULL DEFAULT 0,
+    is_list_visible  TINYINT         NOT NULL DEFAULT 1,
+    is_detail_visible TINYINT        NOT NULL DEFAULT 1,
+    sort_order       INT             NOT NULL DEFAULT 0,
+    unit             VARCHAR(32)     NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_product_attribute_product_deleted (product_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_audit
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    product_id       BIGINT UNSIGNED NOT NULL,
+    product_name     VARCHAR(200)    NOT NULL,
+    merchant_id      BIGINT UNSIGNED NULL,
+    merchant_name    VARCHAR(100)    NULL,
+    audit_status     VARCHAR(32)     NOT NULL DEFAULT 'PENDING',
+    audit_type       VARCHAR(32)     NOT NULL DEFAULT 'CREATE',
+    submit_time      DATETIME        NULL,
+    auditor_id       BIGINT UNSIGNED NULL,
+    auditor_name     VARCHAR(100)    NULL,
+    audit_time       DATETIME        NULL,
+    audit_comment    VARCHAR(1000)   NULL,
+    reject_reason    VARCHAR(1000)   NULL,
+    product_snapshot TEXT            NULL,
+    priority         INT             NOT NULL DEFAULT 0,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_product_audit_product_deleted (product_id, deleted),
+    INDEX idx_product_audit_status_deleted (audit_status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sku_specification
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    spec_name        VARCHAR(100)    NOT NULL,
+    spec_values      VARCHAR(1000)   NULL,
+    category_id      BIGINT UNSIGNED NULL,
+    spec_type        INT             NOT NULL DEFAULT 1,
+    is_required      TINYINT         NOT NULL DEFAULT 0,
+    sort_order       INT             NOT NULL DEFAULT 0,
+    status           INT             NOT NULL DEFAULT 1,
+    description      VARCHAR(1000)   NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_sku_spec_category_deleted (category_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS brand
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    brand_name       VARCHAR(100)    NOT NULL,
+    brand_name_en    VARCHAR(100)    NULL,
+    logo_url         VARCHAR(500)    NULL,
+    description      VARCHAR(1000)   NULL,
+    brand_story      TEXT            NULL,
+    official_website VARCHAR(500)    NULL,
+    country          VARCHAR(100)    NULL,
+    founded_year     INT             NULL,
+    status           INT             NOT NULL DEFAULT 1,
+    is_hot           TINYINT         NOT NULL DEFAULT 0,
+    is_recommended   TINYINT         NOT NULL DEFAULT 0,
+    product_count    INT             NOT NULL DEFAULT 0,
+    sort_order       INT             NOT NULL DEFAULT 0,
+    seo_keywords     VARCHAR(500)    NULL,
+    seo_description  VARCHAR(1000)   NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_brand_status_deleted (status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS brand_authorization
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    brand_id         BIGINT UNSIGNED NOT NULL,
+    brand_name       VARCHAR(100)    NOT NULL,
+    merchant_id      BIGINT UNSIGNED NOT NULL,
+    merchant_name    VARCHAR(100)    NULL,
+    auth_type        VARCHAR(32)     NOT NULL DEFAULT 'NORMAL',
+    auth_status      VARCHAR(32)     NOT NULL DEFAULT 'PENDING',
+    certificate_url  VARCHAR(500)    NULL,
+    start_time       DATETIME        NULL,
+    end_time         DATETIME        NULL,
+    auditor_id       BIGINT UNSIGNED NULL,
+    auditor_name     VARCHAR(100)    NULL,
+    audit_time       DATETIME        NULL,
+    audit_comment    VARCHAR(1000)   NULL,
+    remark           VARCHAR(1000)   NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_brand_auth_brand_deleted (brand_id, deleted),
+    INDEX idx_brand_auth_merchant_deleted (merchant_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS attribute_template
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    template_name    VARCHAR(100)    NOT NULL,
+    category_id      BIGINT UNSIGNED NOT NULL,
+    attributes       TEXT            NULL,
+    description      VARCHAR(1000)   NULL,
+    status           INT             NOT NULL DEFAULT 1,
+    is_system        TINYINT         NOT NULL DEFAULT 0,
+    usage_count      INT             NOT NULL DEFAULT 0,
+    creator_id       BIGINT UNSIGNED NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_attribute_template_category_deleted (category_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_shop
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    merchant_id      BIGINT UNSIGNED NOT NULL,
+    shop_name        VARCHAR(100)    NOT NULL,
+    avatar_url       VARCHAR(500)    NULL,
+    description      VARCHAR(1000)   NULL,
+    contact_phone    VARCHAR(32)     NULL,
+    address          VARCHAR(255)    NULL,
+    status           INT             NOT NULL DEFAULT 1,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_merchant_shop_merchant_deleted (merchant_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS outbox_event
 (
     id                 BIGINT UNSIGNED PRIMARY KEY,
