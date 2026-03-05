@@ -108,7 +108,7 @@ logging:
     org.springframework.web: warn
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.cloud.order.v2.entity
+  type-aliases-package: com.cloud.order.entity
   configuration:
     map-underscore-to-camel-case: true
     auto-mapping-behavior: full
@@ -137,7 +137,7 @@ springdoc:
   group-configs:
     - group: 'order'
       paths-to-match: '/**'
-      packages-to-scan: com.cloud.order.v2.controller
+      packages-to-scan: com.cloud.order.controller
 knife4j:
   enable: true
   production: false

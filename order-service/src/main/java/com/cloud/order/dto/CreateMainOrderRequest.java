@@ -1,4 +1,4 @@
-package com.cloud.order.v2.dto;
+package com.cloud.order.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;

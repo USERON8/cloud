@@ -3,11 +3,11 @@ package com.cloud.order.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.order.service.OrderTimeoutService;
-import com.cloud.order.v2.entity.OrderMainV2;
-import com.cloud.order.v2.entity.OrderSubV2;
-import com.cloud.order.v2.mapper.OrderMainV2Mapper;
-import com.cloud.order.v2.mapper.OrderSubV2Mapper;
-import com.cloud.order.v2.service.OrderV2Service;
+import com.cloud.order.entity.OrderMain;
+import com.cloud.order.entity.OrderSub;
+import com.cloud.order.mapper.OrderMainMapper;
+import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +22,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderTimeoutServiceImpl implements OrderTimeoutService {
 
-    private final OrderSubV2Mapper orderSubV2Mapper;
-    private final OrderMainV2Mapper orderMainV2Mapper;
-    private final OrderV2Service orderV2Service;
+    private final OrderSubMapper orderSubMapper;
+    private final OrderMainMapper orderMainMapper;
+    private final OrderService orderService;
 
     @Value("${order.timeout.minutes:30}")
     private Integer timeoutMinutes;
@@ -45,20 +45,20 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
                 : timeoutMinutes;
 
         LocalDateTime timeoutPoint = LocalDateTime.now().minusMinutes(effectiveTimeout);
-        return orderSubV2Mapper.selectList(
-                new LambdaQueryWrapper<OrderSubV2>()
-                        .eq(OrderSubV2::getOrderStatus, "CREATED")
-                        .lt(OrderSubV2::getCreatedAt, timeoutPoint)
-                        .eq(OrderSubV2::getDeleted, 0)
-                        .orderByAsc(OrderSubV2::getCreatedAt)
-        ).stream().map(OrderSubV2::getId).toList();
+        return orderSubMapper.selectList(
+                new LambdaQueryWrapper<OrderSub>()
+                        .eq(OrderSub::getOrderStatus, "CREATED")
+                        .lt(OrderSub::getCreatedAt, timeoutPoint)
+                        .eq(OrderSub::getDeleted, 0)
+                        .orderByAsc(OrderSub::getCreatedAt)
+        ).stream().map(OrderSub::getId).toList();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelTimeoutOrder(Long subOrderId) {
         try {
-            OrderSubV2 updated = orderV2Service.advanceSubOrderStatus(subOrderId, "CANCEL");
+            OrderSub updated = orderService.advanceSubOrderStatus(subOrderId, "CANCEL");
             if (updated == null) {
                 return false;
             }
@@ -108,21 +108,21 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         if (mainOrderId == null) {
             return;
         }
-        List<OrderSubV2> remainingActiveSubs = orderSubV2Mapper.selectList(
-                new LambdaQueryWrapper<OrderSubV2>()
-                        .eq(OrderSubV2::getMainOrderId, mainOrderId)
-                        .eq(OrderSubV2::getDeleted, 0)
-                        .in(OrderSubV2::getOrderStatus, List.of("CREATED", "STOCK_RESERVED", "PAID", "SHIPPED", "RECEIVED"))
+        List<OrderSub> remainingActiveSubs = orderSubMapper.selectList(
+                new LambdaQueryWrapper<OrderSub>()
+                        .eq(OrderSub::getMainOrderId, mainOrderId)
+                        .eq(OrderSub::getDeleted, 0)
+                        .in(OrderSub::getOrderStatus, List.of("CREATED", "STOCK_RESERVED", "PAID", "SHIPPED", "RECEIVED"))
         );
         if (!remainingActiveSubs.isEmpty()) {
             return;
         }
-        OrderMainV2 mainOrder = orderMainV2Mapper.selectById(mainOrderId);
+        OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
             return;
         }
         mainOrder.setOrderStatus("CANCELLED");
         mainOrder.setCancelledAt(LocalDateTime.now());
-        orderMainV2Mapper.updateById(mainOrder);
+        orderMainMapper.updateById(mainOrder);
     }
 }

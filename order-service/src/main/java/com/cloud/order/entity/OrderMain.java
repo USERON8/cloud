@@ -1,4 +1,4 @@
-package com.cloud.order.v2.entity;
+package com.cloud.order.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("order_main")
-public class OrderMainV2 extends BaseEntity<OrderMainV2> {
+public class OrderMain extends BaseEntity<OrderMain> {
 
     @TableField("main_order_no")
     private String mainOrderNo;

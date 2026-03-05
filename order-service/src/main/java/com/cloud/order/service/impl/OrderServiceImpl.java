@@ -1,18 +1,18 @@
-package com.cloud.order.v2.service.impl;
+package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.BusinessException;
-import com.cloud.order.v2.dto.CreateMainOrderRequest;
-import com.cloud.order.v2.dto.OrderAggregateResponse;
-import com.cloud.order.v2.entity.AfterSaleV2;
-import com.cloud.order.v2.entity.OrderItemV2;
-import com.cloud.order.v2.entity.OrderMainV2;
-import com.cloud.order.v2.entity.OrderSubV2;
-import com.cloud.order.v2.mapper.AfterSaleV2Mapper;
-import com.cloud.order.v2.mapper.OrderItemV2Mapper;
-import com.cloud.order.v2.mapper.OrderMainV2Mapper;
-import com.cloud.order.v2.mapper.OrderSubV2Mapper;
-import com.cloud.order.v2.service.OrderV2Service;
+import com.cloud.order.dto.CreateMainOrderRequest;
+import com.cloud.order.dto.OrderAggregateResponse;
+import com.cloud.order.entity.AfterSale;
+import com.cloud.order.entity.OrderItem;
+import com.cloud.order.entity.OrderMain;
+import com.cloud.order.entity.OrderSub;
+import com.cloud.order.mapper.AfterSaleMapper;
+import com.cloud.order.mapper.OrderItemMapper;
+import com.cloud.order.mapper.OrderMainMapper;
+import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class OrderV2ServiceImpl implements OrderV2Service {
+public class OrderServiceImpl implements OrderService {
 
     private static final Map<String, String> SUB_ACTION_TARGET = Map.of(
             "RESERVE", "STOCK_RESERVED",
@@ -76,14 +76,14 @@ public class OrderV2ServiceImpl implements OrderV2Service {
             Map.entry("CLOSED", Set.of())
     );
 
-    private final OrderMainV2Mapper orderMainV2Mapper;
-    private final OrderSubV2Mapper orderSubV2Mapper;
-    private final OrderItemV2Mapper orderItemV2Mapper;
-    private final AfterSaleV2Mapper afterSaleV2Mapper;
+    private final OrderMainMapper orderMainMapper;
+    private final OrderSubMapper orderSubMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final AfterSaleMapper afterSaleMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderMainV2 createMainOrder(CreateMainOrderRequest request) {
+    public OrderMain createMainOrder(CreateMainOrderRequest request) {
         String idempotencyKey = request.getIdempotencyKey();
         if (!StringUtils.hasText(idempotencyKey)) {
             throw new BusinessException("idempotency key is required");
@@ -92,17 +92,17 @@ public class OrderV2ServiceImpl implements OrderV2Service {
             throw new BusinessException("subOrders is required");
         }
 
-        OrderMainV2 existing = orderMainV2Mapper.selectOne(
-                new LambdaQueryWrapper<OrderMainV2>()
-                        .eq(OrderMainV2::getIdempotencyKey, idempotencyKey.trim())
-                        .eq(OrderMainV2::getDeleted, 0)
+        OrderMain existing = orderMainMapper.selectOne(
+                new LambdaQueryWrapper<OrderMain>()
+                        .eq(OrderMain::getIdempotencyKey, idempotencyKey.trim())
+                        .eq(OrderMain::getDeleted, 0)
                         .last("LIMIT 1")
         );
         if (existing != null) {
             return existing;
         }
 
-        OrderMainV2 main = new OrderMainV2();
+        OrderMain main = new OrderMain();
         main.setMainOrderNo("M" + System.currentTimeMillis());
         main.setUserId(request.getUserId());
         main.setOrderStatus("CREATED");
@@ -112,12 +112,12 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         main.setIdempotencyKey(idempotencyKey.trim());
 
         try {
-            orderMainV2Mapper.insert(main);
+            orderMainMapper.insert(main);
         } catch (DuplicateKeyException duplicateKeyException) {
-            OrderMainV2 duplicated = orderMainV2Mapper.selectOne(
-                    new LambdaQueryWrapper<OrderMainV2>()
-                            .eq(OrderMainV2::getIdempotencyKey, idempotencyKey.trim())
-                            .eq(OrderMainV2::getDeleted, 0)
+            OrderMain duplicated = orderMainMapper.selectOne(
+                    new LambdaQueryWrapper<OrderMain>()
+                            .eq(OrderMain::getIdempotencyKey, idempotencyKey.trim())
+                            .eq(OrderMain::getDeleted, 0)
                             .last("LIMIT 1")
             );
             if (duplicated != null) {
@@ -128,7 +128,7 @@ public class OrderV2ServiceImpl implements OrderV2Service {
 
         long seq = 1;
         for (CreateMainOrderRequest.CreateSubOrderRequest subRequest : request.getSubOrders()) {
-            OrderSubV2 sub = new OrderSubV2();
+            OrderSub sub = new OrderSub();
             sub.setSubOrderNo("S" + System.currentTimeMillis() + seq++);
             sub.setMainOrderId(main.getId());
             sub.setMerchantId(subRequest.getMerchantId());
@@ -142,10 +142,10 @@ public class OrderV2ServiceImpl implements OrderV2Service {
             sub.setReceiverName(subRequest.getReceiverName());
             sub.setReceiverPhone(subRequest.getReceiverPhone());
             sub.setReceiverAddress(subRequest.getReceiverAddress());
-            orderSubV2Mapper.insert(sub);
+            orderSubMapper.insert(sub);
 
             for (CreateMainOrderRequest.CreateOrderItemRequest itemRequest : subRequest.getItems()) {
-                OrderItemV2 item = new OrderItemV2();
+                OrderItem item = new OrderItem();
                 item.setMainOrderId(main.getId());
                 item.setSubOrderId(sub.getId());
                 item.setSpuId(itemRequest.getSpuId());
@@ -156,33 +156,33 @@ public class OrderV2ServiceImpl implements OrderV2Service {
                 item.setQuantity(itemRequest.getQuantity());
                 item.setUnitPrice(defaultAmount(itemRequest.getUnitPrice()));
                 item.setTotalPrice(defaultAmount(itemRequest.getTotalPrice()));
-                orderItemV2Mapper.insert(item);
+                orderItemMapper.insert(item);
             }
         }
         return main;
     }
 
     @Override
-    public OrderMainV2 getMainOrder(Long mainOrderId) {
-        return orderMainV2Mapper.selectById(mainOrderId);
+    public OrderMain getMainOrder(Long mainOrderId) {
+        return orderMainMapper.selectById(mainOrderId);
     }
 
     @Override
     public OrderAggregateResponse getOrderAggregate(Long mainOrderId) {
-        OrderMainV2 main = orderMainV2Mapper.selectById(mainOrderId);
+        OrderMain main = orderMainMapper.selectById(mainOrderId);
         if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
             return null;
         }
-        List<OrderSubV2> subOrders = listSubOrders(mainOrderId);
+        List<OrderSub> subOrders = listSubOrders(mainOrderId);
 
         OrderAggregateResponse response = new OrderAggregateResponse();
         response.setMainOrder(main);
         List<OrderAggregateResponse.SubOrderWithItems> wrapped = new ArrayList<>(subOrders.size());
 
-        for (OrderSubV2 subOrder : subOrders) {
-            List<OrderItemV2> items = orderItemV2Mapper.selectList(new LambdaQueryWrapper<OrderItemV2>()
-                    .eq(OrderItemV2::getSubOrderId, subOrder.getId())
-                    .eq(OrderItemV2::getDeleted, 0));
+        for (OrderSub subOrder : subOrders) {
+            List<OrderItem> items = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
+                    .eq(OrderItem::getSubOrderId, subOrder.getId())
+                    .eq(OrderItem::getDeleted, 0));
             OrderAggregateResponse.SubOrderWithItems item = new OrderAggregateResponse.SubOrderWithItems();
             item.setSubOrder(subOrder);
             item.setItems(items);
@@ -193,23 +193,23 @@ public class OrderV2ServiceImpl implements OrderV2Service {
     }
 
     @Override
-    public List<OrderSubV2> listSubOrders(Long mainOrderId) {
-        return orderSubV2Mapper.selectList(
-                new LambdaQueryWrapper<OrderSubV2>()
-                        .eq(OrderSubV2::getMainOrderId, mainOrderId)
-                        .eq(OrderSubV2::getDeleted, 0)
+    public List<OrderSub> listSubOrders(Long mainOrderId) {
+        return orderSubMapper.selectList(
+                new LambdaQueryWrapper<OrderSub>()
+                        .eq(OrderSub::getMainOrderId, mainOrderId)
+                        .eq(OrderSub::getDeleted, 0)
         );
     }
 
     @Override
-    public OrderSubV2 getSubOrder(Long subOrderId) {
-        return orderSubV2Mapper.selectById(subOrderId);
+    public OrderSub getSubOrder(Long subOrderId) {
+        return orderSubMapper.selectById(subOrderId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderSubV2 advanceSubOrderStatus(Long subOrderId, String action) {
-        OrderSubV2 sub = orderSubV2Mapper.selectById(subOrderId);
+    public OrderSub advanceSubOrderStatus(Long subOrderId, String action) {
+        OrderSub sub = orderSubMapper.selectById(subOrderId);
         if (sub == null || sub.getDeleted() == 1) {
             throw new BusinessException("sub order not found");
         }
@@ -229,31 +229,31 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         } else if ("CLOSED".equals(targetStatus) || "CANCELLED".equals(targetStatus)) {
             sub.setClosedAt(LocalDateTime.now());
         }
-        orderSubV2Mapper.updateById(sub);
+        orderSubMapper.updateById(sub);
         refreshMainOrderStatus(sub.getMainOrderId());
         return sub;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public AfterSaleV2 applyAfterSale(AfterSaleV2 afterSale) {
+    public AfterSale applyAfterSale(AfterSale afterSale) {
         afterSale.setAfterSaleNo("AS" + System.currentTimeMillis());
         if (afterSale.getStatus() == null) {
             afterSale.setStatus("APPLIED");
         }
-        afterSaleV2Mapper.insert(afterSale);
+        afterSaleMapper.insert(afterSale);
         return afterSale;
     }
 
     @Override
-    public AfterSaleV2 getAfterSale(Long afterSaleId) {
-        return afterSaleV2Mapper.selectById(afterSaleId);
+    public AfterSale getAfterSale(Long afterSaleId) {
+        return afterSaleMapper.selectById(afterSaleId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public AfterSaleV2 advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
-        AfterSaleV2 afterSale = afterSaleV2Mapper.selectById(afterSaleId);
+    public AfterSale advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
+        AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
         if (afterSale == null || afterSale.getDeleted() == 1) {
             throw new BusinessException("after sale not found");
         }
@@ -271,7 +271,7 @@ public class OrderV2ServiceImpl implements OrderV2Service {
             afterSale.setClosedAt(LocalDateTime.now());
             afterSale.setCloseReason(remark);
         }
-        afterSaleV2Mapper.updateById(afterSale);
+        afterSaleMapper.updateById(afterSale);
         return afterSale;
     }
 
@@ -293,11 +293,11 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         if (mainOrderId == null) {
             return;
         }
-        OrderMainV2 mainOrder = orderMainV2Mapper.selectById(mainOrderId);
+        OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
             return;
         }
-        List<OrderSubV2> subOrders = listSubOrders(mainOrderId);
+        List<OrderSub> subOrders = listSubOrders(mainOrderId);
         if (subOrders.isEmpty()) {
             return;
         }
@@ -319,7 +319,7 @@ public class OrderV2ServiceImpl implements OrderV2Service {
         } else {
             mainOrder.setOrderStatus("CREATED");
         }
-        orderMainV2Mapper.updateById(mainOrder);
+        orderMainMapper.updateById(mainOrder);
     }
 
     private BigDecimal defaultAmount(BigDecimal amount) {

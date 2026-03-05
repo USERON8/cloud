@@ -1,4 +1,4 @@
-package com.cloud.order.v2.entity;
+package com.cloud.order.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("cart")
-public class CartV2 extends BaseEntity<CartV2> {
+public class Cart extends BaseEntity<Cart> {
 
     @TableField("cart_no")
     private String cartNo;

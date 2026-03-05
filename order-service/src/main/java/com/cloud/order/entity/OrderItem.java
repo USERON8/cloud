@@ -1,4 +1,4 @@
-package com.cloud.order.v2.entity;
+package com.cloud.order.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,14 +10,14 @@ import java.math.BigDecimal;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("cart_item")
-public class CartItemV2 extends BaseEntity<CartItemV2> {
+@TableName("order_item")
+public class OrderItem extends BaseEntity<OrderItem> {
 
-    @TableField("cart_id")
-    private Long cartId;
+    @TableField("main_order_id")
+    private Long mainOrderId;
 
-    @TableField("user_id")
-    private Long userId;
+    @TableField("sub_order_id")
+    private Long subOrderId;
 
     @TableField("spu_id")
     private Long spuId;
@@ -25,8 +25,14 @@ public class CartItemV2 extends BaseEntity<CartItemV2> {
     @TableField("sku_id")
     private Long skuId;
 
+    @TableField("sku_code")
+    private String skuCode;
+
     @TableField("sku_name")
     private String skuName;
+
+    @TableField("sku_snapshot")
+    private String skuSnapshot;
 
     @TableField("quantity")
     private Integer quantity;
@@ -34,10 +40,7 @@ public class CartItemV2 extends BaseEntity<CartItemV2> {
     @TableField("unit_price")
     private BigDecimal unitPrice;
 
-    @TableField("selected")
-    private Integer selected;
-
-    @TableField("checked_out")
-    private Integer checkedOut;
+    @TableField("total_price")
+    private BigDecimal totalPrice;
 }
 

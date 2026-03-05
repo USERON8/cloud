@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@MapperScan("com.cloud.order.v2.mapper")
+@MapperScan("com.cloud.order.mapper")
 public class OrderApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");

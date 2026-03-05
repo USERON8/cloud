@@ -1,14 +1,14 @@
-package com.cloud.order.v2.controller;
+package com.cloud.order.controller;
 
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
-import com.cloud.order.v2.dto.CreateMainOrderRequest;
-import com.cloud.order.v2.dto.OrderAggregateResponse;
-import com.cloud.order.v2.entity.AfterSaleV2;
-import com.cloud.order.v2.entity.OrderMainV2;
-import com.cloud.order.v2.entity.OrderSubV2;
-import com.cloud.order.v2.service.OrderV2Service;
+import com.cloud.order.dto.CreateMainOrderRequest;
+import com.cloud.order.dto.OrderAggregateResponse;
+import com.cloud.order.entity.AfterSale;
+import com.cloud.order.entity.OrderMain;
+import com.cloud.order.entity.OrderSub;
+import com.cloud.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,11 +20,11 @@ import java.util.List;
 import java.util.Objects;
 
 @RestController
-@RequestMapping("/api/v2/orders")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
-public class OrderV2Controller {
+public class OrderController {
 
-    private final OrderV2Service orderV2Service;
+    private final OrderService orderService;
 
     @PostMapping
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
@@ -43,14 +43,14 @@ public class OrderV2Controller {
             }
         }
         request.setIdempotencyKey(idempotencyKey.trim());
-        OrderMainV2 mainOrder = orderV2Service.createMainOrder(request);
-        return Result.success(orderV2Service.getOrderAggregate(mainOrder.getId()));
+        OrderMain mainOrder = orderService.createMainOrder(request);
+        return Result.success(orderService.getOrderAggregate(mainOrder.getId()));
     }
 
     @GetMapping("/main/{mainOrderId}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     public Result<OrderAggregateResponse> getMainOrder(@PathVariable Long mainOrderId, Authentication authentication) {
-        OrderMainV2 mainOrder = orderV2Service.getMainOrder(mainOrderId);
+        OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
             return Result.notFound("main order not found");
         }
@@ -60,14 +60,14 @@ public class OrderV2Controller {
                 return Result.forbidden("forbidden to query other user's orders");
             }
         }
-        return Result.success(orderV2Service.getOrderAggregate(mainOrderId));
+        return Result.success(orderService.getOrderAggregate(mainOrderId));
     }
 
     @GetMapping("/main/{mainOrderId}/sub-orders")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    public Result<List<OrderSubV2>> listSubOrders(@PathVariable Long mainOrderId,
+    public Result<List<OrderSub>> listSubOrders(@PathVariable Long mainOrderId,
                                                    Authentication authentication) {
-        OrderMainV2 mainOrder = orderV2Service.getMainOrder(mainOrderId);
+        OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
             return Result.notFound("main order not found");
         }
@@ -77,24 +77,24 @@ public class OrderV2Controller {
                 return Result.forbidden("forbidden to query other user's orders");
             }
         }
-        return Result.success(orderV2Service.listSubOrders(mainOrderId));
+        return Result.success(orderService.listSubOrders(mainOrderId));
     }
 
     @PostMapping("/sub/{subOrderId}/actions/{action}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    public Result<OrderSubV2> advanceSubOrderStatus(@PathVariable Long subOrderId,
+    public Result<OrderSub> advanceSubOrderStatus(@PathVariable Long subOrderId,
                                                      @PathVariable String action,
                                                      Authentication authentication) {
-        OrderSubV2 subOrder = requireAccessibleSubOrder(subOrderId, authentication);
+        OrderSub subOrder = requireAccessibleSubOrder(subOrderId, authentication);
         if (subOrder == null) {
             return Result.notFound("sub order not found");
         }
-        return Result.success(orderV2Service.advanceSubOrderStatus(subOrderId, action));
+        return Result.success(orderService.advanceSubOrderStatus(subOrderId, action));
     }
 
     @PostMapping("/after-sales")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    public Result<AfterSaleV2> applyAfterSale(@RequestBody AfterSaleV2 afterSale,
+    public Result<AfterSale> applyAfterSale(@RequestBody AfterSale afterSale,
                                                Authentication authentication) {
         Long currentUserId = requireCurrentUserId(authentication);
         if (!isAdmin(authentication)) {
@@ -104,16 +104,16 @@ public class OrderV2Controller {
                 return Result.forbidden("forbidden to create after-sale for another user");
             }
         }
-        return Result.success(orderV2Service.applyAfterSale(afterSale));
+        return Result.success(orderService.applyAfterSale(afterSale));
     }
 
     @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    public Result<AfterSaleV2> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
+    public Result<AfterSale> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
                                                        @PathVariable String action,
                                                        @RequestParam(required = false) String remark,
                                                        Authentication authentication) {
-        AfterSaleV2 afterSale = orderV2Service.getAfterSale(afterSaleId);
+        AfterSale afterSale = orderService.getAfterSale(afterSaleId);
         if (afterSale == null || Integer.valueOf(1).equals(afterSale.getDeleted())) {
             return Result.notFound("after sale not found");
         }
@@ -127,7 +127,7 @@ public class OrderV2Controller {
                 return Result.forbidden("forbidden to operate another user's after-sale");
             }
         }
-        return Result.success(orderV2Service.advanceAfterSaleStatus(afterSaleId, action, remark));
+        return Result.success(orderService.advanceAfterSaleStatus(afterSaleId, action, remark));
     }
 
     private boolean isAdmin(Authentication authentication) {
@@ -150,8 +150,8 @@ public class OrderV2Controller {
         }
     }
 
-    private OrderSubV2 requireAccessibleSubOrder(Long subOrderId, Authentication authentication) {
-        OrderSubV2 subOrder = orderV2Service.getSubOrder(subOrderId);
+    private OrderSub requireAccessibleSubOrder(Long subOrderId, Authentication authentication) {
+        OrderSub subOrder = orderService.getSubOrder(subOrderId);
         if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
             throw new BusinessException("sub order not found");
         }
@@ -165,7 +165,7 @@ public class OrderV2Controller {
             }
             return subOrder;
         }
-        OrderMainV2 mainOrder = orderV2Service.getMainOrder(subOrder.getMainOrderId());
+        OrderMain mainOrder = orderService.getMainOrder(subOrder.getMainOrderId());
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())
                 || !Objects.equals(mainOrder.getUserId(), currentUserId)) {
             throw new BusinessException("forbidden");

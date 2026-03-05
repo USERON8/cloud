@@ -20,7 +20,7 @@ class GatewayRouteContractTest {
         assertThat(yaml).contains("Path=/api/v2/products/**");
 
         assertThat(yaml).contains("- id: order-service-api-v2");
-        assertThat(yaml).contains("Path=/api/v2/orders/**,/api/orders/**,/api/v1/refund/**");
+        assertThat(yaml).contains("Path=/api/orders/**,/api/v1/refund/**");
         assertThat(yaml).doesNotContain("Path=/api/v2/**");
 
         assertThat(yaml).contains("- id: payment-service-api-v2");
