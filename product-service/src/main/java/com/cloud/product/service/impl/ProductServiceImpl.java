@@ -20,6 +20,7 @@ import com.cloud.product.module.entity.Shop;
 import com.cloud.product.service.CategoryService;
 import com.cloud.product.service.ProductService;
 import com.cloud.product.service.ShopService;
+import com.cloud.product.service.support.ProductCacheProtectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -43,6 +44,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private final ProductConverter productConverter;
     private final ShopService shopService;
     private final CategoryService categoryService;
+    private final ProductCacheProtectionService productCacheProtectionService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -63,6 +65,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!saved) {
             throw new BusinessException("Create product failed");
         }
+        productCacheProtectionService.markProductExists(product.getId());
 
         return product.getId();
     }
@@ -139,8 +142,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @org.springframework.cache.annotation.Cacheable(cacheNames = "productCache", key = "#id", condition = "#id != null")
     public ProductVO getProductById(Long id) {
         validateId(id);
-        Product product = requireExistingProduct(id);
-        return productConverter.toVO(product);
+        return productCacheProtectionService.queryProductById(id, () -> {
+            Product product = getById(id);
+            return product == null ? null : productConverter.toVO(product);
+        }).orElseThrow(() -> new ProductServiceException.ProductNotFoundException(id));
     }
 
     @Override

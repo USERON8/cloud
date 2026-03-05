@@ -64,6 +64,7 @@ public class ElasticsearchOptimizedService {
     private static final String EMPTY_LIST_CACHE_MARKER = "__EMPTY__";
     private static final String METRIC_SEARCH_LATENCY = "search.request.latency";
     private static final String METRIC_ES_ERROR = "search.es.error.count";
+    private static final String CACHE_REBUILD_LOCK_PREFIX = "search:cache:rebuild:lock:";
     private static final String CACHE_NAME_SMART = "search.smart";
     private static final String CACHE_NAME_SUGGESTIONS = "search.suggestions";
     private static final String CACHE_NAME_HOT = "search.hotKeywords";
@@ -128,6 +129,15 @@ public class ElasticsearchOptimizedService {
 
     @Value("${search.optimized.hot-keyword.cache-invalidate-interval-ms:3000}")
     private long hotKeywordCacheInvalidateIntervalMs;
+
+    @Value("${search.optimized.cache.lock.wait-ms:120}")
+    private long cacheLockWaitMs;
+
+    @Value("${search.optimized.cache.lock.lease-ms:3000}")
+    private long cacheLockLeaseMs;
+
+    @Value("${search.optimized.cache.lock.retry-times:2}")
+    private int cacheLockRetryTimes;
 
     private final ElasticsearchClient elasticsearchClient;
     private final StringRedisTemplate redisTemplate;
@@ -367,46 +377,70 @@ public class ElasticsearchOptimizedService {
 
     private SearchResult loadSmartSearchForCache(SmartSearchCacheKey cacheKey) {
         String redisKey = buildSmartSearchCacheKey(cacheKey);
-        SearchResult l2 = getSmartSearchFromRedis(redisKey);
-        if (l2 != null) {
-            return l2;
-        }
-        SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
-        putSmartSearchToRedis(redisKey, result);
-        return result;
+        return withCacheRebuildMutex(
+                buildRebuildLockKey(redisKey),
+                () -> getSmartSearchFromRedis(redisKey),
+                () -> {
+                    SearchResult l2 = getSmartSearchFromRedis(redisKey);
+                    if (l2 != null) {
+                        return l2;
+                    }
+                    SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
+                    putSmartSearchToRedis(redisKey, result);
+                    return result;
+                }
+        );
     }
 
     private List<String> loadSuggestionsForCache(KeywordLimitCacheKey cacheKey) {
         String redisKey = buildSuggestionCacheKey(cacheKey);
-        StringListCacheResult l2 = getStringListFromRedis(redisKey);
-        if (l2.hit()) {
-            return l2.value();
-        }
-        List<String> result = querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
-        putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
-        return result;
+        return withCacheRebuildMutex(
+                buildRebuildLockKey(redisKey),
+                () -> readStringListCacheIfHit(redisKey),
+                () -> {
+                    List<String> l2 = readStringListCacheIfHit(redisKey);
+                    if (l2 != null) {
+                        return l2;
+                    }
+                    List<String> result = querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
+                    putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
+                    return result;
+                }
+        );
     }
 
     private List<String> loadHotKeywordsForCache(LimitCacheKey cacheKey) {
         String redisKey = buildHotKeywordCacheKey(cacheKey);
-        StringListCacheResult l2 = getStringListFromRedis(redisKey);
-        if (l2.hit()) {
-            return l2.value();
-        }
-        List<String> result = queryHotKeywordsFromRedis(cacheKey.limit());
-        putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
-        return result;
+        return withCacheRebuildMutex(
+                buildRebuildLockKey(redisKey),
+                () -> readStringListCacheIfHit(redisKey),
+                () -> {
+                    List<String> l2 = readStringListCacheIfHit(redisKey);
+                    if (l2 != null) {
+                        return l2;
+                    }
+                    List<String> result = queryHotKeywordsFromRedis(cacheKey.limit());
+                    putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
+                    return result;
+                }
+        );
     }
 
     private List<String> loadRecommendationsForCache(KeywordLimitCacheKey cacheKey) {
         String redisKey = buildRecommendationCacheKey(cacheKey);
-        StringListCacheResult l2 = getStringListFromRedis(redisKey);
-        if (l2.hit()) {
-            return l2.value();
-        }
-        List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
-        putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
-        return result;
+        return withCacheRebuildMutex(
+                buildRebuildLockKey(redisKey),
+                () -> readStringListCacheIfHit(redisKey),
+                () -> {
+                    List<String> l2 = readStringListCacheIfHit(redisKey);
+                    if (l2 != null) {
+                        return l2;
+                    }
+                    List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
+                    putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
+                    return result;
+                }
+        );
     }
 
     private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
@@ -800,6 +834,59 @@ public class ElasticsearchOptimizedService {
             redisTemplate.opsForValue().set(key, json, addJitterTtlSeconds(ttlSeconds), TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Write string list cache failed, key={}", key, e);
+        }
+    }
+
+    private List<String> readStringListCacheIfHit(String redisKey) {
+        StringListCacheResult result = getStringListFromRedis(redisKey);
+        return result.hit() ? result.value() : null;
+    }
+
+    private String buildRebuildLockKey(String redisKey) {
+        return CACHE_REBUILD_LOCK_PREFIX + redisKey;
+    }
+
+    private <T> T withCacheRebuildMutex(String lockKey, java.util.function.Supplier<T> readFromCache, java.util.function.Supplier<T> rebuild) {
+        String token = java.util.UUID.randomUUID().toString();
+        Boolean acquired = redisTemplate.opsForValue()
+                .setIfAbsent(lockKey, token, Math.max(500L, cacheLockLeaseMs), TimeUnit.MILLISECONDS);
+
+        if (Boolean.TRUE.equals(acquired)) {
+            try {
+                return rebuild.get();
+            } finally {
+                safeUnlock(lockKey, token);
+            }
+        }
+
+        int retries = Math.max(1, cacheLockRetryTimes);
+        long waitSlice = Math.max(20L, cacheLockWaitMs / retries);
+        for (int i = 0; i < retries; i++) {
+            sleepQuietly(waitSlice);
+            T cached = readFromCache.get();
+            if (cached != null) {
+                return cached;
+            }
+        }
+        return rebuild.get();
+    }
+
+    private void safeUnlock(String lockKey, String token) {
+        try {
+            String current = redisTemplate.opsForValue().get(lockKey);
+            if (token.equals(current)) {
+                redisTemplate.delete(lockKey);
+            }
+        } catch (Exception e) {
+            log.warn("Unlock cache rebuild key failed, key={}", lockKey, e);
+        }
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

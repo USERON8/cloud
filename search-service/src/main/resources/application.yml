@@ -77,6 +77,10 @@ search:
     cache:
       l1-max-entries: ${SEARCH_L1_MAX_ENTRIES:5000}
       record-stats: ${SEARCH_L1_RECORD_STATS:true}
+      lock:
+        wait-ms: ${SEARCH_CACHE_LOCK_WAIT_MS:120}
+        lease-ms: ${SEARCH_CACHE_LOCK_LEASE_MS:3000}
+        retry-times: ${SEARCH_CACHE_LOCK_RETRY_TIMES:2}
       refresh:
         executor:
           core-size: ${SEARCH_CACHE_REFRESH_CORE:2}

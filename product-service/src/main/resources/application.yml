@@ -142,6 +142,22 @@ product:
     enabled: true
   statistics:
     enabled: true
+  cache:
+    guard:
+      enabled: ${PRODUCT_CACHE_GUARD_ENABLED:true}
+      bloom:
+        enabled: ${PRODUCT_CACHE_BLOOM_ENABLED:true}
+        rebuild-on-startup: ${PRODUCT_CACHE_BLOOM_REBUILD_ON_STARTUP:true}
+        expected-insertions: ${PRODUCT_CACHE_BLOOM_EXPECTED_INSERTIONS:500000}
+        false-positive-rate: ${PRODUCT_CACHE_BLOOM_FALSE_POSITIVE_RATE:0.01}
+      detail-ttl-seconds: ${PRODUCT_CACHE_DETAIL_TTL_SECONDS:1800}
+      detail-jitter-seconds: ${PRODUCT_CACHE_DETAIL_JITTER_SECONDS:300}
+      null-ttl-seconds: ${PRODUCT_CACHE_NULL_TTL_SECONDS:90}
+      null-jitter-seconds: ${PRODUCT_CACHE_NULL_JITTER_SECONDS:30}
+      lock:
+        wait-millis: ${PRODUCT_CACHE_LOCK_WAIT_MILLIS:120}
+        lease-millis: ${PRODUCT_CACHE_LOCK_LEASE_MILLIS:3000}
+        retry-times: ${PRODUCT_CACHE_LOCK_RETRY_TIMES:2}
   config:
     page:
       default-size: 10
