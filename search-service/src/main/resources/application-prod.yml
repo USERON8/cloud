@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://prod-elasticsearch:9200}
     username: ${ELASTICSEARCH_USERNAME:}
@@ -23,7 +23,6 @@ logging:
     com.cloud.search: info
     org.springframework.security: warn
     org.springframework.web: warn
-    org.springframework.cloud.openfeign: warn
     org.elasticsearch: warn
     com.alibaba.nacos: warn
     root: warn
@@ -34,5 +33,6 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+
 
 

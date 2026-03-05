@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   redis:
     host: 127.0.0.1
     port: 16379
@@ -35,7 +35,6 @@ logging:
     com.cloud.order: debug
     org.springframework.security: debug
     org.springframework.web: debug
-    org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
 mybatis-plus:
   configuration:
@@ -50,6 +49,7 @@ knife4j:
       resourceserver:
         jwt:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
+
 
 
 

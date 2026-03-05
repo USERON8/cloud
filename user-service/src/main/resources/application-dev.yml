@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   redis:
     host: 127.0.0.1
     port: 16379
@@ -41,7 +41,6 @@ logging:
     com.cloud.user: debug
     org.springframework.security: debug
     org.springframework.web: debug
-    org.springframework.cloud.openfeign: debug
     com.alibaba.nacos: warn
 mybatis-plus:
   configuration:
@@ -51,6 +50,7 @@ knife4j:
   production: false
   basic:
     enable: false
+
 
 
 

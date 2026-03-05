@@ -37,18 +37,6 @@ spring:
         namespace: public
         import-check:
           enabled: false
-    openfeign:
-      client:
-        config:
-          default:
-            connectTimeout: 5000
-            readTimeout: 10000
-            loggerLevel: basic
-      compression:
-        request:
-          enabled: true
-        response:
-          enabled: true
   security:
     oauth2:
       resourceserver:

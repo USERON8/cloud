@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   cloud:
     function:
       definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
@@ -133,6 +133,7 @@
           destination: refund-cancelled
           content-type: application/json
           group: order-refund-cancelled-notification-group
+
 
 
 

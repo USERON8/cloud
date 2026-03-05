@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   cloud:
     function:
       definition: orderCreatedConsumer;paymentSuccessConsumer;stockRestoreConsumer
@@ -56,6 +56,7 @@
           destination: stock-restore
           content-type: application/json
           group: stock-restore-consumer-group
+
 
 
 

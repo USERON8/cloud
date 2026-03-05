@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   elasticsearch:
     uris: http://127.0.0.1:19200
     username:
@@ -33,7 +33,6 @@ logging:
     com.cloud.search: debug
     org.springframework.security: debug
     org.springframework.web: debug
-    org.springframework.cloud.openfeign: debug
     org.elasticsearch: debug
     com.alibaba.nacos: warn
 knife4j:
@@ -41,6 +40,7 @@ knife4j:
   production: false
   basic:
     enable: false
+
 
 
 

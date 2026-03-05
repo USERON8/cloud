@@ -1,4 +1,4 @@
-﻿server:
+server:
   shutdown: graceful
   tomcat:
     threads:
@@ -34,18 +34,6 @@ spring:
         namespace: ${NACOS_NAMESPACE:public}
         file-extension: yaml
         group: ${NACOS_GROUP:DEFAULT_GROUP}
-    openfeign:
-      client:
-        config:
-          default:
-            connectTimeout: ${FEIGN_CONNECT_TIMEOUT:5000}
-            readTimeout: ${FEIGN_READ_TIMEOUT:10000}
-            loggerLevel: ${FEIGN_LOG_LEVEL:basic}
-      compression:
-        request:
-          enabled: true
-        response:
-          enabled: true
     stream:
       rocketmq:
         binder:
@@ -133,9 +121,9 @@ knife4j:
     language: ZH_CN
     enable-version: true
     enable-swagger-models: true
-    swagger-model-name: 閻庡湱鍋樼紞瀣尵鐠囨彃鐏欓悶?
+    swagger-model-name: 鐎圭偘缍嬬猾璇插灙鐞?
     enable-footer-custom: true
-    footer-custom-content: "Cloud 鐎甸偊鍠楀﹢鍥礉閳ユ娊鎸柛?API 闁哄倸娲﹂妴?
+    footer-custom-content: "Cloud 瀵邦喗婀囬崝鈥抽挬閸?API 閺傚洦銆?
 cache:
   multi-level: ${CACHE_MULTI_LEVEL:true}
   consistency-enabled: ${CACHE_CONSISTENCY_ENABLED:false}
@@ -233,6 +221,8 @@ management:
     export:
       prometheus:
         enabled: ${PROMETHEUS_ENABLED:true}
+
+
 
 
 

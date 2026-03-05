@@ -1,6 +1,7 @@
-﻿app:
+app:
   security:
     testenv-bypass-enabled: true
   jwt:
     test-mode: true
     test-token-validity: P100Y
+

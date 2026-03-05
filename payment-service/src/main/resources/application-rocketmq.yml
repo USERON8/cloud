@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   cloud:
     function:
       definition: orderCreatedConsumer;refundProcessConsumer
@@ -54,6 +54,7 @@
           destination: refund-process
           content-type: application/json
           group: payment-refund-process-consumer-group
+
 
 
 

@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -36,7 +36,6 @@ logging:
     com.cloud.user: info
     org.springframework.security: warn
     org.springframework.web: warn
-    org.springframework.cloud.openfeign: warn
     com.alibaba.nacos: warn
     root: warn
 mybatis-plus:
@@ -49,5 +48,6 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+
 
 

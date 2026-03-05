@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -44,5 +44,6 @@ knife4j:
     enable: true
     username: ${API_DOC_USERNAME:admin}
     password: ${API_DOC_PASSWORD:admin123}
+
 
 
