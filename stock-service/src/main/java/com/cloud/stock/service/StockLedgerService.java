@@ -1,9 +1,9 @@
-package com.cloud.api.stock;
+package com.cloud.stock.service;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 
-public interface StockFeignClient {
+public interface StockLedgerService {
 
     StockLedgerVO getLedgerBySkuId(Long skuId);
 
