@@ -15,7 +15,8 @@ pipeline {
 
     environment {
         MAVEN_VERSION = '3.9.9'
-        MAVEN_OPTS = '-Xmx2g -Djava.awt.headless=true'
+        MAVEN_OPTS = '-Xms512m -Xmx2g -XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Djava.awt.headless=true -Dfile.encoding=UTF-8'
+        JAVA_TOOL_OPTIONS = '-XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8'
         NODE_OPTIONS = '--max-old-space-size=2048'
     }
 
