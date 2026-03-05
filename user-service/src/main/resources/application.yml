@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: user-service
+  cache:
+    type: redis
   profiles:
     active: dev
   datasource:

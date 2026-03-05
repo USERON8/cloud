@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: payment-service
+  cache:
+    type: none
   profiles:
     active: dev
     include: rocketmq

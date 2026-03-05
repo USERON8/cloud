@@ -1,0 +1,68 @@
+groups:
+  - name: cache-observability-recording
+    interval: 30s
+    rules:
+      - record: redis:qps:rate1m
+        expr: sum(rate(redis_commands_processed_total{job="redis-exporter"}[1m]))
+      - record: redis:cache_hit_rate:ratio5m
+        expr: |
+          sum(rate(redis_keyspace_hits_total{job="redis-exporter"}[5m]))
+          /
+          clamp_min(
+            sum(rate(redis_keyspace_hits_total{job="redis-exporter"}[5m]))
+            + sum(rate(redis_keyspace_misses_total{job="redis-exporter"}[5m])),
+            1e-9
+          )
+      - record: redis:memory_usage:ratio
+        expr: max(redis_memory_used_bytes{job="redis-exporter"}) / clamp_min(max(redis_memory_max_bytes{job="redis-exporter"}), 1)
+      - record: redis:slowlog_entries:increase5m
+        expr: increase(redis_slowlog_last_id{job="redis-exporter"}[5m])
+      - record: caffeine:hit_rate:ratio5m
+        expr: |
+          sum(rate(cache_gets_total{job="spring-boot",cache=~"search.*|product.*",result="hit"}[5m]))
+          /
+          clamp_min(sum(rate(cache_gets_total{job="spring-boot",cache=~"search.*|product.*"}[5m])), 1e-9)
+      - record: caffeine:evictions:increase5m
+        expr: increase(cache_evictions_total{job="spring-boot",cache=~"search.*|product.*"}[5m])
+      - record: caffeine:load_time_ms:avg5m
+        expr: |
+          1000 *
+          sum(rate(cache_load_duration_seconds_sum{job="spring-boot",cache=~"search.*|product.*"}[5m]))
+          /
+          clamp_min(sum(rate(cache_load_duration_seconds_count{job="spring-boot",cache=~"search.*|product.*"}[5m])), 1e-9)
+
+  - name: cache-observability-alerts
+    interval: 30s
+    rules:
+      - alert: RedisCacheHitRateLow
+        expr: redis:cache_hit_rate:ratio5m < 0.70
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          scope: cache
+        annotations:
+          summary: "Redis cache hit rate is low"
+          description: "Redis cache hit rate stayed below 70% for 10m. Current value={{ $value | humanizePercentage }}."
+
+      - alert: RedisSlowlogSpike
+        expr: redis:slowlog_entries:increase5m > 20
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          scope: redis
+        annotations:
+          summary: "Redis slow query spike detected"
+          description: "Redis slowlog entries increased by more than 20 in 5m. Current value={{ $value }}."
+
+      - alert: CaffeineEvictionAnomaly
+        expr: sum(caffeine:evictions:increase5m) > 1000 and caffeine:hit_rate:ratio5m < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+          scope: cache
+        annotations:
+          summary: "Caffeine eviction anomaly"
+          description: "Caffeine evictions are high and hit rate is low for 10m, indicating potential cache capacity/TTL mismatch."

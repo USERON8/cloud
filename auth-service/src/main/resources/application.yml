@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: auth-service
+  cache:
+    type: none
   profiles:
     active: dev
   main:

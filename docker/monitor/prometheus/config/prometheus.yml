@@ -12,8 +12,7 @@ alerting:
 
 # 兼容性注释已标准化。
 rule_files:
-# - "first_rules.yml"
-# - "second_rules.yml"
+  - "rules/cache-observability-rules.yml"
 
 # 兼容性注释已标准化。
 scrape_configs:
