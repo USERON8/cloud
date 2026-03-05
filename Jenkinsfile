@@ -8,12 +8,15 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'RUN_DEPLOY', defaultValue: false, description: 'Run local deploy stage after package')
+        booleanParam(name: 'RUN_FRONTEND', defaultValue: true, description: 'Build frontend (my-shop-web)')
+        booleanParam(name: 'RUN_DEPLOY', defaultValue: false, description: 'Run local deployment after build')
+        booleanParam(name: 'RUN_SMOKE', defaultValue: true, description: 'Run smoke test after deployment')
     }
 
     environment {
         MAVEN_VERSION = '3.9.9'
         MAVEN_OPTS = '-Xmx2g -Djava.awt.headless=true'
+        NODE_OPTIONS = '--max-old-space-size=2048'
     }
 
     stages {
@@ -23,21 +26,43 @@ pipeline {
             }
         }
 
-        stage('Build And Test') {
+        stage('Environment Check') {
+            steps {
+                sh 'bash --version | head -1'
+                sh 'java -version'
+                sh 'docker --version'
+                sh 'docker version --format \'{{.Server.Version}}\''
+            }
+        }
+
+        stage('Backend Unit Test') {
             steps {
                 sh 'bash scripts/ci/mvnw-local.sh -T 1C -DskipITs clean test'
             }
         }
 
-        stage('Package') {
+        stage('Backend Package') {
             steps {
                 sh 'bash scripts/ci/mvnw-local.sh -T 1C -DskipTests package'
             }
         }
 
-        stage('Archive') {
+        stage('Frontend Build') {
+            when {
+                expression { return params.RUN_FRONTEND }
+            }
+            steps {
+                dir('my-shop-web') {
+                    sh 'npm ci'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
             steps {
                 archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true, allowEmptyArchive: false
+                archiveArtifacts artifacts: 'my-shop-web/dist/**', allowEmptyArchive: true
             }
         }
 
@@ -49,9 +74,25 @@ pipeline {
                 sh 'bash scripts/ci/deploy-local.sh'
             }
         }
+
+        stage('Smoke Test') {
+            when {
+                expression { return params.RUN_DEPLOY && params.RUN_SMOKE }
+            }
+            steps {
+                sh 'bash scripts/ci/smoke-local.sh'
+            }
+        }
     }
 
     post {
+        failure {
+            script {
+                if (params.RUN_DEPLOY) {
+                    sh 'bash scripts/ci/rollback-local.sh || true'
+                }
+            }
+        }
         always {
             junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
             archiveArtifacts artifacts: '.tmp/acceptance/startup.csv,.tmp/acceptance/logs/*.log', allowEmptyArchive: true
