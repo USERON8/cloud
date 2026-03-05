@@ -2,195 +2,44 @@ package com.cloud.api.product;
 
 import com.cloud.common.domain.dto.product.ProductRequestDTO;
 import com.cloud.common.domain.vo.product.ProductVO;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
-
-
-
-
-
-
-@FeignClient(name = "product-service", path = "/internal/product", contextId = "productFeignClient")
 public interface ProductFeignClient {
 
-    
+    Long createProduct(ProductRequestDTO productRequestDTO);
 
+    ProductVO getProductById(Long id);
 
+    Boolean updateProduct(Long id, ProductRequestDTO productRequestDTO);
 
+    Boolean patchProduct(Long id, ProductRequestDTO productRequestDTO);
 
+    Boolean deleteProduct(Long id);
 
-    @PostMapping("/create")
-    Long createProduct(@RequestBody ProductRequestDTO productRequestDTO);
+    ProductVO getProductProfile(Long id);
 
-    
+    Boolean updateProductProfile(Long id, ProductRequestDTO profileDTO);
 
+    Boolean updateProductStatus(Long id, Integer status);
 
+    List<ProductVO> getProductsByCategoryId(Long categoryId, Integer status);
 
+    List<ProductVO> getProductsByBrandId(Long brandId, Integer status);
 
+    List<ProductVO> getProductsByIds(List<Long> ids);
 
-    @GetMapping("/{id}")
-    ProductVO getProductById(@PathVariable("id") Long id);
+    Boolean deleteProductsBatch(List<Long> ids);
 
-    
+    Boolean enableProductsBatch(List<Long> ids);
 
+    Boolean disableProductsBatch(List<Long> ids);
 
+    Integer createProductsBatch(List<ProductRequestDTO> productList);
 
+    Boolean checkStock(Long productId, Integer quantity);
 
+    Boolean deductStock(Long productId, Integer quantity);
 
-
-    @PutMapping("/{id}")
-    Boolean updateProduct(@PathVariable("id") Long id, @RequestBody ProductRequestDTO productRequestDTO);
-
-    
-
-
-
-
-
-
-    @PatchMapping("/{id}")
-    Boolean patchProduct(@PathVariable("id") Long id, @RequestBody ProductRequestDTO productRequestDTO);
-
-    
-
-
-
-
-
-    @DeleteMapping("/{id}")
-    Boolean deleteProduct(@PathVariable("id") Long id);
-
-    
-
-
-
-
-
-    @GetMapping("/{id}/profile")
-    ProductVO getProductProfile(@PathVariable("id") Long id);
-
-    
-
-
-
-
-
-
-    @PutMapping("/{id}/profile")
-    Boolean updateProductProfile(@PathVariable("id") Long id, @RequestBody ProductRequestDTO profileDTO);
-
-    
-
-
-
-
-
-
-    @PatchMapping("/{id}/status")
-    Boolean updateProductStatus(@PathVariable("id") Long id, @RequestParam Integer status);
-
-    
-
-
-
-
-
-
-    @GetMapping("/category/{categoryId}")
-    List<ProductVO> getProductsByCategoryId(@PathVariable("categoryId") Long categoryId,
-                                            @RequestParam(required = false) Integer status);
-
-    
-
-
-
-
-
-
-    @GetMapping("/brand/{brandId}")
-    List<ProductVO> getProductsByBrandId(@PathVariable("brandId") Long brandId,
-                                         @RequestParam(required = false) Integer status);
-
-    
-
-    
-
-
-
-
-
-    @GetMapping("/batch")
-    List<ProductVO> getProductsByIds(@RequestParam List<Long> ids);
-
-    
-
-
-
-
-
-    @DeleteMapping("/batch")
-    Boolean deleteProductsBatch(@RequestBody List<Long> ids);
-
-    
-
-
-
-
-
-    @PutMapping("/batch/enable")
-    Boolean enableProductsBatch(@RequestBody List<Long> ids);
-
-    
-
-
-
-
-
-    @PutMapping("/batch/disable")
-    Boolean disableProductsBatch(@RequestBody List<Long> ids);
-
-    
-
-
-
-
-
-    @PostMapping("/batch")
-    Integer createProductsBatch(@RequestBody List<ProductRequestDTO> productList);
-
-    
-
-    
-
-
-
-
-
-
-    @GetMapping("/{productId}/stock/check")
-    Boolean checkStock(@PathVariable("productId") Long productId, @RequestParam Integer quantity);
-
-    
-
-
-
-
-
-
-    @PostMapping("/{productId}/stock/deduct")
-    Boolean deductStock(@PathVariable("productId") Long productId, @RequestParam Integer quantity);
-
-    
-
-
-
-
-
-
-    @PostMapping("/{productId}/stock/restore")
-    Boolean restoreStock(@PathVariable("productId") Long productId, @RequestParam Integer quantity);
+    Boolean restoreStock(Long productId, Integer quantity);
 }
