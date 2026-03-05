@@ -56,7 +56,7 @@
               uri: lb://product-service
               order: 20
               predicates:
-                - Path=/api/product,/api/product/**,/api/category,/api/category/**
+                - Path=/api/v2/products/**,/api/product,/api/product/**,/api/category,/api/category/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -75,7 +75,7 @@
               uri: lb://order-service
               order: 20
               predicates:
-                - Path=/api/v2/**
+                - Path=/api/v2/orders/**,/api/orders/**,/api/v1/refund/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -88,7 +88,7 @@
               uri: lb://payment-service
               order: 20
               predicates:
-                - Path=/api/payments/**,/api/v1/payment/alipay/**
+                - Path=/api/v2/payments/**,/api/payments/**,/api/v1/payment/alipay/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -107,7 +107,7 @@
               uri: lb://stock-service
               order: 20
               predicates:
-                - Path=/api/stocks/**
+                - Path=/api/v2/stocks/**,/api/stocks/**
               filters:
                 - name: RequestRateLimiter
                   args:
