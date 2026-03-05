@@ -22,6 +22,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -51,7 +52,8 @@ import java.util.Optional;
 @Tag(name = "Authentication API", description = "Authentication, login and token management APIs")
 public class AuthController {
 
-    private final UserFeignClient userFeignClient;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private UserFeignClient userFeignClient;
     private final OAuth2TokenManagementService tokenManagementService;
     private final PasswordEncoder passwordEncoder;
     private final OAuth2ResponseUtil oauth2ResponseUtil;

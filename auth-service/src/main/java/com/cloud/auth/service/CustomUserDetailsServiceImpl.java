@@ -10,6 +10,7 @@ import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -29,7 +30,8 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
     private static final String DEFAULT_BCRYPT_PASSWORD =
             "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P3mTd.lQBHBR8y";
 
-    private final UserFeignClient userFeignClient;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private UserFeignClient userFeignClient;
 
     @Autowired(required = false)
     private OAuth2ComplianceChecker complianceChecker;
@@ -139,8 +141,6 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             if (encodedPassword != null && !encodedPassword.trim().isEmpty() && !"null".equals(encodedPassword)) {
                 return encodedPassword;
             }
-        } catch (feign.FeignException.NotFound ex) {
-            throw new ResourceNotFoundException("User password", username);
         } catch (Exception ex) {
             log.warn("Failed to load password from user-service for {}: {}", username, ex.getMessage());
         }

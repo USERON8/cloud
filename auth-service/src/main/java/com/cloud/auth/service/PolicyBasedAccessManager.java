@@ -3,6 +3,7 @@ package com.cloud.auth.service;
 import com.cloud.api.user.UserFeignClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PolicyBasedAccessManager {
 
-    private final UserFeignClient userFeignClient;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private UserFeignClient userFeignClient;
 
     public boolean checkAccess(Authentication authentication, String resource, String action, Map<String, Object> context) {
         if (authentication == null || !authentication.isAuthenticated()) {

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -35,7 +36,8 @@ public class GitHubUserInfoService {
     private static final String GITHUB_USER_API = "https://api.github.com/user";
     private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
 
-    private final UserFeignClient userFeignClient;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private UserFeignClient userFeignClient;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 

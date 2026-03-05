@@ -4,6 +4,7 @@ import com.cloud.api.user.UserFeignClient;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
-    private final UserFeignClient userFeignClient;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private UserFeignClient userFeignClient;
 
     @Override
     public void customize(JwtEncodingContext context) {
