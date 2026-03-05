@@ -21,22 +21,22 @@ VALUES (11001, 'S2026000001', 10001, 30001, 'CREATED', 'PENDING', 'NONE', 199.00
         'Tester', '13800000000', 'Shanghai Pudong', 0, 0);
 
 INSERT INTO order_item (id, main_order_id, sub_order_id, spu_id, sku_id, sku_code, sku_name, sku_snapshot, quantity, unit_price, total_price, deleted, version)
-VALUES (12001, 10001, 11001, 40001, 41001, 'SKU-41001', 'Test SKU A',
-        JSON_OBJECT('spuName', 'Test SPU A', 'spec', 'Default'), 1, 199.00, 199.00, 0, 0);
+VALUES (12001, 10001, 11001, 50001, 51001, 'CP15-256-BLK', 'Cloud Phone 15 256G Black',
+        JSON_OBJECT('spuName', 'Cloud Phone 15', 'spec', 'color:black;storage:256G'), 1, 4999.00, 4999.00, 0, 0);
 
 INSERT INTO cart (id, cart_no, user_id, cart_status, selected_count, total_amount, deleted, version)
-VALUES (13001, 'C2026000001', 20001, 'ACTIVE', 1, 199.00, 0, 0);
+VALUES (13001, 'C2026000001', 20001, 'ACTIVE', 1, 4999.00, 0, 0);
 
 INSERT INTO cart_item (id, cart_id, user_id, spu_id, sku_id, sku_name, quantity, unit_price, selected, checked_out, deleted, version)
-VALUES (13101, 13001, 20001, 40001, 41001, 'Test SKU A', 1, 199.00, 1, 0, 0, 0);
+VALUES (13101, 13001, 20001, 50001, 51001, 'Cloud Phone 15 256G Black', 1, 4999.00, 1, 0, 0, 0);
 
 INSERT INTO after_sale (id, after_sale_no, main_order_id, sub_order_id, user_id, merchant_id, after_sale_type, status,
                         reason, description, apply_amount, approved_amount, deleted, version)
 VALUES (14001, 'AS2026000001', 10001, 11001, 20001, 30001, 'REFUND', 'APPLIED',
-        'quality issue', 'box damaged', 199.00, NULL, 0, 0);
+        'quality issue', 'box damaged', 4999.00, NULL, 0, 0);
 
 INSERT INTO after_sale_item (id, after_sale_id, order_item_id, sku_id, quantity, apply_amount, approved_amount, deleted, version)
-VALUES (14101, 14001, 12001, 41001, 1, 199.00, NULL, 0, 0);
+VALUES (14101, 14001, 12001, 51001, 1, 4999.00, NULL, 0, 0);
 
 INSERT INTO after_sale_timeline (id, after_sale_id, from_status, to_status, action, operator_id, operator_role, remark, deleted, version)
 VALUES (14201, 14001, NULL, 'APPLIED', 'USER_APPLY', 20001, 'USER', 'apply success', 0, 0);
