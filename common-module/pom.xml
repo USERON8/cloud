@@ -28,6 +28,10 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-db</artifactId>
+        </dependency>
         <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
