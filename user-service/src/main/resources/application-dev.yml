@@ -39,8 +39,8 @@ minio:
 logging:
   level:
     com.cloud.user: debug
-    org.springframework.security: debug
-    org.springframework.web: debug
+    org.springframework.security: warn
+    org.springframework.web: warn
     com.alibaba.nacos: warn
 mybatis-plus:
   configuration:

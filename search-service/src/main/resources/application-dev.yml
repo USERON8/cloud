@@ -31,8 +31,8 @@ cache:
 logging:
   level:
     com.cloud.search: debug
-    org.springframework.security: debug
-    org.springframework.web: debug
+    org.springframework.security: warn
+    org.springframework.web: warn
     org.elasticsearch: debug
     com.alibaba.nacos: warn
 knife4j:

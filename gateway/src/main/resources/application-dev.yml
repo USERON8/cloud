@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   redis:
     host: 127.0.0.1
     port: 16379
@@ -22,8 +22,8 @@ logging:
   level:
     com.cloud.gateway: debug
     org.springframework.cloud.gateway: debug
-    org.springframework.security: debug
-    org.springframework.web: debug
+    org.springframework.security: warn
+    org.springframework.web: warn
     com.alibaba.nacos: warn
 app:
   security:
