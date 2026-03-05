@@ -31,9 +31,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createConfiguredExecutor(
                 "stockQueryExecutor",
-                Math.max(8, processors * 2),
-                Math.max(16, processors * 6),
-                1000,
+                Math.max(4, processors),
+                Math.max(12, processors * 3),
+                500,
                 60,
                 "stock-query-"
         );

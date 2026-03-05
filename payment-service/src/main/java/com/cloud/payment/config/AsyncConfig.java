@@ -61,9 +61,9 @@ public class AsyncConfig extends BaseAsyncConfig {
         int processors = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor executor = createConfiguredExecutor(
                 "paymentCallbackExecutor",
-                processors * 2,
-                processors * 4,
-                300,
+                Math.max(4, processors),
+                Math.max(8, processors * 3),
+                200,
                 60,
                 "payment-callback-"
         );
@@ -150,7 +150,7 @@ public class AsyncConfig extends BaseAsyncConfig {
                 "paymentLogExecutor",
                 1,
                 3,
-                1000,
+                300,
                 60,
                 "payment-log-"
         );

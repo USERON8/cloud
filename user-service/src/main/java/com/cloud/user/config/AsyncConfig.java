@@ -30,8 +30,8 @@ public class AsyncConfig extends BaseAsyncConfig {
         ThreadPoolTaskExecutor executor = createConfiguredExecutor(
                 "userQueryExecutor",
                 Math.max(4, processors),
-                processors * 4,
-                500,
+                processors * 3,
+                300,
                 60,
                 "user-query-"
         );
@@ -74,7 +74,7 @@ public class AsyncConfig extends BaseAsyncConfig {
                 "userNotificationExecutor",
                 Math.max(4, processors),
                 Math.max(8, processors * 2),
-                800,
+                400,
                 60,
                 "user-notification-"
         );
