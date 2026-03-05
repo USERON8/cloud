@@ -58,12 +58,17 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
+        
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-registry-nacos</artifactId>
         </dependency>
 
-        <!-- 数据库相关 -->
+        <!-- 数据库相�?-->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -80,7 +85,7 @@
             </exclusions>
         </dependency>
 
-        <!-- 工具类 -->
+        <!-- 工具�?-->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-3-starter</artifactId>
@@ -148,7 +153,7 @@
             <artifactId>poi-ooxml</artifactId>
         </dependency>
 
-        <!-- 显式添加objenesis依赖，Redisson运行时需要 -->
+        <!-- 显式添加objenesis依赖，Redisson运行时需�?-->
         <dependency>
             <groupId>org.objenesis</groupId>
             <artifactId>objenesis</artifactId>
@@ -202,3 +207,5 @@
         </plugins>
     </build>
 </project>
+
+

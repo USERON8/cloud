@@ -1,11 +1,9 @@
 package com.cloud.auth;
 
 import com.cloud.common.config.MybatisPlusConfig;
-import com.cloud.common.security.internal.InternalApiFeignClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
@@ -44,10 +42,6 @@ import org.springframework.context.annotation.FilterType;
                         pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*"
                 )
         }
-)
-@EnableFeignClients(
-        basePackages = "com.cloud.api",
-        defaultConfiguration = InternalApiFeignClientConfig.class
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class AuthApplication {

@@ -53,7 +53,7 @@
 
         <graalvm-native-maven-plugin.version>0.10.3</graalvm-native-maven-plugin.version>
 
-        <openfeign.version>4.3.0</openfeign.version>
+        <dubbo.version>3.3.4</dubbo.version>
 
         <!-- 娴嬭瘯鏂囨。鐗堟湰 -->
         <swagger.version>2.2.34</swagger.version>
@@ -237,11 +237,15 @@
                 <version>${knife4j.version}</version>
             </dependency>
 
-            <!-- Spring Cloud 鐗堟湰绠＄悊 -->
             <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-starter-openfeign</artifactId>
-                <version>${openfeign.version}</version>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-spring-boot-starter</artifactId>
+                <version>${dubbo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-registry-nacos</artifactId>
+                <version>${dubbo.version}</version>
             </dependency>
 
             <!-- 椤圭洰鍐呴儴妯″潡鐗堟湰绠＄悊 -->
