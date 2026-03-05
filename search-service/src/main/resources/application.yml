@@ -76,17 +76,27 @@ search:
       max-search-size: ${SEARCH_MAX_SIZE:80}
     cache:
       l1-max-entries: ${SEARCH_L1_MAX_ENTRIES:5000}
+      record-stats: ${SEARCH_L1_RECORD_STATS:true}
+      refresh:
+        executor:
+          core-size: ${SEARCH_CACHE_REFRESH_CORE:2}
+          max-size: ${SEARCH_CACHE_REFRESH_MAX:6}
+          queue-capacity: ${SEARCH_CACHE_REFRESH_QUEUE:200}
       smart-search:
-        l1-ttl-millis: ${SEARCH_SMART_L1_TTL_MS:30000}
+        l1-expire-after-write-ms: ${SEARCH_SMART_L1_EXPIRE_MS:30000}
+        l1-refresh-after-write-ms: ${SEARCH_SMART_L1_REFRESH_MS:10000}
         l2-ttl-seconds: ${SEARCH_SMART_L2_TTL_S:120}
       suggestions:
-        l1-ttl-millis: ${SEARCH_SUGGESTION_L1_TTL_MS:20000}
+        l1-expire-after-write-ms: ${SEARCH_SUGGESTION_L1_EXPIRE_MS:20000}
+        l1-refresh-after-write-ms: ${SEARCH_SUGGESTION_L1_REFRESH_MS:8000}
         l2-ttl-seconds: ${SEARCH_SUGGESTION_L2_TTL_S:120}
       hot-keywords:
-        l1-ttl-millis: ${SEARCH_HOT_L1_TTL_MS:15000}
+        l1-expire-after-write-ms: ${SEARCH_HOT_L1_EXPIRE_MS:15000}
+        l1-refresh-after-write-ms: ${SEARCH_HOT_L1_REFRESH_MS:5000}
         l2-ttl-seconds: ${SEARCH_HOT_L2_TTL_S:30}
       recommendations:
-        l1-ttl-millis: ${SEARCH_RECOMMEND_L1_TTL_MS:20000}
+        l1-expire-after-write-ms: ${SEARCH_RECOMMEND_L1_EXPIRE_MS:20000}
+        l1-refresh-after-write-ms: ${SEARCH_RECOMMEND_L1_REFRESH_MS:8000}
         l2-ttl-seconds: ${SEARCH_RECOMMEND_L2_TTL_S:60}
     hot-keyword:
       expire-refresh-seconds: ${SEARCH_HOT_REFRESH_EXPIRE_S:60}

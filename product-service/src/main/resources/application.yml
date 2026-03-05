@@ -42,7 +42,7 @@ spring:
   cache:
     type: caffeine
     caffeine:
-      spec: initialCapacity=150,maximumSize=1500,expireAfterWrite=45m,expireAfterAccess=20m,recordStats
+      spec: initialCapacity=${PRODUCT_CACHE_INITIAL_CAPACITY:150},maximumSize=${PRODUCT_CACHE_MAX_SIZE:1500},expireAfterWrite=${PRODUCT_CACHE_EXPIRE_AFTER_WRITE:45m},expireAfterAccess=${PRODUCT_CACHE_EXPIRE_AFTER_ACCESS:20m}${PRODUCT_CACHE_RECORD_STATS_SUFFIX:,recordStats}
     cache-names:
       - productCache
       - productListCache

@@ -17,17 +17,22 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,14 +42,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @SuppressWarnings("unchecked")
 public class ElasticsearchOptimizedService {
 
@@ -57,6 +64,10 @@ public class ElasticsearchOptimizedService {
     private static final String EMPTY_LIST_CACHE_MARKER = "__EMPTY__";
     private static final String METRIC_SEARCH_LATENCY = "search.request.latency";
     private static final String METRIC_ES_ERROR = "search.es.error.count";
+    private static final String CACHE_NAME_SMART = "search.smart";
+    private static final String CACHE_NAME_SUGGESTIONS = "search.suggestions";
+    private static final String CACHE_NAME_HOT = "search.hotKeywords";
+    private static final String CACHE_NAME_RECOMMEND = "search.recommendations";
 
     @Value("${search.optimized.cache.smart-search.l2-ttl-seconds:120}")
     private long smartSearchL2TtlSeconds;
@@ -70,17 +81,32 @@ public class ElasticsearchOptimizedService {
     @Value("${search.optimized.cache.recommendations.l2-ttl-seconds:60}")
     private long recommendationL2TtlSeconds;
 
-    @Value("${search.optimized.cache.smart-search.l1-ttl-millis:30000}")
-    private long smartSearchL1TtlMillis;
+    @Value("${search.optimized.cache.smart-search.l1-expire-after-write-ms:${search.optimized.cache.smart-search.l1-ttl-millis:30000}}")
+    private long smartSearchL1ExpireAfterWriteMs;
 
-    @Value("${search.optimized.cache.suggestions.l1-ttl-millis:20000}")
-    private long suggestionL1TtlMillis;
+    @Value("${search.optimized.cache.suggestions.l1-expire-after-write-ms:${search.optimized.cache.suggestions.l1-ttl-millis:20000}}")
+    private long suggestionL1ExpireAfterWriteMs;
 
-    @Value("${search.optimized.cache.hot-keywords.l1-ttl-millis:15000}")
-    private long hotKeywordsL1TtlMillis;
+    @Value("${search.optimized.cache.hot-keywords.l1-expire-after-write-ms:${search.optimized.cache.hot-keywords.l1-ttl-millis:15000}}")
+    private long hotKeywordsL1ExpireAfterWriteMs;
 
-    @Value("${search.optimized.cache.recommendations.l1-ttl-millis:20000}")
-    private long recommendationL1TtlMillis;
+    @Value("${search.optimized.cache.recommendations.l1-expire-after-write-ms:${search.optimized.cache.recommendations.l1-ttl-millis:20000}}")
+    private long recommendationL1ExpireAfterWriteMs;
+
+    @Value("${search.optimized.cache.smart-search.l1-refresh-after-write-ms:10000}")
+    private long smartSearchL1RefreshAfterWriteMs;
+
+    @Value("${search.optimized.cache.suggestions.l1-refresh-after-write-ms:8000}")
+    private long suggestionL1RefreshAfterWriteMs;
+
+    @Value("${search.optimized.cache.hot-keywords.l1-refresh-after-write-ms:5000}")
+    private long hotKeywordsL1RefreshAfterWriteMs;
+
+    @Value("${search.optimized.cache.recommendations.l1-refresh-after-write-ms:8000}")
+    private long recommendationL1RefreshAfterWriteMs;
+
+    @Value("${search.optimized.cache.record-stats:true}")
+    private boolean l1RecordStats;
 
     @Value("${search.optimized.limit.default-search-size:20}")
     private int defaultSearchSize;
@@ -107,15 +133,87 @@ public class ElasticsearchOptimizedService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final Executor cacheRefreshExecutor;
 
-    private final Map<String, CacheEntry<SearchResult>> l1SmartSearchCache = new ConcurrentHashMap<>();
-    private final Map<String, CacheEntry<List<String>>> l1SuggestionsCache = new ConcurrentHashMap<>();
-    private final Map<String, CacheEntry<List<String>>> l1HotKeywordsCache = new ConcurrentHashMap<>();
-    private final Map<String, CacheEntry<List<String>>> l1RecommendationsCache = new ConcurrentHashMap<>();
+    private LoadingCache<SmartSearchCacheKey, SearchResult> l1SmartSearchCache;
+    private LoadingCache<KeywordLimitCacheKey, List<String>> l1SuggestionsCache;
+    private LoadingCache<LimitCacheKey, List<String>> l1HotKeywordsCache;
+    private LoadingCache<KeywordLimitCacheKey, List<String>> l1RecommendationsCache;
     private final Map<String, Timer> searchLatencyTimers = new ConcurrentHashMap<>();
     private final Map<String, Counter> esErrorCounters = new ConcurrentHashMap<>();
     private final AtomicLong hotKeywordExpireRefreshedAt = new AtomicLong(0L);
     private final AtomicLong hotKeywordCacheInvalidatedAt = new AtomicLong(0L);
+
+    public ElasticsearchOptimizedService(ElasticsearchClient elasticsearchClient,
+                                         StringRedisTemplate redisTemplate,
+                                         ObjectMapper objectMapper,
+                                         MeterRegistry meterRegistry,
+                                         @Qualifier("searchCacheRefreshExecutor") Executor cacheRefreshExecutor) {
+        this.elasticsearchClient = elasticsearchClient;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
+        this.cacheRefreshExecutor = cacheRefreshExecutor;
+    }
+
+    @PostConstruct
+    public void initL1Caches() {
+        long maxEntries = Math.max(100, l1MaxEntries);
+        l1SmartSearchCache = buildLoadingCache(
+                CACHE_NAME_SMART,
+                maxEntries,
+                smartSearchL1ExpireAfterWriteMs,
+                smartSearchL1RefreshAfterWriteMs,
+                this::loadSmartSearchForCache
+        );
+        l1SuggestionsCache = buildLoadingCache(
+                CACHE_NAME_SUGGESTIONS,
+                maxEntries,
+                suggestionL1ExpireAfterWriteMs,
+                suggestionL1RefreshAfterWriteMs,
+                this::loadSuggestionsForCache
+        );
+        l1HotKeywordsCache = buildLoadingCache(
+                CACHE_NAME_HOT,
+                maxEntries,
+                hotKeywordsL1ExpireAfterWriteMs,
+                hotKeywordsL1RefreshAfterWriteMs,
+                this::loadHotKeywordsForCache
+        );
+        l1RecommendationsCache = buildLoadingCache(
+                CACHE_NAME_RECOMMEND,
+                maxEntries,
+                recommendationL1ExpireAfterWriteMs,
+                recommendationL1RefreshAfterWriteMs,
+                this::loadRecommendationsForCache
+        );
+    }
+
+    private <K, V> LoadingCache<K, V> buildLoadingCache(String cacheName,
+                                                        long maximumSize,
+                                                        long expireAfterWriteMs,
+                                                        long refreshAfterWriteMs,
+                                                        Function<K, V> loader) {
+        long safeExpire = Math.max(1_000L, expireAfterWriteMs);
+        long safeRefresh = Math.max(500L, Math.min(refreshAfterWriteMs, safeExpire - 1));
+
+        @SuppressWarnings("unchecked")
+        Caffeine<K, V> builder = (Caffeine<K, V>) Caffeine.newBuilder()
+                .maximumSize(Math.max(100L, maximumSize))
+                .expireAfterWrite(Duration.ofMillis(safeExpire))
+                .refreshAfterWrite(Duration.ofMillis(safeRefresh))
+                .executor(cacheRefreshExecutor);
+
+        if (l1RecordStats) {
+            builder.recordStats();
+        }
+
+        LoadingCache<K, V> cache = builder
+                .buildAsync((key, executor) -> CompletableFuture.supplyAsync(() -> loader.apply(key), executor))
+                .synchronous();
+        CaffeineCacheMetrics.monitor(meterRegistry, cache, cacheName);
+        return cache;
+    }
 
     @Transactional(readOnly = true)
     public SearchResult smartProductSearch(String keyword, Long categoryId,
@@ -126,60 +224,28 @@ public class ElasticsearchOptimizedService {
         int safeFrom = Math.max(0, from);
         int safeSize = size <= 0 ? defaultSearchSize() : Math.min(size, maxSearchSize());
         String safeKeyword = normalizeKeyword(keyword);
-        String cacheKey = buildSmartSearchCacheKey(safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize);
+        SmartSearchCacheKey cacheKey = new SmartSearchCacheKey(
+                safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize
+        );
 
-        SearchResult l1Cached = getL1Cache(l1SmartSearchCache, cacheKey);
+        SearchResult l1Cached = l1SmartSearchCache.getIfPresent(cacheKey);
         if (l1Cached != null) {
             recordTimer(sample, "smart-search", "l1-hit");
-            return l1Cached;
+            return l1SmartSearchCache.get(cacheKey);
         }
 
-        SearchResult l2Cached = getSmartSearchFromRedis(cacheKey);
+        String redisKey = buildSmartSearchCacheKey(cacheKey);
+        SearchResult l2Cached = getSmartSearchFromRedis(redisKey);
         if (l2Cached != null) {
-            putL1Cache(l1SmartSearchCache, cacheKey, l2Cached, smartSearchL1TtlMillis);
+            l1SmartSearchCache.put(cacheKey, l2Cached);
             recordTimer(sample, "smart-search", "l2-hit");
             return l2Cached;
         }
 
         try {
-            Query query = buildProductSearchQuery(safeKeyword, categoryId, minPrice, maxPrice);
-            SearchRequest searchRequest = SearchRequest.of(s -> s
-                    .index(PRODUCT_INDEX)
-                    .query(query)
-                    .from(safeFrom)
-                    .size(safeSize)
-                    .timeout(esRequestTimeoutMs + "ms")
-                    .sort(buildSortOptions(sortField, sortOrder))
-                    .highlight(buildHighlight())
-                    .aggregations(buildAggregations())
-                    .source(src -> src.fetch(true))
-            );
-
-            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
-
-            List<Map<String, Object>> products = new ArrayList<>();
-            for (Hit<Map> hit : response.hits().hits()) {
-                Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
-                if (hit.highlight() != null && !hit.highlight().isEmpty()) {
-                    product.put("highlight", hit.highlight());
-                }
-                product.put("score", hit.score());
-                products.add(product);
-            }
-
-            long total = response.hits().total() != null ? response.hits().total().value() : 0L;
-            Map<String, Object> aggregations = processAggregations(response.aggregations());
-
-            SearchResult result = SearchResult.builder()
-                    .documents(products)
-                    .total(total)
-                    .from(safeFrom)
-                    .size(safeSize)
-                    .aggregations(aggregations)
-                    .build();
-
-            putSmartSearchToRedis(cacheKey, result);
-            putL1Cache(l1SmartSearchCache, cacheKey, result, smartSearchL1TtlMillis);
+            SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
+            putSmartSearchToRedis(redisKey, result);
+            l1SmartSearchCache.put(cacheKey, result);
             recordHotSearch(safeKeyword);
             recordTimer(sample, "smart-search", "es-hit");
             return result;
@@ -203,54 +269,26 @@ public class ElasticsearchOptimizedService {
         }
 
         int safeLimit = normalizeKeywordLimit(limit);
-        String cacheKey = buildSuggestionCacheKey(safeKeyword, safeLimit);
+        KeywordLimitCacheKey cacheKey = new KeywordLimitCacheKey(safeKeyword.toLowerCase(), safeLimit);
 
-        List<String> l1Cached = getL1Cache(l1SuggestionsCache, cacheKey);
+        List<String> l1Cached = l1SuggestionsCache.getIfPresent(cacheKey);
         if (l1Cached != null) {
             recordTimer(sample, "suggestions", "l1-hit");
-            return l1Cached;
+            return l1SuggestionsCache.get(cacheKey);
         }
 
-        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        String redisKey = buildSuggestionCacheKey(cacheKey);
+        StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
         if (l2Cached.hit()) {
-            putL1Cache(l1SuggestionsCache, cacheKey, l2Cached.value(), suggestionL1TtlMillis);
+            l1SuggestionsCache.put(cacheKey, l2Cached.value());
             recordTimer(sample, "suggestions", "l2-hit");
             return l2Cached.value();
         }
 
         try {
-            Query query = Query.of(q -> q
-                    .multiMatch(m -> m
-                            .query(safeKeyword)
-                            .fields("productName^3", "productName.pinyin^2", "categoryName", "brandName")
-                            .type(TextQueryType.BoolPrefix)
-                            .fuzziness("AUTO")
-                    )
-            );
-
-            SearchRequest searchRequest = SearchRequest.of(s -> s
-                    .index(PRODUCT_INDEX)
-                    .query(query)
-                    .size(Math.min(safeLimit * 2, maxSearchSize()))
-                    .timeout(esRequestTimeoutMs + "ms")
-                    .source(src -> src.filter(f -> f.includes("productName", "categoryName", "brandName")))
-            );
-
-            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
-            Set<String> suggestions = new LinkedHashSet<>();
-            for (Hit<Map> hit : response.hits().hits()) {
-                Map<String, Object> source = hit.source() != null ? hit.source() : Collections.emptyMap();
-                addKeywordIfPresent(suggestions, source.get("productName"));
-                addKeywordIfPresent(suggestions, source.get("categoryName"));
-                addKeywordIfPresent(suggestions, source.get("brandName"));
-                if (suggestions.size() >= safeLimit) {
-                    break;
-                }
-            }
-
-            List<String> result = suggestions.stream().limit(safeLimit).toList();
-            putStringListToRedis(cacheKey, result, suggestionL2TtlSeconds);
-            putL1Cache(l1SuggestionsCache, cacheKey, result, suggestionL1TtlMillis);
+            List<String> result = querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
+            putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
+            l1SuggestionsCache.put(cacheKey, result);
             recordTimer(sample, "suggestions", "es-hit");
             return result;
 
@@ -266,35 +304,30 @@ public class ElasticsearchOptimizedService {
     public List<String> getHotSearchKeywords(int limit) {
         Timer.Sample sample = Timer.start(meterRegistry);
         int safeLimit = normalizeKeywordLimit(limit);
-        String cacheKey = buildHotKeywordCacheKey(safeLimit);
+        LimitCacheKey cacheKey = new LimitCacheKey(safeLimit);
 
-        List<String> l1Cached = getL1Cache(l1HotKeywordsCache, cacheKey);
+        List<String> l1Cached = l1HotKeywordsCache.getIfPresent(cacheKey);
         if (l1Cached != null) {
             recordTimer(sample, "hot-keywords", "l1-hit");
-            return l1Cached;
+            return l1HotKeywordsCache.get(cacheKey);
         }
 
-        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        String redisKey = buildHotKeywordCacheKey(cacheKey);
+        StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
         if (l2Cached.hit()) {
-            putL1Cache(l1HotKeywordsCache, cacheKey, l2Cached.value(), hotKeywordsL1TtlMillis);
+            l1HotKeywordsCache.put(cacheKey, l2Cached.value());
             recordTimer(sample, "hot-keywords", "l2-hit");
             return l2Cached.value();
         }
 
         try {
-            Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, safeLimit - 1L);
-            if (hotKeywords == null || hotKeywords.isEmpty()) {
+            List<String> result = queryHotKeywordsFromRedis(cacheKey.limit());
+            if (result.isEmpty()) {
                 recordTimer(sample, "hot-keywords", "empty");
                 return List.of();
             }
-
-            List<String> result = hotKeywords.stream()
-                    .filter(StringUtils::hasText)
-                    .limit(safeLimit)
-                    .collect(Collectors.toList());
-
-            putStringListToRedis(cacheKey, result, hotKeywordsL2TtlSeconds);
-            putL1Cache(l1HotKeywordsCache, cacheKey, result, hotKeywordsL1TtlMillis);
+            putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
+            l1HotKeywordsCache.put(cacheKey, result);
             recordTimer(sample, "hot-keywords", "redis-hit");
             return result;
         } catch (Exception e) {
@@ -309,45 +342,180 @@ public class ElasticsearchOptimizedService {
         Timer.Sample sample = Timer.start(meterRegistry);
         String safeKeyword = normalizeKeyword(keyword);
         int safeLimit = normalizeKeywordLimit(limit);
-        String cacheKey = buildRecommendationCacheKey(safeKeyword, safeLimit);
+        KeywordLimitCacheKey cacheKey = new KeywordLimitCacheKey(safeKeyword.toLowerCase(), safeLimit);
 
-        List<String> l1Cached = getL1Cache(l1RecommendationsCache, cacheKey);
+        List<String> l1Cached = l1RecommendationsCache.getIfPresent(cacheKey);
         if (l1Cached != null) {
             recordTimer(sample, "recommendations", "l1-hit");
-            return l1Cached;
+            return l1RecommendationsCache.get(cacheKey);
         }
 
-        StringListCacheResult l2Cached = getStringListFromRedis(cacheKey);
+        String redisKey = buildRecommendationCacheKey(cacheKey);
+        StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
         if (l2Cached.hit()) {
-            putL1Cache(l1RecommendationsCache, cacheKey, l2Cached.value(), recommendationL1TtlMillis);
+            l1RecommendationsCache.put(cacheKey, l2Cached.value());
             recordTimer(sample, "recommendations", "l2-hit");
             return l2Cached.value();
         }
 
+        List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
+        putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
+        l1RecommendationsCache.put(cacheKey, result);
+        recordTimer(sample, "recommendations", "computed");
+        return result;
+    }
+
+    private SearchResult loadSmartSearchForCache(SmartSearchCacheKey cacheKey) {
+        String redisKey = buildSmartSearchCacheKey(cacheKey);
+        SearchResult l2 = getSmartSearchFromRedis(redisKey);
+        if (l2 != null) {
+            return l2;
+        }
+        SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
+        putSmartSearchToRedis(redisKey, result);
+        return result;
+    }
+
+    private List<String> loadSuggestionsForCache(KeywordLimitCacheKey cacheKey) {
+        String redisKey = buildSuggestionCacheKey(cacheKey);
+        StringListCacheResult l2 = getStringListFromRedis(redisKey);
+        if (l2.hit()) {
+            return l2.value();
+        }
+        List<String> result = querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
+        putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
+        return result;
+    }
+
+    private List<String> loadHotKeywordsForCache(LimitCacheKey cacheKey) {
+        String redisKey = buildHotKeywordCacheKey(cacheKey);
+        StringListCacheResult l2 = getStringListFromRedis(redisKey);
+        if (l2.hit()) {
+            return l2.value();
+        }
+        List<String> result = queryHotKeywordsFromRedis(cacheKey.limit());
+        putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
+        return result;
+    }
+
+    private List<String> loadRecommendationsForCache(KeywordLimitCacheKey cacheKey) {
+        String redisKey = buildRecommendationCacheKey(cacheKey);
+        StringListCacheResult l2 = getStringListFromRedis(redisKey);
+        if (l2.hit()) {
+            return l2.value();
+        }
+        List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
+        putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
+        return result;
+    }
+
+    private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
+        Query query = buildProductSearchQuery(key.keyword(), key.categoryId(), key.minPrice(), key.maxPrice());
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(PRODUCT_INDEX)
+                .query(query)
+                .from(key.from())
+                .size(key.size())
+                .timeout(esRequestTimeoutMs + "ms")
+                .sort(buildSortOptions(key.sortField(), key.sortOrder()))
+                .highlight(buildHighlight())
+                .aggregations(buildAggregations())
+                .source(src -> src.fetch(true))
+        );
+
+        try {
+            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+
+            List<Map<String, Object>> products = new ArrayList<>();
+            for (Hit<Map> hit : response.hits().hits()) {
+                Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
+                if (hit.highlight() != null && !hit.highlight().isEmpty()) {
+                    product.put("highlight", hit.highlight());
+                }
+                product.put("score", hit.score());
+                products.add(product);
+            }
+
+            long total = response.hits().total() != null ? response.hits().total().value() : 0L;
+            Map<String, Object> aggregations = processAggregations(response.aggregations());
+            return SearchResult.builder()
+                    .documents(products)
+                    .total(total)
+                    .from(key.from())
+                    .size(key.size())
+                    .aggregations(aggregations)
+                    .build();
+        } catch (Exception ex) {
+            throw new IllegalStateException("smart search query failed", ex);
+        }
+    }
+
+    private List<String> querySuggestionsFromElasticsearch(String keyword, int limit) {
+        Query query = Query.of(q -> q
+                .multiMatch(m -> m
+                        .query(keyword)
+                        .fields("productName^3", "productName.pinyin^2", "categoryName", "brandName")
+                        .type(TextQueryType.BoolPrefix)
+                        .fuzziness("AUTO")
+                )
+        );
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(PRODUCT_INDEX)
+                .query(query)
+                .size(Math.min(limit * 2, maxSearchSize()))
+                .timeout(esRequestTimeoutMs + "ms")
+                .source(src -> src.filter(f -> f.includes("productName", "categoryName", "brandName")))
+        );
+
+        try {
+            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+            Set<String> suggestions = new LinkedHashSet<>();
+            for (Hit<Map> hit : response.hits().hits()) {
+                Map<String, Object> source = hit.source() != null ? hit.source() : Collections.emptyMap();
+                addKeywordIfPresent(suggestions, source.get("productName"));
+                addKeywordIfPresent(suggestions, source.get("categoryName"));
+                addKeywordIfPresent(suggestions, source.get("brandName"));
+                if (suggestions.size() >= limit) {
+                    break;
+                }
+            }
+            return suggestions.stream().limit(limit).toList();
+        } catch (Exception ex) {
+            throw new IllegalStateException("suggestions query failed", ex);
+        }
+    }
+
+    private List<String> queryHotKeywordsFromRedis(int limit) {
+        Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, limit - 1L);
+        if (hotKeywords == null || hotKeywords.isEmpty()) {
+            return List.of();
+        }
+        return hotKeywords.stream()
+                .filter(StringUtils::hasText)
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    private List<String> computeRecommendations(String keyword, int limit) {
         LinkedHashSet<String> deduplicated = new LinkedHashSet<>();
-        if (StringUtils.hasText(safeKeyword)) {
-            deduplicated.addAll(getSearchSuggestions(safeKeyword, safeLimit));
+        if (StringUtils.hasText(keyword)) {
+            deduplicated.addAll(getSearchSuggestions(keyword, limit));
         }
 
-        List<String> hotKeywords = getHotSearchKeywords(Math.min(safeLimit * 3, maxSearchSize()));
-        if (StringUtils.hasText(safeKeyword)) {
-            String lowered = safeKeyword.toLowerCase();
+        List<String> hotKeywords = getHotSearchKeywords(Math.min(limit * 3, maxSearchSize()));
+        if (StringUtils.hasText(keyword)) {
+            String lowered = keyword.toLowerCase();
             hotKeywords.stream()
                     .filter(item -> item.toLowerCase().contains(lowered))
                     .forEach(deduplicated::add);
         }
 
         hotKeywords.forEach(deduplicated::add);
-
-        List<String> result = deduplicated.stream()
+        return deduplicated.stream()
                 .filter(StringUtils::hasText)
-                .limit(safeLimit)
+                .limit(limit)
                 .collect(Collectors.toList());
-
-        putStringListToRedis(cacheKey, result, recommendationL2TtlSeconds);
-        putL1Cache(l1RecommendationsCache, cacheKey, result, recommendationL1TtlMillis);
-        recordTimer(sample, "recommendations", "computed");
-        return result;
     }
 
     private Query buildProductSearchQuery(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
@@ -537,23 +705,23 @@ public class ElasticsearchOptimizedService {
         }
     }
 
-    private String buildSmartSearchCacheKey(String keyword, Long categoryId, Double minPrice, Double maxPrice,
-                                            String sortField, String sortOrder, int from, int size) {
-        return SEARCH_CACHE_KEY_PREFIX + keyword + ':' + String.valueOf(categoryId) + ':' + String.valueOf(minPrice)
-                + ':' + String.valueOf(maxPrice) + ':' + String.valueOf(sortField) + ':' + String.valueOf(sortOrder)
-                + ':' + from + ':' + size;
+    private String buildSmartSearchCacheKey(SmartSearchCacheKey key) {
+        return SEARCH_CACHE_KEY_PREFIX + key.keyword() + ':' + String.valueOf(key.categoryId()) + ':'
+                + String.valueOf(key.minPrice()) + ':' + String.valueOf(key.maxPrice()) + ':'
+                + String.valueOf(key.sortField()) + ':' + String.valueOf(key.sortOrder()) + ':'
+                + key.from() + ':' + key.size();
     }
 
-    private String buildSuggestionCacheKey(String keyword, int limit) {
-        return SUGGESTION_CACHE_KEY_PREFIX + keyword.toLowerCase() + ':' + limit;
+    private String buildSuggestionCacheKey(KeywordLimitCacheKey key) {
+        return SUGGESTION_CACHE_KEY_PREFIX + key.keyword() + ':' + key.limit();
     }
 
-    private String buildHotKeywordCacheKey(int limit) {
-        return HOT_CACHE_KEY_PREFIX + limit;
+    private String buildHotKeywordCacheKey(LimitCacheKey key) {
+        return HOT_CACHE_KEY_PREFIX + key.limit();
     }
 
-    private String buildRecommendationCacheKey(String keyword, int limit) {
-        return RECOMMEND_CACHE_KEY_PREFIX + keyword.toLowerCase() + ':' + limit;
+    private String buildRecommendationCacheKey(KeywordLimitCacheKey key) {
+        return RECOMMEND_CACHE_KEY_PREFIX + key.keyword() + ':' + key.limit();
     }
 
     private SearchResult getSmartSearchFromRedis(String key) {
@@ -641,26 +809,9 @@ public class ElasticsearchOptimizedService {
         return safeBase + ThreadLocalRandom.current().nextLong(jitterUpper);
     }
 
-    private <T> T getL1Cache(Map<String, CacheEntry<T>> cache, String key) {
-        CacheEntry<T> cacheEntry = cache.get(key);
-        if (cacheEntry == null) {
-            return null;
-        }
-        if (cacheEntry.isExpired()) {
-            cache.remove(key);
-            return null;
-        }
-        return cacheEntry.value();
-    }
-
-    private <T> void putL1Cache(Map<String, CacheEntry<T>> cache, String key, T value, long ttlMillis) {
-        trimL1CacheIfNeeded(cache);
-        cache.put(key, new CacheEntry<>(value, System.currentTimeMillis() + ttlMillis));
-    }
-
     private void clearL1HotCache() {
-        l1HotKeywordsCache.clear();
-        l1RecommendationsCache.clear();
+        l1HotKeywordsCache.invalidateAll();
+        l1RecommendationsCache.invalidateAll();
     }
 
     private void recordTimer(Timer.Sample sample, String operation, String result) {
@@ -685,26 +836,6 @@ public class ElasticsearchOptimizedService {
         counter.increment();
     }
 
-    private <T> void trimL1CacheIfNeeded(Map<String, CacheEntry<T>> cache) {
-        int safeMaxEntries = l1MaxEntries <= 0 ? 5000 : l1MaxEntries;
-        if (cache.size() < safeMaxEntries) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        cache.entrySet().removeIf(entry -> entry.getValue().expiresAtMillis() <= now);
-        if (cache.size() < safeMaxEntries) {
-            return;
-        }
-        int removeCount = Math.max(1, safeMaxEntries / 10);
-        int removed = 0;
-        var iterator = cache.keySet().iterator();
-        while (iterator.hasNext() && removed < removeCount) {
-            iterator.next();
-            iterator.remove();
-            removed++;
-        }
-    }
-
     private int defaultSearchSize() {
         return defaultSearchSize <= 0 ? 20 : defaultSearchSize;
     }
@@ -718,10 +849,20 @@ public class ElasticsearchOptimizedService {
         return Math.max(safeMax, defaultSearchSize());
     }
 
-    private record CacheEntry<T>(T value, long expiresAtMillis) {
-        private boolean isExpired() {
-            return System.currentTimeMillis() > expiresAtMillis;
-        }
+    private record SmartSearchCacheKey(String keyword,
+                                       Long categoryId,
+                                       Double minPrice,
+                                       Double maxPrice,
+                                       String sortField,
+                                       String sortOrder,
+                                       int from,
+                                       int size) {
+    }
+
+    private record KeywordLimitCacheKey(String keyword, int limit) {
+    }
+
+    private record LimitCacheKey(int limit) {
     }
 
     private record StringListCacheResult(boolean hit, List<String> value) {

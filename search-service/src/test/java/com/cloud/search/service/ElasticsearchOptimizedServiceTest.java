@@ -12,11 +12,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,10 +44,19 @@ class ElasticsearchOptimizedServiceTest {
     private ZSetOperations<String, String> zSetOperations;
 
     private ElasticsearchOptimizedService service;
+    private MeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() {
-        service = new ElasticsearchOptimizedService(elasticsearchClient, redisTemplate, new ObjectMapper(), new SimpleMeterRegistry());
+        Executor directExecutor = Runnable::run;
+        meterRegistry = new SimpleMeterRegistry();
+        service = new ElasticsearchOptimizedService(
+                elasticsearchClient,
+                redisTemplate,
+                new ObjectMapper(),
+                meterRegistry,
+                directExecutor
+        );
         ReflectionTestUtils.setField(service, "defaultSearchSize", 20);
         ReflectionTestUtils.setField(service, "defaultKeywordSize", 10);
         ReflectionTestUtils.setField(service, "maxSearchSize", 100);
@@ -53,10 +64,17 @@ class ElasticsearchOptimizedServiceTest {
         ReflectionTestUtils.setField(service, "suggestionL2TtlSeconds", 120L);
         ReflectionTestUtils.setField(service, "hotKeywordsL2TtlSeconds", 30L);
         ReflectionTestUtils.setField(service, "recommendationL2TtlSeconds", 60L);
-        ReflectionTestUtils.setField(service, "smartSearchL1TtlMillis", 30000L);
-        ReflectionTestUtils.setField(service, "suggestionL1TtlMillis", 20000L);
-        ReflectionTestUtils.setField(service, "hotKeywordsL1TtlMillis", 15000L);
-        ReflectionTestUtils.setField(service, "recommendationL1TtlMillis", 20000L);
+        ReflectionTestUtils.setField(service, "smartSearchL1ExpireAfterWriteMs", 30000L);
+        ReflectionTestUtils.setField(service, "suggestionL1ExpireAfterWriteMs", 20000L);
+        ReflectionTestUtils.setField(service, "hotKeywordsL1ExpireAfterWriteMs", 15000L);
+        ReflectionTestUtils.setField(service, "recommendationL1ExpireAfterWriteMs", 20000L);
+        ReflectionTestUtils.setField(service, "smartSearchL1RefreshAfterWriteMs", 10000L);
+        ReflectionTestUtils.setField(service, "suggestionL1RefreshAfterWriteMs", 8000L);
+        ReflectionTestUtils.setField(service, "hotKeywordsL1RefreshAfterWriteMs", 5000L);
+        ReflectionTestUtils.setField(service, "recommendationL1RefreshAfterWriteMs", 8000L);
+        ReflectionTestUtils.setField(service, "l1MaxEntries", 100);
+        ReflectionTestUtils.setField(service, "l1RecordStats", true);
+        ReflectionTestUtils.invokeMethod(service, "initL1Caches");
     }
 
     @Test
@@ -99,5 +117,17 @@ class ElasticsearchOptimizedServiceTest {
 
         assertThat(recommendations).containsExactly("iphone", "iphone 15", "ipad", "watch");
         verifyNoInteractions(elasticsearchClient);
+    }
+
+    @Test
+    void shouldExposeCaffeineCacheMetricsForPrometheus() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("search:suggest:phone:5")).thenReturn("[\"phone\"]");
+
+        service.getSearchSuggestions("phone", 5);
+
+        assertThat(meterRegistry.find("cache.gets").tag("cache", "search.suggestions").meter()).isNotNull();
+        assertThat(meterRegistry.find("cache.evictions").tag("cache", "search.suggestions").meter()).isNotNull();
+        assertThat(meterRegistry.find("cache.load.duration").tag("cache", "search.suggestions").meter()).isNotNull();
     }
 }

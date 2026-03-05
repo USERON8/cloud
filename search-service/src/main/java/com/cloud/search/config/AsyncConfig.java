@@ -2,6 +2,7 @@ package com.cloud.search.config;
 
 import com.cloud.common.config.BaseAsyncConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,15 @@ import java.util.concurrent.Executor;
 @EnableAsync
 @ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
+
+    @Value("${search.optimized.cache.refresh.executor.core-size:2}")
+    private int cacheRefreshCoreSize;
+
+    @Value("${search.optimized.cache.refresh.executor.max-size:6}")
+    private int cacheRefreshMaxSize;
+
+    @Value("${search.optimized.cache.refresh.executor.queue-capacity:200}")
+    private int cacheRefreshQueueCapacity;
 
     
 
@@ -176,6 +186,20 @@ public class AsyncConfig extends BaseAsyncConfig {
         executor.initialize();
 
         
+        return executor;
+    }
+
+    @Bean("searchCacheRefreshExecutor")
+    public Executor searchCacheRefreshExecutor() {
+        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
+                "searchCacheRefreshExecutor",
+                Math.max(1, cacheRefreshCoreSize),
+                Math.max(Math.max(1, cacheRefreshCoreSize), cacheRefreshMaxSize),
+                Math.max(50, cacheRefreshQueueCapacity),
+                60,
+                "search-cache-refresh-"
+        );
+        executor.initialize();
         return executor;
     }
 
