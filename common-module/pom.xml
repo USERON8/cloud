@@ -12,6 +12,10 @@
     <artifactId>common-module</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-core</artifactId>
+        </dependency>
         <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

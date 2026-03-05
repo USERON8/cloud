@@ -2,7 +2,6 @@ package com.cloud.common.validation;
 
 import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.Result;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +12,6 @@ import java.util.List;
 
 
 
-@Slf4j
 public class BatchValidationUtils {
 
     
