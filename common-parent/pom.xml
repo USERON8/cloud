@@ -18,6 +18,7 @@
         <module>../common-web</module>
         <module>../common-db</module>
         <module>../common-security</module>
+        <module>../common-messaging</module>
         <module>../common-api</module>
         <module>../common-log</module>
         <module>../common-module</module>

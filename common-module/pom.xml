@@ -32,6 +32,10 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-db</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-messaging</artifactId>
+        </dependency>
         <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -185,17 +189,6 @@
         </dependency>
 
         <!-- Encoding-safe comment -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-rocketmq</artifactId>
-            <exclusions>
-                <!-- Encoding-safe comment -->
-                <exclusion>
-                    <groupId>org.apache.tomcat</groupId>
-                    <artifactId>annotations-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
