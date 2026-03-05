@@ -2,6 +2,7 @@ package com.cloud.product.service.support;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.vo.product.ProductVO;
+import com.cloud.common.utils.RedisKeyScanUtils;
 import com.cloud.product.mapper.ProductMapper;
 import com.cloud.product.module.entity.Product;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,13 +34,18 @@ public class ProductCacheProtectionService {
 
     private static final String PRODUCT_CACHE_KEY_PREFIX = "product:detail:";
     private static final String PRODUCT_CACHE_LOCK_PREFIX = "product:detail:rebuild:lock:";
+    private static final String PRODUCT_CACHE_PATTERN = PRODUCT_CACHE_KEY_PREFIX + "*";
     private static final String PRODUCT_ID_BLOOM_KEY = "product:id:bloom";
     private static final String NULL_CACHE_MARKER = "__NULL__";
+    private static final String PRODUCT_CACHE_NAME = "productCache";
+    private static final String PRODUCT_LIST_CACHE_NAME = "productListCache";
+    private static final String PRODUCT_STATS_CACHE_NAME = "productStatsCache";
 
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final ProductMapper productMapper;
     private final ObjectProvider<RedissonClient> redissonClientProvider;
+    private final ObjectProvider<CacheManager> cacheManagerProvider;
 
     @Value("${product.cache.guard.enabled:true}")
     private boolean guardEnabled;
@@ -74,6 +82,12 @@ public class ProductCacheProtectionService {
 
     @Value("${product.cache.guard.lock.retry-times:2}")
     private int lockRetryTimes;
+
+    @Value("${product.cache.guard.redis.scan-count:500}")
+    private long redisScanCount;
+
+    @Value("${product.cache.guard.redis.pipeline-batch-size:200}")
+    private int redisPipelineBatchSize;
 
     private RBloomFilter<String> bloomFilter;
 
@@ -189,6 +203,29 @@ public class ProductCacheProtectionService {
         }
     }
 
+    public void evictProductCaches(Long productId) {
+        if (productId == null || productId <= 0) {
+            evictAllProductCaches();
+            return;
+        }
+        evictRedisProductDetail(productId);
+        evictLocalProductCaches(List.of(productId));
+    }
+
+    public void evictProductCaches(Collection<Long> productIds) {
+        if (CollectionUtils.isEmpty(productIds)) {
+            evictAllProductCaches();
+            return;
+        }
+        evictRedisProductDetails(productIds);
+        evictLocalProductCaches(productIds);
+    }
+
+    public void evictAllProductCaches() {
+        evictAllRedisProductDetails();
+        evictAllLocalProductCaches();
+    }
+
     private Optional<ProductVO> loadAndWriteCache(String redisKey, String productIdStr, Supplier<ProductVO> dbLoader) {
         ProductVO value = dbLoader.get();
         if (value == null) {
@@ -278,6 +315,83 @@ public class ProductCacheProtectionService {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private void evictRedisProductDetails(Collection<Long> productIds) {
+        List<String> keys = productIds.stream()
+                .filter(id -> id != null && id > 0)
+                .map(id -> PRODUCT_CACHE_KEY_PREFIX + id)
+                .toList();
+        if (keys.isEmpty()) {
+            return;
+        }
+        try {
+            RedisKeyScanUtils.deleteKeysInPipeline(stringRedisTemplate, keys, redisPipelineBatchSize);
+        } catch (Exception e) {
+            log.warn("Evict product detail redis cache failed, keys={}", keys, e);
+        }
+    }
+
+    private void evictRedisProductDetail(Long productId) {
+        if (productId == null || productId <= 0) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(PRODUCT_CACHE_KEY_PREFIX + productId);
+        } catch (Exception e) {
+            log.warn("Evict single product detail redis cache failed, id={}", productId, e);
+        }
+    }
+
+    private void evictAllRedisProductDetails() {
+        try {
+            RedisKeyScanUtils.deleteByPattern(
+                    stringRedisTemplate,
+                    PRODUCT_CACHE_PATTERN,
+                    redisScanCount,
+                    redisPipelineBatchSize
+            );
+        } catch (Exception e) {
+            log.warn("Evict all product detail redis cache failed, pattern={}", PRODUCT_CACHE_PATTERN, e);
+        }
+    }
+
+    private void evictLocalProductCaches(Collection<Long> productIds) {
+        CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
+        if (cacheManager == null) {
+            return;
+        }
+        Cache productCache = cacheManager.getCache(PRODUCT_CACHE_NAME);
+        if (productCache != null) {
+            for (Long productId : productIds) {
+                if (productId != null && productId > 0) {
+                    productCache.evict(productId);
+                }
+            }
+        }
+        clearCache(cacheManager.getCache(PRODUCT_LIST_CACHE_NAME));
+        clearCache(cacheManager.getCache(PRODUCT_STATS_CACHE_NAME));
+    }
+
+    private void evictAllLocalProductCaches() {
+        CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
+        if (cacheManager == null) {
+            return;
+        }
+        clearCache(cacheManager.getCache(PRODUCT_CACHE_NAME));
+        clearCache(cacheManager.getCache(PRODUCT_LIST_CACHE_NAME));
+        clearCache(cacheManager.getCache(PRODUCT_STATS_CACHE_NAME));
+    }
+
+    private void clearCache(Cache cache) {
+        if (cache == null) {
+            return;
+        }
+        try {
+            cache.clear();
+        } catch (Exception e) {
+            log.warn("Clear local cache failed, cache={}", cache.getName(), e);
         }
     }
 

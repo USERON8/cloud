@@ -7,10 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.InOrder;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -25,6 +28,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.longThat;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,6 +52,21 @@ class ProductCacheProtectionServiceTest {
     @Mock
     private RBloomFilter<String> bloomFilter;
 
+    @Mock
+    private ObjectProvider<CacheManager> cacheManagerProvider;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private Cache productCache;
+
+    @Mock
+    private Cache productListCache;
+
+    @Mock
+    private Cache productStatsCache;
+
     private ProductCacheProtectionService service;
 
     @BeforeEach
@@ -55,9 +75,14 @@ class ProductCacheProtectionServiceTest {
                 stringRedisTemplate,
                 new ObjectMapper(),
                 productMapper,
-                redissonClientProvider
+                redissonClientProvider,
+                cacheManagerProvider
         );
-        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(cacheManagerProvider.getIfAvailable()).thenReturn(cacheManager);
+        lenient().when(cacheManager.getCache("productCache")).thenReturn(productCache);
+        lenient().when(cacheManager.getCache("productListCache")).thenReturn(productListCache);
+        lenient().when(cacheManager.getCache("productStatsCache")).thenReturn(productStatsCache);
 
         ReflectionTestUtils.setField(service, "guardEnabled", true);
         ReflectionTestUtils.setField(service, "bloomEnabled", true);
@@ -109,5 +134,16 @@ class ProductCacheProtectionServiceTest {
                 eq(TimeUnit.SECONDS)
         );
         verify(redissonClientProvider, never()).getIfAvailable();
+    }
+
+    @Test
+    void shouldEvictRedisBeforeLocalCaffeine() {
+        service.evictProductCaches(88L);
+
+        InOrder inOrder = inOrder(stringRedisTemplate, productCache, productListCache, productStatsCache);
+        inOrder.verify(stringRedisTemplate).delete("product:detail:88");
+        inOrder.verify(productCache).evict(88L);
+        inOrder.verify(productListCache).clear();
+        inOrder.verify(productStatsCache).clear();
     }
 }

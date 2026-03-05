@@ -23,11 +23,11 @@ import com.cloud.product.service.ShopService;
 import com.cloud.product.service.support.ProductCacheProtectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -48,7 +48,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
     public Long createProduct(ProductRequestDTO requestDTO) {
         validateProductRequest(requestDTO, true);
 
@@ -65,17 +64,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!saved) {
             throw new BusinessException("Create product failed");
         }
-        productCacheProtectionService.markProductExists(product.getId());
+        runAfterCommit(() -> {
+            productCacheProtectionService.markProductExists(product.getId());
+            productCacheProtectionService.evictProductCaches(product.getId());
+        });
 
         return product.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean updateProduct(Long id, ProductRequestDTO requestDTO) {
         validateId(id);
         validateProductRequest(requestDTO, false);
@@ -96,16 +94,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!updated) {
             return false;
         }
+        scheduleProductCacheEvictionAfterCommit(id);
 
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean deleteProduct(Long id) {
         validateId(id);
         Product existing = requireExistingProduct(id);
@@ -115,12 +110,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!deleted) {
             return false;
         }
+        scheduleProductCacheEvictionAfterCommit(id);
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchDeleteProducts(List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             return true;
@@ -133,6 +128,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (!deleted) {
             return false;
         }
+        scheduleProductCacheEvictionAfterCommit(ids);
 
         return true;
     }
@@ -264,44 +260,46 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean enableProduct(Long id) {
-        return updateProductStatus(id, 1);
+        boolean updated = updateProductStatus(id, 1);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(id);
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean disableProduct(Long id) {
-        return updateProductStatus(id, 0);
+        boolean updated = updateProductStatus(id, 0);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(id);
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchEnableProducts(List<Long> ids) {
-        return batchUpdateProductStatus(ids, 1);
+        boolean updated = batchUpdateProductStatus(ids, 1);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(ids);
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public Boolean batchDisableProducts(List<Long> ids) {
-        return batchUpdateProductStatus(ids, 0);
+        boolean updated = batchUpdateProductStatus(ids, 0);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(ids);
+        }
+        return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean updateStock(Long id, Integer stock) {
         validateId(id);
         if (stock == null || stock < 0) {
@@ -312,15 +310,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, id).set(Product::getStock, stock);
         boolean updated = update(updateWrapper);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(id);
+        }
         return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean increaseStock(Long id, Integer amount) {
         validateId(id);
         if (amount == null || amount <= 0) {
@@ -332,15 +329,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         updateWrapper.eq(Product::getId, id)
                 .setSql("stock_quantity = stock_quantity + " + amount);
         boolean updated = update(updateWrapper);
+        if (updated) {
+            scheduleProductCacheEvictionAfterCommit(id);
+        }
         return updated;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "productCache", key = "#id"),
-            @CacheEvict(cacheNames = {"productListCache", "productStatsCache"}, allEntries = true)
-    })
     public Boolean decreaseStock(Long id, Integer amount) {
         validateId(id);
         if (amount == null || amount <= 0) {
@@ -357,6 +353,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             int available = existing.getStock() == null ? 0 : existing.getStock();
             throw new ProductServiceException.StockInsufficientException(id, amount, available);
         }
+        scheduleProductCacheEvictionAfterCommit(id);
 
         return true;
     }
@@ -406,13 +403,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
-    @CacheEvict(cacheNames = "productCache", key = "#id")
     public void evictProductCache(Long id) {
+        scheduleProductCacheEvictionAfterCommit(id);
     }
 
     @Override
-    @CacheEvict(cacheNames = {"productCache", "productListCache", "productStatsCache"}, allEntries = true)
     public void evictAllProductCache() {
+        scheduleAllProductCacheEvictionAfterCommit();
     }
 
     @Override
@@ -657,6 +654,36 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                     String.format("Merchant %s cannot manage product %s", currentUserId, targetIdText)
             );
         }
+    }
+
+    private void scheduleProductCacheEvictionAfterCommit(Long productId) {
+        runAfterCommit(() -> productCacheProtectionService.evictProductCaches(productId));
+    }
+
+    private void scheduleProductCacheEvictionAfterCommit(List<Long> productIds) {
+        if (CollectionUtils.isEmpty(productIds)) {
+            scheduleAllProductCacheEvictionAfterCommit();
+            return;
+        }
+        runAfterCommit(() -> productCacheProtectionService.evictProductCaches(productIds));
+    }
+
+    private void scheduleAllProductCacheEvictionAfterCommit() {
+        runAfterCommit(productCacheProtectionService::evictAllProductCaches);
+    }
+
+    private void runAfterCommit(Runnable runnable) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()
+                || !TransactionSynchronizationManager.isSynchronizationActive()) {
+            runnable.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                runnable.run();
+            }
+        });
     }
 
 }
