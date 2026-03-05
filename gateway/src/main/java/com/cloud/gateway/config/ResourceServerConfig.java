@@ -139,7 +139,7 @@ public class ResourceServerConfig {
                             ).authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
                             .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
-                            .pathMatchers("/order/**", "/cart/**", "/api/orders/**", "/api/v1/refund/**").authenticated()
+                            .pathMatchers("/order/**", "/cart/**", "/api/orders/**", "/api/v1/refund/**", "/api/v2/**").authenticated()
                             .pathMatchers("/payment/**", "/api/payments/**", "/api/v1/payment/alipay/**").authenticated()
                             .pathMatchers("/stock/**", "/api/stocks/**").authenticated()
                             .pathMatchers("/search/**", "/api/search/**").permitAll()

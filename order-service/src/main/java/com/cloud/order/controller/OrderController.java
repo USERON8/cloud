@@ -21,6 +21,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 @Tag(name = "Order Management", description = "Order REST APIs")
+@ConditionalOnProperty(prefix = "order.legacy", name = "enabled", havingValue = "true")
 public class OrderController {
 
     private final OrderService orderService;

@@ -18,6 +18,7 @@ import com.cloud.order.service.RefundService;
 import com.cloud.order.vo.RefundVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "order.legacy", name = "enabled", havingValue = "true")
 public class RefundServiceImpl implements RefundService {
 
     private final RefundMapper refundMapper;

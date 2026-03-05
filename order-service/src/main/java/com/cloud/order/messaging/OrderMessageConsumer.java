@@ -12,6 +12,7 @@ import com.cloud.order.service.OrderService;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ import java.util.function.Consumer;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "order.legacy", name = "enabled", havingValue = "true")
 public class OrderMessageConsumer {
 
     private static final String PAYMENT_SUCCESS_NAMESPACE = "order:paymentSuccess";

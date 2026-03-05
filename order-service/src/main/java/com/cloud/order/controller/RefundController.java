@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +31,7 @@ import java.util.Objects;
 @RequestMapping("/api/v1/refund")
 @RequiredArgsConstructor
 @Tag(name = "Refund Management", description = "Refund APIs")
+@ConditionalOnProperty(prefix = "order.legacy", name = "enabled", havingValue = "true")
 public class RefundController {
 
     private final RefundService refundService;

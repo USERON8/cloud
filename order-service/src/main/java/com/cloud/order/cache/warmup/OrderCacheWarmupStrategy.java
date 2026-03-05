@@ -5,6 +5,7 @@ import com.cloud.order.mapper.OrderMapper;
 import com.cloud.order.module.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.List;
 @Component
 @Slf4j
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "order.legacy", name = "enabled", havingValue = "true")
 public class OrderCacheWarmupStrategy implements com.cloud.common.cache.warmup.CacheWarmupStrategy {
 
     private final OrderMapper orderMapper;

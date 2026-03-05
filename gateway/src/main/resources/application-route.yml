@@ -75,7 +75,7 @@
               uri: lb://order-service
               order: 20
               predicates:
-                - Path=/api/orders/**,/api/v1/refund/**
+                - Path=/api/v2/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -140,15 +140,6 @@
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - name: CircuitBreaker
-                  args:
-                    name: search-route
-                    fallbackUri: forward:/gateway/fallback/search
-                    statusCodes:
-                      - 500
-                      - 502
-                      - 503
-                      - 504
 
             - id: search-service-api-legacy
               uri: lb://search-service
