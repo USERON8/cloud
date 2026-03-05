@@ -1,0 +1,46 @@
+package com.cloud.payment.module.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.cloud.common.domain.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("payment_order")
+public class PaymentOrderEntity extends BaseEntity<PaymentOrderEntity> {
+
+    @TableField("payment_no")
+    private String paymentNo;
+
+    @TableField("main_order_no")
+    private String mainOrderNo;
+
+    @TableField("sub_order_no")
+    private String subOrderNo;
+
+    @TableField("user_id")
+    private Long userId;
+
+    @TableField("amount")
+    private BigDecimal amount;
+
+    @TableField("channel")
+    private String channel;
+
+    @TableField("status")
+    private String status;
+
+    @TableField("provider_txn_no")
+    private String providerTxnNo;
+
+    @TableField("idempotency_key")
+    private String idempotencyKey;
+
+    @TableField("paid_at")
+    private LocalDateTime paidAt;
+}

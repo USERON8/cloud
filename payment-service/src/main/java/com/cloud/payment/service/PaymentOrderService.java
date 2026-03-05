@@ -1,4 +1,4 @@
-package com.cloud.api.payment;
+package com.cloud.payment.service;
 
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
@@ -6,7 +6,7 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 
-public interface PaymentFeignClient {
+public interface PaymentOrderService {
 
     Long createPaymentOrder(PaymentOrderCommandDTO command);
 
