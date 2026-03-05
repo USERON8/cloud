@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.Mockito.inOrder;
@@ -94,6 +93,9 @@ class ProductCacheProtectionServiceTest {
         ReflectionTestUtils.setField(service, "lockWaitMillis", 120L);
         ReflectionTestUtils.setField(service, "lockLeaseMillis", 3000L);
         ReflectionTestUtils.setField(service, "lockRetryTimes", 1);
+        ReflectionTestUtils.setField(service, "pubsubEnabled", true);
+        ReflectionTestUtils.setField(service, "pubsubChannel", "product:cache:invalidate");
+        ReflectionTestUtils.setField(service, "localNodeId", "node-a");
     }
 
     @Test
@@ -142,8 +144,31 @@ class ProductCacheProtectionServiceTest {
 
         InOrder inOrder = inOrder(stringRedisTemplate, productCache, productListCache, productStatsCache);
         inOrder.verify(stringRedisTemplate).delete("product:detail:88");
+        inOrder.verify(stringRedisTemplate).convertAndSend(eq("product:cache:invalidate"), any(String.class));
         inOrder.verify(productCache).evict(88L);
         inOrder.verify(productListCache).clear();
         inOrder.verify(productStatsCache).clear();
+    }
+
+    @Test
+    void shouldEvictLocalCacheWhenReceiveRemoteEvent() {
+        String payload = "{\"nodeId\":\"node-b\",\"clearAll\":false,\"productIds\":[88],\"timestamp\":1}";
+
+        service.handleLocalCacheInvalidationMessage(payload);
+
+        verify(productCache).evict(88L);
+        verify(productListCache).clear();
+        verify(productStatsCache).clear();
+    }
+
+    @Test
+    void shouldIgnoreLocalNodeEvent() {
+        String payload = "{\"nodeId\":\"node-a\",\"clearAll\":false,\"productIds\":[88],\"timestamp\":1}";
+
+        service.handleLocalCacheInvalidationMessage(payload);
+
+        verify(productCache, never()).evict(88L);
+        verify(productListCache, never()).clear();
+        verify(productStatsCache, never()).clear();
     }
 }

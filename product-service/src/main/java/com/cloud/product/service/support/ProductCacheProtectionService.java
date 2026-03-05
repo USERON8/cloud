@@ -19,10 +19,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -40,6 +43,7 @@ public class ProductCacheProtectionService {
     private static final String PRODUCT_CACHE_NAME = "productCache";
     private static final String PRODUCT_LIST_CACHE_NAME = "productListCache";
     private static final String PRODUCT_STATS_CACHE_NAME = "productStatsCache";
+    private static final String DEFAULT_PUBSUB_CHANNEL = "product:cache:invalidate";
 
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
@@ -89,10 +93,23 @@ public class ProductCacheProtectionService {
     @Value("${product.cache.guard.redis.pipeline-batch-size:200}")
     private int redisPipelineBatchSize;
 
+    @Value("${product.cache.guard.pubsub.enabled:true}")
+    private boolean pubsubEnabled;
+
+    @Value("${product.cache.guard.pubsub.channel:" + DEFAULT_PUBSUB_CHANNEL + "}")
+    private String pubsubChannel;
+
+    @Value("${product.cache.guard.pubsub.node-id:}")
+    private String localNodeId;
+
     private RBloomFilter<String> bloomFilter;
 
     @PostConstruct
     public void initBloomFilter() {
+        if (!StringUtils.hasText(localNodeId)) {
+            localNodeId = "product-node-" + UUID.randomUUID();
+        }
+
         if (!guardEnabled || !bloomEnabled) {
             return;
         }
@@ -208,22 +225,49 @@ public class ProductCacheProtectionService {
             evictAllProductCaches();
             return;
         }
+        List<Long> productIds = List.of(productId);
         evictRedisProductDetail(productId);
-        evictLocalProductCaches(List.of(productId));
+        publishLocalCacheInvalidation(false, productIds);
+        evictLocalProductCaches(productIds);
     }
 
     public void evictProductCaches(Collection<Long> productIds) {
-        if (CollectionUtils.isEmpty(productIds)) {
+        List<Long> validIds = normalizeProductIds(productIds);
+        if (CollectionUtils.isEmpty(validIds)) {
             evictAllProductCaches();
             return;
         }
-        evictRedisProductDetails(productIds);
-        evictLocalProductCaches(productIds);
+        evictRedisProductDetails(validIds);
+        publishLocalCacheInvalidation(false, validIds);
+        evictLocalProductCaches(validIds);
     }
 
     public void evictAllProductCaches() {
         evictAllRedisProductDetails();
+        publishLocalCacheInvalidation(true, List.of());
         evictAllLocalProductCaches();
+    }
+
+    public void handleLocalCacheInvalidationMessage(String payload) {
+        if (!pubsubEnabled || !StringUtils.hasText(payload)) {
+            return;
+        }
+        try {
+            LocalCacheInvalidationEvent event = objectMapper.readValue(payload, LocalCacheInvalidationEvent.class);
+            if (!isValidEvent(event)) {
+                return;
+            }
+            if (StringUtils.hasText(localNodeId) && localNodeId.equals(event.nodeId())) {
+                return;
+            }
+            if (event.clearAll()) {
+                evictAllLocalProductCaches();
+                return;
+            }
+            evictLocalProductCaches(event.productIds());
+        } catch (Exception e) {
+            log.warn("Handle product cache invalidation event failed, payload={}", payload, e);
+        }
     }
 
     private Optional<ProductVO> loadAndWriteCache(String redisKey, String productIdStr, Supplier<ProductVO> dbLoader) {
@@ -319,8 +363,8 @@ public class ProductCacheProtectionService {
     }
 
     private void evictRedisProductDetails(Collection<Long> productIds) {
-        List<String> keys = productIds.stream()
-                .filter(id -> id != null && id > 0)
+        List<Long> validIds = normalizeProductIds(productIds);
+        List<String> keys = validIds.stream()
                 .map(id -> PRODUCT_CACHE_KEY_PREFIX + id)
                 .toList();
         if (keys.isEmpty()) {
@@ -358,16 +402,18 @@ public class ProductCacheProtectionService {
     }
 
     private void evictLocalProductCaches(Collection<Long> productIds) {
+        List<Long> validIds = normalizeProductIds(productIds);
+        if (validIds.isEmpty()) {
+            return;
+        }
         CacheManager cacheManager = cacheManagerProvider.getIfAvailable();
         if (cacheManager == null) {
             return;
         }
         Cache productCache = cacheManager.getCache(PRODUCT_CACHE_NAME);
         if (productCache != null) {
-            for (Long productId : productIds) {
-                if (productId != null && productId > 0) {
-                    productCache.evict(productId);
-                }
+            for (Long productId : validIds) {
+                productCache.evict(productId);
             }
         }
         clearCache(cacheManager.getCache(PRODUCT_LIST_CACHE_NAME));
@@ -393,6 +439,58 @@ public class ProductCacheProtectionService {
         } catch (Exception e) {
             log.warn("Clear local cache failed, cache={}", cache.getName(), e);
         }
+    }
+
+    private void publishLocalCacheInvalidation(boolean clearAll, Collection<Long> productIds) {
+        if (!pubsubEnabled) {
+            return;
+        }
+        try {
+            List<Long> validIds = clearAll ? List.of() : normalizeProductIds(productIds);
+            LocalCacheInvalidationEvent event = new LocalCacheInvalidationEvent(
+                    localNodeId,
+                    clearAll,
+                    validIds,
+                    System.currentTimeMillis()
+            );
+            String payload = objectMapper.writeValueAsString(event);
+            stringRedisTemplate.convertAndSend(resolvePubsubChannel(), payload);
+        } catch (Exception e) {
+            log.warn("Publish product cache invalidation event failed", e);
+        }
+    }
+
+    private String resolvePubsubChannel() {
+        if (!StringUtils.hasText(pubsubChannel)) {
+            return DEFAULT_PUBSUB_CHANNEL;
+        }
+        return pubsubChannel;
+    }
+
+    private List<Long> normalizeProductIds(Collection<Long> productIds) {
+        if (CollectionUtils.isEmpty(productIds)) {
+            return List.of();
+        }
+        List<Long> validIds = new ArrayList<>();
+        for (Long productId : productIds) {
+            if (productId != null && productId > 0 && !validIds.contains(productId)) {
+                validIds.add(productId);
+            }
+        }
+        return validIds;
+    }
+
+    private boolean isValidEvent(LocalCacheInvalidationEvent event) {
+        if (event == null) {
+            return false;
+        }
+        if (event.clearAll()) {
+            return true;
+        }
+        return !CollectionUtils.isEmpty(event.productIds());
+    }
+
+    private record LocalCacheInvalidationEvent(String nodeId, boolean clearAll, List<Long> productIds, long timestamp) {
     }
 
     private record CacheLookupResult(boolean hit, ProductVO value) {

@@ -158,6 +158,10 @@ product:
         wait-millis: ${PRODUCT_CACHE_LOCK_WAIT_MILLIS:120}
         lease-millis: ${PRODUCT_CACHE_LOCK_LEASE_MILLIS:3000}
         retry-times: ${PRODUCT_CACHE_LOCK_RETRY_TIMES:2}
+      pubsub:
+        enabled: ${PRODUCT_CACHE_PUBSUB_ENABLED:true}
+        channel: ${PRODUCT_CACHE_PUBSUB_CHANNEL:product:cache:invalidate}
+        node-id: ${PRODUCT_CACHE_PUBSUB_NODE_ID:}
   config:
     page:
       default-size: 10
