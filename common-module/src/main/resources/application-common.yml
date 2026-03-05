@@ -71,11 +71,11 @@ spring:
       timeout: ${REDIS_TIMEOUT:10000ms}
       lettuce:
         pool:
-          max-active: ${REDIS_MAX_ACTIVE:50}
-          max-wait: ${REDIS_MAX_WAIT:3000ms}
-          max-idle: ${REDIS_MAX_IDLE:20}
-          min-idle: ${REDIS_MIN_IDLE:5}
-          time-between-eviction-runs: 60000
+          max-active: ${REDIS_MAX_ACTIVE:100}
+          max-wait: ${REDIS_MAX_WAIT:2000ms}
+          max-idle: ${REDIS_MAX_IDLE:30}
+          min-idle: ${REDIS_MIN_IDLE:10}
+          time-between-eviction-runs: ${REDIS_POOL_EVICTION_INTERVAL:30000ms}
         shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
 logging:
   file:

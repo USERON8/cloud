@@ -1,5 +1,6 @@
 package com.cloud.auth.service;
 
+import com.cloud.common.utils.RedisKeyScanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -85,26 +87,36 @@ public class TokenBlacklistService {
 
     public int cleanupExpiredEntries() {
         try {
-            Set<String> allKeys = redisTemplate.keys(BLACKLIST_KEY_PREFIX + "*");
+            Set<String> allKeys = RedisKeyScanUtils.scanKeys(redisTemplate, BLACKLIST_KEY_PREFIX + "*", 500);
             if (allKeys == null || allKeys.isEmpty()) {
+                redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "active_blacklisted", 0);
+                redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "last_updated", Instant.now().toString());
                 return 0;
             }
 
-            int cleanedCount = 0;
-            for (String key : allKeys) {
-                Long ttl = redisTemplate.getExpire(key);
-                if (ttl != null && ttl <= 0) {
-                    redisTemplate.delete(key);
-                    cleanedCount++;
+            Map<String, Long> ttlMap = RedisKeyScanUtils.batchTtlSeconds(redisTemplate, allKeys, 200);
+            java.util.List<String> keysWithoutTtl = new ArrayList<>();
+            for (Map.Entry<String, Long> entry : ttlMap.entrySet()) {
+                Long ttl = entry.getValue();
+                if (ttl != null && ttl == -1L) {
+                    keysWithoutTtl.add(entry.getKey());
                 }
             }
 
-            if (cleanedCount > 0) {
-                redisTemplate.opsForHash().increment(BLACKLIST_STATS_KEY, "active_blacklisted", -cleanedCount);
-                redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "last_updated", Instant.now().toString());
+            long cleanedCount = RedisKeyScanUtils.deleteKeysInPipeline(redisTemplate, keysWithoutTtl, 200);
+            int activeCount = allKeys.size() - (int) cleanedCount;
+            if (activeCount < 0) {
+                activeCount = 0;
             }
 
-            return cleanedCount;
+            redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "active_blacklisted", activeCount);
+            redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "last_updated", Instant.now().toString());
+
+            if (cleanedCount > 0) {
+                log.info("Blacklist cleanup removed {} entries without TTL", cleanedCount);
+            }
+
+            return (int) cleanedCount;
         } catch (Exception e) {
             log.error("Failed to cleanup expired blacklist entries", e);
             return 0;

@@ -21,10 +21,10 @@ spring:
       timeout: 10000
       lettuce:
         pool:
-          max-active: 32
-          max-wait: -1ms
-          max-idle: 16
-          min-idle: 4
+          max-active: ${REDIS_MAX_ACTIVE:100}
+          max-wait: ${REDIS_MAX_WAIT:2000ms}
+          max-idle: ${REDIS_MAX_IDLE:30}
+          min-idle: ${REDIS_MIN_IDLE:10}
 logging:
   level:
     com.cloud.auth: info

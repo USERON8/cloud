@@ -1,6 +1,7 @@
 package com.cloud.auth.service;
 
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.utils.RedisKeyScanUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,6 +35,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -261,15 +263,27 @@ public class OAuth2TokenManagementService {
             return 0;
         }
 
-        Set<String> authKeys = redisTemplate.keys("oauth2:auth:*");
+        Set<String> authKeys = RedisKeyScanUtils.scanKeys(redisTemplate, "oauth2:auth:*", 500);
         if (authKeys == null || authKeys.isEmpty()) {
             return 0;
         }
 
+        List<String> authKeyList = authKeys.stream().toList();
+        String principalNameField = "principalName";
+        List<Object> principalNames = redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
+            byte[] field = principalNameField.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            for (String key : authKeyList) {
+                connection.hGet(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), field);
+            }
+            return null;
+        });
+
         int revokedCount = 0;
-        for (String key : authKeys) {
-            Object principalName = redisTemplate.opsForHash().get(key, "principalName");
-            if (principalName == null || !username.equals(principalName.toString())) {
+        for (int i = 0; i < authKeyList.size(); i++) {
+            String key = authKeyList.get(i);
+            Object principalNameObj = (principalNames != null && i < principalNames.size()) ? principalNames.get(i) : null;
+            String principalName = decodeRedisValue(principalNameObj);
+            if (!username.equals(principalName)) {
                 continue;
             }
 
@@ -281,6 +295,16 @@ public class OAuth2TokenManagementService {
             }
         }
         return revokedCount;
+    }
+
+    private String decodeRedisValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof byte[] bytes) {
+            return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return value.toString();
     }
 
     private void revokeAuthorization(OAuth2Authorization authorization, String reason) {

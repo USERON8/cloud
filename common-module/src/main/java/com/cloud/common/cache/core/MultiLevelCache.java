@@ -3,6 +3,7 @@ package com.cloud.common.cache.core;
 import com.cloud.common.cache.message.CacheMessage;
 import com.cloud.common.cache.metrics.CacheMetricsCollector;
 import com.cloud.common.cache.model.CacheObject;
+import com.cloud.common.utils.RedisKeyScanUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.support.AbstractValueAdaptingCache;
@@ -265,7 +266,7 @@ public class MultiLevelCache extends AbstractValueAdaptingCache {
 
             
             String pattern = keyPrefix + name + ":*";
-            redisTemplate.delete(redisTemplate.keys(pattern));
+            RedisKeyScanUtils.deleteByPattern(redisTemplate, pattern, 500, 200);
 
             
             

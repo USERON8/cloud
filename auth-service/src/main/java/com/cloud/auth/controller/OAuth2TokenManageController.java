@@ -2,6 +2,7 @@ package com.cloud.auth.controller;
 
 import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
 import com.cloud.auth.service.TokenBlacklistService;
+import com.cloud.common.utils.RedisKeyScanUtils;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,8 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
 @Slf4j
 @RestController
 @RequestMapping("/auth/tokens")
@@ -50,11 +49,11 @@ public class OAuth2TokenManageController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> getTokenStats() {
         Map<String, Object> stats = new HashMap<>();
-        Set<String> authKeys = redisTemplate.keys("oauth2:auth:*");
-        Set<String> tokenKeys = redisTemplate.keys("oauth2:token:*");
+        long authCount = RedisKeyScanUtils.countKeysByPattern(redisTemplate, "oauth2:auth:*", 500);
+        long tokenCount = RedisKeyScanUtils.countKeysByPattern(redisTemplate, "oauth2:token:*", 500);
 
-        stats.put("authorizationCount", authKeys != null ? authKeys.size() : 0);
-        stats.put("tokenIndexCount", tokenKeys != null ? tokenKeys.size() : 0);
+        stats.put("authorizationCount", authCount);
+        stats.put("tokenIndexCount", tokenCount);
         stats.put("redisInfo", "Hash storage mode");
         stats.put("storageType", "Redis Hash");
 
