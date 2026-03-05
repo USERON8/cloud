@@ -14,7 +14,11 @@
     <dependencies>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-module</artifactId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-domain</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -13,6 +13,7 @@
 
     <modules>
         <module>common-core</module>
+        <module>common-domain</module>
         <module>common-module</module>
         <module>api-module</module>
         <module>gateway</module>
@@ -253,6 +254,11 @@
             <dependency>
                 <groupId>com.cloud</groupId>
                 <artifactId>common-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-domain</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
