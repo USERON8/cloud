@@ -2,38 +2,24 @@ USE product_db;
 
 DELETE FROM inbox_consume_log;
 DELETE FROM outbox_event;
-DELETE FROM merchant_shop;
-DELETE FROM attribute_template;
-DELETE FROM brand_authorization;
-DELETE FROM brand;
-DELETE FROM sku_specification;
-DELETE FROM product_audit;
-DELETE FROM product_attribute;
 DELETE FROM product_review;
-DELETE FROM product_sku;
-DELETE FROM products;
+DELETE FROM sku;
+DELETE FROM spu;
 DELETE FROM category;
 
-INSERT INTO category (id, parent_id, name, level, sort_order, status, create_by, update_by, deleted, version)
-VALUES (100, 0, 'Electronics', 1, 1, 1, 1, 1, 0, 0),
-       (200, 100, 'Phone', 2, 1, 1, 1, 1, 0, 0),
-       (300, 200, 'Smart Phone', 3, 1, 1, 1, 1, 0, 0);
+INSERT INTO category (id, parent_id, name, level, path, sort_order, status, deleted, version)
+VALUES (100, 0, 'Electronics', 1, '/100', 1, 1, 0, 0),
+       (200, 100, 'Phone', 2, '/100/200', 1, 1, 0, 0),
+       (300, 200, 'Smart Phone', 3, '/100/200/300', 1, 1, 0, 0);
 
-INSERT INTO brand (id, brand_name, status, is_hot, is_recommended, product_count, sort_order, deleted, version)
-VALUES (20001, 'CloudBrand', 1, 0, 0, 1, 1, 0, 0);
+INSERT INTO spu (id, spu_name, subtitle, category_id, brand_id, merchant_id, status, description, main_image, deleted, version)
+VALUES (50001, 'Cloud Phone 15', 'Æì½¢¿î', 300, 7001, 9001, 1, 'Cloud Phone 15 description', 'https://img.example.com/spu-50001.jpg', 0, 0);
 
-INSERT INTO merchant_shop (id, merchant_id, shop_name, status, deleted, version)
-VALUES (30001, 30001, 'Cloud Shop', 1, 0, 0);
+INSERT INTO sku (id, spu_id, sku_code, sku_name, spec_json, sale_price, market_price, cost_price, status, image_url, deleted, version)
+VALUES (51001, 50001, 'CP15-256-BLK', 'Cloud Phone 15 256G Black', JSON_OBJECT('color', 'black', 'storage', '256G'), 4999.00, 5399.00, 4200.00, 1, 'https://img.example.com/sku-51001.jpg', 0, 0),
+       (51002, 50001, 'CP15-512-SLV', 'Cloud Phone 15 512G Silver', JSON_OBJECT('color', 'silver', 'storage', '512G'), 5699.00, 6099.00, 4800.00, 1, 'https://img.example.com/sku-51002.jpg', 0, 0);
 
-INSERT INTO products (id, product_name, price, category_id, brand_id, status, stock_quantity, shop_id, deleted, version)
-VALUES (40001, 'Test Product A', 199.00, 300, 20001, 1, 100, 30001, 0, 0);
-
-INSERT INTO product_sku (id, product_id, sku_code, sku_name, spec_values, price, original_price, cost_price, stock_quantity,
-                         sales_quantity, status, sort_order, deleted, version)
-VALUES (41001, 40001, 'SKU-41001', 'Test SKU A', 'color:black;memory:256G',
-        199.00, 299.00, 129.00, 100, 0, 1, 1, 0, 0);
-
-INSERT INTO product_review (id, product_id, product_name, sku_id, order_id, order_no, user_id, user_nickname, rating,
-                            content, is_anonymous, audit_status, like_count, is_visible, review_type, deleted, version)
-VALUES (43001, 40001, 'Test Product A', 41001, 12001, 'ORD-12001', 20001, 'demo-user',
-        5, 'great', 0, 'APPROVED', 0, 1, 'NORMAL', 0, 0);
+INSERT INTO product_review (id, spu_id, sku_id, order_sub_no, user_id, rating, content, images, tags, is_anonymous, audit_status,
+                            merchant_reply, like_count, is_visible, deleted, version)
+VALUES (52001, 50001, 51001, 'SUB202603050001', 30001, 5, 'very good', JSON_ARRAY('https://img.example.com/review-1.jpg'),
+        'fast,smooth', 0, 'APPROVED', 'thanks', 3, 1, 0, 0);

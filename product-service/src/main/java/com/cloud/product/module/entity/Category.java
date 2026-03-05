@@ -36,6 +36,9 @@ public class Category extends BaseEntity<Category> {
     @TableField("level")
     private Integer level;
 
+    @TableField("path")
+    private String path;
+
     
 
 

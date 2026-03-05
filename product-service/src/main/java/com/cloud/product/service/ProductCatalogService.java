@@ -1,4 +1,4 @@
-package com.cloud.api.product;
+package com.cloud.product.service;
 
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
@@ -6,7 +6,7 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 
 import java.util.List;
 
-public interface ProductFeignClient {
+public interface ProductCatalogService {
 
     Long createSpu(SpuCreateRequestDTO request);
 
