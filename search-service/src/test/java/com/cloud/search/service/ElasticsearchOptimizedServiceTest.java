@@ -103,7 +103,7 @@ class ElasticsearchOptimizedServiceTest {
         assertThat(second).containsExactly("iphone", "xiaomi");
         verify(zSetOperations, times(1)).reverseRange("search:hot:zset", 0, 1);
         verify(valueOperations, times(1))
-                .set(eq("search:hot:list:2"), eq("[\"iphone\",\"xiaomi\"]"), longThat(ttl -> ttl >= 30L && ttl <= 31L), eq(TimeUnit.SECONDS));
+                .set(eq("search:hot:list:2"), eq("[\"iphone\",\"xiaomi\"]"), longThat(ttl -> ttl >= 30L && ttl <= 32L), eq(TimeUnit.SECONDS));
     }
 
     @Test

@@ -12,5 +12,5 @@ public class InternalApiSecurityProperties {
     private boolean enabled = true;
     private String headerName = InternalApiHeaders.API_KEY_HEADER;
     private String callerHeaderName = InternalApiHeaders.CALLER_HEADER;
-    private String key = System.getenv().getOrDefault("INTERNAL_API_KEY", "change-me-internal-api-key");
+    private String key = System.getenv("INTERNAL_API_KEY");
 }

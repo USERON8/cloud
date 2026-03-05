@@ -15,6 +15,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import reactor.core.publisher.Mono;
 
+import jakarta.annotation.PostConstruct;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +37,7 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
     @Value("${app.security.signature.enabled:true}")
     private boolean enabled;
 
-    @Value("${app.security.signature.secret:gateway-signature-secret}")
+    @Value("${app.security.signature.secret}")
     private String secret;
 
     @Value("${app.security.signature.timestamp-skew-seconds:300}")
@@ -47,6 +48,14 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
 
     public ApiSignatureReplayFilter(ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
         this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
+    }
+
+    @PostConstruct
+    public void validateSecret() {
+        if (enabled && !StringUtils.hasText(secret)) {
+            throw new IllegalStateException(
+                    "GATEWAY_SIGNATURE_SECRET must be configured when app.security.signature.enabled=true");
+        }
     }
 
     @Override

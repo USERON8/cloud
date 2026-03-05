@@ -9,6 +9,11 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -47,6 +52,15 @@ public class TokenBlacklistChecker implements OAuth2TokenValidator<Jwt> {
         if (jti != null && !jti.trim().isEmpty()) {
             return jti;
         }
-        return String.valueOf(jwt.getTokenValue().hashCode());
+        return sha256Hex(jwt.getTokenValue());
+    }
+
+    private String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
+        }
     }
 }

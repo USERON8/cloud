@@ -45,7 +45,7 @@ public class ThreadPoolMonitorController {
             return Result.success(threadPoolInfoList);
         } catch (Exception e) {
             log.error("Failed to get thread pool info", e);
-            return Result.error("Failed to get thread pool info: " + e.getMessage());
+            return Result.error("failed to get thread pool info");
         }
     }
 
@@ -63,7 +63,7 @@ public class ThreadPoolMonitorController {
             return Result.error("Thread pool bean not found: " + name);
         } catch (Exception e) {
             log.error("Failed to get thread pool info by name: {}", name, e);
-            return Result.error("Failed to get thread pool info: " + e.getMessage());
+            return Result.error("failed to get thread pool info");
         }
     }
 

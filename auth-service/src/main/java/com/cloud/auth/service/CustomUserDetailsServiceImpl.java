@@ -27,9 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
-    private static final String DEFAULT_BCRYPT_PASSWORD =
-            "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P3mTd.lQBHBR8y";
-
     @DubboReference(check = false, timeout = 5000, retries = 0)
     private UserDubboApi userDubboApi;
 
@@ -144,7 +141,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         } catch (Exception ex) {
             log.warn("Failed to load password from user-service for {}: {}", username, ex.getMessage());
         }
-        return DEFAULT_BCRYPT_PASSWORD;
+        throw new ResourceNotFoundException("User password", username);
     }
 }
 

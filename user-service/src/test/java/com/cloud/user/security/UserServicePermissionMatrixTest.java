@@ -47,9 +47,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -119,67 +119,67 @@ class UserServicePermissionMatrixTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private TokenBlacklistChecker tokenBlacklistChecker;
 
-    @MockBean(name = "redisTemplate")
+    @MockitoBean(name = "redisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
 
-    @MockBean
+    @MockitoBean
     private RedisConnectionFactory redisConnectionFactory;
 
-    @MockBean(name = "redissonClient")
+    @MockitoBean(name = "redissonClient")
     private RedissonClient redissonClient;
 
-    @MockBean
+    @MockitoBean
     private AdminService adminService;
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
 
-    @MockBean
+    @MockitoBean
     private MinioService minioService;
 
-    @MockBean
+    @MockitoBean
     private UserNotificationService userNotificationService;
 
-    @MockBean
+    @MockitoBean
     private UserStatisticsService userStatisticsService;
 
-    @MockBean
+    @MockitoBean
     private UserAsyncService userAsyncService;
 
-    @MockBean
+    @MockitoBean
     private MerchantService merchantService;
 
-    @MockBean
+    @MockitoBean
     private MerchantAuthService merchantAuthService;
 
-    @MockBean
+    @MockitoBean
     private MerchantAuthConverter merchantAuthConverter;
 
-    @MockBean
+    @MockitoBean
     private AdminConverter adminConverter;
 
-    @MockBean
+    @MockitoBean
     private UserAddressService userAddressService;
 
-    @MockBean
+    @MockitoBean
     private ApplicationContext applicationContext;
 
-    @MockBean
+    @MockitoBean
     private UserMapper userMapper;
 
-    @MockBean
+    @MockitoBean
     private MerchantMapper merchantMapper;
 
-    @MockBean
+    @MockitoBean
     private MerchantAuthMapper merchantAuthMapper;
 
-    @MockBean
+    @MockitoBean
     private AdminMapper adminMapper;
 
-    @MockBean
+    @MockitoBean
     private UserAddressMapper userAddressMapper;
 
     @Test

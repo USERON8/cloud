@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/admin")
@@ -60,7 +62,7 @@ public class AdminController {
             return Result.success(result);
         } catch (Exception e) {
             log.error("Failed to query admin page", e);
-            return Result.error("Failed to query admin page: " + e.getMessage());
+            return Result.error("Failed to query admin page");
         }
     }
 
@@ -81,7 +83,7 @@ public class AdminController {
             return Result.success("Query successful", admin);
         } catch (Exception e) {
             log.error("Failed to get admin details: {}", id, e);
-            return Result.error("Failed to get admin details: " + e.getMessage());
+            return Result.error("Failed to get admin details");
         }
     }
 
@@ -98,7 +100,7 @@ public class AdminController {
             return Result.success("Admin created", created);
         } catch (Exception e) {
             log.error("Failed to create admin", e);
-            return Result.error("Failed to create admin: " + e.getMessage());
+            return Result.error("Failed to create admin");
         }
     }
 
@@ -118,7 +120,7 @@ public class AdminController {
             return Result.success("Admin updated", result);
         } catch (Exception e) {
             log.error("Failed to update admin: {}", id, e);
-            return Result.error("Failed to update admin: " + e.getMessage());
+            return Result.error("Failed to update admin");
         }
     }
 
@@ -134,7 +136,7 @@ public class AdminController {
             return Result.success("Deleted successfully", result);
         } catch (Exception e) {
             log.error("Failed to delete admin: {}", id, e);
-            return Result.error("Failed to delete admin: " + e.getMessage());
+            return Result.error("Failed to delete admin");
         }
     }
 
@@ -149,7 +151,7 @@ public class AdminController {
             return Result.success("Status updated", result);
         } catch (Exception e) {
             log.error("Failed to update admin status: {}, status={}", id, status, e);
-            return Result.error("Failed to update admin status: " + e.getMessage());
+            return Result.error("Failed to update admin status");
         }
     }
 
@@ -159,11 +161,12 @@ public class AdminController {
     public Result<Boolean> resetPassword(
             @Parameter(description = "Admin ID") @PathVariable Long id) {
         try {
-            boolean result = adminService.resetPassword(id, "123456");
+            String temporaryPassword = "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+            boolean result = adminService.resetPassword(id, temporaryPassword);
             return Result.success("Password reset successful", result);
         } catch (Exception e) {
             log.error("Failed to reset admin password: {}", id, e);
-            return Result.error("Failed to reset password: " + e.getMessage());
+            return Result.error("Failed to reset password");
         }
     }
 }

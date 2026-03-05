@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Configuration
@@ -16,8 +17,9 @@ public class InternalApiSecurityConfig {
 
     @Bean
     public FilterRegistrationBean<InternalApiKeyAuthFilter> internalApiKeyAuthFilter(InternalApiSecurityProperties properties) {
-        if ("change-me-internal-api-key".equals(properties.getKey())) {
-            log.warn("Using default INTERNAL_API_KEY. Set env INTERNAL_API_KEY in all services.");
+        if (!StringUtils.hasText(properties.getKey())) {
+            throw new IllegalStateException(
+                    "INTERNAL_API_KEY is required when cloud.security.internal-api.enabled=true");
         }
         FilterRegistrationBean<InternalApiKeyAuthFilter> bean = new FilterRegistrationBean<>();
         bean.setFilter(new InternalApiKeyAuthFilter(properties));

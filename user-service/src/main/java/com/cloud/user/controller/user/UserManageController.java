@@ -51,7 +51,7 @@ public class UserManageController {
             return Result.success("user updated", Boolean.TRUE.equals(result));
         } catch (Exception e) {
             log.error("Failed to update user, id={}", id, e);
-            return Result.error("failed to update user: " + e.getMessage());
+            return Result.error("failed to update user");
         }
     }
 
@@ -68,7 +68,7 @@ public class UserManageController {
             return Result.success("user deleted", result);
         } catch (Exception e) {
             log.error("Failed to delete user, id={}", id, e);
-            return Result.error("failed to delete user: " + e.getMessage());
+            return Result.error("failed to delete user");
         }
     }
 
@@ -87,7 +87,7 @@ public class UserManageController {
             return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
         } catch (Exception e) {
             log.error("Failed to batch delete users", e);
-            return Result.error("failed to batch delete users: " + e.getMessage());
+            return Result.error("failed to batch delete users");
         }
     }
 
@@ -111,7 +111,7 @@ public class UserManageController {
             return Result.success(String.format("batch update completed: %d", userDTOList.size()), result);
         } catch (Exception e) {
             log.error("Failed to batch update users", e);
-            return Result.error("failed to batch update users: " + e.getMessage());
+            return Result.error("failed to batch update users");
         }
     }
 
@@ -136,7 +136,7 @@ public class UserManageController {
             return Result.success(message, true);
         } catch (Exception e) {
             log.error("Failed to batch update user status, status={}", status, e);
-            return Result.error("failed to batch update user status: " + e.getMessage());
+            return Result.error("failed to batch update user status");
         }
     }
 }

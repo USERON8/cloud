@@ -111,7 +111,7 @@ public class UserProfileController {
             return Result.success("password changed", Boolean.TRUE.equals(changed));
         } catch (Exception e) {
             log.error("Failed to change current user password, userId={}", currentUserId, e);
-            return Result.error("failed to change password: " + e.getMessage());
+            return Result.error("failed to change password");
         }
     }
 
@@ -131,7 +131,7 @@ public class UserProfileController {
             return Result.success("avatar uploaded", avatarUrl);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid avatar upload request, userId={}", currentUserId, e);
-            return Result.badRequest(e.getMessage());
+            return Result.badRequest("invalid avatar upload request");
         } catch (Exception e) {
             log.error("Failed to upload avatar, userId={}", currentUserId, e);
             return Result.error("failed to upload avatar");

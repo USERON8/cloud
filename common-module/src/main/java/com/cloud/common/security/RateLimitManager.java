@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 
@@ -30,10 +32,10 @@ public class RateLimitManager {
     private static final String STATS_PREFIX = "rate_limit:stats:";
     private final RedisTemplate<String, Object> redisTemplate;
     
-    private final Map<String, RateLimitRule> rateLimitRules = new HashMap<>();
+    private final Map<String, RateLimitRule> rateLimitRules = new ConcurrentHashMap<>();
 
     
-    private final Map<String, RateLimitStats> limitStats = new HashMap<>();
+    private final Map<String, RateLimitStats> limitStats = new ConcurrentHashMap<>();
 
     
 
@@ -431,38 +433,39 @@ public class RateLimitManager {
 
 
     public static class RateLimitStats {
-        private long totalRequests;      
-        private long allowedRequests;    
-        private long rejectedRequests;   
-        private Instant lastRequestTime; 
+        private final AtomicLong totalRequests = new AtomicLong(0);      
+        private final AtomicLong allowedRequests = new AtomicLong(0);    
+        private final AtomicLong rejectedRequests = new AtomicLong(0);   
+        private volatile Instant lastRequestTime; 
 
         public void recordAllow() {
-            totalRequests++;
-            allowedRequests++;
+            totalRequests.incrementAndGet();
+            allowedRequests.incrementAndGet();
             lastRequestTime = Instant.now();
         }
 
         public void recordReject() {
-            totalRequests++;
-            rejectedRequests++;
+            totalRequests.incrementAndGet();
+            rejectedRequests.incrementAndGet();
             lastRequestTime = Instant.now();
         }
 
         public double getRejectRate() {
-            return totalRequests > 0 ? (double) rejectedRequests / totalRequests : 0.0;
+            long total = totalRequests.get();
+            return total > 0 ? (double) rejectedRequests.get() / total : 0.0;
         }
 
         
         public long getTotalRequests() {
-            return totalRequests;
+            return totalRequests.get();
         }
 
         public long getAllowedRequests() {
-            return allowedRequests;
+            return allowedRequests.get();
         }
 
         public long getRejectedRequests() {
-            return rejectedRequests;
+            return rejectedRequests.get();
         }
 
         public Instant getLastRequestTime() {

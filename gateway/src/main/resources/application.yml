@@ -138,7 +138,7 @@ app:
     enable-test-api: false
     signature:
       enabled: ${APP_SECURITY_SIGNATURE_ENABLED:true}
-      secret: ${GATEWAY_SIGNATURE_SECRET:gateway-signature-secret}
+      secret: ${GATEWAY_SIGNATURE_SECRET}
       timestamp-skew-seconds: ${APP_SECURITY_SIGNATURE_TIMESTAMP_SKEW_SECONDS:300}
       nonce-expire-seconds: ${APP_SECURITY_SIGNATURE_NONCE_EXPIRE_SECONDS:600}
     rate-limit:

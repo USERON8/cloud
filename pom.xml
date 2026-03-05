@@ -336,7 +336,24 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.4</version>
+                    <version>3.5.3</version>
+                    <executions>
+                        <execution>
+                            <id>default-test</id>
+                            <configuration combine.self="override">
+                                <forkCount>1</forkCount>
+                                <reuseForks>true</reuseForks>
+                                <systemPropertyVariables>
+                                    <!-- Encoding-safe comment -->
+                                    <logDir>${project.build.directory}/logs</logDir>
+                                    <!-- Encoding-safe comment -->
+                                    <spring.profiles.active>test</spring.profiles.active>
+                                </systemPropertyVariables>
+                                <!-- Encoding-safe comment -->
+                                <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            </configuration>
+                        </execution>
+                    </executions>
                     <configuration>
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
@@ -345,11 +362,6 @@
                             <logDir>${project.build.directory}/logs</logDir>
                             <!-- Encoding-safe comment -->
                             <spring.profiles.active>test</spring.profiles.active>
-                            <!-- Encoding-safe comment -->
-                            <junit.platform.listeners.uid.tracking.enabled>true
-                            </junit.platform.listeners.uid.tracking.enabled>
-                            <junit.platform.listeners.uid.tracking.output.dir>${project.build.directory}/test-ids
-                            </junit.platform.listeners.uid.tracking.output.dir>
                         </systemPropertyVariables>
                         <!-- Encoding-safe comment -->
                         <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -364,6 +376,34 @@
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration combine.self="override">
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <systemPropertyVariables>
+                                <logDir>${project.build.directory}/logs</logDir>
+                                <spring.profiles.active>test</spring.profiles.active>
+                            </systemPropertyVariables>
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <systemPropertyVariables>
+                        <logDir>${project.build.directory}/logs</logDir>
+                        <spring.profiles.active>test</spring.profiles.active>
+                    </systemPropertyVariables>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
             </plugin>
         </plugins>
     </build>

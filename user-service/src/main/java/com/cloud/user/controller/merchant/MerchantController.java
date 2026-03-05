@@ -84,7 +84,7 @@ public class MerchantController {
             return Result.success(result);
         } catch (Exception e) {
             log.error("Failed to query merchants", e);
-            return Result.error("Failed to query merchants: " + e.getMessage());
+            return Result.error("failed to query merchants");
         }
     }
 
@@ -107,7 +107,7 @@ public class MerchantController {
             return Result.success("query successful", merchant);
         } catch (Exception e) {
             log.error("Failed to query merchant, id={}", id, e);
-            return Result.error("Failed to query merchant: " + e.getMessage());
+            return Result.error("failed to query merchant");
         }
     }
 
@@ -124,7 +124,7 @@ public class MerchantController {
             return Result.success("merchant created", created);
         } catch (Exception e) {
             log.error("Failed to create merchant", e);
-            return Result.error("Failed to create merchant: " + e.getMessage());
+            return Result.error("failed to create merchant");
         }
     }
 
@@ -146,7 +146,7 @@ public class MerchantController {
             return Result.success("merchant updated", result);
         } catch (Exception e) {
             log.error("Failed to update merchant, id={}", id, e);
-            return Result.error("Failed to update merchant: " + e.getMessage());
+            return Result.error("failed to update merchant");
         }
     }
 
@@ -162,7 +162,7 @@ public class MerchantController {
             return Result.success("merchant deleted", result);
         } catch (Exception e) {
             log.error("Failed to delete merchant, id={}", id, e);
-            return Result.error("Failed to delete merchant: " + e.getMessage());
+            return Result.error("failed to delete merchant");
         }
     }
 
@@ -177,7 +177,7 @@ public class MerchantController {
             return Result.success("merchant approved", result);
         } catch (Exception e) {
             log.error("Failed to approve merchant, id={}", id, e);
-            return Result.error("Failed to approve merchant: " + e.getMessage());
+            return Result.error("failed to approve merchant");
         }
     }
 
@@ -192,7 +192,7 @@ public class MerchantController {
             return Result.success("merchant rejected", result);
         } catch (Exception e) {
             log.error("Failed to reject merchant, id={}", id, e);
-            return Result.error("Failed to reject merchant: " + e.getMessage());
+            return Result.error("failed to reject merchant");
         }
     }
 
@@ -207,7 +207,7 @@ public class MerchantController {
             return Result.success("merchant status updated", result);
         } catch (Exception e) {
             log.error("Failed to update merchant status, id={}, status={}", id, status, e);
-            return Result.error("Failed to update merchant status: " + e.getMessage());
+            return Result.error("failed to update merchant status");
         }
     }
 
@@ -224,7 +224,7 @@ public class MerchantController {
             return Result.success("query successful", statistics);
         } catch (Exception e) {
             log.error("Failed to get merchant statistics, id={}", id, e);
-            return Result.error("Failed to get merchant statistics: " + e.getMessage());
+            return Result.error("failed to get merchant statistics");
         }
     }
 
@@ -245,7 +245,7 @@ public class MerchantController {
             return Result.success("batch delete completed", result);
         } catch (Exception e) {
             log.error("Failed to batch delete merchants, ids={}", ids, e);
-            return Result.error("Failed to batch delete merchants: " + e.getMessage());
+            return Result.error("failed to batch delete merchants");
         }
     }
 
@@ -277,7 +277,7 @@ public class MerchantController {
             return Result.success(message, true);
         } catch (Exception e) {
             log.error("Failed to batch update merchant status, ids={}, status={}", ids, status, e);
-            return Result.error("Failed to batch update merchant status: " + e.getMessage());
+            return Result.error("failed to batch update merchant status");
         }
     }
 
@@ -305,7 +305,7 @@ public class MerchantController {
             return Result.success(message, true);
         } catch (Exception e) {
             log.error("Failed to batch approve merchants, ids={}", ids, e);
-            return Result.error("Failed to batch approve merchants: " + e.getMessage());
+            return Result.error("failed to batch approve merchants");
         }
     }
 }
