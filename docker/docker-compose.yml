@@ -463,7 +463,10 @@
       SW_OAP_ADDRESS: http://skywalking-oap:12800
 
   jenkins:
-    image: jenkins/jenkins:jdk17
+    build:
+      context: ./docker-compose/jenkins
+      dockerfile: Dockerfile
+    image: cloud/jenkins:jdk17-docker
     container_name: cloud-jenkins
     user: root
     networks:
@@ -475,6 +478,7 @@
     environment:
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false
       TZ: Asia/Shanghai
+      DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - type: bind
         source: ./docker-compose/jenkins/home
