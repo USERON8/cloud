@@ -14,17 +14,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.security.Principal;
-import java.time.Duration;
 
 @Slf4j
 @Service
@@ -37,7 +35,7 @@ public class GitHubUserInfoService {
 
     @DubboReference(check = false, timeout = 5000, retries = 0)
     private UserDubboApi userDubboApi;
-    private final WebClient webClient = WebClient.builder().build();
+    private final RestClient restClient = RestClient.builder().build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public UserDTO getOrCreateUser(OAuth2AuthorizedClient authorizedClient) {
@@ -70,18 +68,7 @@ public class GitHubUserInfoService {
     private GitHubUserDTO fetchGitHubUserInfo(OAuth2AuthorizedClient authorizedClient) {
         try {
             String accessToken = authorizedClient.getAccessToken().getTokenValue();
-            String responseBody = webClient.get()
-                    .uri(GITHUB_USER_API)
-                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
-                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
-                            .defaultIfEmpty("")
-                            .flatMap(body -> Mono.error(
-                                    new SystemException("Failed to fetch GitHub user info: " + response.statusCode() + ", body=" + body))))
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(8))
-                    .block();
+            String responseBody = getGitHubResponseBody(GITHUB_USER_API, accessToken, "Failed to fetch GitHub user info");
             if (responseBody == null || responseBody.isBlank()) {
                 throw new SystemException("Failed to fetch GitHub user info: empty response");
             }
@@ -116,18 +103,7 @@ public class GitHubUserInfoService {
 
     private String fetchPrimaryEmail(String accessToken) {
         try {
-            String responseBody = webClient.get()
-                    .uri(GITHUB_USER_EMAILS_API)
-                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
-                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
-                            .defaultIfEmpty("")
-                            .flatMap(body -> Mono.error(
-                                    new SystemException("Failed to fetch GitHub emails: " + response.statusCode() + ", body=" + body))))
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(8))
-                    .block();
+            String responseBody = getGitHubResponseBody(GITHUB_USER_EMAILS_API, accessToken, "Failed to fetch GitHub emails");
             if (responseBody == null || responseBody.isBlank()) {
                 return null;
             }
@@ -144,6 +120,21 @@ public class GitHubUserInfoService {
             log.warn("Failed to fetch GitHub email: {}", e.getMessage());
         }
         return null;
+    }
+
+    private String getGitHubResponseBody(String uri, String accessToken, String errorPrefix) {
+        try {
+            return restClient.get()
+                    .uri(uri)
+                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
+                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException ex) {
+            throw new SystemException(500,
+                    String.format("%s: %s, body=%s", errorPrefix, ex.getStatusCode(), ex.getResponseBodyAsString()),
+                    ex);
+        }
     }
 
     private void applyGitHubHeaders(HttpHeaders headers, String accessToken) {

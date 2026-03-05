@@ -37,12 +37,6 @@
 
         
 
-        <!-- Spring Cloud LoadBalancer -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-
         <!-- Spring Boot Security Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -96,7 +90,6 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-module</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
             <exclusions>
                 <!-- Encoding-safe comment -->
                 <exclusion>
@@ -124,14 +117,13 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>api-module</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
 
         <!-- MySQL Driver -->
@@ -152,13 +144,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Cloud Stream Test Binder -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-stream-test-binder</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Spring Cloud Stream RocketMQ -->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
@@ -166,13 +151,6 @@
             <version>2.2.34</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-models-jakarta</artifactId>
-            <version>2.2.34</version>
-            <scope>compile</scope>
-        </dependency>
-
         <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
@@ -189,11 +167,6 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-rocketmq</artifactId>
         </dependency>
 
     </dependencies>
