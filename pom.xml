@@ -12,10 +12,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>common-core</module>
-        <module>common-domain</module>
-        <module>common-module</module>
-        <module>api-module</module>
+        <module>common-parent</module>
         <module>gateway</module>
         <module>auth-service</module>
         <module>user-service</module>
@@ -259,6 +256,31 @@
             <dependency>
                 <groupId>com.cloud</groupId>
                 <artifactId>common-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-db</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-log</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

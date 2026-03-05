@@ -9,12 +9,12 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>api-module</artifactId>
+    <artifactId>common-log</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-api</artifactId>
+            <artifactId>common-core</artifactId>
         </dependency>
     </dependencies>
 </project>

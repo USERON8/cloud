@@ -9,12 +9,16 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>api-module</artifactId>
+    <artifactId>common-db</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-api</artifactId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-domain</artifactId>
         </dependency>
     </dependencies>
 </project>
