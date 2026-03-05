@@ -1,4 +1,4 @@
-package com.cloud.product.controller.v2;
+package com.cloud.product.controller;
 
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v2/products")
+@RequestMapping("/api/product")
 @RequiredArgsConstructor
 public class ProductCatalogController {
 

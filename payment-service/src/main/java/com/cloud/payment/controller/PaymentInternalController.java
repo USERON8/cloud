@@ -1,6 +1,6 @@
-package com.cloud.payment.controller.v2;
+package com.cloud.payment.controller;
 
-import com.cloud.api.payment.PaymentFeignClient;
+import com.cloud.api.payment.PaymentDubboApi;
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/internal/v2/payment")
+@RequestMapping("/internal/payment")
 @RequiredArgsConstructor
-public class PaymentInternalController implements PaymentFeignClient {
+public class PaymentInternalController implements PaymentDubboApi {
 
     private final PaymentOrderService paymentOrderService;
 
@@ -47,3 +47,4 @@ public class PaymentInternalController implements PaymentFeignClient {
         return paymentOrderService.getRefundByNo(refundNo);
     }
 }
+

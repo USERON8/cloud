@@ -1,15 +1,15 @@
 package com.cloud.stock.rpc;
 
-import com.cloud.api.stock.StockFeignClient;
+import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.stock.service.StockLedgerService;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
-@DubboService(interfaceClass = StockFeignClient.class, timeout = 5000, retries = 0)
+@DubboService(interfaceClass = StockDubboApi.class, timeout = 5000, retries = 0)
 @RequiredArgsConstructor
-public class StockLedgerDubboService implements StockFeignClient {
+public class StockLedgerDubboService implements StockDubboApi {
 
     private final StockLedgerService stockLedgerService;
 
@@ -38,3 +38,4 @@ public class StockLedgerDubboService implements StockFeignClient {
         return stockLedgerService.rollback(command);
     }
 }
+

@@ -1,6 +1,6 @@
 package com.cloud.payment.rpc;
 
-import com.cloud.api.payment.PaymentFeignClient;
+import com.cloud.api.payment.PaymentDubboApi;
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
@@ -10,9 +10,9 @@ import com.cloud.payment.service.PaymentOrderService;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
-@DubboService(interfaceClass = PaymentFeignClient.class, timeout = 5000, retries = 0)
+@DubboService(interfaceClass = PaymentDubboApi.class, timeout = 5000, retries = 0)
 @RequiredArgsConstructor
-public class PaymentOrderDubboService implements PaymentFeignClient {
+public class PaymentOrderDubboService implements PaymentDubboApi {
 
     private final PaymentOrderService paymentOrderService;
 
@@ -41,3 +41,4 @@ public class PaymentOrderDubboService implements PaymentFeignClient {
         return paymentOrderService.getRefundByNo(refundNo);
     }
 }
+

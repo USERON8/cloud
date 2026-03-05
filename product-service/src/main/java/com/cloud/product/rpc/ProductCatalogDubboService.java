@@ -1,6 +1,6 @@
 package com.cloud.product.rpc;
 
-import com.cloud.api.product.ProductFeignClient;
+import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
@@ -10,9 +10,9 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import java.util.List;
 
-@DubboService(interfaceClass = ProductFeignClient.class, timeout = 5000, retries = 0)
+@DubboService(interfaceClass = ProductDubboApi.class, timeout = 5000, retries = 0)
 @RequiredArgsConstructor
-public class ProductCatalogDubboService implements ProductFeignClient {
+public class ProductCatalogDubboService implements ProductDubboApi {
 
     private final ProductCatalogService productCatalogService;
 
@@ -46,3 +46,4 @@ public class ProductCatalogDubboService implements ProductFeignClient {
         return productCatalogService.updateSpuStatus(spuId, status);
     }
 }
+

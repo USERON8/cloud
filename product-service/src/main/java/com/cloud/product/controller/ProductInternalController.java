@@ -1,6 +1,6 @@
-package com.cloud.product.controller.v2;
+package com.cloud.product.controller;
 
-import com.cloud.api.product.ProductFeignClient;
+import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/internal/v2/product")
+@RequestMapping("/internal/product")
 @RequiredArgsConstructor
-public class ProductInternalController implements ProductFeignClient {
+public class ProductInternalController implements ProductDubboApi {
 
     private final ProductCatalogService productCatalogService;
 
@@ -54,3 +54,4 @@ public class ProductInternalController implements ProductFeignClient {
         return productCatalogService.updateSpuStatus(spuId, status);
     }
 }
+

@@ -61,9 +61,9 @@ const DEFAULT_HEALTH_TARGETS = buildDefaultHealthTargets(BASE_URL);
 const GATEWAY_BATCH_REQUESTS = [
   "/api/query/users?username=admin",
   "/api/category/tree?enabledOnly=true",
-  "/api/v2/orders",
-  "/api/v2/payments/orders/contract-check",
-  "/api/v2/stocks/ledger/1",
+  "/api/orders",
+  "/api/payments/orders/contract-check",
+  "/api/stocks/ledger/1",
   "/api/search/basic?keyword=demo&page=0&size=1",
 ].map((path) => ["GET", `${BASE_URL}${path}`]);
 
@@ -559,8 +559,8 @@ export function case02OrderCreated(data) {
 
     const authReachableParams = jsonHeaders(authToken, true);
     const [orderResponse, stockResponse] = http.batch([
-      ["GET", `${BASE_URL}/api/v2/orders/main/${orderId}`, null, authReachableParams],
-      ["GET", `${BASE_URL}/api/v2/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/orders/main/${orderId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
     ]);
 
     const orderReachable = orderResponse.status !== 404 && isResultEnvelope(orderResponse);
@@ -592,7 +592,7 @@ export function case03PaymentSuccess(data) {
     const authParams = jsonHeaders(authToken, true);
     const tolerantAuthParams = jsonHeaders(authToken, true);
     const paySuccessResponse = http.get(
-      `${BASE_URL}/api/v2/payments/orders/${encodeURIComponent(paymentNo)}`,
+      `${BASE_URL}/api/payments/orders/${encodeURIComponent(paymentNo)}`,
       authParams
     );
     const paySuccessOk = paySuccessResponse.status !== 404 && isResultEnvelope(paySuccessResponse);
@@ -608,7 +608,7 @@ export function case03PaymentSuccess(data) {
       idempotencyKey: __ENV.CALLBACK_IDEMPOTENCY_KEY || `k6-cb-key-${Date.now()}`,
       payload: "{\"source\":\"k6\"}",
     });
-    const callbackResp = http.post(`${BASE_URL}/api/v2/payments/callbacks`, callbackBody, tolerantAuthParams);
+    const callbackResp = http.post(`${BASE_URL}/api/payments/callbacks`, callbackBody, tolerantAuthParams);
     const callbackOk = callbackResp.status !== 404 && isResultEnvelope(callbackResp);
     check(callbackResp, {
       "case03 payment callback route reachable": () => callbackOk,
@@ -631,7 +631,7 @@ export function case04StockInsufficient(data) {
     }
 
     const authParams = jsonHeaders(authToken, true);
-    const response = http.post(`${BASE_URL}/api/v2/stocks/reserve`, JSON.stringify({
+    const response = http.post(`${BASE_URL}/api/stocks/reserve`, JSON.stringify({
       subOrderNo: __ENV.STOCK_SUB_ORDER_NO || `k6-sub-${Date.now()}`,
       skuId: Number(TEST_DATA.skuId),
       quantity: Number(TEST_DATA.insufficientQuantity),
@@ -668,7 +668,7 @@ export function case05RefundFlow(data) {
     }
 
     const response = http.post(
-      `${BASE_URL}/api/v2/payments/refunds`,
+      `${BASE_URL}/api/payments/refunds`,
       REFUND_CREATE_BODY,
       jsonHeaders(authToken, true)
     );
@@ -701,12 +701,12 @@ export function case06EventIdempotency(data) {
       payload: "{\"source\":\"k6-idempotency\"}",
     });
     const first = http.post(
-      `${BASE_URL}/api/v2/payments/callbacks`,
+      `${BASE_URL}/api/payments/callbacks`,
       callbackBody,
       tolerantAuthParams
     );
     const second = http.post(
-      `${BASE_URL}/api/v2/payments/callbacks`,
+      `${BASE_URL}/api/payments/callbacks`,
       callbackBody,
       tolerantAuthParams
     );
@@ -738,7 +738,7 @@ export function case07SearchSync(data) {
     }
 
     const authParams = jsonHeaders(authToken);
-    const productResponse = http.get(`${BASE_URL}/api/v2/products/spu/${TEST_DATA.spuId}`, authParams);
+    const productResponse = http.get(`${BASE_URL}/api/product/spu/${TEST_DATA.spuId}`, authParams);
     if (!isResultSuccess(productResponse)) {
       return "failed";
     }
@@ -778,7 +778,7 @@ export function case07SearchSync(data) {
     }
 
     const updateResponse = http.put(
-      `${BASE_URL}/api/v2/products/spu/${TEST_DATA.spuId}`,
+      `${BASE_URL}/api/product/spu/${TEST_DATA.spuId}`,
       JSON.stringify(updatePayload),
       authParams
     );

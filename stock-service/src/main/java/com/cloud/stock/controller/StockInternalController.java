@@ -1,6 +1,6 @@
-package com.cloud.stock.controller.v2;
+package com.cloud.stock.controller;
 
-import com.cloud.api.stock.StockFeignClient;
+import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.stock.service.StockLedgerService;
@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/internal/v2/stock")
+@RequestMapping("/internal/stock")
 @RequiredArgsConstructor
-public class StockInternalController implements StockFeignClient {
+public class StockInternalController implements StockDubboApi {
 
     private final StockLedgerService stockLedgerService;
 
@@ -44,3 +44,4 @@ public class StockInternalController implements StockFeignClient {
         return stockLedgerService.rollback(command);
     }
 }
+

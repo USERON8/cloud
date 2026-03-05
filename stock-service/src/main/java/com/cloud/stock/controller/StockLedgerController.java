@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v2/stocks")
+@RequestMapping("/api/stocks")
 @RequiredArgsConstructor
 public class StockLedgerController {
 
