@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -87,7 +87,7 @@ public class SearchFallbackController {
 
     private Mono<ResponseEntity<String>> fallbackSearch(MultiValueMap<String, String> queryParams) {
         String keyword = normalizeKeyword(queryParams.getFirst("keyword"));
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             String json = toJson(Result.success("Search fallback applied with empty keyword", List.of()));
             return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json));
         }
@@ -109,7 +109,7 @@ public class SearchFallbackController {
     private Mono<ResponseEntity<String>> fallbackSuggestions(MultiValueMap<String, String> queryParams) {
         String keyword = normalizeKeyword(queryParams.getFirst("keyword"));
         int size = parseSize(queryParams.getFirst("size"));
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             String json = toJson(Result.success("Suggestions fallback applied with empty keyword", List.of()));
             return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json));
         }
@@ -168,7 +168,7 @@ public class SearchFallbackController {
     }
 
     private String resolveRouteType(String originalPath, String explicitRoute) {
-        if (StringUtils.hasText(explicitRoute)) {
+        if (StrUtil.isNotBlank(explicitRoute)) {
             String normalized = explicitRoute.trim().toLowerCase();
             if ("suggestions".equals(normalized) || "search".equals(normalized) || "smart-search".equals(normalized)) {
                 return normalized;
@@ -190,7 +190,7 @@ public class SearchFallbackController {
     }
 
     private int parseSize(String rawSize) {
-        if (!StringUtils.hasText(rawSize)) {
+        if (StrUtil.isBlank(rawSize)) {
             return 10;
         }
         try {
@@ -205,7 +205,7 @@ public class SearchFallbackController {
     }
 
     private String normalizeKeyword(String keyword) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return "";
         }
         return keyword.trim();
@@ -223,7 +223,7 @@ public class SearchFallbackController {
     }
 
     private boolean isSuccessResult(String body) {
-        if (!StringUtils.hasText(body)) {
+        if (StrUtil.isBlank(body)) {
             return false;
         }
         try {
@@ -242,3 +242,5 @@ public class SearchFallbackController {
         }
     }
 }
+
+

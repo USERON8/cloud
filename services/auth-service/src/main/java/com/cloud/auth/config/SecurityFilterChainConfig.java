@@ -40,6 +40,9 @@ public class SecurityFilterChainConfig {
     @Value("${app.security.public-actuator-enabled:false}")
     private boolean publicActuatorEnabled;
 
+    @Value("${app.security.api-docs-enabled:false}")
+    private boolean apiDocsEnabled;
+
     @Value("${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
     private String corsAllowedOriginPatterns;
 
@@ -87,10 +90,9 @@ public class SecurityFilterChainConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/auth/users/register",
-                                "/auth/sessions",
-                                "/auth/tokens/refresh"
+                                "/auth/users/register"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/auth/sessions").permitAll()
                         .requestMatchers("/auth/oauth2/github/**").permitAll()
                         .requestMatchers("/admin/**", "/management/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
@@ -113,7 +115,7 @@ public class SecurityFilterChainConfig {
                             response.getWriter().write("{\"error\":\"access_denied\",\"message\":\"Insufficient permissions\"}");
                         })
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }
@@ -127,24 +129,29 @@ public class SecurityFilterChainConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
+                .authorizeHttpRequests(authorize -> {
+                    authorize.requestMatchers(
                                 "/health/**",
+                                "/favicon.ico",
+                                "/error",
+                                "/login",
+                                "/oauth2/authorization/**",
+                                "/login/oauth2/**",
+                                "/auth/oauth2/github/**"
+                            ).permitAll()
+                            .requestMatchers(publicCommon).permitAll();
+                    if (apiDocsEnabled) {
+                        authorize.requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 "/doc.html",
-                                "/doc.html/**",
-                                "/favicon.ico",
-                                "/error",
-                                "/oauth2/authorization/**",
-                                "/login/oauth2/**",
-                                "/auth/oauth2/github/**"
-                        ).permitAll()
-                        .requestMatchers(publicCommon).permitAll()
-                        .anyRequest().denyAll()
-                )
+                                "/doc.html/**"
+                        ).permitAll();
+                    }
+                    authorize.anyRequest().denyAll();
+                })
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler((request, response, exception) -> {
@@ -153,7 +160,7 @@ public class SecurityFilterChainConfig {
                         })
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
+                .formLogin(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();

@@ -43,8 +43,6 @@ const CASE_STAGE_SECONDS = Number(__ENV.CASE_STAGE_SECONDS || 35);
 const SEARCH_DELAY_SECONDS = Number(__ENV.SEARCH_DELAY_SECONDS || 2);
 const CASE_SLEEP_SECONDS = Number(__ENV.CASE_SLEEP_SECONDS || 1);
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "30s";
-const AUTH_LOGIN_MAX_RETRIES = Number(__ENV.AUTH_LOGIN_MAX_RETRIES || 3);
-const AUTH_LOGIN_RETRY_SLEEP_SECONDS = Number(__ENV.AUTH_LOGIN_RETRY_SLEEP_SECONDS || 1);
 
 const CASE_SUCCESS_RATE_THRESHOLD = Number(__ENV.CASE_SUCCESS_RATE_THRESHOLD || 0.9);
 const HTTP_FAILED_RATE_THRESHOLD = Number(__ENV.HTTP_FAILED_RATE_THRESHOLD || 0.05);
@@ -368,13 +366,6 @@ function hasMerchantOrAdminRole(userType) {
   return userType === "MERCHANT" || userType === "ADMIN";
 }
 
-function shouldRetryLogin(response) {
-  if (!response) {
-    return true;
-  }
-
-  return response.status === 0 || response.status === 429 || response.status >= 500;
-}
 
 function isStockInsufficientPayload(payload) {
   if (payload === false) {
@@ -394,23 +385,6 @@ function isStockInsufficientPayload(payload) {
   );
 }
 
-function extractUserIdFromLoginResponse(response) {
-  const body = String(response?.body || "");
-  const patterns = [
-    /"user"\s*:\s*\{[\s\S]*?"id"\s*:\s*(\d+)/,
-    /"userId"\s*:\s*(\d+)/,
-    /"user_id"\s*:\s*(\d+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const matched = pattern.exec(body);
-    if (matched && matched[1]) {
-      return matched[1];
-    }
-  }
-
-  return "";
-}
 
 function extractDataIdFromResponse(response) {
   const parsed = parseJsonResponse(response);
@@ -435,70 +409,11 @@ function extractDataIdFromResponse(response) {
 }
 
 export function setup() {
-  if (__ENV.AUTH_TOKEN) {
-    return {
-      authToken: __ENV.AUTH_TOKEN,
-      authUserId: AUTH_USER_ID || TEST_DATA.userId || "",
-      authUserType: AUTH_USER_TYPE_ENV,
-    };
-  }
-
-  const username = __ENV.AUTH_USERNAME;
-  const password = __ENV.AUTH_PASSWORD;
-  if (!username || !password) {
-    return { authToken: "" };
-  }
-
-  const loginPayload = {
-    username,
-    password,
-    userType: __ENV.AUTH_USER_TYPE || "USER",
+  return {
+    authToken: String(__ENV.AUTH_TOKEN || "").trim(),
+    authUserId: AUTH_USER_ID || TEST_DATA.userId || "",
+    authUserType: AUTH_USER_TYPE_ENV,
   };
-
-  let lastResponse = null;
-  for (let attempt = 1; attempt <= AUTH_LOGIN_MAX_RETRIES; attempt += 1) {
-    const loginResponse = http.post(
-      `${BASE_URL}/auth/sessions`,
-      JSON.stringify(loginPayload),
-      jsonHeaders()
-    );
-    lastResponse = loginResponse;
-
-    if (isResultSuccess(loginResponse)) {
-      const parsed = parseJsonResponse(loginResponse);
-      const accessToken = parsed?.data?.access_token || parsed?.data?.accessToken || parsed?.data?.token;
-      if (accessToken) {
-        const responseUserId = extractUserIdFromLoginResponse(loginResponse);
-        const responseUserType = String(parsed?.data?.userType || parsed?.data?.user?.userType || "").toUpperCase();
-        return {
-          authToken: accessToken,
-          authUserId: responseUserId,
-          authUserType: responseUserType || AUTH_USER_TYPE_ENV,
-        };
-      }
-
-      console.error("[setup] access token missing in login response");
-      return { authToken: "" };
-    }
-
-    if (attempt < AUTH_LOGIN_MAX_RETRIES && shouldRetryLogin(loginResponse)) {
-      console.warn(
-        `[setup] auth login retrying (${attempt}/${AUTH_LOGIN_MAX_RETRIES}), status=${loginResponse.status}`
-      );
-      if (AUTH_LOGIN_RETRY_SLEEP_SECONDS > 0) {
-        sleep(AUTH_LOGIN_RETRY_SLEEP_SECONDS);
-      }
-      continue;
-    }
-
-    break;
-  }
-
-  const lastStatus = lastResponse ? lastResponse.status : 0;
-  console.error(
-    `[setup] auth login failed after ${AUTH_LOGIN_MAX_RETRIES} attempts, last_status=${lastStatus}`
-  );
-  return { authToken: "" };
 }
 
 export function case01GatewayRoute() {

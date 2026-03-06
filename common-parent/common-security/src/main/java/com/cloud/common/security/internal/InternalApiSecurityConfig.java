@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 @Slf4j
 @Configuration
@@ -17,7 +17,7 @@ public class InternalApiSecurityConfig {
 
     @Bean
     public FilterRegistrationBean<InternalApiKeyAuthFilter> internalApiKeyAuthFilter(InternalApiSecurityProperties properties) {
-        if (!StringUtils.hasText(properties.getKey())) {
+        if (StrUtil.isBlank(properties.getKey())) {
             throw new IllegalStateException(
                     "INTERNAL_API_KEY is required when cloud.security.internal-api.enabled=true");
         }
@@ -28,3 +28,5 @@ public class InternalApiSecurityConfig {
         return bean;
     }
 }
+
+

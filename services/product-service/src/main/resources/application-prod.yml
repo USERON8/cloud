@@ -3,8 +3,8 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     hikari:
       pool-name: ProductHikariCP
       minimum-idle: 10
@@ -19,7 +19,7 @@ spring:
     redis:
       host: ${REDIS_HOST:prod-redis}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:root}
+      password: ${REDIS_PASSWORD}
       database: 1
       timeout: 6000ms
       lettuce:
@@ -44,8 +44,8 @@ knife4j:
   production: true
   basic:
     enable: true
-    username: ${API_DOC_USERNAME:admin}
-    password: ${API_DOC_PASSWORD:admin123}
+    username: ${API_DOC_USERNAME}
+    password: ${API_DOC_PASSWORD}
 
 
 

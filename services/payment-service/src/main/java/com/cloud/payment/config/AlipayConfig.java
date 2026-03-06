@@ -7,7 +7,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.validation.annotation.Validated;
 
 @Configuration
@@ -54,7 +54,7 @@ public class AlipayConfig {
             sdkConfig.setCharset(charset);
             sdkConfig.setAlipayPublicKey(alipayPublicKey);
             sdkConfig.setSignType(signType);
-            if (StringUtils.hasText(appEncryptKey)) {
+            if (StrUtil.isNotBlank(appEncryptKey)) {
                 sdkConfig.setEncryptKey(appEncryptKey);
             }
             return new DefaultAlipayClient(sdkConfig);
@@ -63,3 +63,4 @@ public class AlipayConfig {
         }
     }
 }
+

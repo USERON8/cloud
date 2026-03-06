@@ -8,18 +8,15 @@ import org.springframework.stereotype.Component;
 public class PermissionManager {
 
     public boolean hasUserAccess(Authentication authentication) {
-        return SecurityPermissionUtils.hasRole(authentication, "USER")
-                || SecurityPermissionUtils.hasUserType(authentication, "USER");
+        return SecurityPermissionUtils.hasRole(authentication, "USER");
     }
 
     public boolean hasAdminAccess(Authentication authentication) {
-        return SecurityPermissionUtils.hasRole(authentication, "ADMIN")
-                || SecurityPermissionUtils.hasUserType(authentication, "ADMIN");
+        return SecurityPermissionUtils.hasRole(authentication, "ADMIN");
     }
 
     public boolean hasMerchantAccess(Authentication authentication) {
-        return SecurityPermissionUtils.hasRole(authentication, "MERCHANT")
-                || SecurityPermissionUtils.hasUserType(authentication, "MERCHANT");
+        return SecurityPermissionUtils.hasRole(authentication, "MERCHANT");
     }
 
     public boolean isMerchantOwner(Long merchantId, Authentication authentication) {

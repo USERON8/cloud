@@ -13,6 +13,16 @@ function normalizeRole(role?: string): UserRole {
 }
 
 export function getCurrentRole(): UserRole {
+  const roles = Array.isArray(sessionState.user?.roles) ? sessionState.user.roles : []
+  if (roles.includes('ADMIN')) {
+    return 'ADMIN'
+  }
+  if (roles.includes('MERCHANT')) {
+    return 'MERCHANT'
+  }
+  if (roles.includes('USER')) {
+    return 'USER'
+  }
   return normalizeRole(sessionState.user?.userType)
 }
 

@@ -61,7 +61,7 @@ public class MybatisPlusConfig {
 
         
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
-        interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
+        interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
 
         return interceptor;
     }
@@ -92,6 +92,11 @@ public class MybatisPlusConfig {
 
 
 
+
+    @SuppressWarnings("deprecation")
+    private IllegalSQLInnerInterceptor createIllegalSqlInterceptor() {
+        return new IllegalSQLInnerInterceptor();
+    }
 
     public static class UnifiedMetaObjectHandler implements MetaObjectHandler {
 

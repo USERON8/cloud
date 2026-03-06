@@ -9,7 +9,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +73,7 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
     @Override
     public boolean isEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
+        if (StrUtil.isBlank(traceId)) {
             return false;
         }
         try {
@@ -86,7 +86,7 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
     @Override
     public void markEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
+        if (StrUtil.isBlank(traceId)) {
             return;
         }
         try {
@@ -138,3 +138,5 @@ public class CategorySearchServiceImpl implements CategorySearchService {
         }
     }
 }
+
+

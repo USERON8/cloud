@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.ConstantDelay;
+
+import java.time.Duration;
 
 
 
@@ -77,7 +80,7 @@ public abstract class RedissonConfig {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500);
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)));
 
         
         if (password != null && !password.trim().isEmpty()) {
@@ -125,7 +128,7 @@ public abstract class RedissonConfig {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500);
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)));
 
         
         if (password != null && !password.trim().isEmpty()) {
@@ -173,7 +176,7 @@ public abstract class RedissonConfig {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(getTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500);
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)));
 
         
         if (password != null && !password.trim().isEmpty()) {

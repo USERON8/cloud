@@ -32,10 +32,6 @@ public class UnifiedSecurityExpressions {
         return SecurityPermissionUtils.hasAnyAuthority(permissions);
     }
 
-    public boolean hasUserType(String userType) {
-        return SecurityPermissionUtils.hasUserType(userType);
-    }
-
     public boolean isSameUser(String userId) {
         return SecurityPermissionUtils.isSameUser(userId);
     }

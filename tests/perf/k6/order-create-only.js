@@ -9,8 +9,6 @@ const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "30s";
 const ORDER_VUS = Number(__ENV.ORDER_VUS || 8);
 const ORDER_DURATION = __ENV.ORDER_DURATION || "30s";
 const ORDER_SLEEP_SECONDS = Number(__ENV.ORDER_SLEEP_SECONDS || 0);
-const LOGIN_RETRIES = Number(__ENV.AUTH_LOGIN_MAX_RETRIES || 3);
-const LOGIN_RETRY_SLEEP_SECONDS = Number(__ENV.AUTH_LOGIN_RETRY_SLEEP_SECONDS || 1);
 
 const SHOP_ID = String(__ENV.SHOP_ID || "").trim();
 const ADDRESS_ID = String(__ENV.ADDRESS_ID || "1").trim();
@@ -65,31 +63,6 @@ function isSuccess(response) {
   return parsed && Number(parsed.code) === 200;
 }
 
-function shouldRetryLogin(response) {
-  if (!response) {
-    return true;
-  }
-  return response.status === 0 || response.status === 429 || response.status >= 500;
-}
-
-function extractUserIdFromLoginResponse(response) {
-  const body = String(response?.body || "");
-  const patterns = [
-    /"user"\s*:\s*\{[\s\S]*?"id"\s*:\s*(\d+)/,
-    /"userId"\s*:\s*(\d+)/,
-    /"user_id"\s*:\s*(\d+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const matched = pattern.exec(body);
-    if (matched && matched[1]) {
-      return matched[1];
-    }
-  }
-
-  return "";
-}
-
 function buildOrderCreateBody(userId) {
   const payload = {
     shopId: SHOP_ID,
@@ -135,50 +108,10 @@ export const options = {
 };
 
 export function setup() {
-  if (__ENV.AUTH_TOKEN) {
-    const setupData = {
-      authToken: __ENV.AUTH_TOKEN,
-      authUserId: String(__ENV.AUTH_USER_ID || USER_ID || "").trim(),
-    };
-    validatePrerequisites(setupData);
-    return setupData;
-  }
-
-  const username = __ENV.AUTH_USERNAME;
-  const password = __ENV.AUTH_PASSWORD;
-  if (!username || !password) {
-    const setupData = { authToken: "", authUserId: USER_ID };
-    validatePrerequisites(setupData);
-    return setupData;
-  }
-
-  const loginBody = JSON.stringify({
-    username,
-    password,
-    userType: __ENV.AUTH_USER_TYPE || "USER",
-  });
-
-  for (let attempt = 1; attempt <= LOGIN_RETRIES; attempt += 1) {
-    const loginResp = http.post(`${BASE_URL}/auth/sessions`, loginBody, REQUEST_PARAMS);
-    if (isSuccess(loginResp)) {
-      const parsed = parseJson(loginResp);
-      const authToken = parsed?.data?.access_token || parsed?.data?.accessToken || parsed?.data?.token || "";
-      const authUserId = extractUserIdFromLoginResponse(loginResp) || USER_ID;
-      const setupData = { authToken, authUserId };
-      validatePrerequisites(setupData);
-      return setupData;
-    }
-
-    if (attempt < LOGIN_RETRIES && shouldRetryLogin(loginResp)) {
-      if (LOGIN_RETRY_SLEEP_SECONDS > 0) {
-        sleep(LOGIN_RETRY_SLEEP_SECONDS);
-      }
-      continue;
-    }
-    break;
-  }
-
-  const setupData = { authToken: "", authUserId: USER_ID };
+  const setupData = {
+    authToken: String(__ENV.AUTH_TOKEN || "").trim(),
+    authUserId: String(__ENV.AUTH_USER_ID || USER_ID || "").trim(),
+  };
   validatePrerequisites(setupData);
   return setupData;
 }
@@ -188,8 +121,8 @@ function validatePrerequisites(setupData) {
   if (!SHOP_ID) missing.push("SHOP_ID");
   if (!ADDRESS_ID) missing.push("ADDRESS_ID");
   if (!PRODUCT_ID) missing.push("PRODUCT_ID");
-  if (!setupData?.authToken) missing.push("AUTH_TOKEN or AUTH_USERNAME/AUTH_PASSWORD");
-  if (!String(setupData?.authUserId || "").trim()) missing.push("AUTH_USER_ID or login response user id");
+  if (!setupData?.authToken) missing.push("AUTH_TOKEN");
+  if (!String(setupData?.authUserId || "").trim()) missing.push("AUTH_USER_ID");
 
   if (missing.length > 0) {
     throw new Error(`[order-only] missing required inputs: ${missing.join(", ")}`);

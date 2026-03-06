@@ -46,34 +46,34 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
         log.warn("User service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof UserServiceException.UserNotFoundException) {
-            return Result.error(ResultCode.USER_NOT_FOUND, e.getMessage());
+            return Result.error(ResultCode.USER_NOT_FOUND);
         } else if (e instanceof UserServiceException.UserAlreadyExistsException) {
-            return Result.error(ResultCode.USER_ALREADY_EXISTS, e.getMessage());
+            return Result.error(ResultCode.USER_ALREADY_EXISTS);
         } else if (e instanceof UserServiceException.UserCreateFailedException) {
-            return Result.error(ResultCode.USER_CREATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.USER_CREATE_FAILED);
         } else if (e instanceof UserServiceException.UserUpdateFailedException) {
-            return Result.error(ResultCode.USER_UPDATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.USER_UPDATE_FAILED);
         } else if (e instanceof UserServiceException.UserDeleteFailedException) {
-            return Result.error(ResultCode.USER_DELETE_FAILED, e.getMessage());
+            return Result.error(ResultCode.USER_DELETE_FAILED);
         } else if (e instanceof UserServiceException.UserQueryFailedException) {
-            return Result.error(ResultCode.USER_QUERY_FAILED, e.getMessage());
-        } else if (e instanceof UserServiceException.UserTypeMismatchException) {
-            return Result.error(ResultCode.USER_TYPE_MISMATCH, e.getMessage());
+            return Result.error(ResultCode.USER_QUERY_FAILED);
+        } else if (e instanceof UserServiceException.RoleMismatchException) {
+            return Result.error(ResultCode.ROLE_MISMATCH);
         } else if (e instanceof UserServiceException.UserDisabledException) {
-            return Result.error(ResultCode.USER_DISABLED, e.getMessage());
+            return Result.error(ResultCode.USER_DISABLED);
         } else if (e instanceof UserServiceException.PasswordErrorException) {
-            return Result.error(ResultCode.PASSWORD_ERROR, e.getMessage());
+            return Result.error(ResultCode.PASSWORD_ERROR);
         } else if (e instanceof UserServiceException.ParamValidationFailedException) {
-            return Result.error(ResultCode.PARAM_VALIDATION_FAILED, e.getMessage());
+            return Result.error(ResultCode.PARAM_VALIDATION_FAILED);
         } else if (e instanceof UserServiceException.AddressPermissionException) {
-            return Result.forbidden(e.getMessage());
+            return Result.forbidden("You do not have permission to perform this operation");
         } else if (e instanceof UserServiceException.FileUploadException) {
-            return Result.error(ResultCode.UPLOAD_FAILED, e.getMessage());
+            return Result.error(ResultCode.UPLOAD_FAILED);
         } else if (e instanceof UserServiceException.FileSizeExceededException) {
-            return Result.error(ResultCode.FILE_SIZE_EXCEEDED, e.getMessage());
+            return Result.error(ResultCode.FILE_SIZE_EXCEEDED);
         }
 
-        return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
+        return Result.error(ResultCode.BUSINESS_ERROR);
     }
 
     @ExceptionHandler(AdminException.class)
@@ -81,20 +81,20 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
         log.warn("Admin service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof AdminException.AdminNotFoundException) {
-            return Result.error(ResultCode.ADMIN_NOT_FOUND, e.getMessage());
+            return Result.error(ResultCode.ADMIN_NOT_FOUND);
         } else if (e instanceof AdminException.AdminCreateFailedException) {
-            return Result.error(ResultCode.ADMIN_CREATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ADMIN_CREATE_FAILED);
         } else if (e instanceof AdminException.AdminUpdateFailedException) {
-            return Result.error(ResultCode.ADMIN_UPDATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ADMIN_UPDATE_FAILED);
         } else if (e instanceof AdminException.AdminDeleteFailedException) {
-            return Result.error(ResultCode.ADMIN_DELETE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ADMIN_DELETE_FAILED);
         } else if (e instanceof AdminException.AdminStatusErrorException) {
-            return Result.error(ResultCode.ADMIN_STATUS_ERROR, e.getMessage());
+            return Result.error(ResultCode.ADMIN_STATUS_ERROR);
         } else if (e instanceof AdminException.AdminQueryFailedException) {
-            return Result.error(ResultCode.ADMIN_QUERY_FAILED, e.getMessage());
+            return Result.error(ResultCode.ADMIN_QUERY_FAILED);
         }
 
-        return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
+        return Result.error(ResultCode.BUSINESS_ERROR);
     }
 
     @ExceptionHandler(MerchantException.class)
@@ -102,21 +102,21 @@ public class UserGlobalExceptionHandler extends com.cloud.common.exception.Globa
         log.warn("Merchant service exception - uri: {}, type: {}, message: {}", request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof MerchantException.MerchantNotFoundException) {
-            return Result.error(ResultCode.MERCHANT_NOT_FOUND, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_NOT_FOUND);
         } else if (e instanceof MerchantException.MerchantCreateFailedException) {
-            return Result.error(ResultCode.MERCHANT_CREATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_CREATE_FAILED);
         } else if (e instanceof MerchantException.MerchantUpdateFailedException) {
-            return Result.error(ResultCode.MERCHANT_UPDATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_UPDATE_FAILED);
         } else if (e instanceof MerchantException.MerchantDeleteFailedException) {
-            return Result.error(ResultCode.MERCHANT_DELETE_FAILED, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_DELETE_FAILED);
         } else if (e instanceof MerchantException.MerchantStatusErrorException) {
-            return Result.error(ResultCode.MERCHANT_STATUS_ERROR, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_STATUS_ERROR);
         } else if (e instanceof MerchantException.MerchantQueryFailedException) {
-            return Result.error(ResultCode.MERCHANT_QUERY_FAILED, e.getMessage());
+            return Result.error(ResultCode.MERCHANT_QUERY_FAILED);
         } else if (e instanceof MerchantException.UserNotMerchantException) {
-            return Result.error(ResultCode.USER_NOT_MERCHANT, e.getMessage());
+            return Result.error(ResultCode.USER_NOT_MERCHANT);
         }
 
-        return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
+        return Result.error(ResultCode.BUSINESS_ERROR);
     }
 }

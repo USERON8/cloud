@@ -15,7 +15,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,7 +83,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     public boolean isEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
+        if (StrUtil.isBlank(traceId)) {
             return false;
         }
         try {
@@ -96,7 +96,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     public void markEventProcessed(String traceId) {
-        if (!StringUtils.hasText(traceId)) {
+        if (StrUtil.isBlank(traceId)) {
             return;
         }
         try {
@@ -169,7 +169,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     @Override
     @Transactional(readOnly = true)
     public List<String> getSearchSuggestions(String keyword, Integer size) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return Collections.emptyList();
         }
         int limit = size == null || size <= 0 ? 10 : Math.min(size, 50);
@@ -177,7 +177,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             Page<ShopDocument> page = shopDocumentRepository.findByShopNameContaining(keyword, PageRequest.of(0, limit));
             return page.getContent().stream()
                     .map(ShopDocument::getShopName)
-                    .filter(StringUtils::hasText)
+                    .filter(StrUtil::isNotBlank)
                     .distinct()
                     .limit(limit)
                     .collect(Collectors.toList());
@@ -218,10 +218,10 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     private Page<ShopDocument> selectPage(ShopSearchRequest request, Pageable pageable) {
         Integer status = request.getStatus();
-        if (StringUtils.hasText(request.getKeyword()) && status != null) {
+        if (StrUtil.isNotBlank(request.getKeyword()) && status != null) {
             return shopDocumentRepository.searchByKeywordAndStatus(request.getKeyword(), status, pageable);
         }
-        if (StringUtils.hasText(request.getKeyword())) {
+        if (StrUtil.isNotBlank(request.getKeyword())) {
             return shopDocumentRepository.findByShopNameContaining(request.getKeyword(), pageable);
         }
         if (request.getMerchantId() != null && status != null) {
@@ -233,12 +233,12 @@ public class ShopSearchServiceImpl implements ShopSearchService {
         if (request.getRecommended() != null) {
             return shopDocumentRepository.findByRecommended(request.getRecommended(), pageable);
         }
-        if (StringUtils.hasText(request.getAddressKeyword())) {
+        if (StrUtil.isNotBlank(request.getAddressKeyword())) {
             return shopDocumentRepository.findByAddressContaining(request.getAddressKeyword(), pageable);
         }
         if (request.getMinRating() != null) {
             return shopDocumentRepository.advancedSearch(
-                    StringUtils.hasText(request.getKeyword()) ? request.getKeyword() : "",
+                    StrUtil.isNotBlank(request.getKeyword()) ? request.getKeyword() : "",
                     request.getMinRating(),
                     status != null ? status : 1,
                     pageable
@@ -262,8 +262,11 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     }
 
     private Sort buildSort(String sortBy, String sortOrder) {
-        String field = StringUtils.hasText(sortBy) ? sortBy : "createdAt";
+        String field = StrUtil.isNotBlank(sortBy) ? sortBy : "createdAt";
         Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(direction, field);
     }
 }
+
+
+

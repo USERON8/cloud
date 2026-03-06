@@ -1,8 +1,6 @@
 package com.cloud.auth.service;
 
 import com.cloud.api.user.UserDubboApi;
-import com.cloud.auth.util.OAuth2ResponseUtil;
-import com.cloud.common.domain.dto.auth.LoginResponseDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
@@ -17,7 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -142,11 +139,9 @@ public class GitHubUserInfoService {
         headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
     }
 
-    public LoginResponseDTO getUserInfoAndGenerateToken(
+    public UserDTO getAuthorizedUser(
             Principal principal,
-            OAuth2AuthorizedClientService authorizedClientService,
-            OAuth2TokenManagementService tokenManagementService,
-            OAuth2ResponseUtil oauth2ResponseUtil) {
+            OAuth2AuthorizedClientService authorizedClientService) {
         if (principal == null) {
             throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "Not authenticated");
         }
@@ -162,8 +157,7 @@ public class GitHubUserInfoService {
             throw new SystemException("Failed to get user info");
         }
 
-        OAuth2Authorization authorization = tokenManagementService.generateTokensForUser(userDTO, null);
-        return oauth2ResponseUtil.buildLoginResponse(authorization, userDTO);
+        return userDTO;
     }
 
     public boolean checkAuthStatus(

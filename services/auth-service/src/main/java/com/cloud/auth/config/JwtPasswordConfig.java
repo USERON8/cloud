@@ -32,7 +32,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -66,7 +66,7 @@ public class JwtPasswordConfig {
 
     @Bean
     public KeyPair keyPair() {
-        if (StringUtils.hasText(configuredPrivateKey)) {
+        if (StrUtil.isNotBlank(configuredPrivateKey)) {
             return loadKeyPairFromConfig();
         }
 
@@ -170,11 +170,6 @@ public class JwtPasswordConfig {
                 allAuthorities.addAll(roleAuthorities);
             }
 
-            Object userType = jwt.getClaim("user_type");
-            if (userType != null) {
-                allAuthorities.add(new SimpleGrantedAuthority("ROLE_" + userType.toString().toUpperCase()));
-            }
-
             return allAuthorities;
         });
 
@@ -185,7 +180,7 @@ public class JwtPasswordConfig {
     private KeyPair loadKeyPairFromConfig() {
         try {
             RSAPrivateKey privateKey = parsePrivateKey(configuredPrivateKey);
-            RSAPublicKey publicKey = StringUtils.hasText(configuredPublicKey)
+            RSAPublicKey publicKey = StrUtil.isNotBlank(configuredPublicKey)
                     ? parsePublicKey(configuredPublicKey)
                     : derivePublicKey(privateKey);
 
@@ -239,3 +234,4 @@ public class JwtPasswordConfig {
                 .replaceAll("\\s+", "");
     }
 }
+

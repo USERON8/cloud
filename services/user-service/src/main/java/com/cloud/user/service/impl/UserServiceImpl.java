@@ -1,5 +1,7 @@
 package com.cloud.user.service.impl;
 
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,9 +23,9 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
+import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -50,7 +52,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(readOnly = true)
     public UserDTO findByUsername(String username) {
-        if (StringUtils.isBlank(username)) {
+        if (StrUtil.isBlank(username)) {
             throw new BusinessException("username is required");
         }
 
@@ -64,22 +66,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Page<User> page = PageUtils.buildPage(pageDTO);
 
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.isNotBlank(pageDTO.getUsername())) {
+        if (StrUtil.isNotBlank(pageDTO.getUsername())) {
             queryWrapper.like(User::getUsername, pageDTO.getUsername());
         }
-        if (StringUtils.isNotBlank(pageDTO.getEmail())) {
+        if (StrUtil.isNotBlank(pageDTO.getEmail())) {
             queryWrapper.like(User::getEmail, pageDTO.getEmail());
         }
-        if (StringUtils.isNotBlank(pageDTO.getPhone())) {
+        if (StrUtil.isNotBlank(pageDTO.getPhone())) {
             queryWrapper.like(User::getPhone, pageDTO.getPhone());
         }
-        if (StringUtils.isNotBlank(pageDTO.getNickname())) {
+        if (StrUtil.isNotBlank(pageDTO.getNickname())) {
             queryWrapper.like(User::getNickname, pageDTO.getNickname());
         }
         if (pageDTO.getStatus() != null) {
             queryWrapper.eq(User::getStatus, pageDTO.getStatus());
         }
-        if (StringUtils.isNotBlank(pageDTO.getUserType())) {
+        if (StrUtil.isNotBlank(pageDTO.getUserType())) {
             queryWrapper.eq(User::getUserType, pageDTO.getUserType());
         }
         queryWrapper.orderByDesc(User::getCreatedAt);
@@ -179,14 +181,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = userConverter.toEntity(registerRequest);
-        if (StringUtils.isBlank(registerRequest.getPassword())) {
+        if (StrUtil.isBlank(registerRequest.getPassword())) {
             throw new BusinessException("password is required");
         }
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword().trim()));
         if (user.getStatus() == null) {
             user.setStatus(1);
         }
-        if (StringUtils.isBlank(user.getUserType())) {
+        if (StrUtil.isBlank(user.getUserType())) {
             user.setUserType(registerRequest.getUserType() == null ? UserType.USER.getCode() : registerRequest.getUserType());
         }
 
@@ -237,7 +239,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(readOnly = true)
     public UserDTO findByGitHubUsername(String githubUsername) {
-        if (StringUtils.isBlank(githubUsername)) {
+        if (StrUtil.isBlank(githubUsername)) {
             return null;
         }
         User user = getOne(new LambdaQueryWrapper<User>()
@@ -249,7 +251,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(readOnly = true)
     public UserDTO findByOAuthProvider(String oauthProvider, String oauthProviderId) {
-        if (StringUtils.isBlank(oauthProvider) || StringUtils.isBlank(oauthProviderId)) {
+        if (StrUtil.isBlank(oauthProvider) || StrUtil.isBlank(oauthProviderId)) {
             return null;
         }
         User user = getOne(new LambdaQueryWrapper<User>()
@@ -349,7 +351,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     })
     public Long createUser(UserDTO userDTO) {
         User user = userConverter.toEntity(userDTO);
-        if (org.springframework.util.StringUtils.hasText(user.getPassword())) {
+        if (StrUtil.isNotBlank(user.getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         save(user);
@@ -380,8 +382,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new EntityNotFoundException("user", userDTO.getId());
         }
 
-        if (StringUtils.isNotBlank(userDTO.getUsername())
-                && !StringUtils.equals(userDTO.getUsername(), existingUser.getUsername())) {
+        if (StrUtil.isNotBlank(userDTO.getUsername())
+                && !StrUtil.equals(userDTO.getUsername(), existingUser.getUsername())) {
             long count = lambdaQuery()
                     .eq(User::getUsername, userDTO.getUsername())
                     .ne(User::getId, userDTO.getId())
@@ -392,7 +394,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = userConverter.toEntity(userDTO);
-        if (StringUtils.isNotBlank(user.getPassword())) {
+        if (StrUtil.isNotBlank(user.getPassword())) {
             user.setPassword(normalizePassword(user.getPassword()));
         }
         return updateById(user);
@@ -522,7 +524,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return false;
         }
         for (User entity : entityList) {
-            if (entity != null && StringUtils.isNotBlank(entity.getPassword())) {
+            if (entity != null && StrUtil.isNotBlank(entity.getPassword())) {
                 entity.setPassword(normalizePassword(entity.getPassword()));
             }
         }
@@ -550,7 +552,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
     )
     public boolean updateById(User entity) {
-        if (entity != null && StringUtils.isNotBlank(entity.getPassword())) {
+        if (entity != null && StrUtil.isNotBlank(entity.getPassword())) {
             entity.setPassword(normalizePassword(entity.getPassword()));
         }
         return super.updateById(entity);
@@ -558,7 +560,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private String normalizePassword(String password) {
         String trimmed = password == null ? null : password.trim();
-        if (StringUtils.isBlank(trimmed)) {
+        if (StrUtil.isBlank(trimmed)) {
             return trimmed;
         }
         if (isBCryptHash(trimmed)) {
@@ -576,11 +578,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         merchantDTO.setId(userDTO.getId());
         merchantDTO.setUsername(userDTO.getUsername());
         String merchantPassword = userDTO.getPassword();
-        if (StringUtils.isBlank(merchantPassword)) {
+        if (StrUtil.isBlank(merchantPassword)) {
             merchantPassword = passwordEncoder.encode("merchant_" + userDTO.getId());
         }
         merchantDTO.setPassword(merchantPassword);
-        merchantDTO.setMerchantName(StringUtils.isNotBlank(userDTO.getNickname()) ? userDTO.getNickname() : userDTO.getUsername());
+        merchantDTO.setMerchantName(StrUtil.isNotBlank(userDTO.getNickname()) ? userDTO.getNickname() : userDTO.getUsername());
         merchantDTO.setEmail(userDTO.getEmail());
         merchantDTO.setPhone(userDTO.getPhone());
         merchantDTO.setUserType(String.valueOf(userDTO.getUserType()));
@@ -594,10 +596,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private String buildUniqueGithubUsername(String login) {
-        return com.cloud.common.utils.StringUtils.generateUniqueUsername(
-                login,
-                "github_",
-                username -> findByUsername(username) != null
-        );
+        String baseLogin = StrUtil.blankToDefault(StrUtil.trim(login), "user");
+        String candidateUsername = "github_" + baseLogin;
+
+        for (int suffix = 1; suffix <= 1000; suffix++) {
+            if (findByUsername(candidateUsername) == null) {
+                return candidateUsername;
+            }
+            candidateUsername = StrUtil.format("github_{}_{}", baseLogin, suffix);
+        }
+
+        return StrUtil.format("github_{}_{}", baseLogin, IdUtil.fastSimpleUUID());
     }
 }
+

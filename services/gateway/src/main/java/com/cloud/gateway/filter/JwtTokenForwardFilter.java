@@ -10,7 +10,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -22,6 +22,17 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
+
+    private static final String[] FORWARDED_IDENTITY_HEADERS = {
+            "X-User-Name",
+            "X-User-Id",
+            "X-User-Nickname",
+            "X-User-Status",
+            "X-Client-Id",
+            "X-Token-Version",
+            "X-User-Scopes",
+            "X-User-Roles"
+    };
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -37,7 +48,12 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
                     
                     ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
-                            .header("Authorization", "Bearer " + token);
+                            .headers(headers -> {
+                                for (String header : FORWARDED_IDENTITY_HEADERS) {
+                                    headers.remove(header);
+                                }
+                                headers.set("Authorization", "Bearer " + token);
+                            });
 
 
                     
@@ -59,7 +75,6 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         try {
             
             addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
-            addHeaderIfPresent(requestBuilder, "X-User-Type", jwt.getClaimAsString("user_type"));
             addHeaderIfPresent(requestBuilder, "X-User-Id", getClaimAsString(jwt, "user_id"));
             addHeaderIfPresent(requestBuilder, "X-User-Nickname", jwt.getClaimAsString("nickname"));
             addHeaderIfPresent(requestBuilder, "X-User-Status", getClaimAsString(jwt, "status"));
@@ -75,6 +90,12 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                 addHeaderIfPresent(requestBuilder, "X-User-Scopes", jwt.getClaimAsString("scope"));
             }
 
+            Object roles = jwt.getClaim("roles");
+            if (roles instanceof java.util.Collection<?> roleCollection && !roleCollection.isEmpty()) {
+                addHeaderIfPresent(requestBuilder, "X-User-Roles",
+                        roleCollection.stream().map(Object::toString).collect(java.util.stream.Collectors.joining(" ")));
+            }
+
             log.debug("Added user claim headers for user {}", jwt.getClaimAsString("username"));
 
         } catch (Exception e) {
@@ -86,7 +107,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
 
     private void addHeaderIfPresent(ServerHttpRequest.Builder requestBuilder, String headerName, String value) {
-        if (StringUtils.hasText(value) && !"null".equals(value)) {
+        if (StrUtil.isNotBlank(value) && !"null".equals(value)) {
             requestBuilder.header(headerName, value);
         }
     }
@@ -104,3 +125,4 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         return -100; 
     }
 }
+

@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -85,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public OrderMain createMainOrder(CreateMainOrderRequest request) {
         String idempotencyKey = request.getIdempotencyKey();
-        if (!StringUtils.hasText(idempotencyKey)) {
+        if (StrUtil.isBlank(idempotencyKey)) {
             throw new BusinessException("idempotency key is required");
         }
         if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
@@ -326,3 +326,5 @@ public class OrderServiceImpl implements OrderService {
         return amount == null ? BigDecimal.ZERO : amount;
     }
 }
+
+

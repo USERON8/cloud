@@ -108,10 +108,9 @@ public class GlobalPermissionExceptionHandler {
             case "PERMISSION_DENIED":
             case "INSUFFICIENT_PERMISSION":
             case "INSUFFICIENT_SCOPE":
-            case "USER_TYPE_MISMATCH":
+            case "ROLE_MISMATCH":
             case "FORBIDDEN_OPERATION":
                 return 403;
-            case "USER_TYPE_UNKNOWN":
             case "USER_ID_UNKNOWN":
                 return 400;
             default:

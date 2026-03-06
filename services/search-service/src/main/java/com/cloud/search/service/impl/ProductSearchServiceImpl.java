@@ -14,7 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 pageable
         );
 
-        if (StringUtils.hasText(safeRequest.getKeyword())) {
+        if (StrUtil.isNotBlank(safeRequest.getKeyword())) {
             recordHotSearch(safeRequest.getKeyword());
         }
 
@@ -69,7 +69,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     @Override
     @Transactional(readOnly = true)
     public List<String> getSearchSuggestions(String keyword, Integer size) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return Collections.emptyList();
         }
         int limit = size == null || size <= 0 ? 10 : Math.min(size, 50);
@@ -81,7 +81,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             }
             return docs.stream()
                     .map(ProductDocument::getProductName)
-                    .filter(StringUtils::hasText)
+                    .filter(StrUtil::isNotBlank)
                     .distinct()
                     .limit(limit)
                     .collect(Collectors.toList());
@@ -101,7 +101,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 return Collections.emptyList();
             }
             return keywords.stream()
-                    .filter(StringUtils::hasText)
+                    .filter(StrUtil::isNotBlank)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Get hot search keywords failed", e);
@@ -117,10 +117,10 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
         Map<String, Object> aggregations = new LinkedHashMap<>();
         aggregations.put("categories", list.stream()
-                .filter(item -> StringUtils.hasText(item.getCategoryName()))
+                .filter(item -> StrUtil.isNotBlank(item.getCategoryName()))
                 .collect(Collectors.groupingBy(ProductDocument::getCategoryName, Collectors.counting())));
         aggregations.put("brands", list.stream()
-                .filter(item -> StringUtils.hasText(item.getBrandName()))
+                .filter(item -> StrUtil.isNotBlank(item.getBrandName()))
                 .collect(Collectors.groupingBy(ProductDocument::getBrandName, Collectors.counting())));
 
         base.setAggregations(aggregations);
@@ -136,7 +136,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
         Page<ProductDocument> resultPage;
         Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
-        if (StringUtils.hasText(keyword)) {
+        if (StrUtil.isNotBlank(keyword)) {
             resultPage = productDocumentRepository.searchByKeyword(keyword, pageable);
             recordHotSearch(keyword);
         } else {
@@ -242,7 +242,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 1,
                 pageable
         );
-        if (StringUtils.hasText(keyword)) {
+        if (StrUtil.isNotBlank(keyword)) {
             recordHotSearch(keyword);
         }
         long took = System.currentTimeMillis() - start;
@@ -250,7 +250,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     }
 
     private void recordHotSearch(String keyword) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return;
         }
         try {
@@ -274,8 +274,11 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     }
 
     private Sort buildSort(String sortBy, String sortOrder) {
-        String field = StringUtils.hasText(sortBy) ? sortBy : "hotScore";
+        String field = StrUtil.isNotBlank(sortBy) ? sortBy : "hotScore";
         Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(direction, field);
     }
 }
+
+
+

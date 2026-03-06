@@ -21,7 +21,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,7 +137,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
         Page<Shop> page = new Page<>(current, size);
         LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(request.getShopNameKeyword())) {
+        if (StrUtil.isNotBlank(request.getShopNameKeyword())) {
             queryWrapper.like(Shop::getShopName, request.getShopNameKeyword());
         }
         if (request.getStatus() != null) {
@@ -169,7 +169,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     @Cacheable(cacheNames = "shopListCache", key = "'search:' + #shopName + ':' + (#status ?: 'null')")
     public List<ShopVO> searchShopsByName(String shopName, Integer status) {
         log.debug("Search shops by name: shopName={}, status={}", shopName, status);
-        if (!StringUtils.hasText(shopName)) {
+        if (StrUtil.isBlank(shopName)) {
             return new ArrayList<>();
         }
 
@@ -298,13 +298,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         if (create && requestDTO.getMerchantId() == null) {
             throw new BusinessException("Merchant id is required");
         }
-        if (create && !StringUtils.hasText(requestDTO.getShopName())) {
+        if (create && StrUtil.isBlank(requestDTO.getShopName())) {
             throw new BusinessException("Shop name cannot be blank");
         }
-        if (create && !StringUtils.hasText(requestDTO.getContactPhone())) {
+        if (create && StrUtil.isBlank(requestDTO.getContactPhone())) {
             throw new BusinessException("Contact phone cannot be blank");
         }
-        if (create && !StringUtils.hasText(requestDTO.getAddress())) {
+        if (create && StrUtil.isBlank(requestDTO.getAddress())) {
             throw new BusinessException("Address cannot be blank");
         }
         if (requestDTO.getStatus() != null && requestDTO.getStatus() != 0 && requestDTO.getStatus() != 1) {
@@ -313,19 +313,19 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     private void applyRequest(Shop shop, ShopRequestDTO requestDTO) {
-        if (StringUtils.hasText(requestDTO.getShopName())) {
+        if (StrUtil.isNotBlank(requestDTO.getShopName())) {
             shop.setShopName(requestDTO.getShopName());
         }
-        if (StringUtils.hasText(requestDTO.getAvatarUrl())) {
+        if (StrUtil.isNotBlank(requestDTO.getAvatarUrl())) {
             shop.setAvatarUrl(requestDTO.getAvatarUrl());
         }
-        if (StringUtils.hasText(requestDTO.getDescription())) {
+        if (StrUtil.isNotBlank(requestDTO.getDescription())) {
             shop.setDescription(requestDTO.getDescription());
         }
-        if (StringUtils.hasText(requestDTO.getContactPhone())) {
+        if (StrUtil.isNotBlank(requestDTO.getContactPhone())) {
             shop.setContactPhone(requestDTO.getContactPhone());
         }
-        if (StringUtils.hasText(requestDTO.getAddress())) {
+        if (StrUtil.isNotBlank(requestDTO.getAddress())) {
             shop.setAddress(requestDTO.getAddress());
         }
         if (requestDTO.getStatus() != null) {
@@ -357,3 +357,5 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         return true;
     }
 }
+
+

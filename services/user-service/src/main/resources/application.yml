@@ -139,12 +139,14 @@ user:
   statistics:
     enabled: true
 springdoc:
+  api-docs:
+    enabled: false
+    path: /v3/api-docs
   swagger-ui:
+    enabled: false
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
   group-configs:
     - group: 'user'
       paths-to-match: '/**'
@@ -156,7 +158,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller
 knife4j:
-  enable: true
+  enable: false
   production: false
   basic:
     enable: false
@@ -204,3 +206,4 @@ dubbo:
   provider:
     timeout: 5000
     retries: 0
+

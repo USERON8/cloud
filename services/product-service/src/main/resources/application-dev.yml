@@ -50,9 +50,13 @@ knife4j:
   basic:
     enable: false
 
+app:
+  security:
+    api-docs-enabled: true
 
-
-
-
-
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 

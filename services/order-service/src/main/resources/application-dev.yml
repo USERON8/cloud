@@ -50,10 +50,13 @@ knife4j:
         jwt:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
 
+app:
+  security:
+    api-docs-enabled: true
 
-
-
-
-
-
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 

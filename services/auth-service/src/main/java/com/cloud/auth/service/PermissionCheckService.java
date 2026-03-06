@@ -110,21 +110,16 @@ public class PermissionCheckService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
-            String userType = jwt.getClaimAsString("user_type");
             Long userId = jwt.getClaim("user_id");
 
-            
-            switch (userType) {
-                case "ADMIN":
-                    return true;
-                case "MERCHANT":
-                    
-                    return isMerchantResource(resource, userId);
-                case "USER":
-                    
-                    return isUserResource(resource, userId);
-                default:
-                    return false;
+            if (isAdmin(authentication)) {
+                return true;
+            }
+            if (isMerchant(authentication)) {
+                return isMerchantResource(resource, userId);
+            }
+            if (isUser(authentication)) {
+                return isUserResource(resource, userId);
             }
         }
 
@@ -187,13 +182,15 @@ public class PermissionCheckService {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
-
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof Jwt) {
-            Jwt jwt = (Jwt) principal;
-            return jwt.getClaimAsString("user_type");
+        if (isAdmin(authentication)) {
+            return "ADMIN";
         }
-
+        if (isMerchant(authentication)) {
+            return "MERCHANT";
+        }
+        if (isUser(authentication)) {
+            return "USER";
+        }
         return null;
     }
 

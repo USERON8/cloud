@@ -19,7 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,7 +53,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = ADMIN_CACHE, key = "'username:' + #username", unless = "#result == null")
     public AdminDTO getAdminByUsername(String username) throws AdminException.AdminNotFoundException {
-        if (!StringUtils.hasText(username)) {
+        if (StrUtil.isBlank(username)) {
             throw new IllegalArgumentException("username is required");
         }
 
@@ -112,13 +112,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             failMessage = "failed to acquire create admin lock"
     )
     public AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException {
-        if (!StringUtils.hasText(adminDTO.getUsername())) {
+        if (StrUtil.isBlank(adminDTO.getUsername())) {
             throw new IllegalArgumentException("username is required");
         }
-        if (!StringUtils.hasText(adminDTO.getRealName())) {
+        if (StrUtil.isBlank(adminDTO.getRealName())) {
             throw new IllegalArgumentException("realName is required");
         }
-        if (!StringUtils.hasText(adminDTO.getPassword())) {
+        if (StrUtil.isBlank(adminDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
 
@@ -129,7 +129,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
 
         Admin admin = adminConverter.toEntity(adminDTO);
-        if (StringUtils.hasText(admin.getPassword())) {
+        if (StrUtil.isNotBlank(admin.getPassword())) {
             admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         }
         if (admin.getStatus() == null) {
@@ -165,7 +165,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new AdminException.AdminNotFoundException(adminDTO.getId());
         }
 
-        if (StringUtils.hasText(adminDTO.getUsername())
+        if (StrUtil.isNotBlank(adminDTO.getUsername())
                 && !adminDTO.getUsername().equals(existingAdmin.getUsername())) {
             long count = lambdaQuery()
                     .eq(Admin::getUsername, adminDTO.getUsername())
@@ -178,23 +178,23 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         Admin admin = adminConverter.toEntity(adminDTO);
         admin.setId(adminDTO.getId());
-        if (!StringUtils.hasText(admin.getUsername())) {
+        if (StrUtil.isBlank(admin.getUsername())) {
             admin.setUsername(existingAdmin.getUsername());
         }
-        if (!StringUtils.hasText(admin.getRealName())) {
+        if (StrUtil.isBlank(admin.getRealName())) {
             admin.setRealName(existingAdmin.getRealName());
         }
-        if (!StringUtils.hasText(admin.getRole())) {
+        if (StrUtil.isBlank(admin.getRole())) {
             admin.setRole(existingAdmin.getRole());
         }
         if (admin.getStatus() == null) {
             admin.setStatus(existingAdmin.getStatus());
         }
-        if (!StringUtils.hasText(admin.getPhone())) {
+        if (StrUtil.isBlank(admin.getPhone())) {
             admin.setPhone(existingAdmin.getPhone());
         }
 
-        if (StringUtils.hasText(admin.getPassword())) {
+        if (StrUtil.isNotBlank(admin.getPassword())) {
             admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         } else {
             admin.setPassword(null);
@@ -263,7 +263,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean resetPassword(Long id, String newPassword) throws AdminException.AdminNotFoundException {
-        if (!StringUtils.hasText(newPassword)) {
+        if (StrUtil.isBlank(newPassword)) {
             throw new IllegalArgumentException("new password is required");
         }
 
@@ -282,7 +282,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
     public boolean changePassword(Long id, String oldPassword, String newPassword)
             throws AdminException.AdminNotFoundException, AdminException.AdminPasswordException {
-        if (!StringUtils.hasText(oldPassword) || !StringUtils.hasText(newPassword)) {
+        if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
             throw new IllegalArgumentException("old password and new password are required");
         }
 
@@ -311,3 +311,5 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public void evictAllAdminCache() {
     }
 }
+
+

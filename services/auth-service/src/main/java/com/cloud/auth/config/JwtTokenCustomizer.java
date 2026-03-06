@@ -5,15 +5,17 @@ import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.stereotype.Component;
 
-
-
-
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,13 +30,14 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             return;
         }
 
+        List<String> audiences = resolveAudiences(context);
+        Set<String> roles = extractRoles(context);
+
         context.getClaims()
                 .claim("client_id", context.getRegisteredClient().getClientId())
-                .claim("token_version", "v1");
-
-        if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
-            context.getClaims().claim("user_type", "SERVICE");
-        }
+                .claim("token_version", "v2")
+                .claim("roles", roles)
+                .claim("aud", audiences);
 
         Object principal = context.getPrincipal().getPrincipal();
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
@@ -44,10 +47,8 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             try {
                 UserDTO user = userDubboApi.findByUsername(username);
                 if (user != null) {
-                    String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                     context.getClaims()
                             .claim("user_id", user.getId())
-                            .claim("user_type", userTypeCode)
                             .claim("nickname", user.getNickname())
                             .claim("status", user.getStatus());
                 }
@@ -62,10 +63,8 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
                 try {
                     UserDTO user = userDubboApi.findByUsername(principalName);
                     if (user != null) {
-                        String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
                         context.getClaims()
                                 .claim("user_id", user.getId())
-                                .claim("user_type", userTypeCode)
                                 .claim("nickname", user.getNickname())
                                 .claim("status", user.getStatus());
                     }
@@ -74,6 +73,33 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
                 }
             }
         }
+    }
+
+    private List<String> resolveAudiences(JwtEncodingContext context) {
+        String clientId = context.getRegisteredClient().getClientId();
+        if ("client-service".equals(clientId)) {
+            return List.of("internal-api");
+        }
+        if ("service-client".equals(clientId)) {
+            return List.of("service-api");
+        }
+        return List.of("gateway");
+    }
+
+    private Set<String> extractRoles(JwtEncodingContext context) {
+        Set<String> roles = new LinkedHashSet<>();
+        if (context.getPrincipal() != null && context.getPrincipal().getAuthorities() != null) {
+            roles.addAll(context.getPrincipal().getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(authority -> authority != null && authority.startsWith("ROLE_"))
+                    .map(authority -> authority.substring("ROLE_".length()))
+                    .filter(role -> !role.isBlank())
+                    .collect(Collectors.toCollection(LinkedHashSet::new)));
+        }
+        if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
+            roles.add("SERVICE");
+        }
+        return roles;
     }
 }
 

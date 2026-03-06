@@ -19,38 +19,38 @@ public class OrderGlobalExceptionHandler extends com.cloud.common.exception.Glob
                 request.getRequestURI(), e.getClass().getSimpleName(), e.getMessage());
 
         if (e instanceof OrderServiceException.OrderNotFoundException) {
-            return Result.error(ResultCode.ORDER_NOT_FOUND, e.getMessage());
+            return Result.error(ResultCode.ORDER_NOT_FOUND);
         }
         if (e instanceof OrderServiceException.OrderCreateFailedException) {
-            return Result.error(ResultCode.ORDER_CREATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ORDER_CREATE_FAILED);
         }
         if (e instanceof OrderServiceException.OrderUpdateFailedException) {
-            return Result.error(ResultCode.ORDER_UPDATE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ORDER_UPDATE_FAILED);
         }
         if (e instanceof OrderServiceException.OrderDeleteFailedException) {
-            return Result.error(ResultCode.ORDER_DELETE_FAILED, e.getMessage());
+            return Result.error(ResultCode.ORDER_DELETE_FAILED);
         }
         if (e instanceof OrderServiceException.OrderStatusErrorException) {
-            return Result.error(ResultCode.ORDER_STATUS_ERROR, e.getMessage());
+            return Result.error(ResultCode.ORDER_STATUS_ERROR);
         }
         if (e instanceof OrderServiceException.OrderQueryFailedException) {
-            return Result.error(ResultCode.ORDER_QUERY_FAILED, e.getMessage());
+            return Result.error(ResultCode.ORDER_QUERY_FAILED);
         }
 
-        return Result.error(ResultCode.BUSINESS_ERROR, e.getMessage());
+        return Result.error(ResultCode.BUSINESS_ERROR);
     }
 
     @ExceptionHandler(OrderBusinessException.class)
     public Result<String> handleOrderBusinessException(OrderBusinessException e, HttpServletRequest request) {
         log.warn("Order business exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        return Result.error(e.getCode(), "Order request failed");
     }
 
     @ExceptionHandler(InsufficientStockException.class)
     public Result<String> handleInsufficientStockException(InsufficientStockException e, HttpServletRequest request) {
         log.warn("Insufficient stock: uri={}, productId={}, message={}",
                 request.getRequestURI(), e.getProductId(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        return Result.error(e.getCode(), "Insufficient stock");
     }
 
     @ExceptionHandler(java.util.ConcurrentModificationException.class)

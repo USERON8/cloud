@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -273,7 +273,7 @@ public class ElasticsearchOptimizedService {
     public List<String> getSearchSuggestions(String keyword, int limit) {
         Timer.Sample sample = Timer.start(meterRegistry);
         String safeKeyword = normalizeKeyword(keyword);
-        if (!StringUtils.hasText(safeKeyword)) {
+        if (StrUtil.isBlank(safeKeyword)) {
             recordTimer(sample, "suggestions", "empty");
             return List.of();
         }
@@ -526,19 +526,19 @@ public class ElasticsearchOptimizedService {
             return List.of();
         }
         return hotKeywords.stream()
-                .filter(StringUtils::hasText)
+                .filter(StrUtil::isNotBlank)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
     private List<String> computeRecommendations(String keyword, int limit) {
         LinkedHashSet<String> deduplicated = new LinkedHashSet<>();
-        if (StringUtils.hasText(keyword)) {
+        if (StrUtil.isNotBlank(keyword)) {
             deduplicated.addAll(getSearchSuggestions(keyword, limit));
         }
 
         List<String> hotKeywords = getHotSearchKeywords(Math.min(limit * 3, maxSearchSize()));
-        if (StringUtils.hasText(keyword)) {
+        if (StrUtil.isNotBlank(keyword)) {
             String lowered = keyword.toLowerCase();
             hotKeywords.stream()
                     .filter(item -> item.toLowerCase().contains(lowered))
@@ -547,7 +547,7 @@ public class ElasticsearchOptimizedService {
 
         hotKeywords.forEach(deduplicated::add);
         return deduplicated.stream()
-                .filter(StringUtils::hasText)
+                .filter(StrUtil::isNotBlank)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
@@ -555,7 +555,7 @@ public class ElasticsearchOptimizedService {
     private Query buildProductSearchQuery(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
 
-        if (StringUtils.hasText(keyword)) {
+        if (StrUtil.isNotBlank(keyword)) {
             Query keywordQuery = Query.of(q -> q.multiMatch(m -> m
                     .query(keyword)
                     .fields("productName^3", "productName.pinyin^2", "description", "categoryName", "brandName")
@@ -594,7 +594,7 @@ public class ElasticsearchOptimizedService {
         List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
         SortOrder order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
 
-        if (StringUtils.hasText(sortField)) {
+        if (StrUtil.isNotBlank(sortField)) {
             switch (sortField.toLowerCase()) {
                 case "price" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
                         .field(f -> f.field("price").order(order))));
@@ -678,7 +678,7 @@ public class ElasticsearchOptimizedService {
     }
 
     private void recordHotSearch(String keyword) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return;
         }
         try {
@@ -716,7 +716,7 @@ public class ElasticsearchOptimizedService {
     }
 
     private String normalizeKeyword(String keyword) {
-        if (!StringUtils.hasText(keyword)) {
+        if (StrUtil.isBlank(keyword)) {
             return "";
         }
         return keyword.trim();
@@ -761,7 +761,7 @@ public class ElasticsearchOptimizedService {
     private SearchResult getSmartSearchFromRedis(String key) {
         try {
             String json = redisTemplate.opsForValue().get(key);
-            if (!StringUtils.hasText(json)) {
+            if (StrUtil.isBlank(json)) {
                 return null;
             }
             JsonNode root = objectMapper.readTree(json);
@@ -805,7 +805,7 @@ public class ElasticsearchOptimizedService {
     private StringListCacheResult getStringListFromRedis(String key) {
         try {
             String json = redisTemplate.opsForValue().get(key);
-            if (!StringUtils.hasText(json)) {
+            if (StrUtil.isBlank(json)) {
                 return StringListCacheResult.miss();
             }
             List<String> value = objectMapper.readValue(json, new TypeReference<List<String>>() {
@@ -1047,3 +1047,6 @@ public class ElasticsearchOptimizedService {
         }
     }
 }
+
+
+

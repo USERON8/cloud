@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class OAuth2ClientConfig {
     public ClientRegistrationRepository clientRegistrationRepository() {
         List<ClientRegistration> registrations = new ArrayList<>();
 
-        if (!StringUtils.hasText(githubClientId) || !StringUtils.hasText(githubClientSecret)) {
+        if (StrUtil.isBlank(githubClientId) || StrUtil.isBlank(githubClientSecret)) {
             throw new IllegalStateException("Missing GitHub OAuth2 credentials. Set spring.security.oauth2.client.registration.github.client-id and client-secret");
         }
 
@@ -62,7 +62,7 @@ public class OAuth2ClientConfig {
                 .build();
         registrations.add(githubClient);
 
-        if (!StringUtils.hasText(serviceClientSecret)) {
+        if (StrUtil.isBlank(serviceClientSecret)) {
             throw new IllegalStateException("Missing client-service secret. Set spring.security.oauth2.client.registration.client-service.client-secret");
         }
 
@@ -102,3 +102,5 @@ public class OAuth2ClientConfig {
         return authorizedClientManager;
     }
 }
+
+

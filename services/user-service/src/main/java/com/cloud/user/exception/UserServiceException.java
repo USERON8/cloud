@@ -107,9 +107,9 @@ public class UserServiceException extends BusinessException {
         }
     }
 
-    public static class UserTypeMismatchException extends UserServiceException {
-        public UserTypeMismatchException(String message) {
-            super(ResultCode.USER_TYPE_MISMATCH, message);
+    public static class RoleMismatchException extends UserServiceException {
+        public RoleMismatchException(String message) {
+            super(ResultCode.ROLE_MISMATCH, message);
         }
     }
 

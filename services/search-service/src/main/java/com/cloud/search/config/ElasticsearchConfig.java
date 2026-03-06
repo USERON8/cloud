@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
 
@@ -61,7 +61,7 @@ public class ElasticsearchConfig {
             httpClientBuilder.setMaxConnPerRoute(maxConnectionsPerRoute);
             httpClientBuilder.setKeepAliveStrategy((response, context) -> Duration.ofMinutes(5).toMillis());
 
-            if (StringUtils.hasText(username) && StringUtils.hasText(password)) {
+            if (StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password)) {
                 CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                 credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
@@ -80,3 +80,4 @@ public class ElasticsearchConfig {
         return new ElasticsearchClient(transport);
     }
 }
+

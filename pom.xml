@@ -63,7 +63,8 @@
         <logback.version>1.5.13</logback.version>
 
         <!-- Encoding-safe comment -->
-        <redisson.version>3.51.0</redisson.version>
+         <redisson.version>3.51.0</redisson.version>
+        <hutool.version>5.8.41</hutool.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <objenesis.version>3.3</objenesis.version>
         <jackson.version>2.15.2</jackson.version>
@@ -180,6 +181,11 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-core</artifactId>
+                <version>${hutool.version}</version>
             </dependency>
 
             <!-- Encoding-safe comment -->
@@ -388,11 +394,11 @@
                         <execution>
                             <id>default-test</id>
                             <configuration combine.self="override">
-                                <forkCount>1</forkCount>
-                                <reuseForks>true</reuseForks>
-                                <systemPropertyVariables>
-                                    <!-- Encoding-safe comment -->
-                                    <logDir>${project.build.directory}/logs</logDir>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <systemPropertyVariables>
+                                <!-- Encoding-safe comment -->
+                                <logDir>${project.build.directory}/logs</logDir>
                                     <!-- Encoding-safe comment -->
                                     <spring.profiles.active>test</spring.profiles.active>
                                 </systemPropertyVariables>

@@ -111,10 +111,10 @@ cache:
       use-key-prefix: true
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
@@ -129,7 +129,7 @@ springdoc:
       name: MIT License
       url: https://opensource.org/licenses/MIT
 knife4j:
-  enable: true
+  enable: false
   production: false
   basic:
     enable: false
@@ -222,3 +222,4 @@ dubbo:
   provider:
     timeout: 5000
     retries: 0
+

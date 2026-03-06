@@ -9,7 +9,7 @@ spring:
     redis:
       host: ${REDIS_HOST:prod-redis}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:root}
+      password: ${REDIS_PASSWORD}
       database: 6
       timeout: 6000ms
       lettuce:
@@ -31,8 +31,8 @@ knife4j:
   production: true
   basic:
     enable: true
-    username: ${API_DOC_USERNAME:admin}
-    password: ${API_DOC_PASSWORD:admin123}
+    username: ${API_DOC_USERNAME}
+    password: ${API_DOC_PASSWORD}
 
 
 

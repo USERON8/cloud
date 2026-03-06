@@ -87,9 +87,14 @@ public final class SecurityPermissionUtils {
 
 
     public static String getCurrentUserType(Authentication authentication) {
-        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-            Jwt jwt = jwtAuth.getToken();
-            return jwt.getClaimAsString("user_type");
+        if (hasRole(authentication, "ADMIN")) {
+            return "ADMIN";
+        }
+        if (hasRole(authentication, "MERCHANT")) {
+            return "MERCHANT";
+        }
+        if (hasRole(authentication, "USER")) {
+            return "USER";
         }
         return null;
     }
@@ -214,21 +219,6 @@ public final class SecurityPermissionUtils {
     
 
 
-    public static boolean hasUserType(String userType) {
-        return hasUserType(getCurrentAuthentication(), userType);
-    }
-
-    
-
-
-    public static boolean hasUserType(Authentication authentication, String userType) {
-        String currentUserType = getCurrentUserType(authentication);
-        return currentUserType != null && currentUserType.equalsIgnoreCase(userType);
-    }
-
-    
-
-
     public static boolean isAdmin() {
         return isAdmin(getCurrentAuthentication());
     }
@@ -237,14 +227,7 @@ public final class SecurityPermissionUtils {
 
 
     public static boolean isAdmin(Authentication authentication) {
-        if (authentication == null) {
-            return false;
-        }
-        return hasRole(authentication, "ADMIN")
-                || hasUserType(authentication, "ADMIN")
-                || hasAnyAuthority(authentication,
-                "SCOPE_admin:read",
-                "SCOPE_admin:write");
+        return hasRole(authentication, "ADMIN");
     }
 
     
@@ -258,14 +241,7 @@ public final class SecurityPermissionUtils {
 
 
     public static boolean isMerchant(Authentication authentication) {
-        if (authentication == null) {
-            return false;
-        }
-        return hasRole(authentication, "MERCHANT")
-                || hasUserType(authentication, "MERCHANT")
-                || hasAnyAuthority(authentication,
-                "SCOPE_merchant:read",
-                "SCOPE_merchant:write");
+        return hasRole(authentication, "MERCHANT");
     }
 
     

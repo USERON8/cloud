@@ -29,17 +29,23 @@ public class PolicyBasedAccessManager {
         }
 
         Long userId = jwt.getClaim("user_id");
-        String userType = jwt.getClaimAsString("user_type");
-        if (userId == null || userType == null) {
+        if (userId == null) {
             return false;
         }
 
-        return switch (userType) {
-            case "ADMIN" -> true;
-            case "MERCHANT" -> checkMerchantAccess(userId, resource, action, context);
-            case "USER" -> checkUserAccess(userId, resource, action, context);
-            default -> false;
-        };
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        boolean isMerchant = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_MERCHANT".equals(a.getAuthority()));
+        boolean isUser = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_USER".equals(a.getAuthority()));
+        if (isAdmin) {
+            return true;
+        }
+        if (isMerchant) {
+            return checkMerchantAccess(userId, resource, action, context);
+        }
+        if (isUser) {
+            return checkUserAccess(userId, resource, action, context);
+        }
+        return false;
     }
 
     private boolean checkMerchantAccess(Long merchantId, String resource, String action, Map<String, Object> context) {

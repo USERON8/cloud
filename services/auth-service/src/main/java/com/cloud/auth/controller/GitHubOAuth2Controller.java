@@ -1,13 +1,16 @@
 package com.cloud.auth.controller;
 
 import com.cloud.auth.service.GitHubUserInfoService;
-import com.cloud.auth.service.OAuth2TokenManagementService;
-import com.cloud.auth.util.OAuth2ResponseUtil;
-import com.cloud.common.domain.dto.auth.LoginResponseDTO;
+import com.cloud.auth.service.AuthorizationRequestSessionService;
+import com.cloud.common.domain.dto.auth.AuthorizationRequestDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.result.Result;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,14 +25,12 @@ public class GitHubOAuth2Controller {
 
     private final GitHubUserInfoService gitHubUserInfoService;
     private final OAuth2AuthorizedClientService authorizedClientService;
-    private final OAuth2TokenManagementService tokenManagementService;
-    private final OAuth2ResponseUtil oauth2ResponseUtil;
+    private final AuthorizationRequestSessionService authorizationRequestSessionService;
 
     @GetMapping("/user-info")
-    public Result<LoginResponseDTO> getUserInfo(Principal principal) {
-        LoginResponseDTO loginResponse = gitHubUserInfoService.getUserInfoAndGenerateToken(
-                principal, authorizedClientService, tokenManagementService, oauth2ResponseUtil);
-        return Result.success(loginResponse);
+    public Result<UserDTO> getUserInfo(Principal principal) {
+        UserDTO user = gitHubUserInfoService.getAuthorizedUser(principal, authorizedClientService);
+        return Result.success(user);
     }
 
     @GetMapping("/status")
@@ -44,7 +45,10 @@ public class GitHubOAuth2Controller {
     }
 
     @GetMapping("/login-url")
-    public Result<String> getGitHubLoginUrl() {
+    public Result<String> getGitHubLoginUrl(
+            @Valid @ModelAttribute AuthorizationRequestDTO authorizationRequest,
+            HttpServletRequest request) {
+        authorizationRequestSessionService.store(authorizationRequest, request);
         return Result.success("/oauth2/authorization/github");
     }
 }

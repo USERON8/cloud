@@ -29,6 +29,13 @@ app:
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+  security:
+    api-docs-enabled: true
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 knife4j:
   enable: true
   production: false

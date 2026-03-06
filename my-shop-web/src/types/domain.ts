@@ -8,12 +8,16 @@ export interface UserInfo {
   email?: string
   phone?: string
   userType?: string
+  roles?: string[]
 }
 
-export interface LoginRequest {
-  username: string
-  password: string
-  userType: 'USER' | 'MERCHANT' | 'ADMIN'
+export interface OAuthTokenResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+  refresh_token?: string
+  scope?: string
+  id_token?: string
 }
 
 export interface RegisterRequest {
@@ -22,17 +26,6 @@ export interface RegisterRequest {
   phone: string
   nickname: string
   userType?: 'USER' | 'MERCHANT' | 'ADMIN'
-}
-
-export interface LoginResponse {
-  access_token: string
-  token_type: string
-  expires_in: number
-  refresh_token: string
-  scope?: string
-  userType?: string
-  nickname?: string
-  user?: UserInfo
 }
 
 export interface ProductItem {

@@ -1,5 +1,6 @@
 package com.cloud.common.config.base;
 
+import cn.hutool.core.util.IdUtil;
 import com.cloud.common.config.properties.MessageProperties;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -153,7 +154,7 @@ public abstract class BaseMessageConfig {
 
     @Deprecated
     protected String generateTraceId() {
-        return com.cloud.common.utils.StringUtils.generateTraceId();
+        return IdUtil.fastSimpleUUID();
     }
 
     

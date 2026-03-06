@@ -17,7 +17,7 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.lang.reflect.Method;
 
@@ -90,11 +90,11 @@ public class DistributedLockAspect {
         }
 
         String prefix = distributedLock.prefix();
-        if (StringUtils.hasText(prefix)) {
+        if (StrUtil.isNotBlank(prefix)) {
             key = prefix + ":" + key;
         }
 
-        if (!StringUtils.hasText(key)) {
+        if (StrUtil.isBlank(key)) {
             throw new IllegalArgumentException("Distributed lock key cannot be empty");
         }
 
@@ -187,3 +187,5 @@ public class DistributedLockAspect {
         return null;
     }
 }
+
+

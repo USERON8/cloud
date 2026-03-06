@@ -1,13 +1,13 @@
-# k6 压测脚本
+# k6 Scripts
 
-该目录用于主链路验收、全服务 smoke 和搜索链路压测。
+This directory contains the k6 load and smoke test entry points for the cloud shop system.
 
-## 推荐入口
+## Recommended runners
 
-- `run-k6.ps1`（PowerShell）
-- `run-k6.sh`（Shell）
+- `run-k6.ps1`
+- `run-k6.sh`
 
-支持场景：
+Supported scenarios:
 
 - `acceptance`
 - `smoke`
@@ -16,7 +16,7 @@
 - `route-only`
 - `order-only`
 
-## 快速运行
+## Quick start
 
 ```powershell
 powershell -File tests/perf/k6/run-k6.ps1 -Scenario acceptance
@@ -28,36 +28,24 @@ powershell -File tests/perf/k6/run-k6.ps1 -Scenario smoke -BaseUrl http://host.d
 ./tests/perf/k6/run-k6.sh smoke http://host.docker.internal:18080 loadtest
 ```
 
-## 兼容脚本
+## Common environment variables
 
-以下脚本仍可用，但内部已统一转发到 `run-k6`：
-
-- `run-acceptance.ps1/.sh`
-- `run-all-services-smoke.ps1/.sh`
-- `run-search-chain.ps1/.sh`
-- `run-search-singleton-max.ps1/.sh`
-
-## 常用变量
-
-- `K6_BASE_URL`（默认 `http://host.docker.internal:18080`）
+- `K6_BASE_URL` default `http://host.docker.internal:18080`
 - `AUTH_TOKEN`
-- `AUTH_USERNAME` / `AUTH_PASSWORD` / `AUTH_USER_TYPE`
+- `AUTH_USER_ID`
+- `AUTH_USER_TYPE`
 - `USER_ID` / `MERCHANT_ID` / `SPU_ID` / `SKU_ID`
 - `PAYMENT_NO` / `REFUND_NO` / `AFTER_SALE_NO`
 - `SMOKE_VUS` / `SMOKE_DURATION` / `SMOKE_P95_THRESHOLD_MS`
 - `SEARCH_MAIN_VUS` / `SEARCH_MAIN_DURATION`
 - `SEARCH_FALLBACK_VUS` / `SEARCH_FALLBACK_DURATION`
-- `SERVICE_TARGETS`（逗号分隔 URL，覆盖默认 smoke 目标）
+- `SERVICE_TARGETS` comma-separated URL list overriding default smoke targets
 - `REQUEST_TIMEOUT`
 
-## API 字段契约巡检
+Protected flows now require a valid pre-issued `AUTH_TOKEN`. The removed username/password login chain is no longer supported in k6 setup.
+
+## API contract check
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File docs/tools/check-api-contract.ps1
 ```
-
-脚本会检查 Controller 的：
-- 路径占位符与 `@PathVariable` 是否一致
-- `GET` 是否错误声明 `@RequestBody`
-- 每个接口是否存在多 `@RequestBody`
-- 外部 API 是否统一返回 `Result<T>`

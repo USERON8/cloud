@@ -135,6 +135,7 @@ app:
       interval-sec: ${APP_SENTINEL_GATEWAY_INTERVAL_SEC:1}
       route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
   security:
+    api-docs-enabled: false
     enable-test-api: false
     signature:
       enabled: ${APP_SECURITY_SIGNATURE_ENABLED:true}
@@ -175,13 +176,13 @@ resilience4j:
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /doc.html
 knife4j:
-  enable: true
+  enable: false
   production: false
   basic:
     enable: false
@@ -222,3 +223,4 @@ knife4j:
         search-service:
           group-name: search-service
           api-docs-path: /v3/api-docs
+

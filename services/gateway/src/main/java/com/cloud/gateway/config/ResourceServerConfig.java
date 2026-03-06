@@ -1,5 +1,7 @@
 package com.cloud.gateway.config;
 
+import com.cloud.common.security.AudienceTokenValidator;
+import com.cloud.common.security.InternalScopeClientValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +28,11 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Configuration
@@ -46,6 +51,12 @@ public class ResourceServerConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String issuerUri;
 
+    @Value("${app.security.jwt.accepted-audiences:gateway,internal-api}")
+    private String acceptedAudiences;
+
+    @Value("${app.security.jwt.internal-client-ids:client-service}")
+    private String allowedInternalClientIds;
+
     @Value("${app.security.enable-test-api:false}")
     private boolean enableTestApi;
 
@@ -54,6 +65,9 @@ public class ResourceServerConfig {
 
     @Value("${app.security.public-actuator-enabled:false}")
     private boolean publicActuatorEnabled;
+
+    @Value("${app.security.api-docs-enabled:false}")
+    private boolean apiDocsEnabled;
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -80,33 +94,13 @@ public class ResourceServerConfig {
                             .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**").permitAll()
                             .pathMatchers(HttpMethod.POST,
                                     "/auth/users/register",
-                                    "/auth/sessions",
-                                    "/auth/tokens/refresh",
                                     "/api/v1/payment/alipay/notify"
                             ).permitAll()
+                            .pathMatchers(HttpMethod.DELETE, "/auth/sessions").permitAll()
                             .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return").permitAll()
                             .pathMatchers("/auth/oauth2/github/**").permitAll()
                             .pathMatchers("/login/**").permitAll()
                             .pathMatchers("/health/**", "/metrics/**").permitAll()
-                            .pathMatchers(
-                                    "/doc.html",
-                                    "/doc.html/**",
-                                    "/*/doc.html",
-                                    "/*/doc.html/**"
-                            ).permitAll()
-                            .pathMatchers(
-                                    "/swagger-ui.html",
-                                    "/swagger-ui/**",
-                                    "/*/swagger-ui/**"
-                            ).permitAll()
-                            .pathMatchers(
-                                    "/v3/api-docs/**",
-                                    "/*/v3/api-docs/**",
-                                    "/swagger-resources/**",
-                                    "/*/swagger-resources/**",
-                                    "/webjars/**",
-                                    "/*/webjars/**"
-                            ).permitAll()
                             .pathMatchers(
                                     "/favicon.ico",
                                     "/csrf",
@@ -115,18 +109,34 @@ public class ResourceServerConfig {
                                     "/static/**",
                                     "/public/**"
                             ).permitAll()
-                            .pathMatchers(
-                                    "/auth-service/doc.html", "/auth-service/doc.html/**",
-                                    "/user-service/doc.html", "/user-service/doc.html/**",
-                                    "/product-service/doc.html", "/product-service/doc.html/**",
-                                    "/order-service/doc.html", "/order-service/doc.html/**",
-                                    "/payment-service/doc.html", "/payment-service/doc.html/**",
-                                    "/stock-service/doc.html", "/stock-service/doc.html/**",
-                                    "/search-service/doc.html", "/search-service/doc.html/**"
-                            ).permitAll();
+                            .pathMatchers("/webjars/**").permitAll();
 
                     if (publicActuatorEnabled) {
                         authExchanges = authExchanges.pathMatchers("/actuator/**").permitAll();
+                    }
+
+                    if (apiDocsEnabled) {
+                        authExchanges = authExchanges
+                                .pathMatchers(
+                                        "/doc.html",
+                                        "/doc.html/**",
+                                        "/*/doc.html",
+                                        "/*/doc.html/**",
+                                        "/swagger-ui.html",
+                                        "/swagger-ui/**",
+                                        "/*/swagger-ui/**",
+                                        "/v3/api-docs/**",
+                                        "/*/v3/api-docs/**",
+                                        "/swagger-resources/**",
+                                        "/*/swagger-resources/**",
+                                        "/auth-service/doc.html", "/auth-service/doc.html/**",
+                                        "/user-service/doc.html", "/user-service/doc.html/**",
+                                        "/product-service/doc.html", "/product-service/doc.html/**",
+                                        "/order-service/doc.html", "/order-service/doc.html/**",
+                                        "/payment-service/doc.html", "/payment-service/doc.html/**",
+                                        "/stock-service/doc.html", "/stock-service/doc.html/**",
+                                        "/search-service/doc.html", "/search-service/doc.html/**"
+                                ).permitAll();
                     }
 
                     if (enableTestApi) {
@@ -194,7 +204,13 @@ public class ResourceServerConfig {
     public ReactiveJwtDecoder jwtDecoder() {
         NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
-        decoder.setJwtValidator(withIssuer);
+        OAuth2TokenValidator<Jwt> withAudience = new AudienceTokenValidator(parseCsv(acceptedAudiences));
+        OAuth2TokenValidator<Jwt> withInternalClient = new InternalScopeClientValidator(parseCsv(allowedInternalClientIds));
+        decoder.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
+                withIssuer,
+                withAudience,
+                withInternalClient
+        ));
 
         return token -> decoder.decode(token)
                 .flatMap(jwt -> reactiveStringRedisTemplate.hasKey(BLACKLIST_KEY_PREFIX + extractTokenId(jwt, token))
@@ -234,6 +250,16 @@ public class ResourceServerConfig {
             }
         }
         return false;
+    }
+
+    private Set<String> parseCsv(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 }
 

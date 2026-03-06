@@ -58,8 +58,9 @@ public final class RedisKeyScanUtils {
             int end = Math.min(start + batchSize, allKeys.size());
             List<String> batch = allKeys.subList(start, end);
             List<Object> result = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                var keyCommands = connection.keyCommands();
                 for (String key : batch) {
-                    connection.del(serializeKey(key));
+                    keyCommands.del(serializeKey(key));
                 }
                 return null;
             });
@@ -83,8 +84,9 @@ public final class RedisKeyScanUtils {
             int end = Math.min(start + batchSize, allKeys.size());
             List<String> batch = allKeys.subList(start, end);
             List<Object> result = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                var keyCommands = connection.keyCommands();
                 for (String key : batch) {
-                    connection.ttl(serializeKey(key));
+                    keyCommands.ttl(serializeKey(key));
                 }
                 return null;
             });
@@ -101,7 +103,7 @@ public final class RedisKeyScanUtils {
                 .count(Math.max(scanCount, 100))
                 .build();
         Set<String> keys = new LinkedHashSet<>();
-        try (Cursor<byte[]> cursor = connection.scan(options)) {
+        try (Cursor<byte[]> cursor = connection.keyCommands().scan(options)) {
             while (cursor.hasNext()) {
                 keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
             }

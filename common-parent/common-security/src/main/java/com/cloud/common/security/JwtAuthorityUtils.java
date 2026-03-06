@@ -44,14 +44,10 @@ public final class JwtAuthorityUtils {
 
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scope"), lowerCaseScope));
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scp"), lowerCaseScope));
+            authorities.addAll(extractRoleAuthorities(jwt.getClaim("roles")));
 
             if (includeAuthoritiesClaim) {
                 authorities.addAll(extractRawAuthorities(jwt.getClaim("authorities")));
-            }
-
-            String userType = jwt.getClaimAsString("user_type");
-            if (userType != null && !userType.isBlank()) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + userType.trim().toUpperCase(Locale.ROOT)));
             }
 
             if (customizer != null) {
@@ -105,6 +101,30 @@ public final class JwtAuthorityUtils {
         }
 
         return rawAuthorities.stream()
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<GrantedAuthority> extractRoleAuthorities(Object rolesClaim) {
+        Set<String> roles = new LinkedHashSet<>();
+        if (rolesClaim == null) {
+            return Set.of();
+        }
+        if (rolesClaim instanceof String roleString) {
+            roles.addAll(Arrays.stream(roleString.trim().split("\\s+"))
+                    .map(String::trim)
+                    .filter(role -> !role.isBlank())
+                    .collect(Collectors.toSet()));
+        } else if (rolesClaim instanceof Collection<?> roleCollection) {
+            roles.addAll(roleCollection.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(role -> !role.isBlank())
+                    .collect(Collectors.toSet()));
+        }
+        return roles.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase(Locale.ROOT))
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }

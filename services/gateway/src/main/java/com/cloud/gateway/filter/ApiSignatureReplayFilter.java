@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -52,7 +52,7 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
 
     @PostConstruct
     public void validateSecret() {
-        if (enabled && !StringUtils.hasText(secret)) {
+        if (enabled && StrUtil.isBlank(secret)) {
             throw new IllegalStateException(
                     "GATEWAY_SIGNATURE_SECRET must be configured when app.security.signature.enabled=true");
         }
@@ -79,7 +79,7 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
         String timestamp = request.getHeaders().getFirst(HEADER_TIMESTAMP);
         String nonce = request.getHeaders().getFirst(HEADER_NONCE);
 
-        if (!StringUtils.hasText(signature) || !StringUtils.hasText(timestamp) || !StringUtils.hasText(nonce)) {
+        if (StrUtil.isBlank(signature) || StrUtil.isBlank(timestamp) || StrUtil.isBlank(nonce)) {
             return reject(exchange, HttpStatus.UNAUTHORIZED, "signature headers missing");
         }
 
@@ -167,3 +167,5 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
         return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
     }
 }
+
+

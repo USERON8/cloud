@@ -59,7 +59,7 @@ public enum ResultCode {
     USER_QUERY_FAILED(8005, "User query failed"),
     USER_NOT_MERCHANT(8006, "User is not a merchant"),
     PARAM_VALIDATION_FAILED(8007, "Parameter validation failed"),
-    USER_TYPE_MISMATCH(8008, "User type mismatch"),
+    ROLE_MISMATCH(8008, "Role mismatch"),
     PASSWORD_ERROR(8009, "Password error"),
     USER_DISABLED(8010, "User is disabled"),
 

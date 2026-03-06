@@ -10,9 +10,6 @@ const SMOKE_SLEEP_SECONDS = Number(__ENV.SMOKE_SLEEP_SECONDS || 0.2);
 const SMOKE_P95_THRESHOLD_MS = Number(__ENV.SMOKE_P95_THRESHOLD_MS || 1200);
 const SMOKE_ERROR_RATE_THRESHOLD = Number(__ENV.SMOKE_ERROR_RATE_THRESHOLD || 0.05);
 const REACHABLE_RESPONSE_CALLBACK = http.expectedStatuses({ min: 200, max: 499 });
-const AUTH_USERNAME = String(__ENV.AUTH_USERNAME || "").trim();
-const AUTH_PASSWORD = String(__ENV.AUTH_PASSWORD || "").trim();
-const AUTH_USER_TYPE = String(__ENV.AUTH_USER_TYPE || "USER").trim();
 
 const smokeLatency = new Trend("services_smoke_latency_ms", true);
 const smokeErrorRate = new Rate("services_smoke_error_rate");
@@ -63,89 +60,8 @@ export const options = {
   },
 };
 
-function readTokenFromResponse(response) {
-  if (!response || response.status < 200 || response.status >= 300) {
-    return "";
-  }
-  try {
-    const payload = response.json();
-    return (
-      payload?.data?.access_token ||
-      payload?.data?.accessToken ||
-      payload?.data?.token ||
-      ""
-    );
-  } catch (error) {
-    return "";
-  }
-}
-
-function buildRegisterPayload(username, password, userType) {
-  const timestamp = Date.now().toString();
-  return JSON.stringify({
-    username,
-    password,
-    phone: `13${timestamp.slice(-9)}`,
-    nickname: `k6_${timestamp.slice(-6)}`,
-    userType: userType || "USER",
-  });
-}
-
-function loginWithCredentials(username, password, userType) {
-  const loginPayload = JSON.stringify({
-    username,
-    password,
-    userType: userType || "USER",
-  });
-  const loginResp = http.post(`${BASE_URL}/auth/sessions`, loginPayload, {
-    timeout: REQUEST_TIMEOUT,
-    headers: { "Content-Type": "application/json" },
-    responseCallback: REACHABLE_RESPONSE_CALLBACK,
-  });
-  return readTokenFromResponse(loginResp);
-}
-
 export function setup() {
-  const presetToken = String(__ENV.AUTH_TOKEN || "").trim();
-  if (presetToken) {
-    return { token: presetToken };
-  }
-
-  if (!AUTH_USERNAME || !AUTH_PASSWORD) {
-    return { token: "" };
-  }
-
-  let token = loginWithCredentials(AUTH_USERNAME, AUTH_PASSWORD, AUTH_USER_TYPE);
-  if (token) {
-    return { token };
-  }
-
-  const registerResp = http.post(
-    `${BASE_URL}/auth/users/register`,
-    buildRegisterPayload(AUTH_USERNAME, AUTH_PASSWORD, AUTH_USER_TYPE),
-    {
-      timeout: REQUEST_TIMEOUT,
-      headers: { "Content-Type": "application/json" },
-      responseCallback: REACHABLE_RESPONSE_CALLBACK,
-    }
-  );
-
-  token = readTokenFromResponse(registerResp);
-  if (token) {
-    return { token };
-  }
-
-  const retryResp = http.post(`${BASE_URL}/auth/sessions`, JSON.stringify({
-    username: AUTH_USERNAME,
-    password: AUTH_PASSWORD,
-    userType: AUTH_USER_TYPE,
-  }), {
-    timeout: REQUEST_TIMEOUT,
-    headers: { "Content-Type": "application/json" },
-    responseCallback: REACHABLE_RESPONSE_CALLBACK,
-  });
-
-  return { token: readTokenFromResponse(retryResp) };
+  return { token: String(__ENV.AUTH_TOKEN || "").trim() };
 }
 
 export default function run(data) {

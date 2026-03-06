@@ -5,13 +5,16 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
+import org.redisson.config.ConstantDelay;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
+
+import java.time.Duration;
 
 
 
@@ -92,9 +95,9 @@ public class RedissonClientConfiguration {
         Config config = new Config();
 
         
-        if (StringUtils.hasText(clusterNodes)) {
+        if (StrUtil.isNotBlank(clusterNodes)) {
             configureCluster(config);
-        } else if (StringUtils.hasText(sentinelNodes) && StringUtils.hasText(sentinelMaster)) {
+        } else if (StrUtil.isNotBlank(sentinelNodes) && StrUtil.isNotBlank(sentinelMaster)) {
             configureSentinel(config);
         } else {
             configureSingle(config);
@@ -133,11 +136,11 @@ public class RedissonClientConfiguration {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(parseTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500)
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)))
                 .setPingConnectionInterval(1000)  
                 .setKeepAlive(true);              
 
-        if (StringUtils.hasText(password)) {
+        if (StrUtil.isNotBlank(password)) {
             config.useSingleServer().setPassword(password);
         }
 
@@ -166,12 +169,12 @@ public class RedissonClientConfiguration {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(parseTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500)
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)))
                 .setPingConnectionInterval(1000)
                 .setKeepAlive(true)
                 .setScanInterval(2000);  
 
-        if (StringUtils.hasText(password)) {
+        if (StrUtil.isNotBlank(password)) {
             config.useClusterServers().setPassword(password);
         }
 
@@ -202,12 +205,12 @@ public class RedissonClientConfiguration {
                 .setIdleConnectionTimeout(10000)
                 .setConnectTimeout(parseTimeout())
                 .setRetryAttempts(3)
-                .setRetryInterval(1500)
+                .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)))
                 .setPingConnectionInterval(1000)
                 .setKeepAlive(true)
                 .setScanInterval(2000);
 
-        if (StringUtils.hasText(password)) {
+        if (StrUtil.isNotBlank(password)) {
             config.useSentinelServers().setPassword(password);
         }
 
@@ -218,7 +221,7 @@ public class RedissonClientConfiguration {
 
 
     private int parseTimeout() {
-        if (!StringUtils.hasText(timeoutStr)) {
+        if (StrUtil.isBlank(timeoutStr)) {
             return 3000;
         }
 
@@ -241,12 +244,14 @@ public class RedissonClientConfiguration {
 
 
     private String getMode() {
-        if (StringUtils.hasText(clusterNodes)) {
+        if (StrUtil.isNotBlank(clusterNodes)) {
             return "闆嗙兢妯″紡";
-        } else if (StringUtils.hasText(sentinelNodes) && StringUtils.hasText(sentinelMaster)) {
+        } else if (StrUtil.isNotBlank(sentinelNodes) && StrUtil.isNotBlank(sentinelMaster)) {
             return "鍝ㄥ叺妯″紡";
         } else {
             return "鍗曟満妯″紡";
         }
     }
 }
+
+

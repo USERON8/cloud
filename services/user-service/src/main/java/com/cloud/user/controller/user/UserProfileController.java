@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -64,25 +64,25 @@ public class UserProfileController {
             return Result.unauthorized("current user is not available");
         }
 
-        if (!StringUtils.hasText(updateDTO.getNickname())
-                && !StringUtils.hasText(updateDTO.getAvatarUrl())
-                && !StringUtils.hasText(updateDTO.getEmail())
-                && !StringUtils.hasText(updateDTO.getPhone())) {
+        if (StrUtil.isBlank(updateDTO.getNickname())
+                && StrUtil.isBlank(updateDTO.getAvatarUrl())
+                && StrUtil.isBlank(updateDTO.getEmail())
+                && StrUtil.isBlank(updateDTO.getPhone())) {
             return Result.badRequest("at least one profile field is required");
         }
 
         User updateEntity = new User();
         updateEntity.setId(currentUserId);
-        if (StringUtils.hasText(updateDTO.getNickname())) {
+        if (StrUtil.isNotBlank(updateDTO.getNickname())) {
             updateEntity.setNickname(updateDTO.getNickname());
         }
-        if (StringUtils.hasText(updateDTO.getAvatarUrl())) {
+        if (StrUtil.isNotBlank(updateDTO.getAvatarUrl())) {
             updateEntity.setAvatarUrl(updateDTO.getAvatarUrl());
         }
-        if (StringUtils.hasText(updateDTO.getEmail())) {
+        if (StrUtil.isNotBlank(updateDTO.getEmail())) {
             updateEntity.setEmail(updateDTO.getEmail());
         }
-        if (StringUtils.hasText(updateDTO.getPhone())) {
+        if (StrUtil.isNotBlank(updateDTO.getPhone())) {
             updateEntity.setPhone(updateDTO.getPhone());
         }
 
@@ -140,7 +140,7 @@ public class UserProfileController {
 
     private Long parseCurrentUserId(Authentication authentication) {
         String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
-        if (!StringUtils.hasText(currentUserId)) {
+        if (StrUtil.isBlank(currentUserId)) {
             return null;
         }
         try {
@@ -151,3 +151,5 @@ public class UserProfileController {
         }
     }
 }
+
+

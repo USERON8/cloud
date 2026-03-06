@@ -66,10 +66,9 @@ spring:
         registration:
           web-client:
             client-id: web-client
-            client-secret: ${WEB_CLIENT_SECRET}
-            client-authentication-method: client_secret_basic
+            client-authentication-method: none
             authorization-grant-type: authorization_code
-            redirect-uri: ${WEB_CLIENT_REDIRECT_URI:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/authorized}
+            redirect-uri: ${WEB_CLIENT_REDIRECT_URI:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback}
             scope: openid,profile,read,write,user.read,user.write,order.read,order.write
             client-name: Web Client
           github:
@@ -105,13 +104,9 @@ logging:
     org.springframework.web: warn
 app:
   security:
+    api-docs-enabled: false
     cors:
       allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
-    session-cookie:
-      refresh-token-name: ${APP_SECURITY_SESSION_COOKIE_REFRESH_TOKEN_NAME:shop_rt}
-      path: ${APP_SECURITY_SESSION_COOKIE_PATH:/}
-      secure: ${APP_SECURITY_SESSION_COOKIE_SECURE:false}
-      same-site: ${APP_SECURITY_SESSION_COOKIE_SAME_SITE:Lax}
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
@@ -125,14 +120,14 @@ app:
   oauth2:
     github:
       redirect:
-        success-url: ${APP_OAUTH2_GITHUB_SUCCESS_URL:http://127.0.0.1:18080/auth/success}
         error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:18080/auth/error}
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
-        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:${WEB_CLIENT_SECRET}}
+        redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback}
       mobile:
         id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
+        redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
       service:
         id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}
         secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET}
@@ -141,10 +136,10 @@ app:
         secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
@@ -155,7 +150,7 @@ springdoc:
       paths-to-match: '/oauth2/**'
   default-flat-param-object: true
 knife4j:
-  enable: true
+  enable: false
   production: false
   basic:
     enable: false
@@ -216,3 +211,4 @@ dubbo:
   provider:
     timeout: 5000
     retries: 0
+

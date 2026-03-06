@@ -1,18 +1,14 @@
 package com.cloud.auth.service;
 
-import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.utils.RedisKeyScanUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -28,13 +24,10 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
-import java.security.Principal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -52,92 +45,8 @@ public class OAuth2TokenManagementService {
     @Qualifier("oauth2MainRedisTemplate")
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${app.oauth2.default-redirect-uri:http://127.0.0.1:80/authorized}")
-    private String defaultRedirectUri;
-
     @Value("${AUTH_ISSUER_URI:http://127.0.0.1:8081}")
     private String issuerUri;
-
-    public OAuth2Authorization generateTokensForUser(UserDTO userDTO, Set<String> scopes) {
-        if (userDTO == null) {
-            throw new IllegalArgumentException("User DTO cannot be null");
-        }
-
-        RegisteredClient registeredClient = registeredClientRepository.findByClientId("web-client");
-        if (registeredClient == null) {
-            throw new IllegalStateException("Registered client 'web-client' not found");
-        }
-
-        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if (userDTO.getUserType() != null) {
-            switch (userDTO.getUserType()) {
-                case ADMIN -> authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                case MERCHANT -> authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
-                case USER -> {
-                }
-            }
-        }
-
-        UsernamePasswordAuthenticationToken userAuthentication =
-                new UsernamePasswordAuthenticationToken(userDTO.getUsername(), "[PROTECTED]", authorities);
-
-        if (scopes == null || scopes.isEmpty()) {
-            scopes = Set.of("openid", "profile", "read", "write", "user:read", "user:write");
-        }
-        Set<String> allowedScopes = registeredClient.getScopes();
-        scopes = scopes.stream().filter(allowedScopes::contains).collect(Collectors.toSet());
-
-        OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
-                .id(UUID.randomUUID().toString())
-                .principalName(userDTO.getUsername())
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizedScopes(scopes)
-                .attribute(Principal.class.getName(), userAuthentication)
-                .attribute("user_id", userDTO.getId())
-                .attribute("user_type", userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null)
-                .attribute("nickname", userDTO.getNickname())
-                .attribute("authorization_code", "SIMULATED_" + UUID.randomUUID())
-                .attribute("redirect_uri", defaultRedirectUri);
-
-        AuthorizationServerContext authorizationServerContext = resolveAuthorizationServerContext();
-
-        OAuth2TokenContext accessTokenContext = DefaultOAuth2TokenContext.builder()
-                .registeredClient(registeredClient)
-                .principal(userAuthentication)
-                .authorizationGrant(userAuthentication)
-                .authorizationServerContext(authorizationServerContext)
-                .authorization(authorizationBuilder.build())
-                .tokenType(OAuth2TokenType.ACCESS_TOKEN)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizedScopes(scopes)
-                .build();
-
-        OAuth2Token accessToken = tokenGenerator.generate(accessTokenContext);
-        OAuth2AccessToken oauth2AccessToken = toAccessToken(accessToken, scopes);
-        authorizationBuilder.accessToken(oauth2AccessToken);
-
-        if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN)) {
-            OAuth2TokenContext refreshTokenContext = DefaultOAuth2TokenContext.builder()
-                    .registeredClient(registeredClient)
-                    .principal(userAuthentication)
-                    .authorizationGrant(userAuthentication)
-                    .authorizationServerContext(authorizationServerContext)
-                    .authorization(authorizationBuilder.build())
-                    .tokenType(OAuth2TokenType.REFRESH_TOKEN)
-                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                    .authorizedScopes(scopes)
-                    .build();
-            OAuth2Token refreshToken = tokenGenerator.generate(refreshTokenContext);
-            if (refreshToken instanceof OAuth2RefreshToken oauth2RefreshToken) {
-                authorizationBuilder.refreshToken(oauth2RefreshToken);
-            }
-        }
-
-        OAuth2Authorization authorization = authorizationBuilder.build();
-        authorizationService.save(authorization);
-        return authorization;
-    }
 
     public OAuth2Authorization generateTokensForClient(String clientId, Set<String> scopes) {
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
@@ -211,7 +120,7 @@ public class OAuth2TokenManagementService {
     }
 
     public OAuth2Authorization findByToken(String tokenValue) {
-        if (!StringUtils.hasText(tokenValue)) {
+        if (StrUtil.isBlank(tokenValue)) {
             return null;
         }
         return authorizationService.findByToken(tokenValue, null);
@@ -239,7 +148,7 @@ public class OAuth2TokenManagementService {
     public boolean logout(String accessToken, String refreshToken) {
         boolean revoked = false;
 
-        if (StringUtils.hasText(accessToken)) {
+        if (StrUtil.isNotBlank(accessToken)) {
             OAuth2Authorization authorization = findByToken(accessToken);
             if (authorization != null) {
                 revokeAuthorization(authorization, "logout");
@@ -247,7 +156,7 @@ public class OAuth2TokenManagementService {
             }
         }
 
-        if (StringUtils.hasText(refreshToken)) {
+        if (StrUtil.isNotBlank(refreshToken)) {
             OAuth2Authorization authorization = findByToken(refreshToken);
             if (authorization != null) {
                 revokeAuthorization(authorization, "logout");
@@ -259,7 +168,7 @@ public class OAuth2TokenManagementService {
     }
 
     public int logoutAllSessions(String username) {
-        if (!StringUtils.hasText(username)) {
+        if (StrUtil.isBlank(username)) {
             return 0;
         }
 
@@ -272,8 +181,9 @@ public class OAuth2TokenManagementService {
         String principalNameField = "principalName";
         List<Object> principalNames = redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
             byte[] field = principalNameField.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            var hashCommands = connection.hashCommands();
             for (String key : authKeyList) {
-                connection.hGet(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), field);
+                hashCommands.hGet(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), field);
             }
             return null;
         });
@@ -354,3 +264,5 @@ public class OAuth2TokenManagementService {
         };
     }
 }
+
+

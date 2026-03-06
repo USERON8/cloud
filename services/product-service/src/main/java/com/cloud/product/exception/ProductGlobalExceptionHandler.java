@@ -36,7 +36,7 @@ public class ProductGlobalExceptionHandler extends com.cloud.common.exception.Gl
             HttpServletRequest request
     ) {
         log.warn("Product permission exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.forbidden(e.getMessage());
+        return Result.forbidden("Access denied");
     }
 
     @ExceptionHandler(ProductServiceException.ProductNotFoundException.class)
@@ -46,21 +46,21 @@ public class ProductGlobalExceptionHandler extends com.cloud.common.exception.Gl
             HttpServletRequest request
     ) {
         log.warn("Product not found exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.notFound(e.getMessage());
+        return Result.notFound("Product not found");
     }
 
     @ExceptionHandler(ProductServiceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleProductServiceException(ProductServiceException e, HttpServletRequest request) {
         log.warn("Product service exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.badRequest(e.getMessage());
+        return Result.badRequest("Product request failed");
     }
 
     @ExceptionHandler(CategoryException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Object> handleCategoryException(CategoryException e, HttpServletRequest request) {
         log.warn("Category exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.badRequest(e.getMessage());
+        return Result.badRequest("Category request failed");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

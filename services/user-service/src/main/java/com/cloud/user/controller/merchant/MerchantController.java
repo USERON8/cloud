@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -60,7 +60,7 @@ public class MerchantController {
         try {
             if (!SecurityPermissionUtils.isAdmin(authentication)) {
                 String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
-                if (!StringUtils.hasText(currentUserId)) {
+                if (StrUtil.isBlank(currentUserId)) {
                     return Result.unauthorized("current user is not available");
                 }
 
@@ -309,3 +309,5 @@ public class MerchantController {
         }
     }
 }
+
+

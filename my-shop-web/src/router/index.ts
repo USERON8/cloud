@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { hydrateSessionFromStorage, isAuthenticated } from '../auth/session'
 import { hasAnyRole, type UserRole } from '../auth/permission'
-import { ensureAuthenticatedSession } from '../api/http'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,10 +28,10 @@ const router = createRouter({
       meta: { title: 'Forbidden', public: true }
     },
     {
-      path: '/auth/success',
+      path: '/callback',
       name: 'oauth-success',
       component: () => import('../views/OAuthSuccessView.vue'),
-      meta: { title: 'GitHub Sign In', public: true }
+      meta: { title: 'OAuth Callback', public: true }
     },
     {
       path: '/auth/error',
@@ -97,11 +96,7 @@ hydrateSessionFromStorage()
 
 router.beforeEach(async (to) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
-  let loggedIn = isAuthenticated()
-
-  if (requiresAuth && !loggedIn) {
-    loggedIn = await ensureAuthenticatedSession()
-  }
+  const loggedIn = isAuthenticated()
   const roleMeta = [...to.matched].reverse().find((record) => Array.isArray(record.meta.roles))?.meta.roles as
     | UserRole[]
     | undefined

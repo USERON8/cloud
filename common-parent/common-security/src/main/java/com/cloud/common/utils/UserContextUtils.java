@@ -6,7 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -28,7 +28,6 @@ public class UserContextUtils {
     
     public static final String HEADER_USER_ID = "X-User-Id";
     public static final String HEADER_USER_NAME = "X-User-Name";
-    public static final String HEADER_USER_TYPE = "X-User-Type";
     public static final String HEADER_USER_NICKNAME = "X-User-Nickname";
     public static final String HEADER_USER_STATUS = "X-User-Status";
     public static final String HEADER_CLIENT_ID = "X-Client-Id";
@@ -42,14 +41,7 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserId() {
-        
-        String userIdFromJwt = getClaimFromJwt("user_id");
-        if (StringUtils.hasText(userIdFromJwt)) {
-            return userIdFromJwt;
-        }
-
-        
-        return getHeaderValue(HEADER_USER_ID);
+        return getClaimFromJwt("user_id");
     }
 
     
@@ -60,18 +52,17 @@ public class UserContextUtils {
     public static String getCurrentUsername() {
         
         String usernameFromJwt = getClaimFromJwt("username");
-        if (StringUtils.hasText(usernameFromJwt)) {
+        if (StrUtil.isNotBlank(usernameFromJwt)) {
             return usernameFromJwt;
         }
 
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && StringUtils.hasText(authentication.getName())) {
+        if (authentication != null && StrUtil.isNotBlank(authentication.getName())) {
             return authentication.getName();
         }
 
-        
-        return getHeaderValue(HEADER_USER_NAME);
+        return null;
     }
 
     
@@ -80,14 +71,16 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserType() {
-        
-        String userTypeFromJwt = getClaimFromJwt("user_type");
-        if (StringUtils.hasText(userTypeFromJwt)) {
-            return userTypeFromJwt;
+        if (hasRole("ADMIN")) {
+            return "ADMIN";
         }
-
-        
-        return getHeaderValue(HEADER_USER_TYPE);
+        if (hasRole("MERCHANT")) {
+            return "MERCHANT";
+        }
+        if (hasRole("USER")) {
+            return "USER";
+        }
+        return null;
     }
 
     
@@ -96,14 +89,7 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserNickname() {
-        
-        String nicknameFromJwt = getClaimFromJwt("nickname");
-        if (StringUtils.hasText(nicknameFromJwt)) {
-            return nicknameFromJwt;
-        }
-
-        
-        return getHeaderValue(HEADER_USER_NICKNAME);
+        return getClaimFromJwt("nickname");
     }
 
     
@@ -112,14 +98,7 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserStatus() {
-        
-        String statusFromJwt = getClaimFromJwt("status");
-        if (StringUtils.hasText(statusFromJwt)) {
-            return statusFromJwt;
-        }
-
-        
-        return getHeaderValue(HEADER_USER_STATUS);
+        return getClaimFromJwt("status");
     }
 
     
@@ -139,14 +118,7 @@ public class UserContextUtils {
 
 
     public static String getClientId() {
-        
-        String clientIdFromJwt = getClaimFromJwt("client_id");
-        if (StringUtils.hasText(clientIdFromJwt)) {
-            return clientIdFromJwt;
-        }
-
-        
-        return getHeaderValue(HEADER_CLIENT_ID);
+        return getClaimFromJwt("client_id");
     }
 
     
@@ -155,20 +127,10 @@ public class UserContextUtils {
 
 
     public static Set<String> getCurrentUserScopes() {
-        
         String scopesFromJwt = getClaimFromJwt("scope");
-        if (StringUtils.hasText(scopesFromJwt)) {
+        if (StrUtil.isNotBlank(scopesFromJwt)) {
             return Stream.of(scopesFromJwt.split("\\s+"))
-                    .filter(StringUtils::hasText)
-                    .map(UserContextUtils::normalizeScope)
-                    .collect(Collectors.toSet());
-        }
-
-        
-        String scopesFromHeader = getHeaderValue(HEADER_USER_SCOPES);
-        if (StringUtils.hasText(scopesFromHeader)) {
-            return Stream.of(scopesFromHeader.split("\\s+"))
-                    .filter(StringUtils::hasText)
+                    .filter(StrUtil::isNotBlank)
                     .map(UserContextUtils::normalizeScope)
                     .collect(Collectors.toSet());
         }
@@ -183,7 +145,7 @@ public class UserContextUtils {
 
 
     public static boolean hasScope(String scope) {
-        if (!StringUtils.hasText(scope)) {
+        if (StrUtil.isBlank(scope)) {
             return false;
         }
         Set<String> userScopes = getCurrentUserScopes();
@@ -199,7 +161,7 @@ public class UserContextUtils {
     public static boolean hasAnyScope(String... scopes) {
         Set<String> userScopes = getCurrentUserScopes();
         for (String scope : scopes) {
-            if (StringUtils.hasText(scope) && userScopes.contains(normalizeScope(scope))) {
+            if (StrUtil.isNotBlank(scope) && userScopes.contains(normalizeScope(scope))) {
                 return true;
             }
         }
@@ -264,7 +226,7 @@ public class UserContextUtils {
             if (requestAttributes != null) {
                 HttpServletRequest request = requestAttributes.getRequest();
                 String value = request.getHeader(headerName);
-                return StringUtils.hasText(value) && !"null".equals(value) ? value : null;
+                return StrUtil.isNotBlank(value) && !"null".equals(value) ? value : null;
             }
         } catch (Exception e) {
             log.debug("HTTP?{} ? {}", headerName, e.getMessage());
@@ -278,7 +240,7 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserInfo() {
-        return String.format("User[id=%s, username=%s, type=%s, nickname=%s, status=%s, scopes=%s]",
+        return String.format("User[id=%s, username=%s, role=%s, nickname=%s, status=%s, scopes=%s]",
                 getCurrentUserId(),
                 getCurrentUsername(),
                 getCurrentUserType(),
@@ -294,8 +256,7 @@ public class UserContextUtils {
 
 
     public static boolean isUserType(String userType) {
-        String currentUserType = getCurrentUserType();
-        return userType.equals(currentUserType);
+        return hasRole(userType);
     }
 
     
@@ -313,7 +274,7 @@ public class UserContextUtils {
 
 
     public static boolean isMerchant() {
-        return isUserType("MERCHANT");
+        return hasRole("MERCHANT");
     }
 
     
@@ -322,7 +283,7 @@ public class UserContextUtils {
 
 
     public static boolean isAdmin() {
-        return isUserType("ADMIN");
+        return hasRole("ADMIN");
     }
 
     
@@ -343,13 +304,20 @@ public class UserContextUtils {
 
 
     public static String getTokenVersion() {
-        
-        String versionFromJwt = getClaimFromJwt("token_version");
-        if (StringUtils.hasText(versionFromJwt)) {
-            return versionFromJwt;
-        }
+        return getClaimFromJwt("token_version");
+    }
 
-        
-        return getHeaderValue(HEADER_TOKEN_VERSION);
+    public static boolean hasRole(String role) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || role == null || role.isBlank()) {
+            return false;
+        }
+        String expected = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        return authentication.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .anyMatch(expected::equals);
     }
 }
+
+
+

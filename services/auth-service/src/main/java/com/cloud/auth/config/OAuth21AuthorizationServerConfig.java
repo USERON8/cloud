@@ -14,9 +14,11 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Slf4j
 @Configuration
@@ -39,11 +41,14 @@ public class OAuth21AuthorizationServerConfig {
     @Value("${app.oauth2.clients.web.id:web-client}")
     private String webClientId;
 
-    @Value("${app.oauth2.clients.web.secret:}")
-    private String webClientSecret;
+    @Value("${app.oauth2.clients.web.redirect-uris:http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback}")
+    private String webClientRedirectUris;
 
     @Value("${app.oauth2.clients.mobile.id:mobile-client}")
     private String mobileClientId;
+
+    @Value("${app.oauth2.clients.mobile.redirect-uris:com.example.app://callback}")
+    private String mobileClientRedirectUris;
 
     @Value("${app.oauth2.clients.service.id:service-client}")
     private String serviceClientId;
@@ -76,22 +81,12 @@ public class OAuth21AuthorizationServerConfig {
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient webAppClient = RegisteredClient.withId(WEB_CLIENT_ID)
                 .clientId(webClientId)
-                .clientSecret(requiredAndNormalizedSecret(webClientSecret, webClientId))
-                .clientAuthenticationMethods(methods -> {
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-                })
+                .clientAuthenticationMethods(methods -> methods.add(ClientAuthenticationMethod.NONE))
                 .authorizationGrantTypes(grantTypes -> {
                     grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE);
                     grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN);
-                    grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
                 })
-                .redirectUris(uris -> {
-                    uris.add("http://127.0.0.1/authorized");
-                    uris.add("http://127.0.0.1:3000/callback");
-                    uris.add("http://127.0.0.1:80/login/callback");
-                    uris.add("http://127.0.0.1:80/login/callback");
-                })
+                .redirectUris(uris -> uris.addAll(parseCsvValues(webClientRedirectUris)))
                 .scopes(scopes -> {
                     scopes.add(OidcScopes.OPENID);
                     scopes.add(OidcScopes.PROFILE);
@@ -118,7 +113,7 @@ public class OAuth21AuthorizationServerConfig {
                     grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE);
                     grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN);
                 })
-                .redirectUris(uris -> uris.add("com.example.app://callback"))
+                .redirectUris(uris -> uris.addAll(parseCsvValues(mobileClientRedirectUris)))
                 .scopes(scopes -> {
                     scopes.add(OidcScopes.OPENID);
                     scopes.add(OidcScopes.PROFILE);
@@ -179,7 +174,7 @@ public class OAuth21AuthorizationServerConfig {
     }
 
     private String requiredAndNormalizedSecret(String secret, String clientId) {
-        if (!StringUtils.hasText(secret)) {
+        if (StrUtil.isBlank(secret)) {
             throw new IllegalStateException("Missing client secret for " + clientId);
         }
 
@@ -218,4 +213,20 @@ public class OAuth21AuthorizationServerConfig {
                 .reuseRefreshTokens(false)
                 .build();
     }
+
+    private Set<String> parseCsvValues(String rawValue) {
+        if (StrUtil.isBlank(rawValue)) {
+            return Set.of();
+        }
+        Set<String> values = new LinkedHashSet<>();
+        for (String item : rawValue.split(",")) {
+            String candidate = item == null ? "" : item.trim();
+            if (!candidate.isEmpty()) {
+                values.add(candidate);
+            }
+        }
+        return values;
+    }
 }
+
+

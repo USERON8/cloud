@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +26,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
         try {
             UserDTO user = getUserForNotification(userId);
-            if (user == null || !StringUtils.hasText(user.getEmail())) {
+            if (user == null || StrUtil.isBlank(user.getEmail())) {
                 return CompletableFuture.completedFuture(false);
             }
             return CompletableFuture.completedFuture(deliveryProvider.deliverWelcome(userId));
@@ -41,7 +41,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     public CompletableFuture<Boolean> sendPasswordResetEmailAsync(Long userId, String resetToken) {
         try {
             UserDTO user = getUserForNotification(userId);
-            if (user == null || !StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(resetToken)) {
+            if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(resetToken)) {
                 return CompletableFuture.completedFuture(false);
             }
             return CompletableFuture.completedFuture(
@@ -58,7 +58,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     public CompletableFuture<Boolean> sendActivationEmailAsync(Long userId, String activationToken) {
         try {
             UserDTO user = getUserForNotification(userId);
-            if (user == null || !StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(activationToken)) {
+            if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(activationToken)) {
                 return CompletableFuture.completedFuture(false);
             }
             return CompletableFuture.completedFuture(
@@ -136,3 +136,5 @@ public class UserNotificationServiceImpl implements UserNotificationService {
         }
     }
 }
+
+

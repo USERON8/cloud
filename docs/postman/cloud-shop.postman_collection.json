@@ -1,452 +1,626 @@
 {
-  "info": {
-    "_postman_id": "ad37c253-56dc-4a34-a272-1b964551c8c6",
-    "name": "Cloud Shop API (Gateway)",
-    "description": "Cloud shop microservices API collection via gateway. Includes auth, v1/v2 business APIs, and key smoke flows.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"{{phone}}\",\n  \"nickname\": \"{{nickname}}\",\n  \"userType\": \"USER\"\n}"
-            },
-            "url": "{{baseUrl}}/auth/users/register"
-          }
-        },
-        {
-          "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const data = res?.data || {};",
-                  "if (data.access_token) pm.collectionVariables.set('accessToken', data.access_token);",
-                  "if (data.refresh_token) pm.collectionVariables.set('refreshToken', data.refresh_token);",
-                  "if (data.user && data.user.id) pm.collectionVariables.set('userId', String(data.user.id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"userType\": \"USER\"\n}"
-            },
-            "url": "{{baseUrl}}/auth/sessions"
-          }
-        },
-        {
-          "name": "Refresh Token",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/auth/tokens/refresh?refresh_token={{refreshToken}}"
-          }
-        },
-        {
-          "name": "Validate Token",
-          "request": {
-            "method": "GET",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/auth/tokens/validate"
-          }
-        },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/auth/sessions"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Product",
-      "item": [
-        {
-          "name": "List Products",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/product?page=1&size=10"
-          }
-        },
-        {
-          "name": "Search Products",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/product/search?keyword=phone&page=1&size=10"
-          }
-        },
-        {
-          "name": "Category Tree",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/category/tree"
-          }
-        },
-        {
-          "name": "Create SPU (v2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const id = res?.data?.id;",
-                  "if (id) pm.collectionVariables.set('spuId', String(id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Demo SPU\",\n  \"categoryId\": 111,\n  \"brandId\": 222,\n  \"status\": 1\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/spu"
-          }
-        },
-        {
-          "name": "Create SKU (v2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const id = res?.data?.id;",
-                  "if (id) pm.collectionVariables.set('skuId', String(id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"spuId\": {{spuId}},\n  \"skuCode\": \"SKU-DEMO-001\",\n  \"price\": 199.00,\n  \"status\": 1\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/sku"
-          }
-        },
-        {
-          "name": "List SKU By SPU (v2)",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/v2/spu/{{spuId}}/sku"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Order",
-      "item": [
-        {
-          "name": "Create Order (v1)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const id = res?.data?.id;",
-                  "if (id) pm.collectionVariables.set('orderId', String(id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 99.9,\n  \"payAmount\": 99.9,\n  \"addressId\": 1,\n  \"remark\": \"postman v1 order\"\n}"
-            },
-            "url": "{{baseUrl}}/api/orders"
-          }
-        },
-        {
-          "name": "Pay Order (v1)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/api/orders/{{orderId}}/pay"
-          }
-        },
-        {
-          "name": "Create Main Order (v2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const id = res?.data?.id;",
-                  "if (id) pm.collectionVariables.set('mainOrderId', String(id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 299.00,\n  \"payableAmount\": 299.00,\n  \"remark\": \"postman v2 main order\",\n  \"idempotencyKey\": \"idem-{{$timestamp}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/order-main"
-          }
-        },
-        {
-          "name": "List Sub Orders (v2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const first = Array.isArray(res?.data) ? res.data[0] : null;",
-                  "if (first && first.id) pm.collectionVariables.set('subOrderId', String(first.id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/api/v2/order-main/{{mainOrderId}}/sub-orders"
-          }
-        },
-        {
-          "name": "Advance Sub Order Status (v2)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/api/v2/order-sub/{{subOrderId}}/actions/PAID"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Payment",
-      "item": [
-        {
-          "name": "Create Payment (v1)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "const id = res?.data?.id;",
-                  "if (id) pm.collectionVariables.set('paymentId', String(id));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderId\": {{orderId}},\n  \"userId\": {{userId}},\n  \"amount\": 99.9,\n  \"status\": 0,\n  \"channel\": 1,\n  \"paymentMethod\": \"ALIPAY\"\n}"
-            },
-            "url": "{{baseUrl}}/api/payments"
-          }
-        },
-        {
-          "name": "Mark Payment Success (v1)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "url": "{{baseUrl}}/api/payments/{{paymentId}}/success"
-          }
-        },
-        {
-          "name": "Create Payment Order (v2)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mainOrderNo\": \"M2026000001\",\n  \"subOrderNo\": \"S2026000001\",\n  \"paymentNo\": \"P2026000001\",\n  \"amount\": 299.00,\n  \"status\": \"CREATED\"\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/payments/order"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Stock",
-      "item": [
-        {
-          "name": "Check Stock (v1)",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/stocks/check/1/1"
-          }
-        },
-        {
-          "name": "Create Ledger (v2)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"skuId\": {{skuId}},\n  \"warehouseCode\": \"W001\",\n  \"onHandQty\": 100,\n  \"reservedQty\": 0,\n  \"salableQty\": 100\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/stocks/ledger"
-          }
-        },
-        {
-          "name": "Reserve Stock (v2)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mainOrderNo\": \"M2026000001\",\n  \"subOrderNo\": \"S2026000001\",\n  \"skuId\": {{skuId}},\n  \"qty\": 1\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/stocks/reserve"
-          }
-        },
-        {
-          "name": "Confirm Stock (v2)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subOrderNo\": \"S2026000001\",\n  \"skuId\": {{skuId}},\n  \"qty\": 1\n}"
-            },
-            "url": "{{baseUrl}}/api/v2/stocks/confirm"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Search",
-      "item": [
-        {
-          "name": "Search",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/search?keyword=phone&page=1&size=10"
-          }
-        },
-        {
-          "name": "Smart Search",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/smart-search?keyword=phone&page=1&size=10"
-          }
-        },
-        {
-          "name": "Suggestions",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/suggestions?keyword=ip"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Internal (API Key Required)",
-      "item": [
-        {
-          "name": "Internal User By Username",
-          "request": {
-            "method": "GET",
-            "header": [
-              {"key": "X-Internal-Api-Key", "value": "{{internalApiKey}}"},
-              {"key": "X-Internal-Caller", "value": "postman"}
-            ],
-            "url": "{{baseUrl}}/internal/user/username/{{username}}"
-          }
-        }
-      ]
-    }
-  ],
-  "variable": [
-    {"key": "baseUrl", "value": "http://127.0.0.1:18080"},
-    {"key": "username", "value": "testuser01"},
-    {"key": "password", "value": "Aa123456"},
-    {"key": "phone", "value": "13800138000"},
-    {"key": "nickname", "value": "PostmanUser"},
-    {"key": "accessToken", "value": ""},
-    {"key": "refreshToken", "value": ""},
-    {"key": "internalApiKey", "value": "cloud-internal-key-dev"},
-    {"key": "userId", "value": "1"},
-    {"key": "orderId", "value": "1"},
-    {"key": "paymentId", "value": "1"},
-    {"key": "mainOrderId", "value": "1"},
-    {"key": "subOrderId", "value": "1"},
-    {"key": "spuId", "value": "1"},
-    {"key": "skuId", "value": "1"}
-  ]
+    "info":  {
+                 "_postman_id":  "ad37c253-56dc-4a34-a272-1b964551c8c6",
+                 "name":  "Cloud Shop API (Gateway)",
+                 "description":  "Cloud shop microservices API collection via gateway. Includes auth, v1/v2 business APIs, and key smoke flows.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Register",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"{{phone}}\",\n  \"nickname\": \"{{nickname}}\",\n  \"userType\": \"USER\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/users/register"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Authorize (Browser Redirect)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/oauth2/authorize?response_type=code\u0026client_id={{oauthClientId}}\u0026redirect_uri={{oauthRedirectUri}}\u0026scope={{oauthScope}}\u0026state={{oauthState}}\u0026code_challenge={{oauthCodeChallenge}}\u0026code_challenge_method=S256",
+                                                      "description":  "Open this request in a browser-capable client. The authorization server will authenticate the user, then redirect to redirect_uri with code and state."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Exchange Authorization Code",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/x-www-form-urlencoded"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "urlencoded",
+                                                                   "urlencoded":  [
+                                                                                      {
+                                                                                          "key":  "grant_type",
+                                                                                          "value":  "authorization_code",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "client_id",
+                                                                                          "value":  "{{oauthClientId}}",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "code",
+                                                                                          "value":  "{{oauthCode}}",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "redirect_uri",
+                                                                                          "value":  "{{oauthRedirectUri}}",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "code_verifier",
+                                                                                          "value":  "{{oauthCodeVerifier}}",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/oauth2/token"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Refresh Token (Standard Endpoint)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/x-www-form-urlencoded"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "urlencoded",
+                                                                   "urlencoded":  [
+                                                                                      {
+                                                                                          "key":  "grant_type",
+                                                                                          "value":  "refresh_token",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "client_id",
+                                                                                          "value":  "{{oauthClientId}}",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "refresh_token",
+                                                                                          "value":  "{{refreshToken}}",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/oauth2/token"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Validate Token",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/auth/tokens/validate"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Logout",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/auth/sessions"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Product",
+                     "item":  [
+                                  {
+                                      "name":  "List Products",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/product?page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Products",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/product/search?keyword=phone\u0026page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Category Tree",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/category/tree"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create SPU (v2)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const id = res?.data?.id;",
+                                                                                    "if (id) pm.collectionVariables.set(\u0027spuId\u0027, String(id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"Demo SPU\",\n  \"categoryId\": 111,\n  \"brandId\": 222,\n  \"status\": 1\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/spu"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create SKU (v2)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const id = res?.data?.id;",
+                                                                                    "if (id) pm.collectionVariables.set(\u0027skuId\u0027, String(id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"spuId\": {{spuId}},\n  \"skuCode\": \"SKU-DEMO-001\",\n  \"price\": 199.00,\n  \"status\": 1\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/sku"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "List SKU By SPU (v2)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/v2/spu/{{spuId}}/sku"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Order",
+                     "item":  [
+                                  {
+                                      "name":  "Create Order (v1)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const id = res?.data?.id;",
+                                                                                    "if (id) pm.collectionVariables.set(\u0027orderId\u0027, String(id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 99.9,\n  \"payAmount\": 99.9,\n  \"addressId\": 1,\n  \"remark\": \"postman v1 order\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/orders"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Pay Order (v1)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/orders/{{orderId}}/pay"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Main Order (v2)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const id = res?.data?.id;",
+                                                                                    "if (id) pm.collectionVariables.set(\u0027mainOrderId\u0027, String(id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 299.00,\n  \"payableAmount\": 299.00,\n  \"remark\": \"postman v2 main order\",\n  \"idempotencyKey\": \"idem-{{$timestamp}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/order-main"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "List Sub Orders (v2)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const first = Array.isArray(res?.data) ? res.data[0] : null;",
+                                                                                    "if (first \u0026\u0026 first.id) pm.collectionVariables.set(\u0027subOrderId\u0027, String(first.id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/v2/order-main/{{mainOrderId}}/sub-orders"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Advance Sub Order Status (v2)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/v2/order-sub/{{subOrderId}}/actions/PAID"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Payment",
+                     "item":  [
+                                  {
+                                      "name":  "Create Payment (v1)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "const res = pm.response.json();",
+                                                                                    "const id = res?.data?.id;",
+                                                                                    "if (id) pm.collectionVariables.set(\u0027paymentId\u0027, String(id));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"orderId\": {{orderId}},\n  \"userId\": {{userId}},\n  \"amount\": 99.9,\n  \"status\": 0,\n  \"channel\": 1,\n  \"paymentMethod\": \"ALIPAY\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/payments"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Mark Payment Success (v1)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/payments/{{paymentId}}/success"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Payment Order (v2)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"mainOrderNo\": \"M2026000001\",\n  \"subOrderNo\": \"S2026000001\",\n  \"paymentNo\": \"P2026000001\",\n  \"amount\": 299.00,\n  \"status\": \"CREATED\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/payments/order"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Stock",
+                     "item":  [
+                                  {
+                                      "name":  "Check Stock (v1)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/stocks/check/1/1"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Ledger (v2)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"skuId\": {{skuId}},\n  \"warehouseCode\": \"W001\",\n  \"onHandQty\": 100,\n  \"reservedQty\": 0,\n  \"salableQty\": 100\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/stocks/ledger"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reserve Stock (v2)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"mainOrderNo\": \"M2026000001\",\n  \"subOrderNo\": \"S2026000001\",\n  \"skuId\": {{skuId}},\n  \"qty\": 1\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/stocks/reserve"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Confirm Stock (v2)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{accessToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"subOrderNo\": \"S2026000001\",\n  \"skuId\": {{skuId}},\n  \"qty\": 1\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/v2/stocks/confirm"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Search",
+                     "item":  [
+                                  {
+                                      "name":  "Search",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/search?keyword=phone\u0026page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Smart Search",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/smart-search?keyword=phone\u0026page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Suggestions",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/suggestions?keyword=ip"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Internal (API Key Required)",
+                     "item":  [
+                                  {
+                                      "name":  "Internal User By Username",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Internal-Api-Key",
+                                                                         "value":  "{{internalApiKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Internal-Caller",
+                                                                         "value":  "postman"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/internal/user/username/{{username}}"
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://127.0.0.1:18080"
+                     },
+                     {
+                         "key":  "username",
+                         "value":  "testuser01"
+                     },
+                     {
+                         "key":  "password",
+                         "value":  "Aa123456"
+                     },
+                     {
+                         "key":  "phone",
+                         "value":  "13800138000"
+                     },
+                     {
+                         "key":  "nickname",
+                         "value":  "PostmanUser"
+                     },
+                     {
+                         "key":  "accessToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "refreshToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "internalApiKey",
+                         "value":  "cloud-internal-key-dev"
+                     },
+                     {
+                         "key":  "userId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "orderId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "paymentId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "mainOrderId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "subOrderId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "spuId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "skuId",
+                         "value":  "1"
+                     }
+                 ]
 }

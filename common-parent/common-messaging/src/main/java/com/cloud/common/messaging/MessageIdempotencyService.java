@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
 
@@ -42,7 +42,7 @@ public class MessageIdempotencyService {
         if (!idempotentEnabled) {
             return true;
         }
-        if (!StringUtils.hasText(namespace) || !StringUtils.hasText(eventId)) {
+        if (StrUtil.isBlank(namespace) || StrUtil.isBlank(eventId)) {
             return true;
         }
 
@@ -82,7 +82,7 @@ public class MessageIdempotencyService {
         if (!idempotentEnabled) {
             return;
         }
-        if (!StringUtils.hasText(namespace) || !StringUtils.hasText(eventId)) {
+        if (StrUtil.isBlank(namespace) || StrUtil.isBlank(eventId)) {
             return;
         }
         String key = buildKey(namespace, eventId);
@@ -97,7 +97,7 @@ public class MessageIdempotencyService {
         if (!idempotentEnabled) {
             return;
         }
-        if (!StringUtils.hasText(namespace) || !StringUtils.hasText(eventId)) {
+        if (StrUtil.isBlank(namespace) || StrUtil.isBlank(eventId)) {
             return;
         }
 
@@ -117,3 +117,5 @@ public class MessageIdempotencyService {
         return KEY_PREFIX + ":" + namespace + ":" + eventId;
     }
 }
+
+

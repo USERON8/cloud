@@ -1,17 +1,18 @@
 package com.cloud.auth.handler;
 
 import com.cloud.auth.service.GitHubUserInfoService;
-import com.cloud.auth.service.OAuth2TokenManagementService;
-import com.cloud.auth.util.OAuth2ResponseUtil;
-import com.cloud.common.domain.dto.auth.LoginResponseDTO;
+import com.cloud.auth.service.AuthorizationCodeFlowService;
+import com.cloud.auth.service.AuthorizationRequestSessionService;
+import com.cloud.auth.service.LocalUserAuthorityService;
+import com.cloud.common.domain.dto.auth.AuthorizationRequestDTO;
+import com.cloud.common.domain.dto.auth.AuthorizationSessionResponseDTO;
+import com.cloud.common.domain.dto.user.UserDTO;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
@@ -20,7 +21,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -31,86 +31,57 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2AuthorizedClientService authorizedClientService;
-    private final OAuth2TokenManagementService tokenManagementService;
-    private final OAuth2ResponseUtil oauth2ResponseUtil;
     private final GitHubUserInfoService gitHubUserInfoService;
-
-    @Value("${app.oauth2.github.redirect.success-url:http://127.0.0.1:3000/auth/success}")
-    private String githubSuccessRedirectUrl;
+    private final AuthorizationRequestSessionService authorizationRequestSessionService;
+    private final AuthorizationCodeFlowService authorizationCodeFlowService;
+    private final LocalUserAuthorityService localUserAuthorityService;
 
     @Value("${app.oauth2.github.redirect.error-url:http://127.0.0.1:3000/auth/error}")
     private String githubErrorRedirectUrl;
-
-    @Value("${app.security.session-cookie.refresh-token-name:shop_rt}")
-    private String refreshTokenCookieName;
-
-    @Value("${app.security.session-cookie.path:/}")
-    private String sessionCookiePath;
-
-    @Value("${app.security.session-cookie.secure:false}")
-    private boolean sessionCookieSecure;
-
-    @Value("${app.security.session-cookie.same-site:Lax}")
-    private String sessionCookieSameSite;
-
-    @Value("${app.security.session-cookie.refresh-max-age-seconds:2592000}")
-    private long sessionCookieRefreshMaxAgeSeconds;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         try {
+            AuthorizationRequestDTO authorizationRequest = authorizationRequestSessionService.consume(request);
+            if (authorizationRequest == null) {
+                handleError(request, response, "Missing pending local OAuth2 authorization request");
+                return;
+            }
+
             if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
-                handleError(response, "Invalid authentication type");
+                handleError(request, response, "Invalid authentication type");
                 return;
             }
 
             OAuth2AuthorizedClient authorizedClient = authorizedClientService
                     .loadAuthorizedClient(oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
             if (authorizedClient == null) {
-                handleError(response, "OAuth2 authorized client not found");
+                handleError(request, response, "OAuth2 authorized client not found");
                 return;
             }
 
-            LoginResponseDTO loginResponse = gitHubUserInfoService.getUserInfoAndGenerateToken(
-                    oauthToken,
-                    authorizedClientService,
-                    tokenManagementService,
-                    oauth2ResponseUtil
+            UserDTO user = gitHubUserInfoService.getOrCreateUser(authorizedClient);
+            AuthorizationSessionResponseDTO sessionResponse = authorizationCodeFlowService.createAuthorizationSession(
+                    authorizationRequest,
+                    localUserAuthorityService.createAuthenticatedPrincipal(user),
+                    request,
+                    response
             );
-            handleSuccess(response, loginResponse);
+            response.sendRedirect(sessionResponse.getAuthorizationUri());
         } catch (Exception e) {
             log.error("Failed to handle OAuth2 success callback", e);
-            handleError(response, "OAuth2 login failed");
+            handleError(request, response, "OAuth2 login failed");
         }
     }
 
-    private void handleSuccess(HttpServletResponse response, LoginResponseDTO loginResponse) throws IOException {
-        writeRefreshTokenCookie(response, loginResponse.getRefresh_token());
-        response.sendRedirect(githubSuccessRedirectUrl);
-    }
-
-    private void handleError(HttpServletResponse response, String errorMessage) throws IOException {
+    private void handleError(HttpServletRequest request, HttpServletResponse response, String errorMessage) throws IOException {
+        authorizationRequestSessionService.clear(request);
         String message = URLEncoder.encode(
                 errorMessage == null ? "OAuth2 login failed" : errorMessage,
                 StandardCharsets.UTF_8
         );
         response.sendRedirect(githubErrorRedirectUrl + "?message=" + message);
-    }
-
-    private void writeRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            return;
-        }
-        long maxAge = Math.max(sessionCookieRefreshMaxAgeSeconds, 0);
-        ResponseCookie cookie = ResponseCookie.from(refreshTokenCookieName, refreshToken)
-                .httpOnly(true)
-                .secure(sessionCookieSecure)
-                .path(sessionCookiePath)
-                .sameSite(sessionCookieSameSite)
-                .maxAge(Duration.ofSeconds(maxAge))
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

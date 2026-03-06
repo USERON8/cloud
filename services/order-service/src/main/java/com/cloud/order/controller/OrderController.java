@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public class OrderController {
     public Result<OrderAggregateResponse> createMainOrder(@RequestBody @Valid CreateMainOrderRequest request,
                                                            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                            Authentication authentication) {
-        if (!StringUtils.hasText(idempotencyKey)) {
+        if (StrUtil.isBlank(idempotencyKey)) {
             throw new BusinessException("Idempotency-Key header is required");
         }
         Long currentUserId = requireCurrentUserId(authentication);
@@ -173,3 +173,5 @@ public class OrderController {
         return subOrder;
     }
 }
+
+

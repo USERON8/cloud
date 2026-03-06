@@ -1,7 +1,9 @@
 package com.cloud.common.config;
 
-import com.cloud.common.security.JwtAuthorityUtils;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
+import com.cloud.common.security.AudienceTokenValidator;
+import com.cloud.common.security.InternalScopeClientValidator;
+import com.cloud.common.security.JwtAuthorityUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +35,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public abstract class BaseResourceServerConfig {
@@ -44,6 +49,12 @@ public abstract class BaseResourceServerConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String issuerUri;
 
+    @Value("${app.security.jwt.accepted-audiences:gateway,internal-api,service-api}")
+    private String acceptedAudiences;
+
+    @Value("${app.security.jwt.internal-client-ids:client-service}")
+    private String allowedInternalClientIds;
+
     @Value("${app.security.testenv-bypass-enabled:false}")
     private boolean securityTestMode;
 
@@ -52,6 +63,9 @@ public abstract class BaseResourceServerConfig {
 
     @Value("${app.security.public-actuator-enabled:false}")
     private boolean publicActuatorEnabled;
+
+    @Value("${app.security.api-docs-enabled:false}")
+    private boolean apiDocsEnabled;
 
     @Value("${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
     private String corsAllowedOriginPatterns;
@@ -135,8 +149,10 @@ public abstract class BaseResourceServerConfig {
         if (publicActuatorEnabled) {
             authz.requestMatchers("/actuator/**").permitAll();
         }
-        authz.requestMatchers("/webjars/**", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll();
+        authz.requestMatchers("/webjars/**", "/favicon.ico", "/error").permitAll();
+        if (apiDocsEnabled) {
+            authz.requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll();
+        }
     }
 
     protected boolean isStatelessSession() {
@@ -159,7 +175,14 @@ public abstract class BaseResourceServerConfig {
     public JwtDecoder jwtDecoder(OAuth2TokenValidator<Jwt> blacklistTokenValidator) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, blacklistTokenValidator));
+        OAuth2TokenValidator<Jwt> withAudience = new AudienceTokenValidator(parseCsv(acceptedAudiences));
+        OAuth2TokenValidator<Jwt> withInternalClient = new InternalScopeClientValidator(parseCsv(allowedInternalClientIds));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                withIssuer,
+                withAudience,
+                withInternalClient,
+                blacklistTokenValidator
+        ));
         return decoder;
     }
 
@@ -203,7 +226,8 @@ public abstract class BaseResourceServerConfig {
                 .expiresAt(Instant.parse("2099-12-31T23:59:59Z"))
                 .claim("user_id", "999999")
                 .claim("username", "test-user")
-                .claim("user_type", "ADMIN")
+                .claim("roles", List.of("ADMIN", "MERCHANT", "USER"))
+                .claim("aud", List.of("gateway", "internal-api"))
                 .claim("scope", "internal_api user:read user:write merchant:read merchant:write admin:read admin:write")
                 .build();
 
@@ -221,6 +245,16 @@ public abstract class BaseResourceServerConfig {
                 }
             }
         };
+    }
+
+    private Set<String> parseCsv(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 }
 

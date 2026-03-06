@@ -23,7 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     @Override
     @Transactional(readOnly = true)
     public MerchantDTO getMerchantByUsername(String username) throws MerchantException.MerchantNotFoundException {
-        if (!StringUtils.hasText(username)) {
+        if (StrUtil.isBlank(username)) {
             throw new IllegalArgumentException("username is required");
         }
 
@@ -73,7 +73,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     @Override
     @Transactional(readOnly = true)
     public MerchantDTO getMerchantByName(String merchantName) throws MerchantException.MerchantNotFoundException {
-        if (!StringUtils.hasText(merchantName)) {
+        if (StrUtil.isBlank(merchantName)) {
             throw new IllegalArgumentException("merchantName is required");
         }
 
@@ -118,13 +118,13 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             failMessage = "failed to acquire create merchant lock"
     )
     public MerchantDTO createMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantAlreadyExistsException {
-        if (!StringUtils.hasText(merchantDTO.getUsername())) {
+        if (StrUtil.isBlank(merchantDTO.getUsername())) {
             throw new IllegalArgumentException("username is required");
         }
-        if (!StringUtils.hasText(merchantDTO.getMerchantName())) {
+        if (StrUtil.isBlank(merchantDTO.getMerchantName())) {
             throw new IllegalArgumentException("merchantName is required");
         }
-        if (!StringUtils.hasText(merchantDTO.getPassword())) {
+        if (StrUtil.isBlank(merchantDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
 
@@ -132,14 +132,14 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
         }
 
-        if (StringUtils.hasText(merchantDTO.getMerchantName())) {
+        if (StrUtil.isNotBlank(merchantDTO.getMerchantName())) {
             if (lambdaQuery().eq(Merchant::getMerchantName, merchantDTO.getMerchantName()).count() > 0) {
                 throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getMerchantName());
             }
         }
 
         Merchant merchant = merchantConverter.toEntity(merchantDTO);
-        if (StringUtils.hasText(merchant.getPassword())) {
+        if (StrUtil.isNotBlank(merchant.getPassword())) {
             merchant.setPassword(passwordEncoder.encode(merchant.getPassword()));
         }
         if (merchant.getStatus() == null) {
@@ -174,7 +174,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             throw new MerchantException.MerchantNotFoundException(merchantDTO.getId());
         }
 
-        if (StringUtils.hasText(merchantDTO.getUsername()) && !merchantDTO.getUsername().equals(existing.getUsername())) {
+        if (StrUtil.isNotBlank(merchantDTO.getUsername()) && !merchantDTO.getUsername().equals(existing.getUsername())) {
             long count = lambdaQuery()
                     .eq(Merchant::getUsername, merchantDTO.getUsername())
                     .ne(Merchant::getId, merchantDTO.getId())
@@ -184,7 +184,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             }
         }
 
-        if (StringUtils.hasText(merchantDTO.getMerchantName()) && !merchantDTO.getMerchantName().equals(existing.getMerchantName())) {
+        if (StrUtil.isNotBlank(merchantDTO.getMerchantName()) && !merchantDTO.getMerchantName().equals(existing.getMerchantName())) {
             long count = lambdaQuery()
                     .eq(Merchant::getMerchantName, merchantDTO.getMerchantName())
                     .ne(Merchant::getId, merchantDTO.getId())
@@ -196,19 +196,19 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
 
         Merchant merchant = merchantConverter.toEntity(merchantDTO);
         merchant.setId(merchantDTO.getId());
-        if (!StringUtils.hasText(merchant.getUsername())) {
+        if (StrUtil.isBlank(merchant.getUsername())) {
             merchant.setUsername(existing.getUsername());
         }
-        if (!StringUtils.hasText(merchant.getMerchantName())) {
+        if (StrUtil.isBlank(merchant.getMerchantName())) {
             merchant.setMerchantName(existing.getMerchantName());
         }
-        if (!StringUtils.hasText(merchant.getPhone())) {
+        if (StrUtil.isBlank(merchant.getPhone())) {
             merchant.setPhone(existing.getPhone());
         }
         if (merchant.getStatus() == null) {
             merchant.setStatus(existing.getStatus());
         }
-        if (StringUtils.hasText(merchant.getPassword())) {
+        if (StrUtil.isNotBlank(merchant.getPassword())) {
             merchant.setPassword(passwordEncoder.encode(merchant.getPassword()));
         } else {
             merchant.setPassword(null);
@@ -306,7 +306,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     )
     public boolean rejectMerchant(Long id, String reason)
             throws MerchantException.MerchantNotFoundException, MerchantException.MerchantAuditException {
-        if (!StringUtils.hasText(reason)) {
+        if (StrUtil.isBlank(reason)) {
             throw new IllegalArgumentException("reason is required");
         }
 
@@ -367,3 +367,5 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         return merchantDTO;
     }
 }
+
+
