@@ -12,7 +12,6 @@
 - `db/init/stock-service/init.sql`
 - `db/init/payment-service/init.sql`
 - `db/test/*/test.sql`（含 auth-service 在内的业务服务）
-- `db/archive/**`（历史归档，不参与主流程）
 
 ## 执行顺序
 
