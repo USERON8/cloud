@@ -1,14 +1,11 @@
 package com.cloud.user.service.impl;
 
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
-import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
-import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -22,11 +19,8 @@ import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,15 +29,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final UserConverter userConverter;
-    private final PasswordEncoder passwordEncoder;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
 
     @Override
@@ -186,161 +177,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    @DistributedLock(
-            key = "'user:register:' + #registerRequest.username",
-            waitTime = 3,
-            leaseTime = 15,
-            failMessage = "failed to acquire user register lock"
-    )
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "user", key = "'username:' + #registerRequest.username", beforeInvocation = true),
-            @CacheEvict(cacheNames = "userList", allEntries = true)
-    })
-    public UserDTO registerUser(RegisterRequestDTO registerRequest) {
-        authPrincipalRemoteService.assertUsernameAvailable(registerRequest.getUsername(), null);
-
-        User user = userConverter.toEntity(registerRequest);
-        if (StrUtil.isBlank(registerRequest.getPassword())) {
-            throw new BusinessException("password is required");
-        }
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword().trim()));
-        if (user.getStatus() == null) {
-            user.setStatus(1);
-        }
-
-        if (!save(user)) {
-            throw new BusinessException("failed to register user");
-        }
-
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, List.of("USER")));
-        return toDTOWithRoles(user, List.of("USER"));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "auth", key = "'password:' + #username", unless = "#result == null")
-    public String getUserPassword(String username) {
-        try {
-            User user = getOne(new LambdaQueryWrapper<User>()
-                    .eq(User::getUsername, username)
-                    .select(User::getUsername, User::getPassword, User::getStatus));
-            if (user == null) {
-                return null;
-            }
-            if (user.getStatus() == null || user.getStatus() != 1) {
-                return null;
-            }
-            return user.getPassword();
-        } catch (Exception e) {
-            log.error("Failed to get user password", e);
-            return null;
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserDTO findByGitHubId(Long githubId) {
-        if (githubId == null) {
-            return null;
-        }
-        User user = getOne(new LambdaQueryWrapper<User>()
-                .eq(User::getGithubId, githubId)
-                .eq(User::getOauthProvider, "github"));
-        return user == null ? null : toDTOWithRoles(user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserDTO findByGitHubUsername(String githubUsername) {
-        if (StrUtil.isBlank(githubUsername)) {
-            return null;
-        }
-        User user = getOne(new LambdaQueryWrapper<User>()
-                .eq(User::getGithubUsername, githubUsername)
-                .eq(User::getOauthProvider, "github"));
-        return user == null ? null : toDTOWithRoles(user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserDTO findByOAuthProvider(String oauthProvider, String oauthProviderId) {
-        if (StrUtil.isBlank(oauthProvider) || StrUtil.isBlank(oauthProviderId)) {
-            return null;
-        }
-        User user = getOne(new LambdaQueryWrapper<User>()
-                .eq(User::getOauthProvider, oauthProvider)
-                .eq(User::getOauthProviderId, oauthProviderId));
-        return user == null ? null : toDTOWithRoles(user);
-    }
-
-    @Override
-    @DistributedLock(
-            key = "'user:github:create:' + #githubUserDTO.githubId",
-            waitTime = 3,
-            leaseTime = 15,
-            failMessage = "failed to acquire github user create lock"
-    )
-    @Transactional(rollbackFor = Exception.class)
-    @CacheEvict(cacheNames = "user", key = "'github_id:' + #githubUserDTO.githubId", beforeInvocation = true)
-    public UserDTO createGitHubUser(GitHubUserDTO githubUserDTO) {
-        UserDTO existing = findByGitHubId(githubUserDTO.getGithubId());
-        if (existing != null) {
-            return existing;
-        }
-
-        String username = buildUniqueGithubUsername(githubUserDTO.getLogin());
-        User user = new User();
-        user.setUsername(username);
-        user.setNickname(githubUserDTO.getDisplayName());
-        user.setEmail(githubUserDTO.getEmail());
-        user.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        user.setStatus(1);
-        user.setPhone(null);
-        user.setGithubId(githubUserDTO.getGithubId());
-        user.setGithubUsername(githubUserDTO.getLogin());
-        user.setOauthProvider("github");
-        user.setOauthProviderId(String.valueOf(githubUserDTO.getGithubId()));
-        user.setPassword(passwordEncoder.encode("github_oauth2_" + githubUserDTO.getGithubId()));
-
-        if (!save(user)) {
-            throw new BusinessException("failed to create github user");
-        }
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, List.of("USER")));
-        return toDTOWithRoles(user, List.of("USER"));
-    }
-
-    @Override
-    @DistributedLock(
-            key = "'user:github:update:' + #userId",
-            waitTime = 3,
-            leaseTime = 10,
-            failMessage = "failed to acquire github user update lock"
-    )
-    @Transactional(rollbackFor = Exception.class)
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "user", key = "#userId"),
-            @CacheEvict(cacheNames = "user", key = "'github_id:' + #githubUserDTO.githubId")
-    })
-    public boolean updateGitHubUserInfo(Long userId, GitHubUserDTO githubUserDTO) {
-        User existingUser = getById(userId);
-        if (existingUser == null) {
-            throw new EntityNotFoundException("user", userId);
-        }
-
-        User updatedUser = new User();
-        updatedUser.setId(userId);
-        updatedUser.setNickname(githubUserDTO.getDisplayName());
-        updatedUser.setEmail(githubUserDTO.getEmail());
-        updatedUser.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        updatedUser.setGithubId(githubUserDTO.getGithubId());
-        updatedUser.setGithubUsername(githubUserDTO.getLogin());
-        updatedUser.setOauthProvider("github");
-        updatedUser.setOauthProviderId(String.valueOf(githubUserDTO.getGithubId()));
-        return updateById(updatedUser);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Page<UserDTO> getUsersPage(Integer page, Integer size) {
         Page<User> pageParam = new Page<>(page, size);
@@ -364,14 +200,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
     public Long createUser(UserDTO userDTO) {
+        if (userDTO == null) {
+            throw new BusinessException("user payload is required");
+        }
+        if (StrUtil.isBlank(userDTO.getPassword())) {
+            throw new BusinessException("password is required");
+        }
         authPrincipalRemoteService.assertUsernameAvailable(userDTO.getUsername(), null);
         User user = userConverter.toEntity(userDTO);
-        if (StrUtil.isNotBlank(user.getPassword())) {
-            user.setPassword(normalizePassword(user.getPassword()));
-        }
         save(user);
         List<String> roles = userDTO.getRoles() == null || userDTO.getRoles().isEmpty() ? List.of("USER") : userDTO.getRoles();
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, roles));
+        authPrincipalRemoteService.createPrincipal(toCreatePrincipalDTO(userDTO, user.getId(), roles));
         return user.getId();
     }
 
@@ -383,9 +222,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     })
     public Long createProfile(UserDTO userDTO) {
         User user = userConverter.toEntity(userDTO);
-        if (StrUtil.isNotBlank(user.getPassword())) {
-            user.setPassword(normalizePassword(user.getPassword()));
-        }
         save(user);
         return user.getId();
     }
@@ -427,9 +263,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = userConverter.toEntity(userDTO);
-        if (StrUtil.isNotBlank(user.getPassword())) {
-            user.setPassword(normalizePassword(user.getPassword()));
-        }
         boolean updated = updateById(user);
         if (updated) {
             authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(userDTO, existingUser));
@@ -450,9 +283,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("user id is required");
         }
         User user = userConverter.toEntity(userDTO);
-        if (StrUtil.isNotBlank(user.getPassword())) {
-            user.setPassword(normalizePassword(user.getPassword()));
-        }
         return updateById(user);
     }
 
@@ -517,11 +347,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public String resetPassword(Long id) {
+        if (getById(id) == null) {
+            throw new EntityNotFoundException("user", id);
+        }
         String newPassword = "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        User user = new User();
-        user.setId(id);
-        user.setPassword(passwordEncoder.encode(newPassword));
-        updateById(user);
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(id);
         authPrincipalDTO.setPassword(newPassword);
@@ -542,24 +371,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean changePassword(Long id, String oldPassword, String newPassword) {
-        User user = getById(id);
-        if (user == null) {
+        if (getById(id) == null) {
             throw new EntityNotFoundException("user", id);
         }
-
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!authPrincipalRemoteService.changePassword(id, oldPassword, newPassword)) {
             throw new BusinessException("old password mismatch");
         }
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        boolean updated = updateById(user);
-        if (updated) {
-            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-            authPrincipalDTO.setId(id);
-            authPrincipalDTO.setPassword(newPassword);
-            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
-        }
-        return updated;
+        return true;
     }
 
     @Override
@@ -587,7 +405,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         User updateEntity = new User();
         updateEntity.setStatus(status);
-        return update(updateEntity, wrapper) ? userIds.size() : 0;
+        boolean updated = update(updateEntity, wrapper);
+        if (updated) {
+            userIds.forEach(userId -> {
+                AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+                authPrincipalDTO.setId(userId);
+                authPrincipalDTO.setStatus(status);
+                authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+            });
+        }
+        return updated ? userIds.size() : 0;
     }
 
     @Override
@@ -601,12 +428,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (entityList == null || entityList.isEmpty()) {
             return false;
         }
-        for (User entity : entityList) {
-            if (entity != null && StrUtil.isNotBlank(entity.getPassword())) {
-                entity.setPassword(normalizePassword(entity.getPassword()));
-            }
+        boolean updated = super.updateBatchById(entityList);
+        if (updated) {
+            entityList.stream()
+                    .filter(entity -> entity != null && entity.getId() != null)
+                    .forEach(entity -> {
+                        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+                        authPrincipalDTO.setId(entity.getId());
+                        authPrincipalDTO.setUsername(entity.getUsername());
+                        authPrincipalDTO.setStatus(entity.getStatus());
+                        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                    });
         }
-        return super.updateBatchById(entityList);
+        return updated;
     }
 
     @Override
@@ -630,39 +464,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
     )
     public boolean updateById(User entity) {
-        if (entity != null && StrUtil.isNotBlank(entity.getPassword())) {
-            entity.setPassword(normalizePassword(entity.getPassword()));
-        }
         return super.updateById(entity);
-    }
-
-    private String normalizePassword(String password) {
-        String trimmed = password == null ? null : password.trim();
-        if (StrUtil.isBlank(trimmed)) {
-            return trimmed;
-        }
-        if (isBCryptHash(trimmed)) {
-            return trimmed;
-        }
-        return passwordEncoder.encode(trimmed);
-    }
-
-    private static boolean isBCryptHash(String value) {
-        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
-    }
-
-    private String buildUniqueGithubUsername(String login) {
-        String baseLogin = StrUtil.blankToDefault(StrUtil.trim(login), "user");
-        String candidateUsername = "github_" + baseLogin;
-
-        for (int suffix = 1; suffix <= 1000; suffix++) {
-            if (findByUsername(candidateUsername) == null) {
-                return candidateUsername;
-            }
-            candidateUsername = StrUtil.format("github_{}_{}", baseLogin, suffix);
-        }
-
-        return StrUtil.format("github_{}_{}", baseLogin, IdUtil.fastSimpleUUID());
     }
 
     private UserDTO toDTOWithRoles(User user) {
@@ -700,15 +502,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return vos;
     }
 
-    private AuthPrincipalDTO toAuthPrincipalDTO(User user, List<String> roles) {
+    private AuthPrincipalDTO toCreatePrincipalDTO(UserDTO userDTO, Long userId, List<String> roles) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-        authPrincipalDTO.setId(user.getId());
-        authPrincipalDTO.setUsername(user.getUsername());
-        authPrincipalDTO.setPassword(user.getPassword());
-        authPrincipalDTO.setNickname(user.getNickname());
-        authPrincipalDTO.setEmail(user.getEmail());
-        authPrincipalDTO.setPhone(user.getPhone());
-        authPrincipalDTO.setStatus(user.getStatus());
+        authPrincipalDTO.setId(userId);
+        authPrincipalDTO.setUsername(userDTO.getUsername());
+        authPrincipalDTO.setPassword(userDTO.getPassword());
+        authPrincipalDTO.setNickname(userDTO.getNickname());
+        authPrincipalDTO.setEmail(userDTO.getEmail());
+        authPrincipalDTO.setPhone(userDTO.getPhone());
+        authPrincipalDTO.setStatus(userDTO.getStatus());
         authPrincipalDTO.setRoles(roles);
         return authPrincipalDTO;
     }

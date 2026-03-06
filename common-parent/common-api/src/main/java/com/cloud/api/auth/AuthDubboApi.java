@@ -18,6 +18,8 @@ public interface AuthDubboApi {
 
     Boolean deletePrincipal(Long userId);
 
+    Boolean changePassword(Long userId, String oldPassword, String newPassword);
+
     List<String> getRoleCodes(Long userId);
 
     Map<Long, List<String>> getRoleCodesByUserIds(Collection<Long> userIds);

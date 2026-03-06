@@ -25,12 +25,6 @@ public class Admin extends BaseEntity<Admin> {
     
 
 
-    @TableField(value = "password")
-    private String password;
-
-    
-
-
     @TableField(value = "real_name")
     private String realName;
 

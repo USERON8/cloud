@@ -1,5 +1,6 @@
 package com.cloud.common.domain.dto.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,6 +26,7 @@ public class UserDTO implements Serializable {
     @Size(max = 50, message = "Username length must be less than or equal to 50")
     private String username;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Size(max = 255, message = "Password length must be less than or equal to 255")
     private String password;
 
@@ -41,17 +43,6 @@ public class UserDTO implements Serializable {
     @Email(message = "Invalid email format")
     @Size(max = 100, message = "Email length must be less than or equal to 100")
     private String email;
-
-    private Long githubId;
-
-    @Size(max = 100, message = "GitHub username length must be less than or equal to 100")
-    private String githubUsername;
-
-    @Size(max = 20, message = "OAuth provider length must be less than or equal to 20")
-    private String oauthProvider;
-
-    @Size(max = 100, message = "OAuth provider ID length must be less than or equal to 100")
-    private String oauthProviderId;
 
     @Min(value = 0, message = "Status must be greater than or equal to 0")
     @Max(value = 1, message = "Status must be less than or equal to 1")

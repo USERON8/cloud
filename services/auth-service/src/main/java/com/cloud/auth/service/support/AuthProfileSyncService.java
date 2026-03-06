@@ -37,7 +37,6 @@ public class AuthProfileSyncService {
         UserDTO profile = new UserDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
-        profile.setPassword(authUser.getPassword());
         profile.setPhone(request.getPhone());
         profile.setNickname(request.getNickname());
         profile.setStatus(authUser.getStatus());
@@ -50,14 +49,9 @@ public class AuthProfileSyncService {
         UserDTO profile = new UserDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
-        profile.setPassword(authUser.getPassword());
         profile.setNickname(githubUserDTO.getDisplayName());
         profile.setEmail(githubUserDTO.getEmail());
         profile.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        profile.setGithubId(githubUserDTO.getGithubId());
-        profile.setGithubUsername(githubUserDTO.getLogin());
-        profile.setOauthProvider("github");
-        profile.setOauthProviderId(String.valueOf(githubUserDTO.getGithubId()));
         profile.setStatus(authUser.getStatus());
         profile.setRoles(List.copyOf(roles));
 

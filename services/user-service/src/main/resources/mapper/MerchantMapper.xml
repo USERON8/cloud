@@ -7,7 +7,6 @@
     <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.Merchant">
         <id property="id" column="id"/>
         <result property="username" column="username"/>
-        <result property="password" column="password"/>
         <result property="merchantName" column="merchant_name"/>
         <result property="phone" column="phone"/>
         <result property="status" column="status"/>
@@ -17,7 +16,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,username,password,merchant_name,phone,status,
+        id,username,merchant_name,phone,status,
         created_at,updated_at,deleted
     </sql>
 </mapper>

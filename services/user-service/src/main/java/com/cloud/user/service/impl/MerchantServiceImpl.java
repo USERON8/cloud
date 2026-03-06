@@ -22,7 +22,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -47,7 +46,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     private final MerchantAuthMapper merchantAuthMapper;
     private final UserMapper userMapper;
     private final MerchantConverter merchantConverter;
-    private final PasswordEncoder passwordEncoder;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final UserPrincipalSyncService userPrincipalSyncService;
 
@@ -145,9 +143,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         }
 
         Merchant merchant = merchantConverter.toEntity(merchantDTO);
-        if (StrUtil.isNotBlank(merchant.getPassword())) {
-            merchant.setPassword(passwordEncoder.encode(merchant.getPassword()));
-        }
         if (merchant.getStatus() == null) {
             merchant.setStatus(STATUS_PENDING);
         }
@@ -158,13 +153,12 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         userPrincipalSyncService.upsertUserPrincipal(
                 merchant.getId(),
                 merchant.getUsername(),
-                merchant.getPassword(),
                 merchant.getMerchantName(),
                 merchantDTO.getEmail(),
                 merchant.getPhone(),
                 merchant.getStatus()
         );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(merchant, merchantDTO.getEmail()));
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(merchant, merchantDTO.getEmail(), merchantDTO.getPassword()));
         return toEnrichedDTO(merchant);
     }
 
@@ -225,25 +219,18 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant.getStatus() == null) {
             merchant.setStatus(existing.getStatus());
         }
-        if (StrUtil.isNotBlank(merchant.getPassword())) {
-            merchant.setPassword(passwordEncoder.encode(merchant.getPassword()));
-        } else {
-            merchant.setPassword(null);
-        }
-
         boolean updated = updateById(merchant);
         if (updated) {
             Merchant current = resolveCurrentMerchant(merchantDTO, existing);
             userPrincipalSyncService.upsertUserPrincipal(
                     current.getId(),
                     current.getUsername(),
-                    current.getPassword(),
                     current.getMerchantName(),
                     merchantDTO.getEmail(),
                     current.getPhone(),
                     current.getStatus()
             );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, merchantDTO.getEmail()));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, merchantDTO.getEmail(), merchantDTO.getPassword()));
         }
         return updated;
     }
@@ -278,7 +265,14 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
-        return removeByIds(ids);
+        boolean removed = removeByIds(ids);
+        if (removed) {
+            ids.forEach(id -> {
+                userPrincipalSyncService.deleteUserPrincipal(id);
+                authPrincipalRemoteService.deletePrincipal(id);
+            });
+        }
+        return removed;
     }
 
     @Override
@@ -298,7 +292,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                 userPrincipalSyncService.upsertUserPrincipal(
                         refreshed.getId(),
                         refreshed.getUsername(),
-                        refreshed.getPassword(),
                         refreshed.getMerchantName(),
                         merchantDTO.getEmail(),
                         refreshed.getPhone(),
@@ -427,18 +420,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         Merchant merged = new Merchant();
         merged.setId(existing.getId());
         merged.setUsername(StrUtil.blankToDefault(merchantDTO.getUsername(), existing.getUsername()));
-        merged.setPassword(StrUtil.isBlank(merchantDTO.getPassword()) ? existing.getPassword() : passwordEncoder.encode(merchantDTO.getPassword()));
         merged.setMerchantName(StrUtil.blankToDefault(merchantDTO.getMerchantName(), existing.getMerchantName()));
         merged.setPhone(merchantDTO.getPhone() == null ? existing.getPhone() : merchantDTO.getPhone());
         merged.setStatus(merchantDTO.getStatus() == null ? existing.getStatus() : merchantDTO.getStatus());
         return merged;
     }
 
-    private AuthPrincipalDTO toAuthPrincipalDTO(Merchant merchant, String email) {
+    private AuthPrincipalDTO toAuthPrincipalDTO(Merchant merchant, String email, String password) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(merchant.getId());
         authPrincipalDTO.setUsername(merchant.getUsername());
-        authPrincipalDTO.setPassword(merchant.getPassword());
+        authPrincipalDTO.setPassword(password);
         authPrincipalDTO.setNickname(merchant.getMerchantName());
         authPrincipalDTO.setEmail(email);
         authPrincipalDTO.setPhone(merchant.getPhone());

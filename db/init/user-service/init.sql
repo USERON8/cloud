@@ -6,15 +6,10 @@ CREATE TABLE IF NOT EXISTS users
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
     username          VARCHAR(50)  NOT NULL,
-    password          VARCHAR(255) NOT NULL,
     phone             VARCHAR(20)  NULL,
     nickname          VARCHAR(50)  NOT NULL,
     avatar_url        VARCHAR(255) NULL,
     email             VARCHAR(100) NULL,
-    github_id         BIGINT UNSIGNED NULL,
-    github_username   VARCHAR(100) NULL,
-    oauth_provider    VARCHAR(32) NULL,
-    oauth_provider_id VARCHAR(100) NULL,
     status            TINYINT      NOT NULL DEFAULT 1,
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -23,10 +18,7 @@ CREATE TABLE IF NOT EXISTS users
     UNIQUE KEY uk_users_username (username),
     UNIQUE KEY uk_users_phone (phone),
     UNIQUE KEY uk_users_email (email),
-    UNIQUE KEY uk_users_github_id (github_id),
-    UNIQUE KEY uk_users_oauth_provider_id (oauth_provider, oauth_provider_id),
-    INDEX idx_users_status_deleted (status, deleted),
-    INDEX idx_users_github_username_deleted (github_username, deleted)
+    INDEX idx_users_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -103,7 +95,6 @@ CREATE TABLE IF NOT EXISTS admin
 (
     id         BIGINT UNSIGNED PRIMARY KEY,
     username   VARCHAR(50)  NOT NULL,
-    password   VARCHAR(255) NOT NULL,
     real_name  VARCHAR(50)  NOT NULL,
     phone      VARCHAR(20)  NULL,
     role       VARCHAR(20)  NOT NULL DEFAULT 'ADMIN',
@@ -123,7 +114,6 @@ CREATE TABLE IF NOT EXISTS merchant
 (
     id            BIGINT UNSIGNED PRIMARY KEY,
     username      VARCHAR(50)  NOT NULL,
-    password      VARCHAR(255) NOT NULL,
     merchant_name VARCHAR(100) NOT NULL,
     phone         VARCHAR(20)  NULL,
     status        TINYINT      NOT NULL DEFAULT 1,

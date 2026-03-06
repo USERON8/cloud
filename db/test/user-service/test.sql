@@ -12,17 +12,12 @@ DELETE FROM admin;
 DELETE FROM users;
 DELETE FROM test_access_token WHERE id = 1;
 
-INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, github_id, github_username,
-                   oauth_provider, oauth_provider_id, status, deleted, version)
-VALUES (20001, 't_user_20001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
-        '13900000001', 'Test User 1', 'https://example.com/u1.png', 't_user_20001@example.com',
-        NULL, NULL, NULL, NULL, 1, 0, 0),
-       (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
-        '13900010001', 'Test Admin 1', NULL, NULL,
-        NULL, NULL, NULL, NULL, 1, 0, 0),
-       (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
-        '13900020001', 'Merchant Owner', 'https://example.com/u2.png', 't_merchant_30001@example.com',
-        NULL, NULL, NULL, NULL, 1, 0, 0);
+INSERT INTO users (id, username, phone, nickname, avatar_url, email, status, deleted, version)
+VALUES (20001, 't_user_20001', '13900000001', 'Test User 1', 'https://example.com/u1.png',
+        't_user_20001@example.com', 1, 0, 0),
+       (24001, 't_admin_24001', '13900010001', 'Test Admin 1', NULL, NULL, 1, 0, 0),
+       (30001, 't_merchant_30001', '13900020001', 'Merchant Owner', 'https://example.com/u2.png',
+        't_merchant_30001@example.com', 1, 0, 0);
 
 INSERT INTO user_profile_ext (id, user_id, gender, birthday, bio, country, province, city, personal_tags, preferences, deleted, version)
 VALUES (21001, 20001, 'MALE', '1995-01-01', 'test profile', 'China', 'Shanghai', 'Shanghai',
@@ -36,13 +31,11 @@ VALUES (22001, 20001, 'HOME', 'Test User 1', '13900000001', 'China', 'Shanghai',
 INSERT INTO user_favorite (id, user_id, spu_id, sku_id, favorite_status, deleted, version)
 VALUES (23001, 20001, 40001, 41001, 'ACTIVE', 0, 0);
 
-INSERT INTO admin (id, username, password, real_name, phone, role, status, deleted, version)
-VALUES (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
-        'Test Admin 1', '13900010001', 'ADMIN', 1, 0, 0);
+INSERT INTO admin (id, username, real_name, phone, role, status, deleted, version)
+VALUES (24001, 't_admin_24001', 'Test Admin 1', '13900010001', 'ADMIN', 1, 0, 0);
 
-INSERT INTO merchant (id, username, password, merchant_name, phone, status, deleted, version)
-VALUES (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
-        'Test Merchant A', '13900020001', 1, 0, 0);
+INSERT INTO merchant (id, username, merchant_name, phone, status, deleted, version)
+VALUES (30001, 't_merchant_30001', 'Test Merchant A', '13900020001', 1, 0, 0);
 
 INSERT INTO merchant_auth (id, merchant_id, business_license_number, business_license_url, id_card_front_url,
                            id_card_back_url, contact_phone, contact_address, auth_status, auth_remark, deleted, version)

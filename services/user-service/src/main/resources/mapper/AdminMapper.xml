@@ -7,7 +7,6 @@
     <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.Admin">
         <id property="id" column="id"/>
         <result property="username" column="username"/>
-        <result property="password" column="password"/>
         <result property="realName" column="real_name"/>
         <result property="phone" column="phone"/>
         <result property="role" column="role"/>
@@ -18,7 +17,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,username,password,real_name,phone,role,
+        id,username,real_name,phone,role,
         status,created_at,updated_at,deleted
     </sql>
 </mapper>

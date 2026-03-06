@@ -26,12 +26,6 @@ public class User extends BaseEntity<User> {
     
 
 
-    @TableField(value = "password", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
-    private String password;
-
-    
-
-
     @TableField(value = "phone", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
     private String phone;
 
@@ -61,29 +55,4 @@ public class User extends BaseEntity<User> {
 
     
 
-
-
-    
-
-
-    @TableField(value = "github_id", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
-    private Long githubId;
-
-    
-
-
-    @TableField(value = "github_username", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
-    private String githubUsername;
-
-    
-
-
-    @TableField(value = "oauth_provider", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
-    private String oauthProvider;
-
-    
-
-
-    @TableField(value = "oauth_provider_id", insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
-    private String oauthProviderId;
 }

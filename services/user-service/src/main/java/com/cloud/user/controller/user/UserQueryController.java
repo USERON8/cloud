@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,50 +53,5 @@ public class UserQueryController {
         userPageDTO.setEmail(email);
         userPageDTO.setRoleCode(roleCode);
         return Result.success(userService.pageQuery(userPageDTO));
-    }
-
-    @GetMapping("/findByGitHubId")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "Find user by GitHub ID", description = "Get one user by GitHub ID")
-    public Result<UserDTO> findByGitHubId(
-            @RequestParam
-            @Parameter(description = "GitHub ID")
-            @NotNull(message = "github id is required") Long githubId) {
-        UserDTO userDTO = userService.findByGitHubId(githubId);
-        if (userDTO != null) {
-            return Result.success("query successful", userDTO);
-        }
-        return Result.notFound("user not found by github id");
-    }
-
-    @GetMapping("/findByGitHubUsername")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "Find user by GitHub username", description = "Get one user by GitHub username")
-    public Result<UserDTO> findByGitHubUsername(
-            @RequestParam
-            @Parameter(description = "GitHub username")
-            @NotBlank(message = "github username is required") String githubUsername) {
-        UserDTO userDTO = userService.findByGitHubUsername(githubUsername);
-        if (userDTO != null) {
-            return Result.success("query successful", userDTO);
-        }
-        return Result.notFound("user not found by github username");
-    }
-
-    @GetMapping("/findByOAuthProvider")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    @Operation(summary = "Find user by OAuth provider", description = "Get one user by OAuth provider and provider ID")
-    public Result<UserDTO> findByOAuthProvider(
-            @RequestParam
-            @Parameter(description = "OAuth provider")
-            @NotBlank(message = "oauth provider is required") String oauthProvider,
-            @RequestParam
-            @Parameter(description = "OAuth provider ID")
-            @NotBlank(message = "oauth provider id is required") String oauthProviderId) {
-        UserDTO userDTO = userService.findByOAuthProvider(oauthProvider, oauthProviderId);
-        if (userDTO != null) {
-            return Result.success("query successful", userDTO);
-        }
-        return Result.notFound("user not found by oauth provider");
     }
 }

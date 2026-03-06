@@ -65,4 +65,8 @@ public class AuthPrincipalRemoteService {
     public Map<String, Long> getRoleDistribution() {
         return authDubboApi.getRoleDistribution();
     }
+
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        return Boolean.TRUE.equals(authDubboApi.changePassword(userId, oldPassword, newPassword));
+    }
 }

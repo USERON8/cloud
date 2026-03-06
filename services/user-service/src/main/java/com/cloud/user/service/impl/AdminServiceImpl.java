@@ -18,7 +18,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -38,7 +37,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     private final AdminMapper adminMapper;
     private final AdminConverter adminConverter;
-    private final PasswordEncoder passwordEncoder;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final UserPrincipalSyncService userPrincipalSyncService;
 
@@ -135,9 +133,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         authPrincipalRemoteService.assertUsernameAvailable(adminDTO.getUsername(), null);
 
         Admin admin = adminConverter.toEntity(adminDTO);
-        if (StrUtil.isNotBlank(admin.getPassword())) {
-            admin.setPassword(passwordEncoder.encode(admin.getPassword()));
-        }
         if (admin.getStatus() == null) {
             admin.setStatus(STATUS_ENABLED);
         }
@@ -148,13 +143,12 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         userPrincipalSyncService.upsertUserPrincipal(
                 admin.getId(),
                 admin.getUsername(),
-                admin.getPassword(),
                 admin.getRealName(),
                 null,
                 admin.getPhone(),
                 admin.getStatus()
         );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin));
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin, adminDTO.getPassword()));
         return adminConverter.toDTO(admin);
     }
 
@@ -211,25 +205,18 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             admin.setPhone(existingAdmin.getPhone());
         }
 
-        if (StrUtil.isNotBlank(admin.getPassword())) {
-            admin.setPassword(passwordEncoder.encode(admin.getPassword()));
-        } else {
-            admin.setPassword(null);
-        }
-
         boolean updated = updateById(admin);
         if (updated) {
             Admin current = resolveCurrentAdmin(adminDTO, existingAdmin);
             userPrincipalSyncService.upsertUserPrincipal(
                     current.getId(),
                     current.getUsername(),
-                    current.getPassword(),
                     current.getRealName(),
                     null,
                     current.getPhone(),
                     current.getStatus()
             );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, adminDTO.getPassword()));
         }
         return updated;
     }
@@ -265,7 +252,14 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (CollectionUtils.isEmpty(ids)) {
             return true;
         }
-        return removeByIds(ids);
+        boolean removed = removeByIds(ids);
+        if (removed) {
+            ids.forEach(id -> {
+                userPrincipalSyncService.deleteUserPrincipal(id);
+                authPrincipalRemoteService.deletePrincipal(id);
+            });
+        }
+        return removed;
     }
 
     @Override
@@ -283,7 +277,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             userPrincipalSyncService.upsertUserPrincipal(
                     admin.getId(),
                     admin.getUsername(),
-                    admin.getPassword(),
                     admin.getRealName(),
                     null,
                     admin.getPhone(),
@@ -325,24 +318,11 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new AdminException.AdminNotFoundException(id);
         }
 
-        admin.setPassword(passwordEncoder.encode(newPassword));
-        boolean updated = updateById(admin);
-        if (updated) {
-            userPrincipalSyncService.upsertUserPrincipal(
-                    admin.getId(),
-                    admin.getUsername(),
-                    admin.getPassword(),
-                    admin.getRealName(),
-                    null,
-                    admin.getPhone(),
-                    admin.getStatus()
-            );
-            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-            authPrincipalDTO.setId(admin.getId());
-            authPrincipalDTO.setPassword(newPassword);
-            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
-        }
-        return updated;
+        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+        authPrincipalDTO.setId(admin.getId());
+        authPrincipalDTO.setPassword(newPassword);
+        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+        return true;
     }
 
     @Override
@@ -360,29 +340,11 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new AdminException.AdminNotFoundException(id);
         }
 
-        if (!passwordEncoder.matches(oldPassword, admin.getPassword())) {
+        if (!authPrincipalRemoteService.changePassword(id, oldPassword, newPassword)) {
             log.warn("Old password mismatch, adminId={}", id);
             throw new AdminException.AdminPasswordException("old password mismatch");
         }
-
-        admin.setPassword(passwordEncoder.encode(newPassword));
-        boolean updated = updateById(admin);
-        if (updated) {
-            userPrincipalSyncService.upsertUserPrincipal(
-                    admin.getId(),
-                    admin.getUsername(),
-                    admin.getPassword(),
-                    admin.getRealName(),
-                    null,
-                    admin.getPhone(),
-                    admin.getStatus()
-            );
-            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-            authPrincipalDTO.setId(admin.getId());
-            authPrincipalDTO.setPassword(newPassword);
-            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
-        }
-        return updated;
+        return true;
     }
 
     @Override
@@ -399,7 +361,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         Admin merged = new Admin();
         merged.setId(existingAdmin.getId());
         merged.setUsername(StrUtil.blankToDefault(adminDTO.getUsername(), existingAdmin.getUsername()));
-        merged.setPassword(StrUtil.isBlank(adminDTO.getPassword()) ? existingAdmin.getPassword() : passwordEncoder.encode(adminDTO.getPassword()));
         merged.setRealName(StrUtil.blankToDefault(adminDTO.getRealName(), existingAdmin.getRealName()));
         merged.setPhone(adminDTO.getPhone() == null ? existingAdmin.getPhone() : adminDTO.getPhone());
         merged.setRole(StrUtil.blankToDefault(adminDTO.getRole(), existingAdmin.getRole()));
@@ -407,11 +368,11 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         return merged;
     }
 
-    private AuthPrincipalDTO toAuthPrincipalDTO(Admin admin) {
+    private AuthPrincipalDTO toAuthPrincipalDTO(Admin admin, String password) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(admin.getId());
         authPrincipalDTO.setUsername(admin.getUsername());
-        authPrincipalDTO.setPassword(admin.getPassword());
+        authPrincipalDTO.setPassword(password);
         authPrincipalDTO.setNickname(admin.getRealName());
         authPrincipalDTO.setPhone(admin.getPhone());
         authPrincipalDTO.setStatus(admin.getStatus());

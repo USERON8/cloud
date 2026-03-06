@@ -42,6 +42,11 @@ public class AuthDubboService implements AuthDubboApi {
     }
 
     @Override
+    public Boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        return authIdentityService.changePassword(userId, oldPassword, newPassword);
+    }
+
+    @Override
     public List<String> getRoleCodes(Long userId) {
         return authIdentityService.getRoleCodes(userId);
     }

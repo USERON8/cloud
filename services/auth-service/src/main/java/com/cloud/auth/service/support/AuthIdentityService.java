@@ -145,6 +145,29 @@ public class AuthIdentityService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public Boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        if (userId == null) {
+            throw new BusinessException("principal id is required");
+        }
+        if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
+            throw new BusinessException("old password and new password are required");
+        }
+
+        AuthUser existing = authUserMapper.selectById(userId);
+        if (existing == null) {
+            throw new BusinessException("principal not found");
+        }
+        if (!passwordEncoder.matches(oldPassword, existing.getPassword())) {
+            return false;
+        }
+
+        AuthUser update = new AuthUser();
+        update.setId(userId);
+        update.setPassword(normalizePassword(newPassword));
+        return authUserMapper.updateById(update) > 0;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public UserDTO register(RegisterRequestDTO registerRequest) {
         String username = StrUtil.trim(registerRequest.getUsername());
         if (findByUsername(username) != null) {

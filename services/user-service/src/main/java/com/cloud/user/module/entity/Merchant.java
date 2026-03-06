@@ -25,12 +25,6 @@ public class Merchant extends BaseEntity<Merchant> {
     
 
 
-    @TableField(value = "password")
-    private String password;
-
-    
-
-
     @TableField(value = "merchant_name")
     private String merchantName;
 

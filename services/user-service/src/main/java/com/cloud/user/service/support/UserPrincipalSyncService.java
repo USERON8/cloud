@@ -30,7 +30,6 @@ public class UserPrincipalSyncService {
     @Transactional
     public void upsertUserPrincipal(Long userId,
                                     String username,
-                                    String encodedPassword,
                                     String nickname,
                                     String email,
                                     String phone,
@@ -44,7 +43,6 @@ public class UserPrincipalSyncService {
             User user = new User();
             user.setId(userId);
             user.setUsername(username);
-            user.setPassword(encodedPassword);
             user.setNickname(nickname == null || nickname.isBlank() ? username : nickname);
             user.setEmail(email);
             user.setPhone(phone);
@@ -57,9 +55,6 @@ public class UserPrincipalSyncService {
         user.setId(userId);
         if (username != null && !username.isBlank()) {
             user.setUsername(username);
-        }
-        if (encodedPassword != null && !encodedPassword.isBlank()) {
-            user.setPassword(encodedPassword);
         }
         if (nickname != null && !nickname.isBlank()) {
             user.setNickname(nickname);
