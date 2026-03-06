@@ -13,14 +13,14 @@
 
     <modules>
         <module>common-parent</module>
-        <module>gateway</module>
-        <module>auth-service</module>
-        <module>user-service</module>
-        <module>order-service</module>
-        <module>stock-service</module>
-        <module>payment-service</module>
-        <module>search-service</module>
-        <module>product-service</module>
+        <module>services/gateway</module>
+        <module>services/auth-service</module>
+        <module>services/user-service</module>
+        <module>services/order-service</module>
+        <module>services/stock-service</module>
+        <module>services/payment-service</module>
+        <module>services/search-service</module>
+        <module>services/product-service</module>
     </modules>
 
     <parent>
@@ -286,16 +286,6 @@
             <dependency>
                 <groupId>com.cloud</groupId>
                 <artifactId>common-log</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.cloud</groupId>
-                <artifactId>common-module</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.cloud</groupId>
-                <artifactId>api-module</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

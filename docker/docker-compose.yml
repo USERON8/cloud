@@ -396,35 +396,35 @@
         source: ./monitor/logstash/drivers
         target: /usr/share/logstash/drivers
       - type: bind
-        source: ../auth-service/logs
+        source: ../services/auth-service/logs
         target: /workspace/service-logs/auth-service
         read_only: true
       - type: bind
-        source: ../gateway/logs
+        source: ../services/gateway/logs
         target: /workspace/service-logs/gateway
         read_only: true
       - type: bind
-        source: ../user-service/logs
+        source: ../services/user-service/logs
         target: /workspace/service-logs/user-service
         read_only: true
       - type: bind
-        source: ../order-service/logs
+        source: ../services/order-service/logs
         target: /workspace/service-logs/order-service
         read_only: true
       - type: bind
-        source: ../stock-service/logs
+        source: ../services/stock-service/logs
         target: /workspace/service-logs/stock-service
         read_only: true
       - type: bind
-        source: ../payment-service/logs
+        source: ../services/payment-service/logs
         target: /workspace/service-logs/payment-service
         read_only: true
       - type: bind
-        source: ../product-service/logs
+        source: ../services/product-service/logs
         target: /workspace/service-logs/product-service
         read_only: true
       - type: bind
-        source: ../search-service/logs
+        source: ../services/search-service/logs
         target: /workspace/service-logs/search-service
         read_only: true
       - type: bind

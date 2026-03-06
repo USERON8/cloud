@@ -7,20 +7,17 @@
         <groupId>com.cloud</groupId>
         <artifactId>cloud</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>common-parent</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>common-core</artifactId>
 
-    <modules>
-        <module>common-core</module>
-        <module>common-domain</module>
-        <module>common-web</module>
-        <module>common-db</module>
-        <module>common-security</module>
-        <module>common-messaging</module>
-        <module>common-api</module>
-        <module>common-log</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 </project>
+

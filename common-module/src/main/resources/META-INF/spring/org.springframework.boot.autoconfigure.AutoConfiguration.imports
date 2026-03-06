@@ -1,3 +1,0 @@
-com.cloud.common.config.DistributedLockAutoConfiguration
-com.cloud.common.config.RedisConfig
-com.cloud.common.config.XxlJobAutoConfiguration
