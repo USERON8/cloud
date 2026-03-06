@@ -19,8 +19,6 @@ public interface UserConverter {
 
     UserDTO toDTO(User user);
 
-    User toEntity(UserDTO userDTO);
-
     List<UserDTO> toDTOList(List<User> users);
 
     UserVO toVO(User user);

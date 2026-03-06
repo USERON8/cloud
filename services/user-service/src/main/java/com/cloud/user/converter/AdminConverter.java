@@ -8,47 +8,16 @@ import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 
-
-
-
-
-
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE, 
-        unmappedSourcePolicy = ReportingPolicy.IGNORE  
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface AdminConverter {
 
-    
-
-
-
-
-
     AdminDTO toDTO(Admin admin);
 
-    
-
-
-
-
-
-    Admin toEntity(AdminDTO adminDTO);
-
-    
-
-
-
-
-
     AdminVO toVO(Admin admin);
-
-    
-
-
-
-
 
     List<AdminVO> toVOList(List<Admin> admins);
 
