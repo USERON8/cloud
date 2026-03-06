@@ -1,9 +1,9 @@
 package com.cloud.user.controller.user;
 
+import com.cloud.common.domain.dto.user.UserManageUpdateRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.result.Result;
 import com.cloud.common.validation.BatchValidationUtils;
-import com.cloud.user.converter.UserConverter;
 import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,7 +33,6 @@ import java.util.List;
 public class UserManageController {
 
     private final UserService userService;
-    private final UserConverter userConverter = UserConverter.INSTANCE;
 
     @PutMapping("/{id}")
     @Operation(summary = "Update user", description = "Update user by user ID")
@@ -43,9 +42,10 @@ public class UserManageController {
             @Parameter(description = "User ID") Long id,
             @RequestBody
             @Parameter(description = "User payload")
-            @Valid @NotNull(message = "user payload is required") UserDTO userDTO,
+            @Valid @NotNull(message = "user payload is required") UserManageUpdateRequestDTO requestDTO,
             Authentication authentication) {
         try {
+            UserDTO userDTO = toUserDTO(requestDTO);
             userDTO.setId(id);
             Boolean result = userService.updateUser(userDTO);
             return Result.success("user updated", Boolean.TRUE.equals(result));
@@ -97,18 +97,18 @@ public class UserManageController {
     public Result<Boolean> updateBatch(
             @RequestBody
             @Parameter(description = "User payload list")
-            @Valid @NotNull(message = "user payload list is required") List<UserDTO> userDTOList,
+            @Valid @NotNull(message = "user payload list is required") List<UserManageUpdateRequestDTO> requestDTOList,
             Authentication authentication) {
         try {
-            BatchValidationUtils.validateBatchSize(userDTOList, "Batch update users");
-            long missingIdCount = userDTOList.stream().filter(dto -> dto.getId() == null).count();
+            BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");
+            long missingIdCount = requestDTOList.stream().filter(dto -> dto.getId() == null).count();
             if (missingIdCount > 0) {
                 return Result.badRequest("all user payloads must include id for batch update");
             }
             boolean result = userService.updateBatchById(
-                    userDTOList.stream().map(userConverter::toEntity).toList()
+                    requestDTOList.stream().map(UserManageController::toUserEntity).toList()
             );
-            return Result.success(String.format("batch update completed: %d", userDTOList.size()), result);
+            return Result.success(String.format("batch update completed: %d", requestDTOList.size()), result);
         } catch (Exception e) {
             log.error("Failed to batch update users", e);
             return Result.error("failed to batch update users");
@@ -138,5 +138,31 @@ public class UserManageController {
             log.error("Failed to batch update user status, status={}", status, e);
             return Result.error("failed to batch update user status");
         }
+    }
+
+    private static UserDTO toUserDTO(UserManageUpdateRequestDTO requestDTO) {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(requestDTO.getId());
+        userDTO.setUsername(requestDTO.getUsername());
+        userDTO.setPassword(requestDTO.getPassword());
+        userDTO.setPhone(requestDTO.getPhone());
+        userDTO.setNickname(requestDTO.getNickname());
+        userDTO.setAvatarUrl(requestDTO.getAvatarUrl());
+        userDTO.setEmail(requestDTO.getEmail());
+        userDTO.setStatus(requestDTO.getStatus());
+        userDTO.setRoles(requestDTO.getRoles());
+        return userDTO;
+    }
+
+    private static com.cloud.user.module.entity.User toUserEntity(UserManageUpdateRequestDTO requestDTO) {
+        com.cloud.user.module.entity.User user = new com.cloud.user.module.entity.User();
+        user.setId(requestDTO.getId());
+        user.setUsername(requestDTO.getUsername());
+        user.setPhone(requestDTO.getPhone());
+        user.setNickname(requestDTO.getNickname());
+        user.setAvatarUrl(requestDTO.getAvatarUrl());
+        user.setEmail(requestDTO.getEmail());
+        user.setStatus(requestDTO.getStatus());
+        return user;
     }
 }

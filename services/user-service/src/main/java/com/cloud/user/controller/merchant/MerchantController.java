@@ -2,6 +2,7 @@ package com.cloud.user.controller.merchant;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantDTO;
+import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -118,9 +119,9 @@ public class MerchantController {
             @Parameter(description = "Merchant payload")
             @RequestBody
             @Valid
-            @NotNull(message = "merchant payload is required") MerchantDTO merchantDTO) {
+            @NotNull(message = "merchant payload is required") MerchantUpsertRequestDTO requestDTO) {
         try {
-            MerchantDTO created = merchantService.createMerchant(merchantDTO);
+            MerchantDTO created = merchantService.createMerchant(toMerchantDTO(requestDTO));
             return Result.success("merchant created", created);
         } catch (Exception e) {
             log.error("Failed to create merchant", e);
@@ -138,8 +139,9 @@ public class MerchantController {
             @Parameter(description = "Merchant payload")
             @RequestBody
             @Valid
-            @NotNull(message = "merchant payload is required") MerchantDTO merchantDTO,
+            @NotNull(message = "merchant payload is required") MerchantUpsertRequestDTO requestDTO,
             Authentication authentication) {
+        MerchantDTO merchantDTO = toMerchantDTO(requestDTO);
         merchantDTO.setId(id);
         try {
             boolean result = merchantService.updateMerchant(merchantDTO);
@@ -307,6 +309,17 @@ public class MerchantController {
             log.error("Failed to batch approve merchants, ids={}", ids, e);
             return Result.error("failed to batch approve merchants");
         }
+    }
+
+    private static MerchantDTO toMerchantDTO(MerchantUpsertRequestDTO requestDTO) {
+        MerchantDTO merchantDTO = new MerchantDTO();
+        merchantDTO.setUsername(requestDTO.getUsername());
+        merchantDTO.setPassword(requestDTO.getPassword());
+        merchantDTO.setMerchantName(requestDTO.getMerchantName());
+        merchantDTO.setEmail(requestDTO.getEmail());
+        merchantDTO.setPhone(requestDTO.getPhone());
+        merchantDTO.setStatus(requestDTO.getStatus());
+        return merchantDTO;
     }
 }
 

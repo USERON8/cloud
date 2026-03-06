@@ -2,6 +2,7 @@ package com.cloud.user.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.AdminDTO;
+import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.user.service.AdminService;
@@ -94,9 +95,9 @@ public class AdminController {
             @Parameter(description = "Admin payload")
             @RequestBody
             @Valid
-            @NotNull(message = "admin payload cannot be null") AdminDTO adminDTO) {
+            @NotNull(message = "admin payload cannot be null") AdminUpsertRequestDTO requestDTO) {
         try {
-            AdminDTO created = adminService.createAdmin(adminDTO);
+            AdminDTO created = adminService.createAdmin(toAdminDTO(requestDTO));
             return Result.success("Admin created", created);
         } catch (Exception e) {
             log.error("Failed to create admin", e);
@@ -112,8 +113,9 @@ public class AdminController {
             @Parameter(description = "Admin payload")
             @RequestBody
             @Valid
-            @NotNull(message = "admin payload cannot be null") AdminDTO adminDTO,
+            @NotNull(message = "admin payload cannot be null") AdminUpsertRequestDTO requestDTO,
             Authentication authentication) {
+        AdminDTO adminDTO = toAdminDTO(requestDTO);
         adminDTO.setId(id);
         try {
             boolean result = adminService.updateAdmin(adminDTO);
@@ -168,5 +170,16 @@ public class AdminController {
             log.error("Failed to reset admin password: {}", id, e);
             return Result.error("Failed to reset password");
         }
+    }
+
+    private static AdminDTO toAdminDTO(AdminUpsertRequestDTO requestDTO) {
+        AdminDTO adminDTO = new AdminDTO();
+        adminDTO.setUsername(requestDTO.getUsername());
+        adminDTO.setPassword(requestDTO.getPassword());
+        adminDTO.setRealName(requestDTO.getRealName());
+        adminDTO.setPhone(requestDTO.getPhone());
+        adminDTO.setRole(requestDTO.getRole());
+        adminDTO.setStatus(requestDTO.getStatus());
+        return adminDTO;
     }
 }
