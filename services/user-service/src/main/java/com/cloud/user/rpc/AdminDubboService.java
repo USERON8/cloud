@@ -2,6 +2,7 @@ package com.cloud.user.rpc;
 
 import com.cloud.api.user.AdminDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
+import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +28,13 @@ public class AdminDubboService implements AdminDubboApi {
     }
 
     @Override
-    public AdminDTO create(AdminDTO adminDTO) {
-        return adminService.createAdmin(adminDTO);
+    public AdminDTO create(AdminUpsertRequestDTO requestDTO) {
+        return adminService.createAdmin(requestDTO);
     }
 
     @Override
-    public AdminDTO update(Long id, AdminDTO adminDTO) {
-        adminDTO.setId(id);
-        boolean success = adminService.updateAdmin(adminDTO);
+    public AdminDTO update(Long id, AdminUpsertRequestDTO requestDTO) {
+        boolean success = adminService.updateAdmin(id, requestDTO);
         return success ? adminService.getAdminById(id) : null;
     }
 

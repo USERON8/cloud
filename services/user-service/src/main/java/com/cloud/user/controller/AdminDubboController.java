@@ -2,6 +2,7 @@ package com.cloud.user.controller;
 
 import com.cloud.api.user.AdminDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
+import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -36,15 +37,14 @@ public class AdminDubboController implements AdminDubboApi {
 
     @Override
     @PostMapping("/manage/create")
-    public AdminDTO create(@RequestBody AdminDTO adminDTO) {
-        return adminService.createAdmin(adminDTO);
+    public AdminDTO create(@RequestBody AdminUpsertRequestDTO requestDTO) {
+        return adminService.createAdmin(requestDTO);
     }
 
     @Override
     @PutMapping("/manage/update/{id}")
-    public AdminDTO update(@PathVariable("id") Long id, @RequestBody AdminDTO adminDTO) {
-        adminDTO.setId(id);
-        boolean success = adminService.updateAdmin(adminDTO);
+    public AdminDTO update(@PathVariable("id") Long id, @RequestBody AdminUpsertRequestDTO requestDTO) {
+        boolean success = adminService.updateAdmin(id, requestDTO);
         return success ? adminService.getAdminById(id) : null;
     }
 

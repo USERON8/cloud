@@ -97,7 +97,7 @@ public class AdminController {
             @Valid
             @NotNull(message = "admin payload cannot be null") AdminUpsertRequestDTO requestDTO) {
         try {
-            AdminDTO created = adminService.createAdmin(toAdminDTO(requestDTO));
+            AdminDTO created = adminService.createAdmin(requestDTO);
             return Result.success("Admin created", created);
         } catch (Exception e) {
             log.error("Failed to create admin", e);
@@ -115,10 +115,8 @@ public class AdminController {
             @Valid
             @NotNull(message = "admin payload cannot be null") AdminUpsertRequestDTO requestDTO,
             Authentication authentication) {
-        AdminDTO adminDTO = toAdminDTO(requestDTO);
-        adminDTO.setId(id);
         try {
-            boolean result = adminService.updateAdmin(adminDTO);
+            boolean result = adminService.updateAdmin(id, requestDTO);
             return Result.success("Admin updated", result);
         } catch (Exception e) {
             log.error("Failed to update admin: {}", id, e);
@@ -170,16 +168,5 @@ public class AdminController {
             log.error("Failed to reset admin password: {}", id, e);
             return Result.error("Failed to reset password");
         }
-    }
-
-    private static AdminDTO toAdminDTO(AdminUpsertRequestDTO requestDTO) {
-        AdminDTO adminDTO = new AdminDTO();
-        adminDTO.setUsername(requestDTO.getUsername());
-        adminDTO.setPassword(requestDTO.getPassword());
-        adminDTO.setRealName(requestDTO.getRealName());
-        adminDTO.setPhone(requestDTO.getPhone());
-        adminDTO.setRole(requestDTO.getRole());
-        adminDTO.setStatus(requestDTO.getStatus());
-        return adminDTO;
     }
 }

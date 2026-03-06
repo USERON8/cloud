@@ -264,7 +264,6 @@ public class AuthIdentityService {
         if (StrUtil.isBlank(result.getAvatarUrl())) {
             result.setAvatarUrl(avatarUrl);
         }
-        result.setPassword(null);
         return result;
     }
 

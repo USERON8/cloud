@@ -8,6 +8,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
@@ -189,7 +190,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @DistributedLock(
-            key = "'user:create:' + #userDTO.username",
+            key = "'user:create:' + #requestDTO.username",
             waitTime = 5,
             leaseTime = 15,
             failMessage = "failed to acquire user create lock"
@@ -199,18 +200,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "user", allEntries = true),
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
-    public Long createUser(UserDTO userDTO) {
-        if (userDTO == null) {
+    public Long createUser(UserUpsertRequestDTO requestDTO) {
+        if (requestDTO == null) {
             throw new BusinessException("user payload is required");
         }
-        if (StrUtil.isBlank(userDTO.getPassword())) {
+        if (StrUtil.isBlank(requestDTO.getPassword())) {
             throw new BusinessException("password is required");
         }
-        authPrincipalRemoteService.assertUsernameAvailable(userDTO.getUsername(), null);
-        User user = userConverter.toEntity(userDTO);
+        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
+        User user = toUserEntity(requestDTO);
         save(user);
-        List<String> roles = userDTO.getRoles() == null || userDTO.getRoles().isEmpty() ? List.of("USER") : userDTO.getRoles();
-        authPrincipalRemoteService.createPrincipal(toCreatePrincipalDTO(userDTO, user.getId(), roles));
+        List<String> roles = requestDTO.getRoles() == null || requestDTO.getRoles().isEmpty()
+                ? List.of("USER")
+                : requestDTO.getRoles();
+        authPrincipalRemoteService.createPrincipal(toCreatePrincipalDTO(requestDTO, user.getId(), roles));
         return user.getId();
     }
 
@@ -228,44 +231,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @DistributedLock(
-            key = "'user:update:' + #userDTO.id",
+            key = "'user:update:' + #id",
             waitTime = 5,
             leaseTime = 15,
             failMessage = "failed to acquire user update lock"
     )
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
-            @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
-            @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username"),
+            @CacheEvict(cacheNames = "user", key = "#id"),
+            @CacheEvict(cacheNames = "user", key = "'username:' + #requestDTO.username"),
             @CacheEvict(cacheNames = "userList", allEntries = true),
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
-    public Boolean updateUser(UserDTO userDTO) {
-        if (userDTO == null || userDTO.getId() == null) {
+    public Boolean updateUser(Long id, UserUpsertRequestDTO requestDTO) {
+        if (id == null || requestDTO == null) {
             throw new BusinessException("user id is required");
         }
 
-        User existingUser = getById(userDTO.getId());
+        User existingUser = getById(id);
         if (existingUser == null) {
-            throw new EntityNotFoundException("user", userDTO.getId());
+            throw new EntityNotFoundException("user", id);
         }
 
-        if (StrUtil.isNotBlank(userDTO.getUsername())
-                && !StrUtil.equals(userDTO.getUsername(), existingUser.getUsername())) {
+        if (StrUtil.isNotBlank(requestDTO.getUsername())
+                && !StrUtil.equals(requestDTO.getUsername(), existingUser.getUsername())) {
             long count = lambdaQuery()
-                    .eq(User::getUsername, userDTO.getUsername())
-                    .ne(User::getId, userDTO.getId())
+                    .eq(User::getUsername, requestDTO.getUsername())
+                    .ne(User::getId, id)
                     .count();
             if (count > 0) {
                 throw new BusinessException("username already exists");
             }
-            authPrincipalRemoteService.assertUsernameAvailable(userDTO.getUsername(), userDTO.getId());
+            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
-        User user = userConverter.toEntity(userDTO);
+        User user = toUserEntity(requestDTO);
+        user.setId(id);
         boolean updated = updateById(user);
         if (updated) {
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(userDTO, existingUser));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
         }
         return updated;
     }
@@ -502,29 +506,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return vos;
     }
 
-    private AuthPrincipalDTO toCreatePrincipalDTO(UserDTO userDTO, Long userId, List<String> roles) {
+    private User toUserEntity(UserUpsertRequestDTO requestDTO) {
+        User user = new User();
+        user.setUsername(requestDTO.getUsername());
+        user.setPhone(requestDTO.getPhone());
+        user.setNickname(requestDTO.getNickname());
+        user.setAvatarUrl(requestDTO.getAvatarUrl());
+        user.setEmail(requestDTO.getEmail());
+        user.setStatus(requestDTO.getStatus());
+        return user;
+    }
+
+    private AuthPrincipalDTO toCreatePrincipalDTO(UserUpsertRequestDTO requestDTO, Long userId, List<String> roles) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(userId);
-        authPrincipalDTO.setUsername(userDTO.getUsername());
-        authPrincipalDTO.setPassword(userDTO.getPassword());
-        authPrincipalDTO.setNickname(userDTO.getNickname());
-        authPrincipalDTO.setEmail(userDTO.getEmail());
-        authPrincipalDTO.setPhone(userDTO.getPhone());
-        authPrincipalDTO.setStatus(userDTO.getStatus());
+        authPrincipalDTO.setUsername(requestDTO.getUsername());
+        authPrincipalDTO.setPassword(requestDTO.getPassword());
+        authPrincipalDTO.setNickname(requestDTO.getNickname());
+        authPrincipalDTO.setEmail(requestDTO.getEmail());
+        authPrincipalDTO.setPhone(requestDTO.getPhone());
+        authPrincipalDTO.setStatus(requestDTO.getStatus());
         authPrincipalDTO.setRoles(roles);
         return authPrincipalDTO;
     }
 
-    private AuthPrincipalDTO toAuthPrincipalDTO(UserDTO userDTO, User existingUser) {
+    private AuthPrincipalDTO toAuthPrincipalDTO(Long userId, UserUpsertRequestDTO requestDTO, User existingUser) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-        authPrincipalDTO.setId(userDTO.getId());
-        authPrincipalDTO.setUsername(StrUtil.blankToDefault(userDTO.getUsername(), existingUser.getUsername()));
-        authPrincipalDTO.setPassword(userDTO.getPassword());
-        authPrincipalDTO.setNickname(StrUtil.blankToDefault(userDTO.getNickname(), existingUser.getNickname()));
-        authPrincipalDTO.setEmail(userDTO.getEmail() == null ? existingUser.getEmail() : userDTO.getEmail());
-        authPrincipalDTO.setPhone(userDTO.getPhone() == null ? existingUser.getPhone() : userDTO.getPhone());
-        authPrincipalDTO.setStatus(userDTO.getStatus() == null ? existingUser.getStatus() : userDTO.getStatus());
-        authPrincipalDTO.setRoles(userDTO.getRoles());
+        authPrincipalDTO.setId(userId);
+        authPrincipalDTO.setUsername(StrUtil.blankToDefault(requestDTO.getUsername(), existingUser.getUsername()));
+        authPrincipalDTO.setPassword(requestDTO.getPassword());
+        authPrincipalDTO.setNickname(StrUtil.blankToDefault(requestDTO.getNickname(), existingUser.getNickname()));
+        authPrincipalDTO.setEmail(requestDTO.getEmail() == null ? existingUser.getEmail() : requestDTO.getEmail());
+        authPrincipalDTO.setPhone(requestDTO.getPhone() == null ? existingUser.getPhone() : requestDTO.getPhone());
+        authPrincipalDTO.setStatus(requestDTO.getStatus() == null ? existingUser.getStatus() : requestDTO.getStatus());
+        authPrincipalDTO.setRoles(requestDTO.getRoles());
         return authPrincipalDTO;
     }
 }

@@ -1,7 +1,7 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.common.domain.dto.user.UserManageUpdateRequestDTO;
-import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.result.Result;
 import com.cloud.common.validation.BatchValidationUtils;
 import com.cloud.user.service.UserService;
@@ -45,9 +45,7 @@ public class UserManageController {
             @Valid @NotNull(message = "user payload is required") UserManageUpdateRequestDTO requestDTO,
             Authentication authentication) {
         try {
-            UserDTO userDTO = toUserDTO(requestDTO);
-            userDTO.setId(id);
-            Boolean result = userService.updateUser(userDTO);
+            Boolean result = userService.updateUser(id, toUserUpsertRequestDTO(requestDTO));
             return Result.success("user updated", Boolean.TRUE.equals(result));
         } catch (Exception e) {
             log.error("Failed to update user, id={}", id, e);
@@ -140,18 +138,17 @@ public class UserManageController {
         }
     }
 
-    private static UserDTO toUserDTO(UserManageUpdateRequestDTO requestDTO) {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(requestDTO.getId());
-        userDTO.setUsername(requestDTO.getUsername());
-        userDTO.setPassword(requestDTO.getPassword());
-        userDTO.setPhone(requestDTO.getPhone());
-        userDTO.setNickname(requestDTO.getNickname());
-        userDTO.setAvatarUrl(requestDTO.getAvatarUrl());
-        userDTO.setEmail(requestDTO.getEmail());
-        userDTO.setStatus(requestDTO.getStatus());
-        userDTO.setRoles(requestDTO.getRoles());
-        return userDTO;
+    private static UserUpsertRequestDTO toUserUpsertRequestDTO(UserManageUpdateRequestDTO requestDTO) {
+        UserUpsertRequestDTO upsertRequestDTO = new UserUpsertRequestDTO();
+        upsertRequestDTO.setUsername(requestDTO.getUsername());
+        upsertRequestDTO.setPassword(requestDTO.getPassword());
+        upsertRequestDTO.setPhone(requestDTO.getPhone());
+        upsertRequestDTO.setNickname(requestDTO.getNickname());
+        upsertRequestDTO.setAvatarUrl(requestDTO.getAvatarUrl());
+        upsertRequestDTO.setEmail(requestDTO.getEmail());
+        upsertRequestDTO.setStatus(requestDTO.getStatus());
+        upsertRequestDTO.setRoles(requestDTO.getRoles());
+        return upsertRequestDTO;
     }
 
     private static com.cloud.user.module.entity.User toUserEntity(UserManageUpdateRequestDTO requestDTO) {

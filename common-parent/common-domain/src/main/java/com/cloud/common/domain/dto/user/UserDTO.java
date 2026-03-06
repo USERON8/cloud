@@ -1,6 +1,5 @@
 package com.cloud.common.domain.dto.user;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,10 +24,6 @@ public class UserDTO implements Serializable {
     @NotBlank(message = "Username cannot be blank")
     @Size(max = 50, message = "Username length must be less than or equal to 50")
     private String username;
-
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Size(max = 255, message = "Password length must be less than or equal to 255")
-    private String password;
 
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "Invalid phone format")
     private String phone;

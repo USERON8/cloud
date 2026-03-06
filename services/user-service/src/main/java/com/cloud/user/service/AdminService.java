@@ -3,6 +3,7 @@ package com.cloud.user.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.AdminDTO;
+import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.module.entity.Admin;
 
@@ -73,7 +74,7 @@ public interface AdminService extends IService<Admin> {
 
 
 
-    AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException;
+    AdminDTO createAdmin(AdminUpsertRequestDTO requestDTO) throws AdminException.AdminAlreadyExistsException;
 
     
 
@@ -82,7 +83,7 @@ public interface AdminService extends IService<Admin> {
 
 
 
-    boolean updateAdmin(AdminDTO adminDTO) throws AdminException.AdminNotFoundException;
+    boolean updateAdmin(Long id, AdminUpsertRequestDTO requestDTO) throws AdminException.AdminNotFoundException;
 
     
 

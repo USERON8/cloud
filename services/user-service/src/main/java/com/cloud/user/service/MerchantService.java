@@ -3,6 +3,7 @@ package com.cloud.user.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.MerchantDTO;
+import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
 import com.cloud.user.exception.MerchantException;
 import com.cloud.user.module.entity.Merchant;
 
@@ -73,7 +74,7 @@ public interface MerchantService extends IService<Merchant> {
 
 
 
-    MerchantDTO createMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantAlreadyExistsException;
+    MerchantDTO createMerchant(MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantAlreadyExistsException;
 
     
 
@@ -82,7 +83,7 @@ public interface MerchantService extends IService<Merchant> {
 
 
 
-    boolean updateMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantNotFoundException;
+    boolean updateMerchant(Long id, MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantNotFoundException;
 
     
 

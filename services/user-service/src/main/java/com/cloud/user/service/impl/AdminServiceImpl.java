@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
+import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
@@ -108,31 +109,31 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Transactional(rollbackFor = Exception.class)
     @CachePut(cacheNames = ADMIN_CACHE, key = "#result.id")
     @DistributedLock(
-            key = "'create:' + #adminDTO.username",
+            key = "'create:' + #requestDTO.username",
             prefix = "admin",
             waitTime = 10,
             leaseTime = 30,
             failMessage = "failed to acquire create admin lock"
     )
-    public AdminDTO createAdmin(AdminDTO adminDTO) throws AdminException.AdminAlreadyExistsException {
-        if (StrUtil.isBlank(adminDTO.getUsername())) {
+    public AdminDTO createAdmin(AdminUpsertRequestDTO requestDTO) throws AdminException.AdminAlreadyExistsException {
+        if (StrUtil.isBlank(requestDTO.getUsername())) {
             throw new IllegalArgumentException("username is required");
         }
-        if (StrUtil.isBlank(adminDTO.getRealName())) {
+        if (StrUtil.isBlank(requestDTO.getRealName())) {
             throw new IllegalArgumentException("realName is required");
         }
-        if (StrUtil.isBlank(adminDTO.getPassword())) {
+        if (StrUtil.isBlank(requestDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
 
-        long count = lambdaQuery().eq(Admin::getUsername, adminDTO.getUsername()).count();
+        long count = lambdaQuery().eq(Admin::getUsername, requestDTO.getUsername()).count();
         if (count > 0) {
-            log.warn("Admin already exists, username={}", adminDTO.getUsername());
-            throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
+            log.warn("Admin already exists, username={}", requestDTO.getUsername());
+            throw new AdminException.AdminAlreadyExistsException(requestDTO.getUsername());
         }
-        authPrincipalRemoteService.assertUsernameAvailable(adminDTO.getUsername(), null);
+        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
 
-        Admin admin = adminConverter.toEntity(adminDTO);
+        Admin admin = toAdminEntity(requestDTO);
         if (admin.getStatus() == null) {
             admin.setStatus(STATUS_ENABLED);
         }
@@ -148,47 +149,47 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                 admin.getPhone(),
                 admin.getStatus()
         );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin, adminDTO.getPassword()));
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
         return adminConverter.toDTO(admin);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
-            @CacheEvict(cacheNames = ADMIN_CACHE, key = "#adminDTO.id"),
-            @CacheEvict(cacheNames = ADMIN_CACHE, key = "'username:' + #adminDTO.username")
+            @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id"),
+            @CacheEvict(cacheNames = ADMIN_CACHE, key = "'username:' + #requestDTO.username")
     })
     @DistributedLock(
-            key = "'update:' + #adminDTO.id",
+            key = "'update:' + #id",
             prefix = "admin",
             waitTime = 10,
             leaseTime = 30,
             failMessage = "failed to acquire update admin lock"
     )
-    public boolean updateAdmin(AdminDTO adminDTO) throws AdminException.AdminNotFoundException {
-        if (adminDTO == null || adminDTO.getId() == null) {
+    public boolean updateAdmin(Long id, AdminUpsertRequestDTO requestDTO) throws AdminException.AdminNotFoundException {
+        if (id == null || requestDTO == null) {
             throw new IllegalArgumentException("admin id is required");
         }
-        Admin existingAdmin = getById(adminDTO.getId());
+        Admin existingAdmin = getById(id);
         if (existingAdmin == null) {
-            log.warn("Admin not found, adminId={}", adminDTO.getId());
-            throw new AdminException.AdminNotFoundException(adminDTO.getId());
+            log.warn("Admin not found, adminId={}", id);
+            throw new AdminException.AdminNotFoundException(id);
         }
 
-        if (StrUtil.isNotBlank(adminDTO.getUsername())
-                && !adminDTO.getUsername().equals(existingAdmin.getUsername())) {
+        if (StrUtil.isNotBlank(requestDTO.getUsername())
+                && !requestDTO.getUsername().equals(existingAdmin.getUsername())) {
             long count = lambdaQuery()
-                    .eq(Admin::getUsername, adminDTO.getUsername())
-                    .ne(Admin::getId, adminDTO.getId())
+                    .eq(Admin::getUsername, requestDTO.getUsername())
+                    .ne(Admin::getId, id)
                     .count();
             if (count > 0) {
-                throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
+                throw new AdminException.AdminAlreadyExistsException(requestDTO.getUsername());
             }
-            authPrincipalRemoteService.assertUsernameAvailable(adminDTO.getUsername(), adminDTO.getId());
+            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
-        Admin admin = adminConverter.toEntity(adminDTO);
-        admin.setId(adminDTO.getId());
+        Admin admin = toAdminEntity(requestDTO);
+        admin.setId(id);
         if (StrUtil.isBlank(admin.getUsername())) {
             admin.setUsername(existingAdmin.getUsername());
         }
@@ -207,7 +208,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         boolean updated = updateById(admin);
         if (updated) {
-            Admin current = resolveCurrentAdmin(adminDTO, existingAdmin);
+            Admin current = resolveCurrentAdmin(requestDTO, existingAdmin);
             userPrincipalSyncService.upsertUserPrincipal(
                     current.getId(),
                     current.getUsername(),
@@ -216,7 +217,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                     current.getPhone(),
                     current.getStatus()
             );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, adminDTO.getPassword()));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getPassword()));
         }
         return updated;
     }
@@ -357,14 +358,24 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public void evictAllAdminCache() {
     }
 
-    private Admin resolveCurrentAdmin(AdminDTO adminDTO, Admin existingAdmin) {
+    private Admin toAdminEntity(AdminUpsertRequestDTO requestDTO) {
+        Admin admin = new Admin();
+        admin.setUsername(requestDTO.getUsername());
+        admin.setRealName(requestDTO.getRealName());
+        admin.setPhone(requestDTO.getPhone());
+        admin.setRole(requestDTO.getRole());
+        admin.setStatus(requestDTO.getStatus());
+        return admin;
+    }
+
+    private Admin resolveCurrentAdmin(AdminUpsertRequestDTO requestDTO, Admin existingAdmin) {
         Admin merged = new Admin();
         merged.setId(existingAdmin.getId());
-        merged.setUsername(StrUtil.blankToDefault(adminDTO.getUsername(), existingAdmin.getUsername()));
-        merged.setRealName(StrUtil.blankToDefault(adminDTO.getRealName(), existingAdmin.getRealName()));
-        merged.setPhone(adminDTO.getPhone() == null ? existingAdmin.getPhone() : adminDTO.getPhone());
-        merged.setRole(StrUtil.blankToDefault(adminDTO.getRole(), existingAdmin.getRole()));
-        merged.setStatus(adminDTO.getStatus() == null ? existingAdmin.getStatus() : adminDTO.getStatus());
+        merged.setUsername(StrUtil.blankToDefault(requestDTO.getUsername(), existingAdmin.getUsername()));
+        merged.setRealName(StrUtil.blankToDefault(requestDTO.getRealName(), existingAdmin.getRealName()));
+        merged.setPhone(requestDTO.getPhone() == null ? existingAdmin.getPhone() : requestDTO.getPhone());
+        merged.setRole(StrUtil.blankToDefault(requestDTO.getRole(), existingAdmin.getRole()));
+        merged.setStatus(requestDTO.getStatus() == null ? existingAdmin.getStatus() : requestDTO.getStatus());
         return merged;
     }
 

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
+import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.exception.MerchantException;
 import com.cloud.user.mapper.MerchantAuthMapper;
@@ -114,35 +115,35 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     @Transactional(rollbackFor = Exception.class)
     @CachePut(cacheNames = MERCHANT_CACHE, key = "#result.id")
     @DistributedLock(
-            key = "'create:' + #merchantDTO.username",
+            key = "'create:' + #requestDTO.username",
             prefix = "merchant",
             waitTime = 10,
             leaseTime = 30,
             failMessage = "failed to acquire create merchant lock"
     )
-    public MerchantDTO createMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantAlreadyExistsException {
-        if (StrUtil.isBlank(merchantDTO.getUsername())) {
+    public MerchantDTO createMerchant(MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantAlreadyExistsException {
+        if (StrUtil.isBlank(requestDTO.getUsername())) {
             throw new IllegalArgumentException("username is required");
         }
-        if (StrUtil.isBlank(merchantDTO.getMerchantName())) {
+        if (StrUtil.isBlank(requestDTO.getMerchantName())) {
             throw new IllegalArgumentException("merchantName is required");
         }
-        if (StrUtil.isBlank(merchantDTO.getPassword())) {
+        if (StrUtil.isBlank(requestDTO.getPassword())) {
             throw new IllegalArgumentException("password is required");
         }
 
-        if (lambdaQuery().eq(Merchant::getUsername, merchantDTO.getUsername()).count() > 0) {
-            throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
+        if (lambdaQuery().eq(Merchant::getUsername, requestDTO.getUsername()).count() > 0) {
+            throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getUsername());
         }
-        authPrincipalRemoteService.assertUsernameAvailable(merchantDTO.getUsername(), null);
+        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
 
-        if (StrUtil.isNotBlank(merchantDTO.getMerchantName())) {
-            if (lambdaQuery().eq(Merchant::getMerchantName, merchantDTO.getMerchantName()).count() > 0) {
-                throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getMerchantName());
+        if (StrUtil.isNotBlank(requestDTO.getMerchantName())) {
+            if (lambdaQuery().eq(Merchant::getMerchantName, requestDTO.getMerchantName()).count() > 0) {
+                throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getMerchantName());
             }
         }
 
-        Merchant merchant = merchantConverter.toEntity(merchantDTO);
+        Merchant merchant = toMerchantEntity(requestDTO);
         if (merchant.getStatus() == null) {
             merchant.setStatus(STATUS_PENDING);
         }
@@ -154,59 +155,59 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                 merchant.getId(),
                 merchant.getUsername(),
                 merchant.getMerchantName(),
-                merchantDTO.getEmail(),
+                requestDTO.getEmail(),
                 merchant.getPhone(),
                 merchant.getStatus()
         );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(merchant, merchantDTO.getEmail(), merchantDTO.getPassword()));
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
         return toEnrichedDTO(merchant);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
-            @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#merchantDTO.id"),
-            @CacheEvict(cacheNames = MERCHANT_CACHE, key = "'username:' + #merchantDTO.username")
+            @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id"),
+            @CacheEvict(cacheNames = MERCHANT_CACHE, key = "'username:' + #requestDTO.username")
     })
     @DistributedLock(
-            key = "'update:' + #merchantDTO.id",
+            key = "'update:' + #id",
             prefix = "merchant",
             waitTime = 10,
             leaseTime = 30,
             failMessage = "failed to acquire update merchant lock"
     )
-    public boolean updateMerchant(MerchantDTO merchantDTO) throws MerchantException.MerchantNotFoundException {
-        if (merchantDTO == null || merchantDTO.getId() == null) {
+    public boolean updateMerchant(Long id, MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantNotFoundException {
+        if (id == null || requestDTO == null) {
             throw new IllegalArgumentException("merchant id is required");
         }
-        Merchant existing = getById(merchantDTO.getId());
+        Merchant existing = getById(id);
         if (existing == null) {
-            throw new MerchantException.MerchantNotFoundException(merchantDTO.getId());
+            throw new MerchantException.MerchantNotFoundException(id);
         }
 
-        if (StrUtil.isNotBlank(merchantDTO.getUsername()) && !merchantDTO.getUsername().equals(existing.getUsername())) {
+        if (StrUtil.isNotBlank(requestDTO.getUsername()) && !requestDTO.getUsername().equals(existing.getUsername())) {
             long count = lambdaQuery()
-                    .eq(Merchant::getUsername, merchantDTO.getUsername())
-                    .ne(Merchant::getId, merchantDTO.getId())
+                    .eq(Merchant::getUsername, requestDTO.getUsername())
+                    .ne(Merchant::getId, id)
                     .count();
             if (count > 0) {
-                throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
+                throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getUsername());
             }
-            authPrincipalRemoteService.assertUsernameAvailable(merchantDTO.getUsername(), merchantDTO.getId());
+            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
-        if (StrUtil.isNotBlank(merchantDTO.getMerchantName()) && !merchantDTO.getMerchantName().equals(existing.getMerchantName())) {
+        if (StrUtil.isNotBlank(requestDTO.getMerchantName()) && !requestDTO.getMerchantName().equals(existing.getMerchantName())) {
             long count = lambdaQuery()
-                    .eq(Merchant::getMerchantName, merchantDTO.getMerchantName())
-                    .ne(Merchant::getId, merchantDTO.getId())
+                    .eq(Merchant::getMerchantName, requestDTO.getMerchantName())
+                    .ne(Merchant::getId, id)
                     .count();
             if (count > 0) {
-                throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getMerchantName());
+                throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getMerchantName());
             }
         }
 
-        Merchant merchant = merchantConverter.toEntity(merchantDTO);
-        merchant.setId(merchantDTO.getId());
+        Merchant merchant = toMerchantEntity(requestDTO);
+        merchant.setId(id);
         if (StrUtil.isBlank(merchant.getUsername())) {
             merchant.setUsername(existing.getUsername());
         }
@@ -221,16 +222,16 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         }
         boolean updated = updateById(merchant);
         if (updated) {
-            Merchant current = resolveCurrentMerchant(merchantDTO, existing);
+            Merchant current = resolveCurrentMerchant(requestDTO, existing);
             userPrincipalSyncService.upsertUserPrincipal(
                     current.getId(),
                     current.getUsername(),
                     current.getMerchantName(),
-                    merchantDTO.getEmail(),
+                    requestDTO.getEmail(),
                     current.getPhone(),
                     current.getStatus()
             );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, merchantDTO.getEmail(), merchantDTO.getPassword()));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getEmail(), requestDTO.getPassword()));
         }
         return updated;
     }
@@ -416,13 +417,22 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         return merchantDTO;
     }
 
-    private Merchant resolveCurrentMerchant(MerchantDTO merchantDTO, Merchant existing) {
+    private Merchant toMerchantEntity(MerchantUpsertRequestDTO requestDTO) {
+        Merchant merchant = new Merchant();
+        merchant.setUsername(requestDTO.getUsername());
+        merchant.setMerchantName(requestDTO.getMerchantName());
+        merchant.setPhone(requestDTO.getPhone());
+        merchant.setStatus(requestDTO.getStatus());
+        return merchant;
+    }
+
+    private Merchant resolveCurrentMerchant(MerchantUpsertRequestDTO requestDTO, Merchant existing) {
         Merchant merged = new Merchant();
         merged.setId(existing.getId());
-        merged.setUsername(StrUtil.blankToDefault(merchantDTO.getUsername(), existing.getUsername()));
-        merged.setMerchantName(StrUtil.blankToDefault(merchantDTO.getMerchantName(), existing.getMerchantName()));
-        merged.setPhone(merchantDTO.getPhone() == null ? existing.getPhone() : merchantDTO.getPhone());
-        merged.setStatus(merchantDTO.getStatus() == null ? existing.getStatus() : merchantDTO.getStatus());
+        merged.setUsername(StrUtil.blankToDefault(requestDTO.getUsername(), existing.getUsername()));
+        merged.setMerchantName(StrUtil.blankToDefault(requestDTO.getMerchantName(), existing.getMerchantName()));
+        merged.setPhone(requestDTO.getPhone() == null ? existing.getPhone() : requestDTO.getPhone());
+        merged.setStatus(requestDTO.getStatus() == null ? existing.getStatus() : requestDTO.getStatus());
         return merged;
     }
 

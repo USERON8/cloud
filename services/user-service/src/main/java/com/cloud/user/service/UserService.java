@@ -3,6 +3,7 @@ package com.cloud.user.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.user.module.entity.User;
@@ -84,7 +85,7 @@ public interface UserService extends IService<User> {
 
 
 
-    Long createUser(UserDTO userDTO);
+    Long createUser(UserUpsertRequestDTO requestDTO);
 
     Long createProfile(UserDTO userDTO);
 
@@ -94,7 +95,7 @@ public interface UserService extends IService<User> {
 
 
 
-    Boolean updateUser(UserDTO userDTO);
+    Boolean updateUser(Long id, UserUpsertRequestDTO requestDTO);
 
     Boolean updateProfile(UserDTO userDTO);
 

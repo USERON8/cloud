@@ -121,7 +121,7 @@ public class MerchantController {
             @Valid
             @NotNull(message = "merchant payload is required") MerchantUpsertRequestDTO requestDTO) {
         try {
-            MerchantDTO created = merchantService.createMerchant(toMerchantDTO(requestDTO));
+            MerchantDTO created = merchantService.createMerchant(requestDTO);
             return Result.success("merchant created", created);
         } catch (Exception e) {
             log.error("Failed to create merchant", e);
@@ -141,10 +141,8 @@ public class MerchantController {
             @Valid
             @NotNull(message = "merchant payload is required") MerchantUpsertRequestDTO requestDTO,
             Authentication authentication) {
-        MerchantDTO merchantDTO = toMerchantDTO(requestDTO);
-        merchantDTO.setId(id);
         try {
-            boolean result = merchantService.updateMerchant(merchantDTO);
+            boolean result = merchantService.updateMerchant(id, requestDTO);
             return Result.success("merchant updated", result);
         } catch (Exception e) {
             log.error("Failed to update merchant, id={}", id, e);
@@ -309,17 +307,6 @@ public class MerchantController {
             log.error("Failed to batch approve merchants, ids={}", ids, e);
             return Result.error("failed to batch approve merchants");
         }
-    }
-
-    private static MerchantDTO toMerchantDTO(MerchantUpsertRequestDTO requestDTO) {
-        MerchantDTO merchantDTO = new MerchantDTO();
-        merchantDTO.setUsername(requestDTO.getUsername());
-        merchantDTO.setPassword(requestDTO.getPassword());
-        merchantDTO.setMerchantName(requestDTO.getMerchantName());
-        merchantDTO.setEmail(requestDTO.getEmail());
-        merchantDTO.setPhone(requestDTO.getPhone());
-        merchantDTO.setStatus(requestDTO.getStatus());
-        return merchantDTO;
     }
 }
 
