@@ -4,12 +4,6 @@ DELETE FROM inbox_consume_log;
 DELETE FROM outbox_event;
 DELETE FROM user_favorite;
 DELETE FROM user_profile_ext;
-DELETE FROM sys_role_menu;
-DELETE FROM sys_role_permission;
-DELETE FROM sys_user_role;
-DELETE FROM sys_permission;
-DELETE FROM sys_role;
-DELETE FROM sys_menu;
 DELETE FROM operation_audit_log;
 DELETE FROM user_address;
 DELETE FROM merchant_auth;
@@ -45,42 +39,6 @@ VALUES (23001, 20001, 40001, 41001, 'ACTIVE', 0, 0);
 INSERT INTO admin (id, username, password, real_name, phone, role, status, deleted, version)
 VALUES (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
         'Test Admin 1', '13900010001', 'ADMIN', 1, 0, 0);
-
-INSERT INTO sys_role (id, role_name, role_code, role_status, deleted, version)
-VALUES (26001, 'User', 'ROLE_USER', 1, 0, 0),
-       (26002, 'Merchant', 'ROLE_MERCHANT', 1, 0, 0),
-       (26003, 'Admin', 'ROLE_ADMIN', 1, 0, 0),
-       (26011, 'Super Admin', 'ROLE_SUPER_ADMIN', 1, 0, 0),
-       (26012, 'Ops Admin', 'ROLE_OPS_ADMIN', 1, 0, 0);
-
-INSERT INTO sys_permission (id, permission_name, permission_code, http_method, api_path, deleted, version)
-VALUES (27001, 'Order Manage', 'order:manage', 'POST', '/api/v2/order-sub/*/ship', 0, 0),
-       (27002, 'After Sale Audit', 'after_sale:audit', 'POST', '/api/v2/after-sales/*/audit', 0, 0),
-       (27003, 'Product Publish', 'product:publish', 'POST', '/api/v2/spu/*/publish', 0, 0);
-
-INSERT INTO sys_menu (id, menu_name, menu_code, parent_id, menu_type, route_path, sort_order, visible, deleted, version)
-VALUES (28001, 'Order Center', 'MENU_ORDER_CENTER', 0, 'MENU', '/ops/orders', 1, 1, 0, 0),
-       (28002, 'After Sale Center', 'MENU_AFTER_SALE_CENTER', 0, 'MENU', '/ops/after-sales', 2, 1, 0, 0),
-       (28003, 'Product Center', 'MENU_PRODUCT_CENTER', 0, 'MENU', '/ops/products', 3, 1, 0, 0);
-
-INSERT INTO sys_role_permission (id, role_id, permission_id, deleted, version)
-VALUES (29001, 26011, 27001, 0, 0),
-       (29002, 26011, 27002, 0, 0),
-       (29003, 26011, 27003, 0, 0),
-       (29004, 26012, 27001, 0, 0);
-
-INSERT INTO sys_role_menu (id, role_id, menu_id, deleted, version)
-VALUES (29101, 26011, 28001, 0, 0),
-       (29102, 26011, 28002, 0, 0),
-       (29103, 26011, 28003, 0, 0),
-       (29104, 26012, 28001, 0, 0);
-
-INSERT INTO sys_user_role (id, user_id, role_id, deleted, version)
-VALUES (29201, 24001, 26003, 0, 0),
-       (29202, 24001, 26011, 0, 0),
-       (29203, 20001, 26001, 0, 0),
-       (29204, 30001, 26001, 0, 0),
-       (29205, 30001, 26002, 0, 0);
 
 INSERT INTO merchant (id, username, password, merchant_name, phone, status, deleted, version)
 VALUES (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
