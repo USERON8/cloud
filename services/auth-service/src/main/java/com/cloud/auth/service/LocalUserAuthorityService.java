@@ -36,9 +36,11 @@ public class LocalUserAuthorityService {
 
         for (String role : normalizedRoles) {
             String roleAuthority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-            authorityNames.add(roleAuthority);
-            for (String permission : permissionConfig.getPermissionsByRole(roleAuthority)) {
-                authorityNames.add("SCOPE_" + permission);
+            for (String expandedRole : expandRoleAuthorities(roleAuthority)) {
+                authorityNames.add(expandedRole);
+                for (String permission : permissionConfig.getPermissionsByRole(expandedRole)) {
+                    authorityNames.add("SCOPE_" + permission);
+                }
             }
         }
 
@@ -79,5 +81,14 @@ public class LocalUserAuthorityService {
                 .map(String::toUpperCase)
                 .map(role -> role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<String> expandRoleAuthorities(String roleAuthority) {
+        Set<String> roles = new LinkedHashSet<>();
+        roles.add(roleAuthority);
+        if ("ROLE_SUPER_ADMIN".equals(roleAuthority)) {
+            roles.add("ROLE_ADMIN");
+        }
+        return roles;
     }
 }

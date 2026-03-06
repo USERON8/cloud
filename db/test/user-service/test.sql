@@ -23,6 +23,9 @@ INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, g
 VALUES (20001, 't_user_20001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
         '13900000001', 'Test User 1', 'https://example.com/u1.png', 't_user_20001@example.com',
         NULL, NULL, NULL, NULL, 1, 0, 0),
+       (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
+        '13900010001', 'Test Admin 1', NULL, NULL,
+        NULL, NULL, NULL, NULL, 1, 0, 0),
        (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
         '13900020001', 'Merchant Owner', 'https://example.com/u2.png', 't_merchant_30001@example.com',
         NULL, NULL, NULL, NULL, 1, 0, 0);
@@ -73,10 +76,11 @@ VALUES (29101, 26011, 28001, 0, 0),
        (29104, 26012, 28001, 0, 0);
 
 INSERT INTO sys_user_role (id, user_id, role_id, deleted, version)
-VALUES (29201, 24001, 26011, 0, 0),
-       (29202, 20001, 26001, 0, 0),
-       (29203, 30001, 26001, 0, 0),
-       (29204, 30001, 26002, 0, 0);
+VALUES (29201, 24001, 26003, 0, 0),
+       (29202, 24001, 26011, 0, 0),
+       (29203, 20001, 26001, 0, 0),
+       (29204, 30001, 26001, 0, 0),
+       (29205, 30001, 26002, 0, 0);
 
 INSERT INTO merchant (id, username, password, merchant_name, phone, status, deleted, version)
 VALUES (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',

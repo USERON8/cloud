@@ -62,6 +62,15 @@ public class PermissionConfig {
                 "order:read", "order:write"
         ));
         rolePermissions.put("ROLE_ADMIN", new ArrayList<>(adminPermissions));
+        rolePermissions.put("ROLE_SUPER_ADMIN", new ArrayList<>(adminPermissions));
+        rolePermissions.put("ROLE_OPS_ADMIN", Arrays.asList(
+                "read", "write",
+                "order:read", "order:write",
+                "product:read", "product:write",
+                "stock:read", "stock:write",
+                "payment:read", "payment:write",
+                "search:read", "search:write"
+        ));
     }
 
     public List<String> getPermissionsByRole(String role) {

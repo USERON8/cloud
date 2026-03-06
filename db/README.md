@@ -13,6 +13,9 @@
 - `db/test/*/test.sql`（5 个业务服务）
 - `db/archive/**`（历史归档，不参与主流程）
 
+如果是从旧版本升级现有库，而不是全新初始化，需要先执行对应的一次性迁移脚本，例如
+`db/archive/migrations/20260306_user_rbac_principal_backfill.sql`。
+
 ## 执行顺序
 
 1. `db/init/infra/nacos/init.sql`
