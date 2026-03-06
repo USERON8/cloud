@@ -7,14 +7,16 @@ import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerIntercep
 import com.baomidou.mybatisplus.extension.plugins.inner.IllegalSQLInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
-import com.cloud.common.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 
 
@@ -197,12 +199,55 @@ public class MybatisPlusConfig {
 
         private Long getCurrentUserId() {
             try {
-                Long userId = SecurityUtils.getCurrentUserId();
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication == null) {
+                    return 0L;
+                }
+
+                Object principal = authentication.getPrincipal();
+                Long userId = extractUserId(principal);
+                if (userId != null) {
+                    return userId;
+                }
+
+                Object details = authentication.getDetails();
+                userId = extractUserId(details);
                 return userId != null ? userId : 0L;
             } catch (Exception e) {
                 log.debug("IDD: {}", e.getMessage());
                 return 0L; 
             }
+        }
+
+        private Long extractUserId(Object source) {
+            if (source == null) {
+                return null;
+            }
+            if (source instanceof Map<?, ?> map) {
+                return parseUserId(map.get("user_id"));
+            }
+            try {
+                Object claim = source.getClass()
+                        .getMethod("getClaimAsString", String.class)
+                        .invoke(source, "user_id");
+                return parseUserId(claim);
+            } catch (ReflectiveOperationException ignored) {
+                return null;
+            }
+        }
+
+        private Long parseUserId(Object rawValue) {
+            if (rawValue == null) {
+                return null;
+            }
+            if (rawValue instanceof Number number) {
+                return number.longValue();
+            }
+            String userId = String.valueOf(rawValue).trim();
+            if (userId.isEmpty()) {
+                return null;
+            }
+            return Long.parseLong(userId);
         }
     }
 }
