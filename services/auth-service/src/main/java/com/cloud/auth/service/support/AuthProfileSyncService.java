@@ -5,13 +5,11 @@ import com.cloud.auth.module.entity.AuthUser;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
-
-import java.util.Collection;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -33,27 +31,25 @@ public class AuthProfileSyncService {
         }
     }
 
-    public UserDTO createRegisteredProfile(AuthUser authUser, Collection<String> roles, RegisterRequestDTO request) {
-        UserDTO profile = new UserDTO();
+    public UserDTO createRegisteredProfile(AuthUser authUser, RegisterRequestDTO request) {
+        UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
         profile.setPhone(request.getPhone());
         profile.setNickname(request.getNickname());
         profile.setStatus(authUser.getStatus());
-        profile.setRoles(List.copyOf(roles));
         createProfile(profile);
         return getProfile(authUser.getId());
     }
 
-    public UserDTO syncGitHubProfile(AuthUser authUser, Collection<String> roles, GitHubUserDTO githubUserDTO) {
-        UserDTO profile = new UserDTO();
+    public UserDTO syncGitHubProfile(AuthUser authUser, GitHubUserDTO githubUserDTO) {
+        UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
         profile.setNickname(githubUserDTO.getDisplayName());
         profile.setEmail(githubUserDTO.getEmail());
         profile.setAvatarUrl(githubUserDTO.getAvatarUrl());
         profile.setStatus(authUser.getStatus());
-        profile.setRoles(List.copyOf(roles));
 
         UserDTO existing = getProfile(authUser.getId());
         try {
@@ -68,9 +64,9 @@ public class AuthProfileSyncService {
         return getProfile(authUser.getId());
     }
 
-    private void createProfile(UserDTO userDTO) {
+    private void createProfile(UserProfileUpsertDTO profileUpsertDTO) {
         try {
-            userDubboApi.create(userDTO);
+            userDubboApi.create(profileUpsertDTO);
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to create user profile in user-service", ex);
         }

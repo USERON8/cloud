@@ -182,7 +182,7 @@ public class AuthIdentityService {
 
         authRoleAssignmentService.replaceRoles(authUser.getId(), List.of("USER"));
         List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserDTO profile = authProfileSyncService.createRegisteredProfile(authUser, roles, registerRequest);
+        UserDTO profile = authProfileSyncService.createRegisteredProfile(authUser, registerRequest);
         return mergeProfile(profile, authUser, roles, registerRequest.getPhone(), registerRequest.getNickname(), null, null);
     }
 
@@ -225,7 +225,7 @@ public class AuthIdentityService {
         }
 
         List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserDTO profile = authProfileSyncService.syncGitHubProfile(authUser, roles, githubUserDTO);
+        UserDTO profile = authProfileSyncService.syncGitHubProfile(authUser, githubUserDTO);
         return mergeProfile(profile, authUser, roles, null, githubUserDTO.getDisplayName(), githubUserDTO.getEmail(), githubUserDTO.getAvatarUrl());
     }
 

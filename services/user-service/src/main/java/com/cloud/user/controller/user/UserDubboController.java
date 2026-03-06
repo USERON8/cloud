@@ -2,6 +2,7 @@ package com.cloud.user.controller.user;
 
 import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +24,14 @@ public class UserDubboController implements UserDubboApi {
 
     @Override
     @PostMapping("/create")
-    public Long create(@RequestBody UserDTO userDTO) {
-        return userService.createProfile(userDTO);
+    public Long create(@RequestBody UserProfileUpsertDTO profileUpsertDTO) {
+        return userService.createProfile(profileUpsertDTO);
     }
 
     @Override
     @PutMapping("/update")
-    public Boolean update(@RequestBody UserDTO userDTO) {
-        return userService.updateProfile(userDTO);
+    public Boolean update(@RequestBody UserProfileUpsertDTO profileUpsertDTO) {
+        return userService.updateProfile(profileUpsertDTO);
     }
 }
 

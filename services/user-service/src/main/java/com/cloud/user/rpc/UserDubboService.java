@@ -2,6 +2,7 @@ package com.cloud.user.rpc;
 
 import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -18,13 +19,13 @@ public class UserDubboService implements UserDubboApi {
     }
 
     @Override
-    public Long create(UserDTO userDTO) {
-        return userService.createProfile(userDTO);
+    public Long create(UserProfileUpsertDTO profileUpsertDTO) {
+        return userService.createProfile(profileUpsertDTO);
     }
 
     @Override
-    public Boolean update(UserDTO userDTO) {
-        return userService.updateProfile(userDTO);
+    public Boolean update(UserProfileUpsertDTO profileUpsertDTO) {
+        return userService.updateProfile(profileUpsertDTO);
     }
 }
 

@@ -8,6 +8,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BusinessException;
@@ -223,8 +224,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "user", allEntries = true),
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
-    public Long createProfile(UserDTO userDTO) {
-        User user = userConverter.toEntity(userDTO);
+    public Long createProfile(UserProfileUpsertDTO profileUpsertDTO) {
+        User user = toUserEntity(profileUpsertDTO);
         save(user);
         return user.getId();
     }
@@ -277,16 +278,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(rollbackFor = Exception.class)
     @Caching(evict = {
-            @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
-            @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username"),
+            @CacheEvict(cacheNames = "user", key = "#profileUpsertDTO.id"),
+            @CacheEvict(cacheNames = "user", key = "'username:' + #profileUpsertDTO.username"),
             @CacheEvict(cacheNames = "userList", allEntries = true),
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
-    public Boolean updateProfile(UserDTO userDTO) {
-        if (userDTO == null || userDTO.getId() == null) {
+    public Boolean updateProfile(UserProfileUpsertDTO profileUpsertDTO) {
+        if (profileUpsertDTO == null || profileUpsertDTO.getId() == null) {
             throw new BusinessException("user id is required");
         }
-        User user = userConverter.toEntity(userDTO);
+        User user = toUserEntity(profileUpsertDTO);
         return updateById(user);
     }
 
@@ -514,6 +515,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setAvatarUrl(requestDTO.getAvatarUrl());
         user.setEmail(requestDTO.getEmail());
         user.setStatus(requestDTO.getStatus());
+        return user;
+    }
+
+    private User toUserEntity(UserProfileUpsertDTO profileUpsertDTO) {
+        User user = new User();
+        user.setId(profileUpsertDTO.getId());
+        user.setUsername(profileUpsertDTO.getUsername());
+        user.setPhone(profileUpsertDTO.getPhone());
+        user.setNickname(profileUpsertDTO.getNickname());
+        user.setAvatarUrl(profileUpsertDTO.getAvatarUrl());
+        user.setEmail(profileUpsertDTO.getEmail());
+        user.setStatus(profileUpsertDTO.getStatus());
         return user;
     }
 
