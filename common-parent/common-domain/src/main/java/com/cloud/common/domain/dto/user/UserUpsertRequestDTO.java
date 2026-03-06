@@ -18,6 +18,8 @@ public class UserUpsertRequestDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private Long id;
+
     @Size(max = 50, message = "username length must be less than or equal to 50")
     private String username;
 

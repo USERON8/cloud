@@ -124,6 +124,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>com.cloud.gateway.GatewayApplication</mainClass>
                     <excludes> <!-- Encoding-safe comment -->
                         <exclude>
                             <groupId>org.projectlombok</groupId>
