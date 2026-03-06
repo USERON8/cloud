@@ -3,14 +3,14 @@ package com.cloud.user.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
-import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
-import com.cloud.user.service.support.RoleAssignmentService;
+import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import com.cloud.user.service.support.UserPrincipalSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,8 +39,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private final AdminMapper adminMapper;
     private final AdminConverter adminConverter;
     private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
-    private final RoleAssignmentService roleAssignmentService;
+    private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final UserPrincipalSyncService userPrincipalSyncService;
 
     @Override
@@ -133,7 +132,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             log.warn("Admin already exists, username={}", adminDTO.getUsername());
             throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
         }
-        userPrincipalSyncService.assertUsernameAvailable(adminDTO.getUsername(), null);
+        authPrincipalRemoteService.assertUsernameAvailable(adminDTO.getUsername(), null);
 
         Admin admin = adminConverter.toEntity(adminDTO);
         if (StrUtil.isNotBlank(admin.getPassword())) {
@@ -155,7 +154,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                 admin.getPhone(),
                 admin.getStatus()
         );
-        roleAssignmentService.addRoles(admin.getId(), List.of("ADMIN"));
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin));
         return adminConverter.toDTO(admin);
     }
 
@@ -191,7 +190,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             if (count > 0) {
                 throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
             }
-            userPrincipalSyncService.assertUsernameAvailable(adminDTO.getUsername(), adminDTO.getId());
+            authPrincipalRemoteService.assertUsernameAvailable(adminDTO.getUsername(), adminDTO.getId());
         }
 
         Admin admin = adminConverter.toEntity(adminDTO);
@@ -220,16 +219,17 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         boolean updated = updateById(admin);
         if (updated) {
+            Admin current = resolveCurrentAdmin(adminDTO, existingAdmin);
             userPrincipalSyncService.upsertUserPrincipal(
-                    admin.getId(),
-                    admin.getUsername(),
-                    admin.getPassword(),
-                    admin.getRealName(),
+                    current.getId(),
+                    current.getUsername(),
+                    current.getPassword(),
+                    current.getRealName(),
                     null,
-                    admin.getPhone(),
-                    admin.getStatus()
+                    current.getPhone(),
+                    current.getStatus()
             );
-            roleAssignmentService.addRoles(admin.getId(), List.of("ADMIN"));
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current));
         }
         return updated;
     }
@@ -252,8 +252,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
         boolean removed = removeById(id);
         if (removed) {
-            roleAssignmentService.removeRoles(id, List.of("ADMIN"));
-            cleanupPrincipalIfRoleless(id);
+            userPrincipalSyncService.deleteUserPrincipal(id);
+            authPrincipalRemoteService.deletePrincipal(id);
         }
         return removed;
     }
@@ -289,6 +289,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                     admin.getPhone(),
                     admin.getStatus()
             );
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(admin.getId());
+            authPrincipalDTO.setStatus(admin.getStatus());
+            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
         }
         return updated;
     }
@@ -333,6 +337,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                     admin.getPhone(),
                     admin.getStatus()
             );
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(admin.getId());
+            authPrincipalDTO.setPassword(newPassword);
+            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
         }
         return updated;
     }
@@ -369,6 +377,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                     admin.getPhone(),
                     admin.getStatus()
             );
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(admin.getId());
+            authPrincipalDTO.setPassword(newPassword);
+            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
         }
         return updated;
     }
@@ -383,10 +395,37 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public void evictAllAdminCache() {
     }
 
-    private void cleanupPrincipalIfRoleless(Long userId) {
-        if (roleAssignmentService.getRoleCodesByUserId(userId).isEmpty()) {
-            userPrincipalSyncService.deleteUserPrincipal(userId);
-        }
+    private Admin resolveCurrentAdmin(AdminDTO adminDTO, Admin existingAdmin) {
+        Admin merged = new Admin();
+        merged.setId(existingAdmin.getId());
+        merged.setUsername(StrUtil.blankToDefault(adminDTO.getUsername(), existingAdmin.getUsername()));
+        merged.setPassword(StrUtil.isBlank(adminDTO.getPassword()) ? existingAdmin.getPassword() : passwordEncoder.encode(adminDTO.getPassword()));
+        merged.setRealName(StrUtil.blankToDefault(adminDTO.getRealName(), existingAdmin.getRealName()));
+        merged.setPhone(adminDTO.getPhone() == null ? existingAdmin.getPhone() : adminDTO.getPhone());
+        merged.setRole(StrUtil.blankToDefault(adminDTO.getRole(), existingAdmin.getRole()));
+        merged.setStatus(adminDTO.getStatus() == null ? existingAdmin.getStatus() : adminDTO.getStatus());
+        return merged;
+    }
+
+    private AuthPrincipalDTO toAuthPrincipalDTO(Admin admin) {
+        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+        authPrincipalDTO.setId(admin.getId());
+        authPrincipalDTO.setUsername(admin.getUsername());
+        authPrincipalDTO.setPassword(admin.getPassword());
+        authPrincipalDTO.setNickname(admin.getRealName());
+        authPrincipalDTO.setPhone(admin.getPhone());
+        authPrincipalDTO.setStatus(admin.getStatus());
+        authPrincipalDTO.setRoles(resolveAdminRoles(admin.getRole()));
+        return authPrincipalDTO;
+    }
+
+    private List<String> resolveAdminRoles(String role) {
+        String normalized = StrUtil.blankToDefault(role, "ADMIN").trim().toUpperCase();
+        return switch (normalized) {
+            case "SUPER_ADMIN", "ROLE_SUPER_ADMIN" -> List.of("ADMIN", "SUPER_ADMIN");
+            case "OPS_ADMIN", "ROLE_OPS_ADMIN" -> List.of("ADMIN", "OPS_ADMIN");
+            default -> List.of("ADMIN");
+        };
     }
 }
 

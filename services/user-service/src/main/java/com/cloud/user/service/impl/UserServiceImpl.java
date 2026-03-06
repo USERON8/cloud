@@ -6,9 +6,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
-import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -16,13 +16,11 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
-import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
-import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
-import com.cloud.user.service.support.RoleAssignmentService;
+import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -46,9 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final UserConverter userConverter;
     private final PasswordEncoder passwordEncoder;
-    private final MerchantService merchantService;
-    private final MerchantConverter merchantConverter;
-    private final RoleAssignmentService roleAssignmentService;
+    private final AuthPrincipalRemoteService authPrincipalRemoteService;
 
     @Override
     @Transactional(readOnly = true)
@@ -83,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             queryWrapper.eq(User::getStatus, pageDTO.getStatus());
         }
         if (StrUtil.isNotBlank(pageDTO.getRoleCode())) {
-            Collection<Long> userIds = roleAssignmentService.getUserIdsByRoleCode(pageDTO.getRoleCode());
+            Collection<Long> userIds = authPrincipalRemoteService.getUserIdsByRoleCode(pageDTO.getRoleCode());
             if (userIds.isEmpty()) {
                 return PageResult.of(page.getCurrent(), page.getSize(), 0L, List.of());
             }
@@ -117,7 +113,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new EntityNotFoundException("user", id);
         }
-        return removeById(id);
+        boolean deleted = removeById(id);
+        if (deleted) {
+            authPrincipalRemoteService.deletePrincipal(id);
+        }
+        return deleted;
     }
 
     @Override
@@ -137,7 +137,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userIds == null || userIds.isEmpty()) {
             throw new BusinessException("user ids are required");
         }
-        return removeByIds(userIds);
+        boolean deleted = removeByIds(userIds);
+        if (deleted) {
+            userIds.forEach(authPrincipalRemoteService::deletePrincipal);
+        }
+        return deleted;
     }
 
     @Override
@@ -151,6 +155,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new EntityNotFoundException("user", id);
         }
         return toDTOWithRoles(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDTO getProfileById(Long id) {
+        if (id == null) {
+            throw new BusinessException("user id is required");
+        }
+        User user = getById(id);
+        if (user == null) {
+            throw new EntityNotFoundException("user", id);
+        }
+        return userConverter.toDTO(user);
     }
 
     @Override
@@ -181,9 +198,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
     public UserDTO registerUser(RegisterRequestDTO registerRequest) {
-        if (findByUsername(registerRequest.getUsername()) != null) {
-            throw new BusinessException("username already exists");
-        }
+        authPrincipalRemoteService.assertUsernameAvailable(registerRequest.getUsername(), null);
 
         User user = userConverter.toEntity(registerRequest);
         if (StrUtil.isBlank(registerRequest.getPassword())) {
@@ -198,9 +213,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("failed to register user");
         }
 
-        roleAssignmentService.replaceRoles(user.getId(), List.of("USER"));
-
-        return toDTOWithRoles(user);
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, List.of("USER")));
+        return toDTOWithRoles(user, List.of("USER"));
     }
 
     @Override
@@ -292,8 +306,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!save(user)) {
             throw new BusinessException("failed to create github user");
         }
-        roleAssignmentService.replaceRoles(user.getId(), List.of("USER"));
-        return toDTOWithRoles(user);
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, List.of("USER")));
+        return toDTOWithRoles(user, List.of("USER"));
     }
 
     @Override
@@ -350,13 +364,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
     public Long createUser(UserDTO userDTO) {
+        authPrincipalRemoteService.assertUsernameAvailable(userDTO.getUsername(), null);
         User user = userConverter.toEntity(userDTO);
         if (StrUtil.isNotBlank(user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setPassword(normalizePassword(user.getPassword()));
         }
         save(user);
-        roleAssignmentService.replaceRoles(user.getId(),
-                userDTO.getRoles() == null || userDTO.getRoles().isEmpty() ? List.of("USER") : userDTO.getRoles());
+        List<String> roles = userDTO.getRoles() == null || userDTO.getRoles().isEmpty() ? List.of("USER") : userDTO.getRoles();
+        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(user, roles));
+        return user.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "user", allEntries = true),
+            @CacheEvict(cacheNames = "userList", allEntries = true)
+    })
+    public Long createProfile(UserDTO userDTO) {
+        User user = userConverter.toEntity(userDTO);
+        if (StrUtil.isNotBlank(user.getPassword())) {
+            user.setPassword(normalizePassword(user.getPassword()));
+        }
+        save(user);
         return user.getId();
     }
 
@@ -393,6 +423,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (count > 0) {
                 throw new BusinessException("username already exists");
             }
+            authPrincipalRemoteService.assertUsernameAvailable(userDTO.getUsername(), userDTO.getId());
         }
 
         User user = userConverter.toEntity(userDTO);
@@ -400,10 +431,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setPassword(normalizePassword(user.getPassword()));
         }
         boolean updated = updateById(user);
-        if (updated && userDTO.getRoles() != null) {
-            roleAssignmentService.replaceRoles(userDTO.getId(), userDTO.getRoles());
+        if (updated) {
+            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(userDTO, existingUser));
         }
         return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "user", key = "#userDTO.id"),
+            @CacheEvict(cacheNames = "user", key = "'username:' + #userDTO.username"),
+            @CacheEvict(cacheNames = "userList", allEntries = true),
+            @CacheEvict(cacheNames = "auth", allEntries = true)
+    })
+    public Boolean updateProfile(UserDTO userDTO) {
+        if (userDTO == null || userDTO.getId() == null) {
+            throw new BusinessException("user id is required");
+        }
+        User user = userConverter.toEntity(userDTO);
+        if (StrUtil.isNotBlank(user.getPassword())) {
+            user.setPassword(normalizePassword(user.getPassword()));
+        }
+        return updateById(user);
     }
 
     @Override
@@ -421,7 +471,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean deleteUser(Long id) {
-        return removeById(id);
+        boolean deleted = removeById(id);
+        if (deleted) {
+            authPrincipalRemoteService.deletePrincipal(id);
+        }
+        return deleted;
     }
 
     @Override
@@ -440,7 +494,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setId(id);
         user.setStatus(status);
-        return updateById(user);
+        boolean updated = updateById(user);
+        if (updated) {
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(id);
+            authPrincipalDTO.setStatus(status);
+            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+        }
+        return updated;
     }
 
     @Override
@@ -461,6 +522,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setId(id);
         user.setPassword(passwordEncoder.encode(newPassword));
         updateById(user);
+        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+        authPrincipalDTO.setId(id);
+        authPrincipalDTO.setPassword(newPassword);
+        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
         return newPassword;
     }
 
@@ -487,7 +552,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        return updateById(user);
+        boolean updated = updateById(user);
+        if (updated) {
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(id);
+            authPrincipalDTO.setPassword(newPassword);
+            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+        }
+        return updated;
     }
 
     @Override
@@ -594,11 +666,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private UserDTO toDTOWithRoles(User user) {
+        return toDTOWithRoles(user, null);
+    }
+
+    private UserDTO toDTOWithRoles(User user, List<String> roles) {
         if (user == null) {
             return null;
         }
         UserDTO dto = userConverter.toDTO(user);
-        dto.setRoles(roleAssignmentService.getRoleCodesByUserId(user.getId()));
+        dto.setRoles(roles == null ? authPrincipalRemoteService.getRoleCodesByUserId(user.getId()) : roles);
         return dto;
     }
 
@@ -607,7 +683,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return List.of();
         }
         List<UserDTO> dtos = userConverter.toDTOList(users);
-        Map<Long, List<String>> roleMap = roleAssignmentService.getRoleCodesByUserIds(
+        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(
                 users.stream().map(User::getId).toList());
         dtos.forEach(dto -> dto.setRoles(roleMap.getOrDefault(dto.getId(), List.of())));
         return dtos;
@@ -618,10 +694,36 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return List.of();
         }
         List<UserVO> vos = userConverter.toVOList(users);
-        Map<Long, List<String>> roleMap = roleAssignmentService.getRoleCodesByUserIds(
+        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(
                 users.stream().map(User::getId).toList());
         vos.forEach(vo -> vo.setRoles(roleMap.getOrDefault(vo.getId(), List.of())));
         return vos;
+    }
+
+    private AuthPrincipalDTO toAuthPrincipalDTO(User user, List<String> roles) {
+        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+        authPrincipalDTO.setId(user.getId());
+        authPrincipalDTO.setUsername(user.getUsername());
+        authPrincipalDTO.setPassword(user.getPassword());
+        authPrincipalDTO.setNickname(user.getNickname());
+        authPrincipalDTO.setEmail(user.getEmail());
+        authPrincipalDTO.setPhone(user.getPhone());
+        authPrincipalDTO.setStatus(user.getStatus());
+        authPrincipalDTO.setRoles(roles);
+        return authPrincipalDTO;
+    }
+
+    private AuthPrincipalDTO toAuthPrincipalDTO(UserDTO userDTO, User existingUser) {
+        AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+        authPrincipalDTO.setId(userDTO.getId());
+        authPrincipalDTO.setUsername(StrUtil.blankToDefault(userDTO.getUsername(), existingUser.getUsername()));
+        authPrincipalDTO.setPassword(userDTO.getPassword());
+        authPrincipalDTO.setNickname(StrUtil.blankToDefault(userDTO.getNickname(), existingUser.getNickname()));
+        authPrincipalDTO.setEmail(userDTO.getEmail() == null ? existingUser.getEmail() : userDTO.getEmail());
+        authPrincipalDTO.setPhone(userDTO.getPhone() == null ? existingUser.getPhone() : userDTO.getPhone());
+        authPrincipalDTO.setStatus(userDTO.getStatus() == null ? existingUser.getStatus() : userDTO.getStatus());
+        authPrincipalDTO.setRoles(userDTO.getRoles());
+        return authPrincipalDTO;
     }
 }
 

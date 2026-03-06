@@ -57,6 +57,8 @@ public interface UserService extends IService<User> {
 
     UserDTO getUserById(Long id);
 
+    UserDTO getProfileById(Long id);
+
     
 
 
@@ -151,6 +153,8 @@ public interface UserService extends IService<User> {
 
     Long createUser(UserDTO userDTO);
 
+    Long createProfile(UserDTO userDTO);
+
     
 
 
@@ -158,6 +162,8 @@ public interface UserService extends IService<User> {
 
 
     Boolean updateUser(UserDTO userDTO);
+
+    Boolean updateProfile(UserDTO userDTO);
 
     
 

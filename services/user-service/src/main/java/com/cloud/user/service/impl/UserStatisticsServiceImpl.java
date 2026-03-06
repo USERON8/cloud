@@ -5,7 +5,7 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
-import com.cloud.user.service.support.RoleAssignmentService;
+import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -36,7 +36,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final RoleAssignmentService roleAssignmentService;
+    private final AuthPrincipalRemoteService authPrincipalRemoteService;
 
     @Override
     @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
@@ -97,7 +97,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Cacheable(cacheNames = "user:statistics", key = "'role_distribution'")
     public Map<String, Long> getRoleDistribution() {
         try {
-            return roleAssignmentService.getRoleDistribution();
+            return authPrincipalRemoteService.getRoleDistribution();
         } catch (Exception e) {
             log.error("Failed to get role distribution", e);
             return Collections.emptyMap();
