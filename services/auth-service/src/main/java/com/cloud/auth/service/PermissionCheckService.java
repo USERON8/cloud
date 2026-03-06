@@ -208,11 +208,11 @@ public class PermissionCheckService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
-            String username = jwt.getSubject();
+            Long userId = jwt.getClaim("user_id");
             try {
-                return userDubboApi.findByUsername(username);
+                return userId == null ? null : userDubboApi.findById(userId);
             } catch (Exception e) {
-                log.error(": username={}", username, e);
+                log.error("Failed to load current user profile, userId={}", userId, e);
                 return null;
             }
         }

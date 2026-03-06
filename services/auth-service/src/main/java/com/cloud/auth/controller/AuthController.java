@@ -1,7 +1,7 @@
 package com.cloud.auth.controller;
 
-import com.cloud.api.user.UserDubboApi;
 import com.cloud.auth.service.OAuth2TokenManagementService;
+import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.auth.RegisterResponseDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
@@ -17,7 +17,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
@@ -37,16 +36,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication API", description = "Authentication, login and token management APIs")
 public class AuthController {
 
-    @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserDubboApi userDubboApi;
     private final OAuth2TokenManagementService tokenManagementService;
+    private final AuthIdentityService authIdentityService;
 
     @PostMapping("/users/register")
     @Operation(summary = "Register user")
     public Result<RegisterResponseDTO> register(
             @RequestBody @Valid @NotNull(message = "Register request cannot be null")
             RegisterRequestDTO registerRequestDTO) {
-        UserDTO registeredUser = userDubboApi.register(registerRequestDTO);
+        UserDTO registeredUser = authIdentityService.register(registerRequestDTO);
         if (registeredUser == null) {
             throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
         }

@@ -1,7 +1,7 @@
 package com.cloud.auth;
 
-import com.cloud.common.config.MybatisPlusConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -12,19 +12,13 @@ import org.springframework.context.annotation.FilterType;
 
 
 @Slf4j
-@SpringBootApplication(
-        exclude = {
-                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
-        }
-)
+@SpringBootApplication
 @ComponentScan(
         basePackages = {"com.cloud.auth", "com.cloud.common"},
         excludeFilters = {
                 @ComponentScan.Filter(
                         type = FilterType.ASSIGNABLE_TYPE,
                         classes = {
-                                MybatisPlusConfig.class,
                                 com.cloud.common.config.RedissonConfig.class,
                                 com.cloud.common.security.RateLimitManager.class
                         }
@@ -40,6 +34,7 @@ import org.springframework.context.annotation.FilterType;
         }
 )
 @EnableAspectJAutoProxy(proxyTargetClass = true)
+@MapperScan("com.cloud.auth.mapper")
 public class AuthApplication {
 
     public static void main(String[] args) {

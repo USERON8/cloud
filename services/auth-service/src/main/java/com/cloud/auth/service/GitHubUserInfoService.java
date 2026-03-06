@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.api.user.UserDubboApi;
+import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -30,32 +29,14 @@ public class GitHubUserInfoService {
     private static final String GITHUB_USER_API = "https://api.github.com/user";
     private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
 
-    @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserDubboApi userDubboApi;
+    private final AuthIdentityService authIdentityService;
     private final RestClient restClient = RestClient.builder().build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public UserDTO getOrCreateUser(OAuth2AuthorizedClient authorizedClient) {
         try {
             GitHubUserDTO githubUser = fetchGitHubUserInfo(authorizedClient);
-            String oauthProviderId = String.valueOf(githubUser.getGithubId());
-
-            UserDTO existingUser = userDubboApi.findByGitHubId(githubUser.getGithubId());
-            if (existingUser == null) {
-                existingUser = userDubboApi.findByOAuthProvider(OAUTH_PROVIDER_GITHUB, oauthProviderId);
-            }
-
-            if (existingUser != null) {
-                userDubboApi.updateGitHubUserInfo(existingUser.getId(), githubUser);
-                UserDTO refreshedUser = userDubboApi.findById(existingUser.getId());
-                return refreshedUser != null ? refreshedUser : existingUser;
-            }
-
-            UserDTO newUser = userDubboApi.createGitHubUser(githubUser);
-            if (newUser == null) {
-                throw new SystemException("Failed to create GitHub user");
-            }
-            return newUser;
+            return authIdentityService.getOrCreateGitHubUser(githubUser);
         } catch (Exception e) {
             log.error("Failed to process GitHub user info", e);
             throw new SystemException(500, "Failed to process GitHub user info", e);

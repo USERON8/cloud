@@ -14,6 +14,8 @@ spring:
     type: none
   profiles:
     active: dev
+  datasource:
+    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   main:
     allow-circular-references: true
   cloud:
@@ -87,12 +89,6 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
 logging:
   file:
     path: logs
@@ -211,4 +207,19 @@ dubbo:
   provider:
     timeout: 5000
     retries: 0
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.auth.module.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
 

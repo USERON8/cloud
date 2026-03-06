@@ -1,5 +1,6 @@
 package com.cloud.auth.service;
 
+import com.cloud.auth.service.support.AuthPermissionQueryService;
 import com.cloud.common.config.PermissionConfig;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -22,12 +24,19 @@ import java.util.Set;
 public class LocalUserAuthorityService {
 
     private final PermissionConfig permissionConfig;
+    private final AuthPermissionQueryService authPermissionQueryService;
 
     public List<SimpleGrantedAuthority> buildAuthorities(Collection<String> roles) {
         Set<String> normalizedRoles = normalizeRoles(roles);
         if (normalizedRoles.isEmpty()) {
             normalizedRoles.add("USER");
         }
+
+        Set<String> expandedRoleAuthorities = normalizedRoles.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .flatMap(role -> expandRoleAuthorities(role).stream())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Map<String, List<String>> permissionsByRole = loadPermissionsByRole(expandedRoleAuthorities);
 
         Set<String> authorityNames = new LinkedHashSet<>();
         authorityNames.add("SCOPE_openid");
@@ -38,7 +47,7 @@ public class LocalUserAuthorityService {
             String roleAuthority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
             for (String expandedRole : expandRoleAuthorities(roleAuthority)) {
                 authorityNames.add(expandedRole);
-                for (String permission : permissionConfig.getPermissionsByRole(expandedRole)) {
+                for (String permission : permissionConfig.resolvePermissions(expandedRole, permissionsByRole.get(expandedRole))) {
                     authorityNames.add("SCOPE_" + permission);
                 }
             }
@@ -90,5 +99,13 @@ public class LocalUserAuthorityService {
             roles.add("ROLE_ADMIN");
         }
         return roles;
+    }
+
+    private Map<String, List<String>> loadPermissionsByRole(Set<String> roleAuthorities) {
+        if (roleAuthorities == null || roleAuthorities.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, List<String>> permissions = authPermissionQueryService.getPermissionsByRoles(roleAuthorities);
+        return permissions == null ? Map.of() : permissions;
     }
 }

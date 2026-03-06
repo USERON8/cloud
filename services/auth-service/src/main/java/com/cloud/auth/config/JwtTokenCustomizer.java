@@ -1,10 +1,9 @@
 package com.cloud.auth.config;
 
-import com.cloud.api.user.UserDubboApi;
-import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.auth.module.entity.AuthUser;
+import com.cloud.auth.service.support.AuthIdentityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -21,8 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
-    @DubboReference(check = false, timeout = 5000, retries = 0)
-    private UserDubboApi userDubboApi;
+    private final AuthIdentityService authIdentityService;
 
     @Override
     public void customize(JwtEncodingContext context) {
@@ -45,15 +43,13 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             context.getClaims().claim("username", username);
 
             try {
-                UserDTO user = userDubboApi.findByUsername(username);
+                AuthUser user = authIdentityService.findByUsername(username);
                 if (user != null) {
                     context.getClaims()
                             .claim("user_id", user.getId())
-                            .claim("nickname", user.getNickname())
                             .claim("status", user.getStatus());
                 }
             } catch (Exception ex) {
-                
                 log.warn("load user info for jwt claims failed, username={}", username, ex);
             }
         } else {
@@ -61,11 +57,10 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
             if (principalName != null && !principalName.isBlank()) {
                 context.getClaims().claim("username", principalName);
                 try {
-                    UserDTO user = userDubboApi.findByUsername(principalName);
+                    AuthUser user = authIdentityService.findByUsername(principalName);
                     if (user != null) {
                         context.getClaims()
                                 .claim("user_id", user.getId())
-                                .claim("nickname", user.getNickname())
                                 .claim("status", user.getStatus());
                     }
                 } catch (Exception ex) {

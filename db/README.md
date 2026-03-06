@@ -5,21 +5,19 @@
 ## 目录结构
 
 - `db/init/infra/nacos/init.sql`
+- `db/init/auth-service/init.sql`
 - `db/init/user-service/init.sql`
 - `db/init/product-service/init.sql`
 - `db/init/order-service/init.sql`
 - `db/init/stock-service/init.sql`
 - `db/init/payment-service/init.sql`
-- `db/test/*/test.sql`（5 个业务服务）
+- `db/test/*/test.sql`（含 auth-service 在内的业务服务）
 - `db/archive/**`（历史归档，不参与主流程）
-
-如果是从旧版本升级现有库，而不是全新初始化，需要先执行对应的一次性迁移脚本，例如
-`db/archive/migrations/20260306_user_rbac_principal_backfill.sql`。
 
 ## 执行顺序
 
 1. `db/init/infra/nacos/init.sql`
-2. 5 个业务服务 `db/init/*/init.sql`
+2. 各业务服务 `db/init/*/init.sql`
 3. 可选执行 `db/test/*/test.sql`
 
 ## 示例（MySQL 在 127.0.0.1:3306）
