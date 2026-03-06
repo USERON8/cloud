@@ -5,6 +5,7 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
+import com.cloud.user.service.support.RoleAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -35,6 +36,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
 
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoleAssignmentService roleAssignmentService;
 
     @Override
     @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
@@ -45,7 +47,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
             vo.setTodayNewUsers(countTodayNewUsers());
             vo.setMonthNewUsers(countMonthNewUsers());
             vo.setActiveUsers(countActiveUsers(7));
-            vo.setUserTypeDistribution(getUserTypeDistribution());
+            vo.setRoleDistribution(getRoleDistribution());
             vo.setUserStatusDistribution(getUserStatusDistribution());
             vo.setGrowthRate(calculateUserGrowthRate(7));
             return vo;
@@ -92,24 +94,20 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     }
 
     @Override
-    @Cacheable(cacheNames = "user:statistics", key = "'type_distribution'")
-    public Map<String, Long> getUserTypeDistribution() {
+    @Cacheable(cacheNames = "user:statistics", key = "'role_distribution'")
+    public Map<String, Long> getRoleDistribution() {
         try {
-            List<User> users = userMapper.selectList(null);
-            return users.stream().collect(Collectors.groupingBy(
-                    user -> user.getUserType() == null ? "UNKNOWN" : user.getUserType(),
-                    Collectors.counting()
-            ));
+            return roleAssignmentService.getRoleDistribution();
         } catch (Exception e) {
-            log.error("Failed to get user type distribution", e);
+            log.error("Failed to get role distribution", e);
             return Collections.emptyMap();
         }
     }
 
     @Override
     @Async("userStatisticsExecutor")
-    public CompletableFuture<Map<String, Long>> getUserTypeDistributionAsync() {
-        return CompletableFuture.completedFuture(getUserTypeDistribution());
+    public CompletableFuture<Map<String, Long>> getRoleDistributionAsync() {
+        return CompletableFuture.completedFuture(getRoleDistribution());
     }
 
     @Override
@@ -266,7 +264,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     public CompletableFuture<Boolean> refreshStatisticsCacheAsync() {
         try {
             getUserStatisticsOverview();
-            getUserTypeDistribution();
+            getRoleDistribution();
             getUserStatusDistribution();
             countActiveUsers(7);
             countActiveUsers(30);

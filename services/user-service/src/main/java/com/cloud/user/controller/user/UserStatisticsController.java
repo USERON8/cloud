@@ -81,16 +81,16 @@ public class UserStatisticsController {
                 });
     }
 
-    @GetMapping("/type-distribution")
-    @Operation(summary = "Get type distribution", description = "Get user type distribution")
+    @GetMapping("/role-distribution")
+    @Operation(summary = "Get role distribution", description = "Get user role distribution")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
-    public Result<Map<String, Long>> getTypeDistribution() {
+    public Result<Map<String, Long>> getRoleDistribution() {
         try {
-            Map<String, Long> distribution = userStatisticsService.getUserTypeDistribution();
+            Map<String, Long> distribution = userStatisticsService.getRoleDistribution();
             return Result.success("query successful", distribution);
         } catch (Exception e) {
-            log.error("Failed to get user type distribution", e);
-            return Result.fail("failed to get user type distribution");
+            log.error("Failed to get user role distribution", e);
+            return Result.fail("failed to get user role distribution");
         }
     }
 

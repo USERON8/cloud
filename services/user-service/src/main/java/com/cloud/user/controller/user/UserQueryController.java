@@ -46,13 +46,13 @@ public class UserQueryController {
             @RequestParam(defaultValue = "20") Integer size,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) String userType) {
+            @RequestParam(required = false) String roleCode) {
         UserPageDTO userPageDTO = new UserPageDTO();
         userPageDTO.setCurrent(page.longValue());
         userPageDTO.setSize(size.longValue());
         userPageDTO.setUsername(username);
         userPageDTO.setEmail(email);
-        userPageDTO.setUserType(userType);
+        userPageDTO.setRoleCode(roleCode);
         return Result.success(userService.pageQuery(userPageDTO));
     }
 

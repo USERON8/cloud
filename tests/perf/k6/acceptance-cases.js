@@ -118,7 +118,7 @@ const TEST_DATA = Object.freeze({
 const CASE04_AUTH_TOKEN = __ENV.CASE04_AUTH_TOKEN || "";
 const CASE07_AUTH_TOKEN = __ENV.CASE07_AUTH_TOKEN || "";
 const AUTH_USER_ID = getIdEnv("AUTH_USER_ID");
-const AUTH_USER_TYPE_ENV = String(__ENV.AUTH_USER_TYPE || "USER").toUpperCase();
+const AUTH_PRIMARY_ROLE_ENV = String(__ENV.AUTH_PRIMARY_ROLE || "USER").toUpperCase();
 
 function buildOrderCreateBody(userId) {
   const skuId = Number(TEST_DATA.skuId || __ENV.ORDER_SKU_ID || 0);
@@ -354,16 +354,16 @@ function getAuthUserIdFromSetup(data) {
   return "";
 }
 
-function getAuthUserTypeFromSetup(data) {
-  const setupUserType = String(data?.authUserType || "").toUpperCase();
-  if (setupUserType) {
-    return setupUserType;
+function getAuthPrimaryRoleFromSetup(data) {
+  const setupPrimaryRole = String(data?.authPrimaryRole || "").toUpperCase();
+  if (setupPrimaryRole) {
+    return setupPrimaryRole;
   }
-  return AUTH_USER_TYPE_ENV;
+  return AUTH_PRIMARY_ROLE_ENV;
 }
 
-function hasMerchantOrAdminRole(userType) {
-  return userType === "MERCHANT" || userType === "ADMIN";
+function hasMerchantOrAdminRole(role) {
+  return role === "MERCHANT" || role === "ADMIN";
 }
 
 
@@ -412,7 +412,7 @@ export function setup() {
   return {
     authToken: String(__ENV.AUTH_TOKEN || "").trim(),
     authUserId: AUTH_USER_ID || TEST_DATA.userId || "",
-    authUserType: AUTH_USER_TYPE_ENV,
+    authPrimaryRole: AUTH_PRIMARY_ROLE_ENV,
   };
 }
 
@@ -538,7 +538,7 @@ export function case03PaymentSuccess(data) {
 export function case04StockInsufficient(data) {
   runCase("04", "stock-insufficient", () => {
     const authToken = CASE04_AUTH_TOKEN || getAuthTokenFromSetup(data);
-    if (!CASE04_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
+    if (!CASE04_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthPrimaryRoleFromSetup(data))) {
       return "skipped";
     }
     if (!authToken || !TEST_DATA.skuId) {
@@ -645,7 +645,7 @@ export function case06EventIdempotency(data) {
 export function case07SearchSync(data) {
   runCase("07", "search-sync", () => {
     const authToken = CASE07_AUTH_TOKEN || getAuthTokenFromSetup(data);
-    if (!CASE07_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthUserTypeFromSetup(data))) {
+    if (!CASE07_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthPrimaryRoleFromSetup(data))) {
       return "skipped";
     }
     if (!authToken || !TEST_DATA.spuId || !TEST_DATA.categoryId) {

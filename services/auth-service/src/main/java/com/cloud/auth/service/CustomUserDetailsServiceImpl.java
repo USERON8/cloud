@@ -47,7 +47,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             }
 
             List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
-                    localUserAuthorityService.buildAuthorities(userDTO.getUserType());
+                    localUserAuthorityService.buildAuthorities(userDTO.getRoles());
             String encodedPassword = getEncodedPassword(username);
 
             UserDetails userDetails = User.builder()
@@ -62,10 +62,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
             if (complianceChecker != null) {
                 try {
-                    complianceChecker.validateCompliance(
-                            userDetails,
-                            userDTO.getUserType() != null ? userDTO.getUserType().getCode() : null
-                    );
+                    complianceChecker.validateCompliance(userDetails, userDTO.getRoles());
                 } catch (Exception e) {
                     log.debug("OAuth2 compliance check skipped: {}", e.getMessage());
                 }

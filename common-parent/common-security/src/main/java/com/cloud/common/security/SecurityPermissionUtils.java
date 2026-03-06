@@ -79,14 +79,14 @@ public final class SecurityPermissionUtils {
     
 
 
-    public static String getCurrentUserType() {
-        return getCurrentUserType(getCurrentAuthentication());
+    public static String getCurrentPrimaryRole() {
+        return getCurrentPrimaryRole(getCurrentAuthentication());
     }
 
     
 
 
-    public static String getCurrentUserType(Authentication authentication) {
+    public static String getCurrentPrimaryRole(Authentication authentication) {
         if (hasRole(authentication, "ADMIN")) {
             return "ADMIN";
         }
@@ -437,9 +437,9 @@ public final class SecurityPermissionUtils {
         }
 
         String userId = getCurrentUserId(authentication);
-        String userType = getCurrentUserType(authentication);
-        return String.format("User[id=%s, type=%s]",
+        String primaryRole = getCurrentPrimaryRole(authentication);
+        return String.format("User[id=%s, role=%s]",
                 userId != null ? userId : "unknown",
-                userType != null ? userType : "unknown");
+                primaryRole != null ? primaryRole : "unknown");
     }
 }

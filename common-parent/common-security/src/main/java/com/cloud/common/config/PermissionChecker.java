@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PermissionChecker {
 
-    public boolean checkUserType(String requiredRole, String currentRole) {
+    public boolean checkRole(String requiredRole, String currentRole) {
         if (requiredRole == null || currentRole == null) {
             return false;
         }
@@ -28,12 +28,12 @@ public class PermissionChecker {
         return "USER".equalsIgnoreCase(currentRole);
     }
 
-    public void assertUserType(String requiredType) {
+    public void assertRole(String requiredRole) {
         String currentRole = getCurrentRole();
-        if (!checkUserType(requiredType, currentRole)) {
+        if (!checkRole(requiredRole, currentRole)) {
             throw new PermissionException(
                     "ACCESS_DENIED",
-                    "required role " + requiredType + " but current role is " + (currentRole != null ? currentRole : "UNKNOWN")
+                    "required role " + requiredRole + " but current role is " + (currentRole != null ? currentRole : "UNKNOWN")
             );
         }
     }

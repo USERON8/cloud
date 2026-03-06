@@ -88,19 +88,6 @@ function readRoles(claims: Record<string, unknown>): string[] {
   return []
 }
 
-function deriveUserType(roles: string[]): string {
-  if (roles.includes('ADMIN')) {
-    return 'ADMIN'
-  }
-  if (roles.includes('MERCHANT')) {
-    return 'MERCHANT'
-  }
-  if (roles.includes('USER')) {
-    return 'USER'
-  }
-  return 'USER'
-}
-
 function buildUserInfo(accessClaims: Record<string, unknown>, idClaims: Record<string, unknown>): UserInfo {
   const roles = readRoles(accessClaims)
   const username =
@@ -118,7 +105,6 @@ function buildUserInfo(accessClaims: Record<string, unknown>, idClaims: Record<s
     username,
     nickname,
     email: readStringClaim(idClaims, 'email') || undefined,
-    userType: deriveUserType(roles),
     roles
   }
 }

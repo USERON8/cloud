@@ -26,7 +26,6 @@
 | oauth_provider    | VARCHAR(20)                        |                                                                | OAuth提供商（github, wechat等） |
 | oauth_provider_id | VARCHAR(100)                       |                                                                | OAuth提供商用户ID              |
 | status            | TINYINT                            | NOT NULL DEFAULT 1                                             | 状态：0-禁用，1-启用              |
-| user_type         | ENUM ('USER', 'MERCHANT', 'ADMIN') | NOT NULL DEFAULT 'USER'                                        | 用户类型：USER/MERCHANT/ADMIN  |
 | created_at        | DATETIME                           | NOT NULL DEFAULT CURRENT_TIMESTAMP                             | 创建时间                      |
 | updated_at        | DATETIME                           | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                      |
 | deleted           | TINYINT                            | NOT NULL DEFAULT 0                                             | 软删除标记                     |
@@ -37,7 +36,6 @@
 - idx_phone (phone)
 - idx_email (email)
 - idx_status (status)
-- idx_user_type (user_type)
 - idx_github_id (github_id)
 - idx_github_username (github_username)
 - idx_oauth_provider (oauth_provider)

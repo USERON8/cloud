@@ -3,6 +3,7 @@ package com.cloud.common.domain.vo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 
@@ -39,7 +40,7 @@ public class MerchantVO {
     
 
 
-    private String userType;
+    private List<String> roles;
 
     
 

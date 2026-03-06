@@ -51,14 +51,14 @@ public interface UserStatisticsService {
 
 
 
-    Map<String, Long> getUserTypeDistribution();
+    Map<String, Long> getRoleDistribution();
 
     
 
 
 
 
-    CompletableFuture<Map<String, Long>> getUserTypeDistributionAsync();
+    CompletableFuture<Map<String, Long>> getRoleDistributionAsync();
 
     
 

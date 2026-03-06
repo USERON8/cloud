@@ -33,7 +33,7 @@ powershell -File tests/perf/k6/run-k6.ps1 -Scenario smoke -BaseUrl http://host.d
 - `K6_BASE_URL` default `http://host.docker.internal:18080`
 - `AUTH_TOKEN`
 - `AUTH_USER_ID`
-- `AUTH_USER_TYPE`
+- `AUTH_PRIMARY_ROLE`
 - `USER_ID` / `MERCHANT_ID` / `SPU_ID` / `SKU_ID`
 - `PAYMENT_NO` / `REFUND_NO` / `AFTER_SALE_NO`
 - `SMOKE_VUS` / `SMOKE_DURATION` / `SMOKE_P95_THRESHOLD_MS`

@@ -7,8 +7,11 @@ import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
+import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
+import com.cloud.user.service.support.RoleAssignmentService;
+import com.cloud.user.service.support.UserPrincipalSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -36,6 +39,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private final AdminMapper adminMapper;
     private final AdminConverter adminConverter;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+    private final RoleAssignmentService roleAssignmentService;
+    private final UserPrincipalSyncService userPrincipalSyncService;
 
     @Override
     @Transactional(readOnly = true)
@@ -127,6 +133,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             log.warn("Admin already exists, username={}", adminDTO.getUsername());
             throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
         }
+        userPrincipalSyncService.assertUsernameAvailable(adminDTO.getUsername(), null);
 
         Admin admin = adminConverter.toEntity(adminDTO);
         if (StrUtil.isNotBlank(admin.getPassword())) {
@@ -139,6 +146,16 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (!save(admin)) {
             throw new AdminException("failed to create admin");
         }
+        userPrincipalSyncService.upsertUserPrincipal(
+                admin.getId(),
+                admin.getUsername(),
+                admin.getPassword(),
+                admin.getRealName(),
+                null,
+                admin.getPhone(),
+                admin.getStatus()
+        );
+        roleAssignmentService.addRoles(admin.getId(), List.of("ADMIN"));
         return adminConverter.toDTO(admin);
     }
 
@@ -174,6 +191,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             if (count > 0) {
                 throw new AdminException.AdminAlreadyExistsException(adminDTO.getUsername());
             }
+            userPrincipalSyncService.assertUsernameAvailable(adminDTO.getUsername(), adminDTO.getId());
         }
 
         Admin admin = adminConverter.toEntity(adminDTO);
@@ -200,7 +218,20 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             admin.setPassword(null);
         }
 
-        return updateById(admin);
+        boolean updated = updateById(admin);
+        if (updated) {
+            userPrincipalSyncService.upsertUserPrincipal(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getPassword(),
+                    admin.getRealName(),
+                    null,
+                    admin.getPhone(),
+                    admin.getStatus()
+            );
+            roleAssignmentService.addRoles(admin.getId(), List.of("ADMIN"));
+        }
+        return updated;
     }
 
     @Override
@@ -219,7 +250,12 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             log.warn("Admin not found, adminId={}", id);
             throw new AdminException.AdminNotFoundException(id);
         }
-        return removeById(id);
+        boolean removed = removeById(id);
+        if (removed) {
+            roleAssignmentService.removeRoles(id, List.of("ADMIN"));
+            cleanupPrincipalIfRoleless(id);
+        }
+        return removed;
     }
 
     @Override
@@ -242,7 +278,19 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new AdminException.AdminNotFoundException(id);
         }
         admin.setStatus(status);
-        return updateById(admin);
+        boolean updated = updateById(admin);
+        if (updated) {
+            userPrincipalSyncService.upsertUserPrincipal(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getPassword(),
+                    admin.getRealName(),
+                    null,
+                    admin.getPhone(),
+                    admin.getStatus()
+            );
+        }
+        return updated;
     }
 
     @Override
@@ -274,7 +322,19 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
 
         admin.setPassword(passwordEncoder.encode(newPassword));
-        return updateById(admin);
+        boolean updated = updateById(admin);
+        if (updated) {
+            userPrincipalSyncService.upsertUserPrincipal(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getPassword(),
+                    admin.getRealName(),
+                    null,
+                    admin.getPhone(),
+                    admin.getStatus()
+            );
+        }
+        return updated;
     }
 
     @Override
@@ -298,7 +358,19 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
 
         admin.setPassword(passwordEncoder.encode(newPassword));
-        return updateById(admin);
+        boolean updated = updateById(admin);
+        if (updated) {
+            userPrincipalSyncService.upsertUserPrincipal(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getPassword(),
+                    admin.getRealName(),
+                    null,
+                    admin.getPhone(),
+                    admin.getStatus()
+            );
+        }
+        return updated;
     }
 
     @Override
@@ -309,6 +381,12 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Override
     @CacheEvict(cacheNames = ADMIN_CACHE, allEntries = true)
     public void evictAllAdminCache() {
+    }
+
+    private void cleanupPrincipalIfRoleless(Long userId) {
+        if (roleAssignmentService.getRoleCodesByUserId(userId).isEmpty()) {
+            userPrincipalSyncService.deleteUserPrincipal(userId);
+        }
     }
 }
 

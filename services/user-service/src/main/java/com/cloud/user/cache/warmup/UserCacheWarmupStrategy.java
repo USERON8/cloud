@@ -62,7 +62,7 @@ public class UserCacheWarmupStrategy {
                     })
                     .join();
 
-            userStatisticsService.getUserTypeDistributionAsync()
+            userStatisticsService.getRoleDistributionAsync()
                     .exceptionally(e -> {
                         log.warn("Warmup user type distribution failed: {}", e.getMessage());
                         return null;

@@ -1,9 +1,10 @@
 package com.cloud.auth.service;
 
+import com.cloud.common.config.PermissionConfig;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.enums.UserType;
 import com.cloud.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,62 +12,39 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class LocalUserAuthorityService {
 
-    public List<SimpleGrantedAuthority> buildAuthorities(UserType userType) {
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        authorities.add(new SimpleGrantedAuthority("SCOPE_openid"));
-        authorities.add(new SimpleGrantedAuthority("SCOPE_profile"));
-        authorities.add(new SimpleGrantedAuthority("SCOPE_read"));
+    private final PermissionConfig permissionConfig;
 
-        if (userType == null) {
-            authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
-            authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
-            authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
-            return authorities;
+    public List<SimpleGrantedAuthority> buildAuthorities(Collection<String> roles) {
+        Set<String> normalizedRoles = normalizeRoles(roles);
+        if (normalizedRoles.isEmpty()) {
+            normalizedRoles.add("USER");
         }
 
-        switch (userType) {
-            case ADMIN -> {
-                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_admin:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_admin:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
-            }
-            case MERCHANT -> {
-                authorities.add(new SimpleGrantedAuthority("ROLE_MERCHANT"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_merchant:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_product:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_stock:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_stock:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
-            }
-            case USER -> {
-                authorities.add(new SimpleGrantedAuthority("SCOPE_user:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:read"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_order:write"));
-                authorities.add(new SimpleGrantedAuthority("SCOPE_write"));
+        Set<String> authorityNames = new LinkedHashSet<>();
+        authorityNames.add("SCOPE_openid");
+        authorityNames.add("SCOPE_profile");
+        authorityNames.add("SCOPE_read");
+
+        for (String role : normalizedRoles) {
+            String roleAuthority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+            authorityNames.add(roleAuthority);
+            for (String permission : permissionConfig.getPermissionsByRole(roleAuthority)) {
+                authorityNames.add("SCOPE_" + permission);
             }
         }
 
-        return authorities;
+        return authorityNames.stream()
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
     public Authentication createAuthenticatedPrincipal(UserDTO userDTO) {
@@ -77,7 +55,7 @@ public class LocalUserAuthorityService {
             throw new BusinessException(ResultCode.USER_DISABLED);
         }
 
-        List<SimpleGrantedAuthority> authorities = buildAuthorities(userDTO.getUserType());
+        List<SimpleGrantedAuthority> authorities = buildAuthorities(userDTO.getRoles());
         UserDetails userDetails = User.builder()
                 .username(userDTO.getUsername())
                 .password("[SOCIAL_LOGIN]")
@@ -89,5 +67,17 @@ public class LocalUserAuthorityService {
                 .build();
 
         return UsernamePasswordAuthenticationToken.authenticated(userDetails, null, authorities);
+    }
+
+    private Set<String> normalizeRoles(Collection<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return new LinkedHashSet<>();
+        }
+        return roles.stream()
+                .filter(role -> role != null && !role.isBlank())
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .map(role -> role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 }

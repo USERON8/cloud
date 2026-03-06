@@ -23,10 +23,10 @@ public class OAuth2ComplianceChecker {
     private static final String ROLE_PREFIX = "ROLE_";
     private static final String SCOPE_PREFIX = "SCOPE_";
 
-    public OAuth2ComplianceResult validateCompliance(UserDetails userDetails, String userType) {
+    public OAuth2ComplianceResult validateCompliance(UserDetails userDetails, List<String> roles) {
         OAuth2ComplianceResult result = new OAuth2ComplianceResult();
         result.setUsername(userDetails.getUsername());
-        result.setUserType(userType);
+        result.setRoles(roles == null ? List.of() : roles);
 
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
         Set<String> authorityStrings = authorities.stream()
@@ -37,8 +37,8 @@ public class OAuth2ComplianceChecker {
         validateBaseScopes(result, authorityStrings);
         validateRoleFormat(result, authorityStrings);
         validateScopeFormat(result, authorityStrings);
-        validateUserTypeSpecificPermissions(result, authorityStrings, userType);
-        validatePermissionInheritance(result, authorityStrings, userType);
+        validateRoleSpecificPermissions(result, authorityStrings, result.getRoles());
+        validatePermissionInheritance(result, authorityStrings, result.getRoles());
 
         return result;
     }
@@ -58,9 +58,6 @@ public class OAuth2ComplianceChecker {
         if (roles.isEmpty()) {
             result.addWarning("No role authority found with ROLE_ prefix");
         }
-        if (!authorities.contains("ROLE_USER")) {
-            result.addWarning("Missing base role ROLE_USER");
-        }
     }
 
     private void validateScopeFormat(OAuth2ComplianceResult result, Set<String> authorities) {
@@ -73,44 +70,38 @@ public class OAuth2ComplianceChecker {
         result.setScopeCount(scopes.size());
     }
 
-    private void validateUserTypeSpecificPermissions(OAuth2ComplianceResult result,
-                                                     Set<String> authorities,
-                                                     String userType) {
-        String normalizedType = userType != null ? userType.toUpperCase() : "USER";
-        switch (normalizedType) {
-            case "ADMIN" -> {
+    private void validateRoleSpecificPermissions(OAuth2ComplianceResult result,
+                                                 Set<String> authorities,
+                                                 List<String> roles) {
+        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        if (normalizedRoles.contains("ADMIN")) {
                 if (!authorities.contains("ROLE_ADMIN")) {
                     result.addWarning("Admin user missing ROLE_ADMIN");
                 }
                 if (!authorities.contains("SCOPE_admin:read") || !authorities.contains("SCOPE_admin:write")) {
                     result.addWarning("Admin user missing admin scopes");
                 }
-            }
-            case "MERCHANT" -> {
+        } else if (normalizedRoles.contains("MERCHANT")) {
                 if (!authorities.contains("ROLE_MERCHANT")) {
                     result.addWarning("Merchant user missing ROLE_MERCHANT");
                 }
                 if (!authorities.contains("SCOPE_merchant:read") || !authorities.contains("SCOPE_merchant:write")) {
                     result.addWarning("Merchant user missing merchant scopes");
                 }
-            }
-            default -> {
-                if (!authorities.contains("SCOPE_user:read")) {
-                    result.addWarning("User missing SCOPE_user:read");
-                }
-            }
+        } else if (!authorities.contains("SCOPE_user:read")) {
+            result.addWarning("User missing SCOPE_user:read");
         }
     }
 
     private void validatePermissionInheritance(OAuth2ComplianceResult result,
                                                Set<String> authorities,
-                                               String userType) {
-        String normalizedType = userType != null ? userType.toUpperCase() : "USER";
-        if ("ADMIN".equals(normalizedType)) {
+                                               List<String> roles) {
+        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        if (normalizedRoles.contains("ADMIN")) {
             if (!authorities.contains("SCOPE_order:read")) {
                 result.addInfo("Admin should include SCOPE_order:read for support operations");
             }
-        } else if ("MERCHANT".equals(normalizedType)) {
+        } else if (normalizedRoles.contains("MERCHANT")) {
             if (!authorities.contains("SCOPE_order:read")) {
                 result.addInfo("Merchant should include SCOPE_order:read");
             }
@@ -122,7 +113,7 @@ public class OAuth2ComplianceChecker {
         private final List<String> warnings = new ArrayList<>();
         private final List<String> infos = new ArrayList<>();
         private String username;
-        private String userType;
+        private List<String> roles = List.of();
         private Set<String> authorities;
         private int scopeCount;
 
@@ -150,12 +141,12 @@ public class OAuth2ComplianceChecker {
             this.username = username;
         }
 
-        public String getUserType() {
-            return userType;
+        public List<String> getRoles() {
+            return roles;
         }
 
-        public void setUserType(String userType) {
-            this.userType = userType;
+        public void setRoles(List<String> roles) {
+            this.roles = roles == null ? List.of() : roles;
         }
 
         public Set<String> getAuthorities() {

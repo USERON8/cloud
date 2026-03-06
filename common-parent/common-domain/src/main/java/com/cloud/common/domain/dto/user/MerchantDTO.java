@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 
@@ -40,7 +41,7 @@ public class MerchantDTO implements Serializable {
     
 
 
-    private String userType;
+    private List<String> roles;
     
 
 

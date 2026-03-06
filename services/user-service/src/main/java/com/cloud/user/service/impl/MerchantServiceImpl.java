@@ -13,6 +13,8 @@ import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.support.RoleAssignmentService;
+import com.cloud.user.service.support.UserPrincipalSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -45,6 +47,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     private final UserMapper userMapper;
     private final MerchantConverter merchantConverter;
     private final PasswordEncoder passwordEncoder;
+    private final RoleAssignmentService roleAssignmentService;
+    private final UserPrincipalSyncService userPrincipalSyncService;
 
     @Override
     @Transactional(readOnly = true)
@@ -131,6 +135,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (lambdaQuery().eq(Merchant::getUsername, merchantDTO.getUsername()).count() > 0) {
             throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
         }
+        userPrincipalSyncService.assertUsernameAvailable(merchantDTO.getUsername(), null);
 
         if (StrUtil.isNotBlank(merchantDTO.getMerchantName())) {
             if (lambdaQuery().eq(Merchant::getMerchantName, merchantDTO.getMerchantName()).count() > 0) {
@@ -149,6 +154,16 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (!save(merchant)) {
             throw new MerchantException("failed to create merchant");
         }
+        userPrincipalSyncService.upsertUserPrincipal(
+                merchant.getId(),
+                merchant.getUsername(),
+                merchant.getPassword(),
+                merchant.getMerchantName(),
+                merchantDTO.getEmail(),
+                merchant.getPhone(),
+                merchant.getStatus()
+        );
+        roleAssignmentService.addRoles(merchant.getId(), List.of("USER", "MERCHANT"));
         return toEnrichedDTO(merchant);
     }
 
@@ -182,6 +197,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             if (count > 0) {
                 throw new MerchantException.MerchantAlreadyExistsException(merchantDTO.getUsername());
             }
+            userPrincipalSyncService.assertUsernameAvailable(merchantDTO.getUsername(), merchantDTO.getId());
         }
 
         if (StrUtil.isNotBlank(merchantDTO.getMerchantName()) && !merchantDTO.getMerchantName().equals(existing.getMerchantName())) {
@@ -214,7 +230,20 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             merchant.setPassword(null);
         }
 
-        return updateById(merchant);
+        boolean updated = updateById(merchant);
+        if (updated) {
+            userPrincipalSyncService.upsertUserPrincipal(
+                    merchant.getId(),
+                    merchant.getUsername(),
+                    merchant.getPassword(),
+                    merchant.getMerchantName(),
+                    merchantDTO.getEmail(),
+                    merchant.getPhone(),
+                    merchant.getStatus()
+            );
+            roleAssignmentService.addRoles(merchant.getId(), List.of("USER", "MERCHANT"));
+        }
+        return updated;
     }
 
     @Override
@@ -232,7 +261,11 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(id);
         }
-        return removeById(id);
+        boolean removed = removeById(id);
+        if (removed) {
+            roleAssignmentService.removeRoles(id, List.of("MERCHANT"));
+        }
+        return removed;
     }
 
     @Override
@@ -254,7 +287,23 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             throw new MerchantException.MerchantNotFoundException(id);
         }
         merchant.setStatus(status);
-        return updateById(merchant);
+        boolean updated = updateById(merchant);
+        if (updated) {
+            Merchant refreshed = getById(id);
+            if (refreshed != null) {
+                MerchantDTO merchantDTO = toEnrichedDTO(refreshed);
+                userPrincipalSyncService.upsertUserPrincipal(
+                        refreshed.getId(),
+                        refreshed.getUsername(),
+                        refreshed.getPassword(),
+                        refreshed.getMerchantName(),
+                        merchantDTO.getEmail(),
+                        refreshed.getPhone(),
+                        refreshed.getStatus()
+                );
+            }
+        }
+        return updated;
     }
 
     @Override
@@ -361,8 +410,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         User user = userMapper.selectById(merchant.getId());
         if (user != null) {
             merchantDTO.setEmail(user.getEmail());
-            merchantDTO.setUserType(user.getUserType());
         }
+        merchantDTO.setRoles(roleAssignmentService.getRoleCodesByUserId(merchant.getId()));
 
         return merchantDTO;
     }

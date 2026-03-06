@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS users
     oauth_provider    VARCHAR(32) NULL,
     oauth_provider_id VARCHAR(100) NULL,
     status            TINYINT      NOT NULL DEFAULT 1,
-    user_type         ENUM ('USER', 'MERCHANT', 'ADMIN') NOT NULL DEFAULT 'USER',
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT      NOT NULL DEFAULT 0,
@@ -27,7 +26,6 @@ CREATE TABLE IF NOT EXISTS users
     UNIQUE KEY uk_users_github_id (github_id),
     UNIQUE KEY uk_users_oauth_provider_id (oauth_provider, oauth_provider_id),
     INDEX idx_users_status_deleted (status, deleted),
-    INDEX idx_users_user_type_deleted (user_type, deleted),
     INDEX idx_users_github_username_deleted (github_username, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -253,6 +251,17 @@ CREATE TABLE IF NOT EXISTS sys_role_menu
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+INSERT INTO sys_role (id, role_name, role_code, role_status, deleted, version)
+VALUES (26001, 'User', 'ROLE_USER', 1, 0, 0),
+       (26002, 'Merchant', 'ROLE_MERCHANT', 1, 0, 0),
+       (26003, 'Admin', 'ROLE_ADMIN', 1, 0, 0)
+ON DUPLICATE KEY UPDATE
+    role_name = VALUES(role_name),
+    role_code = VALUES(role_code),
+    role_status = VALUES(role_status),
+    deleted = VALUES(deleted),
+    version = VALUES(version);
 
 CREATE TABLE IF NOT EXISTS operation_audit_log
 (

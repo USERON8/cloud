@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 public class PermissionConfig {
 
     private Map<String, List<String>> rolePermissions = new HashMap<>();
-    private Map<String, List<String>> userTypePermissions = new HashMap<>();
     private boolean enabled = true;
     private boolean strictMode = false;
     private List<String> defaultPermissions = new ArrayList<>();
@@ -49,40 +48,20 @@ public class PermissionConfig {
                 "log:read", "log:write"
         );
 
-        userTypePermissions.put("USER", Arrays.asList("read", "user:read", "user:write"));
-        userTypePermissions.put("MERCHANT", Arrays.asList(
+        rolePermissions.put("ROLE_USER", Arrays.asList(
                 "read", "write",
                 "user:read", "user:write",
-                "product:read", "product:write",
-                "order:read", "order:write",
-                "stock:read", "stock:write"
+                "order:read", "order:write"
         ));
-        userTypePermissions.put("ADMIN", new ArrayList<>(adminPermissions));
-
-        rolePermissions.put("ROLE_USER", Arrays.asList("read", "user:read", "user:write"));
         rolePermissions.put("ROLE_MERCHANT", Arrays.asList(
                 "read", "write",
                 "user:read", "user:write",
-                "product:read", "product:write"
+                "merchant:read", "merchant:write",
+                "product:read", "product:write",
+                "stock:read", "stock:write",
+                "order:read", "order:write"
         ));
         rolePermissions.put("ROLE_ADMIN", new ArrayList<>(adminPermissions));
-    }
-
-    public List<String> getPermissionsByUserType(String userType) {
-        if (!enabled) {
-            return Collections.emptyList();
-        }
-
-        List<String> permissions = userTypePermissions.get(userType);
-        if (permissions == null) {
-            if (strictMode) {
-                log.warn("Unknown userType in strict mode: {}", userType);
-                return Collections.emptyList();
-            }
-            return new ArrayList<>(defaultPermissions);
-        }
-
-        return new ArrayList<>(permissions);
     }
 
     public List<String> getPermissionsByRole(String role) {
@@ -102,51 +81,34 @@ public class PermissionConfig {
         return new ArrayList<>(permissions);
     }
 
-    public boolean hasPermission(String userType, String permission) {
+    public boolean hasPermissionByRole(String role, String permission) {
         if (!enabled) {
             return true;
         }
-        return getPermissionsByUserType(userType).contains(permission);
+        return getPermissionsByRole(role).contains(permission);
     }
 
-    public boolean hasAnyPermission(String userType, String... permissions) {
+    public boolean hasAnyPermissionByRole(String role, String... permissions) {
         if (!enabled) {
             return true;
         }
-        List<String> userPermissions = getPermissionsByUserType(userType);
-        return Arrays.stream(permissions).anyMatch(userPermissions::contains);
+        List<String> rolePermissionList = getPermissionsByRole(role);
+        return Arrays.stream(permissions).anyMatch(rolePermissionList::contains);
     }
 
-    public boolean hasAllPermissions(String userType, String... permissions) {
+    public boolean hasAllPermissionsByRole(String role, String... permissions) {
         if (!enabled) {
             return true;
         }
-        List<String> userPermissions = getPermissionsByUserType(userType);
-        return Arrays.stream(permissions).allMatch(userPermissions::contains);
+        List<String> rolePermissionList = getPermissionsByRole(role);
+        return Arrays.stream(permissions).allMatch(rolePermissionList::contains);
     }
 
     public Set<String> getAllPermissions() {
         Set<String> all = new HashSet<>();
-        userTypePermissions.values().forEach(all::addAll);
         rolePermissions.values().forEach(all::addAll);
         all.addAll(defaultPermissions);
         return all;
-    }
-
-    public void addUserTypePermissions(String userType, List<String> permissions) {
-        List<String> existing = userTypePermissions.computeIfAbsent(userType, k -> new ArrayList<>());
-        permissions.forEach(permission -> {
-            if (!existing.contains(permission)) {
-                existing.add(permission);
-            }
-        });
-    }
-
-    public void removeUserTypePermissions(String userType, List<String> permissions) {
-        List<String> existing = userTypePermissions.get(userType);
-        if (existing != null) {
-            existing.removeAll(permissions);
-        }
     }
 
     @DistributedLock(
@@ -167,39 +129,17 @@ public class PermissionConfig {
     }
 
     @DistributedLock(
-            key = "'permission:config:usertype:' + #userType",
-            waitTime = 5,
-            leaseTime = 10,
-            timeUnit = TimeUnit.SECONDS,
-            failMessage = "Acquire user type permission update lock failed"
-    )
-    public void updateUserTypePermissions(String userType, List<String> permissions) {
-        if (userType == null || userType.trim().isEmpty()) {
-            throw new IllegalArgumentException("userType cannot be blank");
-        }
-        if (permissions == null) {
-            permissions = new ArrayList<>();
-        }
-        this.userTypePermissions.put(userType, new ArrayList<>(permissions));
-    }
-
-    @DistributedLock(
             key = "'permission:config:batch:update'",
             waitTime = 10,
             leaseTime = 30,
             timeUnit = TimeUnit.SECONDS,
             failMessage = "Acquire batch permission update lock failed"
     )
-    public void batchUpdatePermissions(Map<String, List<String>> rolePermissions,
-                                       Map<String, List<String>> userTypePermissions) {
+    public void batchUpdatePermissions(Map<String, List<String>> rolePermissions) {
         try {
             if (rolePermissions != null) {
                 this.rolePermissions.clear();
                 this.rolePermissions.putAll(rolePermissions);
-            }
-            if (userTypePermissions != null) {
-                this.userTypePermissions.clear();
-                this.userTypePermissions.putAll(userTypePermissions);
             }
         } catch (Exception e) {
             log.error("Failed to batch update permissions", e);
@@ -216,7 +156,6 @@ public class PermissionConfig {
     )
     public void resetToDefault() {
         this.rolePermissions.clear();
-        this.userTypePermissions.clear();
         this.enabled = true;
         this.strictMode = false;
         this.defaultPermissions.clear();

@@ -12,7 +12,6 @@ import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.vo.user.UserVO;
-import com.cloud.common.enums.UserType;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
@@ -23,7 +22,7 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.UserService;
-import cn.hutool.core.util.StrUtil;
+import com.cloud.user.service.support.RoleAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -36,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -48,6 +48,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final PasswordEncoder passwordEncoder;
     private final MerchantService merchantService;
     private final MerchantConverter merchantConverter;
+    private final RoleAssignmentService roleAssignmentService;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,7 +58,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
-        return user == null ? null : userConverter.toDTO(user);
+        return user == null ? null : toDTOWithRoles(user);
     }
 
     @Override
@@ -81,13 +82,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (pageDTO.getStatus() != null) {
             queryWrapper.eq(User::getStatus, pageDTO.getStatus());
         }
-        if (StrUtil.isNotBlank(pageDTO.getUserType())) {
-            queryWrapper.eq(User::getUserType, pageDTO.getUserType());
+        if (StrUtil.isNotBlank(pageDTO.getRoleCode())) {
+            Collection<Long> userIds = roleAssignmentService.getUserIdsByRoleCode(pageDTO.getRoleCode());
+            if (userIds.isEmpty()) {
+                return PageResult.of(page.getCurrent(), page.getSize(), 0L, List.of());
+            }
+            queryWrapper.in(User::getId, userIds);
         }
         queryWrapper.orderByDesc(User::getCreatedAt);
 
         Page<User> resultPage = this.page(page, queryWrapper);
-        List<UserVO> userVOList = userConverter.toVOList(resultPage.getRecords());
+        List<UserVO> userVOList = toVOListWithRoles(resultPage.getRecords());
         return PageResult.of(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal(), userVOList);
     }
 
@@ -145,7 +150,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new EntityNotFoundException("user", id);
         }
-        return userConverter.toDTO(user);
+        return toDTOWithRoles(user);
     }
 
     @Override
@@ -160,7 +165,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyList();
         }
-        return listByIds(userIds).stream().map(userConverter::toDTO).collect(Collectors.toList());
+        return toDTOListWithRoles(listByIds(userIds));
     }
 
     @Override
@@ -188,19 +193,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user.getStatus() == null) {
             user.setStatus(1);
         }
-        if (StrUtil.isBlank(user.getUserType())) {
-            user.setUserType(registerRequest.getUserType() == null ? UserType.USER.getCode() : registerRequest.getUserType());
-        }
 
         if (!save(user)) {
             throw new BusinessException("failed to register user");
         }
 
-        UserDTO userDTO = userConverter.toDTO(user);
-        if (UserType.MERCHANT.getCode().equalsIgnoreCase(registerRequest.getUserType())) {
-            createMerchantForUser(userDTO);
-        }
-        return userDTO;
+        roleAssignmentService.replaceRoles(user.getId(), List.of("USER"));
+
+        return toDTOWithRoles(user);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getGithubId, githubId)
                 .eq(User::getOauthProvider, "github"));
-        return user == null ? null : userConverter.toDTO(user);
+        return user == null ? null : toDTOWithRoles(user);
     }
 
     @Override
@@ -245,7 +245,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getGithubUsername, githubUsername)
                 .eq(User::getOauthProvider, "github"));
-        return user == null ? null : userConverter.toDTO(user);
+        return user == null ? null : toDTOWithRoles(user);
     }
 
     @Override
@@ -257,7 +257,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getOauthProvider, oauthProvider)
                 .eq(User::getOauthProviderId, oauthProviderId));
-        return user == null ? null : userConverter.toDTO(user);
+        return user == null ? null : toDTOWithRoles(user);
     }
 
     @Override
@@ -281,7 +281,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setNickname(githubUserDTO.getDisplayName());
         user.setEmail(githubUserDTO.getEmail());
         user.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        user.setUserType(UserType.USER.getCode());
         user.setStatus(1);
         user.setPhone(null);
         user.setGithubId(githubUserDTO.getGithubId());
@@ -293,7 +292,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!save(user)) {
             throw new BusinessException("failed to create github user");
         }
-        return userConverter.toDTO(user);
+        roleAssignmentService.replaceRoles(user.getId(), List.of("USER"));
+        return toDTOWithRoles(user);
     }
 
     @Override
@@ -333,7 +333,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Page<User> userPage = page(pageParam);
 
         Page<UserDTO> dtoPage = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
-        dtoPage.setRecords(userPage.getRecords().stream().map(userConverter::toDTO).collect(Collectors.toList()));
+        dtoPage.setRecords(toDTOListWithRoles(userPage.getRecords()));
         return dtoPage;
     }
 
@@ -355,6 +355,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         save(user);
+        roleAssignmentService.replaceRoles(user.getId(),
+                userDTO.getRoles() == null || userDTO.getRoles().isEmpty() ? List.of("USER") : userDTO.getRoles());
         return user.getId();
     }
 
@@ -397,7 +399,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StrUtil.isNotBlank(user.getPassword())) {
             user.setPassword(normalizePassword(user.getPassword()));
         }
-        return updateById(user);
+        boolean updated = updateById(user);
+        if (updated && userDTO.getRoles() != null) {
+            roleAssignmentService.replaceRoles(userDTO.getId(), userDTO.getRoles());
+        }
+        return updated;
     }
 
     @Override
@@ -573,28 +579,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 
-    private void createMerchantForUser(UserDTO userDTO) {
-        MerchantDTO merchantDTO = new MerchantDTO();
-        merchantDTO.setId(userDTO.getId());
-        merchantDTO.setUsername(userDTO.getUsername());
-        String merchantPassword = userDTO.getPassword();
-        if (StrUtil.isBlank(merchantPassword)) {
-            merchantPassword = passwordEncoder.encode("merchant_" + userDTO.getId());
-        }
-        merchantDTO.setPassword(merchantPassword);
-        merchantDTO.setMerchantName(StrUtil.isNotBlank(userDTO.getNickname()) ? userDTO.getNickname() : userDTO.getUsername());
-        merchantDTO.setEmail(userDTO.getEmail());
-        merchantDTO.setPhone(userDTO.getPhone());
-        merchantDTO.setUserType(String.valueOf(userDTO.getUserType()));
-        merchantDTO.setStatus(userDTO.getStatus());
-        merchantDTO.setAuthStatus(0);
-
-        boolean saved = merchantService.save(merchantConverter.toEntity(merchantDTO));
-        if (!saved) {
-            throw new BusinessException("failed to create merchant for user");
-        }
-    }
-
     private String buildUniqueGithubUsername(String login) {
         String baseLogin = StrUtil.blankToDefault(StrUtil.trim(login), "user");
         String candidateUsername = "github_" + baseLogin;
@@ -607,6 +591,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         return StrUtil.format("github_{}_{}", baseLogin, IdUtil.fastSimpleUUID());
+    }
+
+    private UserDTO toDTOWithRoles(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserDTO dto = userConverter.toDTO(user);
+        dto.setRoles(roleAssignmentService.getRoleCodesByUserId(user.getId()));
+        return dto;
+    }
+
+    private List<UserDTO> toDTOListWithRoles(List<User> users) {
+        if (users == null || users.isEmpty()) {
+            return List.of();
+        }
+        List<UserDTO> dtos = userConverter.toDTOList(users);
+        Map<Long, List<String>> roleMap = roleAssignmentService.getRoleCodesByUserIds(
+                users.stream().map(User::getId).toList());
+        dtos.forEach(dto -> dto.setRoles(roleMap.getOrDefault(dto.getId(), List.of())));
+        return dtos;
+    }
+
+    private List<UserVO> toVOListWithRoles(List<User> users) {
+        if (users == null || users.isEmpty()) {
+            return List.of();
+        }
+        List<UserVO> vos = userConverter.toVOList(users);
+        Map<Long, List<String>> roleMap = roleAssignmentService.getRoleCodesByUserIds(
+                users.stream().map(User::getId).toList());
+        vos.forEach(vo -> vo.setRoles(roleMap.getOrDefault(vo.getId(), List.of())));
+        return vos;
     }
 }
 

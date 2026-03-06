@@ -35,5 +35,5 @@ public class UserPageDTO extends PageQuery {
     
 
 
-    private String userType;
+    private String roleCode;
 }

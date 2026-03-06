@@ -30,8 +30,8 @@ public class UserStatisticsVO implements Serializable {
     @Schema(description = "Active users in recent 7 days")
     private Long activeUsers;
 
-    @Schema(description = "User type distribution Map<type, count>")
-    private Map<String, Long> userTypeDistribution;
+    @Schema(description = "Role distribution Map<role, count>")
+    private Map<String, Long> roleDistribution;
 
     @Schema(description = "User status distribution Map<status, count>")
     private Map<String, Long> userStatusDistribution;

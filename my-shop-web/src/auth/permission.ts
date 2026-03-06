@@ -5,13 +5,6 @@ export type UserRole = 'USER' | 'MERCHANT' | 'ADMIN'
 
 const DEFAULT_ROLE: UserRole = 'USER'
 
-function normalizeRole(role?: string): UserRole {
-  if (role === 'ADMIN' || role === 'MERCHANT' || role === 'USER') {
-    return role
-  }
-  return DEFAULT_ROLE
-}
-
 export function getCurrentRole(): UserRole {
   const roles = Array.isArray(sessionState.user?.roles) ? sessionState.user.roles : []
   if (roles.includes('ADMIN')) {
@@ -23,7 +16,7 @@ export function getCurrentRole(): UserRole {
   if (roles.includes('USER')) {
     return 'USER'
   }
-  return normalizeRole(sessionState.user?.userType)
+  return DEFAULT_ROLE
 }
 
 export function hasAnyRole(...roles: UserRole[]): boolean {

@@ -21,7 +21,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"{{phone}}\",\n  \"nickname\": \"{{nickname}}\",\n  \"userType\": \"USER\"\n}"
+                                                                   "raw":  "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"{{phone}}\",\n  \"nickname\": \"{{nickname}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/auth/users/register"
                                                   }

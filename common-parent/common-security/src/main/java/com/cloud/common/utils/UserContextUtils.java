@@ -70,7 +70,7 @@ public class UserContextUtils {
 
 
 
-    public static String getCurrentUserType() {
+    public static String getCurrentPrimaryRole() {
         if (hasRole("ADMIN")) {
             return "ADMIN";
         }
@@ -243,7 +243,7 @@ public class UserContextUtils {
         return String.format("User[id=%s, username=%s, role=%s, nickname=%s, status=%s, scopes=%s]",
                 getCurrentUserId(),
                 getCurrentUsername(),
-                getCurrentUserType(),
+                getCurrentPrimaryRole(),
                 getCurrentUserNickname(),
                 getCurrentUserStatus(),
                 getCurrentUserScopes());
@@ -255,17 +255,8 @@ public class UserContextUtils {
 
 
 
-    public static boolean isUserType(String userType) {
-        return hasRole(userType);
-    }
-
-    
-
-
-
-
     public static boolean isRegularUser() {
-        return isUserType("USER");
+        return hasRole("USER");
     }
 
     

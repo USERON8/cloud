@@ -19,13 +19,13 @@ DELETE FROM users;
 DELETE FROM test_access_token WHERE id = 1;
 
 INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, github_id, github_username,
-                   oauth_provider, oauth_provider_id, status, user_type, deleted, version)
+                   oauth_provider, oauth_provider_id, status, deleted, version)
 VALUES (20001, 't_user_20001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
         '13900000001', 'Test User 1', 'https://example.com/u1.png', 't_user_20001@example.com',
-        NULL, NULL, NULL, NULL, 1, 'USER', 0, 0),
+        NULL, NULL, NULL, NULL, 1, 0, 0),
        (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',
         '13900020001', 'Merchant Owner', 'https://example.com/u2.png', 't_merchant_30001@example.com',
-        NULL, NULL, NULL, NULL, 1, 'MERCHANT', 0, 0);
+        NULL, NULL, NULL, NULL, 1, 0, 0);
 
 INSERT INTO user_profile_ext (id, user_id, gender, birthday, bio, country, province, city, personal_tags, preferences, deleted, version)
 VALUES (21001, 20001, 'MALE', '1995-01-01', 'test profile', 'China', 'Shanghai', 'Shanghai',
@@ -44,8 +44,11 @@ VALUES (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/y
         'Test Admin 1', '13900010001', 'ADMIN', 1, 0, 0);
 
 INSERT INTO sys_role (id, role_name, role_code, role_status, deleted, version)
-VALUES (26001, 'Super Admin', 'ROLE_SUPER_ADMIN', 1, 0, 0),
-       (26002, 'Ops Admin', 'ROLE_OPS_ADMIN', 1, 0, 0);
+VALUES (26001, 'User', 'ROLE_USER', 1, 0, 0),
+       (26002, 'Merchant', 'ROLE_MERCHANT', 1, 0, 0),
+       (26003, 'Admin', 'ROLE_ADMIN', 1, 0, 0),
+       (26011, 'Super Admin', 'ROLE_SUPER_ADMIN', 1, 0, 0),
+       (26012, 'Ops Admin', 'ROLE_OPS_ADMIN', 1, 0, 0);
 
 INSERT INTO sys_permission (id, permission_name, permission_code, http_method, api_path, deleted, version)
 VALUES (27001, 'Order Manage', 'order:manage', 'POST', '/api/v2/order-sub/*/ship', 0, 0),
@@ -58,19 +61,22 @@ VALUES (28001, 'Order Center', 'MENU_ORDER_CENTER', 0, 'MENU', '/ops/orders', 1,
        (28003, 'Product Center', 'MENU_PRODUCT_CENTER', 0, 'MENU', '/ops/products', 3, 1, 0, 0);
 
 INSERT INTO sys_role_permission (id, role_id, permission_id, deleted, version)
-VALUES (29001, 26001, 27001, 0, 0),
-       (29002, 26001, 27002, 0, 0),
-       (29003, 26001, 27003, 0, 0),
-       (29004, 26002, 27001, 0, 0);
+VALUES (29001, 26011, 27001, 0, 0),
+       (29002, 26011, 27002, 0, 0),
+       (29003, 26011, 27003, 0, 0),
+       (29004, 26012, 27001, 0, 0);
 
 INSERT INTO sys_role_menu (id, role_id, menu_id, deleted, version)
-VALUES (29101, 26001, 28001, 0, 0),
-       (29102, 26001, 28002, 0, 0),
-       (29103, 26001, 28003, 0, 0),
-       (29104, 26002, 28001, 0, 0);
+VALUES (29101, 26011, 28001, 0, 0),
+       (29102, 26011, 28002, 0, 0),
+       (29103, 26011, 28003, 0, 0),
+       (29104, 26012, 28001, 0, 0);
 
 INSERT INTO sys_user_role (id, user_id, role_id, deleted, version)
-VALUES (29201, 24001, 26001, 0, 0);
+VALUES (29201, 24001, 26011, 0, 0),
+       (29202, 20001, 26001, 0, 0),
+       (29203, 30001, 26001, 0, 0),
+       (29204, 30001, 26002, 0, 0);
 
 INSERT INTO merchant (id, username, password, merchant_name, phone, status, deleted, version)
 VALUES (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu',

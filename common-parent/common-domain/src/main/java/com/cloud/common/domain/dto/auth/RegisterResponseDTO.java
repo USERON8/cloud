@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 
 
 
@@ -35,5 +36,5 @@ public class RegisterResponseDTO {
     
 
 
-    private String userType;
+    private List<String> roles;
 }

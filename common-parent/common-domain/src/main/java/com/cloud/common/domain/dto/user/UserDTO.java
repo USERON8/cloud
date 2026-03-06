@@ -1,6 +1,5 @@
 package com.cloud.common.domain.dto.user;
 
-import com.cloud.common.enums.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -12,6 +11,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class UserDTO implements Serializable {
@@ -57,7 +57,7 @@ public class UserDTO implements Serializable {
     @Max(value = 1, message = "Status must be less than or equal to 1")
     private Integer status;
 
-    private UserType userType;
+    private List<String> roles;
 
     private LocalDateTime createdAt;
 

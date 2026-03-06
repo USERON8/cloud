@@ -25,6 +25,4 @@ public class RegisterRequestDTO {
     @NotBlank(message = "nickname cannot be blank")
     private String nickname;
 
-    @Pattern(regexp = "^(USER|ADMIN|MERCHANT)$", message = "userType must be USER, ADMIN or MERCHANT")
-    private String userType = "USER";
 }

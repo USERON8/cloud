@@ -44,7 +44,6 @@ public interface UserConverter {
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-        
     User toEntity(RegisterRequestDTO registerRequestDTO);
 
     
@@ -99,9 +98,8 @@ public interface UserConverter {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "username", ignore = true) 
     @Mapping(target = "password", ignore = true) 
-    @Mapping(target = "phone", ignore = true) 
-    @Mapping(target = "userType", ignore = true) 
-    @Mapping(target = "status", ignore = true) 
+    @Mapping(target = "phone", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

@@ -7,7 +7,6 @@ export interface UserInfo {
   avatarUrl?: string
   email?: string
   phone?: string
-  userType?: string
   roles?: string[]
 }
 
@@ -25,7 +24,6 @@ export interface RegisterRequest {
   password: string
   phone: string
   nickname: string
-  userType?: 'USER' | 'MERCHANT' | 'ADMIN'
 }
 
 export interface ProductItem {

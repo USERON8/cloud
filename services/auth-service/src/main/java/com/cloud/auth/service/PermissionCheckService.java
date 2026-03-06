@@ -178,7 +178,7 @@ public class PermissionCheckService {
 
 
 
-    public String getCurrentUserType(Authentication authentication) {
+    public String getCurrentPrimaryRole(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }

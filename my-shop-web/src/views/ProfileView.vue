@@ -20,7 +20,7 @@ const form = reactive<Required<Pick<UserInfo, 'nickname' | 'email' | 'phone' | '
 )
 
 const accountName = computed(() => sessionState.user?.username || 'Unknown')
-const accountType = computed(() => sessionState.user?.userType || 'Unknown')
+const accountType = computed(() => sessionState.user?.roles?.[0] || 'Unknown')
 const avatarPreview = computed(() => {
   if (form.avatarUrl.trim() && !avatarLoadFailed.value) {
     return form.avatarUrl.trim()

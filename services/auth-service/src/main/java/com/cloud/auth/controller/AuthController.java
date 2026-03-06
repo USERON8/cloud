@@ -56,7 +56,7 @@ public class AuthController {
                 registeredUser.getUsername(),
                 registeredUser.getPhone(),
                 registeredUser.getNickname(),
-                registeredUser.getUserType() == null ? null : registeredUser.getUserType().getCode()
+                registeredUser.getRoles()
         );
         return Result.success("Registration successful. Continue with /oauth2/authorize to sign in.", registerResponse);
     }

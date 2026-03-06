@@ -62,8 +62,6 @@ public class User extends BaseEntity<User> {
     
 
 
-    @TableField(value = "user_type", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
-    private String userType;
 
     
 

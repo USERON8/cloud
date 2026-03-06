@@ -3,6 +3,7 @@ package com.cloud.common.domain.vo.user;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 
@@ -47,7 +48,7 @@ public class UserVO {
     
 
 
-    private String userType;
+    private List<String> roles;
 
     
 
