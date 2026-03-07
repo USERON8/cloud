@@ -30,13 +30,41 @@ function Select-FirstQuotedValue {
     return ""
 }
 
-function Parse-ClassBasePath {
+function Get-QuotedValues {
+    param([string]$InputText)
+    if ([string]::IsNullOrWhiteSpace($InputText)) { return @() }
+    return @([regex]::Matches($InputText, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+}
+
+function Parse-ClassBasePaths {
     param([string]$Content)
     $m = [regex]::Match($Content, '@RequestMapping\(([^)]*)\)(?:(?!\bclass\b).)*\bclass\b', 'Singleline')
-    if (-not $m.Success) { return "/" }
-    $basePath = Select-FirstQuotedValue -InputText $m.Groups[1].Value
-    if ([string]::IsNullOrWhiteSpace($basePath)) { return "/" }
-    return $basePath
+    if (-not $m.Success) { return @("/") }
+    $basePaths = @(Get-QuotedValues -InputText $m.Groups[1].Value)
+    if ($basePaths.Count -eq 0) {
+        $basePath = Select-FirstQuotedValue -InputText $m.Groups[1].Value
+        if (-not [string]::IsNullOrWhiteSpace($basePath)) {
+            $basePaths = @($basePath)
+        }
+    }
+    if ($basePaths.Count -eq 0) { return @("/") }
+    return $basePaths
+}
+
+function Get-AnnotationBlock {
+    param(
+        [string[]]$Lines,
+        [int]$StartIndex
+    )
+    $block = [System.Collections.Generic.List[string]]::new()
+    for ($i = $StartIndex - 1; $i -ge 0; $i--) {
+        $line = $Lines[$i]
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            break
+        }
+        $block.Insert(0, $line)
+    }
+    return ($block -join "`n")
 }
 
 $controllerFiles = Get-ChildItem -Path $Root -Recurse -File -Filter *Controller.java |
@@ -45,17 +73,45 @@ $controllerFiles = Get-ChildItem -Path $Root -Recurse -File -Filter *Controller.
 $issues = [System.Collections.Generic.List[pscustomobject]]::new()
 $checkedMethods = 0
 
-$methodPattern = '(?<ann>(?:\s*@(?:Get|Post|Put|Delete|Patch|Request)Mapping\([^)]*\)\s*)+)\s*public\s+(?<return>[^(\r\n]+?)\s+(?<name>[A-Za-z_]\w*)\s*\((?<params>.*?)\)\s*\{'
+$methodPattern = 'public\s+(?<return>.+?)\s+(?<name>[A-Za-z_]\w*)\s*\((?<params>.*?)\)\s*\{'
 
 foreach ($file in $controllerFiles) {
     $content = Get-Content -Raw -Path $file.FullName
-    $classBasePath = Parse-ClassBasePath -Content $content
-    $isFeignAdapterController = $content -match 'implements\s+\w+FeignClient'
-    $matches = [regex]::Matches($content, $methodPattern, 'Singleline')
+    $lines = Get-Content -Path $file.FullName
+    $classBasePaths = @(Parse-ClassBasePaths -Content $content)
+    $isApiAdapterController = $content -match 'implements\s+\w+Api\b'
 
-    foreach ($match in $matches) {
+    for ($lineIndex = 0; $lineIndex -lt $lines.Count; $lineIndex++) {
+        if ($lines[$lineIndex] -notmatch '^\s*public\b') {
+            continue
+        }
+
+        $annotationBlock = Get-AnnotationBlock -Lines $lines -StartIndex $lineIndex
+        if ($annotationBlock -notmatch '@(?:Get|Post|Put|Delete|Patch|Request)Mapping') {
+            continue
+        }
+
+        $signatureLines = [System.Collections.Generic.List[string]]::new()
+        $braceFound = $false
+        for ($sigIndex = $lineIndex; $sigIndex -lt $lines.Count; $sigIndex++) {
+            $signatureLines.Add($lines[$sigIndex])
+            if ($lines[$sigIndex] -match '\{') {
+                $braceFound = $true
+                break
+            }
+        }
+        if (-not $braceFound) {
+            continue
+        }
+
+        $signature = ($signatureLines -join ' ')
+        $match = [regex]::Match($signature, $methodPattern, 'Singleline')
+        if (-not $match.Success) {
+            continue
+        }
+
         $checkedMethods++
-        $ann = $match.Groups['ann'].Value
+        $ann = $annotationBlock
         $params = $match.Groups['params'].Value
         $returnType = if ($null -eq $match.Groups['return'].Value) { "" } else { [string]$match.Groups['return'].Value }
         $returnType = $returnType.Trim()
@@ -73,13 +129,14 @@ foreach ($file in $controllerFiles) {
         if ($mappingArgs.Success) {
             $methodPath = Select-FirstQuotedValue -InputText $mappingArgs.Groups[1].Value
         }
-        $fullPath = Normalize-PathJoin -BasePath $classBasePath -MethodPath $methodPath
+        $fullPaths = @($classBasePaths | ForEach-Object { Normalize-PathJoin -BasePath $_ -MethodPath $methodPath })
+        $fullPath = $fullPaths[0]
 
         $placeholderMatches = [regex]::Matches($fullPath, '\{([^}/]+)\}')
         $placeholders = @()
         foreach ($pm in $placeholderMatches) { $placeholders += $pm.Groups[1].Value }
 
-        $pathVarMatches = [regex]::Matches($params, '@PathVariable(?:\((?:\s*(?:value|name)\s*=\s*)?"?([^",)]+)"?[^)]*\))?\s+[^\s,<>]+(?:<[^>]+>)?\s+([A-Za-z_]\w*)', 'Singleline')
+        $pathVarMatches = [regex]::Matches($params, '@PathVariable(?:\((?:\s*(?:value|name)\s*=\s*)?"?([^",)]+)"?[^)]*\))?(?:\s+@\w+(?:\([^)]*\))?)*\s+[^\s,<>]+(?:<[^>]+>)?\s+([A-Za-z_]\w*)', 'Singleline')
         $pathVars = @()
         foreach ($vm in $pathVarMatches) {
             $explicitName = if ($null -eq $vm.Groups[1].Value) { "" } else { [string]$vm.Groups[1].Value }
@@ -120,14 +177,15 @@ foreach ($file in $controllerFiles) {
                 })
         }
 
-        $isInternalApi = $fullPath.StartsWith("/internal/")
-        $isGatewayFallback = $fullPath.StartsWith("/gateway/")
-        if (-not $isInternalApi -and -not $isGatewayFallback -and -not $isFeignAdapterController -and -not $returnType.StartsWith("Result<")) {
+        $isApiEndpoint = @($fullPaths | Where-Object { $_.StartsWith("/api/") }).Count -gt 0
+        $isInternalApi = @($fullPaths | Where-Object { $_.StartsWith("/internal/") }).Count -gt 0
+        $isGatewayFallback = @($fullPaths | Where-Object { $_.StartsWith("/gateway/") }).Count -gt 0
+        if ($isApiEndpoint -and -not $isInternalApi -and -not $isGatewayFallback -and -not $isApiAdapterController -and $returnType -notmatch '(^|[<\s])Result<') {
             $issues.Add([pscustomobject]@{
                     File   = $file.FullName
                     Method = $methodName
                     Type   = "non-standard-result-wrapper"
-                    Detail = "returnType=$returnType path=$fullPath"
+                    Detail = "returnType=$returnType paths=[$($fullPaths -join ', ')]"
                 })
         }
     }
