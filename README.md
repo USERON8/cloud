@@ -191,7 +191,7 @@ sequenceDiagram
     O->>MQ: outbox event(order.created)
     O-->>C: CREATED / STOCK_RESERVED
 
-    C->>GW: POST /api/payments/order
+    C->>GW: POST /api/payments/orders
     GW->>P: create payment_order
     P->>MQ: payment.paid
     MQ->>O: consume payment.paid
