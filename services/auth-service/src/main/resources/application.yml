@@ -12,8 +12,6 @@ spring:
     name: auth-service
   cache:
     type: none
-  profiles:
-    active: dev
   datasource:
     type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   main:
@@ -95,8 +93,8 @@ logging:
     name: ${logging.file.path}/auth-service.log
   level:
     root: info
-    com.cloud.auth: debug
-    org.springframework.security: debug
+    com.cloud.auth: info
+    org.springframework.security: warn
     org.springframework.web: warn
 app:
   security:

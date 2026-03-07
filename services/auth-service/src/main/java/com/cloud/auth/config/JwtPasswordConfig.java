@@ -1,5 +1,6 @@
 package com.cloud.auth.config;
 
+import com.cloud.common.security.JwtAuthorityUtils;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -10,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
@@ -31,7 +30,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import cn.hutool.core.util.StrUtil;
 
 import java.security.KeyFactory;
@@ -43,7 +41,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -137,43 +134,22 @@ public class JwtPasswordConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("SCOPE_");
-        authoritiesConverter.setAuthoritiesClaimName("scope");
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        converter.setPrincipalClaimName("preferred_username");
-        return converter;
+        return buildJwtAuthenticationConverter(true);
     }
 
     @Bean("enhancedJwtAuthenticationConverter")
     @Primary
     public JwtAuthenticationConverter enhancedJwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            JwtGrantedAuthoritiesConverter scopeConverter = new JwtGrantedAuthoritiesConverter();
-            scopeConverter.setAuthorityPrefix("SCOPE_");
-            scopeConverter.setAuthoritiesClaimName("scope");
-            var scopeAuthorities = scopeConverter.convert(jwt);
+        return buildJwtAuthenticationConverter(false);
+    }
 
-            JwtGrantedAuthoritiesConverter roleConverter = new JwtGrantedAuthoritiesConverter();
-            roleConverter.setAuthorityPrefix("ROLE_");
-            roleConverter.setAuthoritiesClaimName("authorities");
-            var roleAuthorities = roleConverter.convert(jwt);
-
-            var allAuthorities = new ArrayList<GrantedAuthority>();
-            if (scopeAuthorities != null) {
-                allAuthorities.addAll(scopeAuthorities);
-            }
-            if (roleAuthorities != null) {
-                allAuthorities.addAll(roleAuthorities);
-            }
-
-            return allAuthorities;
-        });
-
-        converter.setPrincipalClaimName("preferred_username");
+    private JwtAuthenticationConverter buildJwtAuthenticationConverter(boolean includeAuthoritiesClaim) {
+        JwtAuthenticationConverter converter = JwtAuthorityUtils.buildJwtAuthenticationConverter(
+                true,
+                includeAuthoritiesClaim,
+                null
+        );
+        converter.setPrincipalClaimName("username");
         return converter;
     }
 

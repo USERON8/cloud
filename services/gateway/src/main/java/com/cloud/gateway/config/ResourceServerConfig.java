@@ -153,10 +153,10 @@ public class ResourceServerConfig {
                             ).authenticated()
                             .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
                             .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
+                            .pathMatchers("/search/**", "/api/search/**").permitAll()
                             .pathMatchers("/api/**").authenticated()
                             .pathMatchers("/payment/**", "/api/payments/**", "/api/v1/payment/alipay/**").authenticated()
                             .pathMatchers("/stock/**", "/api/stocks/**").authenticated()
-                            .pathMatchers("/search/**", "/api/search/**").permitAll()
                             .anyExchange().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2
