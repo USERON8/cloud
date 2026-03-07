@@ -13,6 +13,7 @@ spring:
   cache:
     type: none
   profiles:
+    active: dev
     include: route
   main:
     allow-bean-definition-overriding: true

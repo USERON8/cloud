@@ -12,6 +12,8 @@ spring:
     name: search-service
   cache:
     type: none
+  profiles:
+    active: dev
   cloud:
     nacos:
       discovery:
