@@ -1,11 +1,15 @@
 # k6 Scripts
 
-This directory contains the k6 load and smoke test entry points for the cloud shop system.
+This directory contains the canonical k6 runners and scenario files for the cloud shop system.
 
-## Recommended runners
+Repository-wide test script index: `docs/TEST_SCRIPT_INDEX.md`
+
+## Entry points
 
 - `run-k6.ps1`
 - `run-k6.sh`
+
+Use the generic runner instead of per-scenario wrapper scripts.
 
 Supported scenarios:
 
@@ -15,6 +19,20 @@ Supported scenarios:
 - `search-max`
 - `route-only`
 - `order-only`
+
+## Scenario files
+
+- `acceptance-cases.js`
+- `all-services-smoke.js`
+- `search-chain.js`
+- `search-singleton-max.js`
+- `gateway-route-only.js`
+- `order-create-only.js`
+
+## Support scripts
+
+- `lib/preflight.ps1`
+- `lib/preflight.sh`
 
 ## Quick start
 
