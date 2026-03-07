@@ -37,4 +37,16 @@ public class PaymentRefundEntity extends BaseEntity<PaymentRefundEntity> {
 
     @TableField("refunded_at")
     private LocalDateTime refundedAt;
+
+    @TableField("retry_count")
+    private Integer retryCount;
+
+    @TableField("next_retry_at")
+    private LocalDateTime nextRetryAt;
+
+    @TableField("last_retry_at")
+    private LocalDateTime lastRetryAt;
+
+    @TableField("last_error")
+    private String lastError;
 }

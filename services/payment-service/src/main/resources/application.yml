@@ -88,6 +88,16 @@ payment:
     enabled: true
   statistics:
     enabled: true
+  compensation:
+    order-query:
+      batch-size: ${PAYMENT_ORDER_QUERY_BATCH_SIZE:50}
+      initial-delay-seconds: ${PAYMENT_ORDER_QUERY_INITIAL_DELAY_SECONDS:60}
+      interval-seconds: ${PAYMENT_ORDER_QUERY_INTERVAL_SECONDS:120}
+      max-attempts: ${PAYMENT_ORDER_QUERY_MAX_ATTEMPTS:10}
+    refund-retry:
+      batch-size: ${PAYMENT_REFUND_RETRY_BATCH_SIZE:50}
+      interval-seconds: ${PAYMENT_REFUND_RETRY_INTERVAL_SECONDS:300}
+      max-attempts: ${PAYMENT_REFUND_RETRY_MAX_ATTEMPTS:6}
 redis:
   host: 127.0.0.1
   port: 16379
@@ -201,4 +211,17 @@ dubbo:
   provider:
     timeout: 5000
     retries: 0
+
+xxl:
+  job:
+    enabled: ${XXL_JOB_ENABLED:true}
+    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
+    access-token: ${XXL_JOB_ACCESS_TOKEN:}
+    executor:
+      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
+      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
+      ip: ${XXL_JOB_EXECUTOR_IP:}
+      port: ${XXL_JOB_PORT:19086}
+      log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
+      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
 

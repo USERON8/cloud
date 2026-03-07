@@ -43,4 +43,16 @@ public class PaymentOrderEntity extends BaseEntity<PaymentOrderEntity> {
 
     @TableField("paid_at")
     private LocalDateTime paidAt;
+
+    @TableField("poll_count")
+    private Integer pollCount;
+
+    @TableField("next_poll_at")
+    private LocalDateTime nextPollAt;
+
+    @TableField("last_polled_at")
+    private LocalDateTime lastPolledAt;
+
+    @TableField("last_poll_error")
+    private String lastPollError;
 }

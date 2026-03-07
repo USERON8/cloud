@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS payment_order
     provider_txn_no   VARCHAR(128)    NULL,
     idempotency_key   VARCHAR(128)    NOT NULL,
     paid_at           DATETIME        NULL,
+    poll_count        INT             NOT NULL DEFAULT 0,
+    next_poll_at      DATETIME        NULL,
+    last_polled_at    DATETIME        NULL,
+    last_poll_error   VARCHAR(255)    NULL,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
@@ -22,7 +26,8 @@ CREATE TABLE IF NOT EXISTS payment_order
     UNIQUE KEY uk_payment_order_no (payment_no),
     UNIQUE KEY uk_payment_order_idem (idempotency_key),
     INDEX idx_payment_order_main_sub_deleted (main_order_no, sub_order_no, deleted),
-    INDEX idx_payment_order_user_status_deleted (user_id, status, deleted)
+    INDEX idx_payment_order_user_status_deleted (user_id, status, deleted),
+    INDEX idx_payment_order_status_poll_deleted (status, next_poll_at, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -38,6 +43,10 @@ CREATE TABLE IF NOT EXISTS payment_refund
     reason            VARCHAR(255)    NOT NULL,
     idempotency_key   VARCHAR(128)    NOT NULL,
     refunded_at       DATETIME        NULL,
+    retry_count       INT             NOT NULL DEFAULT 0,
+    next_retry_at     DATETIME        NULL,
+    last_retry_at     DATETIME        NULL,
+    last_error        VARCHAR(255)    NULL,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
@@ -45,7 +54,8 @@ CREATE TABLE IF NOT EXISTS payment_refund
     UNIQUE KEY uk_payment_refund_no (refund_no),
     UNIQUE KEY uk_payment_refund_idem (idempotency_key),
     INDEX idx_payment_refund_payment_deleted (payment_no, deleted),
-    INDEX idx_payment_refund_after_sale_deleted (after_sale_no, deleted)
+    INDEX idx_payment_refund_after_sale_deleted (after_sale_no, deleted),
+    INDEX idx_payment_refund_status_retry_deleted (status, next_retry_at, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
