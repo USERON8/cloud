@@ -127,6 +127,13 @@ order:
     enabled: true
   statistics:
     enabled: true
+  automation:
+    auto-confirm:
+      batch-size: ${ORDER_AUTO_CONFIRM_BATCH_SIZE:100}
+      after-hours: ${ORDER_AUTO_CONFIRM_AFTER_HOURS:240}
+    after-sale:
+      batch-size: ${ORDER_AFTER_SALE_BATCH_SIZE:100}
+      audit-timeout-hours: ${ORDER_AFTER_SALE_AUDIT_TIMEOUT_HOURS:48}
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}

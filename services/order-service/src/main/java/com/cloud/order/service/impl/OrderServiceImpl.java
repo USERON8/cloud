@@ -242,6 +242,7 @@ public class OrderServiceImpl implements OrderService {
             afterSale.setStatus("APPLIED");
         }
         afterSaleMapper.insert(afterSale);
+        syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
         return afterSale;
     }
 
@@ -272,7 +273,20 @@ public class OrderServiceImpl implements OrderService {
             afterSale.setCloseReason(remark);
         }
         afterSaleMapper.updateById(afterSale);
+        syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
         return afterSale;
+    }
+
+    private void syncSubOrderAfterSaleStatus(Long subOrderId, String afterSaleStatus) {
+        if (subOrderId == null || StrUtil.isBlank(afterSaleStatus)) {
+            return;
+        }
+        OrderSub subOrder = orderSubMapper.selectById(subOrderId);
+        if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
+            return;
+        }
+        subOrder.setAfterSaleStatus(afterSaleStatus);
+        orderSubMapper.updateById(subOrder);
     }
 
     private void validateSubTransition(String current, String target) {

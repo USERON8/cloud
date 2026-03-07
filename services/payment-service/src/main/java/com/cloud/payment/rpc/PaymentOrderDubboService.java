@@ -27,6 +27,11 @@ public class PaymentOrderDubboService implements PaymentDubboApi {
     }
 
     @Override
+    public PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo) {
+        return paymentOrderService.getPaymentOrderByOrderNo(mainOrderNo, subOrderNo);
+    }
+
+    @Override
     public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
         return paymentOrderService.handlePaymentCallback(command);
     }

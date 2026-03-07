@@ -12,6 +12,8 @@ public interface PaymentOrderService {
 
     PaymentOrderVO getPaymentOrderByNo(String paymentNo);
 
+    PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo);
+
     Boolean handlePaymentCallback(PaymentCallbackCommandDTO command);
 
     Long createRefund(PaymentRefundCommandDTO command);

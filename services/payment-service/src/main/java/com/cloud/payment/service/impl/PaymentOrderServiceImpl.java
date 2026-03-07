@@ -65,6 +65,16 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
 
     @Override
+    public PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo) {
+        PaymentOrderEntity entity = paymentOrderMapper.selectOne(new LambdaQueryWrapper<PaymentOrderEntity>()
+                .eq(PaymentOrderEntity::getMainOrderNo, mainOrderNo)
+                .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
+                .eq(PaymentOrderEntity::getDeleted, 0)
+                .last("LIMIT 1"));
+        return entity == null ? null : toOrderVO(entity);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
         PaymentCallbackLogEntity callbackLog = paymentCallbackLogMapper.selectOne(new LambdaQueryWrapper<PaymentCallbackLogEntity>()
