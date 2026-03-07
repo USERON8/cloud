@@ -55,8 +55,10 @@ public class OrderServiceImpl implements OrderService {
             "AUDIT", "AUDITING",
             "APPROVE", "APPROVED",
             "REJECT", "REJECTED",
+            "WAIT_RETURN", "WAIT_RETURN",
             "RETURN", "RETURNED",
             "RECEIVE", "RECEIVED",
+            "PROCESS", "REFUNDING",
             "REFUND", "REFUNDED",
             "CANCEL", "CANCELLED",
             "CLOSE", "CLOSED"
