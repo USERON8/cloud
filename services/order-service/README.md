@@ -15,6 +15,8 @@
 
 - 业务定时任务通过 `XXL-JOB` 执行
 - 当前已接入 handler：`orderTimeoutCheckJob`
+- 当前已接入 handler：`orderAutoConfirmReceiptJob`
+- 当前已接入 handler：`afterSaleAutoApproveJob`
 
 ## 本地启动
 
