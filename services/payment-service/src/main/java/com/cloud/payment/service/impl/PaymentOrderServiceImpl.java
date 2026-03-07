@@ -13,6 +13,7 @@ import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
+import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final PaymentOrderMapper paymentOrderMapper;
     private final PaymentRefundMapper paymentRefundMapper;
     private final PaymentCallbackLogMapper paymentCallbackLogMapper;
+    private final PaymentCompensationService paymentCompensationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -48,6 +50,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         entity.setChannel(command.getChannel());
         entity.setStatus("CREATED");
         entity.setIdempotencyKey(command.getIdempotencyKey());
+        paymentCompensationService.initializePaymentOrderCompensation(entity);
         paymentOrderMapper.insert(entity);
         return entity.getId();
     }
@@ -98,6 +101,9 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         } else if ("FAIL".equalsIgnoreCase(command.getCallbackStatus())) {
             order.setStatus("FAILED");
         }
+        order.setNextPollAt(null);
+        order.setLastPolledAt(LocalDateTime.now());
+        order.setLastPollError(null);
         paymentOrderMapper.updateById(order);
         return true;
     }
@@ -129,11 +135,11 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         entity.setReason(command.getReason());
         entity.setStatus("REFUNDING");
         entity.setIdempotencyKey(command.getIdempotencyKey());
+        entity.setRetryCount(0);
+        entity.setNextRetryAt(LocalDateTime.now());
         paymentRefundMapper.insert(entity);
 
-        entity.setStatus("REFUNDED");
-        entity.setRefundedAt(LocalDateTime.now());
-        paymentRefundMapper.updateById(entity);
+        paymentCompensationService.submitRefund(paymentOrder, entity);
         return entity.getId();
     }
 
