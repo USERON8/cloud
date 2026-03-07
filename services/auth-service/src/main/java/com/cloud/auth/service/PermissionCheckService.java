@@ -1,6 +1,7 @@
 package com.cloud.auth.service;
 
 import com.cloud.api.user.UserDubboApi;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -210,7 +211,22 @@ public class PermissionCheckService {
             Jwt jwt = (Jwt) principal;
             Long userId = jwt.getClaim("user_id");
             try {
-                return userId == null ? null : userDubboApi.findById(userId);
+                if (userId == null) {
+                    return null;
+                }
+                UserProfileDTO profile = userDubboApi.findById(userId);
+                if (profile == null) {
+                    return null;
+                }
+                UserDTO userDTO = new UserDTO();
+                userDTO.setId(profile.getId());
+                userDTO.setUsername(profile.getUsername());
+                userDTO.setPhone(profile.getPhone());
+                userDTO.setNickname(profile.getNickname());
+                userDTO.setAvatarUrl(profile.getAvatarUrl());
+                userDTO.setEmail(profile.getEmail());
+                userDTO.setStatus(profile.getStatus());
+                return userDTO;
             } catch (Exception e) {
                 log.error("Failed to load current user profile, userId={}", userId, e);
                 return null;

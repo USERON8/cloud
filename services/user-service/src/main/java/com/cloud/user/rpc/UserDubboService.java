@@ -1,7 +1,7 @@
 package com.cloud.user.rpc;
 
 import com.cloud.api.user.UserDubboApi;
-import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ public class UserDubboService implements UserDubboApi {
     private final UserService userService;
 
     @Override
-    public UserDTO findById(Long id) {
+    public UserProfileDTO findById(Long id) {
         return userService.getProfileById(id);
     }
 

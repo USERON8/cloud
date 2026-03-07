@@ -8,6 +8,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -152,7 +153,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(readOnly = true)
-    public UserDTO getProfileById(Long id) {
+    public UserProfileDTO getProfileById(Long id) {
         if (id == null) {
             throw new BusinessException("user id is required");
         }
@@ -160,7 +161,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new EntityNotFoundException("user", id);
         }
-        return userConverter.toDTO(user);
+        return toProfileDTO(user);
     }
 
     @Override
@@ -528,6 +529,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setEmail(profileUpsertDTO.getEmail());
         user.setStatus(profileUpsertDTO.getStatus());
         return user;
+    }
+
+    private UserProfileDTO toProfileDTO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserProfileDTO profile = new UserProfileDTO();
+        profile.setId(user.getId());
+        profile.setUsername(user.getUsername());
+        profile.setPhone(user.getPhone());
+        profile.setNickname(user.getNickname());
+        profile.setAvatarUrl(user.getAvatarUrl());
+        profile.setEmail(user.getEmail());
+        profile.setStatus(user.getStatus());
+        return profile;
     }
 
     private AuthPrincipalDTO toCreatePrincipalDTO(UserUpsertRequestDTO requestDTO, Long userId, List<String> roles) {

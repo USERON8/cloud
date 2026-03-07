@@ -10,6 +10,7 @@ import com.cloud.auth.module.entity.AuthUser;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -182,7 +183,7 @@ public class AuthIdentityService {
 
         authRoleAssignmentService.replaceRoles(authUser.getId(), List.of("USER"));
         List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserDTO profile = authProfileSyncService.createRegisteredProfile(authUser, registerRequest);
+        UserProfileDTO profile = authProfileSyncService.createRegisteredProfile(authUser, registerRequest);
         return mergeProfile(profile, authUser, roles, registerRequest.getPhone(), registerRequest.getNickname(), null, null);
     }
 
@@ -225,7 +226,7 @@ public class AuthIdentityService {
         }
 
         List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserDTO profile = authProfileSyncService.syncGitHubProfile(authUser, githubUserDTO);
+        UserProfileDTO profile = authProfileSyncService.syncGitHubProfile(authUser, githubUserDTO);
         return mergeProfile(profile, authUser, roles, null, githubUserDTO.getDisplayName(), githubUserDTO.getEmail(), githubUserDTO.getAvatarUrl());
     }
 
@@ -236,18 +237,24 @@ public class AuthIdentityService {
             return null;
         }
         List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(userId);
-        UserDTO profile = authProfileSyncService.getProfile(userId);
+        UserProfileDTO profile = authProfileSyncService.getProfile(userId);
         return mergeProfile(profile, authUser, roles, null, null, null, null);
     }
 
-    private UserDTO mergeProfile(UserDTO profile,
+    private UserDTO mergeProfile(UserProfileDTO profile,
                                  AuthUser authUser,
                                  List<String> roles,
                                  String phone,
                                  String nickname,
                                  String email,
                                  String avatarUrl) {
-        UserDTO result = profile == null ? new UserDTO() : profile;
+        UserDTO result = new UserDTO();
+        if (profile != null) {
+            result.setPhone(profile.getPhone());
+            result.setNickname(profile.getNickname());
+            result.setEmail(profile.getEmail());
+            result.setAvatarUrl(profile.getAvatarUrl());
+        }
         result.setId(authUser.getId());
         result.setUsername(authUser.getUsername());
         result.setStatus(authUser.getStatus());

@@ -4,6 +4,7 @@ import com.cloud.api.user.UserDubboApi;
 import com.cloud.auth.module.entity.AuthUser;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class AuthProfileSyncService {
     @DubboReference(check = false, timeout = 5000, retries = 0)
     private UserDubboApi userDubboApi;
 
-    public UserDTO getProfile(Long userId) {
+    public UserProfileDTO getProfile(Long userId) {
         if (userId == null) {
             return null;
         }
@@ -31,7 +32,7 @@ public class AuthProfileSyncService {
         }
     }
 
-    public UserDTO createRegisteredProfile(AuthUser authUser, RegisterRequestDTO request) {
+    public UserProfileDTO createRegisteredProfile(AuthUser authUser, RegisterRequestDTO request) {
         UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
@@ -42,7 +43,7 @@ public class AuthProfileSyncService {
         return getProfile(authUser.getId());
     }
 
-    public UserDTO syncGitHubProfile(AuthUser authUser, GitHubUserDTO githubUserDTO) {
+    public UserProfileDTO syncGitHubProfile(AuthUser authUser, GitHubUserDTO githubUserDTO) {
         UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
         profile.setId(authUser.getId());
         profile.setUsername(authUser.getUsername());
@@ -51,7 +52,7 @@ public class AuthProfileSyncService {
         profile.setAvatarUrl(githubUserDTO.getAvatarUrl());
         profile.setStatus(authUser.getStatus());
 
-        UserDTO existing = getProfile(authUser.getId());
+        UserProfileDTO existing = getProfile(authUser.getId());
         try {
             if (existing == null) {
                 createProfile(profile);

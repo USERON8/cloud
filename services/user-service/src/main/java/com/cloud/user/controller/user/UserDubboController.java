@@ -1,7 +1,7 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.api.user.UserDubboApi;
-import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class UserDubboController implements UserDubboApi {
 
     @Override
     @GetMapping("/id/{id}")
-    public UserDTO findById(@PathVariable("id") Long id) {
+    public UserProfileDTO findById(@PathVariable("id") Long id) {
         return userService.getProfileById(id);
     }
 

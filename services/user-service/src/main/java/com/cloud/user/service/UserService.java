@@ -3,6 +3,7 @@ package com.cloud.user.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.user.UserVO;
@@ -59,7 +60,7 @@ public interface UserService extends IService<User> {
 
     UserDTO getUserById(Long id);
 
-    UserDTO getProfileById(Long id);
+    UserProfileDTO getProfileById(Long id);
 
     
 
