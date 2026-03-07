@@ -20,7 +20,6 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
     protected void configureServiceEndpoints(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         authz.requestMatchers("/api/v1/payment/alipay/notify").permitAll()
-                .requestMatchers("/internal/payment/**").hasAuthority("SCOPE_internal_api")
                 .requestMatchers(HttpMethod.GET, "/api/payments/orders/*").authenticated()
                 .requestMatchers("/api/payments/**")
                 .hasAuthority("SCOPE_internal_api")

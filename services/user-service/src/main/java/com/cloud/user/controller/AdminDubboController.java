@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping({"/admin", "/internal/admin"})
+@RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminDubboController implements AdminDubboApi {
 

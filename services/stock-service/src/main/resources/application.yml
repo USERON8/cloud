@@ -100,8 +100,6 @@ springdoc:
   group-configs:
     - group: 'stock-api'
       paths-to-match: '/api/stocks/**'
-    - group: 'stock-internal'
-      paths-to-match: '/internal/stock/**'
 knife4j:
   enable: false
   production: false

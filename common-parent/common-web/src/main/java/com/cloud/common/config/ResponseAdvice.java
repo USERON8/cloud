@@ -36,12 +36,6 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        // Internal Dubbo adapter endpoints must return raw DTOs to keep contract compatibility.
-        String path = request.getURI().getPath();
-        if (path != null && path.startsWith("/internal/")) {
-            return body;
-        }
-
         Result<Object> result = Result.success(body);
 
         if (String.class.equals(returnType.getParameterType())) {
