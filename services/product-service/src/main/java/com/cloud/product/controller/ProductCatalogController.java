@@ -4,10 +4,21 @@ import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.service.ProductCatalogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -19,12 +30,31 @@ public class ProductCatalogController {
     private final ProductCatalogService productCatalogService;
 
     @PostMapping("/spu")
-    public Result<Long> createSpu(@Valid @RequestBody SpuCreateRequestDTO request) {
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
+            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    public Result<Long> createSpu(@Valid @RequestBody SpuCreateRequestDTO request, Authentication authentication) {
+        if (!canWriteMerchantData(authentication, request.getSpu().getMerchantId())) {
+            return Result.forbidden("forbidden to create product for another merchant");
+        }
         return Result.success(productCatalogService.createSpu(request));
     }
 
     @PutMapping("/spu/{spuId}")
-    public Result<Boolean> updateSpu(@PathVariable Long spuId, @Valid @RequestBody SpuCreateRequestDTO request) {
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
+            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    public Result<Boolean> updateSpu(@PathVariable Long spuId,
+                                     @Valid @RequestBody SpuCreateRequestDTO request,
+                                     Authentication authentication) {
+        SpuDetailVO existing = productCatalogService.getSpuById(spuId);
+        if (existing == null) {
+            return Result.notFound("spu not found");
+        }
+        if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
+            return Result.forbidden("forbidden to update another merchant's product");
+        }
+        if (!SecurityPermissionUtils.isAdmin(authentication)) {
+            request.getSpu().setMerchantId(existing.getMerchantId());
+        }
         return Result.success(productCatalogService.updateSpu(spuId, request));
     }
 
@@ -45,7 +75,23 @@ public class ProductCatalogController {
     }
 
     @PatchMapping("/spu/{spuId}/status")
-    public Result<Boolean> updateSpuStatus(@PathVariable Long spuId, @RequestParam Integer status) {
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
+            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    public Result<Boolean> updateSpuStatus(@PathVariable Long spuId,
+                                           @RequestParam Integer status,
+                                           Authentication authentication) {
+        SpuDetailVO existing = productCatalogService.getSpuById(spuId);
+        if (existing == null) {
+            return Result.notFound("spu not found");
+        }
+        if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
+            return Result.forbidden("forbidden to update another merchant's product");
+        }
         return Result.success(productCatalogService.updateSpuStatus(spuId, status));
+    }
+
+    private boolean canWriteMerchantData(Authentication authentication, Long merchantId) {
+        return SecurityPermissionUtils.isAdmin(authentication)
+                || SecurityPermissionUtils.isMerchantOwner(authentication, merchantId);
     }
 }
