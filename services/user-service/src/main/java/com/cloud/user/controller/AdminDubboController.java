@@ -37,15 +37,15 @@ public class AdminDubboController implements AdminDubboApi {
 
     @Override
     @PostMapping("/manage/create")
-    public AdminDTO create(@RequestBody AdminUpsertRequestDTO requestDTO) {
-        return adminService.createAdmin(requestDTO);
+    public Long create(@RequestBody AdminUpsertRequestDTO requestDTO) {
+        AdminDTO adminDTO = adminService.createAdmin(requestDTO);
+        return adminDTO == null ? null : adminDTO.getId();
     }
 
     @Override
     @PutMapping("/manage/update/{id}")
-    public AdminDTO update(@PathVariable("id") Long id, @RequestBody AdminUpsertRequestDTO requestDTO) {
-        boolean success = adminService.updateAdmin(id, requestDTO);
-        return success ? adminService.getAdminById(id) : null;
+    public Boolean update(@PathVariable("id") Long id, @RequestBody AdminUpsertRequestDTO requestDTO) {
+        return adminService.updateAdmin(id, requestDTO);
     }
 
     @Override

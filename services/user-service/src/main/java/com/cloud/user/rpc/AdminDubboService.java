@@ -28,14 +28,14 @@ public class AdminDubboService implements AdminDubboApi {
     }
 
     @Override
-    public AdminDTO create(AdminUpsertRequestDTO requestDTO) {
-        return adminService.createAdmin(requestDTO);
+    public Long create(AdminUpsertRequestDTO requestDTO) {
+        AdminDTO adminDTO = adminService.createAdmin(requestDTO);
+        return adminDTO == null ? null : adminDTO.getId();
     }
 
     @Override
-    public AdminDTO update(Long id, AdminUpsertRequestDTO requestDTO) {
-        boolean success = adminService.updateAdmin(id, requestDTO);
-        return success ? adminService.getAdminById(id) : null;
+    public Boolean update(Long id, AdminUpsertRequestDTO requestDTO) {
+        return adminService.updateAdmin(id, requestDTO);
     }
 
     @Override

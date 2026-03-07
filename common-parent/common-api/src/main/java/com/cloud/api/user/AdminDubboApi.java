@@ -11,9 +11,9 @@ public interface AdminDubboApi {
 
     List<AdminDTO> findAll();
 
-    AdminDTO create(AdminUpsertRequestDTO requestDTO);
+    Long create(AdminUpsertRequestDTO requestDTO);
 
-    AdminDTO update(Long id, AdminUpsertRequestDTO requestDTO);
+    Boolean update(Long id, AdminUpsertRequestDTO requestDTO);
 
     Boolean delete(Long id);
 }
