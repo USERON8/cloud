@@ -115,8 +115,12 @@ const TEST_DATA = Object.freeze({
   afterSaleNo: String(__ENV.AFTER_SALE_NO || "").trim(),
   insufficientQuantity: Number(__ENV.INSUFFICIENT_QUANTITY || 999999),
 });
-const CASE04_AUTH_TOKEN = __ENV.CASE04_AUTH_TOKEN || "";
-const CASE07_AUTH_TOKEN = __ENV.CASE07_AUTH_TOKEN || "";
+const PAYMENT_INTERNAL_TOKEN = String(__ENV.PAYMENT_INTERNAL_TOKEN || "").trim();
+const CASE03_AUTH_TOKEN = String(__ENV.CASE03_AUTH_TOKEN || "").trim();
+const CASE04_AUTH_TOKEN = String(__ENV.CASE04_AUTH_TOKEN || "").trim();
+const CASE05_AUTH_TOKEN = String(__ENV.CASE05_AUTH_TOKEN || "").trim();
+const CASE06_AUTH_TOKEN = String(__ENV.CASE06_AUTH_TOKEN || "").trim();
+const CASE07_AUTH_TOKEN = String(__ENV.CASE07_AUTH_TOKEN || "").trim();
 const AUTH_USER_ID = getIdEnv("AUTH_USER_ID");
 const AUTH_PRIMARY_ROLE_ENV = String(__ENV.AUTH_PRIMARY_ROLE || "USER").toUpperCase();
 
@@ -366,6 +370,19 @@ function hasMerchantOrAdminRole(role) {
   return role === "MERCHANT" || role === "ADMIN";
 }
 
+function getInternalFlowToken(data, explicitToken = "") {
+  const directToken = String(explicitToken || PAYMENT_INTERNAL_TOKEN || "").trim();
+  if (directToken) {
+    return directToken;
+  }
+
+  const primaryRole = getAuthPrimaryRoleFromSetup(data);
+  if (primaryRole === "SERVICE" || primaryRole === "INTERNAL") {
+    return getAuthTokenFromSetup(data);
+  }
+
+  return "";
+}
 
 function isStockInsufficientPayload(payload) {
   if (payload === false) {
@@ -497,7 +514,7 @@ export function case02OrderCreated(data) {
 
 export function case03PaymentSuccess(data) {
   runCase("03", "payment-success", () => {
-    const authToken = getAuthTokenFromSetup(data);
+    const authToken = getInternalFlowToken(data, CASE03_AUTH_TOKEN);
     const paymentNo = TEST_DATA.paymentNo;
 
     if (!authToken || !paymentNo) {
@@ -577,7 +594,7 @@ export function case04StockInsufficient(data) {
 
 export function case05RefundFlow(data) {
   runCase("05", "refund-flow", () => {
-    const authToken = getAuthTokenFromSetup(data);
+    const authToken = getInternalFlowToken(data, CASE05_AUTH_TOKEN);
     if (!authToken || !TEST_DATA.paymentNo) {
       return "skipped";
     }
@@ -601,7 +618,7 @@ export function case05RefundFlow(data) {
 
 export function case06EventIdempotency(data) {
   runCase("06", "event-idempotency", () => {
-    const authToken = getAuthTokenFromSetup(data);
+    const authToken = getInternalFlowToken(data, CASE06_AUTH_TOKEN);
     if (!authToken || !TEST_DATA.paymentNo) {
       return "skipped";
     }

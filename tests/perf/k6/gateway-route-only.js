@@ -18,10 +18,10 @@ const REQUEST_PARAMS = Object.freeze({
 
 const ROUTES = [
   "/api/query/users?username=admin",
-  "/api/product?page=1&size=1",
+  "/api/product/spu/1",
   "/api/orders?page=1&size=1",
-  "/api/payments?page=1&size=1",
-  "/api/stocks?page=1&size=1",
+  "/api/payments/orders/contract-check",
+  "/api/stocks/ledger/1",
   "/api/search/basic?keyword=demo&page=0&size=1",
 ];
 
