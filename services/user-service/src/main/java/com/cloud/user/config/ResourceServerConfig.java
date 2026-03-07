@@ -18,8 +18,7 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
     @Override
     protected void configureServiceEndpoints(
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers("/admin/**").hasAuthority("SCOPE_internal_api")
-                .requestMatchers(
+        authz.requestMatchers(
                         "/api/admin/**",
                         "/api/manage/users/**",
                         "/api/query/users/**",

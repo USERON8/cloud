@@ -16,8 +16,12 @@ class GatewayRouteContractTest {
     void shouldRouteCanonicalApisAndAvoidCatchAllV2Pattern() throws IOException {
         String yaml = Files.readString(ROUTE_CONFIG);
 
+        assertThat(yaml).contains("- id: user-service-api-v2");
+        assertThat(yaml).doesNotContain("- id: user-service-api-legacy");
+
         assertThat(yaml).contains("- id: product-service-api-v2");
         assertThat(yaml).contains("/api/product/**");
+        assertThat(yaml).doesNotContain("- id: product-service-api-legacy");
 
         assertThat(yaml).contains("- id: order-service-api-v2");
         assertThat(yaml).contains("Path=/api/orders/**,/api/v1/refund/**");
@@ -25,8 +29,13 @@ class GatewayRouteContractTest {
 
         assertThat(yaml).contains("- id: payment-service-api-v2");
         assertThat(yaml).contains("Path=/api/payments/**,/api/v1/payment/alipay/**");
+        assertThat(yaml).doesNotContain("- id: payment-service-api-legacy");
 
         assertThat(yaml).contains("- id: stock-service-api-v2");
         assertThat(yaml).contains("Path=/api/stocks/**");
+        assertThat(yaml).doesNotContain("- id: stock-service-api-legacy");
+
+        assertThat(yaml).contains("- id: search-service-api-v2");
+        assertThat(yaml).doesNotContain("- id: search-service-api-legacy");
     }
 }

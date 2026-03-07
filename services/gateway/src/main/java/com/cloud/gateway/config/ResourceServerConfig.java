@@ -144,19 +144,9 @@ public class ResourceServerConfig {
                     }
 
                     authExchanges
-                            .pathMatchers(
-                                    "/users/**", "/merchant/**", "/admin/**",
-                                    "/api/manage/users/**", "/api/query/users/**",
-                                    "/api/user/address/**", "/api/user/profile/**", "/api/user/notification/**",
-                                    "/api/merchant/**",
-                                    "/api/admin/**", "/api/statistics/**", "/api/thread-pool/**"
-                            ).authenticated()
-                            .pathMatchers("/product/admin/**", "/category/admin/**").authenticated()
-                            .pathMatchers("/product/**", "/category/**", "/api/product/**", "/api/category/**").permitAll()
-                            .pathMatchers("/search/**", "/api/search/**").permitAll()
+                            .pathMatchers("/api/product/**", "/api/category/**").permitAll()
+                            .pathMatchers("/api/search/**").permitAll()
                             .pathMatchers("/api/**").authenticated()
-                            .pathMatchers("/payment/**", "/api/payments/**", "/api/v1/payment/alipay/**").authenticated()
-                            .pathMatchers("/stock/**", "/api/stocks/**").authenticated()
                             .anyExchange().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2

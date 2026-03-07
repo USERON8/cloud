@@ -46,12 +46,6 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: user-service-api-legacy
-              uri: lb://user-service
-              order: 25
-              predicates:
-                - Path=/users/**,/merchant/**,/admin/**
-
             - id: product-service-api-v2
               uri: lb://product-service
               order: 20
@@ -64,12 +58,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-
-            - id: product-service-api-legacy
-              uri: lb://product-service
-              order: 25
-              predicates:
-                - Path=/product/**,/category/**,/brand/**
 
             - id: order-service-api-v2
               uri: lb://order-service
@@ -97,12 +85,6 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: payment-service-api-legacy
-              uri: lb://payment-service
-              order: 25
-              predicates:
-                - Path=/payment/**
-
             - id: stock-service-api-v2
               uri: lb://stock-service
               order: 20
@@ -116,12 +98,6 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: stock-service-api-legacy
-              uri: lb://stock-service
-              order: 25
-              predicates:
-                - Path=/stock/**
-
             - id: search-service-api-v2
               uri: lb://search-service
               order: 20
@@ -134,12 +110,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-
-            - id: search-service-api-legacy
-              uri: lb://search-service
-              order: 25
-              predicates:
-                - Path=/search/**
 
           discovery:
             locator:
