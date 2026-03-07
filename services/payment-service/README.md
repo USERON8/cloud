@@ -11,7 +11,12 @@
 
 - 支付单：`/api/payments/**`
 - 支付宝：`/api/v1/payment/alipay/** (create/query/refund/close/notify/verify)`
-- 内部调用：`/internal/payment/**`
+
+## 调度任务
+
+- 业务补偿任务通过 `XXL-JOB` 执行
+- 当前已接入 handler：`paymentOrderReconcileJob`
+- 当前已接入 handler：`paymentRefundRetryJob`
 
 ## 本地启动
 
