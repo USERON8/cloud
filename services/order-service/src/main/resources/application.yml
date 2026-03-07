@@ -127,6 +127,18 @@ order:
     enabled: true
   statistics:
     enabled: true
+xxl:
+  job:
+    enabled: ${XXL_JOB_ENABLED:true}
+    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
+    access-token: ${XXL_JOB_ACCESS_TOKEN:}
+    executor:
+      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
+      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
+      ip: ${XXL_JOB_EXECUTOR_IP:}
+      port: ${XXL_JOB_PORT:19083}
+      log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
+      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
 springdoc:
   api-docs:
     enabled: false
