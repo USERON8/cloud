@@ -105,6 +105,24 @@ function Set-ServiceRuntimeEnvironment {
     if ([string]::IsNullOrWhiteSpace($env:GATEWAY_SIGNATURE_SECRET)) {
         $env:GATEWAY_SIGNATURE_SECRET = "cloud-gateway-signature-dev"
     }
+    if ([string]::IsNullOrWhiteSpace($env:CLIENT_SERVICE_SECRET)) {
+        $env:CLIENT_SERVICE_SECRET = "cloud-client-service-secret-dev"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:APP_OAUTH2_SERVICE_CLIENT_SECRET)) {
+        $env:APP_OAUTH2_SERVICE_CLIENT_SECRET = $env:CLIENT_SERVICE_SECRET
+    }
+    if ([string]::IsNullOrWhiteSpace($env:APP_OAUTH2_INTERNAL_CLIENT_SECRET)) {
+        $env:APP_OAUTH2_INTERNAL_CLIENT_SECRET = $env:CLIENT_SERVICE_SECRET
+    }
+    if ([string]::IsNullOrWhiteSpace($env:APP_JWT_ALLOW_GENERATED_KEYPAIR)) {
+        $env:APP_JWT_ALLOW_GENERATED_KEYPAIR = "true"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:GITHUB_CLIENT_ID)) {
+        $env:GITHUB_CLIENT_ID = "cloud-github-client-dev"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:GITHUB_CLIENT_SECRET)) {
+        $env:GITHUB_CLIENT_SECRET = "cloud-github-secret-dev"
+    }
 
-    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2} gatewaySignature=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
+    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2} gatewaySignature=configured authSecrets=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
 }
