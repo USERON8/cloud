@@ -75,6 +75,12 @@ if [ "$WITH_MONITORING" = "1" ]; then
   IMAGES_TO_CHECK+=("${MONITORING_IMAGES[@]}")
 fi
 
+if [ "$DRY_RUN" = "1" ]; then
+  mapfile -t UNIQUE_IMAGES < <(printf "%s\n" "${IMAGES_TO_CHECK[@]}" | sort -u)
+  echo "DRY_RUN_DONE script=start-containers images=${UNIQUE_IMAGES[*]}"
+  exit 0
+fi
+
 mapfile -t UNIQUE_IMAGES < <(printf "%s\n" "${IMAGES_TO_CHECK[@]}" | sort -u)
 MISSING_IMAGES=()
 for image in "${UNIQUE_IMAGES[@]}"; do
@@ -89,11 +95,6 @@ done
 if [ "${#MISSING_IMAGES[@]}" -gt 0 ]; then
   echo "Local image check failed. Missing images: ${MISSING_IMAGES[*]}" >&2
   exit 1
-fi
-
-if [ "$DRY_RUN" = "1" ]; then
-  echo "DRY_RUN_DONE script=start-containers"
-  exit 0
 fi
 
 cd "$ROOT_DIR/docker"
