@@ -6,8 +6,8 @@ Repository-wide test script index: `docs/TEST_SCRIPT_INDEX.md`
 
 ## Entry points
 
-- `run-k6.ps1`
 - `run-k6.sh`
+- `run-k6.ps1`
 
 Use the generic runner instead of per-scenario wrapper scripts.
 
@@ -31,19 +31,19 @@ Supported scenarios:
 
 ## Support scripts
 
-- `lib/preflight.ps1`
 - `lib/preflight.sh`
+- `lib/preflight.ps1`
 
 ## Quick start
+
+```bash
+bash tests/perf/k6/run-k6.sh acceptance
+bash tests/perf/k6/run-k6.sh smoke http://host.docker.internal:18080 loadtest
+```
 
 ```powershell
 powershell -File tests/perf/k6/run-k6.ps1 -Scenario acceptance
 powershell -File tests/perf/k6/run-k6.ps1 -Scenario smoke -BaseUrl http://host.docker.internal:18080 -Profile loadtest
-```
-
-```bash
-./tests/perf/k6/run-k6.sh acceptance
-./tests/perf/k6/run-k6.sh smoke http://host.docker.internal:18080 loadtest
 ```
 
 ## Common environment variables
@@ -67,6 +67,6 @@ Protected flows now require pre-issued tokens. `AUTH_TOKEN` is used for user/mer
 
 ## API contract check
 
-```powershell
-powershell -ExecutionPolicy Bypass -File docs/tools/check-api-contract.ps1
+```bash
+bash scripts/tools/check-api-contract.sh
 ```

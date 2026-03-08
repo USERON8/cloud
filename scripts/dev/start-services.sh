@@ -12,6 +12,19 @@ trim_value() {
   printf '%s' "$value"
 }
 
+resolve_writable_dir() {
+  local preferred_dir="$1"
+  local fallback_dir="$2"
+
+  if mkdir -p "$preferred_dir" >/dev/null 2>&1 && [ -w "$preferred_dir" ]; then
+    printf '%s\n' "$preferred_dir"
+    return 0
+  fi
+
+  mkdir -p "$fallback_dir"
+  printf '%s\n' "$fallback_dir"
+}
+
 KILL_PORTS=1
 DRY_RUN=0
 SERVICES_FILTER=""
@@ -99,8 +112,8 @@ else
   JAVA_CMD="java"
 fi
 
-LOG_ROOT="$ROOT_DIR/logs"
-mkdir -p "$LOG_ROOT"
+RUNTIME_LOG_ROOT="${SERVICE_RUNTIME_LOG_ROOT:-$ROOT_DIR/.tmp/service-runtime}"
+mkdir -p "$RUNTIME_LOG_ROOT"
 
 SKYWALKING_ENABLED=0
 if [ -n "${SKYWALKING_AGENT_PATH:-}" ] && [ -f "${SKYWALKING_AGENT_PATH}" ]; then
@@ -118,7 +131,7 @@ health_status() {
   local body_file header_file http_code
   body_file="$(mktemp)"
   header_file="$(mktemp)"
-  http_code="$(curl -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "http://127.0.0.1:${port}/actuator/health" || true)"
+  http_code="$(curl --noproxy '*' -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "http://127.0.0.1:${port}/actuator/health" || true)"
 
   if grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"' "$body_file"; then
     rm -f "$body_file" "$header_file"
@@ -195,10 +208,16 @@ for svc in "${SERVICES[@]}"; do
     exit 1
   fi
 
-  service_log_dir="$LOG_ROOT/$name"
-  mkdir -p "$service_log_dir"
-  out_log="$service_log_dir/stdout.log"
-  err_log="$service_log_dir/stderr.log"
+  service_dir="$(cd "$(dirname "$jar_path")/.." && pwd)"
+  runtime_log_dir="$RUNTIME_LOG_ROOT/$name"
+  mkdir -p "$runtime_log_dir"
+  service_log_dir="$(resolve_writable_dir "$service_dir/logs" "$runtime_log_dir/app-logs")"
+  if [ "$service_log_dir" != "$service_dir/logs" ]; then
+    echo "LOG_DIR_FALLBACK service=$name path=$service_log_dir"
+  fi
+
+  out_log="$runtime_log_dir/stdout.log"
+  err_log="$runtime_log_dir/stderr.log"
   : > "$out_log"
   : > "$err_log"
 
@@ -214,10 +233,18 @@ for svc in "${SERVICES[@]}"; do
     read -r -a jvm_opts_array <<< "$SERVICE_JVM_OPTS"
     java_args+=("${jvm_opts_array[@]}")
   fi
-  java_args+=("-jar" "$jar_path" "--spring.profiles.active=$profiles")
+  java_args+=(
+    "-jar" "$jar_path"
+    "--spring.profiles.active=$profiles"
+    "--logging.file.path=$service_log_dir"
+  )
 
   start_ts="$(date +%s)"
-  nohup "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" &
+  if command -v setsid >/dev/null 2>&1; then
+    nohup setsid "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+  else
+    nohup "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+  fi
   pid=$!
 
   status="TIMEOUT"

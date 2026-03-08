@@ -4,26 +4,26 @@ This project now has a unified startup entrypoint for local development.
 
 ## Recommended entrypoints
 
-PowerShell:
-
-```powershell
-powershell -File scripts/dev/start-platform.ps1 --with-monitoring
-```
-
-Bash:
+WSL/Linux (recommended):
 
 ```bash
 bash scripts/dev/start-platform.sh --with-monitoring
 ```
 
-Compatibility aliases:
+PowerShell compatibility:
 
 ```powershell
-powershell -File scripts/dev/start-all.ps1 --with-monitoring
+powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
+
+Compatibility aliases:
 
 ```bash
 bash scripts/dev/start-all.sh --with-monitoring
+```
+
+```powershell
+powershell -File scripts/dev/start-all.ps1 --with-monitoring
 ```
 
 ## Behavior
@@ -68,27 +68,34 @@ bash scripts/dev/start-platform.sh --skip-containers
 
 Restart only the services you changed:
 
-```powershell
-powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
-```
-
 ```bash
 bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
+```
+
+```powershell
+powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
 ```
 
 Start containers only:
 
 ```bash
-powershell -File scripts/dev/start-platform.ps1 --skip-services --with-monitoring
+bash scripts/dev/start-platform.sh --skip-services --with-monitoring
 ```
 
 Start platform and open dashboards:
 
-```powershell
-powershell -File scripts/dev/start-platform.ps1 --with-monitoring --open-dashboards
+```bash
+bash scripts/dev/start-platform.sh --with-monitoring --open-dashboards
 ```
 
 Enable SkyWalking explicitly:
+
+```bash
+bash scripts/dev/start-platform.sh \
+  --enable-skywalking \
+  --skywalking-agent-path=/path/to/skywalking-agent.jar \
+  --skywalking-backend=127.0.0.1:11800
+```
 
 ```powershell
 powershell -File scripts/dev/start-platform.ps1 `

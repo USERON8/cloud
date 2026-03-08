@@ -23,9 +23,9 @@
 1. 启动基础依赖（含端口占用清理）：
 
 ```bash
-powershell -File scripts/dev/start-containers.ps1
-# Linux/macOS:
-# bash scripts/dev/start-containers.sh
+bash scripts/dev/start-containers.sh
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-containers.ps1
 ```
 
 2. 初始化数据库（先 `init` 再 `test`，可选）：见 `db/README.md`。
@@ -44,9 +44,9 @@ mvn -T 1C clean package -DskipTests
 4. 启动后端服务（含端口占用清理）：
 
 ```bash
-powershell -File scripts/dev/start-services.ps1
-# Linux/macOS:
-# bash scripts/dev/start-services.sh
+bash scripts/dev/start-services.sh
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-services.ps1
 ```
 
 说明：服务交互参数统一由 Nacos `common.yaml` 配置中心下发，不依赖启动脚本外部注入。
@@ -236,5 +236,4 @@ flowchart LR
 - `docker/`：容器与基础设施配置
 - `tests/perf/k6/`：主链路压测脚本
 - `docs/`：运维与排障文档
-
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 
 echo "[mysql-bootstrap] Reset datadir for deterministic re-init..."
 rm -rf /var/lib/mysql/*

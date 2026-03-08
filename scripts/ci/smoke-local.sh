@@ -15,7 +15,7 @@ check_http_up() {
   trap 'rm -f "$body_file" "$header_file"' RETURN
 
   while [ "$SECONDS" -lt "$end" ]; do
-    http_code="$(curl -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "$url" || true)"
+    http_code="$(curl --noproxy '*' -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "$url" || true)"
     if grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"' "$body_file"; then
       echo "SMOKE_OK ${name} ${url} status=UP"
       return 0

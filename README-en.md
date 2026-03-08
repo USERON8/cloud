@@ -25,33 +25,33 @@ Frontend: Vue 3 + TypeScript.
 1. Start infrastructure:
 
 ```bash
-powershell -File scripts/dev/start-containers.ps1
-# Linux/macOS:
-# bash scripts/dev/start-containers.sh
+bash scripts/dev/start-containers.sh
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-containers.ps1
 ```
 
 Optional: start with full monitoring stack (Prometheus + Grafana + exporters):
 
 ```bash
-powershell -File scripts/dev/start-containers.ps1 --with-monitoring
-# Linux/macOS:
-# bash scripts/dev/start-containers.sh --with-monitoring
+bash scripts/dev/start-containers.sh --with-monitoring
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 ```
 
 One-command startup for containers + services:
 
 ```bash
-powershell -File scripts/dev/start-platform.ps1 --with-monitoring
-# Linux/macOS:
-# bash scripts/dev/start-platform.sh --with-monitoring
+bash scripts/dev/start-platform.sh --with-monitoring
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
 
 Compatibility alias:
 
 ```bash
-powershell -File scripts/dev/start-all.ps1 --with-monitoring
-# Linux/macOS:
-# bash scripts/dev/start-all.sh --with-monitoring
+bash scripts/dev/start-all.sh --with-monitoring
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-all.ps1 --with-monitoring
 ```
 
 2. Database bootstrap:
@@ -70,17 +70,17 @@ mvn -T 1C clean package -DskipTests
 4. Start backend services:
 
 ```bash
-powershell -File scripts/dev/start-services.ps1
-# Linux/macOS:
-# bash scripts/dev/start-services.sh
+bash scripts/dev/start-services.sh
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-services.ps1
 ```
 
 Restart only the services you changed:
 
 ```bash
-powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
-# Linux/macOS:
-# bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
+bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
 ```
 
 Service logs are written to `logs/<service>/stdout.log` and `logs/<service>/stderr.log`.

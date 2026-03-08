@@ -35,7 +35,7 @@ invoke_step() {
   local script_path="$1"
   local error_message="$2"
   shift 2
-  "$script_path" "$@"
+  bash "$script_path" "$@"
   local exit_code=$?
   if [ "$exit_code" -ne 0 ]; then
     echo "$error_message" >&2

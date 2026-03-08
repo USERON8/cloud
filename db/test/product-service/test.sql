@@ -13,7 +13,7 @@ VALUES (100, 0, 'Electronics', 1, '/100', 1, 1, 0, 0),
        (300, 200, 'Smart Phone', 3, '/100/200/300', 1, 1, 0, 0);
 
 INSERT INTO spu (id, spu_name, subtitle, category_id, brand_id, merchant_id, status, description, main_image, deleted, version)
-VALUES (50001, 'Cloud Phone 15', 'Æì½¢¿î', 300, 7001, 9001, 1, 'Cloud Phone 15 description', 'https://img.example.com/spu-50001.jpg', 0, 0);
+VALUES (50001, 'Cloud Phone 15', 'Cloud flagship', 300, 7001, 9001, 1, 'Cloud Phone 15 description', 'https://img.example.com/spu-50001.jpg', 0, 0);
 
 INSERT INTO sku (id, spu_id, sku_code, sku_name, spec_json, sale_price, market_price, cost_price, status, image_url, deleted, version)
 VALUES (51001, 50001, 'CP15-256-BLK', 'Cloud Phone 15 256G Black', JSON_OBJECT('color', 'black', 'storage', '256G'), 4999.00, 5399.00, 4200.00, 1, 'https://img.example.com/sku-51001.jpg', 0, 0),

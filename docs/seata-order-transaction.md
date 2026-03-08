@@ -24,8 +24,8 @@ If any stock reservation fails, Seata rolls back both the order writes and the s
 - business databases must keep their `undo_log` tables
 - local startup should include the Seata server:
 
-```powershell
-powershell -File scripts/dev/start-platform.ps1 --with-monitoring
+```bash
+bash scripts/dev/start-platform.sh --with-monitoring
 ```
 
 The unified startup entrypoint now exports `SEATA_SERVER_ADDR` from `docker/.env`, so service processes follow the host port mapping automatically.

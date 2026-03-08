@@ -5,9 +5,9 @@
 ## 1. 启动基础设施与监控组件
 
 ```bash
-powershell -File scripts/dev/start-containers.ps1 --with-monitoring
-# Linux/macOS:
-# bash scripts/dev/start-containers.sh --with-monitoring
+bash scripts/dev/start-containers.sh --with-monitoring
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 ```
 
 该命令会启动：
@@ -31,10 +31,10 @@ powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 
 启动服务前设置环境变量（示例）：
 
-```powershell
-$env:SKYWALKING_AGENT_PATH="D:\path\to\skywalking-agent.jar"
-$env:SKYWALKING_COLLECTOR_BACKEND_SERVICE="127.0.0.1:11800"
-powershell -File scripts/dev/start-services.ps1
+```bash
+export SKYWALKING_AGENT_PATH=/path/to/skywalking-agent.jar
+export SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800
+bash scripts/dev/start-services.sh
 ```
 
 ## 3. Prometheus 抓取范围

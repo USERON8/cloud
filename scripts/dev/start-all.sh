@@ -2,4 +2,4 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$SCRIPT_DIR/start-platform.sh" "$@"
+exec bash "$SCRIPT_DIR/start-platform.sh" "$@"

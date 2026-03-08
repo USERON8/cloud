@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 
 run_sql_dir() {
   local dir="$1"
@@ -12,7 +12,7 @@ run_sql_dir() {
   echo "[mysql-bootstrap] Loading ${label} SQL from ${dir}"
   while IFS= read -r -d '' sql_file; do
     echo "[mysql-bootstrap] -> ${sql_file}"
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" < "${sql_file}"
+    mysql --default-character-set=utf8mb4 -uroot -p"${MYSQL_ROOT_PASSWORD}" < "${sql_file}"
   done < <(find "${dir}" -type f -name "*.sql" -print0 | sort -z)
 }
 

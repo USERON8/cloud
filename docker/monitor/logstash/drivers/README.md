@@ -1,7 +1,7 @@
-Place the MySQL JDBC driver in this directory before starting Logstash.
+The MySQL JDBC driver is now baked into the Logstash image during
+`docker compose up --build`.
 
-Expected file name:
-- `mysql-connector-j-9.3.0.jar`
-
-If you use a different version, update `jdbc_driver_library` in:
+This directory is kept only as a placeholder. If you change the driver
+version, update both:
+- `docker/monitor/logstash/Dockerfile`
 - `docker/monitor/logstash/pipeline/logstash.conf`
