@@ -93,10 +93,6 @@
                     <groupId>org.bouncycastle</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>okio-jvm</artifactId>
-                    <groupId>com.squareup.okio</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
@@ -152,7 +148,6 @@
         </plugins>
     </build>
 </project>
-
 
 
 
