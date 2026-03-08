@@ -112,7 +112,7 @@ function Set-ServiceRuntimeEnvironment {
         $env:APP_OAUTH2_SERVICE_CLIENT_SECRET = $env:CLIENT_SERVICE_SECRET
     }
     if ([string]::IsNullOrWhiteSpace($env:APP_OAUTH2_INTERNAL_CLIENT_SECRET)) {
-        $env:APP_OAUTH2_INTERNAL_CLIENT_SECRET = $env:CLIENT_SERVICE_SECRET
+        $env:APP_OAUTH2_INTERNAL_CLIENT_SECRET = "cloud-internal-client-secret-dev"
     }
     if ([string]::IsNullOrWhiteSpace($env:APP_JWT_ALLOW_GENERATED_KEYPAIR)) {
         $env:APP_JWT_ALLOW_GENERATED_KEYPAIR = "true"
