@@ -83,6 +83,7 @@ export_service_runtime_env() {
 
   export SEATA_SERVER_ADDR="127.0.0.1:${seata_port}"
   export SEATA_REGISTRY_TYPE="file"
+  export GATEWAY_SIGNATURE_SECRET="${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}"
 
-  echo "SERVICE_ENV nacos=${NACOS_SERVER_ADDR} rocketmq=${ROCKETMQ_NAME_SERVER} seata=${SEATA_SERVER_ADDR}"
+  echo "SERVICE_ENV nacos=${NACOS_SERVER_ADDR} rocketmq=${ROCKETMQ_NAME_SERVER} seata=${SEATA_SERVER_ADDR} gatewaySignature=configured"
 }

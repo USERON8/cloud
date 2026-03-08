@@ -102,6 +102,9 @@ function Set-ServiceRuntimeEnvironment {
 
     $env:SEATA_SERVER_ADDR = "127.0.0.1:$seataPort"
     $env:SEATA_REGISTRY_TYPE = "file"
+    if ([string]::IsNullOrWhiteSpace($env:GATEWAY_SIGNATURE_SECRET)) {
+        $env:GATEWAY_SIGNATURE_SECRET = "cloud-gateway-signature-dev"
+    }
 
-    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2}" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
+    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2} gatewaySignature=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
 }
