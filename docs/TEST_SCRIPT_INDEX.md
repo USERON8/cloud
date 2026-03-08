@@ -10,6 +10,11 @@ This repository keeps executable test scripts in two stable groups.
 
 ## Performance and smoke tests
 
+- `scripts/ci/smoke-local.ps1`
+- `scripts/ci/smoke-local.sh`
+  - Local smoke checks for the started platform.
+  - Treat secured actuator endpoints (`401`/redirect) as healthy.
+
 - `tests/perf/k6/run-k6.ps1`
 - `tests/perf/k6/run-k6.sh`
   - Canonical k6 runners.
