@@ -1,6 +1,5 @@
 package com.cloud.stock.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.exception.BusinessException;
@@ -25,10 +24,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
 
     @Override
     public StockLedgerVO getLedgerBySkuId(Long skuId) {
-        StockLedger ledger = stockLedgerMapper.selectOne(new LambdaQueryWrapper<StockLedger>()
-                .eq(StockLedger::getSkuId, skuId)
-                .eq(StockLedger::getDeleted, 0)
-                .last("LIMIT 1"));
+        StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
         return ledger == null ? null : toVO(ledger);
     }
 
@@ -138,11 +134,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     }
 
     private StockReservation getReservation(StockOperateCommandDTO command) {
-        return stockReservationMapper.selectOne(new LambdaQueryWrapper<StockReservation>()
-                .eq(StockReservation::getSubOrderNo, command.getSubOrderNo())
-                .eq(StockReservation::getSkuId, command.getSkuId())
-                .eq(StockReservation::getDeleted, 0)
-                .last("LIMIT 1"));
+        return stockReservationMapper.selectActiveBySubOrderNoAndSkuId(command.getSubOrderNo(), command.getSkuId());
     }
 
     private StockReservation requireReservation(StockOperateCommandDTO command) {
@@ -154,10 +146,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     }
 
     private StockLedger requireLedger(Long skuId) {
-        StockLedger ledger = stockLedgerMapper.selectOne(new LambdaQueryWrapper<StockLedger>()
-                .eq(StockLedger::getSkuId, skuId)
-                .eq(StockLedger::getDeleted, 0)
-                .last("LIMIT 1"));
+        StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
         if (ledger == null) {
             throw new BusinessException("stock ledger not found for skuId=" + skuId);
         }

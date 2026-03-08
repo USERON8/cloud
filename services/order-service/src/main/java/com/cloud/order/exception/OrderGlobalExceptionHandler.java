@@ -1,5 +1,6 @@
 package com.cloud.order.exception;
 
+import com.cloud.common.exception.BusinessException;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -60,6 +61,20 @@ public class OrderGlobalExceptionHandler extends com.cloud.common.exception.Glob
         return Result.error(ResultCode.SYSTEM_BUSY, "Concurrent request conflict, please retry");
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public Result<String> handleWrappedRuntimeException(RuntimeException e, HttpServletRequest request) {
+        BusinessException businessException = unwrapBusinessException(e);
+        if (businessException != null) {
+            log.warn("Wrapped business exception: uri={}, type={}, code={}, message={}",
+                    request.getRequestURI(), e.getClass().getSimpleName(),
+                    businessException.getCode(), businessException.getMessage());
+            return Result.error(businessException.getCode(), businessException.getMessage());
+        }
+
+        log.error("Unhandled runtime exception - uri: {}, type: {}", request.getRequestURI(), e.getClass().getSimpleName(), e);
+        return Result.systemError();
+    }
+
     @ExceptionHandler(org.springframework.web.client.HttpClientErrorException.class)
     public Result<String> handleHttpClientErrorException(org.springframework.web.client.HttpClientErrorException e,
                                                          HttpServletRequest request) {
@@ -82,5 +97,16 @@ public class OrderGlobalExceptionHandler extends com.cloud.common.exception.Glob
         log.error("Remote server error: uri={}, status={}, message={}",
                 request.getRequestURI(), e.getStatusCode(), e.getMessage(), e);
         return Result.error(ResultCode.SYSTEM_ERROR, "Remote service internal error");
+    }
+
+    private BusinessException unwrapBusinessException(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor != null) {
+            if (cursor instanceof BusinessException businessException) {
+                return businessException;
+            }
+            cursor = cursor.getCause();
+        }
+        return null;
     }
 }

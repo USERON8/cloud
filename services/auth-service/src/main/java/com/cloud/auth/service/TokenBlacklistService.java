@@ -7,6 +7,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -166,7 +168,10 @@ public class TokenBlacklistService {
         }
     }
 
-    public static class TokenBlacklistInfo {
+    public static class TokenBlacklistInfo implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         public final String tokenId;
         public final String subject;
         public final String issuer;

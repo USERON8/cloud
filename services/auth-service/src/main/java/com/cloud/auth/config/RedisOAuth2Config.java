@@ -2,7 +2,6 @@ package com.cloud.auth.config;
 
 import com.cloud.auth.service.RedisOAuth2AuthorizationConsentService;
 import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,7 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -41,6 +41,11 @@ public class RedisOAuth2Config {
         return new RedisOAuth2AuthorizationConsentService(oauth2MainRedisTemplate());
     }
 
+    @Bean("oauth2ValueSerializer")
+    public RedisSerializer<Object> oauth2ValueSerializer() {
+        return new JdkSerializationRedisSerializer(RedisOAuth2Config.class.getClassLoader());
+    }
+
     @Bean("oauth2MainRedisTemplate")
     @Primary
     public RedisTemplate<String, Object> oauth2MainRedisTemplate() {
@@ -48,12 +53,13 @@ public class RedisOAuth2Config {
         template.setConnectionFactory(redisConnectionFactory);
 
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonRedisSerializer = new GenericJackson2JsonRedisSerializer();
+        RedisSerializer<Object> valueSerializer = oauth2ValueSerializer();
 
         template.setKeySerializer(stringRedisSerializer);
-        template.setValueSerializer(jsonRedisSerializer);
+        template.setValueSerializer(valueSerializer);
         template.setHashKeySerializer(stringRedisSerializer);
-        template.setHashValueSerializer(jsonRedisSerializer);
+        template.setHashValueSerializer(valueSerializer);
+        template.setDefaultSerializer(valueSerializer);
         template.setEnableTransactionSupport(true);
         template.afterPropertiesSet();
         return template;
@@ -65,13 +71,13 @@ public class RedisOAuth2Config {
         template.setConnectionFactory(redisConnectionFactory);
 
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+        RedisSerializer<Object> valueSerializer = oauth2ValueSerializer();
 
         template.setKeySerializer(stringRedisSerializer);
-        template.setValueSerializer(jsonSerializer);
+        template.setValueSerializer(valueSerializer);
         template.setHashKeySerializer(stringRedisSerializer);
-        template.setHashValueSerializer(jsonSerializer);
-        template.setDefaultSerializer(jsonSerializer);
+        template.setHashValueSerializer(valueSerializer);
+        template.setDefaultSerializer(valueSerializer);
         template.setEnableTransactionSupport(false);
         template.afterPropertiesSet();
         return template;
@@ -185,11 +191,4 @@ public class RedisOAuth2Config {
         }
     }
 
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
-    public static class OAuth2AuthorizationMixin {
-    }
-
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
-    public static class OAuth2AuthorizationConsentMixin {
-    }
 }

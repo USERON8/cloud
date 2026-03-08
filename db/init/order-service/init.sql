@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS order_main
     version          INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_order_main_no (main_order_no),
     UNIQUE KEY uk_order_main_idempotency_key (idempotency_key),
+    INDEX idx_order_main_idempotency_deleted (idempotency_key, deleted),
     INDEX idx_order_main_user_status_deleted (user_id, order_status, deleted),
     INDEX idx_order_main_created_deleted (created_at, deleted)
 ) ENGINE = InnoDB

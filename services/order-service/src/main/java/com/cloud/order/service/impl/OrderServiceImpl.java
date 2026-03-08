@@ -94,12 +94,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("subOrders is required");
         }
 
-        OrderMain existing = orderMainMapper.selectOne(
-                new LambdaQueryWrapper<OrderMain>()
-                        .eq(OrderMain::getIdempotencyKey, idempotencyKey.trim())
-                        .eq(OrderMain::getDeleted, 0)
-                        .last("LIMIT 1")
-        );
+        OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
         if (existing != null) {
             return existing;
         }
@@ -116,12 +111,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderMainMapper.insert(main);
         } catch (DuplicateKeyException duplicateKeyException) {
-            OrderMain duplicated = orderMainMapper.selectOne(
-                    new LambdaQueryWrapper<OrderMain>()
-                            .eq(OrderMain::getIdempotencyKey, idempotencyKey.trim())
-                            .eq(OrderMain::getDeleted, 0)
-                            .last("LIMIT 1")
-            );
+            OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
             if (duplicated != null) {
                 return duplicated;
             }
@@ -164,6 +154,10 @@ public class OrderServiceImpl implements OrderService {
         return main;
     }
 
+    private OrderMain findActiveMainOrderByIdempotencyKey(String idempotencyKey) {
+        return orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
+    }
+
     @Override
     public OrderMain getMainOrder(Long mainOrderId) {
         return orderMainMapper.selectById(mainOrderId);
@@ -182,9 +176,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderAggregateResponse.SubOrderWithItems> wrapped = new ArrayList<>(subOrders.size());
 
         for (OrderSub subOrder : subOrders) {
-            List<OrderItem> items = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
-                    .eq(OrderItem::getSubOrderId, subOrder.getId())
-                    .eq(OrderItem::getDeleted, 0));
+            List<OrderItem> items = orderItemMapper.listActiveBySubOrderId(subOrder.getId());
             OrderAggregateResponse.SubOrderWithItems item = new OrderAggregateResponse.SubOrderWithItems();
             item.setSubOrder(subOrder);
             item.setItems(items);
@@ -196,11 +188,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderSub> listSubOrders(Long mainOrderId) {
-        return orderSubMapper.selectList(
-                new LambdaQueryWrapper<OrderSub>()
-                        .eq(OrderSub::getMainOrderId, mainOrderId)
-                        .eq(OrderSub::getDeleted, 0)
-        );
+        return orderSubMapper.listActiveByMainOrderId(mainOrderId);
     }
 
     @Override

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS stock_ledger
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_stock_ledger_sku (sku_id),
+    INDEX idx_stock_ledger_sku_deleted (sku_id, deleted),
     INDEX idx_stock_ledger_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS stock_reservation
     version           INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_stock_reservation_sub_sku (sub_order_no, sku_id),
     UNIQUE KEY uk_stock_reservation_idempotency (idempotency_key),
+    INDEX idx_stock_reservation_sub_sku_deleted (sub_order_no, sku_id, deleted),
     INDEX idx_stock_reservation_sku_status_deleted (sku_id, status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
