@@ -237,6 +237,7 @@
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_PROMETHEUS_AUTH_TYPE: public
     command: server /data --console-address ":9001"
     volumes:
       - type: bind
@@ -444,10 +445,13 @@
     ports:
       - "${PORT_SKYWALKING_OAP_GRPC:-11800}:11800"
       - "${PORT_SKYWALKING_OAP_HTTP:-12800}:12800"
+      - "${PORT_SKYWALKING_OAP_PROMETHEUS:-1234}:1234"
     environment:
       SW_STORAGE: elasticsearch
       SW_STORAGE_ES_CLUSTER_NODES: elasticsearch-oap:9200
       SW_TELEMETRY: prometheus
+      SW_TELEMETRY_PROMETHEUS_HOST: 0.0.0.0
+      SW_TELEMETRY_PROMETHEUS_PORT: 1234
 
   skywalking-ui:
     image: apache/skywalking-ui:10.3.0

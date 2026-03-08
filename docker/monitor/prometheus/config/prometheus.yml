@@ -1,43 +1,115 @@
-﻿# 兼容性注释已标准化。
 global:
-  scrape_interval: 15s # 兼容性注释已标准化。
-  evaluation_interval: 15s # 兼容性注释已标准化。
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
-# 兼容性注释已标准化。
 alerting:
   alertmanagers:
     - static_configs:
-        - targets:
-          # - alertmanager:9093
+        - targets: []
 
-# 兼容性注释已标准化。
 rule_files:
   - "rules/cache-observability-rules.yml"
 
-# 兼容性注释已标准化。
 scrape_configs:
-  # 兼容性注释已标准化。
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: [ '127.0.0.1:9090' ]
-
-  # 兼容性注释已标准化。
-  - job_name: 'spring-boot'
-    metrics_path: '/actuator/prometheus'
+  - job_name: prometheus
     static_configs:
       - targets:
-          - 'host.docker.internal:8081' # 兼容性注释已标准化。
-          - 'host.docker.internal:8082' # 兼容性注释已标准化。
-          - 'host.docker.internal:8083' # 兼容性注释已标准化。
-          - 'host.docker.internal:8084' # 兼容性注释已标准化。
-          - 'host.docker.internal:8085' # 兼容性注释已标准化。
-          - 'host.docker.internal:8086' # 兼容性注释已标准化。
-          - 'host.docker.internal:8087' # 兼容性注释已标准化。
-    scrape_interval: 10s
+          - "127.0.0.1:9090"
 
-  - job_name: 'redis-exporter'
+  - job_name: spring-boot
+    metrics_path: /actuator/prometheus
+    scrape_interval: 10s
     static_configs:
-      - targets: [ 'redis-exporter:9121' ]
+      - targets:
+          - "host.docker.internal:8080"
+          - "host.docker.internal:8081"
+          - "host.docker.internal:8082"
+          - "host.docker.internal:8083"
+          - "host.docker.internal:8084"
+          - "host.docker.internal:8085"
+          - "host.docker.internal:8086"
+          - "host.docker.internal:8087"
+
+  - job_name: skywalking-oap
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "host.docker.internal:1234"
+
+  - job_name: redis-exporter
     scrape_interval: 10s
+    static_configs:
+      - targets:
+          - "redis-exporter:9121"
 
+  - job_name: mysql-exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "mysqld-exporter:9104"
 
+  - job_name: nginx-exporter
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - "nginx-exporter:9113"
+
+  - job_name: elasticsearch-exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "elasticsearch-exporter:9114"
+
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "host.docker.internal:19000"
+
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module:
+        - http_2xx
+    static_configs:
+      - targets:
+          - "http://host.docker.internal:18848/nacos/"
+          - "http://host.docker.internal:38082/"
+          - "http://host.docker.internal:15601/api/status"
+          - "http://host.docker.internal:19600/"
+          - "http://host.docker.internal:13001/"
+          - "http://host.docker.internal:12800/healthCheck"
+          - "http://host.docker.internal:18718/"
+          - "http://host.docker.internal:18089/"
+          - "http://host.docker.internal:19001/"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: blackbox-tcp
+    metrics_path: /probe
+    params:
+      module:
+        - tcp_connect
+    static_configs:
+      - targets:
+          - "host.docker.internal:13306"
+          - "host.docker.internal:16379"
+          - "host.docker.internal:19876"
+          - "host.docker.internal:30909"
+          - "host.docker.internal:19000"
+          - "host.docker.internal:19200"
+          - "host.docker.internal:19090"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
