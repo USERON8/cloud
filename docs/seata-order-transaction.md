@@ -20,7 +20,7 @@ If any stock reservation fails, Seata rolls back both the order writes and the s
 
 ## Required Infrastructure
 
-- `db/init/infra/seata/init.sql` must be applied so the `seata` database contains `global_table`, `branch_table`, and `lock_table`
+- `db/init/infra/seata/init.sql` must be applied so the `seata` database contains the server-side tables required by DB store, including `global_table`, `branch_table`, `lock_table`, `distributed_lock`, and `vgroup_table`
 - business databases must keep their `undo_log` tables
 - local startup should include the Seata server:
 
@@ -37,7 +37,7 @@ Recommended checks after startup:
 1. create an order that reserves stock successfully
 2. confirm the sub-order status becomes `STOCK_RESERVED`
 3. force an insufficient-stock request and confirm the order data is rolled back
-4. inspect `seata.global_table`, `seata.branch_table`, and the service `undo_log` tables while testing
+4. inspect `seata.global_table`, `seata.branch_table`, `seata.distributed_lock`, and the service `undo_log` tables while testing
 
 ## Non-Goals
 
