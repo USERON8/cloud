@@ -1,21 +1,14 @@
 package com.cloud.auth.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
-import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.util.Assert;
@@ -51,9 +44,6 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final HashOperations<String, String, Object> hashOperations;
-    private final RegisteredClientRepository registeredClientRepository;
-    private final AuthorizationServerSettings authorizationServerSettings;
-    private final ObjectMapper objectMapper;
 
     public SimpleRedisHashOAuth2AuthorizationService(RedisTemplate<String, Object> redisTemplate,
                                                      RegisteredClientRepository registeredClientRepository,
@@ -64,17 +54,6 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
 
         this.redisTemplate = redisTemplate;
         this.hashOperations = redisTemplate.opsForHash();
-        this.registeredClientRepository = registeredClientRepository;
-        this.authorizationServerSettings = authorizationServerSettings;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL
-        );
-        this.objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
-        this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
-        this.objectMapper.registerModule(new JavaTimeModule());
-        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     @Override
@@ -84,11 +63,7 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
         String authHashKey = AUTHORIZATION_HASH_PREFIX + authorization.getId();
 
         try {
-            
-            String authorizationJson = objectMapper.writeValueAsString(authorization);
-
-            
-            hashOperations.put(authHashKey, FIELD_AUTHORIZATION_DATA, authorizationJson);
+            hashOperations.put(authHashKey, FIELD_AUTHORIZATION_DATA, authorization);
             hashOperations.put(authHashKey, FIELD_CLIENT_ID, authorization.getRegisteredClientId());
             hashOperations.put(authHashKey, FIELD_PRINCIPAL_NAME, authorization.getPrincipalName());
             hashOperations.put(authHashKey, FIELD_CREATE_TIME, Instant.now().toString());
@@ -103,10 +78,6 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
             createTokenIndexes(authorization);
 
             log.debug("Saved authorization with id: {} using Hash storage", authorization.getId());
-
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize OAuth2Authorization for id: {}", authorization.getId(), e);
-            throw new RuntimeException("Failed to serialize OAuth2Authorization", e);
         } catch (Exception e) {
             log.error("Failed to save authorization with id: {}", authorization.getId(), e);
             throw new RuntimeException("Failed to save OAuth2Authorization", e);
@@ -139,17 +110,14 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
 
         String authHashKey = AUTHORIZATION_HASH_PREFIX + id;
 
-        try {
-            Object authDataObj = hashOperations.get(authHashKey, FIELD_AUTHORIZATION_DATA);
-            if (authDataObj instanceof String authorizationJson) {
-                return objectMapper.readValue(authorizationJson, OAuth2Authorization.class);
-            }
-            return null;
-
-        } catch (Exception e) {
-            log.error("Failed to deserialize OAuth2Authorization for id: {}", id, e);
-            return null;
+        Object authDataObj = hashOperations.get(authHashKey, FIELD_AUTHORIZATION_DATA);
+        if (authDataObj instanceof OAuth2Authorization authorization) {
+            return authorization;
         }
+        if (authDataObj != null) {
+            log.warn("Unexpected authorization payload type for id {}: {}", id, authDataObj.getClass().getName());
+        }
+        return null;
     }
 
     @Override
