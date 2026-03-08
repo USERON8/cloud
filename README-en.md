@@ -30,6 +30,14 @@ powershell -File scripts/dev/start-containers.ps1
 # bash scripts/dev/start-containers.sh
 ```
 
+Optional: start with full monitoring stack (Prometheus + Grafana + exporters):
+
+```bash
+powershell -File scripts/dev/start-containers.ps1 --with-monitoring
+# Linux/macOS:
+# bash scripts/dev/start-containers.sh --with-monitoring
+```
+
 2. Database bootstrap:
 - Run `db/init/**/*.sql` first, then `db/test/**/*.sql` (optional).
 - In the current closed development phase:
@@ -69,11 +77,13 @@ pnpm --dir my-shop-web build
 - Kibana: `http://127.0.0.1:15601`
 - Prometheus: `http://127.0.0.1:19099`
 - Grafana: `http://127.0.0.1:13000`
+- SkyWalking UI: `http://127.0.0.1:13001`
 
 ## Druid / SkyWalking / XXL-Job
 
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
 - SkyWalking javaagent injection is supported by startup scripts.
+- SkyWalking OAP telemetry is exposed for Prometheus at `http://127.0.0.1:1234/metrics`.
 - XXL-Job executor is built in and disabled by default.
 
 ## Sentinel Circuit Breaking (Gateway)
@@ -137,6 +147,7 @@ sequenceDiagram
 - `docker/`: infrastructure configs
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
+- `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
 - `docs/performance-baseline.md`: baseline for hot cache, timeout controls, async thread/queue sizing, and MySQL index rules
 
 ## Postman Import
@@ -165,6 +176,7 @@ sequenceDiagram
 - Kibana: `http://127.0.0.1:15601`
 - Prometheus: `http://127.0.0.1:19099`
 - Grafana: `http://127.0.0.1:13000`
+- SkyWalking UI: `http://127.0.0.1:13001`
 
 ## Performance Baseline
 
