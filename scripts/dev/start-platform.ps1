@@ -1,30 +1,97 @@
 param(
-    [switch]$WithMonitoring,
-    [switch]$NoKillPorts,
-    [switch]$SkipContainers,
-    [switch]$SkipServices,
-    [switch]$OpenDashboards,
-    [switch]$EnableSkyWalking,
-    [string]$SkyWalkingAgentPath,
-    [string]$SkyWalkingCollectorBackendService,
-    [switch]$DryRun
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$CliArgs
 )
 
 $ErrorActionPreference = "Stop"
 
-foreach ($arg in $args) {
-    if ($arg -eq "--with-monitoring") { $WithMonitoring = $true }
-    if ($arg -eq "--no-kill-ports") { $NoKillPorts = $true }
-    if ($arg -eq "--skip-containers") { $SkipContainers = $true }
-    if ($arg -eq "--skip-services") { $SkipServices = $true }
-    if ($arg -eq "--open-dashboards") { $OpenDashboards = $true }
-    if ($arg -eq "--enable-skywalking") { $EnableSkyWalking = $true }
-    if ($arg -eq "--dry-run") { $DryRun = $true }
+$WithMonitoring = $false
+$NoKillPorts = $false
+$SkipContainers = $false
+$SkipServices = $false
+$Services = $null
+$OpenDashboards = $false
+$EnableSkyWalking = $false
+$SkyWalkingAgentPath = $null
+$SkyWalkingCollectorBackendService = $null
+$DryRun = $false
+
+for ($index = 0; $index -lt $CliArgs.Count; $index++) {
+    $arg = $CliArgs[$index]
+    if ($arg -in @("--with-monitoring", "-WithMonitoring")) {
+        $WithMonitoring = $true
+        continue
+    }
+    if ($arg -in @("--no-kill-ports", "-NoKillPorts")) {
+        $NoKillPorts = $true
+        continue
+    }
+    if ($arg -in @("--skip-containers", "-SkipContainers")) {
+        $SkipContainers = $true
+        continue
+    }
+    if ($arg -in @("--skip-services", "-SkipServices")) {
+        $SkipServices = $true
+        continue
+    }
+    if ($arg -like "--services=*") {
+        $Services = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -like "-Services=*") {
+        $Services = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -eq "-Services") {
+        if (($index + 1) -ge $CliArgs.Count) {
+            throw "Missing value for -Services"
+        }
+        $index += 1
+        $Services = $CliArgs[$index]
+        continue
+    }
+    if ($arg -in @("--open-dashboards", "-OpenDashboards")) {
+        $OpenDashboards = $true
+        continue
+    }
+    if ($arg -in @("--enable-skywalking", "-EnableSkyWalking")) {
+        $EnableSkyWalking = $true
+        continue
+    }
+    if ($arg -in @("--dry-run", "-DryRun")) {
+        $DryRun = $true
+        continue
+    }
     if ($arg -like "--skywalking-agent-path=*") {
         $SkyWalkingAgentPath = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -like "-SkyWalkingAgentPath=*") {
+        $SkyWalkingAgentPath = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -eq "-SkyWalkingAgentPath") {
+        if (($index + 1) -ge $CliArgs.Count) {
+            throw "Missing value for -SkyWalkingAgentPath"
+        }
+        $index += 1
+        $SkyWalkingAgentPath = $CliArgs[$index]
+        continue
     }
     if ($arg -like "--skywalking-backend=*") {
         $SkyWalkingCollectorBackendService = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -like "-SkyWalkingCollectorBackendService=*") {
+        $SkyWalkingCollectorBackendService = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -eq "-SkyWalkingCollectorBackendService") {
+        if (($index + 1) -ge $CliArgs.Count) {
+            throw "Missing value for -SkyWalkingCollectorBackendService"
+        }
+        $index += 1
+        $SkyWalkingCollectorBackendService = $CliArgs[$index]
     }
 }
 
@@ -162,6 +229,7 @@ Set-ServiceRuntimeEnvironment -Root $root
 $serviceArgs = @()
 if ($NoKillPorts) { $serviceArgs += "--no-kill-ports" }
 if ($DryRun) { $serviceArgs += "--dry-run" }
+if (-not [string]::IsNullOrWhiteSpace($Services)) { $serviceArgs += "--services=$Services" }
 
 if (-not $SkipServices) {
     Write-Host "STEP 3/3 services=start"
