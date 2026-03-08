@@ -89,6 +89,10 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-db</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-api</artifactId>
         </dependency>
 
@@ -143,7 +147,6 @@
         </plugins>
     </build>
 </project>
-
 
 
 

@@ -99,6 +99,10 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-db</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-messaging</artifactId>
         </dependency>
         <dependency>

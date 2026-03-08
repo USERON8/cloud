@@ -67,6 +67,10 @@
             <groupId>com.cloud</groupId>
             <artifactId>common-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-db</artifactId>
+        </dependency>
 
         <!-- API Module -->
         <dependency>
