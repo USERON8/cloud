@@ -2,7 +2,7 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
-const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080").replace(/\/+$/, "");
+const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080").replace(/\/+$/, "");
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "5s";
 
 const TARGET_P95_MS = Number(__ENV.SEARCH_MAX_P95_THRESHOLD_MS || 750);

@@ -2,7 +2,7 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
-const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080").trim().replace(/\/+$/, "");
+const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080").trim().replace(/\/+$/, "");
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "10s";
 const SMOKE_VUS = Number(__ENV.SMOKE_VUS || 10);
 const SMOKE_DURATION = __ENV.SMOKE_DURATION || "60s";

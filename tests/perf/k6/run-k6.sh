@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCENARIO="${1:-acceptance}"
-BASE_URL="${2:-http://host.docker.internal:18080}"
+BASE_URL="${2:-http://host.docker.internal:8080}"
 PROFILE="${3:-loadtest}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

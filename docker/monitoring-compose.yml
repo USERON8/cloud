@@ -11,9 +11,7 @@ services:
       - type: bind
         source: ./monitor/prometheus/config
         target: /etc/prometheus
-      - type: bind
-        source: ./monitor/prometheus/data
-        target: /prometheus
+      - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -36,9 +34,7 @@ services:
     ports:
       - "${PORT_GRAFANA_HTTP:-13000}:3000"
     volumes:
-      - type: bind
-        source: ./monitor/grafana/data
-        target: /var/lib/grafana
+      - grafana-data:/var/lib/grafana
       - type: bind
         source: ./monitor/grafana/provisioning
         target: /etc/grafana/provisioning
@@ -63,7 +59,7 @@ services:
         source: ../tests/perf/k6
         target: /scripts
     environment:
-      - BASE_URL=${K6_BASE_URL:-http://host.docker.internal:18080}
+      - BASE_URL=${K6_BASE_URL:-http://host.docker.internal:8080}
       - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
       - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=false
       - K6_PROMETHEUS_RW_STALE_MARKERS=true
@@ -215,3 +211,7 @@ services:
 networks:
   monitoring:
     driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

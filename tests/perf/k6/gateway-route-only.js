@@ -2,7 +2,7 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate } from "k6/metrics";
 
-const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080")
+const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080")
   .trim()
   .replace(/\/+$/, "");
 const ROUTE_VUS = Number(__ENV.ROUTE_VUS || 12);

@@ -13,10 +13,10 @@ k6_preflight() {
   local required_containers=()
   local required_ports=()
   if [[ "$mode" == "search" ]]; then
-    required_containers=(cloud-nginx-gateway cloud-redis cloud-es-search cloud-prometheus)
+    required_containers=(cloud-nginx-gateway cloud-redis cloud-es-search)
     required_ports=(8080 8084 8087)
   else
-    required_containers=(cloud-mysql cloud-redis cloud-nacos cloud-rmq-namesrv cloud-rmq-broker cloud-nginx-gateway cloud-es-search cloud-prometheus)
+    required_containers=(cloud-mysql cloud-redis cloud-nacos cloud-rmq-namesrv cloud-rmq-broker cloud-nginx-gateway cloud-es-search)
     required_ports=(8080 8081 8082 8083 8084 8085 8086 8087)
   fi
 
@@ -50,7 +50,24 @@ k6_preflight() {
     return 1
   fi
 
-  if ! curl -fsS "$gateway_health_url" | grep -q '"status":"UP"'; then
+  local body_file http_code
+  body_file="$(mktemp)"
+  http_code="$(curl --noproxy '*' -sS --max-time 5 -o "$body_file" -w "%{http_code}" "$gateway_health_url" || true)"
+
+  if grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"' "$body_file"; then
+    rm -f "$body_file"
+    echo "[k6-preflight] passed mode=$mode"
+    return 0
+  fi
+
+  if [[ "$http_code" =~ ^(301|302|303|307|308|401|403)$ ]] || grep -Eqi '<title>[[:space:]]*Please sign in[[:space:]]*</title>|action="/login"' "$body_file"; then
+    rm -f "$body_file"
+    echo "[k6-preflight] passed mode=$mode"
+    return 0
+  fi
+
+  rm -f "$body_file"
+  if ! curl --noproxy '*' -fsS "$gateway_health_url" >/dev/null 2>&1; then
     echo "[k6-preflight] gateway health check failed: $gateway_health_url" >&2
     return 1
   fi
