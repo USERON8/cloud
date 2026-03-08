@@ -535,7 +535,7 @@
         target: /data/applogs
     restart: unless-stopped
   seata-server:
-    image: apache/seata-server:2.6.0-jdk17
+    image: apache/seata-server:2.6.0.jdk17
     container_name: cloud-seata-server
     depends_on:
       mysql:

@@ -28,7 +28,7 @@ $baseImages = @(
     "elasticsearch:9.1.2",
     "kibana:9.1.2",
     "logstash:9.1.2",
-    "apache/seata-server:2.6.0-jdk17"
+    "apache/seata-server:2.6.0.jdk17"
 )
 
 $monitoringImages = @(
@@ -85,7 +85,7 @@ if ($DryRun) {
 
 $missingImages = New-Object System.Collections.Generic.List[string]
 foreach ($image in ($imagesToCheck | Select-Object -Unique)) {
-    docker image inspect $image *> $null
+    cmd /c "docker image inspect $image >nul 2>nul" | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host ("IMAGE_CHECK image={0} exists=true action=use-local" -f $image)
     } else {

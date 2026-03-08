@@ -20,7 +20,7 @@ BASE_IMAGES=(
   "elasticsearch:9.1.2"
   "kibana:9.1.2"
   "logstash:9.1.2"
-  "apache/seata-server:2.6.0-jdk17"
+  "apache/seata-server:2.6.0.jdk17"
 )
 
 MONITORING_IMAGES=(
