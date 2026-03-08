@@ -27,7 +27,8 @@ $baseImages = @(
     "minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1",
     "elasticsearch:9.1.2",
     "kibana:9.1.2",
-    "logstash:9.1.2"
+    "logstash:9.1.2",
+    "apache/seata-server:2.6.0-jdk17"
 )
 
 $monitoringImages = @(

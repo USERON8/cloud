@@ -65,3 +65,24 @@ open_local_url() {
     cmd.exe /c start "" "$url" >/dev/null 2>&1 || true
   fi
 }
+
+export_service_runtime_env() {
+  local root="$1"
+  local nacos_port rocketmq_namesrv_port seata_port
+  nacos_port="$(docker_port_value "$root" PORT_NACOS_HTTP 18848)"
+  rocketmq_namesrv_port="$(docker_port_value "$root" PORT_RMQ_NAMESRV 19876)"
+  seata_port="$(docker_port_value "$root" PORT_SEATA_SERVER 18091)"
+
+  export NACOS_HOST="127.0.0.1"
+  export NACOS_PORT="$nacos_port"
+  export NACOS_SERVER_ADDR="127.0.0.1:${nacos_port}"
+
+  export ROCKETMQ_NAMESRV_HOST="127.0.0.1"
+  export ROCKETMQ_NAMESRV_PORT="$rocketmq_namesrv_port"
+  export ROCKETMQ_NAME_SERVER="127.0.0.1:${rocketmq_namesrv_port}"
+
+  export SEATA_SERVER_ADDR="127.0.0.1:${seata_port}"
+  export SEATA_REGISTRY_TYPE="file"
+
+  echo "SERVICE_ENV nacos=${NACOS_SERVER_ADDR} rocketmq=${ROCKETMQ_NAME_SERVER} seata=${SEATA_SERVER_ADDR}"
+}

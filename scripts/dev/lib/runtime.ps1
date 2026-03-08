@@ -81,3 +81,27 @@ function Open-LocalUrl {
         Write-Host ("OPEN_URL url={0} status=failed reason={1}" -f $Url, $_.Exception.Message)
     }
 }
+
+function Set-ServiceRuntimeEnvironment {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root
+    )
+
+    $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
+    $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 19876
+    $seataPort = Get-DockerPortValue -Root $Root -Name "PORT_SEATA_SERVER" -DefaultValue 18091
+
+    $env:NACOS_HOST = "127.0.0.1"
+    $env:NACOS_PORT = [string]$nacosPort
+    $env:NACOS_SERVER_ADDR = "127.0.0.1:$nacosPort"
+
+    $env:ROCKETMQ_NAMESRV_HOST = "127.0.0.1"
+    $env:ROCKETMQ_NAMESRV_PORT = [string]$rocketMqNamesrvPort
+    $env:ROCKETMQ_NAME_SERVER = "127.0.0.1:$rocketMqNamesrvPort"
+
+    $env:SEATA_SERVER_ADDR = "127.0.0.1:$seataPort"
+    $env:SEATA_REGISTRY_TYPE = "file"
+
+    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2}" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
+}

@@ -51,6 +51,7 @@ wait_infrastructure() {
     "rocketmq-namesrv|$(docker_port_value "$ROOT_DIR" PORT_RMQ_NAMESRV 19876)"
     "elasticsearch|$(docker_port_value "$ROOT_DIR" PORT_ES_HTTP 19200)"
     "minio|$(docker_port_value "$ROOT_DIR" PORT_MINIO_API 19000)"
+    "seata-server|$(docker_port_value "$ROOT_DIR" PORT_SEATA_SERVER 18091)"
   )
 
   if [ "$wait_skywalking" = "1" ]; then
@@ -126,6 +127,8 @@ if [ "$DRY_RUN" = "0" ] && [ "$SKIP_SERVICES" = "0" ]; then
   echo "STEP 2/3 infrastructure=wait"
   wait_infrastructure "$WITH_MONITORING" "$SKYWALKING_ACTIVE"
 fi
+
+export_service_runtime_env "$ROOT_DIR"
 
 service_args=()
 if [ "$NO_KILL_PORTS" = "1" ]; then service_args+=("--no-kill-ports"); fi

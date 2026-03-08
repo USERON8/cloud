@@ -540,28 +540,13 @@
     depends_on:
       mysql:
         condition: service_healthy
-      nacos:
-        condition: service_started
     networks:
       service_net:
         ipv4_address: 172.28.0.133
     ports:
       - "${PORT_SEATA_SERVER:-18091}:8091"
     environment:
-      SEATA_IP: 172.28.0.133
-      SEATA_PORT: 8091
-
-      # 注册中心
       SEATA_CONFIG_NAME: file:/seata-server/resources/registry
-
-      # 使用 Nacos 注册
-      SEATA_REGISTRY_TYPE: nacos
-      SEATA_REGISTRY_NACOS_SERVER_ADDR: nacos:8848
-      SEATA_REGISTRY_NACOS_NAMESPACE:
-      SEATA_REGISTRY_NACOS_GROUP: SEATA_GROUP
-      SEATA_REGISTRY_NACOS_APPLICATION: seata-server
-      SEATA_REGISTRY_NACOS_USERNAME: nacos
-      SEATA_REGISTRY_NACOS_PASSWORD: nacos
 
       # 使用 MySQL 存储事务日志
       SEATA_STORE_MODE: db
@@ -569,9 +554,6 @@
       SEATA_STORE_DB_URL: jdbc:mysql://mysql:3306/seata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       SEATA_STORE_DB_USER: root
       SEATA_STORE_DB_PASSWORD: root
-
-      # 事务组
-      SEATA_SERVICE_VGROUP_MAPPING_DEFAULT_TX_GROUP: default
     volumes:
       - type: bind
         source: ./docker-compose/seata/config

@@ -31,6 +31,7 @@ bash scripts/dev/start-all.sh --with-monitoring
 `start-platform.*` orchestrates:
 - `start-containers.*`
 - infrastructure readiness checks using host ports from `docker/.env`
+- runtime env export for `NACOS_SERVER_ADDR`, `ROCKETMQ_NAME_SERVER`, and `SEATA_SERVER_ADDR`
 - optional SkyWalking agent wiring
 - `start-services.*`
 
