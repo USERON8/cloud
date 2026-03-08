@@ -45,7 +45,7 @@ function Get-DockerPortValue {
 function Wait-TcpPort {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Host,
+        [string]$TargetHost,
         [Parameter(Mandatory = $true)]
         [int]$Port,
         [int]$TimeoutSeconds = 90,
@@ -56,7 +56,7 @@ function Wait-TcpPort {
     while ((Get-Date) -lt $deadline) {
         $client = New-Object System.Net.Sockets.TcpClient
         try {
-            $task = $client.ConnectAsync($Host, $Port)
+            $task = $client.ConnectAsync($TargetHost, $Port)
             if ($task.Wait([Math]::Min($SleepMilliseconds, 1000)) -and $client.Connected) {
                 return $true
             }

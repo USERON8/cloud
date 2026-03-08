@@ -77,7 +77,7 @@ function Wait-Infrastructure {
 
     foreach ($target in $targets) {
         Write-Host ("WAIT_PORT name={0} port={1} status=waiting" -f $target.name, $target.port)
-        if (-not (Wait-TcpPort -Host "127.0.0.1" -Port $target.port -TimeoutSeconds 120 -SleepMilliseconds 1000)) {
+        if (-not (Wait-TcpPort -TargetHost "127.0.0.1" -Port $target.port -TimeoutSeconds 120 -SleepMilliseconds 1000)) {
             throw ("Infrastructure port not ready: {0}:{1}" -f $target.name, $target.port)
         }
         Write-Host ("WAIT_PORT name={0} port={1} status=ready" -f $target.name, $target.port)
