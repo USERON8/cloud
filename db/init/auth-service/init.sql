@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS auth_user
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT      NOT NULL DEFAULT 0,
     version           INT          NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_auth_user_username (username),
-    INDEX idx_auth_user_username_deleted (username, deleted),
+    UNIQUE KEY uk_auth_user_username_deleted (username, deleted),
+    INDEX idx_auth_user_deleted (deleted),
     INDEX idx_auth_user_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

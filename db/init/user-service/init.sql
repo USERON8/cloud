@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS users
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT      NOT NULL DEFAULT 0,
     version           INT          NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_users_username (username),
-    INDEX idx_users_username_deleted (username, deleted),
+    UNIQUE KEY uk_users_username_deleted (username, deleted),
+    INDEX idx_users_deleted (deleted),
     UNIQUE KEY uk_users_phone (phone),
     UNIQUE KEY uk_users_email (email),
     INDEX idx_users_status_deleted (status, deleted)
@@ -104,8 +104,8 @@ CREATE TABLE IF NOT EXISTS admin
     updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted    TINYINT      NOT NULL DEFAULT 0,
     version    INT          NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_admin_username (username),
-    INDEX idx_admin_username_deleted (username, deleted),
+    UNIQUE KEY uk_admin_username_deleted (username, deleted),
+    INDEX idx_admin_deleted (deleted),
     INDEX idx_admin_status_deleted (status, deleted),
     INDEX idx_admin_role_deleted (role, deleted)
 ) ENGINE = InnoDB
@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS merchant
     updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted       TINYINT      NOT NULL DEFAULT 0,
     version       INT          NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_merchant_username (username),
-    INDEX idx_merchant_username_deleted (username, deleted),
+    UNIQUE KEY uk_merchant_username_deleted (username, deleted),
+    INDEX idx_merchant_deleted (deleted),
     INDEX idx_merchant_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
