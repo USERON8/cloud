@@ -2,6 +2,7 @@ package com.cloud.payment;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.payment", "com.cloud.common"}
 )
+@EnableDubbo
 @EnableDiscoveryClient
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)

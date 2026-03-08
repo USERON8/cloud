@@ -1,6 +1,7 @@
 package com.cloud.auth;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.FilterType;
 
 @Slf4j
 @SpringBootApplication
+@EnableDubbo
 @ComponentScan(
         basePackages = {"com.cloud.auth", "com.cloud.common"},
         excludeFilters = {

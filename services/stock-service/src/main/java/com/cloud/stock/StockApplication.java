@@ -1,6 +1,7 @@
 package com.cloud.stock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
 )
+@EnableDubbo
 @ComponentScan(
         basePackages = {"com.cloud.stock", "com.cloud.common"}
 )
