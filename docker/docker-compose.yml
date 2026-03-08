@@ -556,8 +556,13 @@
       SEATA_STORE_DB_PASSWORD: root
     volumes:
       - type: bind
-        source: ./docker-compose/seata/config
-        target: /seata-server/resources
+        source: ./docker-compose/seata/config/registry.conf
+        target: /seata-server/resources/registry.conf
+        read_only: true
+      - type: bind
+        source: ./docker-compose/seata/config/file.conf
+        target: /seata-server/resources/file.conf
+        read_only: true
     restart: unless-stopped
 
 # 兼容性注释已标准化。
