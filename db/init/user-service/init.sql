@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users
     deleted           TINYINT      NOT NULL DEFAULT 0,
     version           INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_users_username (username),
+    INDEX idx_users_username_deleted (username, deleted),
     UNIQUE KEY uk_users_phone (phone),
     UNIQUE KEY uk_users_email (email),
     INDEX idx_users_status_deleted (status, deleted)
@@ -104,6 +105,7 @@ CREATE TABLE IF NOT EXISTS admin
     deleted    TINYINT      NOT NULL DEFAULT 0,
     version    INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_admin_username (username),
+    INDEX idx_admin_username_deleted (username, deleted),
     INDEX idx_admin_status_deleted (status, deleted),
     INDEX idx_admin_role_deleted (role, deleted)
 ) ENGINE = InnoDB
@@ -122,6 +124,7 @@ CREATE TABLE IF NOT EXISTS merchant
     deleted       TINYINT      NOT NULL DEFAULT 0,
     version       INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_merchant_username (username),
+    INDEX idx_merchant_username_deleted (username, deleted),
     INDEX idx_merchant_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

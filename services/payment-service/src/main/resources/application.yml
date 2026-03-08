@@ -225,3 +225,6 @@ xxl:
       log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
       log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
 
+seata:
+  enabled: false
+

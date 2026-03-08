@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS auth_user
     deleted           TINYINT      NOT NULL DEFAULT 0,
     version           INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_auth_user_username (username),
+    INDEX idx_auth_user_username_deleted (username, deleted),
     INDEX idx_auth_user_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
