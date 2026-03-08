@@ -49,14 +49,14 @@ $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
 }
 
 $services = @(
-    @{ name = "gateway";         port = 8080; jar = "gateway\target\gateway-0.0.1-SNAPSHOT.jar"; profiles = "dev,route" },
-    @{ name = "auth-service";    port = 8081; jar = "auth-service\target\auth-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "user-service";    port = 8082; jar = "user-service\target\user-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "order-service";   port = 8083; jar = "order-service\target\order-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "product-service"; port = 8084; jar = "product-service\target\product-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "stock-service";   port = 8085; jar = "stock-service\target\stock-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "payment-service"; port = 8086; jar = "payment-service\target\payment-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-    @{ name = "search-service";  port = 8087; jar = "search-service\target\search-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" }
+    @{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-0.0.1-SNAPSHOT.jar"; profiles = "dev,route" },
+    @{ name = "auth-service";    port = 8081; jar = "services\auth-service\target\auth-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "user-service";    port = 8082; jar = "services\user-service\target\user-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "product-service"; port = 8084; jar = "services\product-service\target\product-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "stock-service";   port = 8085; jar = "services\stock-service\target\stock-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "payment-service"; port = 8086; jar = "services\payment-service\target\payment-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
+    @{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" }
 )
 
 $results = @()
