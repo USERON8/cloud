@@ -103,33 +103,63 @@ function Get-ServiceHealthState {
         [int]$Port
     )
 
+    $request = [System.Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/actuator/health")
+    $request.Method = "GET"
+    $request.Timeout = 5000
+    $request.ReadWriteTimeout = 5000
+    $request.AllowAutoRedirect = $false
+
+    $response = $null
     try {
-        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/actuator/health" -Method GET -TimeoutSec 5 -MaximumRedirection 0
-        $content = if ($null -ne $resp.Content) { [string]$resp.Content } else { "" }
+        try {
+            $response = [System.Net.HttpWebResponse]$request.GetResponse()
+        } catch [System.Net.WebException] {
+            if ($null -ne $_.Exception.Response) {
+                $response = [System.Net.HttpWebResponse]$_.Exception.Response
+            } else {
+                return $null
+            }
+        }
+
+        if ($null -eq $response) {
+            return $null
+        }
+
+        $statusCode = [int]$response.StatusCode
         $responsePath = $null
         try {
-            $responsePath = $resp.BaseResponse.ResponseUri.AbsolutePath
-        } catch {
-        }
-        try {
-            $json = $content | ConvertFrom-Json -ErrorAction Stop
-            if ((Get-HealthStatus $json) -eq "UP") {
-                return "UP"
-            }
+            $responsePath = $response.ResponseUri.AbsolutePath
         } catch {
         }
 
-        if (
-            (($responsePath) -and ($responsePath -ne "/actuator/health")) -or
-            ($content -match '<title>\s*Please sign in\s*</title>') -or
-            ($content -match 'action="/login"')
-        ) {
+        $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+        $content = $reader.ReadToEnd()
+        $reader.Dispose()
+
+        if ($statusCode -eq 200) {
+            try {
+                $json = $content | ConvertFrom-Json -ErrorAction Stop
+                if ((Get-HealthStatus $json) -eq "UP") {
+                    return "UP"
+                }
+            } catch {
+            }
+
+            if (
+                (($responsePath) -and ($responsePath -ne "/actuator/health")) -or
+                ($content -match '<title>\s*Please sign in\s*</title>') -or
+                ($content -match 'action="/login"')
+            ) {
+                return "UP_SECURED"
+            }
+        }
+
+        if ($statusCode -in @(301, 302, 303, 307, 308, 401, 403)) {
             return "UP_SECURED"
         }
-    } catch {
-        $httpCode = Get-HttpStatusCode $_
-        if ($httpCode -in @(301, 302, 303, 307, 308, 401, 403)) {
-            return "UP_SECURED"
+    } finally {
+        if ($null -ne $response) {
+            $response.Dispose()
         }
     }
 
