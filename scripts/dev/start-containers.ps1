@@ -10,6 +10,7 @@ foreach ($arg in $args) {
     if ($arg -eq "--with-monitoring") { $WithMonitoring = $true }
     if ($arg -eq "--dry-run") { $DryRun = $true }
     if ($arg -eq "--kill-ports") { $NoKillPorts = $false }
+    if ($arg -eq "--no-kill-ports") { $NoKillPorts = $true }
 }
 
 $killPorts = -not $NoKillPorts
@@ -76,6 +77,11 @@ if ($WithMonitoring) {
     $imagesToCheck += $monitoringImages
 }
 
+if ($DryRun) {
+    Write-Host ("DRY_RUN_DONE script=start-containers images={0}" -f (($imagesToCheck | Select-Object -Unique) -join ","))
+    exit 0
+}
+
 $missingImages = New-Object System.Collections.Generic.List[string]
 foreach ($image in ($imagesToCheck | Select-Object -Unique)) {
     docker image inspect $image *> $null
@@ -89,11 +95,6 @@ foreach ($image in ($imagesToCheck | Select-Object -Unique)) {
 
 if ($missingImages.Count -gt 0) {
     throw ("Local image check failed. Missing images: {0}" -f ($missingImages -join ", "))
-}
-
-if ($DryRun) {
-    Write-Host "DRY_RUN_DONE script=start-containers"
-    exit 0
 }
 
 Push-Location (Join-Path $root "docker")

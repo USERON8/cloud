@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 foreach ($arg in $args) {
     if ($arg -eq "--dry-run") { $DryRun = $true }
     if ($arg -eq "--kill-ports") { $NoKillPorts = $false }
+    if ($arg -eq "--no-kill-ports") { $NoKillPorts = $true }
 }
 
 $killPorts = -not $NoKillPorts
