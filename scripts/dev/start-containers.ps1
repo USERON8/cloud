@@ -31,7 +31,12 @@ $baseImages = @(
 
 $monitoringImages = @(
     "bitnami/prometheus:3.5.0-debian-12-r3",
-    "grafana/grafana:12.2.0-17084981832"
+    "grafana/grafana:12.2.0-17084981832",
+    "oliver006/redis_exporter:v1.67.0",
+    "prom/mysqld-exporter:v0.17.2",
+    "nginx/nginx-prometheus-exporter:1.4.2",
+    "quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0",
+    "prom/blackbox-exporter:v0.26.0"
 )
 
 $envPath = Join-Path $root "docker\.env"
@@ -95,7 +100,9 @@ Push-Location (Join-Path $root "docker")
 try {
     docker compose -f docker-compose.yml up -d --pull never
     if ($WithMonitoring) {
-        docker compose -f monitoring-compose.yml up -d --pull never prometheus grafana
+        docker compose -f monitoring-compose.yml up -d --pull never `
+            prometheus grafana redis-exporter mysqld-exporter `
+            nginx-exporter elasticsearch-exporter blackbox-exporter
     }
 } finally {
     Pop-Location
