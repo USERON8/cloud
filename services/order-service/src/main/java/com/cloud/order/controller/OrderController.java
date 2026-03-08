@@ -8,6 +8,7 @@ import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Objects;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderPlacementService orderPlacementService;
 
     @PostMapping
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
@@ -43,8 +45,7 @@ public class OrderController {
             }
         }
         request.setIdempotencyKey(idempotencyKey.trim());
-        OrderMain mainOrder = orderService.createMainOrder(request);
-        return Result.success(orderService.getOrderAggregate(mainOrder.getId()));
+        return Result.success(orderPlacementService.createOrder(request));
     }
 
     @GetMapping("/main/{mainOrderId}")

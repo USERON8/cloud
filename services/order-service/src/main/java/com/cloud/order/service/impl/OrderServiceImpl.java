@@ -320,6 +320,7 @@ public class OrderServiceImpl implements OrderService {
 
         boolean allDone = subOrders.stream().allMatch(s -> "DONE".equals(s.getOrderStatus()));
         boolean allClosed = subOrders.stream().allMatch(s -> "CANCELLED".equals(s.getOrderStatus()) || "CLOSED".equals(s.getOrderStatus()));
+        boolean anyReserved = subOrders.stream().anyMatch(s -> "STOCK_RESERVED".equals(s.getOrderStatus()));
         boolean anyPaidOrLater = subOrders.stream().anyMatch(s -> Set.of("PAID", "SHIPPED", "RECEIVED", "DONE").contains(s.getOrderStatus()));
 
         if (allDone) {
@@ -332,6 +333,8 @@ public class OrderServiceImpl implements OrderService {
             if (mainOrder.getPaidAt() == null) {
                 mainOrder.setPaidAt(LocalDateTime.now());
             }
+        } else if (anyReserved) {
+            mainOrder.setOrderStatus("STOCK_RESERVED");
         } else {
             mainOrder.setOrderStatus("CREATED");
         }
