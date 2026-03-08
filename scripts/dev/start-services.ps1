@@ -97,6 +97,45 @@ function Get-HttpStatusCode($exception) {
     return $null
 }
 
+function Get-ServiceHealthState {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$Port
+    )
+
+    try {
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/actuator/health" -Method GET -TimeoutSec 5 -MaximumRedirection 0
+        $content = if ($null -ne $resp.Content) { [string]$resp.Content } else { "" }
+        $responsePath = $null
+        try {
+            $responsePath = $resp.BaseResponse.ResponseUri.AbsolutePath
+        } catch {
+        }
+        try {
+            $json = $content | ConvertFrom-Json -ErrorAction Stop
+            if ((Get-HealthStatus $json) -eq "UP") {
+                return "UP"
+            }
+        } catch {
+        }
+
+        if (
+            (($responsePath) -and ($responsePath -ne "/actuator/health")) -or
+            ($content -match '<title>\s*Please sign in\s*</title>') -or
+            ($content -match 'action="/login"')
+        ) {
+            return "UP_SECURED"
+        }
+    } catch {
+        $httpCode = Get-HttpStatusCode $_
+        if ($httpCode -in @(301, 302, 303, 307, 308, 401, 403)) {
+            return "UP_SECURED"
+        }
+    }
+
+    return $null
+}
+
 foreach ($svc in $services) {
     $name = $svc.name
     $port = [int]$svc.port
@@ -135,22 +174,11 @@ foreach ($svc in $services) {
             $status = "EXITED:$($proc.ExitCode)"
             break
         }
-        try {
-            $resp = Invoke-RestMethod -Uri "http://127.0.0.1:$port/actuator/health" -Method GET -TimeoutSec 5
-            if ((Get-HealthStatus $resp) -eq "UP") {
-                $status = "UP"
-                $healthy = $true
-                break
-            }
-        } catch {
-            $httpCode = Get-HttpStatusCode $_
-            if ($httpCode -eq 401 -or $httpCode -eq 403) {
-                # Some services (e.g. gateway) secure actuator endpoints in dev.
-                # Treat auth rejection as process-up signal to continue startup.
-                $status = "UP_SECURED"
-                $healthy = $true
-                break
-            }
+        $healthState = Get-ServiceHealthState -Port $port
+        if (-not [string]::IsNullOrWhiteSpace($healthState)) {
+            $status = $healthState
+            $healthy = $true
+            break
         }
         Start-Sleep -Seconds 2
     }
@@ -182,3 +210,6 @@ $results | ForEach-Object { "{0},{1},{2},{3}" -f $_.service, $_.port, $_.pid, $_
 
 if ($allOk) { Write-Host "STARTUP_OK" } else { Write-Host "STARTUP_FAILED" }
 $results | Format-Table -AutoSize
+if (-not $allOk) {
+    exit 1
+}

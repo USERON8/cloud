@@ -59,7 +59,25 @@ ALL_OK=1
 
 health_status() {
   local port="$1"
-  curl -fsS "http://127.0.0.1:${port}/actuator/health" 2>/dev/null | grep -q "\"status\"[[:space:]]*:[[:space:]]*\"UP\""
+  local body_file header_file http_code
+  body_file="$(mktemp)"
+  header_file="$(mktemp)"
+  http_code="$(curl -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "http://127.0.0.1:${port}/actuator/health" || true)"
+
+  if grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"' "$body_file"; then
+    rm -f "$body_file" "$header_file"
+    echo "UP"
+    return 0
+  fi
+
+  if [[ "$http_code" =~ ^(301|302|303|307|308|401|403)$ ]] || grep -Eqi '<title>[[:space:]]*Please sign in[[:space:]]*</title>|action="/login"' "$body_file"; then
+    rm -f "$body_file" "$header_file"
+    echo "UP_SECURED"
+    return 0
+  fi
+
+  rm -f "$body_file" "$header_file"
+  return 1
 }
 
 for svc in "${SERVICES[@]}"; do
@@ -96,8 +114,8 @@ for svc in "${SERVICES[@]}"; do
       status="EXITED"
       break
     fi
-    if health_status "$port"; then
-      status="UP"
+    if health_state="$(health_status "$port")"; then
+      status="$health_state"
       healthy=1
       break
     fi
@@ -134,4 +152,5 @@ if [ "$ALL_OK" = "1" ]; then
   echo "STARTUP_OK"
 else
   echo "STARTUP_FAILED"
+  exit 1
 fi
