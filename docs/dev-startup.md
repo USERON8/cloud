@@ -37,12 +37,15 @@ bash scripts/dev/start-all.sh --with-monitoring
 
 `start-containers.*` and `start-services.*` are still available when you want finer control.
 
+Service process logs are written under `logs/<service>/stdout.log` and `logs/<service>/stderr.log`.
+
 ## Common flags
 
 - `--with-monitoring`: start Prometheus, Grafana, and exporters together with the base containers
 - `--no-kill-ports`: do not terminate existing listeners before startup
 - `--skip-containers`: only run the service startup phase
 - `--skip-services`: only run the container startup phase
+- `--services=order-service,stock-service`: only restart the named services and leave the others running
 - `--open-dashboards`: open local console URLs after startup
 - `--enable-skywalking`: require a valid SkyWalking agent path and wire the collector backend
 - `--skywalking-agent-path=/path/to/skywalking-agent.jar`: set the agent path explicitly
@@ -61,6 +64,16 @@ Start services only, reusing existing containers:
 
 ```bash
 bash scripts/dev/start-platform.sh --skip-containers
+```
+
+Restart only the services you changed:
+
+```powershell
+powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
+```
+
+```bash
+bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
 ```
 
 Start containers only:

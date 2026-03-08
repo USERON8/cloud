@@ -9,6 +9,7 @@ WITH_MONITORING=0
 NO_KILL_PORTS=0
 SKIP_CONTAINERS=0
 SKIP_SERVICES=0
+SERVICES_FILTER=""
 OPEN_DASHBOARDS=0
 ENABLE_SKYWALKING=0
 SKYWALKING_AGENT_PATH="${SKYWALKING_AGENT_PATH:-}"
@@ -21,6 +22,7 @@ for arg in "$@"; do
     --no-kill-ports) NO_KILL_PORTS=1 ;;
     --skip-containers) SKIP_CONTAINERS=1 ;;
     --skip-services) SKIP_SERVICES=1 ;;
+    --services=*) SERVICES_FILTER="${arg#*=}" ;;
     --open-dashboards) OPEN_DASHBOARDS=1 ;;
     --enable-skywalking) ENABLE_SKYWALKING=1 ;;
     --dry-run) DRY_RUN=1 ;;
@@ -133,6 +135,7 @@ export_service_runtime_env "$ROOT_DIR"
 service_args=()
 if [ "$NO_KILL_PORTS" = "1" ]; then service_args+=("--no-kill-ports"); fi
 if [ "$DRY_RUN" = "1" ]; then service_args+=("--dry-run"); fi
+if [ -n "$SERVICES_FILTER" ]; then service_args+=("--services=$SERVICES_FILTER"); fi
 
 if [ "$SKIP_SERVICES" = "0" ]; then
   echo "STEP 3/3 services=start"

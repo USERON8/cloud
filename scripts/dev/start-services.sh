@@ -5,20 +5,86 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
 
+trim_value() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
 KILL_PORTS=1
 DRY_RUN=0
+SERVICES_FILTER=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --kill-ports) KILL_PORTS=1 ;;
     --no-kill-ports) KILL_PORTS=0 ;;
+    --services=*) SERVICES_FILTER="${arg#*=}" ;;
   esac
 done
 
-SERVICE_PORTS=(8080 8081 8082 8083 8084 8085 8086 8087)
+ALL_SERVICES=(
+  "gateway|8080|services/gateway/target/gateway-0.0.1-SNAPSHOT.jar|dev,route"
+  "auth-service|8081|services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar|dev"
+  "user-service|8082|services/user-service/target/user-service-0.0.1-SNAPSHOT.jar|dev"
+  "order-service|8083|services/order-service/target/order-service-0.0.1-SNAPSHOT.jar|dev"
+  "product-service|8084|services/product-service/target/product-service-0.0.1-SNAPSHOT.jar|dev"
+  "stock-service|8085|services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar|dev"
+  "payment-service|8086|services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar|dev"
+  "search-service|8087|services/search-service/target/search-service-0.0.1-SNAPSHOT.jar|dev"
+)
+
+declare -A SERVICE_INDEX=()
+ALL_SERVICE_NAMES=()
+for svc in "${ALL_SERVICES[@]}"; do
+  IFS='|' read -r name _ <<< "$svc"
+  SERVICE_INDEX["$name"]="$svc"
+  ALL_SERVICE_NAMES+=("$name")
+done
+
+SERVICES=()
+SELECTED_SERVICE_NAMES=()
+if [ -z "$SERVICES_FILTER" ]; then
+  SERVICES=("${ALL_SERVICES[@]}")
+  SELECTED_SERVICE_NAMES=("${ALL_SERVICE_NAMES[@]}")
+else
+  declare -A SEEN_SERVICES=()
+  MISSING_SERVICES=()
+  IFS=',' read -r -a REQUESTED_SERVICES <<< "$SERVICES_FILTER"
+  for raw_name in "${REQUESTED_SERVICES[@]}"; do
+    service_name="$(trim_value "$raw_name")"
+    if [ -z "$service_name" ] || [ -n "${SEEN_SERVICES[$service_name]:-}" ]; then
+      continue
+    fi
+    SEEN_SERVICES["$service_name"]=1
+    if [ -n "${SERVICE_INDEX[$service_name]:-}" ]; then
+      SERVICES+=("${SERVICE_INDEX[$service_name]}")
+      SELECTED_SERVICE_NAMES+=("$service_name")
+    else
+      MISSING_SERVICES+=("$service_name")
+    fi
+  done
+  if [ "${#MISSING_SERVICES[@]}" -gt 0 ]; then
+    echo "Unknown services: ${MISSING_SERVICES[*]}" >&2
+    exit 1
+  fi
+  if [ "${#SERVICES[@]}" -eq 0 ]; then
+    echo "No services selected. Use --services=name1,name2." >&2
+    exit 1
+  fi
+fi
+
+echo "SERVICE_SCOPE services=$(IFS=,; echo "${SELECTED_SERVICE_NAMES[*]}")"
+
+SERVICE_PORTS=()
+for svc in "${SERVICES[@]}"; do
+  IFS='|' read -r _ port _ <<< "$svc"
+  SERVICE_PORTS+=("$port")
+done
 if [ "$KILL_PORTS" = "1" ]; then
-  for p in "${SERVICE_PORTS[@]}"; do
-    kill_port_owner "$p" "$DRY_RUN"
+  for port in "${SERVICE_PORTS[@]}"; do
+    kill_port_owner "$port" "$DRY_RUN"
   done
 fi
 if [ "$DRY_RUN" = "1" ]; then
@@ -33,26 +99,16 @@ else
   JAVA_CMD="java"
 fi
 
-LOG_DIR="$ROOT_DIR/.tmp/acceptance/logs"
-mkdir -p "$LOG_DIR"
+LOG_ROOT="$ROOT_DIR/logs"
+mkdir -p "$LOG_ROOT"
 
 SKYWALKING_ENABLED=0
 if [ -n "${SKYWALKING_AGENT_PATH:-}" ] && [ -f "${SKYWALKING_AGENT_PATH}" ]; then
   SKYWALKING_ENABLED=1
 fi
 SKYWALKING_COLLECTOR_BACKEND_SERVICE="${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-127.0.0.1:11800}"
+SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8}"
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
-
-SERVICES=(
-  "gateway|8080|services/gateway/target/gateway-0.0.1-SNAPSHOT.jar|dev,route"
-  "auth-service|8081|services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar|dev"
-  "user-service|8082|services/user-service/target/user-service-0.0.1-SNAPSHOT.jar|dev"
-  "order-service|8083|services/order-service/target/order-service-0.0.1-SNAPSHOT.jar|dev"
-  "product-service|8084|services/product-service/target/product-service-0.0.1-SNAPSHOT.jar|dev"
-  "stock-service|8085|services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar|dev"
-  "payment-service|8086|services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar|dev"
-  "search-service|8087|services/search-service/target/search-service-0.0.1-SNAPSHOT.jar|dev"
-)
 
 RESULT_ROWS=()
 ALL_OK=1
@@ -80,6 +136,57 @@ health_status() {
   return 1
 }
 
+write_state_files() {
+  local acceptance_dir startup_path pids_path row service port pid status startup_seconds out_log err_log name
+  acceptance_dir="$ROOT_DIR/.tmp/acceptance"
+  startup_path="$acceptance_dir/startup.csv"
+  pids_path="$acceptance_dir/pids.txt"
+  mkdir -p "$acceptance_dir"
+
+  declare -A STARTUP_ROWS=()
+  if [ -f "$startup_path" ]; then
+    while IFS=',' read -r service port pid status startup_seconds out_log err_log; do
+      if [ "$service" = "service" ] || [ -z "$service" ]; then
+        continue
+      fi
+      STARTUP_ROWS["$service"]="$service,$port,$pid,$status,$startup_seconds,$out_log,$err_log"
+    done < "$startup_path"
+  fi
+
+  declare -A PID_ROWS=()
+  if [ -f "$pids_path" ]; then
+    while IFS=',' read -r service port pid status; do
+      if [ -z "$service" ]; then
+        continue
+      fi
+      PID_ROWS["$service"]="$service,$port,$pid,$status"
+    done < "$pids_path"
+  fi
+
+  for row in "${RESULT_ROWS[@]}"; do
+    IFS=',' read -r service port pid status startup_seconds out_log err_log <<< "$row"
+    STARTUP_ROWS["$service"]="$row"
+    PID_ROWS["$service"]="$service,$port,$pid,$status"
+  done
+
+  {
+    echo "service,port,pid,status,startup_seconds,out_log,err_log"
+    for name in "${ALL_SERVICE_NAMES[@]}"; do
+      if [ -n "${STARTUP_ROWS[$name]:-}" ]; then
+        echo "${STARTUP_ROWS[$name]}"
+      fi
+    done
+  } > "$startup_path"
+
+  {
+    for name in "${ALL_SERVICE_NAMES[@]}"; do
+      if [ -n "${PID_ROWS[$name]:-}" ]; then
+        echo "${PID_ROWS[$name]}"
+      fi
+    done
+  } > "$pids_path"
+}
+
 for svc in "${SERVICES[@]}"; do
   IFS='|' read -r name port jar profiles <<< "$svc"
   jar_path="$ROOT_DIR/$jar"
@@ -88,22 +195,29 @@ for svc in "${SERVICES[@]}"; do
     exit 1
   fi
 
-  out_log="$LOG_DIR/${name}.out.log"
-  err_log="$LOG_DIR/${name}.err.log"
+  service_log_dir="$LOG_ROOT/$name"
+  mkdir -p "$service_log_dir"
+  out_log="$service_log_dir/stdout.log"
+  err_log="$service_log_dir/stderr.log"
   : > "$out_log"
   : > "$err_log"
 
-  start_ts="$(date +%s)"
+  java_args=()
   if [ "$SKYWALKING_ENABLED" = "1" ]; then
-    nohup "$JAVA_CMD" \
-      "-javaagent:${SKYWALKING_AGENT_PATH}" \
-      "-Dskywalking.agent.service_name=${name}" \
-      "-Dskywalking.collector.backend_service=${SKYWALKING_COLLECTOR_BACKEND_SERVICE}" \
-      -jar "$jar_path" \
-      --spring.profiles.active="$profiles" >"$out_log" 2>"$err_log" &
-  else
-    nohup "$JAVA_CMD" -jar "$jar_path" --spring.profiles.active="$profiles" >"$out_log" 2>"$err_log" &
+    java_args+=(
+      "-javaagent:${SKYWALKING_AGENT_PATH}"
+      "-Dskywalking.agent.service_name=${name}"
+      "-Dskywalking.collector.backend_service=${SKYWALKING_COLLECTOR_BACKEND_SERVICE}"
+    )
   fi
+  if [ -n "$SERVICE_JVM_OPTS" ]; then
+    read -r -a jvm_opts_array <<< "$SERVICE_JVM_OPTS"
+    java_args+=("${jvm_opts_array[@]}")
+  fi
+  java_args+=("-jar" "$jar_path" "--spring.profiles.active=$profiles")
+
+  start_ts="$(date +%s)"
+  nohup "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" &
   pid=$!
 
   status="TIMEOUT"
@@ -133,20 +247,7 @@ for svc in "${SERVICES[@]}"; do
   fi
 done
 
-mkdir -p "$ROOT_DIR/.tmp/acceptance"
-{
-  echo "service,port,pid,status,startup_seconds,out_log,err_log"
-  for row in "${RESULT_ROWS[@]}"; do
-    echo "$row"
-  done
-} > "$ROOT_DIR/.tmp/acceptance/startup.csv"
-
-{
-  for row in "${RESULT_ROWS[@]}"; do
-    IFS=',' read -r s p pid st _ <<< "$row"
-    echo "${s},${p},${pid},${st}"
-  done
-} > "$ROOT_DIR/.tmp/acceptance/pids.txt"
+write_state_files
 
 if [ "$ALL_OK" = "1" ]; then
   echo "STARTUP_OK"

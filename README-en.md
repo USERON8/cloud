@@ -75,6 +75,16 @@ powershell -File scripts/dev/start-services.ps1
 # bash scripts/dev/start-services.sh
 ```
 
+Restart only the services you changed:
+
+```bash
+powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
+# Linux/macOS:
+# bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
+```
+
+Service logs are written to `logs/<service>/stdout.log` and `logs/<service>/stderr.log`.
+
 5. Build frontend:
 
 ```bash
