@@ -114,10 +114,11 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Cacheable(cacheNames = "user:statistics", key = "'status_distribution'")
     public Map<String, Long> getUserStatusDistribution() {
         try {
-            List<User> users = userMapper.selectList(null);
             Map<String, Long> distribution = new HashMap<>();
-            long active = users.stream().filter(u -> u.getStatus() != null && u.getStatus() == 1).count();
-            long inactive = users.stream().filter(u -> u.getStatus() == null || u.getStatus() == 0).count();
+            long total = userMapper.selectCount(null);
+            long active = userMapper.selectCount(new LambdaQueryWrapper<User>()
+                    .eq(User::getStatus, 1));
+            long inactive = Math.max(total - active, 0L);
             distribution.put("active", active);
             distribution.put("inactive", inactive);
             return distribution;

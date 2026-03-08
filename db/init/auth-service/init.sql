@@ -32,8 +32,10 @@ CREATE TABLE IF NOT EXISTS auth_oauth_account
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_auth_oauth_provider_user (provider, provider_user_id),
-    UNIQUE KEY uk_auth_oauth_user_provider (user_id, provider)
+    UNIQUE KEY uk_auth_oauth_provider_user_deleted (provider, provider_user_id, deleted),
+    UNIQUE KEY uk_auth_oauth_user_provider_deleted (user_id, provider, deleted),
+    INDEX idx_auth_oauth_user_deleted (user_id, deleted),
+    INDEX idx_auth_oauth_deleted_id (deleted, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -48,7 +50,9 @@ CREATE TABLE IF NOT EXISTS sys_role
     updated_at        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT     NOT NULL DEFAULT 0,
     version           INT         NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_sys_role_code (role_code)
+    UNIQUE KEY uk_sys_role_code_deleted (role_code, deleted),
+    INDEX idx_sys_role_status_deleted (role_status, deleted),
+    INDEX idx_sys_role_deleted_id (deleted, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -64,7 +68,8 @@ CREATE TABLE IF NOT EXISTS sys_permission
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT      NOT NULL DEFAULT 0,
     version           INT          NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_sys_permission_code (permission_code)
+    UNIQUE KEY uk_sys_permission_code_deleted (permission_code, deleted),
+    INDEX idx_sys_permission_deleted_id (deleted, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -78,7 +83,10 @@ CREATE TABLE IF NOT EXISTS sys_user_role
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_sys_user_role_user_role (user_id, role_id)
+    UNIQUE KEY uk_sys_user_role_user_role_deleted (user_id, role_id, deleted),
+    INDEX idx_sys_user_role_user_deleted (user_id, deleted),
+    INDEX idx_sys_user_role_role_deleted (role_id, deleted),
+    INDEX idx_sys_user_role_deleted_id (deleted, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -92,7 +100,10 @@ CREATE TABLE IF NOT EXISTS sys_role_permission
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_sys_role_permission_role_permission (role_id, permission_id)
+    UNIQUE KEY uk_sys_role_permission_role_permission_deleted (role_id, permission_id, deleted),
+    INDEX idx_sys_role_permission_role_deleted (role_id, deleted),
+    INDEX idx_sys_role_permission_permission_deleted (permission_id, deleted),
+    INDEX idx_sys_role_permission_deleted_id (deleted, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
