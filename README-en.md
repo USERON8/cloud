@@ -38,6 +38,22 @@ powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 # bash scripts/dev/start-containers.sh --with-monitoring
 ```
 
+One-command startup for containers + services:
+
+```bash
+powershell -File scripts/dev/start-platform.ps1 --with-monitoring
+# Linux/macOS:
+# bash scripts/dev/start-platform.sh --with-monitoring
+```
+
+Compatibility alias:
+
+```bash
+powershell -File scripts/dev/start-all.ps1 --with-monitoring
+# Linux/macOS:
+# bash scripts/dev/start-all.sh --with-monitoring
+```
+
 2. Database bootstrap:
 - Run `db/init/**/*.sql` first, then `db/test/**/*.sql` (optional).
 - In the current closed development phase:
@@ -147,6 +163,7 @@ sequenceDiagram
 - `docker/`: infrastructure configs
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
+- `docs/dev-startup.md`: unified startup entrypoints and common flags
 - `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
 - `docs/performance-baseline.md`: baseline for hot cache, timeout controls, async thread/queue sizing, and MySQL index rules
 
