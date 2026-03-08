@@ -3,6 +3,7 @@ package com.cloud.auth.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
@@ -66,6 +67,10 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
         this.registeredClientRepository = registeredClientRepository;
         this.authorizationServerSettings = authorizationServerSettings;
         this.objectMapper = new ObjectMapper();
+        this.objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL
+        );
         this.objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
         this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
         this.objectMapper.registerModule(new JavaTimeModule());
