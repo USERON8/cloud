@@ -86,11 +86,3 @@ Thumbs.db
 !README.md
 
 
-tests
-
-# k6 generated artifacts
-tests/perf/k6/.smoke-raw-*.json
-tests/perf/k6/.smoke-summary-*.json
-
-docs/
-scripts/
