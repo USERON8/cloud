@@ -9,14 +9,25 @@ check_http_up() {
   local url="$2"
   local timeout="${3:-10}"
   local end=$((SECONDS + timeout))
+  local body_file header_file http_code
+  body_file="$(mktemp)"
+  header_file="$(mktemp)"
+  trap 'rm -f "$body_file" "$header_file"' RETURN
+
   while [ "$SECONDS" -lt "$end" ]; do
-    if curl -fsS "$url" 2>/dev/null | grep -q "\"status\"[[:space:]]*:[[:space:]]*\"UP\""; then
-      echo "SMOKE_OK ${name} ${url}"
+    http_code="$(curl -sS --max-time 5 -o "$body_file" -D "$header_file" -w "%{http_code}" "$url" || true)"
+    if grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"' "$body_file"; then
+      echo "SMOKE_OK ${name} ${url} status=UP"
+      return 0
+    fi
+    if [[ "$http_code" =~ ^(301|302|303|307|308|401|403)$ ]] || grep -Eqi '<title>[[:space:]]*Please sign in[[:space:]]*</title>|action="/login"' "$body_file"; then
+      echo "SMOKE_OK ${name} ${url} status=UP_SECURED http=${http_code}"
       return 0
     fi
     sleep 1
   done
-  echo "SMOKE_FAIL ${name} ${url}" >&2
+
+  echo "SMOKE_FAIL ${name} ${url} http=${http_code}" >&2
   return 1
 }
 
