@@ -41,6 +41,7 @@ if [ -n "${SKYWALKING_AGENT_PATH:-}" ] && [ -f "${SKYWALKING_AGENT_PATH}" ]; the
   SKYWALKING_ENABLED=1
 fi
 SKYWALKING_COLLECTOR_BACKEND_SERVICE="${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-127.0.0.1:11800}"
+SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 
 SERVICES=(
   "gateway|8080|services/gateway/target/gateway-0.0.1-SNAPSHOT.jar|dev,route"
@@ -89,7 +90,7 @@ for svc in "${SERVICES[@]}"; do
 
   status="TIMEOUT"
   healthy=0
-  deadline=$((start_ts + 180))
+  deadline=$((start_ts + SERVICE_STARTUP_TIMEOUT_SECONDS))
   while [ "$(date +%s)" -lt "$deadline" ]; do
     if ! kill -0 "$pid" >/dev/null 2>&1; then
       status="EXITED"

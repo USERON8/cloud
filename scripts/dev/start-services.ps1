@@ -47,6 +47,13 @@ $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
 } else {
     $env:SERVICE_JVM_OPTS
 }
+$startupTimeoutSeconds = 300
+if (-not [string]::IsNullOrWhiteSpace($env:SERVICE_STARTUP_TIMEOUT_SECONDS)) {
+    $parsedTimeout = 0
+    if ([int]::TryParse($env:SERVICE_STARTUP_TIMEOUT_SECONDS, [ref]$parsedTimeout) -and $parsedTimeout -gt 0) {
+        $startupTimeoutSeconds = $parsedTimeout
+    }
+}
 
 $services = @(
     @{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-0.0.1-SNAPSHOT.jar"; profiles = "dev,route" },
@@ -120,7 +127,7 @@ foreach ($svc in $services) {
     $start = Get-Date
     $proc = Start-Process -FilePath $java -ArgumentList $argsList -WorkingDirectory $root -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
 
-    $deadline = $start.AddSeconds(180)
+    $deadline = $start.AddSeconds($startupTimeoutSeconds)
     $status = "TIMEOUT"
     $healthy = $false
     while ((Get-Date) -lt $deadline) {
