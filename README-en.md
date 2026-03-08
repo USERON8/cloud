@@ -98,6 +98,7 @@ pnpm --dir my-shop-web build
 ## Druid / SkyWalking / XXL-Job
 
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
+- Seata AT now covers `order-service -> stock-service` order creation and stock reservation.
 - SkyWalking javaagent injection is supported by startup scripts.
 - SkyWalking OAP telemetry is exposed for Prometheus at `http://127.0.0.1:1234/metrics`.
 - XXL-Job executor is built in and disabled by default.
@@ -165,6 +166,7 @@ sequenceDiagram
 - `docs/`: ops and troubleshooting docs
 - `docs/dev-startup.md`: unified startup entrypoints and common flags
 - `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
+- `docs/seata-order-transaction.md`: Seata AT scope, startup prerequisites, and verification steps
 - `docs/performance-baseline.md`: baseline for hot cache, timeout controls, async thread/queue sizing, and MySQL index rules
 
 ## Postman Import
