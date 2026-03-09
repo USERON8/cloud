@@ -182,10 +182,12 @@ sequenceDiagram
 - `docker/`: infrastructure configs
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
+- `docs/project-closeout.md`: frozen project state and resume order
+- `docs/performance-baseline.md`: local performance ceilings, bottlenecks, and regression workflow
+- `docs/TEST_SCRIPT_INDEX.md`: test-script entrypoint index
 - `docs/dev-startup.md`: unified startup entrypoints and common flags
 - `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
 - `docs/seata-order-transaction.md`: Seata AT scope, startup prerequisites, and verification steps
-- `docs/performance-baseline.md`: baseline for hot cache, timeout controls, async thread/queue sizing, and MySQL index rules
 
 ## Postman Import
 
