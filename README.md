@@ -50,6 +50,7 @@ bash scripts/dev/start-services.sh
 ```
 
 说明：服务交互参数统一由 Nacos `common.yaml` 配置中心下发，不依赖启动脚本外部注入。
+补充：直接执行 `start-services.*` 时，脚本会自动注入本地开发环境所需的基础地址和默认 key/secret，例如 `GATEWAY_SIGNATURE_SECRET`、`CLIENT_SERVICE_SECRET`、`APP_OAUTH2_*_CLIENT_SECRET`、`APP_JWT_ALLOW_GENERATED_KEYPAIR`。
 
 5. 构建前端并部署到 Nginx 静态目录：
 
@@ -236,4 +237,3 @@ flowchart LR
 - `docker/`：容器与基础设施配置
 - `tests/perf/k6/`：主链路压测脚本
 - `docs/`：运维与排障文档
-

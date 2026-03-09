@@ -75,6 +75,8 @@ bash scripts/dev/start-services.sh
 # powershell -File scripts/dev/start-services.ps1
 ```
 
+When `start-services.*` is run directly, it auto-exports the local runtime addresses and development secrets required by gateway/auth, including `GATEWAY_SIGNATURE_SECRET`, `CLIENT_SERVICE_SECRET`, `APP_OAUTH2_*_CLIENT_SECRET`, and `APP_JWT_ALLOW_GENERATED_KEYPAIR`.
+
 Restart only the services you changed:
 
 ```bash

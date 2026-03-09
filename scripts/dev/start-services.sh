@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
+source "$SCRIPT_DIR/lib/runtime.sh"
 
 trim_value() {
   local value="$1"
@@ -104,6 +105,8 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "DRY_RUN_DONE script=start-services"
   exit 0
 fi
+
+export_service_runtime_env "$ROOT_DIR"
 
 JAVA_BIN="${JAVA_HOME:-}/bin/java"
 if [ -x "$JAVA_BIN" ]; then

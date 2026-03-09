@@ -36,6 +36,7 @@ powershell -File scripts/dev/start-all.ps1 --with-monitoring
 - `start-services.*`
 
 `start-containers.*` and `start-services.*` are still available when you want finer control.
+When `start-services.*` is run directly, it now auto-exports local runtime addresses and development secrets from `scripts/dev/lib/runtime.*`, so gateway/auth no longer depend on a prior `start-platform.*` run just to get required keys.
 
 Service process logs are written under `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
 Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.

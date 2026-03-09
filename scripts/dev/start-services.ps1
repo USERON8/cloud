@@ -196,6 +196,7 @@ function Update-ServiceStateFiles {
 $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
+. (Join-Path $PSScriptRoot "lib\runtime.ps1")
 
 $catalog = Get-ServiceCatalog
 $services = Resolve-SelectedServices -Catalog $catalog -RequestedServices $Services
@@ -212,6 +213,8 @@ if ($DryRun) {
     Write-Host "DRY_RUN_DONE script=start-services"
     exit 0
 }
+
+Set-ServiceRuntimeEnvironment -Root $root
 
 $java = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin\java.exe"))) {
     Join-Path $env:JAVA_HOME "bin\java.exe"
