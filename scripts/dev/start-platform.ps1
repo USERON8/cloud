@@ -97,6 +97,7 @@ for ($index = 0; $index -lt $CliArgs.Count; $index++) {
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\runtime.ps1")
+. (Join-Path $PSScriptRoot "lib\skywalking.ps1")
 
 function Invoke-Step {
     param(
@@ -152,50 +153,12 @@ function Wait-Infrastructure {
 }
 
 function Configure-SkyWalking {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$RepoRoot,
-        [switch]$Requested,
-        [string]$AgentPath,
-        [string]$CollectorBackend
-    )
-
-    $resolvedAgentPath = if (-not [string]::IsNullOrWhiteSpace($AgentPath)) {
-        $AgentPath
-    } else {
-        $env:SKYWALKING_AGENT_PATH
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($resolvedAgentPath)) {
-        try {
-            $resolvedAgentPath = (Resolve-Path $resolvedAgentPath -ErrorAction Stop).Path
-        } catch {
-            if ($Requested) {
-                throw ("SkyWalking agent not found: {0}" -f $resolvedAgentPath)
-            }
-            $resolvedAgentPath = $null
-        }
-    }
-
-    if ([string]::IsNullOrWhiteSpace($resolvedAgentPath)) {
-        if ($Requested) {
-            throw "SkyWalking requested but no agent path was provided."
-        }
-        return $false
-    }
-
-    $resolvedCollector = if (-not [string]::IsNullOrWhiteSpace($CollectorBackend)) {
-        $CollectorBackend
-    } elseif (-not [string]::IsNullOrWhiteSpace($env:SKYWALKING_COLLECTOR_BACKEND_SERVICE)) {
-        $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE
-    } else {
-        "127.0.0.1:{0}" -f (Get-DockerPortValue -Root $RepoRoot -Name "PORT_SKYWALKING_OAP_GRPC" -DefaultValue 11800)
-    }
-
-    $env:SKYWALKING_AGENT_PATH = $resolvedAgentPath
-    $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE = $resolvedCollector
-    Write-Host ("SKYWALKING enabled=true agent={0} backend={1}" -f $resolvedAgentPath, $resolvedCollector)
-    return $true
+    $allowDownload = -not $DryRun
+    return (Configure-SkyWalkingRuntime -RepoRoot $root `
+        -Requested:$EnableSkyWalking `
+        -AgentPath $SkyWalkingAgentPath `
+        -CollectorBackend $SkyWalkingCollectorBackendService `
+        -AllowDownload:$allowDownload)
 }
 
 Write-Host "=== START PLATFORM ==="
@@ -214,10 +177,7 @@ if (-not $SkipContainers) {
     Write-Host "STEP 1/3 containers=skipped"
 }
 
-$skywalkingActive = Configure-SkyWalking -RepoRoot $root `
-    -Requested:$EnableSkyWalking `
-    -AgentPath $SkyWalkingAgentPath `
-    -CollectorBackend $SkyWalkingCollectorBackendService
+$skywalkingActive = Configure-SkyWalking
 
 if (-not $DryRun -and -not $SkipServices) {
     Write-Host "STEP 2/3 infrastructure=wait"

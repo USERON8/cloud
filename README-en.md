@@ -76,6 +76,7 @@ bash scripts/dev/start-services.sh
 ```
 
 When `start-services.*` is run directly, it auto-exports the local runtime addresses and development secrets required by gateway/auth, including `GATEWAY_SIGNATURE_SECRET`, `CLIENT_SERVICE_SECRET`, `APP_OAUTH2_*_CLIENT_SECRET`, and `APP_JWT_ALLOW_GENERATED_KEYPAIR`.
+`start-platform.*` and `start-services.*` also auto-wire SkyWalking by default. On first use, the javaagent is downloaded into `.tmp/skywalking/` and then injected into every Java service so HTTP, Dubbo, Redis, and JDBC/MyBatis traces are available in SkyWalking UI.
 
 Restart only the services you changed:
 
@@ -113,7 +114,11 @@ pnpm --dir my-shop-web build
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
 - Seata AT now covers `order-service -> stock-service` order creation and stock reservation.
 - SkyWalking javaagent injection is supported by startup scripts.
+- SkyWalking javaagent auto-download/caching is enabled by default via `.tmp/skywalking/`.
+- Set `SKYWALKING_AUTO_ENABLE=false` to disable the automatic agent wiring.
+- Set `SKYWALKING_AGENT_PATH` to use a custom agent jar.
 - SkyWalking OAP telemetry is exposed for Prometheus at `http://127.0.0.1:1234/metrics`.
+- SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
 - XXL-Job executor is built in and disabled by default.
 
 ## Sentinel Circuit Breaking (Gateway)

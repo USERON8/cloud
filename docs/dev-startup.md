@@ -32,14 +32,15 @@ powershell -File scripts/dev/start-all.ps1 --with-monitoring
 - `start-containers.*`
 - infrastructure readiness checks using host ports from `docker/.env`
 - runtime env export for `NACOS_SERVER_ADDR`, `ROCKETMQ_NAME_SERVER`, and `SEATA_SERVER_ADDR`
-- optional SkyWalking agent wiring
+- automatic SkyWalking agent wiring with local cache/download
 - `start-services.*`
 
 `start-containers.*` and `start-services.*` are still available when you want finer control.
-When `start-services.*` is run directly, it now auto-exports local runtime addresses and development secrets from `scripts/dev/lib/runtime.*`, so gateway/auth no longer depend on a prior `start-platform.*` run just to get required keys.
+When `start-services.*` is run directly, it now auto-exports local runtime addresses and development secrets from `scripts/dev/lib/runtime.*`, so gateway/auth no longer depend on a prior `start-platform.*` run just to get required keys. It also auto-resolves the SkyWalking javaagent from `.tmp/skywalking/`, downloading it on first use when `SKYWALKING_AUTO_ENABLE` is not disabled.
 
 Service process logs are written under `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
 Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
+SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
 
 ## Common flags
 
@@ -49,10 +50,17 @@ Rolling application and error logs are written to `services/<service>/logs/` by 
 - `--skip-services`: only run the container startup phase
 - `--services=order-service,stock-service`: only restart the named services and leave the others running
 - `--open-dashboards`: open local console URLs after startup
-- `--enable-skywalking`: require a valid SkyWalking agent path and wire the collector backend
-- `--skywalking-agent-path=/path/to/skywalking-agent.jar`: set the agent path explicitly
+- `--enable-skywalking`: fail fast if the SkyWalking agent cannot be resolved or downloaded
+- `--skywalking-agent-path=/path/to/skywalking-agent.jar`: set the agent path explicitly instead of the cached copy
 - `--skywalking-backend=127.0.0.1:11800`: override the SkyWalking OAP backend address
 - `--dry-run`: validate argument flow without starting containers or services
+
+Environment overrides:
+- `SKYWALKING_AUTO_ENABLE=false`: disable automatic agent lookup/download
+- `SKYWALKING_AGENT_PATH=/path/to/skywalking-agent.jar`: use a custom agent jar
+- `SKYWALKING_AGENT_DOWNLOAD_URL=...`: override the default download source
+- `SKYWALKING_AGENT_DOWNLOAD_TIMEOUT_SECONDS=180`: override the download timeout
+- `SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800`: override the OAP gRPC endpoint
 
 ## Examples
 
@@ -90,18 +98,23 @@ Start platform and open dashboards:
 bash scripts/dev/start-platform.sh --with-monitoring --open-dashboards
 ```
 
-Enable SkyWalking explicitly:
+Enable SkyWalking explicitly and fail if the agent cannot be prepared:
+
+```bash
+bash scripts/dev/start-platform.sh \
+  --enable-skywalking
+```
+
+```powershell
+powershell -File scripts/dev/start-platform.ps1 `
+  --enable-skywalking
+```
+
+Use a custom agent path when needed:
 
 ```bash
 bash scripts/dev/start-platform.sh \
   --enable-skywalking \
   --skywalking-agent-path=/path/to/skywalking-agent.jar \
-  --skywalking-backend=127.0.0.1:11800
-```
-
-```powershell
-powershell -File scripts/dev/start-platform.ps1 `
-  --enable-skywalking `
-  --skywalking-agent-path=D:\tools\skywalking-agent\skywalking-agent.jar `
   --skywalking-backend=127.0.0.1:11800
 ```

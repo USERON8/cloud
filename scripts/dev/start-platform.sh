@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/runtime.sh"
+source "$SCRIPT_DIR/lib/skywalking.sh"
 
 WITH_MONITORING=0
 NO_KILL_PORTS=0
@@ -79,31 +80,20 @@ wait_infrastructure() {
 }
 
 configure_skywalking() {
-  local resolved_agent_path="$SKYWALKING_AGENT_PATH"
-  if [ -n "$resolved_agent_path" ] && [ ! -f "$resolved_agent_path" ]; then
-    if [ "$ENABLE_SKYWALKING" = "1" ]; then
-      echo "SkyWalking agent not found: $resolved_agent_path" >&2
-      exit 1
-    fi
-    resolved_agent_path=""
+  local allow_download=1
+  if [ "$DRY_RUN" = "1" ]; then
+    allow_download=0
   fi
 
-  if [ -z "$resolved_agent_path" ]; then
-    if [ "$ENABLE_SKYWALKING" = "1" ]; then
-      echo "SkyWalking requested but no agent path was provided." >&2
-      exit 1
-    fi
-    return 1
+  if configure_skywalking_runtime "$ROOT_DIR" "$ENABLE_SKYWALKING" "$SKYWALKING_AGENT_PATH" "$SKYWALKING_BACKEND" "$allow_download"; then
+    return 0
   fi
 
-  if [ -z "$SKYWALKING_BACKEND" ]; then
-    SKYWALKING_BACKEND="127.0.0.1:$(docker_port_value "$ROOT_DIR" PORT_SKYWALKING_OAP_GRPC 11800)"
+  local skywalking_status=$?
+  if [ "$skywalking_status" -eq 2 ]; then
+    exit 1
   fi
-
-  export SKYWALKING_AGENT_PATH="$resolved_agent_path"
-  export SKYWALKING_COLLECTOR_BACKEND_SERVICE="$SKYWALKING_BACKEND"
-  echo "SKYWALKING enabled=true agent=$resolved_agent_path backend=$SKYWALKING_BACKEND"
-  return 0
+  return 1
 }
 
 echo "=== START PLATFORM ==="

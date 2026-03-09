@@ -197,6 +197,7 @@ $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
 . (Join-Path $PSScriptRoot "lib\runtime.ps1")
+. (Join-Path $PSScriptRoot "lib\skywalking.ps1")
 
 $catalog = Get-ServiceCatalog
 $services = Resolve-SelectedServices -Catalog $catalog -RequestedServices $Services
@@ -229,13 +230,9 @@ $runtimeLogRoot = if ([string]::IsNullOrWhiteSpace($env:SERVICE_RUNTIME_LOG_ROOT
 }
 New-Item -ItemType Directory -Force -Path $runtimeLogRoot | Out-Null
 
+$skywalkingEnabled = Configure-SkyWalkingRuntime -RepoRoot $root -AllowDownload
 $skywalkingAgentPath = $env:SKYWALKING_AGENT_PATH
-$skywalkingEnabled = -not [string]::IsNullOrWhiteSpace($skywalkingAgentPath) -and (Test-Path $skywalkingAgentPath)
-$skywalkingBackend = if ([string]::IsNullOrWhiteSpace($env:SKYWALKING_COLLECTOR_BACKEND_SERVICE)) {
-    "127.0.0.1:11800"
-} else {
-    $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE
-}
+$skywalkingBackend = $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE
 $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
     "-XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8"
 } else {
@@ -354,9 +351,13 @@ foreach ($svc in $services) {
 
     $argsList = @()
     if ($skywalkingEnabled) {
+        $skywalkingLogDir = Join-Path $runtimeLogDir "skywalking-agent"
+        New-Item -ItemType Directory -Force -Path $skywalkingLogDir | Out-Null
         $argsList += "-javaagent:$skywalkingAgentPath"
         $argsList += "-Dskywalking.agent.service_name=$name"
+        $argsList += "-Dskywalking.agent.instance_name=$name-$port"
         $argsList += "-Dskywalking.collector.backend_service=$skywalkingBackend"
+        $argsList += "-Dskywalking.logging.dir=$skywalkingLogDir"
     }
     foreach ($jvmOpt in ($serviceJvmOpts -split '\s+')) {
         if (-not [string]::IsNullOrWhiteSpace($jvmOpt)) {

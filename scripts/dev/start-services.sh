@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
 source "$SCRIPT_DIR/lib/runtime.sh"
+source "$SCRIPT_DIR/lib/skywalking.sh"
 
 trim_value() {
   local value="$1"
@@ -119,10 +120,10 @@ RUNTIME_LOG_ROOT="${SERVICE_RUNTIME_LOG_ROOT:-$ROOT_DIR/.tmp/service-runtime}"
 mkdir -p "$RUNTIME_LOG_ROOT"
 
 SKYWALKING_ENABLED=0
-if [ -n "${SKYWALKING_AGENT_PATH:-}" ] && [ -f "${SKYWALKING_AGENT_PATH}" ]; then
+skywalking_download_allowed=1
+if configure_skywalking_runtime "$ROOT_DIR" 0 "${SKYWALKING_AGENT_PATH:-}" "${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-}" "$skywalking_download_allowed"; then
   SKYWALKING_ENABLED=1
 fi
-SKYWALKING_COLLECTOR_BACKEND_SERVICE="${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-127.0.0.1:11800}"
 SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8}"
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 
@@ -226,10 +227,14 @@ for svc in "${SERVICES[@]}"; do
 
   java_args=()
   if [ "$SKYWALKING_ENABLED" = "1" ]; then
+    skywalking_log_dir="$runtime_log_dir/skywalking-agent"
+    mkdir -p "$skywalking_log_dir"
     java_args+=(
       "-javaagent:${SKYWALKING_AGENT_PATH}"
       "-Dskywalking.agent.service_name=${name}"
+      "-Dskywalking.agent.instance_name=${name}-${port}"
       "-Dskywalking.collector.backend_service=${SKYWALKING_COLLECTOR_BACKEND_SERVICE}"
+      "-Dskywalking.logging.dir=${skywalking_log_dir}"
     )
   fi
   if [ -n "$SERVICE_JVM_OPTS" ]; then

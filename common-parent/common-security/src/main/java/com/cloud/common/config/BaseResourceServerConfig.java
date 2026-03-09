@@ -220,7 +220,7 @@ public abstract class BaseResourceServerConfig {
 
         Jwt testJwt = Jwt.withTokenValue(securityTestTokenValue)
                 .header("alg", "none")
-                .issuer("test-env")
+                .issuer("http://test-env.local")
                 .subject("test-user")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.parse("2099-12-31T23:59:59Z"))
@@ -257,4 +257,3 @@ public abstract class BaseResourceServerConfig {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 }
-

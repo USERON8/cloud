@@ -1,7 +1,9 @@
 package com.cloud.common.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.IllegalSQLInnerInterceptor;
@@ -82,6 +84,21 @@ public class MybatisPlusConfig {
     public MetaObjectHandler metaObjectHandler() {
         
         return new UnifiedMetaObjectHandler();
+    }
+
+    @Bean
+    @Primary
+    public IdentifierGenerator identifierGenerator() {
+        return new ResilientIdentifierGenerator();
+    }
+
+    @Bean
+    @Primary
+    public GlobalConfig globalConfig(IdentifierGenerator identifierGenerator, MetaObjectHandler metaObjectHandler) {
+        GlobalConfig globalConfig = new GlobalConfig();
+        globalConfig.setIdentifierGenerator(identifierGenerator);
+        globalConfig.setMetaObjectHandler(metaObjectHandler);
+        return globalConfig;
     }
 
     

@@ -29,12 +29,30 @@ bash scripts/dev/start-containers.sh --with-monitoring
 
 ### 2.2 Java 服务注入 SkyWalking Agent
 
-启动服务前设置环境变量（示例）：
+`start-platform.*` 和 `start-services.*` 现在会默认尝试接入 SkyWalking：
+- 优先使用 `SKYWALKING_AGENT_PATH`
+- 否则复用 `.tmp/skywalking/` 下的缓存 agent
+- 本地没有缓存时，会自动下载 agent 到 `.tmp/skywalking/downloads/`
+- 自动激活 `gateway/webflux/mybatis` 相关 optional plugins，便于查看网关入口、Dubbo、Redis、JDBC/MyBatis 链路
+
+直接启动即可：
+
+```bash
+bash scripts/dev/start-platform.sh --with-monitoring
+```
+
+如需显式控制：
 
 ```bash
 export SKYWALKING_AGENT_PATH=/path/to/skywalking-agent.jar
 export SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800
 bash scripts/dev/start-services.sh
+```
+
+如需关闭自动接入：
+
+```bash
+export SKYWALKING_AUTO_ENABLE=false
 ```
 
 ## 3. Prometheus 抓取范围
@@ -70,6 +88,11 @@ Prometheus 已配置以下抓取：
 - Grafana: `http://127.0.0.1:13000`（默认 `admin/admin`）
 - SkyWalking UI: `http://127.0.0.1:13001`
 
+在 SkyWalking UI 里可以优先查看：
+- `Services` / `Topology`: HTTP + Dubbo 调用链
+- `Trace`: 单次请求里的 Redis/JDBC/MyBatis span
+- `Database`: 慢 SQL 与数据库耗时分布
+
 ## 6. 常见问题
 
 - 如果某些 `host.docker.internal` 抓取失败：
@@ -78,3 +101,7 @@ Prometheus 已配置以下抓取：
 - 如果 `spring-boot` 某服务 `up=0`：
   - 检查该服务是否已启动。
   - 检查该服务的 `/actuator/prometheus` 是否被鉴权或被网关策略拦截。
+- 如果 SkyWalking UI 没有服务数据：
+  - 检查 `.tmp/service-runtime/<service>/skywalking-agent/` 下的 agent 日志。
+  - 检查服务启动参数里是否包含 `-javaagent:.../skywalking-agent.jar`。
+  - 检查 `skywalking-oap` 的 `11800` 端口是否可达。
