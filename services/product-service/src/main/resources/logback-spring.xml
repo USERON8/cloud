@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Log storage root -->
-    <property name="LOG_HOME" value="./product-service/logs"/>
+    <springProperty scope="context" name="LOG_HOME" source="logging.file.path" defaultValue="logs"/>
 
     <!-- Console output -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

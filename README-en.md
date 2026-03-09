@@ -83,7 +83,8 @@ bash scripts/dev/start-platform.sh --skip-containers --services=order-service,st
 # powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
 ```
 
-Service logs are written to `logs/<service>/stdout.log` and `logs/<service>/stderr.log`.
+Service process logs are written to `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
+Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
 
 5. Build frontend:
 

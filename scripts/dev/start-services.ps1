@@ -94,6 +94,26 @@ function Resolve-SelectedServices {
     return $selectedServices
 }
 
+function Resolve-WritableDir {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PreferredDir,
+        [Parameter(Mandatory = $true)]
+        [string]$FallbackDir
+    )
+
+    try {
+        New-Item -ItemType Directory -Force -Path $PreferredDir | Out-Null
+        $probePath = Join-Path $PreferredDir ([System.IO.Path]::GetRandomFileName())
+        New-Item -ItemType File -Path $probePath -Force | Out-Null
+        Remove-Item -Path $probePath -Force -ErrorAction SilentlyContinue
+        return $PreferredDir
+    } catch {
+        New-Item -ItemType Directory -Force -Path $FallbackDir | Out-Null
+        return $FallbackDir
+    }
+}
+
 function Update-ServiceStateFiles {
     param(
         [Parameter(Mandatory = $true)]
@@ -199,8 +219,12 @@ $java = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin\java.e
     "java"
 }
 
-$logRoot = Join-Path $root "logs"
-New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+$runtimeLogRoot = if ([string]::IsNullOrWhiteSpace($env:SERVICE_RUNTIME_LOG_ROOT)) {
+    Join-Path $root ".tmp\service-runtime"
+} else {
+    $env:SERVICE_RUNTIME_LOG_ROOT
+}
+New-Item -ItemType Directory -Force -Path $runtimeLogRoot | Out-Null
 
 $skywalkingAgentPath = $env:SKYWALKING_AGENT_PATH
 $skywalkingEnabled = -not [string]::IsNullOrWhiteSpace($skywalkingAgentPath) -and (Test-Path $skywalkingAgentPath)
@@ -311,10 +335,17 @@ foreach ($svc in $services) {
         throw "jar missing: $jarPath"
     }
 
-    $serviceLogDir = Join-Path $logRoot $name
-    New-Item -ItemType Directory -Force -Path $serviceLogDir | Out-Null
-    $outLog = Join-Path $serviceLogDir "stdout.log"
-    $errLog = Join-Path $serviceLogDir "stderr.log"
+    $serviceDir = (Resolve-Path (Join-Path (Split-Path $jarPath -Parent) "..")).Path
+    $runtimeLogDir = Join-Path $runtimeLogRoot $name
+    $preferredServiceLogDir = Join-Path $serviceDir "logs"
+    New-Item -ItemType Directory -Force -Path $runtimeLogDir | Out-Null
+    $serviceLogDir = Resolve-WritableDir -PreferredDir $preferredServiceLogDir -FallbackDir (Join-Path $runtimeLogDir "app-logs")
+    if ($serviceLogDir -ne $preferredServiceLogDir) {
+        Write-Host ("LOG_DIR_FALLBACK service={0} path={1}" -f $name, $serviceLogDir)
+    }
+
+    $outLog = Join-Path $runtimeLogDir "stdout.log"
+    $errLog = Join-Path $runtimeLogDir "stderr.log"
     if (Test-Path $outLog) { Remove-Item $outLog -Force }
     if (Test-Path $errLog) { Remove-Item $errLog -Force }
 
@@ -332,6 +363,7 @@ foreach ($svc in $services) {
     $argsList += "-jar"
     $argsList += $jarPath
     $argsList += "--spring.profiles.active=$($svc.profiles)"
+    $argsList += "--logging.file.path=$serviceLogDir"
     $start = Get-Date
     $proc = Start-Process -FilePath $java -ArgumentList $argsList -WorkingDirectory $root -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
 

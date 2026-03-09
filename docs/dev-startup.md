@@ -37,7 +37,8 @@ powershell -File scripts/dev/start-all.ps1 --with-monitoring
 
 `start-containers.*` and `start-services.*` are still available when you want finer control.
 
-Service process logs are written under `logs/<service>/stdout.log` and `logs/<service>/stderr.log`.
+Service process logs are written under `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
+Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
 
 ## Common flags
 
