@@ -364,3 +364,264 @@ export interface StockOperatePayload {
 
 export type ProductPage = PageResult<ProductItem>
 export type OrderPage = PageResult<OrderItem>
+
+export interface ThreadPoolInfo {
+  name: string
+  corePoolSize: number
+  maxPoolSize: number
+  activeCount: number
+  poolSize: number
+  queueSize: number
+  completedTaskCount: number
+  taskCount: number
+  queueRemainingCapacity: number
+}
+
+export interface TokenBlacklistStats {
+  totalBlacklisted: number
+  activeBlacklisted: number
+  lastUpdated: string
+}
+
+export interface ProductSearchRequest {
+  keyword?: string
+  shopId?: number
+  shopName?: string
+  categoryId?: number
+  categoryName?: string
+  brandId?: number
+  brandName?: string
+  minPrice?: number
+  maxPrice?: number
+  status?: number
+  stockStatus?: number
+  recommended?: boolean
+  isNew?: boolean
+  isHot?: boolean
+  tags?: string[]
+  minSalesCount?: number
+  minRating?: number
+  page?: number
+  size?: number
+  sortBy?: string
+  sortOrder?: string
+  highlight?: boolean
+  includeAggregations?: boolean
+}
+
+export interface ProductFilterRequest {
+  keyword?: string
+  categoryId?: number
+  brandId?: number
+  shopId?: number
+  minPrice?: number
+  maxPrice?: number
+  minSalesCount?: number
+  recommended?: boolean
+  isNew?: boolean
+  isHot?: boolean
+  sortBy?: string
+  sortOrder?: string
+  page?: number
+  size?: number
+}
+
+export interface SpringPage<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  numberOfElements?: number
+  first?: boolean
+  last?: boolean
+  empty?: boolean
+  sort?: unknown
+}
+
+export interface SpuDto {
+  spuId?: number
+  spuName: string
+  subtitle?: string
+  categoryId: number
+  brandId?: number
+  merchantId: number
+  status?: number
+  description?: string
+  mainImage?: string
+}
+
+export interface SkuDto {
+  skuId?: number
+  skuCode: string
+  skuName: string
+  specJson?: string
+  salePrice: number
+  marketPrice?: number
+  costPrice?: number
+  status?: number
+  imageUrl?: string
+}
+
+export interface SpuCreateRequest {
+  spu: SpuDto
+  skus: SkuDto[]
+}
+
+export interface SkuDetail {
+  skuId?: number
+  spuId?: number
+  skuCode?: string
+  skuName?: string
+  specJson?: string
+  salePrice?: number
+  marketPrice?: number
+  costPrice?: number
+  status?: number
+  imageUrl?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SpuDetail {
+  spuId?: number
+  spuName?: string
+  subtitle?: string
+  categoryId?: number
+  brandId?: number
+  merchantId?: number
+  status?: number
+  description?: string
+  mainImage?: string
+  createdAt?: string
+  updatedAt?: string
+  skus?: SkuDetail[]
+}
+
+export interface LegacyCreateOrderItemRequest {
+  spuId: number
+  skuId: number
+  skuCode?: string
+  skuName?: string
+  skuSnapshot?: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+}
+
+export interface LegacyCreateSubOrderRequest {
+  merchantId: number
+  itemAmount?: number
+  shippingFee?: number
+  discountAmount?: number
+  payableAmount?: number
+  receiverName?: string
+  receiverPhone?: string
+  receiverAddress?: string
+  items: LegacyCreateOrderItemRequest[]
+}
+
+export interface LegacyCreateMainOrderRequest {
+  userId: number
+  totalAmount?: number
+  payableAmount?: number
+  remark?: string
+  idempotencyKey?: string
+  subOrders: LegacyCreateSubOrderRequest[]
+}
+
+export interface LegacyOrderMain {
+  id?: number
+  mainOrderNo?: string
+  userId?: number
+  orderStatus?: string
+  totalAmount?: number
+  payableAmount?: number
+  payChannel?: string
+  paidAt?: string
+  cancelledAt?: string
+  cancelReason?: string
+  remark?: string
+  idempotencyKey?: string
+  createdAt?: string
+  updatedAt?: string
+  deleted?: number
+  version?: number
+}
+
+export interface LegacyOrderSub {
+  id?: number
+  subOrderNo?: string
+  mainOrderId?: number
+  merchantId?: number
+  orderStatus?: string
+  shippingStatus?: string
+  afterSaleStatus?: string
+  itemAmount?: number
+  shippingFee?: number
+  discountAmount?: number
+  payableAmount?: number
+  receiverName?: string
+  receiverPhone?: string
+  receiverAddress?: string
+  shippedAt?: string
+  receivedAt?: string
+  doneAt?: string
+  closedAt?: string
+  closeReason?: string
+  createdAt?: string
+  updatedAt?: string
+  deleted?: number
+  version?: number
+}
+
+export interface LegacyOrderItem {
+  id?: number
+  mainOrderId?: number
+  subOrderId?: number
+  spuId?: number
+  skuId?: number
+  skuCode?: string
+  skuName?: string
+  skuSnapshot?: string
+  quantity?: number
+  unitPrice?: number
+  totalPrice?: number
+  createdAt?: string
+  updatedAt?: string
+  deleted?: number
+  version?: number
+}
+
+export interface LegacyAfterSale {
+  id?: number
+  afterSaleNo?: string
+  mainOrderId?: number
+  subOrderId?: number
+  userId?: number
+  merchantId?: number
+  afterSaleType?: string
+  status?: string
+  reason?: string
+  description?: string
+  applyAmount?: number
+  approvedAmount?: number
+  returnLogisticsCompany?: string
+  returnLogisticsNo?: string
+  refundChannel?: string
+  refundedAt?: string
+  closedAt?: string
+  closeReason?: string
+  createdAt?: string
+  updatedAt?: string
+  deleted?: number
+  version?: number
+}
+
+export interface LegacyOrderAggregate {
+  mainOrder?: LegacyOrderMain
+  subOrders?: Array<{
+    subOrder: LegacyOrderSub
+    items: LegacyOrderItem[]
+  }>
+}
