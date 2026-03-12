@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 
@@ -111,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
             }
 
             OrderMain main = new OrderMain();
-            main.setMainOrderNo("M" + System.currentTimeMillis());
+            main.setMainOrderNo("M" + UUID.randomUUID().toString().replace("-", ""));
             main.setUserId(request.getUserId());
             main.setOrderStatus("CREATED");
             main.setTotalAmount(defaultAmount(request.getTotalAmount()));
@@ -130,10 +131,9 @@ public class OrderServiceImpl implements OrderService {
                 throw duplicateKeyException;
             }
 
-            long seq = 1;
             for (CreateMainOrderRequest.CreateSubOrderRequest subRequest : request.getSubOrders()) {
                 OrderSub sub = new OrderSub();
-                sub.setSubOrderNo("S" + System.currentTimeMillis() + seq++);
+                sub.setSubOrderNo("S" + UUID.randomUUID().toString().replace("-", ""));
                 sub.setMainOrderId(main.getId());
                 sub.setMerchantId(subRequest.getMerchantId());
                 sub.setOrderStatus("CREATED");
