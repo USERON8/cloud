@@ -61,6 +61,9 @@ public class MerchantController {
             @RequestParam(required = false) Integer auditStatus,
             Authentication authentication) {
         try {
+            if (auditStatus != null && !isValidAuditStatus(auditStatus)) {
+                return Result.badRequest("invalid merchant audit status");
+            }
             if (!SecurityPermissionUtils.isAdmin(authentication)) {
                 String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
                 if (StrUtil.isBlank(currentUserId)) {
@@ -311,6 +314,10 @@ public class MerchantController {
             log.error("Failed to batch approve merchants, ids={}", ids, e);
             return Result.error("failed to batch approve merchants");
         }
+    }
+
+    private static boolean isValidAuditStatus(Integer auditStatus) {
+        return auditStatus == 0 || auditStatus == 1 || auditStatus == 2;
     }
 }
 
