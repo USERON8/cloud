@@ -23,7 +23,7 @@ import java.util.Set;
 public class StockLedgerServiceImpl implements StockLedgerService {
 
     private static final Set<String> RESERVE_COMPLETED_STATUSES = Set.of("RESERVED", "CONFIRMED");
-    private static final Set<String> RESERVE_RETRYABLE_STATUSES = Set.of("RESERVING", "RELEASED", "ROLLED_BACK");
+    private static final Set<String> RESERVE_FORBIDDEN_STATUSES = Set.of("RELEASED", "ROLLED_BACK");
 
     private final StockLedgerMapper stockLedgerMapper;
     private final StockReservationMapper stockReservationMapper;
@@ -109,7 +109,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean rollback(StockOperateCommandDTO command) {
-        StockReservation reservation = requireReservation(command);
+        StockReservation reservation = getReservation(command);
+        if (reservation == null) {
+            insertRollbackMarker(command);
+            return true;
+        }
         if ("ROLLED_BACK".equals(reservation.getStatus())) {
             return true;
         }
@@ -182,10 +186,30 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         if (RESERVE_COMPLETED_STATUSES.contains(status)) {
             return true;
         }
-        if (RESERVE_RETRYABLE_STATUSES.contains(status)) {
+        if (RESERVE_FORBIDDEN_STATUSES.contains(status)) {
+            throw new BusinessException("reservation already rolled back for subOrderNo=" + command.getSubOrderNo());
+        }
+        if ("RESERVING".equals(status)) {
             return false;
         }
         throw new BusinessException("reservation status invalid for reserve: " + status);
+    }
+
+    private void insertRollbackMarker(StockOperateCommandDTO command) {
+        if (command == null || command.getSubOrderNo() == null || command.getSkuId() == null) {
+            return;
+        }
+        StockReservation marker = new StockReservation();
+        marker.setSubOrderNo(command.getSubOrderNo());
+        marker.setSkuId(command.getSkuId());
+        marker.setReservedQty(command.getQuantity() == null ? 0 : command.getQuantity());
+        marker.setStatus("ROLLED_BACK");
+        marker.setIdempotencyKey(buildIdempotencyKey(command));
+        try {
+            stockReservationMapper.insert(marker);
+        } catch (DuplicateKeyException ignored) {
+            
+        }
     }
 
     private void ensureReservationQuantityMatches(StockReservation reservation, StockOperateCommandDTO command) {
