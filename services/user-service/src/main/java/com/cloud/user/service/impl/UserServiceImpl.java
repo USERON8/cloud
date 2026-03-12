@@ -22,6 +22,8 @@ import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final UserConverter userConverter;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -272,6 +275,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean updated = updateById(user);
         if (updated) {
             authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
+            evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
         }
         return updated;
     }
@@ -570,6 +574,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         authPrincipalDTO.setStatus(requestDTO.getStatus() == null ? existingUser.getStatus() : requestDTO.getStatus());
         authPrincipalDTO.setRoles(requestDTO.getRoles());
         return authPrincipalDTO;
+    }
+
+    private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
+        if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
+            return;
+        }
+        if (StrUtil.equals(oldUsername, newUsername)) {
+            return;
+        }
+        Cache cache = cacheManager.getCache("user");
+        if (cache != null) {
+            cache.evict("username:" + oldUsername);
+        }
     }
 }
 

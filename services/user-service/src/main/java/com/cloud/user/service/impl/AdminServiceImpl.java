@@ -15,6 +15,8 @@ import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import com.cloud.user.service.support.UserPrincipalSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -40,6 +42,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private final AdminConverter adminConverter;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final UserPrincipalSyncService userPrincipalSyncService;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -218,6 +221,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
                     current.getStatus()
             );
             authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getPassword()));
+            evictUsernameCacheIfChanged(existingAdmin.getUsername(), requestDTO.getUsername());
         }
         return updated;
     }
@@ -389,6 +393,19 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         authPrincipalDTO.setStatus(admin.getStatus());
         authPrincipalDTO.setRoles(resolveAdminRoles(admin.getRole()));
         return authPrincipalDTO;
+    }
+
+    private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
+        if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
+            return;
+        }
+        if (StrUtil.equals(oldUsername, newUsername)) {
+            return;
+        }
+        Cache cache = cacheManager.getCache(ADMIN_CACHE);
+        if (cache != null) {
+            cache.evict("username:" + oldUsername);
+        }
     }
 
     private List<String> resolveAdminRoles(String role) {

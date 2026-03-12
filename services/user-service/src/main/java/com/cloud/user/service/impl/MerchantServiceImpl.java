@@ -19,6 +19,8 @@ import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import com.cloud.user.service.support.UserPrincipalSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -49,6 +51,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     private final MerchantConverter merchantConverter;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final UserPrincipalSyncService userPrincipalSyncService;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -238,6 +241,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                     current.getStatus()
             );
             authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getEmail(), requestDTO.getPassword()));
+            evictUsernameCacheIfChanged(existing.getUsername(), requestDTO.getUsername());
         }
         return updated;
     }
@@ -491,6 +495,19 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         authPrincipalDTO.setStatus(merchant.getStatus());
         authPrincipalDTO.setRoles(List.of("USER", "MERCHANT"));
         return authPrincipalDTO;
+    }
+
+    private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
+        if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
+            return;
+        }
+        if (StrUtil.equals(oldUsername, newUsername)) {
+            return;
+        }
+        Cache cache = cacheManager.getCache(MERCHANT_CACHE);
+        if (cache != null) {
+            cache.evict("username:" + oldUsername);
+        }
     }
 }
 
