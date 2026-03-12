@@ -44,8 +44,7 @@ public class UserNotificationConsumerConfig {
                 return;
             }
             if (!markProcessing(eventId)) {
-                log.debug("Notification event is being processed by another worker: eventId={}", eventId);
-                return;
+                throw new IllegalStateException("notification processing already in progress");
             }
             try {
                 boolean delivered = switch (event.getEventType()) {
