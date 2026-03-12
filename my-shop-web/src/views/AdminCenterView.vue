@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { PieChart, LineChart, BarChart } from 'echarts/charts'
+import { GridComponent, LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
+import VChart from 'vue-echarts'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type {
   AdminInfo,
@@ -59,6 +64,8 @@ import {
   updateAdmin,
   updateAdminStatus
 } from '../api/admin'
+
+use([CanvasRenderer, PieChart, LineChart, BarChart, GridComponent, LegendComponent, TitleComponent, TooltipComponent])
 
 const activeTab = ref('users')
 
@@ -554,6 +561,78 @@ const growthRate = ref<number | null>(null)
 const trendList = computed(() => Object.entries(registrationTrend.value))
 const rankingList = computed(() => Object.entries(activityRanking.value))
 
+const roleChartOption = computed(() => {
+  const data = Object.entries(roleDistribution.value).map(([name, value]) => ({ name, value }))
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        label: { show: false },
+        data
+      }
+    ]
+  }
+})
+
+const statusChartOption = computed(() => {
+  const data = Object.entries(statusDistribution.value).map(([name, value]) => ({ name, value }))
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        label: { show: false },
+        data
+      }
+    ]
+  }
+})
+
+const trendChartOption = computed(() => {
+  const entries = Object.entries(registrationTrend.value)
+  const sorted = entries.sort(([a], [b]) => a.localeCompare(b))
+  const labels = sorted.map(([key]) => key)
+  const values = sorted.map(([, value]) => value)
+  return {
+    tooltip: { trigger: 'axis' },
+    grid: { left: 20, right: 20, top: 20, bottom: 30, containLabel: true },
+    xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        type: 'line',
+        smooth: true,
+        data: values,
+        areaStyle: { opacity: 0.15 }
+      }
+    ]
+  }
+})
+
+const rankingChartOption = computed(() => {
+  const entries = Object.entries(activityRanking.value)
+  const labels = entries.map(([key]) => `User ${key}`)
+  const values = entries.map(([, value]) => value)
+  return {
+    tooltip: { trigger: 'axis' },
+    grid: { left: 20, right: 20, top: 20, bottom: 30, containLabel: true },
+    xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        type: 'bar',
+        data: values,
+        barMaxWidth: 24
+      }
+    ]
+  }
+})
+
 async function loadStatistics(): Promise<void> {
   statsLoading.value = true
   try {
@@ -935,24 +1014,28 @@ onMounted(() => {
         <div class="stats-split">
           <section class="card-block">
             <h4>Role Distribution</h4>
+            <v-chart :option="roleChartOption" autoresize class="chart" />
             <ul>
               <li v-for="(value, key) in roleDistribution" :key="key">{{ key }}: {{ value }}</li>
             </ul>
           </section>
           <section class="card-block">
             <h4>Status Distribution</h4>
+            <v-chart :option="statusChartOption" autoresize class="chart" />
             <ul>
               <li v-for="(value, key) in statusDistribution" :key="key">{{ key }}: {{ value }}</li>
             </ul>
           </section>
           <section class="card-block">
             <h4>Registration Trend (30d)</h4>
+            <v-chart :option="trendChartOption" autoresize class="chart" />
             <ul>
               <li v-for="item in trendList" :key="item[0]">{{ item[0] }}: {{ item[1] }}</li>
             </ul>
           </section>
           <section class="card-block">
             <h4>Activity Ranking</h4>
+            <v-chart :option="rankingChartOption" autoresize class="chart" />
             <ul>
               <li v-for="item in rankingList" :key="item[0]">User {{ item[0] }}: {{ item[1] }}</li>
             </ul>
@@ -1179,5 +1262,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.chart {
+  width: 100%;
+  height: 180px;
 }
 </style>
