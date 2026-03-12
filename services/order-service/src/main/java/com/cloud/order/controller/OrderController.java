@@ -19,11 +19,27 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
+
+    private static final Set<String> SUB_ORDER_ACTIONS = Set.of(
+            "RESERVE", "PAY", "SHIP", "RECEIVE", "DONE", "CANCEL", "CLOSE"
+    );
+    private static final Set<String> USER_SUB_ACTIONS = Set.of("CANCEL", "RECEIVE");
+    private static final Set<String> MERCHANT_SUB_ACTIONS = Set.of("SHIP");
+
+    private static final Set<String> AFTER_SALE_ACTIONS = Set.of(
+            "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RETURN", "RECEIVE",
+            "PROCESS", "REFUND", "CANCEL", "CLOSE"
+    );
+    private static final Set<String> USER_AFTER_SALE_ACTIONS = Set.of("CANCEL", "RETURN");
+    private static final Set<String> MERCHANT_AFTER_SALE_ACTIONS = Set.of(
+            "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RECEIVE"
+    );
 
     private final OrderService orderService;
     private final OrderPlacementService orderPlacementService;
@@ -90,7 +106,11 @@ public class OrderController {
         if (subOrder == null) {
             return Result.notFound("sub order not found");
         }
-        return Result.success(orderService.advanceSubOrderStatus(subOrderId, action));
+        String normalizedAction = normalizeAction(action, SUB_ORDER_ACTIONS, "sub order");
+        if (!isAllowedSubOrderAction(normalizedAction, authentication)) {
+            return Result.forbidden("forbidden to perform action: " + normalizedAction);
+        }
+        return Result.success(orderService.advanceSubOrderStatus(subOrderId, normalizedAction));
     }
 
     @PostMapping("/after-sales")
@@ -128,7 +148,11 @@ public class OrderController {
                 return Result.forbidden("forbidden to operate another user's after-sale");
             }
         }
-        return Result.success(orderService.advanceAfterSaleStatus(afterSaleId, action, remark));
+        String normalizedAction = normalizeAction(action, AFTER_SALE_ACTIONS, "after-sale");
+        if (!isAllowedAfterSaleAction(normalizedAction, authentication)) {
+            return Result.forbidden("forbidden to perform action: " + normalizedAction);
+        }
+        return Result.success(orderService.advanceAfterSaleStatus(afterSaleId, normalizedAction, remark));
     }
 
     private boolean isAdmin(Authentication authentication) {
@@ -137,6 +161,37 @@ public class OrderController {
 
     private boolean isMerchant(Authentication authentication) {
         return SecurityPermissionUtils.isMerchant(authentication);
+    }
+
+    private boolean isAllowedSubOrderAction(String action, Authentication authentication) {
+        if (isAdmin(authentication)) {
+            return true;
+        }
+        if (isMerchant(authentication)) {
+            return MERCHANT_SUB_ACTIONS.contains(action);
+        }
+        return USER_SUB_ACTIONS.contains(action);
+    }
+
+    private boolean isAllowedAfterSaleAction(String action, Authentication authentication) {
+        if (isAdmin(authentication)) {
+            return true;
+        }
+        if (isMerchant(authentication)) {
+            return MERCHANT_AFTER_SALE_ACTIONS.contains(action);
+        }
+        return USER_AFTER_SALE_ACTIONS.contains(action);
+    }
+
+    private String normalizeAction(String action, Set<String> allowedActions, String scope) {
+        if (StrUtil.isBlank(action)) {
+            throw new BusinessException(scope + " action is required");
+        }
+        String normalized = action.trim().toUpperCase();
+        if (!allowedActions.contains(normalized)) {
+            throw new BusinessException("unsupported " + scope + " action: " + normalized);
+        }
+        return normalized;
     }
 
     private Long requireCurrentUserId(Authentication authentication) {
