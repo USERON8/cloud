@@ -16,6 +16,7 @@ const shops = ref<ShopDocument[]>([])
 const loginGateVisible = ref(false)
 const pendingPath = ref('/login')
 const pendingFeature = ref('')
+const marketRequestSeq = ref(0)
 const ratesLoading = ref(false)
 const ratesError = ref('')
 const rateUpdatedAt = ref('')
@@ -36,7 +37,10 @@ function normalizeProducts(source: SearchProductDocument[]): SearchProductDocume
   return source.filter((item) => item.status === 1 && typeof item.productId === 'number')
 }
 
-async function loadShopData(keywordValue: string): Promise<void> {
+async function loadShopData(keywordValue: string, requestId: number): Promise<void> {
+  if (requestId !== marketRequestSeq.value) {
+    return
+  }
   if (keywordValue) {
     const result = await searchShops({
       keyword: keywordValue,
@@ -46,23 +50,35 @@ async function loadShopData(keywordValue: string): Promise<void> {
       sortBy: 'hotScore',
       sortOrder: 'desc'
     })
-    shops.value = result.list || []
+    if (requestId === marketRequestSeq.value) {
+      shops.value = result.list || []
+    }
     return
   }
 
   const recommended = await listRecommendedShops(0, 20)
-  if (recommended.list && recommended.list.length > 0) {
+  if (requestId === marketRequestSeq.value && recommended.list && recommended.list.length > 0) {
     shops.value = recommended.list
     return
   }
 
-  shops.value = await listHotShops(12)
+  if (requestId === marketRequestSeq.value) {
+    shops.value = await listHotShops(12)
+  }
 }
 
 async function loadMarketData(): Promise<void> {
+  const requestId = ++marketRequestSeq.value
   loading.value = true
   try {
     const keywordValue = keyword.value.trim()
+    const shopPromise = loadShopData(keywordValue, requestId).catch((error) => {
+      if (requestId !== marketRequestSeq.value) {
+        return
+      }
+      const message = error instanceof Error ? error.message : 'Failed to load shop list'
+      ElMessage.warning(message)
+    })
     const result = await smartSearchProductsWithFallback({
       keyword: keywordValue || undefined,
       page: 1,
@@ -70,14 +86,18 @@ async function loadMarketData(): Promise<void> {
       sortField: 'score',
       sortOrder: 'desc'
     })
-    const normalized = normalizeProducts(result.documents || [])
-    products.value = normalized
-    await loadShopData(keywordValue)
+    if (requestId !== marketRequestSeq.value) {
+      return
+    }
+    products.value = normalizeProducts(result.documents || [])
+    void shopPromise
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load marketplace'
     ElMessage.error(message)
   } finally {
-    loading.value = false
+    if (requestId === marketRequestSeq.value) {
+      loading.value = false
+    }
   }
 }
 
