@@ -162,6 +162,10 @@ function openSelectedUserEdit(): void {
   openUserEdit(first)
 }
 
+function onUserSelectionChange(rows: UserSummary[]): void {
+  userSelection.value = rows
+}
+
 async function saveUser(): Promise<void> {
   if (!userEditId.value) {
     ElMessage.warning('Select a user to update.')
@@ -223,6 +227,10 @@ async function batchDeleteUsers(): Promise<void> {
       return
     }
   }
+}
+
+function asUser(item: unknown): UserSummary {
+  return item as UserSummary
 }
 
 // Merchants
@@ -312,10 +320,10 @@ async function confirmDeleteMerchant(row: MerchantInfo): Promise<void> {
 async function approveMerchantRow(row: MerchantInfo): Promise<void> {
   let remark = ''
   try {
-    const result = await ElMessageBox.prompt('Approval remark (optional)', 'Approve Merchant', {
+    const result = (await ElMessageBox.prompt('Approval remark (optional)', 'Approve Merchant', {
       confirmButtonText: 'Approve',
       cancelButtonText: 'Cancel'
-    })
+    })) as { value?: string }
     remark = result.value || ''
   } catch (error) {
     if (error instanceof Error && error.message === 'cancel') {
@@ -335,10 +343,10 @@ async function approveMerchantRow(row: MerchantInfo): Promise<void> {
 async function rejectMerchantRow(row: MerchantInfo): Promise<void> {
   let reason = ''
   try {
-    const result = await ElMessageBox.prompt('Reject reason', 'Reject Merchant', {
+    const result = (await ElMessageBox.prompt('Reject reason', 'Reject Merchant', {
       confirmButtonText: 'Reject',
       cancelButtonText: 'Cancel'
-    })
+    })) as { value?: string }
     reason = result.value || ''
   } catch (error) {
     if (error instanceof Error && error.message === 'cancel') {
@@ -354,17 +362,6 @@ async function rejectMerchantRow(row: MerchantInfo): Promise<void> {
     await loadMerchants()
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to reject merchant'
-    ElMessage.error(message)
-  }
-}
-
-async function updateMerchantRowStatus(row: MerchantInfo, status: number): Promise<void> {
-  try {
-    await updateMerchantStatus(row.id, status)
-    ElMessage.success('Merchant status updated.')
-    await loadMerchants()
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update merchant status'
     ElMessage.error(message)
   }
 }
@@ -390,10 +387,10 @@ async function reviewMerchantAuthRow(row: MerchantAuthInfo, status: number): Pro
   const title = status === 1 ? 'Approve Auth' : 'Reject Auth'
   let remark = ''
   try {
-    const result = await ElMessageBox.prompt('Remark (optional)', title, {
+    const result = (await ElMessageBox.prompt('Remark (optional)', title, {
       confirmButtonText: status === 1 ? 'Approve' : 'Reject',
       cancelButtonText: 'Cancel'
-    })
+    })) as { value?: string }
     remark = result.value || ''
   } catch (error) {
     if (error instanceof Error && error.message === 'cancel') {
@@ -902,7 +899,7 @@ onMounted(() => {
               v-if="!useVirtualUsers"
               :data="userRows"
               stripe
-              @selection-change="(rows) => (userSelection = rows)"
+              @selection-change="onUserSelectionChange"
             >
               <el-table-column type="selection" width="48" />
               <el-table-column label="ID" prop="id" width="80" />
@@ -934,27 +931,29 @@ onMounted(() => {
                   <div class="user-row">
                     <el-checkbox
                       class="user-select"
-                      :model-value="isUserSelected(item)"
-                      @change="() => toggleUserSelection(item)"
-                    />
-                    <div class="user-info">
-                      <div class="user-title">
-                        <strong>{{ item.username }}</strong>
-                        <span class="muted">#{{ item.id }}</span>
-                      </div>
-                      <div class="user-meta">
-                        <span>{{ item.nickname || '—' }}</span>
-                        <span>{{ item.email || '—' }}</span>
-                        <el-tag :type="item.status === 1 ? 'success' : 'info'" round>
-                          {{ item.status === 1 ? 'Active' : 'Disabled' }}
-                        </el-tag>
-                      </div>
+                    :model-value="isUserSelected(asUser(item))"
+                    @change="() => toggleUserSelection(asUser(item))"
+                  />
+                  <div class="user-info">
+                    <div class="user-title">
+                      <strong>{{ asUser(item).username }}</strong>
+                      <span class="muted">#{{ asUser(item).id }}</span>
                     </div>
-                    <div class="user-actions">
-                      <el-button round size="small" @click="openUserEdit(item)">Edit</el-button>
-                      <el-button round size="small" type="danger" plain @click="confirmDeleteUser(item)">Delete</el-button>
+                    <div class="user-meta">
+                      <span>{{ asUser(item).nickname || '—' }}</span>
+                      <span>{{ asUser(item).email || '—' }}</span>
+                      <el-tag :type="asUser(item).status === 1 ? 'success' : 'info'" round>
+                        {{ asUser(item).status === 1 ? 'Active' : 'Disabled' }}
+                      </el-tag>
                     </div>
                   </div>
+                  <div class="user-actions">
+                    <el-button round size="small" @click="openUserEdit(asUser(item))">Edit</el-button>
+                    <el-button round size="small" type="danger" plain @click="confirmDeleteUser(asUser(item))">
+                      Delete
+                    </el-button>
+                  </div>
+                </div>
                 </template>
               </RecycleScroller>
             </div>

@@ -78,6 +78,7 @@ import type {
   PaymentRefundCommand,
   ProductFilterRequest,
   ProductSearchRequest,
+  SkuDetail,
   SpuCreateRequest,
   SpuDetail,
   ThreadPoolInfo,
@@ -322,11 +323,11 @@ const categorySpuResult = ref<SpuDetail[]>([])
 const categoryIdQuery = ref<number | undefined>(undefined)
 const categoryStatusQuery = ref<number | undefined>(undefined)
 const skuIdsInput = ref('')
-const skuList = ref([])
+const skuList = ref<SkuDetail[]>([])
 const spuStatusId = ref<number | undefined>(undefined)
 const spuStatusValue = ref<number | undefined>(undefined)
-const categoryTree = ref([])
-const categoryChildren = ref([])
+const categoryTree = ref<CategoryItem[]>([])
+const categoryChildren = ref<CategoryItem[]>([])
 const categoryTreeEnabledOnly = ref(false)
 const categoryParentId = ref<number | undefined>(undefined)
 
