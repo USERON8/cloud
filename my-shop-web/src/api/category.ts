@@ -13,6 +13,10 @@ export function getCategories(params: CategoryQuery = {}): Promise<PageResult<Ca
   return http.get<PageResult<CategoryItem>, PageResult<CategoryItem>>('/api/category', { params })
 }
 
+export function getCategoryById(id: number): Promise<CategoryItem> {
+  return http.get<CategoryItem, CategoryItem>(`/api/category/${id}`)
+}
+
 export function getCategoryTree(enabledOnly = false): Promise<CategoryItem[]> {
   return http.get<CategoryItem[], CategoryItem[]>('/api/category/tree', { params: { enabledOnly } })
 }

@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRole } from '../auth/permission'
-import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions } from '../api/auth'
+import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../api/auth'
 import {
   addTokenToBlacklist,
   checkBlacklist,
@@ -15,7 +15,16 @@ import {
   revokeAuthorization
 } from '../api/auth-tokens'
 import { getThreadPoolDetail, getThreadPools } from '../api/thread-pool'
-import { getCategoryChildren, getCategoryTree } from '../api/category'
+import {
+  createCategoriesBatch,
+  deleteCategoriesBatch,
+  getCategoryById,
+  getCategoryChildren,
+  getCategoryTree,
+  moveCategory,
+  updateCategorySort,
+  updateCategoryStatusBatch
+} from '../api/category'
 import { createSpu, getSpu, listSkuByIds, listSpuByCategory, updateSpu, updateSpuStatus } from '../api/product-catalog'
 import {
   applyAfterSale,
@@ -53,7 +62,11 @@ import {
   type ShopSearchRequest
 } from '../api/shop-search'
 import { combinedSearchProducts, smartSearchProducts } from '../api/product'
+import { findUserByUsername, updateUsersBatch } from '../api/user-management'
+import { approveMerchantsBatch, deleteMerchantsBatch, updateMerchantStatusBatch } from '../api/merchant'
+import { reviewMerchantAuthBatch } from '../api/merchant-auth'
 import type {
+  CategoryItem,
   LegacyAfterSale,
   LegacyCreateMainOrderRequest,
   LegacyOrderAggregate,
@@ -63,7 +76,8 @@ import type {
   SpuCreateRequest,
   SpuDetail,
   ThreadPoolInfo,
-  TokenBlacklistStats
+  TokenBlacklistStats,
+  UserUpsertPayload
 } from '../types/domain'
 
 const activeTab = ref('tokens')
@@ -88,12 +102,20 @@ function parseJson<T>(raw: string, label: string): T | null {
   }
 }
 
+function parseNumberList(raw: string): number[] {
+  return raw
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isFinite(value) && value > 0)
+}
+
 // Auth & token management
 const tokenStats = ref<Record<string, unknown> | null>(null)
 const storageStructure = ref<Record<string, unknown> | null>(null)
 const authorizationId = ref('')
 const authorizationDetail = ref<Record<string, unknown> | null>(null)
 const cleanupResult = ref<Record<string, unknown> | null>(null)
+const tokenValidationMessage = ref<string | null>(null)
 const blacklistStats = ref<TokenBlacklistStats | null>(null)
 const blacklistToken = ref('')
 const blacklistReason = ref('')
@@ -148,6 +170,15 @@ async function runTokenCleanup(): Promise<void> {
     ElMessage.success('Cleanup triggered.')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : 'Failed to cleanup tokens')
+  }
+}
+
+async function validateCurrentToken(): Promise<void> {
+  try {
+    tokenValidationMessage.value = await validateToken()
+    ElMessage.success('Token validated.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to validate token')
   }
 }
 
@@ -573,6 +604,197 @@ async function advanceAfterSale(): Promise<void> {
   }
 }
 
+// Admin bulk ops
+const userLookupUsername = ref('')
+const userLookupResult = ref<unknown>(null)
+const userBatchJson = ref('[\n  {\n    \"id\": 1,\n    \"nickname\": \"Updated user\",\n    \"status\": 1\n  }\n]')
+const userBatchResult = ref<boolean | null>(null)
+
+const categoryLookupId = ref<number | undefined>(undefined)
+const categoryLookupResult = ref<unknown>(null)
+const categorySortId = ref<number | undefined>(undefined)
+const categorySortValue = ref<number | undefined>(undefined)
+const categoryMoveId = ref<number | undefined>(undefined)
+const categoryMoveParentId = ref<number | undefined>(undefined)
+const categoryBatchIdsInput = ref('')
+const categoryBatchStatus = ref<number | undefined>(undefined)
+const categoryBatchDeleteResult = ref<boolean | null>(null)
+const categoryBatchStatusResult = ref<number | null>(null)
+const categoryBatchCreateJson = ref('[\n  {\n    \"name\": \"New Category\",\n    \"status\": 1\n  }\n]')
+const categoryBatchCreateResult = ref<number | null>(null)
+
+const merchantBatchIdsInput = ref('')
+const merchantBatchStatus = ref<number | undefined>(undefined)
+const merchantBatchRemark = ref('')
+const merchantBatchResult = ref<boolean | null>(null)
+
+const merchantAuthBatchIdsInput = ref('')
+const merchantAuthStatus = ref<number | undefined>(undefined)
+const merchantAuthRemark = ref('')
+const merchantAuthBatchResult = ref<boolean | null>(null)
+
+async function lookupUser(): Promise<void> {
+  if (!userLookupUsername.value.trim()) {
+    ElMessage.warning('Provide username.')
+    return
+  }
+  try {
+    userLookupResult.value = await findUserByUsername(userLookupUsername.value.trim())
+    ElMessage.success('User lookup completed.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to lookup user')
+  }
+}
+
+async function submitUserBatchUpdate(): Promise<void> {
+  const payload = parseJson<UserUpsertPayload[]>(userBatchJson.value, 'User batch')
+  if (!payload) return
+  try {
+    userBatchResult.value = await updateUsersBatch(payload)
+    ElMessage.success('User batch update submitted.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update users batch')
+  }
+}
+
+async function loadCategoryById(): Promise<void> {
+  if (!categoryLookupId.value) {
+    ElMessage.warning('Provide category ID.')
+    return
+  }
+  try {
+    categoryLookupResult.value = await getCategoryById(categoryLookupId.value)
+    ElMessage.success('Category loaded.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to load category')
+  }
+}
+
+async function updateCategorySortRow(): Promise<void> {
+  if (!categorySortId.value || categorySortValue.value == null) {
+    ElMessage.warning('Provide category ID and sort value.')
+    return
+  }
+  try {
+    await updateCategorySort(categorySortId.value, categorySortValue.value)
+    ElMessage.success('Category sort updated.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update category sort')
+  }
+}
+
+async function moveCategoryRow(): Promise<void> {
+  if (!categoryMoveId.value || !categoryMoveParentId.value) {
+    ElMessage.warning('Provide category ID and new parent ID.')
+    return
+  }
+  try {
+    await moveCategory(categoryMoveId.value, categoryMoveParentId.value)
+    ElMessage.success('Category moved.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to move category')
+  }
+}
+
+async function deleteCategoryBatch(): Promise<void> {
+  const ids = parseNumberList(categoryBatchIdsInput.value)
+  if (ids.length === 0) {
+    ElMessage.warning('Provide category IDs.')
+    return
+  }
+  try {
+    categoryBatchDeleteResult.value = await deleteCategoriesBatch(ids)
+    ElMessage.success('Category batch delete submitted.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to delete categories batch')
+  }
+}
+
+async function updateCategoryStatusBatchRow(): Promise<void> {
+  const ids = parseNumberList(categoryBatchIdsInput.value)
+  if (ids.length === 0 || categoryBatchStatus.value == null) {
+    ElMessage.warning('Provide category IDs and status.')
+    return
+  }
+  try {
+    categoryBatchStatusResult.value = await updateCategoryStatusBatch(ids, categoryBatchStatus.value)
+    ElMessage.success('Category batch status updated.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update category status batch')
+  }
+}
+
+async function createCategoryBatch(): Promise<void> {
+  const payload = parseJson<CategoryItem[]>(categoryBatchCreateJson.value, 'Category batch')
+  if (!payload) return
+  try {
+    categoryBatchCreateResult.value = await createCategoriesBatch(payload)
+    ElMessage.success('Category batch created.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to create category batch')
+  }
+}
+
+async function deleteMerchantsInBatch(): Promise<void> {
+  const ids = parseNumberList(merchantBatchIdsInput.value)
+  if (ids.length === 0) {
+    ElMessage.warning('Provide merchant IDs.')
+    return
+  }
+  try {
+    merchantBatchResult.value = await deleteMerchantsBatch(ids)
+    ElMessage.success('Merchant batch delete submitted.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to delete merchants batch')
+  }
+}
+
+async function updateMerchantsStatusBatch(): Promise<void> {
+  const ids = parseNumberList(merchantBatchIdsInput.value)
+  if (ids.length === 0 || merchantBatchStatus.value == null) {
+    ElMessage.warning('Provide merchant IDs and status.')
+    return
+  }
+  try {
+    merchantBatchResult.value = await updateMerchantStatusBatch(ids, merchantBatchStatus.value)
+    ElMessage.success('Merchant batch status updated.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update merchant status batch')
+  }
+}
+
+async function approveMerchantsInBatch(): Promise<void> {
+  const ids = parseNumberList(merchantBatchIdsInput.value)
+  if (ids.length === 0) {
+    ElMessage.warning('Provide merchant IDs.')
+    return
+  }
+  try {
+    merchantBatchResult.value = await approveMerchantsBatch(ids, merchantBatchRemark.value.trim() || undefined)
+    ElMessage.success('Merchant batch approve submitted.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to approve merchants batch')
+  }
+}
+
+async function reviewMerchantAuthBatchRow(): Promise<void> {
+  const ids = parseNumberList(merchantAuthBatchIdsInput.value)
+  if (ids.length === 0 || merchantAuthStatus.value == null) {
+    ElMessage.warning('Provide merchant IDs and auth status.')
+    return
+  }
+  try {
+    merchantAuthBatchResult.value = await reviewMerchantAuthBatch(
+      ids,
+      merchantAuthStatus.value,
+      merchantAuthRemark.value.trim() || undefined
+    )
+    ElMessage.success('Merchant auth batch review submitted.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to review merchant auth batch')
+  }
+}
+
 // Search lab
 type SearchEndpointKey =
   | 'complex-search'
@@ -791,6 +1013,12 @@ async function runSearch(): Promise<void> {
           </section>
 
           <section class="card-block">
+            <h4>Validate Current Token</h4>
+            <el-button round @click="validateCurrentToken">Validate</el-button>
+            <div v-if="tokenValidationMessage" class="muted">{{ tokenValidationMessage }}</div>
+          </section>
+
+          <section class="card-block">
             <h4>Authorization Detail</h4>
             <el-input v-model="authorizationId" placeholder="Authorization ID" />
             <div class="row">
@@ -1002,6 +1230,90 @@ async function runSearch(): Promise<void> {
             <el-input v-model="afterSaleAction" placeholder="Action (approve/reject/close)" />
             <el-input v-model="afterSaleRemark" placeholder="Remark (optional)" />
             <el-button round @click="advanceAfterSale">Advance</el-button>
+          </section>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="Admin Bulk" name="admin-bulk">
+        <el-alert v-if="!isAdmin" type="warning" title="Admin access required for bulk operations." />
+        <div v-else class="ops-grid">
+          <section class="card-block">
+            <h4>User Lookup</h4>
+            <el-input v-model="userLookupUsername" placeholder="Username" />
+            <el-button round type="primary" @click="lookupUser">Lookup</el-button>
+            <pre v-if="userLookupResult" class="json">{{ formatJson(userLookupResult) }}</pre>
+          </section>
+
+          <section class="card-block wide">
+            <h4>User Batch Update</h4>
+            <el-input v-model="userBatchJson" type="textarea" rows="6" />
+            <el-button round type="primary" @click="submitUserBatchUpdate">Submit</el-button>
+            <div v-if="userBatchResult !== null" class="muted">Result: {{ userBatchResult }}</div>
+          </section>
+
+          <section class="card-block">
+            <h4>Category Lookup</h4>
+            <el-input-number v-model="categoryLookupId" :min="1" controls-position="right" placeholder="Category ID" />
+            <el-button round @click="loadCategoryById">Load</el-button>
+            <pre v-if="categoryLookupResult" class="json">{{ formatJson(categoryLookupResult) }}</pre>
+          </section>
+
+          <section class="card-block">
+            <h4>Category Sort</h4>
+            <el-input-number v-model="categorySortId" :min="1" controls-position="right" placeholder="Category ID" />
+            <el-input-number v-model="categorySortValue" :min="0" controls-position="right" placeholder="Sort Value" />
+            <el-button round @click="updateCategorySortRow">Update Sort</el-button>
+          </section>
+
+          <section class="card-block">
+            <h4>Move Category</h4>
+            <el-input-number v-model="categoryMoveId" :min="1" controls-position="right" placeholder="Category ID" />
+            <el-input-number v-model="categoryMoveParentId" :min="1" controls-position="right" placeholder="New Parent ID" />
+            <el-button round @click="moveCategoryRow">Move</el-button>
+          </section>
+
+          <section class="card-block">
+            <h4>Category Batch Delete</h4>
+            <el-input v-model="categoryBatchIdsInput" placeholder="Category IDs, comma separated" />
+            <el-button round type="danger" plain @click="deleteCategoryBatch">Delete Batch</el-button>
+            <div v-if="categoryBatchDeleteResult !== null" class="muted">Result: {{ categoryBatchDeleteResult }}</div>
+          </section>
+
+          <section class="card-block">
+            <h4>Category Status Batch</h4>
+            <el-input v-model="categoryBatchIdsInput" placeholder="Category IDs, comma separated" />
+            <el-input-number v-model="categoryBatchStatus" :min="0" :max="1" controls-position="right" placeholder="Status" />
+            <el-button round @click="updateCategoryStatusBatchRow">Update Status</el-button>
+            <div v-if="categoryBatchStatusResult !== null" class="muted">Updated: {{ categoryBatchStatusResult }}</div>
+          </section>
+
+          <section class="card-block wide">
+            <h4>Category Batch Create</h4>
+            <el-input v-model="categoryBatchCreateJson" type="textarea" rows="5" />
+            <el-button round type="primary" @click="createCategoryBatch">Create Batch</el-button>
+            <div v-if="categoryBatchCreateResult !== null" class="muted">Created: {{ categoryBatchCreateResult }}</div>
+          </section>
+
+          <section class="card-block">
+            <h4>Merchant Batch Ops</h4>
+            <el-input v-model="merchantBatchIdsInput" placeholder="Merchant IDs, comma separated" />
+            <el-input-number v-model="merchantBatchStatus" :min="0" :max="2" controls-position="right" placeholder="Status" />
+            <el-input v-model="merchantBatchRemark" placeholder="Remark (optional)" />
+            <div class="row">
+              <el-button round type="danger" plain @click="deleteMerchantsInBatch">Delete</el-button>
+              <el-button round @click="updateMerchantsStatusBatch">Update Status</el-button>
+              <el-button round type="primary" @click="approveMerchantsInBatch">Approve</el-button>
+            </div>
+            <div v-if="merchantBatchResult !== null" class="muted">Result: {{ merchantBatchResult }}</div>
+          </section>
+
+          <section class="card-block">
+            <h4>Merchant Auth Batch Review</h4>
+            <el-input v-model="merchantAuthBatchIdsInput" placeholder="Merchant IDs, comma separated" />
+            <el-input-number v-model="merchantAuthStatus" :min="1" :max="2" controls-position="right" placeholder="Auth Status" />
+            <el-input v-model="merchantAuthRemark" placeholder="Remark (optional)" />
+            <el-button round type="primary" @click="reviewMerchantAuthBatchRow">Review Batch</el-button>
+            <div v-if="merchantAuthBatchResult !== null" class="muted">Result: {{ merchantAuthBatchResult }}</div>
           </section>
         </div>
       </el-tab-pane>
