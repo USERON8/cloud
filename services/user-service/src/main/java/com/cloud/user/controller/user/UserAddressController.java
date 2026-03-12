@@ -63,10 +63,6 @@ public class UserAddressController {
         userAddress.setCreatedAt(LocalDateTime.now());
         userAddress.setUpdatedAt(LocalDateTime.now());
 
-        if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-            userAddressService.resetDefaultAddress(userId);
-        }
-
         userAddressService.save(userAddress);
         return Result.success("address created", userAddressConverter.toDTO(userAddress));
     }
@@ -94,10 +90,6 @@ public class UserAddressController {
         userAddress.setId(addressId);
         userAddress.setUserId(existingAddress.getUserId());
         userAddress.setUpdatedAt(LocalDateTime.now());
-
-        if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-            userAddressService.resetDefaultAddress(existingAddress.getUserId());
-        }
 
         userAddressService.updateById(userAddress);
         return Result.success("address updated", userAddressConverter.toDTO(userAddress));
@@ -275,10 +267,6 @@ public class UserAddressController {
                 userAddress.setId(addressDTO.getId());
                 userAddress.setUserId(existingAddress.getUserId());
                 userAddress.setUpdatedAt(LocalDateTime.now());
-
-                if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-                    userAddressService.resetDefaultAddress(existingAddress.getUserId());
-                }
 
                 if (userAddressService.updateById(userAddress)) {
                     successCount++;

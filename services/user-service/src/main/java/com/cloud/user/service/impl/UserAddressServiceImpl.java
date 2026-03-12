@@ -41,8 +41,15 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             }
     )
     public boolean save(UserAddress entity) {
+        if (entity == null) {
+            throw new BusinessException("user address is required");
+        }
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
+
+        if (Integer.valueOf(1).equals(entity.getIsDefault())) {
+            resetDefaultAddress(entity.getUserId());
+        }
 
         boolean saved = super.save(entity);
         if (!saved) {
@@ -61,6 +68,9 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             }
     )
     public boolean updateById(UserAddress entity) {
+        if (entity == null || entity.getId() == null) {
+            throw new BusinessException("address id is required");
+        }
         entity.setUpdatedAt(LocalDateTime.now());
 
         UserAddress existingAddress = this.getById(entity.getId());
@@ -69,9 +79,19 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             throw new ResourceNotFoundException("address", String.valueOf(entity.getId()));
         }
 
-        if (!existingAddress.getUserId().equals(entity.getUserId())) {
-            log.warn("Failed to update user address due to permission mismatch, addressId={}, userId={}", entity.getId(), entity.getUserId());
+        Long userId = entity.getUserId();
+        if (userId == null) {
+            userId = existingAddress.getUserId();
+            entity.setUserId(userId);
+        }
+
+        if (!existingAddress.getUserId().equals(userId)) {
+            log.warn("Failed to update user address due to permission mismatch, addressId={}, userId={}", entity.getId(), userId);
             throw new BusinessException("No permission to operate this address");
+        }
+
+        if (Integer.valueOf(1).equals(entity.getIsDefault())) {
+            resetDefaultAddress(userId);
         }
 
         boolean updated = super.updateById(entity);
