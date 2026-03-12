@@ -196,6 +196,8 @@ sequenceDiagram
 - `docker/`: infrastructure configs
 - `tests/perf/k6/`: performance scripts
 - `docs/`: ops and troubleshooting docs
+- `docs/code-audit-2026-03-13-zh.md`: 2026-03-13 backend code review & fix log (Chinese)
+- `docs/code-audit-2026-03-13-en.md`: 2026-03-13 backend code review & fix log (English)
 - `docs/project-closeout.md`: frozen project state and resume order
 - `docs/performance-baseline.md`: local performance ceilings, bottlenecks, and regression workflow
 - `docs/TEST_SCRIPT_INDEX.md`: test-script entrypoint index
