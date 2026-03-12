@@ -217,7 +217,7 @@ const savePasswordWithValidation = handlePasswordSubmit(async (values) => {
   <div class="profile-grid">
     <section class="glass-card card">
       <p class="label">Current account</p>
-      <img class="avatar" :src="avatarPreview" alt="Profile avatar" @error="onAvatarError" />
+      <img class="avatar" v-lazy="avatarPreview" alt="Profile avatar" @error="onAvatarError" />
       <h3>{{ accountName }}</h3>
       <p class="muted">Role: {{ accountType }}</p>
       <el-button :loading="loading" round type="primary" @click="loadProfile">Reload Profile</el-button>

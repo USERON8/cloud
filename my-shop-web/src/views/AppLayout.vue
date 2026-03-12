@@ -168,7 +168,7 @@ async function handleLogout(): Promise<void> {
         </div>
 
         <div class="top-actions">
-          <img class="avatar" :src="avatarUrl" alt="User avatar" @error="handleAvatarError" />
+          <img class="avatar" v-lazy="avatarUrl" alt="User avatar" @error="handleAvatarError" />
           <span class="role-chip">{{ roleLabel }}</span>
           <span class="user-chip">{{ displayName }}</span>
           <el-button round @click="$router.push('/market')">访客主页</el-button>

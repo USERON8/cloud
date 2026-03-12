@@ -41,6 +41,9 @@ importers:
       vue-echarts:
         specifier: ^8.0.1
         version: 8.0.1(echarts@6.0.0)(vue@3.5.29(typescript@5.9.3))
+      vue-lazyload:
+        specifier: ^3.0.0
+        version: 3.0.0
       vue-router:
         specifier: ^5.0.3
         version: 5.0.3(@vue/compiler-sfc@3.5.29)(vue@3.5.29(typescript@5.9.3))
@@ -1378,6 +1381,9 @@ packages:
     peerDependencies:
       echarts: ^6.0.0
       vue: ^3.3.0
+
+  vue-lazyload@3.0.0:
+    resolution: {integrity: sha512-h2keL/Rj550dLgesgOtXJS9qOiSMmuJNeVlfNAYV1/IYwOQYaWk5mFJlwRxmZDK9YC5gECcFLYYj7z1lKSf9ug==}
 
   vue-router@5.0.3:
     resolution: {integrity: sha512-nG1c7aAFac7NYj8Hluo68WyWfc41xkEjaR0ViLHCa3oDvTQ/nIuLJlXJX1NUPw/DXzx/8+OKMng045HHQKQKWw==}
@@ -2807,6 +2813,8 @@ snapshots:
     dependencies:
       echarts: 6.0.0
       vue: 3.5.29(typescript@5.9.3)
+
+  vue-lazyload@3.0.0: {}
 
   vue-router@5.0.3(@vue/compiler-sfc@3.5.29)(vue@3.5.29(typescript@5.9.3)):
     dependencies:
