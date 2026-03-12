@@ -1,6 +1,7 @@
 package com.cloud.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -70,15 +71,56 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Cacheable(cacheNames = "user:statistics", key = "'registration:' + #startDate + ':' + #endDate")
     public Map<LocalDate, Long> getUserRegistrationTrend(LocalDate startDate, LocalDate endDate) {
         try {
+            if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+                return Collections.emptyMap();
+            }
             Map<LocalDate, Long> trend = new LinkedHashMap<>();
             LocalDate current = startDate;
             while (!current.isAfter(endDate)) {
-                LocalDateTime dayStart = current.atStartOfDay();
-                LocalDateTime dayEnd = current.plusDays(1).atStartOfDay();
-                LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-                wrapper.ge(User::getCreatedAt, dayStart).lt(User::getCreatedAt, dayEnd);
-                trend.put(current, userMapper.selectCount(wrapper));
+                trend.put(current, 0L);
                 current = current.plusDays(1);
+            }
+
+            LocalDateTime rangeStart = startDate.atStartOfDay();
+            LocalDateTime rangeEnd = endDate.plusDays(1).atStartOfDay();
+            QueryWrapper<User> wrapper = new QueryWrapper<>();
+            wrapper.select("DATE(created_at) AS day", "COUNT(*) AS cnt")
+                    .ge("created_at", rangeStart)
+                    .lt("created_at", rangeEnd)
+                    .groupBy("DATE(created_at)")
+                    .orderByAsc("DATE(created_at)");
+
+            List<Map<String, Object>> rows = userMapper.selectMaps(wrapper);
+            for (Map<String, Object> row : rows) {
+                Object dayObj = row.get("day");
+                Object cntObj = row.get("cnt");
+                LocalDate day = null;
+                if (dayObj instanceof LocalDate localDate) {
+                    day = localDate;
+                } else if (dayObj instanceof java.sql.Date sqlDate) {
+                    day = sqlDate.toLocalDate();
+                } else if (dayObj != null) {
+                    try {
+                        day = LocalDate.parse(dayObj.toString());
+                    } catch (Exception ignore) {
+                        log.debug("Failed to parse registration day value: {}", dayObj);
+                    }
+                }
+
+                Long count = null;
+                if (cntObj instanceof Number number) {
+                    count = number.longValue();
+                } else if (cntObj != null) {
+                    try {
+                        count = Long.parseLong(cntObj.toString());
+                    } catch (Exception ignore) {
+                        log.debug("Failed to parse registration count value: {}", cntObj);
+                    }
+                }
+
+                if (day != null && count != null) {
+                    trend.put(day, count);
+                }
             }
             return trend;
         } catch (Exception e) {
