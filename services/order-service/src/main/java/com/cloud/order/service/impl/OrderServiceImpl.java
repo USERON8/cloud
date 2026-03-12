@@ -357,6 +357,13 @@ public class OrderServiceImpl implements OrderService {
         if (items == null || items.isEmpty()) {
             return;
         }
+        String orderNo = null;
+        if (subOrder.getMainOrderId() != null) {
+            OrderMain mainOrder = orderMainMapper.selectById(subOrder.getMainOrderId());
+            if (mainOrder != null && mainOrder.getDeleted() != null && mainOrder.getDeleted() == 0) {
+                orderNo = mainOrder.getMainOrderNo();
+            }
+        }
         Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
         for (OrderItem item : items) {
             if (item.getSkuId() == null || item.getQuantity() == null) {
@@ -367,6 +374,7 @@ public class OrderServiceImpl implements OrderService {
         for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
             StockOperateCommandDTO command = new StockOperateCommandDTO();
             command.setSubOrderNo(subOrder.getSubOrderNo());
+            command.setOrderNo(orderNo);
             command.setSkuId(entry.getKey());
             command.setQuantity(entry.getValue());
             command.setReason("cancel order " + subOrder.getSubOrderNo());
