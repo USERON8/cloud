@@ -8,6 +8,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.payment", "com.cloud.common"}
@@ -15,8 +16,9 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableDubbo
 @EnableDiscoveryClient
 @Slf4j
+@EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@MapperScan("com.cloud.payment.mapper")
+@MapperScan({"com.cloud.payment.mapper", "com.cloud.common.messaging.outbox"})
 public class PaymentApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");
