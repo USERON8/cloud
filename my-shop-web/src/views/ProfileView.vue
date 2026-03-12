@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { toTypedSchema } from '@vee-validate/zod'
+import { useForm } from 'vee-validate'
+import { z } from 'zod'
 import { changeCurrentPassword, getCurrentProfile, updateCurrentProfile, uploadCurrentAvatar } from '../api/user'
 import { patchSessionUser, sessionState } from '../auth/session'
 import type { UserInfo } from '../types/domain'
@@ -13,28 +16,71 @@ const avatarUploading = ref(false)
 const passwordSaving = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const form = reactive<Required<Pick<UserInfo, 'nickname' | 'email' | 'phone' | 'avatarUrl'>>>(
-  {
+const optionalEmail = z.string().trim().email('Invalid email format').or(z.literal(''))
+const optionalPhone = z
+  .string()
+  .trim()
+  .regex(/^1[3-9]\d{9}$/, 'Invalid phone format')
+  .or(z.literal(''))
+
+const profileSchema = toTypedSchema(
+  z.object({
+    nickname: z.string().trim().min(1, 'Nickname is required'),
+    email: optionalEmail,
+    phone: optionalPhone,
+    avatarUrl: z.string().trim().max(500, 'Avatar URL is too long')
+  })
+)
+
+const passwordSchema = toTypedSchema(
+  z
+    .object({
+      oldPassword: z.string().min(1, 'Current password is required'),
+      newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+      confirmPassword: z.string().min(1, 'Confirm the new password')
+    })
+    .refine((values) => values.newPassword === values.confirmPassword, {
+      message: 'New password does not match confirmation',
+      path: ['confirmPassword']
+    })
+)
+
+const {
+  values: profileValues,
+  errors: profileErrors,
+  handleSubmit: handleProfileSubmit,
+  setValues: setProfileValues
+} = useForm({
+  validationSchema: profileSchema,
+  initialValues: {
     nickname: '',
     email: '',
     phone: '',
     avatarUrl: ''
   }
-)
+})
 
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
+const {
+  values: passwordValues,
+  errors: passwordErrors,
+  handleSubmit: handlePasswordSubmit,
+  resetForm: resetPasswordForm
+} = useForm({
+  validationSchema: passwordSchema,
+  initialValues: {
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
 })
 
 const accountName = computed(() => sessionState.user?.username || 'Unknown')
 const accountType = computed(() => sessionState.user?.roles?.[0] || 'Unknown')
 const avatarPreview = computed(() => {
-  if (form.avatarUrl.trim() && !avatarLoadFailed.value) {
-    return form.avatarUrl.trim()
+  if (profileValues.avatarUrl.trim() && !avatarLoadFailed.value) {
+    return profileValues.avatarUrl.trim()
   }
-  const c = (form.nickname.trim()[0] || accountName.value[0] || 'U').toUpperCase()
+  const c = (profileValues.nickname.trim()[0] || accountName.value[0] || 'U').toUpperCase()
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
     <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3f9e"/><stop offset="100%" stop-color="#58a0ff"/></linearGradient></defs>
     <rect width="120" height="120" rx="30" fill="url(#g)"/>
@@ -49,10 +95,12 @@ function patchForm(data?: UserInfo | null): void {
   if (!data) {
     return
   }
-  form.nickname = data.nickname || ''
-  form.email = data.email || ''
-  form.phone = data.phone || ''
-  form.avatarUrl = data.avatarUrl || ''
+  setProfileValues({
+    nickname: data.nickname || '',
+    email: data.email || '',
+    phone: data.phone || '',
+    avatarUrl: data.avatarUrl || ''
+  })
 }
 
 async function loadProfile(): Promise<void> {
@@ -81,16 +129,16 @@ async function saveProfile(): Promise<void> {
   saveLoading.value = true
   try {
     await updateCurrentProfile({
-      nickname: form.nickname,
-      email: form.email,
-      phone: form.phone,
-      avatarUrl: form.avatarUrl
+      nickname: profileValues.nickname,
+      email: profileValues.email,
+      phone: profileValues.phone,
+      avatarUrl: profileValues.avatarUrl
     })
     patchSessionUser({
-      nickname: form.nickname,
-      email: form.email,
-      phone: form.phone,
-      avatarUrl: form.avatarUrl
+      nickname: profileValues.nickname,
+      email: profileValues.email,
+      phone: profileValues.phone,
+      avatarUrl: profileValues.avatarUrl
     })
     ElMessage.success('Profile updated.')
   } catch (error) {
@@ -106,7 +154,7 @@ onMounted(() => {
 })
 
 watch(
-  () => form.avatarUrl,
+  () => profileValues.avatarUrl,
   () => {
     avatarLoadFailed.value = false
   }
@@ -129,7 +177,7 @@ async function onAvatarSelected(event: Event): Promise<void> {
   avatarUploading.value = true
   try {
     const url = await uploadCurrentAvatar(file)
-    form.avatarUrl = url
+    profileValues.avatarUrl = url
     patchSessionUser({ avatarUrl: url })
     ElMessage.success('Avatar uploaded.')
   } catch (error) {
@@ -143,32 +191,26 @@ async function onAvatarSelected(event: Event): Promise<void> {
   }
 }
 
-async function savePassword(): Promise<void> {
-  if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-    ElMessage.warning('Provide both old and new password.')
-    return
-  }
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.warning('New password does not match confirmation.')
-    return
-  }
+const saveProfileWithValidation = handleProfileSubmit(async () => {
+  await saveProfile()
+})
+
+const savePasswordWithValidation = handlePasswordSubmit(async (values) => {
   passwordSaving.value = true
   try {
     await changeCurrentPassword({
-      oldPassword: passwordForm.oldPassword,
-      newPassword: passwordForm.newPassword
+      oldPassword: values.oldPassword,
+      newPassword: values.newPassword
     })
     ElMessage.success('Password updated.')
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
+    resetPasswordForm()
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Password update failed'
     ElMessage.error(message)
   } finally {
     passwordSaving.value = false
   }
-}
+})
 </script>
 
 <template>
@@ -187,40 +229,42 @@ async function savePassword(): Promise<void> {
       <el-alert v-if="warning" :closable="false" show-icon type="warning" :title="warning" />
 
       <el-form class="form" label-position="top">
-        <el-form-item label="Nickname">
-          <el-input v-model="form.nickname" />
+        <el-form-item label="Nickname" :error="profileErrors.nickname">
+          <el-input v-model="profileValues.nickname" />
         </el-form-item>
-        <el-form-item label="Email">
-          <el-input v-model="form.email" />
+        <el-form-item label="Email" :error="profileErrors.email">
+          <el-input v-model="profileValues.email" />
         </el-form-item>
-        <el-form-item label="Phone">
-          <el-input v-model="form.phone" />
+        <el-form-item label="Phone" :error="profileErrors.phone">
+          <el-input v-model="profileValues.phone" />
         </el-form-item>
-        <el-form-item label="Avatar URL">
-          <el-input v-model="form.avatarUrl" />
+        <el-form-item label="Avatar URL" :error="profileErrors.avatarUrl">
+          <el-input v-model="profileValues.avatarUrl" />
         </el-form-item>
       </el-form>
       <div class="actions">
         <input ref="fileInputRef" class="hidden-input" type="file" accept="image/*" @change="onAvatarSelected" />
         <el-button :loading="avatarUploading" round @click="openAvatarPicker">Upload Avatar</el-button>
-        <el-button :loading="saveLoading" round type="primary" @click="saveProfile">Save Profile</el-button>
+        <el-button :loading="saveLoading" round type="primary" @click="saveProfileWithValidation">Save Profile</el-button>
       </div>
     </section>
 
     <section class="glass-card card">
       <p class="label">Security</p>
       <el-form class="form" label-position="top">
-        <el-form-item label="Current Password">
-          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        <el-form-item label="Current Password" :error="passwordErrors.oldPassword">
+          <el-input v-model="passwordValues.oldPassword" type="password" show-password />
         </el-form-item>
-        <el-form-item label="New Password">
-          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        <el-form-item label="New Password" :error="passwordErrors.newPassword">
+          <el-input v-model="passwordValues.newPassword" type="password" show-password />
         </el-form-item>
-        <el-form-item label="Confirm New Password">
-          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+        <el-form-item label="Confirm New Password" :error="passwordErrors.confirmPassword">
+          <el-input v-model="passwordValues.confirmPassword" type="password" show-password />
         </el-form-item>
       </el-form>
-      <el-button :loading="passwordSaving" round type="primary" @click="savePassword">Update Password</el-button>
+      <el-button :loading="passwordSaving" round type="primary" @click="savePasswordWithValidation">
+        Update Password
+      </el-button>
     </section>
 
     <section class="glass-card card">
