@@ -147,11 +147,30 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
                 return 0L;
             }
             LocalDateTime threshold = LocalDateTime.now().minusDays(safeDays);
-            return keys.stream()
-                    .map(key -> (LocalDateTime) redisTemplate.opsForValue().get(key))
-                    .filter(Objects::nonNull)
-                    .filter(loginTime -> loginTime.isAfter(threshold))
-                    .count();
+            List<String> keyList = List.copyOf(keys);
+            List<Object> values = redisTemplate.opsForValue().multiGet(keyList);
+            if (values == null || values.isEmpty()) {
+                return 0L;
+            }
+            long count = 0L;
+            for (Object value : values) {
+                LocalDateTime loginTime = null;
+                if (value instanceof LocalDateTime time) {
+                    loginTime = time;
+                } else if (value instanceof java.sql.Timestamp timestamp) {
+                    loginTime = timestamp.toLocalDateTime();
+                } else if (value instanceof String raw) {
+                    try {
+                        loginTime = LocalDateTime.parse(raw);
+                    } catch (Exception ignore) {
+                        log.debug("Failed to parse login time value: {}", raw);
+                    }
+                }
+                if (loginTime != null && loginTime.isAfter(threshold)) {
+                    count++;
+                }
+            }
+            return count;
         } catch (Exception e) {
             log.error("Failed to count active users", e);
             return 0L;
@@ -235,15 +254,26 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
             }
 
             Map<Long, Long> activityMap = new HashMap<>();
-            for (String key : keys) {
-                try {
-                    Long userId = Long.parseLong(key.substring(key.lastIndexOf(':') + 1));
-                    Long count = (Long) redisTemplate.opsForValue().get(key);
-                    if (count != null) {
-                        activityMap.put(userId, count);
+            List<String> keyList = List.copyOf(keys);
+            List<Object> values = redisTemplate.opsForValue().multiGet(keyList);
+            if (values != null && !values.isEmpty()) {
+                for (int i = 0; i < keyList.size() && i < values.size(); i++) {
+                    String key = keyList.get(i);
+                    Object value = values.get(i);
+                    try {
+                        Long userId = Long.parseLong(key.substring(key.lastIndexOf(':') + 1));
+                        Long count = null;
+                        if (value instanceof Number number) {
+                            count = number.longValue();
+                        } else if (value instanceof String raw) {
+                            count = Long.parseLong(raw);
+                        }
+                        if (count != null) {
+                            activityMap.put(userId, count);
+                        }
+                    } catch (Exception ignore) {
+                        log.warn("Failed to parse activity key: {}", key);
                     }
-                } catch (Exception ignore) {
-                    log.warn("Failed to parse activity key: {}", key);
                 }
             }
 

@@ -206,11 +206,29 @@ public class UserAsyncServiceImpl implements UserAsyncService {
                 return CompletableFuture.completedFuture(0L);
             }
             LocalDateTime threshold = LocalDateTime.now().minusDays(safeDays);
-            long count = keys.stream()
-                    .map(key -> (LocalDateTime) redisTemplate.opsForValue().get(key))
-                    .filter(Objects::nonNull)
-                    .filter(time -> time.isAfter(threshold))
-                    .count();
+            List<String> keyList = List.copyOf(keys);
+            List<Object> values = redisTemplate.opsForValue().multiGet(keyList);
+            if (values == null || values.isEmpty()) {
+                return CompletableFuture.completedFuture(0L);
+            }
+            long count = 0L;
+            for (Object value : values) {
+                LocalDateTime loginTime = null;
+                if (value instanceof LocalDateTime time) {
+                    loginTime = time;
+                } else if (value instanceof java.sql.Timestamp timestamp) {
+                    loginTime = timestamp.toLocalDateTime();
+                } else if (value instanceof String raw) {
+                    try {
+                        loginTime = LocalDateTime.parse(raw);
+                    } catch (Exception ignore) {
+                        log.debug("Failed to parse login time value: {}", raw);
+                    }
+                }
+                if (loginTime != null && loginTime.isAfter(threshold)) {
+                    count++;
+                }
+            }
             return CompletableFuture.completedFuture(count);
         } catch (Exception e) {
             log.error("Failed to count active users asynchronously", e);
