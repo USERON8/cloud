@@ -22,8 +22,10 @@ public class UserNotificationConsumerConfig {
 
     private static final String PROCESSING_PREFIX = "notification:processing:";
     private static final String DONE_PREFIX = "notification:done:";
+    private static final String INVALID_PREFIX = "notification:invalid:";
     private static final long PROCESSING_TTL_MINUTES = 5;
     private static final long DONE_TTL_DAYS = 7;
+    private static final long INVALID_TTL_DAYS = 7;
 
     private final UserNotificationService userNotificationService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -51,6 +53,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_WELCOME -> {
                         if (event.getUserId() == null) {
                             log.warn("Notification event missing userId: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing userId");
                             yield true;
                         }
                         yield userNotificationService.sendWelcomeEmail(event.getUserId());
@@ -58,6 +61,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_PASSWORD_RESET -> {
                         if (event.getUserId() == null || event.getToken() == null) {
                             log.warn("Notification event missing password reset payload: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing userId or token");
                             yield true;
                         }
                         yield userNotificationService.sendPasswordResetEmail(event.getUserId(), event.getToken());
@@ -65,6 +69,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_ACTIVATION -> {
                         if (event.getUserId() == null || event.getToken() == null) {
                             log.warn("Notification event missing activation payload: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing userId or token");
                             yield true;
                         }
                         yield userNotificationService.sendActivationEmail(event.getUserId(), event.getToken());
@@ -72,6 +77,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_STATUS_CHANGE -> {
                         if (event.getUserId() == null) {
                             log.warn("Notification event missing status change payload: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing userId");
                             yield true;
                         }
                         yield userNotificationService.sendStatusChangeNotification(
@@ -83,6 +89,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_BATCH -> {
                         if (event.getUserIds() == null || event.getUserIds().isEmpty()) {
                             log.warn("Notification event missing batch payload: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing userIds");
                             yield true;
                         }
                         yield userNotificationService.sendBatchNotification(
@@ -94,6 +101,7 @@ public class UserNotificationConsumerConfig {
                     case UserNotificationEvent.TYPE_SYSTEM -> {
                         if (event.getTitle() == null || event.getContent() == null) {
                             log.warn("Notification event missing system payload: eventId={}", event.getEventId());
+                            recordInvalid(eventId, "missing title or content");
                             yield true;
                         }
                         yield userNotificationService.sendSystemAnnouncement(
@@ -103,6 +111,7 @@ public class UserNotificationConsumerConfig {
                     }
                     default -> {
                         log.warn("Unknown notification event type: {}", event.getEventType());
+                        recordInvalid(eventId, "unknown eventType: " + event.getEventType());
                         yield true;
                     }
                 };
@@ -137,5 +146,12 @@ public class UserNotificationConsumerConfig {
 
     private void clearProcessing(String eventId) {
         redisTemplate.delete(PROCESSING_PREFIX + eventId);
+    }
+
+    private void recordInvalid(String eventId, String reason) {
+        if (!StringUtils.hasText(eventId)) {
+            return;
+        }
+        redisTemplate.opsForValue().set(INVALID_PREFIX + eventId, reason, INVALID_TTL_DAYS, TimeUnit.DAYS);
     }
 }
