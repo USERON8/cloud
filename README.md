@@ -1,6 +1,6 @@
 # Cloud Shop Microservices
 
-[English](./README.en.md)
+[English](./README-en.md)
 
 简化版电商微服务项目，后端基于 Spring Boot + Spring Cloud Alibaba，前端为 Vue 3 + TypeScript。
 
