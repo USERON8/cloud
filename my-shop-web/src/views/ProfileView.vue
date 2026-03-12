@@ -203,7 +203,7 @@ function getCroppedBlob(): Promise<Blob> {
       reject(new Error('Cropper is not ready'))
       return
     }
-    cropperRef.value.getCropBlob((blob) => {
+    cropperRef.value.getCropBlob((blob: Blob | null) => {
       if (blob) {
         resolve(blob)
         return

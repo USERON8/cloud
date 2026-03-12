@@ -27,8 +27,7 @@ export default defineConfig(({ mode }) => {
         algorithm: 'brotliCompress',
         ext: '.br',
         threshold: 10240,
-        deleteOriginFile: false,
-        apply: 'build'
+        deleteOriginFile: false
       }),
       ...(analyze
         ? [
