@@ -23,6 +23,30 @@ public class StockReservationRemoteService {
         }
     }
 
+    public Boolean confirm(StockOperateCommandDTO command) {
+        try {
+            return stockDubboApi.confirm(command);
+        } catch (RuntimeException ex) {
+            throw translateException(ex);
+        }
+    }
+
+    public Boolean release(StockOperateCommandDTO command) {
+        try {
+            return stockDubboApi.release(command);
+        } catch (RuntimeException ex) {
+            throw translateException(ex);
+        }
+    }
+
+    public Boolean rollback(StockOperateCommandDTO command) {
+        try {
+            return stockDubboApi.rollback(command);
+        } catch (RuntimeException ex) {
+            throw translateException(ex);
+        }
+    }
+
     private RuntimeException translateException(RuntimeException ex) {
         BusinessException businessException = findBusinessException(ex);
         if (businessException != null) {
