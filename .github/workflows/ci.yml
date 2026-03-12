@@ -16,6 +16,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   backend-maven:
     name: Backend Maven (JDK17)
@@ -93,4 +96,3 @@ jobs:
 
       - name: Validate compose syntax
         run: docker compose -f docker-compose.yml config -q
-
