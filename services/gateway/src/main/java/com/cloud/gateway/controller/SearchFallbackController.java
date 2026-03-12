@@ -68,7 +68,7 @@ public class SearchFallbackController {
         Timer.Sample sample = Timer.start(meterRegistry);
 
         String cacheKey = buildCacheKey(routeType, queryParams);
-        String cachedBody = getCachedResponse(routeType, cacheKey);
+        String cachedBody = searchFallbackCache.get(routeType, cacheKey, queryParams);
         if (cachedBody != null) {
             counter(routeType, "cache_hit").increment();
             return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(cachedBody))
@@ -79,7 +79,7 @@ public class SearchFallbackController {
                 .timeout(Duration.ofMillis(fallbackTimeoutMs))
                 .doOnSuccess(response -> {
                     counter(routeType, "success").increment();
-                    cacheIfEligible(routeType, cacheKey, response);
+                    cacheIfEligible(routeType, cacheKey, response, queryParams);
                 })
                 .onErrorResume(ex -> {
                     counter(routeType, "degraded").increment();
@@ -277,18 +277,8 @@ public class SearchFallbackController {
         return builder.toString();
     }
 
-    private String getCachedResponse(String routeType, String cacheKey) {
-        if (cacheKey == null || cacheKey.isBlank()) {
-            return null;
-        }
-        return switch (routeType) {
-            case "search", "smart-search" -> searchFallbackCache.getSearch(cacheKey);
-            case "suggestions" -> searchFallbackCache.getSuggestions(cacheKey);
-            default -> null;
-        };
-    }
-
-    private void cacheIfEligible(String routeType, String cacheKey, ResponseEntity<String> response) {
+    private void cacheIfEligible(String routeType, String cacheKey, ResponseEntity<String> response,
+                                 MultiValueMap<String, String> queryParams) {
         if (cacheKey == null || cacheKey.isBlank()) {
             return;
         }
@@ -299,12 +289,7 @@ public class SearchFallbackController {
         if (!isSuccessResult(body)) {
             return;
         }
-        switch (routeType) {
-            case "search", "smart-search" -> searchFallbackCache.putSearch(cacheKey, body);
-            case "suggestions" -> searchFallbackCache.putSuggestions(cacheKey, body);
-            default -> {
-            }
-        }
+        searchFallbackCache.put(routeType, cacheKey, body, queryParams);
     }
 }
 
