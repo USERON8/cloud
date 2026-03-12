@@ -1,4 +1,5 @@
 ﻿# Search Service
+Version: 1.1.0
 
 搜索服务，负责商品与店铺检索、推荐与建议词能力。
 

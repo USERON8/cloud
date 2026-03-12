@@ -1,4 +1,5 @@
 ﻿# My Shop Web
+Version: 1.1.0
 
 Vue 3 + TypeScript + Axios + Element Plus 前端，支持 Web / Android / iOS（Capacitor）。
 

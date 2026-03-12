@@ -1,4 +1,5 @@
 ﻿# Payment Service
+Version: 1.1.0
 
 支付服务，包含支付单管理和支付宝聚合接口。
 

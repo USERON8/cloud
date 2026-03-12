@@ -1,4 +1,5 @@
 # Auth Service
+Version: 1.1.0
 
 负责 OAuth 2.1 授权码 + PKCE 认证、JWT 令牌签发、会话管理和 GitHub OAuth 登录。
 

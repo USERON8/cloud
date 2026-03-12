@@ -1,4 +1,5 @@
 ﻿# Product Service
+Version: 1.1.0
 
 商品域服务，提供商品、分类与批量操作接口。
 
