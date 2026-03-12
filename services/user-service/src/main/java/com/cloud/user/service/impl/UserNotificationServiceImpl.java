@@ -1,6 +1,8 @@
 package com.cloud.user.service.impl;
 
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.user.notification.UserNotificationDeliveryProvider;
 import com.cloud.user.service.UserNotificationService;
 import com.cloud.user.service.UserService;
@@ -23,91 +25,61 @@ public class UserNotificationServiceImpl implements UserNotificationService {
 
     @Override
     public boolean sendWelcomeEmail(Long userId) {
-        try {
-            UserDTO user = getUserForNotification(userId);
-            if (user == null || StrUtil.isBlank(user.getEmail())) {
-                return false;
-            }
-            return deliveryProvider.deliverWelcome(userId);
-        } catch (Exception e) {
-            log.error("Failed to send welcome email", e);
+        UserDTO user = getUserForNotification(userId);
+        if (user == null || StrUtil.isBlank(user.getEmail())) {
             return false;
         }
+        return deliveryProvider.deliverWelcome(userId);
     }
 
     @Override
     public boolean sendPasswordResetEmail(Long userId, String resetToken) {
-        try {
-            UserDTO user = getUserForNotification(userId);
-            if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(resetToken)) {
-                return false;
-            }
-            return deliveryProvider.deliverPasswordResetToken(userId, resetToken.trim());
-        } catch (Exception e) {
-            log.error("Failed to send password reset email", e);
+        UserDTO user = getUserForNotification(userId);
+        if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(resetToken)) {
             return false;
         }
+        return deliveryProvider.deliverPasswordResetToken(userId, resetToken.trim());
     }
 
     @Override
     public boolean sendActivationEmail(Long userId, String activationToken) {
-        try {
-            UserDTO user = getUserForNotification(userId);
-            if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(activationToken)) {
-                return false;
-            }
-            return deliveryProvider.deliverActivationToken(userId, activationToken.trim());
-        } catch (Exception e) {
-            log.error("Failed to send activation email", e);
+        UserDTO user = getUserForNotification(userId);
+        if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(activationToken)) {
             return false;
         }
+        return deliveryProvider.deliverActivationToken(userId, activationToken.trim());
     }
 
     @Override
     public boolean sendStatusChangeNotification(Long userId, Integer newStatus, String reason) {
-        try {
-            UserDTO user = getUserForNotification(userId);
-            if (user == null) {
-                return false;
-            }
-            return deliveryProvider.deliverStatusChange(userId, newStatus, reason);
-        } catch (Exception e) {
-            log.error("Failed to send status change notification", e);
+        UserDTO user = getUserForNotification(userId);
+        if (user == null) {
             return false;
         }
+        return deliveryProvider.deliverStatusChange(userId, newStatus, reason);
     }
 
     @Override
     public boolean sendBatchNotification(List<Long> userIds, String title, String content) {
-        try {
-            if (userIds == null || userIds.isEmpty()) {
-                return false;
-            }
-            int successCount = 0;
-            for (Long userId : userIds) {
-                UserDTO user = getUserForNotification(userId);
-                if (user == null) {
-                    continue;
-                }
-                if (deliveryProvider.deliverBatchNotification(userId, title, content)) {
-                    successCount++;
-                }
-            }
-            return successCount > 0;
-        } catch (Exception e) {
-            log.error("Failed to send batch notification", e);
+        if (userIds == null || userIds.isEmpty()) {
             return false;
         }
+        int successCount = 0;
+        for (Long userId : userIds) {
+            UserDTO user = getUserForNotification(userId);
+            if (user == null) {
+                continue;
+            }
+            if (deliveryProvider.deliverBatchNotification(userId, title, content)) {
+                successCount++;
+            }
+        }
+        return successCount > 0;
     }
 
     @Override
     public boolean sendSystemAnnouncement(String title, String content) {
-        try {
-            return deliveryProvider.deliverSystemAnnouncement(title, content);
-        } catch (Exception e) {
-            log.error("Failed to send system announcement", e);
-            return false;
-        }
+        return deliveryProvider.deliverSystemAnnouncement(title, content);
     }
 
     @Override
@@ -152,9 +124,12 @@ public class UserNotificationServiceImpl implements UserNotificationService {
         }
         try {
             return userService.getUserById(userId);
-        } catch (Exception e) {
+        } catch (EntityNotFoundException | BusinessException e) {
             log.warn("User is not available for notification, userId={}", userId);
             return null;
+        } catch (Exception e) {
+            log.error("Failed to load user for notification, userId={}", userId, e);
+            throw e;
         }
     }
 }
