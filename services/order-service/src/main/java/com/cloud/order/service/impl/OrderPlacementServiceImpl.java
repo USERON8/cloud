@@ -14,6 +14,7 @@ import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.Queue;
 
 @Service
+@Slf4j
 public class OrderPlacementServiceImpl implements OrderPlacementService {
 
     private static final Set<String> RESERVE_REQUIRED_STATUSES = Set.of("CREATED");
@@ -136,14 +140,16 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
             return;
         }
 
+        Queue<StockReservationTask> reservedTasks = new ConcurrentLinkedQueue<>();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (List<StockReservationTask> skuTasks : groupTasksBySku(tasks).values()) {
-            futures.add(CompletableFuture.runAsync(() -> reserveTaskGroup(skuTasks), orderStockReservationExecutor));
+            futures.add(CompletableFuture.runAsync(() -> reserveTaskGroup(skuTasks, reservedTasks), orderStockReservationExecutor));
         }
 
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } catch (CompletionException ex) {
+            releaseReservedTasks(reservedTasks);
             throw unwrapReservationException(ex);
         }
     }
@@ -193,13 +199,13 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         return tasks;
     }
 
-    private void reserveTaskGroup(List<StockReservationTask> tasks) {
+    private void reserveTaskGroup(List<StockReservationTask> tasks, Queue<StockReservationTask> reservedTasks) {
         for (StockReservationTask task : tasks) {
-            reserveTask(task);
+            reserveTask(task, reservedTasks);
         }
     }
 
-    private void reserveTask(StockReservationTask task) {
+    private void reserveTask(StockReservationTask task, Queue<StockReservationTask> reservedTasks) {
         StockOperateCommandDTO command = new StockOperateCommandDTO();
         command.setSubOrderNo(task.getSubOrderNo());
         command.setOrderNo(task.getMainOrderNo());
@@ -210,6 +216,26 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         Boolean reserved = stockReservationRemoteService.reserve(command);
         if (!Boolean.TRUE.equals(reserved)) {
             throw new BusinessException("reserve stock failed for skuId=" + task.getSkuId());
+        }
+        reservedTasks.add(task);
+    }
+
+    private void releaseReservedTasks(Queue<StockReservationTask> reservedTasks) {
+        if (reservedTasks == null || reservedTasks.isEmpty()) {
+            return;
+        }
+        for (StockReservationTask task : reservedTasks) {
+            try {
+                StockOperateCommandDTO command = new StockOperateCommandDTO();
+                command.setSubOrderNo(task.getSubOrderNo());
+                command.setOrderNo(task.getMainOrderNo());
+                command.setSkuId(task.getSkuId());
+                command.setQuantity(task.getQuantity());
+                command.setReason("release reserved stock after reservation failure");
+                stockReservationRemoteService.release(command);
+            } catch (Exception ex) {
+                log.error("Failed to release reserved stock after reservation failure, skuId={}", task.getSkuId(), ex);
+            }
         }
     }
 
