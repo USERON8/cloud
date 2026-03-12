@@ -102,10 +102,11 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
 
     @Override
     @Transactional(readOnly = true)
-    public Page<MerchantDTO> getMerchantsPage(Integer page, Integer size, Integer status) {
+    public Page<MerchantDTO> getMerchantsPage(Integer page, Integer size, Integer status, Integer auditStatus) {
         Page<Merchant> pageParam = new Page<>(page, size);
         Page<Merchant> merchantPage = lambdaQuery()
                 .eq(status != null, Merchant::getStatus, status)
+                .eq(auditStatus != null, Merchant::getAuditStatus, auditStatus)
                 .orderByDesc(Merchant::getCreatedAt)
                 .page(pageParam);
 

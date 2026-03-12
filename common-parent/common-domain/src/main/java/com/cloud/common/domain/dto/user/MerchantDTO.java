@@ -40,6 +40,8 @@ public class MerchantDTO implements Serializable {
 
 
     private Integer status;
+
+    private Integer auditStatus;
     
 
 

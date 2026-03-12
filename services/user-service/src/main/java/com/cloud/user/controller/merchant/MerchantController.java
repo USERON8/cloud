@@ -57,6 +57,8 @@ public class MerchantController {
             @Max(value = 100, message = "size must be less than or equal to 100") Integer size,
             @Parameter(description = "Merchant status")
             @RequestParam(required = false) Integer status,
+            @Parameter(description = "Merchant audit status")
+            @RequestParam(required = false) Integer auditStatus,
             Authentication authentication) {
         try {
             if (!SecurityPermissionUtils.isAdmin(authentication)) {
@@ -68,14 +70,16 @@ public class MerchantController {
                 Long merchantId = Long.parseLong(currentUserId);
                 MerchantDTO merchant = merchantService.getMerchantById(merchantId);
                 List<MerchantDTO> records = List.of();
-                if (merchant != null && (status == null || status.equals(merchant.getStatus()))) {
+                if (merchant != null
+                        && (status == null || status.equals(merchant.getStatus()))
+                        && (auditStatus == null || auditStatus.equals(merchant.getAuditStatus()))) {
                     records = List.of(merchant);
                 }
                 PageResult<MerchantDTO> result = PageResult.of(1L, size.longValue(), Long.valueOf(records.size()), records);
                 return Result.success(result);
             }
 
-            Page<MerchantDTO> pageResult = merchantService.getMerchantsPage(page, size, status);
+            Page<MerchantDTO> pageResult = merchantService.getMerchantsPage(page, size, status, auditStatus);
             PageResult<MerchantDTO> result = PageResult.of(
                     pageResult.getCurrent(),
                     pageResult.getSize(),

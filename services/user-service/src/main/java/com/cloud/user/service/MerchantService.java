@@ -63,7 +63,7 @@ public interface MerchantService extends IService<Merchant> {
 
 
 
-    Page<MerchantDTO> getMerchantsPage(Integer page, Integer size, Integer status);
+    Page<MerchantDTO> getMerchantsPage(Integer page, Integer size, Integer status, Integer auditStatus);
 
     
 

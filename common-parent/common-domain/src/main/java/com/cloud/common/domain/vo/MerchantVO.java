@@ -47,6 +47,8 @@ public class MerchantVO {
 
     private Integer status;
 
+    private Integer auditStatus;
+
     
 
 
