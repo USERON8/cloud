@@ -7,6 +7,7 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
+import com.cloud.common.metrics.TradeMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ public class StockFreezeFailedConsumer {
     private final OrderMainMapper orderMainMapper;
     private final OrderSubMapper orderSubMapper;
     private final OrderService orderService;
+    private final TradeMetrics tradeMetrics;
 
     @Bean
     public Consumer<Message<StockFreezeFailedEvent>> stockFreezeFailedConsumer() {
@@ -40,11 +42,13 @@ public class StockFreezeFailedConsumer {
 
             try {
                 if (event == null || event.getOrderNo() == null || event.getOrderNo().isBlank()) {
+                    tradeMetrics.incrementMessageConsume("stock_freeze_failed", "failed");
                     messageIdempotencyService.markSuccess(NS_STOCK_FREEZE_FAILED, eventId);
                     return;
                 }
                 OrderMain mainOrder = orderMainMapper.selectActiveByOrderNo(event.getOrderNo());
                 if (mainOrder == null) {
+                    tradeMetrics.incrementMessageConsume("stock_freeze_failed", "failed");
                     messageIdempotencyService.markSuccess(NS_STOCK_FREEZE_FAILED, eventId);
                     return;
                 }
@@ -58,8 +62,10 @@ public class StockFreezeFailedConsumer {
                         orderService.advanceSubOrderStatus(subOrder.getId(), "CANCEL");
                     }
                 }
+                tradeMetrics.incrementMessageConsume("stock_freeze_failed", "success");
                 messageIdempotencyService.markSuccess(NS_STOCK_FREEZE_FAILED, eventId);
             } catch (Exception ex) {
+                tradeMetrics.incrementMessageConsume("stock_freeze_failed", "retry");
                 log.error("Handle stock-freeze-failed event failed: eventId={}, orderNo={}", eventId,
                         event == null ? null : event.getOrderNo(), ex);
                 throw new RuntimeException("Handle stock-freeze-failed event failed", ex);

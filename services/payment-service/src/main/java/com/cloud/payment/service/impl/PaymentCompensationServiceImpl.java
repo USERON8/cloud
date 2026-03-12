@@ -13,6 +13,7 @@ import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
+import com.cloud.common.metrics.TradeMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     private final PaymentCompensationProperties properties;
     private final List<PaymentProviderGateway> providerGateways;
     private final PaymentMessageProducer paymentMessageProducer;
+    private final TradeMetrics tradeMetrics;
 
     @Override
     public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
@@ -131,6 +133,11 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
             }
         }
         paymentOrderMapper.updateById(order);
+        if (!ORDER_STATUS_PAID.equals(previousStatus) && ORDER_STATUS_PAID.equals(order.getStatus())) {
+            tradeMetrics.incrementPayment("success");
+        } else if (!ORDER_STATUS_FAILED.equals(previousStatus) && ORDER_STATUS_FAILED.equals(order.getStatus())) {
+            tradeMetrics.incrementPayment("failed");
+        }
     }
 
     private void applyRefundAttempt(PaymentOrderEntity order, PaymentRefundEntity refund, int attemptNumber, boolean firstAttempt) {

@@ -3,6 +3,7 @@ package com.cloud.stock.service.impl;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.mapper.StockReservationMapper;
 import com.cloud.stock.module.entity.StockLedger;
@@ -28,6 +29,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     private final StockLedgerMapper stockLedgerMapper;
     private final StockReservationMapper stockReservationMapper;
     private final StockTxnAsyncWriter stockTxnAsyncWriter;
+    private final TradeMetrics tradeMetrics;
 
     @Override
     public StockLedgerVO getLedgerBySkuId(Long skuId) {
@@ -38,23 +40,30 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean reserve(StockOperateCommandDTO command) {
-        StockReservation reservation = insertReservationToken(command);
-        if (reservation == null) {
-            throw new BusinessException("stock reservation not found");
-        }
-        if (shouldSkipReserve(reservation, command)) {
+        try {
+            StockReservation reservation = insertReservationToken(command);
+            if (reservation == null) {
+                throw new BusinessException("stock reservation not found");
+            }
+            if (shouldSkipReserve(reservation, command)) {
+                tradeMetrics.incrementStockFreeze("success");
+                return true;
+            }
+
+            int affected = stockLedgerMapper.reserve(command.getSkuId(), command.getQuantity());
+            if (affected <= 0) {
+                throw new BusinessException("insufficient salable stock");
+            }
+
+            reservation.setStatus("RESERVED");
+            stockReservationMapper.updateById(reservation);
+            writeTxn(command, "RESERVE", command.getReason());
+            tradeMetrics.incrementStockFreeze("success");
             return true;
+        } catch (Exception ex) {
+            tradeMetrics.incrementStockFreeze("failed");
+            throw ex;
         }
-
-        int affected = stockLedgerMapper.reserve(command.getSkuId(), command.getQuantity());
-        if (affected <= 0) {
-            throw new BusinessException("insufficient salable stock");
-        }
-
-        reservation.setStatus("RESERVED");
-        stockReservationMapper.updateById(reservation);
-        writeTxn(command, "RESERVE", command.getReason());
-        return true;
     }
 
     @Override

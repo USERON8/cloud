@@ -17,6 +17,7 @@ import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.PaymentOrderRemoteService;
 import com.cloud.order.service.support.StockReservationRemoteService;
+import com.cloud.common.metrics.TradeMetrics;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -92,76 +93,85 @@ public class OrderServiceImpl implements OrderService {
     private final StockReservationRemoteService stockReservationRemoteService;
     private final PaymentOrderRemoteService paymentOrderRemoteService;
     private final OrderMessageProducer orderMessageProducer;
+    private final TradeMetrics tradeMetrics;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderMain createMainOrder(CreateMainOrderRequest request) {
-        String idempotencyKey = request.getIdempotencyKey();
-        if (StrUtil.isBlank(idempotencyKey)) {
-            throw new BusinessException("idempotency key is required");
-        }
-        if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
-            throw new BusinessException("subOrders is required");
-        }
-
-        OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
-        if (existing != null) {
-            return existing;
-        }
-
-        OrderMain main = new OrderMain();
-        main.setMainOrderNo("M" + System.currentTimeMillis());
-        main.setUserId(request.getUserId());
-        main.setOrderStatus("CREATED");
-        main.setTotalAmount(defaultAmount(request.getTotalAmount()));
-        main.setPayableAmount(defaultAmount(request.getPayableAmount()));
-        main.setRemark(request.getRemark());
-        main.setIdempotencyKey(idempotencyKey.trim());
-
         try {
-            orderMainMapper.insert(main);
-        } catch (DuplicateKeyException duplicateKeyException) {
-            OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
-            if (duplicated != null) {
-                return duplicated;
+            String idempotencyKey = request.getIdempotencyKey();
+            if (StrUtil.isBlank(idempotencyKey)) {
+                throw new BusinessException("idempotency key is required");
             }
-            throw duplicateKeyException;
-        }
-
-        long seq = 1;
-        for (CreateMainOrderRequest.CreateSubOrderRequest subRequest : request.getSubOrders()) {
-            OrderSub sub = new OrderSub();
-            sub.setSubOrderNo("S" + System.currentTimeMillis() + seq++);
-            sub.setMainOrderId(main.getId());
-            sub.setMerchantId(subRequest.getMerchantId());
-            sub.setOrderStatus("CREATED");
-            sub.setShippingStatus("PENDING");
-            sub.setAfterSaleStatus("NONE");
-            sub.setItemAmount(defaultAmount(subRequest.getItemAmount()));
-            sub.setShippingFee(defaultAmount(subRequest.getShippingFee()));
-            sub.setDiscountAmount(defaultAmount(subRequest.getDiscountAmount()));
-            sub.setPayableAmount(defaultAmount(subRequest.getPayableAmount()));
-            sub.setReceiverName(subRequest.getReceiverName());
-            sub.setReceiverPhone(subRequest.getReceiverPhone());
-            sub.setReceiverAddress(subRequest.getReceiverAddress());
-            orderSubMapper.insert(sub);
-
-            for (CreateMainOrderRequest.CreateOrderItemRequest itemRequest : subRequest.getItems()) {
-                OrderItem item = new OrderItem();
-                item.setMainOrderId(main.getId());
-                item.setSubOrderId(sub.getId());
-                item.setSpuId(itemRequest.getSpuId());
-                item.setSkuId(itemRequest.getSkuId());
-                item.setSkuCode(itemRequest.getSkuCode());
-                item.setSkuName(itemRequest.getSkuName());
-                item.setSkuSnapshot(itemRequest.getSkuSnapshot());
-                item.setQuantity(itemRequest.getQuantity());
-                item.setUnitPrice(defaultAmount(itemRequest.getUnitPrice()));
-                item.setTotalPrice(defaultAmount(itemRequest.getTotalPrice()));
-                orderItemMapper.insert(item);
+            if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
+                throw new BusinessException("subOrders is required");
             }
+
+            OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
+            if (existing != null) {
+                tradeMetrics.incrementOrder("success");
+                return existing;
+            }
+
+            OrderMain main = new OrderMain();
+            main.setMainOrderNo("M" + System.currentTimeMillis());
+            main.setUserId(request.getUserId());
+            main.setOrderStatus("CREATED");
+            main.setTotalAmount(defaultAmount(request.getTotalAmount()));
+            main.setPayableAmount(defaultAmount(request.getPayableAmount()));
+            main.setRemark(request.getRemark());
+            main.setIdempotencyKey(idempotencyKey.trim());
+
+            try {
+                orderMainMapper.insert(main);
+            } catch (DuplicateKeyException duplicateKeyException) {
+                OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
+                if (duplicated != null) {
+                    tradeMetrics.incrementOrder("success");
+                    return duplicated;
+                }
+                throw duplicateKeyException;
+            }
+
+            long seq = 1;
+            for (CreateMainOrderRequest.CreateSubOrderRequest subRequest : request.getSubOrders()) {
+                OrderSub sub = new OrderSub();
+                sub.setSubOrderNo("S" + System.currentTimeMillis() + seq++);
+                sub.setMainOrderId(main.getId());
+                sub.setMerchantId(subRequest.getMerchantId());
+                sub.setOrderStatus("CREATED");
+                sub.setShippingStatus("PENDING");
+                sub.setAfterSaleStatus("NONE");
+                sub.setItemAmount(defaultAmount(subRequest.getItemAmount()));
+                sub.setShippingFee(defaultAmount(subRequest.getShippingFee()));
+                sub.setDiscountAmount(defaultAmount(subRequest.getDiscountAmount()));
+                sub.setPayableAmount(defaultAmount(subRequest.getPayableAmount()));
+                sub.setReceiverName(subRequest.getReceiverName());
+                sub.setReceiverPhone(subRequest.getReceiverPhone());
+                sub.setReceiverAddress(subRequest.getReceiverAddress());
+                orderSubMapper.insert(sub);
+
+                for (CreateMainOrderRequest.CreateOrderItemRequest itemRequest : subRequest.getItems()) {
+                    OrderItem item = new OrderItem();
+                    item.setMainOrderId(main.getId());
+                    item.setSubOrderId(sub.getId());
+                    item.setSpuId(itemRequest.getSpuId());
+                    item.setSkuId(itemRequest.getSkuId());
+                    item.setSkuCode(itemRequest.getSkuCode());
+                    item.setSkuName(itemRequest.getSkuName());
+                    item.setSkuSnapshot(itemRequest.getSkuSnapshot());
+                    item.setQuantity(itemRequest.getQuantity());
+                    item.setUnitPrice(defaultAmount(itemRequest.getUnitPrice()));
+                    item.setTotalPrice(defaultAmount(itemRequest.getTotalPrice()));
+                    orderItemMapper.insert(item);
+                }
+            }
+            tradeMetrics.incrementOrder("success");
+            return main;
+        } catch (Exception ex) {
+            tradeMetrics.incrementOrder("failed");
+            throw ex;
         }
-        return main;
     }
 
     private OrderMain findActiveMainOrderByIdempotencyKey(String idempotencyKey) {
@@ -275,31 +285,45 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AfterSale advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
-        AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
-        if (afterSale == null || afterSale.getDeleted() == 1) {
-            throw new BusinessException("after sale not found");
-        }
-        String targetStatus = AFTER_SALE_ACTION_TARGET.get(action.toUpperCase());
-        if (targetStatus == null) {
-            throw new BusinessException("unsupported after-sale action: " + action);
-        }
-        validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
+        boolean refundProcess = false;
+        boolean refundSuccess = false;
+        try {
+            AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
+            if (afterSale == null || afterSale.getDeleted() == 1) {
+                throw new BusinessException("after sale not found");
+            }
+            String targetStatus = AFTER_SALE_ACTION_TARGET.get(action.toUpperCase());
+            if (targetStatus == null) {
+                throw new BusinessException("unsupported after-sale action: " + action);
+            }
+            validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
+            refundProcess = "PROCESS".equalsIgnoreCase(action);
+            refundSuccess = "REFUNDED".equals(targetStatus);
 
-        afterSale.setStatus(targetStatus);
-        if ("REFUNDED".equals(targetStatus)) {
-            afterSale.setRefundedAt(LocalDateTime.now());
-        }
-        if ("CLOSED".equals(targetStatus)) {
-            afterSale.setClosedAt(LocalDateTime.now());
-            afterSale.setCloseReason(remark);
-        }
-        afterSaleMapper.updateById(afterSale);
-        syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
+            afterSale.setStatus(targetStatus);
+            if ("REFUNDED".equals(targetStatus)) {
+                afterSale.setRefundedAt(LocalDateTime.now());
+            }
+            if ("CLOSED".equals(targetStatus)) {
+                afterSale.setClosedAt(LocalDateTime.now());
+                afterSale.setCloseReason(remark);
+            }
+            afterSaleMapper.updateById(afterSale);
+            syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
 
-        if ("PROCESS".equalsIgnoreCase(action)) {
-            dispatchRefundProcess(afterSale, remark);
+            if (refundProcess) {
+                dispatchRefundProcess(afterSale, remark);
+            }
+            if (refundSuccess) {
+                tradeMetrics.incrementRefund("success");
+            }
+            return afterSale;
+        } catch (Exception ex) {
+            if (refundProcess) {
+                tradeMetrics.incrementRefund("failed");
+            }
+            throw ex;
         }
-        return afterSale;
     }
 
     private void syncSubOrderAfterSaleStatus(Long subOrderId, String afterSaleStatus) {

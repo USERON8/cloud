@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderSub;
@@ -36,6 +37,7 @@ public class RefundCompletedConsumer {
     private final OrderItemMapper orderItemMapper;
     private final OrderService orderService;
     private final OrderMessageProducer orderMessageProducer;
+    private final TradeMetrics tradeMetrics;
 
     @Bean
     public Consumer<Message<RefundCompletedEvent>> refundCompletedConsumer() {
@@ -49,6 +51,7 @@ public class RefundCompletedConsumer {
 
             try {
                 if (event == null || event.getAfterSaleNo() == null || event.getAfterSaleNo().isBlank()) {
+                    tradeMetrics.incrementMessageConsume("refund_completed", "failed");
                     messageIdempotencyService.markSuccess(NS_REFUND_COMPLETED, eventId);
                     return;
                 }
@@ -58,6 +61,7 @@ public class RefundCompletedConsumer {
                         .eq(AfterSale::getDeleted, 0)
                         .last("LIMIT 1"));
                 if (afterSale == null) {
+                    tradeMetrics.incrementMessageConsume("refund_completed", "failed");
                     messageIdempotencyService.markSuccess(NS_REFUND_COMPLETED, eventId);
                     return;
                 }
@@ -71,8 +75,10 @@ public class RefundCompletedConsumer {
                     orderMessageProducer.sendStockRestoreEvent(restoreEvent);
                 }
 
+                tradeMetrics.incrementMessageConsume("refund_completed", "success");
                 messageIdempotencyService.markSuccess(NS_REFUND_COMPLETED, eventId);
             } catch (Exception ex) {
+                tradeMetrics.incrementMessageConsume("refund_completed", "retry");
                 log.error("Handle refund-completed event failed: eventId={}, afterSaleNo={}", eventId,
                         event == null ? null : event.getAfterSaleNo(), ex);
                 throw new RuntimeException("Handle refund-completed event failed", ex);

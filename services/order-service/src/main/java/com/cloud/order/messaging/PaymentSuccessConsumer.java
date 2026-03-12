@@ -10,6 +10,7 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
+import com.cloud.common.metrics.TradeMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +35,7 @@ public class PaymentSuccessConsumer {
     private final OrderMainMapper orderMainMapper;
     private final OrderService orderService;
     private final StockReservationRemoteService stockReservationRemoteService;
+    private final TradeMetrics tradeMetrics;
 
     @Bean
     public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
@@ -47,18 +49,21 @@ public class PaymentSuccessConsumer {
 
             try {
                 if (event == null || event.getOrderNo() == null || event.getOrderNo().isBlank()) {
+                    tradeMetrics.incrementMessageConsume("payment_success", "failed");
                     messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
                     return;
                 }
 
                 OrderMain mainOrder = orderMainMapper.selectActiveByOrderNo(event.getOrderNo());
                 if (mainOrder == null) {
+                    tradeMetrics.incrementMessageConsume("payment_success", "failed");
                     messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
                     return;
                 }
 
                 OrderAggregateResponse aggregate = orderService.getOrderAggregate(mainOrder.getId());
                 if (aggregate == null || aggregate.getSubOrders() == null) {
+                    tradeMetrics.incrementMessageConsume("payment_success", "failed");
                     messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
                     return;
                 }
@@ -80,8 +85,10 @@ public class PaymentSuccessConsumer {
                     orderService.advanceSubOrderStatus(subOrder.getId(), "PAY");
                 }
 
+                tradeMetrics.incrementMessageConsume("payment_success", "success");
                 messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
             } catch (Exception ex) {
+                tradeMetrics.incrementMessageConsume("payment_success", "retry");
                 log.error("Handle payment success failed: eventId={}, orderNo={}", eventId,
                         event == null ? null : event.getOrderNo(), ex);
                 throw new RuntimeException("Handle payment success failed", ex);

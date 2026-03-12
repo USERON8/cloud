@@ -7,6 +7,7 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
@@ -34,6 +35,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final PaymentCompensationService paymentCompensationService;
     private final OrderStatusRemoteService orderStatusRemoteService;
     private final PaymentMessageProducer paymentMessageProducer;
+    private final TradeMetrics tradeMetrics;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -112,6 +114,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         if (order == null) {
             throw new BusinessException("payment order not found");
         }
+        String previousStatus = order.getStatus();
 
         PaymentCallbackLogEntity log = new PaymentCallbackLogEntity();
         log.setPaymentNo(command.getPaymentNo());
@@ -136,6 +139,11 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         order.setLastPolledAt(LocalDateTime.now());
         order.setLastPollError(null);
         paymentOrderMapper.updateById(order);
+        if (!"PAID".equals(previousStatus) && "PAID".equals(order.getStatus())) {
+            tradeMetrics.incrementPayment("success");
+        } else if (!"FAILED".equals(previousStatus) && "FAILED".equals(order.getStatus())) {
+            tradeMetrics.incrementPayment("failed");
+        }
         return true;
     }
 

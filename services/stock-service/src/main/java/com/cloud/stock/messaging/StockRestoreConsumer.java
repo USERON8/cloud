@@ -3,6 +3,7 @@ package com.cloud.stock.messaging;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.StockRestoreEvent;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.service.StockLedgerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class StockRestoreConsumer {
 
     private final MessageIdempotencyService messageIdempotencyService;
     private final StockLedgerService stockLedgerService;
+    private final TradeMetrics tradeMetrics;
 
     @Bean
     public Consumer<Message<StockRestoreEvent>> stockRestoreConsumer() {
@@ -35,6 +37,7 @@ public class StockRestoreConsumer {
 
             try {
                 if (event == null || event.getItems() == null) {
+                    tradeMetrics.incrementMessageConsume("stock_restore", "failed");
                     messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
                     return;
                 }
@@ -45,8 +48,10 @@ public class StockRestoreConsumer {
                     }
                     stockLedgerService.rollback(command);
                 }
+                tradeMetrics.incrementMessageConsume("stock_restore", "success");
                 messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
             } catch (Exception ex) {
+                tradeMetrics.incrementMessageConsume("stock_restore", "retry");
                 log.error("Handle stock restore failed: eventId={}, refundNo={}", eventId,
                         event == null ? null : event.getRefundNo(), ex);
                 throw new RuntimeException("Handle stock restore failed", ex);
