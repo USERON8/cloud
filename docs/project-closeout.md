@@ -9,8 +9,9 @@ This note captures the current frozen state of the repository before the project
 - `start-services.*` can run standalone because runtime addresses and development secrets are auto-injected
 - Service rolling logs no longer spill into ad-hoc directories under the repository root
 - SkyWalking is auto-wired for Java services on startup and now exposes HTTP, Dubbo, Redis, and JDBC/MyBatis traces in the local stack
-- Order creation and stock reservation are protected by a bounded Seata AT transaction scope
-- Local pressure-tuning for the order path and MySQL has been applied and documented
+- Order/payment/stock messaging uses `outbox_event` + scheduled relay for reliable delivery
+- Thread pools default to fast-fail on saturation (`FAST_FAIL`)
+- Local performance numbers need re-baselining after recent changes (see `docs/performance-baseline.md`)
 
 ## Current Local Runbook
 
@@ -27,7 +28,7 @@ This note captures the current frozen state of the repository before the project
 ## Known Constraints
 
 - The current MySQL Docker profile is optimized for local throughput experiments and intentionally reduces durability
-- The order path still bottlenecks on hotspot inventory row locking and Seata global lock contention
+- The order path still bottlenecks on hotspot inventory row locking under heavy load
 - Secured actuator endpoints are expected to return `401` or redirects during startup health checks
 - The first SkyWalking startup needs agent download access unless `.tmp/skywalking/` is already warm
 

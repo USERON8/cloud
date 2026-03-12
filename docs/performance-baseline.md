@@ -1,18 +1,22 @@
 # Performance Baseline
 Version: 1.1.0
 
-This document captures the local-development performance baseline that was established during the final tuning pass in March 2026.
+This document tracks **local-development** performance notes. It is not a production SLA.
 
-## Scope
+## Status (2026-03-12)
+
+- The baseline numbers below are **historical** and were captured before the Outbox relay and thread-pool fast-fail changes.
+- After the recent changes (Outbox + fast-fail + gateway caching adjustments), **a new baseline should be re-run**.
+- Use the scripts in `tests/perf/k6/` to re-establish current ceilings.
+
+## Environment Scope
 
 - Environment: local host + Docker infrastructure from `docker/docker-compose.yml`
 - Startup path: `scripts/dev/start-platform.*` or `scripts/dev/start-services.*`
 - Java profile: `dev`
 - Observability: SkyWalking javaagent auto-injected by the startup scripts
 
-These numbers are for regression comparison in the current workstation-like environment. They are not a production SLA.
-
-## Current Baseline
+## Historical Baseline (for reference only)
 
 ### Search read path
 
@@ -23,7 +27,7 @@ These numbers are for regression comparison in the current workstation-like envi
 
 ### Order write path
 
-- Scenario: hotspot order creation with Seata AT and stock reservation
+- Scenario: hotspot order creation with parallel stock reservation
 - Before parallelization: stable ceiling was about `44 TPS`
 - After parallelization and async write optimization:
   - Single SKU stable ceiling: about `112 TPS`
@@ -34,20 +38,14 @@ These numbers are for regression comparison in the current workstation-like envi
   - `112 TPS` on dual SKU corresponds to about `224` stock reservation operations per second
   - Overload starts from the hotspot inventory lock path, not the HTTP layer
 
-## Bottleneck Notes
-
-- The dominant write bottleneck remains the hotspot row lock on `stock_ledger`
-- Seata AT global lock contention is the main limiter on the order path
-- MySQL tuning reduced local write overhead, but it did not remove the hotspot-lock ceiling
-
-## Active Tuning Baseline
+## Active Tuning Baseline (current behavior)
 
 ### Application side
 
 - Druid is the active datasource pool for `order-service` and `stock-service`
-- Dev SQL logging is suppressed by default to avoid stdout amplification during load
-- Dubbo concurrency limits were increased on the order/stock path
-- Order placement uses parallelized reservation and async write paths where safe
+- Order placement uses parallel reservation and async write paths where safe
+- Thread pools now default to **fast-fail** (`FAST_FAIL`) on queue saturation
+- Transactional messaging uses **Outbox + scheduled relay** in `order/payment/stock`
 
 ### Database side
 
@@ -76,9 +74,9 @@ Recommended scripts:
 Before re-running a pressure test:
 
 1. Start the platform with `bash scripts/dev/start-platform.sh --with-monitoring`
-2. Confirm `SkyWalking`, `MySQL`, `Redis`, and `Seata` are healthy
+2. Confirm `SkyWalking`, `MySQL`, and `Redis` are healthy
 3. Run smoke first
-4. Compare new results against the ceilings above, not against raw peak spikes
+4. Compare new results against **fresh runs**, not the historical numbers above
 
 ## Related Docs
 

@@ -106,3 +106,9 @@ Prometheus 已配置以下抓取：
   - 检查 `.tmp/service-runtime/<service>/skywalking-agent/` 下的 agent 日志。
   - 检查服务启动参数里是否包含 `-javaagent:.../skywalking-agent.jar`。
   - 检查 `skywalking-oap` 的 `11800` 端口是否可达。
+
+## 7. 业务指标与 Outbox 关注点
+
+- 业务指标由 `TradeMetrics` 采集：`trade_order_total` / `trade_payment_total` / `trade_refund_total` / `trade_stock_freeze_total` / `trade_message_consume_total`
+- 指标标签：`result`（success/failed/retry）与 `eventType`（如 payment_success、refund_completed）
+- Outbox 健康度建议：按库统计 `outbox_event` 的 `NEW/FAILED/DEAD` 数量，`DEAD > 0` 需要检查 Relay 与 MQ 发送链路

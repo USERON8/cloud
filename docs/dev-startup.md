@@ -34,6 +34,7 @@ powershell -File scripts/dev/start-all.ps1 --with-monitoring
 - infrastructure readiness checks using host ports from `docker/.env`
 - runtime env export for `NACOS_SERVER_ADDR`, `ROCKETMQ_NAME_SERVER`, and `SEATA_SERVER_ADDR`
 - automatic SkyWalking agent wiring with local cache/download
+- scheduled outbox relay inside `order-service`, `payment-service`, and `stock-service`
 - `start-services.*`
 
 `start-containers.*` and `start-services.*` are still available when you want finer control.

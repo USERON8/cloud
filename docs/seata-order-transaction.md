@@ -1,47 +1,33 @@
 # Seata Order Transaction
 Version: 1.1.0
 
-## Scope
+## Current Status
 
-The strong-consistency scope is intentionally limited to order creation and stock reservation:
+Seata dependencies and configuration are present in the codebase, but **no `@GlobalTransactional` flow is enabled** at the moment.
+The order/stock workflow currently relies on **local transactions + Outbox** for reliable messaging, and `payment-service` keeps Seata disabled in `application.yml`.
 
-- `order-service` starts the global transaction
-- `stock-service` joins as an AT branch
-- `payment-service` remains eventual-consistency because external payment providers cannot participate in the same ACID transaction
+## What Is Implemented Today
 
-## Covered Flow
+- Order creation and stock reservation run as local DB transactions.
+- Cross-service consistency is achieved via RocketMQ events written to `outbox_event` and relayed by scheduled jobs.
+- Consumers are idempotent via `MessageIdempotencyService` (Redis).
 
-`POST /api/orders` now executes the following steps inside one Seata global transaction:
+## If You Want To Enable Seata Later
 
-1. Create the main order and sub-orders in `order_db`
-2. Reserve stock in `stock_db` through Dubbo `StockDubboApi.reserve`
-3. Advance created sub-orders to `STOCK_RESERVED`
+Prerequisites (already prepared in this repo):
 
-If any stock reservation fails, Seata rolls back both the order writes and the stock ledger changes.
+- Seata server SQL: `db/init/infra/seata/init.sql`
+- `undo_log` tables in business databases (already included in init scripts)
+- Seata config blocks in service `application.yml`
 
-## Required Infrastructure
+Required code changes (not present today):
 
-- `db/init/infra/seata/init.sql` must be applied so the `seata` database contains the server-side tables required by DB store, including `global_table`, `branch_table`, `lock_table`, `distributed_lock`, and `vgroup_table`
-- business databases must keep their `undo_log` tables
-- local startup should include the Seata server:
+- Add `@GlobalTransactional` on the order entrypoint you want to protect
+- Ensure the stock reservation call is within the same global transaction
+- Validate rollback behavior under insufficient stock
 
-```bash
-bash scripts/dev/start-platform.sh --with-monitoring
-```
+## Non-Goals (Current State)
 
-The unified startup entrypoint now exports `SEATA_SERVER_ADDR` from `docker/.env`, so service processes follow the host port mapping automatically.
-
-## Verification
-
-Recommended checks after startup:
-
-1. create an order that reserves stock successfully
-2. confirm the sub-order status becomes `STOCK_RESERVED`
-3. force an insufficient-stock request and confirm the order data is rolled back
-4. inspect `seata.global_table`, `seata.branch_table`, `seata.distributed_lock`, and the service `undo_log` tables while testing
-
-## Non-Goals
-
-- payment callback processing
-- third-party payment side effects
-- cross-service eventual-consistency flows that are already driven by MQ
+- Global transaction coverage for payment callbacks
+- Cross-service ACID on third-party payment side effects
+- SAGA/TCC flows (not implemented yet)
