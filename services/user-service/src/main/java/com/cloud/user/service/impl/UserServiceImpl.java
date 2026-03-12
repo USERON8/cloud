@@ -449,9 +449,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .forEach(entity -> {
                         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
                         authPrincipalDTO.setId(entity.getId());
-                        authPrincipalDTO.setUsername(entity.getUsername());
-                        authPrincipalDTO.setStatus(entity.getStatus());
-                        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                        boolean hasUpdate = false;
+                        if (StrUtil.isNotBlank(entity.getUsername())) {
+                            authPrincipalDTO.setUsername(entity.getUsername());
+                            hasUpdate = true;
+                        }
+                        if (entity.getStatus() != null) {
+                            authPrincipalDTO.setStatus(entity.getStatus());
+                            hasUpdate = true;
+                        }
+                        if (hasUpdate) {
+                            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                        }
                     });
         }
         return updated;
