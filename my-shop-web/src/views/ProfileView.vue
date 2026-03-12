@@ -83,10 +83,12 @@ const {
 const accountName = computed(() => sessionState.user?.username || 'Unknown')
 const accountType = computed(() => sessionState.user?.roles?.[0] || 'Unknown')
 const avatarPreview = computed(() => {
-  if (profileValues.avatarUrl.trim() && !avatarLoadFailed.value) {
-    return profileValues.avatarUrl.trim()
+  const avatarUrl = profileValues.avatarUrl ?? ''
+  if (avatarUrl.trim() && !avatarLoadFailed.value) {
+    return avatarUrl.trim()
   }
-  const c = (profileValues.nickname.trim()[0] || accountName.value[0] || 'U').toUpperCase()
+  const nickname = profileValues.nickname ?? ''
+  const c = (nickname.trim()[0] || accountName.value[0] || 'U').toUpperCase()
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
     <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3f9e"/><stop offset="100%" stop-color="#58a0ff"/></linearGradient></defs>
     <rect width="120" height="120" rx="30" fill="url(#g)"/>

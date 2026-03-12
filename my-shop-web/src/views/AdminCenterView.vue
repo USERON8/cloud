@@ -32,8 +32,7 @@ import {
   deleteMerchant,
   getMerchants,
   rejectMerchant,
-  updateMerchant,
-  updateMerchantStatus
+  updateMerchant
 } from '../api/merchant'
 import { listMerchantAuthByStatus, reviewMerchantAuth } from '../api/merchant-auth'
 import {
