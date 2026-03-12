@@ -2,6 +2,7 @@ package com.cloud.stock.service.impl;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.mapper.StockReservationMapper;
 import com.cloud.stock.module.entity.StockReservation;
@@ -32,6 +33,9 @@ class StockLedgerServiceImplTest {
     @Mock
     private StockTxnAsyncWriter stockTxnAsyncWriter;
 
+    @Mock
+    private TradeMetrics tradeMetrics;
+
     @InjectMocks
     private StockLedgerServiceImpl stockLedgerService;
 
@@ -51,20 +55,20 @@ class StockLedgerServiceImplTest {
     }
 
     @Test
-    void reserveShouldAllowRetryAfterRollback() {
+    void reserveShouldRejectAfterRollback() {
         StockOperateCommandDTO command = command("S-2", 51001L, 2);
         StockReservation reservation = reservation("S-2", 51001L, 2, "ROLLED_BACK");
 
         when(stockReservationMapper.insert(any(StockReservation.class))).thenThrow(new org.springframework.dao.DuplicateKeyException("dup"));
         when(stockReservationMapper.selectActiveBySubOrderNoAndSkuId("S-2", 51001L)).thenReturn(reservation);
-        when(stockLedgerMapper.reserve(51001L, 2)).thenReturn(1);
 
-        assertThat(stockLedgerService.reserve(command)).isTrue();
+        assertThatThrownBy(() -> stockLedgerService.reserve(command))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("rolled back");
 
-        verify(stockLedgerMapper).reserve(51001L, 2);
-        verify(stockReservationMapper).updateById(reservation);
-        verify(stockTxnAsyncWriter).write(any(StockTxn.class));
-        assertThat(reservation.getStatus()).isEqualTo("RESERVED");
+        verify(stockLedgerMapper, never()).reserve(anyLong(), any());
+        verify(stockReservationMapper, never()).updateById(any(StockReservation.class));
+        verify(stockTxnAsyncWriter, never()).write(any(StockTxn.class));
     }
 
     @Test
