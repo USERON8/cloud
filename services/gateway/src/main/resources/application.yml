@@ -157,6 +157,11 @@ app:
       routes:
         search-path: ${SEARCH_FALLBACK_SEARCH_PATH:/api/product/search}
         suggestions-path: ${SEARCH_FALLBACK_SUGGESTIONS_PATH:/api/product/suggestions}
+      cache:
+        enabled: ${SEARCH_FALLBACK_CACHE_ENABLED:true}
+        max-size: ${SEARCH_FALLBACK_CACHE_MAX_SIZE:1000}
+        search-ttl-ms: ${SEARCH_FALLBACK_CACHE_SEARCH_TTL_MS:3000}
+        suggestions-ttl-ms: ${SEARCH_FALLBACK_CACHE_SUGGESTIONS_TTL_MS:10000}
 
 resilience4j:
   timelimiter:
