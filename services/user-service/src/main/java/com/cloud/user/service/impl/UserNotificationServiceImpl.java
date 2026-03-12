@@ -124,7 +124,10 @@ public class UserNotificationServiceImpl implements UserNotificationService {
         }
         try {
             return userService.getUserById(userId);
-        } catch (EntityNotFoundException | BusinessException e) {
+        } catch (EntityNotFoundException e) {
+            log.warn("User is not available for notification, userId={}", userId);
+            return null;
+        } catch (BusinessException e) {
             log.warn("User is not available for notification, userId={}", userId);
             return null;
         } catch (Exception e) {
