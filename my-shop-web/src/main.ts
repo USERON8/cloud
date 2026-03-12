@@ -12,4 +12,7 @@ app.use(VueLazyload, {
   observer: true
 })
 app.use(MotionPlugin)
+app.config.errorHandler = (error, _instance, info) => {
+  console.error('[Vue error]', info, error)
+}
 app.mount('#app')
