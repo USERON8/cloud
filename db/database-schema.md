@@ -1,489 +1,951 @@
-# 云商城系统数据库表结构文档
+# Database Schema (Generated)
 Version: 1.1.0
-
-## 说明
-
-- 本文档为高层概览，**实际建表以 `db/init/**/init.sql` 为准**
-- `order/payment/stock` 数据库包含统一的 `outbox_event` / `inbox_consume_log` / `undo_log`
-- 如发现字段/表名不一致，请以 init SQL 为准并更新本文档
-
-## 概述
-
-该文档详细描述了云商城系统的数据库表结构，包含6个主要数据库：用户数据库、商品数据库、订单数据库、支付数据库、库存数据库和配置管理数据库。
-
----
-
-## 1. 用户数据库 (user_db)
-
-### 1.1 用户表 (users)
-
-**功能描述**：存储系统中所有用户的基本信息
-
-| 字段名               | 数据类型                               | 约束                                                             | 描述                        |
-|-------------------|------------------------------------|----------------------------------------------------------------|---------------------------|
-| id                | BIGINT UNSIGNED                    | PRIMARY KEY                                                    | 用户ID                      |
-| username          | VARCHAR(50)                        | NOT NULL UNIQUE                                                | 用户名                       |
-| password          | VARCHAR(255)                       | NOT NULL                                                       | 加密密码                      |
-| phone             | VARCHAR(20)                        | UNIQUE                                                         | 手机号                       |
-| nickname          | VARCHAR(50)                        | NOT NULL                                                       | 昵称                        |
-| avatar_url        | VARCHAR(255)                       |                                                                | 头像URL                     |
-| email             | VARCHAR(100)                       | UNIQUE                                                         | 邮箱地址（用于GitHub登录）          |
-| github_id         | BIGINT UNSIGNED                    |                                                                | GitHub用户ID（OAuth登录专用）     |
-| github_username   | VARCHAR(100)                       |                                                                | GitHub用户名（OAuth登录专用）      |
-| oauth_provider    | VARCHAR(20)                        |                                                                | OAuth提供商（github, wechat等） |
-| oauth_provider_id | VARCHAR(100)                       |                                                                | OAuth提供商用户ID              |
-| status            | TINYINT                            | NOT NULL DEFAULT 1                                             | 状态：0-禁用，1-启用              |
-| created_at        | DATETIME                           | NOT NULL DEFAULT CURRENT_TIMESTAMP                             | 创建时间                      |
-| updated_at        | DATETIME                           | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                      |
-| deleted           | TINYINT                            | NOT NULL DEFAULT 0                                             | 软删除标记                     |
-
-**索引**：
-
-- idx_username (username)
-- idx_phone (phone)
-- idx_email (email)
-- idx_status (status)
-- idx_github_id (github_id)
-- idx_github_username (github_username)
-- idx_oauth_provider (oauth_provider)
-- idx_oauth_provider_combined (oauth_provider, oauth_provider_id)
-- uk_github_id (github_id) UNIQUE
-- uk_github_username (github_username) UNIQUE
-- uk_oauth_provider_id (oauth_provider, oauth_provider_id) UNIQUE
-
-### 1.2 用户地址表 (user_address)
-
-**功能描述**：存储用户的收货地址信息
-
-| 字段名            | 数据类型            | 约束                                 | 描述             |
-|----------------|-----------------|------------------------------------|----------------|
-| id             | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 地址ID           |
-| user_id        | BIGINT UNSIGNED | NOT NULL                           | 用户ID           |
-| consignee      | VARCHAR(50)     | NOT NULL                           | 收货人姓名          |
-| phone          | VARCHAR(20)     | NOT NULL                           | 联系电话           |
-| province       | VARCHAR(20)     | NOT NULL                           | 省份             |
-| city           | VARCHAR(20)     | NOT NULL                           | 城市             |
-| district       | VARCHAR(20)     | NOT NULL                           | 区县             |
-| street         | VARCHAR(100)    | NOT NULL                           | 街道             |
-| detail_address | VARCHAR(255)    | NOT NULL                           | 详细地址           |
-| is_default     | TINYINT         | NOT NULL DEFAULT 0                 | 是否默认地址：0-否，1-是 |
-| created_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间           |
-| updated_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间           |
-| deleted        | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记          |
-
-**索引**：
-
-- idx_user_id (user_id)
-- idx_user_default (user_id, is_default)
-
-**外键**：
-
-- user_id 引用 users(id) ON DELETE CASCADE
-
-### 1.3 管理员表 (admin)
-
-**功能描述**：存储管理员账户信息
-
-| 字段名        | 数据类型            | 约束                                 | 描述           |
-|------------|-----------------|------------------------------------|--------------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY                        | 管理员ID        |
-| username   | VARCHAR(50)     | NOT NULL UNIQUE                    | 用户名          |
-| password   | VARCHAR(255)    | NOT NULL                           | 加密密码         |
-| real_name  | VARCHAR(50)     | NOT NULL                           | 真实姓名         |
-| phone      | VARCHAR(20)     |                                    | 联系电话         |
-| role       | VARCHAR(20)     | NOT NULL DEFAULT 'ADMIN'           | 角色           |
-| status     | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用 |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间         |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间         |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记        |
-
-**索引**：
-
-- idx_username (username)
-- idx_role (role)
-- idx_status (status)
-
-### 1.4 商家表 (merchant)
-
-**功能描述**：存储商家账户的基本信息
-
-| 字段名           | 数据类型            | 约束                                 | 描述           |
-|---------------|-----------------|------------------------------------|--------------|
-| id            | BIGINT UNSIGNED | PRIMARY KEY                        | 商家ID         |
-| username      | VARCHAR(50)     | NOT NULL UNIQUE                    | 用户名          |
-| password      | VARCHAR(255)    | NOT NULL                           | 加密密码         |
-| merchant_name | VARCHAR(100)    | NOT NULL                           | 商家名称         |
-| phone         | VARCHAR(20)     |                                    | 联系电话         |
-| status        | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用 |
-| created_at    | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间         |
-| updated_at    | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间         |
-| deleted       | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记        |
-
-**索引**：
-
-- idx_username (username)
-- idx_status (status)
-
-### 1.5 商家认证表 (merchant_auth)
-
-**功能描述**：存储商家实名认证信息
-
-| 字段名                     | 数据类型            | 约束                                 | 描述                       |
-|-------------------------|-----------------|------------------------------------|--------------------------|
-| id                      | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键                       |
-| merchant_id             | BIGINT UNSIGNED | NOT NULL                           | 商家ID                     |
-| business_license_number | VARCHAR(50)     | NOT NULL                           | 营业执照号码                   |
-| business_license_url    | VARCHAR(255)    | NOT NULL                           | 营业执照图片URL                |
-| id_card_front_url       | VARCHAR(255)    | NOT NULL                           | 身份证正面URL                 |
-| id_card_back_url        | VARCHAR(255)    | NOT NULL                           | 身份证反面URL                 |
-| contact_phone           | VARCHAR(20)     | NOT NULL                           | 联系电话                     |
-| contact_address         | VARCHAR(255)    | NOT NULL                           | 联系地址                     |
-| auth_status             | TINYINT         | NOT NULL DEFAULT 0                 | 认证状态：0-待审核，1-审核通过，2-审核拒绝 |
-| auth_remark             | VARCHAR(255)    |                                    | 审核备注                     |
-| created_at              | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                     |
-| updated_at              | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间                     |
-| deleted                 | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记                    |
-
-**索引**：
-
-- uk_merchant_id (merchant_id) UNIQUE
-- idx_auth_status (auth_status)
-
----
-
-## 2. 商品数据库 (product_db)
-
-### 2.1 商品表 (products)
-
-**功能描述**：存储商品的基本信息
-
-| 字段名            | 数据类型            | 约束                                 | 描述           |
-|----------------|-----------------|------------------------------------|--------------|
-| id             | BIGINT UNSIGNED | PRIMARY KEY                        | 商品ID         |
-| shop_id        | BIGINT UNSIGNED | NOT NULL                           | 店铺ID         |
-| product_name   | VARCHAR(100)    | NOT NULL                           | 商品名称         |
-| price          | DECIMAL(10, 2)  | NOT NULL                           | 售价           |
-| stock_quantity | INT             | NOT NULL DEFAULT 0                 | 库存数量         |
-| category_id    | BIGINT UNSIGNED |                                    | 分类ID         |
-| status         | TINYINT         | NOT NULL DEFAULT 0                 | 状态：0-下架，1-上架 |
-| created_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间         |
-| updated_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间         |
-| deleted        | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记        |
-
-**索引**：
-
-- idx_shop_id (shop_id)
-- idx_status (status)
-- idx_category_id (category_id)
-
-### 2.2 商品分类表 (category)
-
-**功能描述**：存储商品分类的层级结构
-
-| 字段名        | 数据类型            | 约束                                 | 描述           |
-|------------|-----------------|------------------------------------|--------------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 分类ID         |
-| parent_id  | BIGINT UNSIGNED | NOT NULL DEFAULT 0                 | 父分类ID        |
-| name       | VARCHAR(50)     | NOT NULL                           | 分类名称         |
-| level      | TINYINT         | NOT NULL                           | 层级           |
-| status     | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-禁用，1-启用 |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间         |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间         |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记        |
-
-**索引**：
-
-- idx_parent_id (parent_id)
-- idx_status (status)
-- idx_level (level)
-
-### 2.3 商家店铺表 (merchant_shop)
-
-**功能描述**：存储商家的店铺信息
-
-| 字段名           | 数据类型            | 约束                                 | 描述           |
-|---------------|-----------------|------------------------------------|--------------|
-| id            | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 店铺ID         |
-| merchant_id   | BIGINT UNSIGNED | NOT NULL                           | 商家ID         |
-| shop_name     | VARCHAR(100)    | NOT NULL                           | 店铺名称         |
-| avatar_url    | VARCHAR(255)    |                                    | 店铺头像URL      |
-| description   | TEXT            |                                    | 店铺描述         |
-| contact_phone | VARCHAR(20)     | NOT NULL                           | 客服电话         |
-| address       | VARCHAR(255)    | NOT NULL                           | 详细地址         |
-| status        | TINYINT         | NOT NULL DEFAULT 1                 | 状态：0-关闭，1-营业 |
-| created_at    | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间         |
-| updated_at    | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间         |
-| deleted       | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记        |
-
-**索引**：
-
-- idx_merchant_id (merchant_id)
-- idx_status (status)
-
----
-
-## 3. 订单数据库 (order_db)
-
-### 3.1 订单主表 (orders)
-
-**功能描述**：存储订单的主要信息
-
-| 字段名           | 数据类型            | 约束                                                             | 描述                               |
-|---------------|-----------------|----------------------------------------------------------------|----------------------------------|
-| id            | BIGINT UNSIGNED | PRIMARY KEY                                                    | 订单ID                             |
-| order_no      | VARCHAR(32)     | NOT NULL UNIQUE                                                | 订单号（业务唯一编号）                      |
-| user_id       | BIGINT UNSIGNED | NOT NULL                                                       | 用户ID                             |
-| total_amount  | DECIMAL(10, 2)  | NOT NULL                                                       | 订单总额                             |
-| pay_amount    | DECIMAL(10, 2)  | NOT NULL                                                       | 实付金额                             |
-| status        | TINYINT         | NOT NULL                                                       | 状态：0-待支付，1-已支付，2-已发货，3-已完成，4-已取消 |
-| address_id    | BIGINT UNSIGNED | NOT NULL                                                       | 地址ID                             |
-| pay_time      | DATETIME        | NULL                                                           | 支付时间                             |
-| ship_time     | DATETIME        | NULL                                                           | 发货时间                             |
-| complete_time | DATETIME        | NULL                                                           | 完成时间                             |
-| cancel_time   | DATETIME        | NULL                                                           | 取消时间                             |
-| cancel_reason | VARCHAR(255)    | NULL                                                           | 取消原因                             |
-| remark        | VARCHAR(500)    | NULL                                                           | 备注                               |
-| create_time   | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP                             | 创建时间                             |
-| update_time   | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                             |
-| create_by     | BIGINT UNSIGNED | NULL                                                           | 创建人                              |
-| update_by     | BIGINT UNSIGNED | NULL                                                           | 更新人                              |
-| version       | INT             | NOT NULL DEFAULT 0                                             | 乐观锁版本号                           |
-| deleted       | TINYINT         | NOT NULL DEFAULT 0                                             | 逻辑删除：0-未删除,1-已删除                 |
-
-**索引**：
-
-- uk_order_no (order_no) UNIQUE
-- idx_user_status (user_id, status)
-- idx_create_time (create_time)
-- idx_status (status)
-- idx_pay_time (pay_time)
-- idx_ship_time (ship_time)
-- idx_complete_time (complete_time)
-- idx_cancel_time (cancel_time)
-
-### 3.2 订单明细表 (order_item)
-
-**功能描述**：存储订单中的商品详细信息
-
-| 字段名              | 数据类型            | 约束                                                             | 描述               |
-|------------------|-----------------|----------------------------------------------------------------|------------------|
-| id               | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT                                     | 主键               |
-| order_id         | BIGINT UNSIGNED | NOT NULL                                                       | 订单ID             |
-| product_id       | BIGINT UNSIGNED | NOT NULL                                                       | 商品ID             |
-| product_snapshot | JSON            | NOT NULL                                                       | 商品快照             |
-| quantity         | INT             | NOT NULL                                                       | 购买数量             |
-| price            | DECIMAL(10, 2)  | NOT NULL                                                       | 购买时单价            |
-| create_time      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP                             | 创建时间             |
-| update_time      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间             |
-| create_by        | BIGINT UNSIGNED | NULL                                                           | 创建人              |
-| update_by        | BIGINT UNSIGNED | NULL                                                           | 更新人              |
-| version          | INT             | NOT NULL DEFAULT 0                                             | 乐观锁版本号           |
-| deleted          | TINYINT         | NOT NULL DEFAULT 0                                             | 逻辑删除：0-未删除,1-已删除 |
-
-**索引**：
-
-- idx_order_product (order_id, product_id)
-- idx_product_id (product_id)
-- idx_create_time (create_time)
-
----
-
-## 4. 支付数据库 (payment_db)
-
-### 4.1 支付主表 (payment)
-
-**功能描述**：存储支付记录的主要信息
-
-| 字段名            | 数据类型            | 约束                                 | 描述                       |
-|----------------|-----------------|------------------------------------|--------------------------|
-| id             | BIGINT UNSIGNED | PRIMARY KEY                        | 支付ID                     |
-| order_id       | BIGINT UNSIGNED | NOT NULL UNIQUE                    | 订单ID                     |
-| user_id        | BIGINT UNSIGNED | NOT NULL                           | 用户ID                     |
-| amount         | DECIMAL(10, 2)  | NOT NULL                           | 支付金额                     |
-| status         | TINYINT         | NOT NULL                           | 状态：0-待支付，1-成功，2-失败，3-已退款 |
-| channel        | TINYINT         | NOT NULL                           | 渠道：1-支付宝，2-微信，3-银行卡      |
-| transaction_id | VARCHAR(100)    |                                    | 第三方流水号                   |
-| trace_id       | VARCHAR(64)     |                                    | 跟踪ID                     |
-| created_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间                     |
-| updated_at     | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间                     |
-| deleted        | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记                    |
-
-**索引**：
-
-- idx_order_user (order_id, user_id)
-- idx_status (status)
-- idx_created_at (created_at)
-- idx_trace_id (trace_id)
-
-### 4.2 支付流水表 (payment_flow)
-
-**功能描述**：记录支付相关的资金流水
-
-| 字段名        | 数据类型            | 约束                                 | 描述             |
-|------------|-----------------|------------------------------------|----------------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键             |
-| payment_id | BIGINT UNSIGNED | NOT NULL                           | 支付ID           |
-| flow_type  | TINYINT         | NOT NULL                           | 流水类型：1-支付，2-退款 |
-| amount     | DECIMAL(10, 2)  | NOT NULL                           | 变动金额           |
-| trace_id   | VARCHAR(64)     |                                    | 跟踪ID           |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间           |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间           |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记          |
-
-**索引**：
-
-- idx_payment_flow (payment_id, flow_type)
-- idx_trace_id (trace_id)
-
----
-
-## 5. 库存数据库 (stock_db)
-
-### 5.1 库存主表 (stock)
-
-**功能描述**：管理商品的库存信息
-
-| 字段名             | 数据类型            | 约束                                 | 描述                |
-|-----------------|-----------------|------------------------------------|-------------------|
-| id              | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键                |
-| product_id      | BIGINT UNSIGNED | NOT NULL                           | 商品ID              |
-| product_name    | VARCHAR(100)    | NOT NULL                           | 商品名称              |
-| stock_quantity  | INT             | NOT NULL DEFAULT 0                 | 总库存量              |
-| frozen_quantity | INT             | NOT NULL DEFAULT 0                 | 冻结库存量             |
-| stock_status    | TINYINT         | NOT NULL DEFAULT 1                 | 状态：1-正常，2-缺货，3-下架 |
-| version         | INT             | NOT NULL DEFAULT 0                 | 乐观锁版本号            |
-| created_at      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间              |
-| updated_at      | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间              |
-| deleted         | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记             |
-
-**索引**：
-
-- uk_product_id (product_id) UNIQUE
-- idx_stock_status (stock_status)
-
-### 5.2 入库记录表 (stock_in)
-
-**功能描述**：记录商品的入库操作
-
-| 字段名        | 数据类型            | 约束                                 | 描述    |
-|------------|-----------------|------------------------------------|-------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键    |
-| product_id | BIGINT UNSIGNED | NOT NULL                           | 商品ID  |
-| quantity   | INT             | NOT NULL                           | 入库数量  |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间  |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间  |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记 |
-
-**索引**：
-
-- idx_product_id (product_id)
-
-### 5.3 出库记录表 (stock_out)
-
-**功能描述**：记录商品的出库操作
-
-| 字段名        | 数据类型            | 约束                                 | 描述    |
-|------------|-----------------|------------------------------------|-------|
-| id         | BIGINT UNSIGNED | PRIMARY KEY AUTO_INCREMENT         | 主键    |
-| product_id | BIGINT UNSIGNED | NOT NULL                           | 商品ID  |
-| order_id   | BIGINT UNSIGNED | NOT NULL                           | 订单ID  |
-| quantity   | INT             | NOT NULL                           | 出库数量  |
-| created_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间  |
-| updated_at | DATETIME        | NOT NULL DEFAULT CURRENT_TIMESTAMP | 更新时间  |
-| deleted    | TINYINT         | NOT NULL DEFAULT 0                 | 软删除标记 |
-
-**索引**：
-
-- idx_product_id (product_id)
-- idx_order_id (order_id)
-
----
-
-## 6. Nacos配置数据库 (nacos_config)
-
-### 6.1 配置信息表 (config_info)
-
-**功能描述**：存储Nacos配置中心的配置信息
-
-| 字段名                | 数据类型          | 约束                                 | 描述      |
-|--------------------|---------------|------------------------------------|---------|
-| id                 | bigint        | PRIMARY KEY AUTO_INCREMENT         | ID      |
-| data_id            | varchar(255)  | NOT NULL                           | 配置标识    |
-| group_id           | varchar(128)  |                                    | 组标识     |
-| content            | longtext      | NOT NULL                           | 配置内容    |
-| md5                | varchar(32)   |                                    | MD5值    |
-| gmt_create         | datetime      | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间    |
-| gmt_modified       | datetime      | NOT NULL DEFAULT CURRENT_TIMESTAMP | 修改时间    |
-| src_user           | text          |                                    | 源用户     |
-| src_ip             | varchar(50)   |                                    | 源IP     |
-| app_name           | varchar(128)  |                                    | 应用名     |
-| tenant_id          | varchar(128)  | DEFAULT ''                         | 租户字段    |
-| c_desc             | varchar(256)  |                                    | 配置描述    |
-| c_use              | varchar(64)   |                                    | 配置使用说明  |
-| effect             | varchar(64)   |                                    | 配置生效的描述 |
-| type               | varchar(64)   |                                    | 配置的类型   |
-| c_schema           | text          |                                    | 配置的模式   |
-| encrypted_data_key | varchar(1024) | NOT NULL DEFAULT ''                | 密钥      |
-
-**索引**：
-
-- uk_configinfo_datagrouptenant (data_id, group_id, tenant_id) UNIQUE
-
-### 6.2 其他Nacos相关表
-
-- **config_info_gray**: 灰度配置信息表
-- **config_tags_relation**: 配置标签关系表
-- **group_capacity**: 组容量信息表
-- **his_config_info**: 历史配置信息表
-- **permissions**: 权限表
-- **roles**: 角色表
-- **tenant_capacity**: 租户容量信息表
-- **tenant_info**: 租户信息表
-- **users**: Nacos用户表
-
----
-
-## 数据库设计特点
-
-### 1. 数据分库设计
-
-系统采用按业务模块分库的设计：
-
-- **user_db**: 用户相关数据
-- **product_db**: 商品相关数据
-- **order_db**: 订单相关数据
-- **payment_db**: 支付相关数据
-- **stock_db**: 库存相关数据
-- **nacos_config**: 配置管理数据
-
-### 2. 公共字段设计
-
-所有业务表都包含以下公共字段：
-
-- `created_at`: 创建时间
-- `updated_at`: 更新时间
-- `deleted`: 软删除标记
-
-### 3. 主键设计
-
-- 业务表主键统一使用 `BIGINT UNSIGNED`
-- 部分表使用雪花算法生成分布式ID
-
-### 4. 索引设计
-
-- 为常用查询条件创建合适的索引
-- 复合索引考虑查询模式和字段选择性
-
-### 5. 数据类型选择
-
-- 金额字段使用 `DECIMAL(10,2)` 确保精度
-- 状态字段使用 `TINYINT` 节省存储空间
-- 文本内容根据长度选择合适的varchar/text类型
-
-### 6. 约束设计
-
-- 重要字段添加NOT NULL约束
-- 唯一性要求的字段添加UNIQUE约束
-- 关键关联关系添加外键约束
-
-这个设计支持高并发的电商业务场景，具有良好的可扩展性和维护性。
+Generated: 2026-03-12
+
+This document is generated from `db/init/**/init.sql` and reflects the current repository state.
+If a table definition differs from runtime, update the corresponding init SQL first.
+
+## auth_db
+
+### auth_oauth_account
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| provider | VARCHAR(32) |
+| provider_user_id | VARCHAR(100) |
+| provider_username | VARCHAR(100) |
+| email | VARCHAR(100) |
+| avatar_url | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### auth_user
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| username | VARCHAR(50) |
+| password | VARCHAR(255) |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### sys_permission
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| permission_name | VARCHAR(64) |
+| permission_code | VARCHAR(128) |
+| http_method | VARCHAR(16) |
+| api_path | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### sys_role
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| role_name | VARCHAR(64) |
+| role_code | VARCHAR(64) |
+| role_status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### sys_role_permission
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| role_id | BIGINT UNSIGNED |
+| permission_id | BIGINT UNSIGNED |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### sys_user_role
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| role_id | BIGINT UNSIGNED |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## nacos_config
+
+## order_db
+
+### after_sale
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| after_sale_no | VARCHAR(64) |
+| main_order_id | BIGINT UNSIGNED |
+| sub_order_id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| merchant_id | BIGINT UNSIGNED |
+| after_sale_type | VARCHAR(16) |
+| status | VARCHAR(32) |
+| reason | VARCHAR(255) |
+| description | VARCHAR(1000) |
+| apply_amount | DECIMAL(12, 2) |
+| approved_amount | DECIMAL(12, 2) |
+| return_logistics_company | VARCHAR(64) |
+| return_logistics_no | VARCHAR(64) |
+| refund_channel | VARCHAR(32) |
+| refunded_at | DATETIME |
+| closed_at | DATETIME |
+| close_reason | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### after_sale_evidence
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| after_sale_id | BIGINT UNSIGNED |
+| evidence_type | VARCHAR(32) |
+| object_key | VARCHAR(255) |
+| object_url | VARCHAR(500) |
+| uploaded_by | BIGINT UNSIGNED |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### after_sale_item
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| after_sale_id | BIGINT UNSIGNED |
+| order_item_id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| quantity | INT |
+| apply_amount | DECIMAL(12, 2) |
+| approved_amount | DECIMAL(12, 2) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### after_sale_timeline
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| after_sale_id | BIGINT UNSIGNED |
+| from_status | VARCHAR(32) |
+| to_status | VARCHAR(32) |
+| action | VARCHAR(64) |
+| operator_id | BIGINT UNSIGNED |
+| operator_role | VARCHAR(32) |
+| remark | VARCHAR(500) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### cart
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| cart_no | VARCHAR(64) |
+| user_id | BIGINT UNSIGNED |
+| cart_status | VARCHAR(16) |
+| selected_count | INT |
+| total_amount | DECIMAL(12, 2) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### cart_item
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| cart_id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| spu_id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| sku_name | VARCHAR(255) |
+| quantity | INT |
+| unit_price | DECIMAL(12, 2) |
+| selected | TINYINT |
+| checked_out | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### inbox_consume_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| consumer_group | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| consume_status | VARCHAR(16) |
+| error_message | VARCHAR(1000) |
+| consumed_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### order_item
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| main_order_id | BIGINT UNSIGNED |
+| sub_order_id | BIGINT UNSIGNED |
+| spu_id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| sku_code | VARCHAR(64) |
+| sku_name | VARCHAR(255) |
+| sku_snapshot | JSON |
+| quantity | INT |
+| unit_price | DECIMAL(12, 2) |
+| total_price | DECIMAL(12, 2) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### order_main
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| main_order_no | VARCHAR(64) |
+| user_id | BIGINT UNSIGNED |
+| order_status | VARCHAR(32) |
+| total_amount | DECIMAL(12, 2) |
+| payable_amount | DECIMAL(12, 2) |
+| pay_channel | VARCHAR(32) |
+| paid_at | DATETIME |
+| cancelled_at | DATETIME |
+| cancel_reason | VARCHAR(255) |
+| remark | VARCHAR(255) |
+| idempotency_key | VARCHAR(128) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### order_sub
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| sub_order_no | VARCHAR(64) |
+| main_order_id | BIGINT UNSIGNED |
+| merchant_id | BIGINT UNSIGNED |
+| order_status | VARCHAR(32) |
+| shipping_status | VARCHAR(32) |
+| after_sale_status | VARCHAR(32) |
+| item_amount | DECIMAL(12, 2) |
+| shipping_fee | DECIMAL(12, 2) |
+| discount_amount | DECIMAL(12, 2) |
+| payable_amount | DECIMAL(12, 2) |
+| receiver_name | VARCHAR(64) |
+| receiver_phone | VARCHAR(32) |
+| receiver_address | VARCHAR(255) |
+| shipped_at | DATETIME |
+| received_at | DATETIME |
+| done_at | DATETIME |
+| closed_at | DATETIME |
+| close_reason | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### outbox_event
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| aggregate_type | VARCHAR(64) |
+| aggregate_id | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| payload | JSON |
+| status | VARCHAR(16) |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## payment_db
+
+### inbox_consume_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| consumer_group | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| consume_status | VARCHAR(16) |
+| error_message | VARCHAR(1000) |
+| consumed_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### outbox_event
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| aggregate_type | VARCHAR(64) |
+| aggregate_id | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| payload | JSON |
+| status | VARCHAR(16) |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### payment_callback_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| payment_no | VARCHAR(64) |
+| callback_no | VARCHAR(64) |
+| callback_status | VARCHAR(32) |
+| provider_txn_no | VARCHAR(128) |
+| payload | TEXT |
+| idempotency_key | VARCHAR(128) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### payment_order
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| payment_no | VARCHAR(64) |
+| main_order_no | VARCHAR(64) |
+| sub_order_no | VARCHAR(64) |
+| user_id | BIGINT UNSIGNED |
+| amount | DECIMAL(12, 2) |
+| channel | VARCHAR(32) |
+| status | VARCHAR(32) |
+| provider_txn_no | VARCHAR(128) |
+| idempotency_key | VARCHAR(128) |
+| paid_at | DATETIME |
+| poll_count | INT |
+| next_poll_at | DATETIME |
+| last_polled_at | DATETIME |
+| last_poll_error | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### payment_refund
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| refund_no | VARCHAR(64) |
+| payment_no | VARCHAR(64) |
+| after_sale_no | VARCHAR(64) |
+| refund_amount | DECIMAL(12, 2) |
+| status | VARCHAR(32) |
+| reason | VARCHAR(255) |
+| idempotency_key | VARCHAR(128) |
+| refunded_at | DATETIME |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| last_retry_at | DATETIME |
+| last_error | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## product_db
+
+### category
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| parent_id | BIGINT UNSIGNED |
+| name | VARCHAR(100) |
+| level | TINYINT |
+| path | VARCHAR(255) |
+| sort_order | INT |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### inbox_consume_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| consumer_group | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| consume_status | VARCHAR(16) |
+| error_message | VARCHAR(1000) |
+| consumed_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### outbox_event
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| aggregate_type | VARCHAR(64) |
+| aggregate_id | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| payload | JSON |
+| status | VARCHAR(16) |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### product_review
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| spu_id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| order_sub_no | VARCHAR(64) |
+| user_id | BIGINT UNSIGNED |
+| rating | TINYINT |
+| content | TEXT |
+| images | JSON |
+| tags | VARCHAR(500) |
+| is_anonymous | TINYINT |
+| audit_status | VARCHAR(32) |
+| merchant_reply | TEXT |
+| reply_time | DATETIME |
+| like_count | INT |
+| is_visible | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### sku
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| spu_id | BIGINT UNSIGNED |
+| sku_code | VARCHAR(100) |
+| sku_name | VARCHAR(200) |
+| spec_json | JSON |
+| sale_price | DECIMAL(12, 2) |
+| market_price | DECIMAL(12, 2) |
+| cost_price | DECIMAL(12, 2) |
+| status | TINYINT |
+| image_url | VARCHAR(500) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### spu
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| spu_name | VARCHAR(200) |
+| subtitle | VARCHAR(255) |
+| category_id | BIGINT UNSIGNED |
+| brand_id | BIGINT UNSIGNED |
+| merchant_id | BIGINT UNSIGNED |
+| status | TINYINT |
+| description | TEXT |
+| main_image | VARCHAR(500) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## seata
+
+### branch_table
+
+| Column | Type |
+| --- | --- |
+| branch_id | BIGINT |
+| xid | VARCHAR(128) |
+| transaction_id | BIGINT |
+| resource_group_id | VARCHAR(32) |
+| resource_id | VARCHAR(256) |
+| branch_type | VARCHAR(8) |
+| status | TINYINT |
+| client_id | VARCHAR(64) |
+| application_data | VARCHAR(2000) |
+| gmt_create | DATETIME(6) |
+| gmt_modified | DATETIME(6) |
+
+### distributed_lock
+
+| Column | Type |
+| --- | --- |
+| lock_key | CHAR(20) |
+| lock_value | VARCHAR(20) |
+| expire | BIGINT |
+
+### global_table
+
+| Column | Type |
+| --- | --- |
+| xid | VARCHAR(128) |
+| transaction_id | BIGINT |
+| status | TINYINT |
+| application_id | VARCHAR(32) |
+| transaction_service_group | VARCHAR(32) |
+| transaction_name | VARCHAR(128) |
+| timeout | INT |
+| begin_time | BIGINT |
+| application_data | VARCHAR(2000) |
+| gmt_create | DATETIME |
+| gmt_modified | DATETIME |
+
+### lock_table
+
+| Column | Type |
+| --- | --- |
+| row_key | VARCHAR(128) |
+| xid | VARCHAR(128) |
+| transaction_id | BIGINT |
+| branch_id | BIGINT |
+| resource_id | VARCHAR(256) |
+| table_name | VARCHAR(32) |
+| pk | VARCHAR(36) |
+| status | TINYINT |
+| gmt_create | DATETIME |
+| gmt_modified | DATETIME |
+
+### vgroup_table
+
+| Column | Type |
+| --- | --- |
+| vGroup | VARCHAR(255) |
+| namespace | VARCHAR(255) |
+| cluster | VARCHAR(255) |
+
+## skywalking
+
+## stock_db
+
+### inbox_consume_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| consumer_group | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| consume_status | VARCHAR(16) |
+| error_message | VARCHAR(1000) |
+| consumed_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### outbox_event
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| aggregate_type | VARCHAR(64) |
+| aggregate_id | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| payload | JSON |
+| status | VARCHAR(16) |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### stock_ledger
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| on_hand_qty | INT |
+| reserved_qty | INT |
+| salable_qty | INT |
+| alert_threshold | INT |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### stock_reservation
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| sub_order_no | VARCHAR(64) |
+| sku_id | BIGINT UNSIGNED |
+| reserved_qty | INT |
+| status | VARCHAR(32) |
+| idempotency_key | VARCHAR(128) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### stock_txn
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| sub_order_no | VARCHAR(64) |
+| txn_type | VARCHAR(32) |
+| quantity | INT |
+| before_on_hand | INT |
+| after_on_hand | INT |
+| before_reserved | INT |
+| after_reserved | INT |
+| before_salable | INT |
+| after_salable | INT |
+| remark | VARCHAR(1000) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## user_db
+
+### admin
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| username | VARCHAR(50) |
+| real_name | VARCHAR(50) |
+| phone | VARCHAR(20) |
+| role | VARCHAR(20) |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### inbox_consume_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| consumer_group | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| consume_status | VARCHAR(16) |
+| error_message | VARCHAR(1000) |
+| consumed_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### merchant
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| username | VARCHAR(50) |
+| merchant_name | VARCHAR(100) |
+| phone | VARCHAR(20) |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### merchant_auth
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| merchant_id | BIGINT UNSIGNED |
+| business_license_number | VARCHAR(50) |
+| business_license_url | VARCHAR(255) |
+| id_card_front_url | VARCHAR(255) |
+| id_card_back_url | VARCHAR(255) |
+| contact_phone | VARCHAR(20) |
+| contact_address | VARCHAR(255) |
+| auth_status | TINYINT |
+| auth_remark | VARCHAR(255) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### operation_audit_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| operator_id | BIGINT UNSIGNED |
+| operator_role | VARCHAR(32) |
+| action | VARCHAR(128) |
+| target_type | VARCHAR(64) |
+| target_id | VARCHAR(64) |
+| trace_id | VARCHAR(64) |
+| request_uri | VARCHAR(255) |
+| request_method | VARCHAR(16) |
+| request_payload | TEXT |
+| result_code | INT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### outbox_event
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| event_id | VARCHAR(64) |
+| aggregate_type | VARCHAR(64) |
+| aggregate_id | VARCHAR(64) |
+| event_type | VARCHAR(64) |
+| payload | JSON |
+| status | VARCHAR(16) |
+| retry_count | INT |
+| next_retry_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### test_access_token
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| token_value | VARCHAR(255) |
+| token_owner | VARCHAR(64) |
+| expires_at | DATETIME |
+| is_active | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+
+### user_address
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| address_tag | VARCHAR(32) |
+| receiver_name | VARCHAR(50) |
+| receiver_phone | VARCHAR(20) |
+| country | VARCHAR(64) |
+| province | VARCHAR(64) |
+| city | VARCHAR(64) |
+| district | VARCHAR(64) |
+| street | VARCHAR(100) |
+| detail_address | VARCHAR(255) |
+| postal_code | VARCHAR(16) |
+| longitude | DECIMAL(11, 7) |
+| latitude | DECIMAL(11, 7) |
+| is_default | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### user_favorite
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| spu_id | BIGINT UNSIGNED |
+| sku_id | BIGINT UNSIGNED |
+| favorite_status | VARCHAR(16) |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### user_profile_ext
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| user_id | BIGINT UNSIGNED |
+| gender | VARCHAR(16) |
+| birthday | DATE |
+| bio | VARCHAR(500) |
+| country | VARCHAR(64) |
+| province | VARCHAR(64) |
+| city | VARCHAR(64) |
+| personal_tags | JSON |
+| preferences | JSON |
+| last_login_at | DATETIME |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+### users
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT UNSIGNED |
+| username | VARCHAR(50) |
+| phone | VARCHAR(20) |
+| nickname | VARCHAR(50) |
+| avatar_url | VARCHAR(255) |
+| email | VARCHAR(100) |
+| status | TINYINT |
+| created_at | DATETIME |
+| updated_at | DATETIME |
+| deleted | TINYINT |
+| version | INT |
+
+## xxl_job
+
+### xxl_job_group
+
+| Column | Type |
+| --- | --- |
+| id | INT |
+| app_name | VARCHAR(64) |
+| title | VARCHAR(64) |
+| address_type | TINYINT |
+| address_list | TEXT |
+| update_time | DATETIME |
+
+### xxl_job_info
+
+| Column | Type |
+| --- | --- |
+| id | INT |
+| job_group | INT |
+| job_desc | VARCHAR(255) |
+| add_time | DATETIME |
+| update_time | DATETIME |
+| author | VARCHAR(64) |
+| schedule_type | VARCHAR(50) |
+| schedule_conf | VARCHAR(128) |
+| misfire_strategy | VARCHAR(50) |
+| executor_route_strategy | VARCHAR(50) |
+| executor_handler | VARCHAR(255) |
+| executor_param | VARCHAR(512) |
+| executor_block_strategy | VARCHAR(50) |
+| executor_timeout | INT |
+| executor_fail_retry_count | INT |
+| glue_type | VARCHAR(50) |
+| glue_source | MEDIUMTEXT |
+| glue_remark | VARCHAR(128) |
+| glue_updatetime | DATETIME |
+| child_jobid | VARCHAR(255) |
+| trigger_status | TINYINT |
+| trigger_last_time | BIGINT |
+| trigger_next_time | BIGINT |
+
+### xxl_job_log
+
+| Column | Type |
+| --- | --- |
+| id | BIGINT |
+| job_group | INT |
+| job_id | INT |
+| executor_address | VARCHAR(255) |
+| executor_handler | VARCHAR(255) |
+| executor_param | VARCHAR(512) |
+| executor_sharding_param | VARCHAR(20) |
+| executor_fail_retry_count | INT |
+| trigger_time | DATETIME |
+| trigger_code | INT |
+| trigger_msg | TEXT |
+| handle_time | DATETIME |
+| handle_code | INT |
+| handle_msg | TEXT |
+| alarm_status | TINYINT |
+
+### xxl_job_log_report
+
+| Column | Type |
+| --- | --- |
+| id | INT |
+| trigger_day | DATETIME |
+| running_count | INT |
+| suc_count | INT |
+| fail_count | INT |
+
+### xxl_job_registry
+
+| Column | Type |
+| --- | --- |
+| id | INT |
+| registry_group | VARCHAR(50) |
+| registry_key | VARCHAR(255) |
+| registry_value | VARCHAR(255) |
+| update_time | DATETIME |
+
+### xxl_job_user
+
+| Column | Type |
+| --- | --- |
+| id | INT |
+| username | VARCHAR(50) |
+| password | VARCHAR(255) |
+| role | TINYINT |
+| permission | VARCHAR(255) |
