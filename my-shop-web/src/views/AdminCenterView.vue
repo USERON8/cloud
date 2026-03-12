@@ -6,6 +6,7 @@ import { PieChart, LineChart, BarChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { VueDraggable } from 'vue-draggable-plus'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type {
   AdminInfo,
@@ -83,6 +84,8 @@ const userQuery = reactive({
   roleCode: ''
 })
 const userSelection = ref<UserSummary[]>([])
+const useVirtualUsers = computed(() => userRows.value.length > 20)
+const selectedUserIds = computed(() => new Set(userSelection.value.map((item) => item.id)))
 const userDialogVisible = ref(false)
 const userEditId = ref<number | null>(null)
 const userForm = reactive<UserUpsertPayload>({
@@ -106,12 +109,37 @@ async function loadUsers(): Promise<void> {
     })
     userRows.value = result.records
     userTotal.value = result.total
+    userSelection.value = []
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load users'
     ElMessage.error(message)
   } finally {
     userLoading.value = false
   }
+}
+
+const allUsersSelected = computed(
+  () => userRows.value.length > 0 && userSelection.value.length === userRows.value.length
+)
+
+function isUserSelected(row: UserSummary): boolean {
+  return selectedUserIds.value.has(row.id)
+}
+
+function toggleUserSelection(row: UserSummary): void {
+  if (selectedUserIds.value.has(row.id)) {
+    userSelection.value = userSelection.value.filter((item) => item.id !== row.id)
+    return
+  }
+  userSelection.value = [...userSelection.value, row]
+}
+
+function toggleAllUsers(): void {
+  if (allUsersSelected.value) {
+    userSelection.value = []
+    return
+  }
+  userSelection.value = [...userRows.value]
 }
 
 function openUserEdit(row: UserSummary): void {
@@ -857,12 +885,19 @@ onMounted(() => {
           <el-input v-model="userQuery.email" placeholder="Email" />
           <el-input v-model="userQuery.roleCode" placeholder="Role" />
           <el-button round type="primary" @click="loadUsers">Search</el-button>
+          <el-checkbox :model-value="allUsersSelected" @change="toggleAllUsers">Select All</el-checkbox>
           <el-button round @click="openSelectedUserEdit">Edit Selected</el-button>
           <el-button round @click="batchUpdateUserStatus(1)">Enable</el-button>
           <el-button round @click="batchUpdateUserStatus(0)">Disable</el-button>
           <el-button round type="danger" plain @click="batchDeleteUsers">Delete</el-button>
         </div>
-        <el-table v-loading="userLoading" :data="userRows" stripe @selection-change="(rows) => (userSelection = rows)">
+        <el-table
+          v-if="!useVirtualUsers"
+          v-loading="userLoading"
+          :data="userRows"
+          stripe
+          @selection-change="(rows) => (userSelection = rows)"
+        >
           <el-table-column type="selection" width="48" />
           <el-table-column label="ID" prop="id" width="80" />
           <el-table-column label="Username" prop="username" min-width="160" />
@@ -882,6 +917,41 @@ onMounted(() => {
             </template>
           </el-table-column>
         </el-table>
+        <div v-else v-loading="userLoading" class="user-virtual-list">
+          <RecycleScroller
+            class="user-scroller"
+            :items="userRows"
+            :item-size="88"
+            key-field="id"
+          >
+            <template #default="{ item }">
+              <div class="user-row">
+                <el-checkbox
+                  class="user-select"
+                  :model-value="isUserSelected(item)"
+                  @change="() => toggleUserSelection(item)"
+                />
+                <div class="user-info">
+                  <div class="user-title">
+                    <strong>{{ item.username }}</strong>
+                    <span class="muted">#{{ item.id }}</span>
+                  </div>
+                  <div class="user-meta">
+                    <span>{{ item.nickname || '—' }}</span>
+                    <span>{{ item.email || '—' }}</span>
+                    <el-tag :type="item.status === 1 ? 'success' : 'info'" round>
+                      {{ item.status === 1 ? 'Active' : 'Disabled' }}
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="user-actions">
+                  <el-button round size="small" @click="openUserEdit(item)">Edit</el-button>
+                  <el-button round size="small" type="danger" plain @click="confirmDeleteUser(item)">Delete</el-button>
+                </div>
+              </div>
+            </template>
+          </RecycleScroller>
+        </div>
         <div class="pager">
           <el-pagination
             v-model:current-page="userQuery.page"
@@ -1399,6 +1469,53 @@ onMounted(() => {
 
 .muted {
   color: var(--text-muted);
+}
+
+.user-virtual-list {
+  margin-top: 6px;
+}
+
+.user-scroller {
+  display: grid;
+  gap: 10px;
+}
+
+.user-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.user-info {
+  display: grid;
+  gap: 4px;
+}
+
+.user-title {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.user-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-self: end;
 }
 
 .stats-grid {
