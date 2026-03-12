@@ -83,20 +83,41 @@ const router = createRouter({
           meta: { title: 'Profile', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
         },
         {
+          path: 'addresses',
+          name: 'addresses',
+          component: () => import('../views/AddressBookView.vue'),
+          meta: { title: 'Addresses', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
+        },
+        {
           path: 'cart',
           name: 'cart',
           component: () => import('../views/CartView.vue'),
           meta: { title: 'Shopping Cart', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
+        },
+        {
+          path: 'merchant',
+          name: 'merchant-center',
+          component: () => import('../views/MerchantCenterView.vue'),
+          meta: { title: 'Merchant Center', roles: ['MERCHANT'] as UserRole[] }
+        },
+        {
+          path: 'admin',
+          name: 'admin-center',
+          component: () => import('../views/AdminCenterView.vue'),
+          meta: { title: 'Admin Center', roles: ['ADMIN'] as UserRole[] }
         }
       ]
     },
     { path: '/home', redirect: '/app/home' },
+    { path: '/addresses', redirect: '/app/addresses' },
     { path: '/cart', redirect: '/app/cart' },
     { path: '/catalog', redirect: '/app/catalog' },
     { path: '/catalog/manage', redirect: '/app/catalog/manage' },
     { path: '/orders', redirect: '/app/orders' },
     { path: '/orders/manage', redirect: '/app/orders/manage' },
-    { path: '/profile', redirect: '/app/profile' }
+    { path: '/profile', redirect: '/app/profile' },
+    { path: '/merchant', redirect: '/app/merchant' },
+    { path: '/admin', redirect: '/app/admin' }
   ]
 })
 

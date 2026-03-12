@@ -10,7 +10,17 @@ import { cartCount } from '../store/cart'
 interface NavItem {
   label: string
   path: string
-  icon: 'dashboard' | 'products' | 'products-admin' | 'orders' | 'orders-admin' | 'profile' | 'cart'
+  icon:
+    | 'dashboard'
+    | 'products'
+    | 'products-admin'
+    | 'orders'
+    | 'orders-admin'
+    | 'profile'
+    | 'cart'
+    | 'addresses'
+    | 'merchant'
+    | 'admin'
   roles: UserRole[]
 }
 
@@ -20,12 +30,16 @@ const { role } = useRole()
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/app/home', icon: 'dashboard', roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  { label: 'Marketplace', path: '/market', icon: 'products', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Products', path: '/app/catalog', icon: 'products', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Product Admin', path: '/app/catalog/manage', icon: 'products-admin', roles: ['MERCHANT', 'ADMIN'] },
   { label: 'Orders', path: '/app/orders', icon: 'orders', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Order Admin', path: '/app/orders/manage', icon: 'orders-admin', roles: ['MERCHANT', 'ADMIN'] },
-  { label: 'Profile', path: '/app/profile', icon: 'profile', roles: ['USER', 'MERCHANT', 'ADMIN'] },
-  { label: 'Cart', path: '/app/cart', icon: 'cart', roles: ['USER', 'MERCHANT', 'ADMIN'] }
+  { label: 'Cart', path: '/app/cart', icon: 'cart', roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  { label: 'Addresses', path: '/app/addresses', icon: 'addresses', roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  { label: 'Merchant Center', path: '/app/merchant', icon: 'merchant', roles: ['MERCHANT'] },
+  { label: 'Admin Center', path: '/app/admin', icon: 'admin', roles: ['ADMIN'] },
+  { label: 'Profile', path: '/app/profile', icon: 'profile', roles: ['USER', 'MERCHANT', 'ADMIN'] }
 ]
 
 const visibleNavItems = computed(() => navItems.filter((item) => item.roles.includes(role.value)))
@@ -66,7 +80,10 @@ const iconMap: Record<NavItem['icon'], string> = {
   orders: 'M6 5h10l3 3v11H6V5Zm10 0v3h3M9 12h6M9 15h6',
   'orders-admin': 'M7 4h10v2h3v14H4V6h3V4Zm2 2h6M8 12h8M8 16h5',
   profile: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 1.8-7 4.5h14c-1-2.7-3.7-4.5-7-4.5Z',
-  cart: 'M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z'
+  cart: 'M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z',
+  addresses: 'M6 4h12v16H6V4Zm2 3h4M8 10h8M8 14h6',
+  merchant: 'M4 7h16l-1.5 12H5.5L4 7Zm2-3h12l1 3H5l1-3Zm3 7h6',
+  admin: 'M12 3 4.5 6v6c0 4.7 3.4 8 7.5 9 4.1-1 7.5-4.3 7.5-9V6L12 3Z'
 }
 
 function getIconPath(icon: NavItem['icon']): string {
