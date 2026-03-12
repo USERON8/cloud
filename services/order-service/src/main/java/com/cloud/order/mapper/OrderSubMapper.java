@@ -21,4 +21,16 @@ public interface OrderSubMapper extends BaseMapper<OrderSub> {
             ORDER BY id ASC
             """)
     List<OrderSub> listActiveByMainOrderId(@Param("mainOrderId") Long mainOrderId);
+
+    @InterceptorIgnore(illegalSql = "1")
+    @Select("""
+            SELECT *
+            FROM order_sub FORCE INDEX (idx_order_sub_main_deleted)
+            WHERE main_order_id = #{mainOrderId}
+              AND sub_order_no = #{subOrderNo}
+              AND deleted = 0
+            LIMIT 1
+            """)
+    OrderSub selectActiveByMainOrderIdAndSubOrderNo(@Param("mainOrderId") Long mainOrderId,
+                                                    @Param("subOrderNo") String subOrderNo);
 }
