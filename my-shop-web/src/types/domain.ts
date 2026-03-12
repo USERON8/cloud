@@ -279,5 +279,88 @@ export interface ShopDocument {
   recommended?: boolean
 }
 
+export interface ProductDocument {
+  productId?: number
+  shopId?: number
+  shopName?: string
+  productName?: string
+  price?: number
+  stockQuantity?: number
+  categoryId?: number
+  categoryName?: string
+  brandId?: number
+  brandName?: string
+  status?: number
+  description?: string
+  imageUrl?: string
+  detailImages?: string
+  tags?: string
+  weight?: number
+  sku?: string
+  salesCount?: number
+  sortOrder?: number
+  rating?: number
+  reviewCount?: number
+  createdAt?: string
+  updatedAt?: string
+  searchWeight?: number
+  hotScore?: number
+  recommended?: boolean
+  isNew?: boolean
+  isHot?: boolean
+  merchantId?: number
+  merchantName?: string
+  remark?: string
+}
+
+export interface PaymentOrderInfo {
+  id?: number
+  paymentNo?: string
+  mainOrderNo?: string
+  subOrderNo?: string
+  userId?: number
+  amount?: number
+  channel?: string
+  status?: string
+  providerTxnNo?: string
+  idempotencyKey?: string
+  paidAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PaymentRefundInfo {
+  id?: number
+  refundNo?: string
+  paymentNo?: string
+  afterSaleNo?: string
+  refundAmount?: number
+  status?: string
+  reason?: string
+  idempotencyKey?: string
+  refundedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface StockLedger {
+  id?: number
+  skuId?: number
+  onHandQty?: number
+  reservedQty?: number
+  salableQty?: number
+  alertThreshold?: number
+  status?: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface StockOperatePayload {
+  subOrderNo: string
+  skuId: number
+  quantity: number
+  reason?: string
+}
+
 export type ProductPage = PageResult<ProductItem>
 export type OrderPage = PageResult<OrderItem>

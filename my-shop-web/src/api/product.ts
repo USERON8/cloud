@@ -1,10 +1,12 @@
 import http from './http'
 import type {
+  ProductDocument,
   ProductItem,
   ProductPage,
   ProductQuery,
   ProductUpsertPayload,
   SearchProductDocument,
+  SearchResult,
   SmartSearchResult
 } from '../types/domain'
 
@@ -120,6 +122,23 @@ export async function listSearchKeywordRecommendationsWithFallback(keyword = '',
   } catch {
     return listSearchSuggestionsWithFallback(keyword, size)
   }
+}
+
+export interface CombinedSearchParams {
+  keyword?: string
+  categoryId?: number
+  brandId?: number
+  minPrice?: number
+  maxPrice?: number
+  shopId?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  page?: number
+  size?: number
+}
+
+export function combinedSearchProducts(params: CombinedSearchParams): Promise<SearchResult<ProductDocument>> {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/filter/combined', { params })
 }
 
 export function updateProductStatus(id: number, status: 0 | 1): Promise<boolean> {
