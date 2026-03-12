@@ -19,10 +19,12 @@ import java.util.concurrent.TimeUnit;
 public class RedisUserNotificationDeliveryProvider implements UserNotificationDeliveryProvider {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private static final long NOTIFICATION_TTL_DAYS = 7;
 
     @Override
     public boolean deliverWelcome(Long userId) {
-        return setValue("notification:welcome:" + userId, System.currentTimeMillis());
+        return setValueWithTtl("notification:welcome:" + userId, System.currentTimeMillis(),
+                NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
     }
 
     @Override
@@ -39,21 +41,21 @@ public class RedisUserNotificationDeliveryProvider implements UserNotificationDe
     public boolean deliverStatusChange(Long userId, Integer newStatus, String reason) {
         String key = "notification:status_change:" + userId + ":" + System.currentTimeMillis();
         String payload = "status=" + newStatus + ";reason=" + (reason == null ? "" : reason);
-        return setValue(key, payload);
+        return setValueWithTtl(key, payload, NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
     }
 
     @Override
     public boolean deliverBatchNotification(Long userId, String title, String content) {
         String key = "notification:batch:" + userId + ":" + System.currentTimeMillis();
         String payload = "title=" + title + ";content=" + content;
-        return setValue(key, payload);
+        return setValueWithTtl(key, payload, NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
     }
 
     @Override
     public boolean deliverSystemAnnouncement(String title, String content) {
         String key = "notification:system:" + System.currentTimeMillis();
         String payload = "title=" + title + ";content=" + content;
-        return setValue(key, payload);
+        return setValueWithTtl(key, payload, NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
     }
 
     private boolean setValue(String key, Object value) {
