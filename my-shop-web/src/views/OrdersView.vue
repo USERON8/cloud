@@ -502,40 +502,49 @@ onMounted(() => {
       </el-button>
     </div>
 
-    <el-table v-loading="loading" :data="rows" stripe @selection-change="onSelectionChange">
-      <el-table-column type="selection" width="50" />
-      <el-table-column label="Order No" min-width="220" prop="orderNo" />
-      <el-table-column v-if="isAdmin" label="Shop ID" min-width="120" prop="shopId" />
-      <el-table-column label="Amount" min-width="130">
-        <template #default="scope">
-          {{ amountText(scope.row.totalAmount) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Status" min-width="160">
-        <template #default="scope">
-          <el-tag :type="statusType(scope.row.status)" round>
-            {{ statusText(scope.row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="Created At" min-width="200" prop="createdAt" />
-      <el-table-column label="Actions" width="360">
-        <template #default="scope">
-          <el-button v-if="canPay(scope.row)" round size="small" type="primary" @click="onPay(scope.row)">
-            Pay
-          </el-button>
-          <el-button v-if="canCancel(scope.row)" round size="small" @click="onCancel(scope.row)">
-            Cancel
-          </el-button>
-          <el-button v-if="canShip(scope.row)" round size="small" type="primary" plain @click="onShip(scope.row)">
-            Ship
-          </el-button>
-          <el-button v-if="canComplete(scope.row)" round size="small" type="success" plain @click="onComplete(scope.row)">
-            Complete
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-skeleton :loading="loading" animated>
+      <template #template>
+        <div class="table-skeleton">
+          <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+        </div>
+      </template>
+      <template #default>
+        <el-table :data="rows" stripe @selection-change="onSelectionChange">
+          <el-table-column type="selection" width="50" />
+          <el-table-column label="Order No" min-width="220" prop="orderNo" />
+          <el-table-column v-if="isAdmin" label="Shop ID" min-width="120" prop="shopId" />
+          <el-table-column label="Amount" min-width="130">
+            <template #default="scope">
+              {{ amountText(scope.row.totalAmount) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="Status" min-width="160">
+            <template #default="scope">
+              <el-tag :type="statusType(scope.row.status)" round>
+                {{ statusText(scope.row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="Created At" min-width="200" prop="createdAt" />
+          <el-table-column label="Actions" width="360">
+            <template #default="scope">
+              <el-button v-if="canPay(scope.row)" round size="small" type="primary" @click="onPay(scope.row)">
+                Pay
+              </el-button>
+              <el-button v-if="canCancel(scope.row)" round size="small" @click="onCancel(scope.row)">
+                Cancel
+              </el-button>
+              <el-button v-if="canShip(scope.row)" round size="small" type="primary" plain @click="onShip(scope.row)">
+                Ship
+              </el-button>
+              <el-button v-if="canComplete(scope.row)" round size="small" type="success" plain @click="onComplete(scope.row)">
+                Complete
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
+    </el-skeleton>
 
     <div class="pager">
       <el-pagination
@@ -601,6 +610,16 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
+}
+
+.table-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 42px;
+  border-radius: 10px;
 }
 
 .title-wrap {

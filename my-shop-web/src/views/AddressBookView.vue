@@ -152,28 +152,37 @@ onMounted(() => {
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="rows" stripe>
-      <el-table-column label="Consignee" min-width="140" prop="consignee" />
-      <el-table-column label="Phone" min-width="140" prop="phone" />
-      <el-table-column label="Address" min-width="320">
-        <template #default="scope">
-          {{ scope.row.province }} {{ scope.row.city }} {{ scope.row.district }} {{ scope.row.street }}
-          {{ scope.row.detailAddress }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Default" width="120">
-        <template #default="scope">
-          <el-tag v-if="scope.row.isDefault === 1" type="success" round>Default</el-tag>
-          <el-button v-else text size="small" @click="setDefault(scope.row)">Set Default</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="Actions" width="180">
-        <template #default="scope">
-          <el-button round size="small" @click="openEdit(scope.row)">Edit</el-button>
-          <el-button round size="small" type="danger" plain @click="confirmDelete(scope.row)">Delete</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-skeleton :loading="loading" animated>
+      <template #template>
+        <div class="table-skeleton">
+          <el-skeleton-item v-for="index in 5" :key="index" class="skeleton-row" variant="rect" />
+        </div>
+      </template>
+      <template #default>
+        <el-table :data="rows" stripe>
+          <el-table-column label="Consignee" min-width="140" prop="consignee" />
+          <el-table-column label="Phone" min-width="140" prop="phone" />
+          <el-table-column label="Address" min-width="320">
+            <template #default="scope">
+              {{ scope.row.province }} {{ scope.row.city }} {{ scope.row.district }} {{ scope.row.street }}
+              {{ scope.row.detailAddress }}
+            </template>
+          </el-table-column>
+          <el-table-column label="Default" width="120">
+            <template #default="scope">
+              <el-tag v-if="scope.row.isDefault === 1" type="success" round>Default</el-tag>
+              <el-button v-else text size="small" @click="setDefault(scope.row)">Set Default</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="Actions" width="180">
+            <template #default="scope">
+              <el-button round size="small" @click="openEdit(scope.row)">Edit</el-button>
+              <el-button round size="small" type="danger" plain @click="confirmDelete(scope.row)">Delete</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
+    </el-skeleton>
 
     <el-dialog v-model="dialogVisible" width="520px" align-center>
       <template #header>
@@ -258,6 +267,16 @@ onMounted(() => {
 
 .form {
   margin-top: 4px;
+}
+
+.table-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 42px;
+  border-radius: 10px;
 }
 
 .grid {
