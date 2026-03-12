@@ -891,67 +891,75 @@ onMounted(() => {
           <el-button round @click="batchUpdateUserStatus(0)">Disable</el-button>
           <el-button round type="danger" plain @click="batchDeleteUsers">Delete</el-button>
         </div>
-        <el-table
-          v-if="!useVirtualUsers"
-          v-loading="userLoading"
-          :data="userRows"
-          stripe
-          @selection-change="(rows) => (userSelection = rows)"
-        >
-          <el-table-column type="selection" width="48" />
-          <el-table-column label="ID" prop="id" width="80" />
-          <el-table-column label="Username" prop="username" min-width="160" />
-          <el-table-column label="Nickname" prop="nickname" min-width="140" />
-          <el-table-column label="Email" prop="email" min-width="180" />
-          <el-table-column label="Status" min-width="120">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" round>
-                {{ scope.row.status === 1 ? 'Active' : 'Disabled' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="Actions" width="180">
-            <template #default="scope">
-              <el-button round size="small" @click="openUserEdit(scope.row)">Edit</el-button>
-              <el-button round size="small" type="danger" plain @click="confirmDeleteUser(scope.row)">Delete</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <div v-else v-loading="userLoading" class="user-virtual-list">
-          <RecycleScroller
-            class="user-scroller"
-            :items="userRows"
-            :item-size="88"
-            key-field="id"
-          >
-            <template #default="{ item }">
-              <div class="user-row">
-                <el-checkbox
-                  class="user-select"
-                  :model-value="isUserSelected(item)"
-                  @change="() => toggleUserSelection(item)"
-                />
-                <div class="user-info">
-                  <div class="user-title">
-                    <strong>{{ item.username }}</strong>
-                    <span class="muted">#{{ item.id }}</span>
+        <el-skeleton :loading="userLoading" animated>
+          <template #template>
+            <div class="table-skeleton">
+              <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+            </div>
+          </template>
+          <template #default>
+            <el-table
+              v-if="!useVirtualUsers"
+              :data="userRows"
+              stripe
+              @selection-change="(rows) => (userSelection = rows)"
+            >
+              <el-table-column type="selection" width="48" />
+              <el-table-column label="ID" prop="id" width="80" />
+              <el-table-column label="Username" prop="username" min-width="160" />
+              <el-table-column label="Nickname" prop="nickname" min-width="140" />
+              <el-table-column label="Email" prop="email" min-width="180" />
+              <el-table-column label="Status" min-width="120">
+                <template #default="scope">
+                  <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" round>
+                    {{ scope.row.status === 1 ? 'Active' : 'Disabled' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Actions" width="180">
+                <template #default="scope">
+                  <el-button round size="small" @click="openUserEdit(scope.row)">Edit</el-button>
+                  <el-button round size="small" type="danger" plain @click="confirmDeleteUser(scope.row)">Delete</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div v-else class="user-virtual-list">
+              <RecycleScroller
+                class="user-scroller"
+                :items="userRows"
+                :item-size="88"
+                key-field="id"
+              >
+                <template #default="{ item }">
+                  <div class="user-row">
+                    <el-checkbox
+                      class="user-select"
+                      :model-value="isUserSelected(item)"
+                      @change="() => toggleUserSelection(item)"
+                    />
+                    <div class="user-info">
+                      <div class="user-title">
+                        <strong>{{ item.username }}</strong>
+                        <span class="muted">#{{ item.id }}</span>
+                      </div>
+                      <div class="user-meta">
+                        <span>{{ item.nickname || '—' }}</span>
+                        <span>{{ item.email || '—' }}</span>
+                        <el-tag :type="item.status === 1 ? 'success' : 'info'" round>
+                          {{ item.status === 1 ? 'Active' : 'Disabled' }}
+                        </el-tag>
+                      </div>
+                    </div>
+                    <div class="user-actions">
+                      <el-button round size="small" @click="openUserEdit(item)">Edit</el-button>
+                      <el-button round size="small" type="danger" plain @click="confirmDeleteUser(item)">Delete</el-button>
+                    </div>
                   </div>
-                  <div class="user-meta">
-                    <span>{{ item.nickname || '—' }}</span>
-                    <span>{{ item.email || '—' }}</span>
-                    <el-tag :type="item.status === 1 ? 'success' : 'info'" round>
-                      {{ item.status === 1 ? 'Active' : 'Disabled' }}
-                    </el-tag>
-                  </div>
-                </div>
-                <div class="user-actions">
-                  <el-button round size="small" @click="openUserEdit(item)">Edit</el-button>
-                  <el-button round size="small" type="danger" plain @click="confirmDeleteUser(item)">Delete</el-button>
-                </div>
-              </div>
-            </template>
-          </RecycleScroller>
-        </div>
+                </template>
+              </RecycleScroller>
+            </div>
+          </template>
+        </el-skeleton>
         <div class="pager">
           <el-pagination
             v-model:current-page="userQuery.page"
@@ -1063,61 +1071,70 @@ onMounted(() => {
           <el-button round @click="openCategoryCreate">New Category</el-button>
           <span class="hint">Drag rows to reorder. Changes save automatically.</span>
         </div>
-        <div v-loading="categoryLoading" class="category-board">
-          <VueDraggable
-            v-model="categoryRows"
-            item-key="id"
-            handle=".drag-handle"
-            :animation="180"
-            :disabled="categoryLoading || categorySortSaving"
-            class="category-list"
-            @end="onCategorySortEnd"
-          >
-            <template #item="{ element, index }">
-              <div class="category-row">
-                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
-                <div class="category-info">
-                  <div class="category-title">
-                    <strong>{{ element.name }}</strong>
-                    <span class="muted">#{{ element.id ?? '--' }}</span>
+        <el-skeleton :loading="categoryLoading" animated>
+          <template #template>
+            <div class="table-skeleton">
+              <el-skeleton-item v-for="index in 5" :key="index" class="skeleton-row" variant="rect" />
+            </div>
+          </template>
+          <template #default>
+            <div class="category-board">
+              <VueDraggable
+                v-model="categoryRows"
+                item-key="id"
+                handle=".drag-handle"
+                :animation="180"
+                :disabled="categorySortSaving"
+                class="category-list"
+                @end="onCategorySortEnd"
+              >
+                <template #item="{ element, index }">
+                  <div class="category-row">
+                    <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                    <div class="category-info">
+                      <div class="category-title">
+                        <strong>{{ element.name }}</strong>
+                        <span class="muted">#{{ element.id ?? '--' }}</span>
+                      </div>
+                      <div class="category-meta">
+                        <span class="chip">Parent {{ element.parentId ?? '-' }}</span>
+                        <span class="chip">Sort {{ element.sortOrder ?? index + 1 }}</span>
+                        <el-tag :type="element.status === 1 ? 'success' : 'info'" round>
+                          {{ element.status === 1 ? 'Enabled' : 'Disabled' }}
+                        </el-tag>
+                      </div>
+                    </div>
+                    <div class="category-actions">
+                      <el-button round size="small" @click="openCategoryEdit(element)">Edit</el-button>
+                      <el-button
+                        round
+                        size="small"
+                        type="success"
+                        plain
+                        @click="updateCategoryRowStatus(element, 1)"
+                      >
+                        Enable
+                      </el-button>
+                      <el-button
+                        round
+                        size="small"
+                        type="warning"
+                        plain
+                        @click="updateCategoryRowStatus(element, 0)"
+                      >
+                        Disable
+                      </el-button>
+                      <el-button round size="small" type="danger" plain @click="deleteCategoryRow(element)">
+                        Delete
+                      </el-button>
+                    </div>
                   </div>
-                  <div class="category-meta">
-                    <span class="chip">Parent {{ element.parentId ?? '-' }}</span>
-                    <span class="chip">Sort {{ element.sortOrder ?? index + 1 }}</span>
-                    <el-tag :type="element.status === 1 ? 'success' : 'info'" round>
-                      {{ element.status === 1 ? 'Enabled' : 'Disabled' }}
-                    </el-tag>
-                  </div>
-                </div>
-                <div class="category-actions">
-                  <el-button round size="small" @click="openCategoryEdit(element)">Edit</el-button>
-                  <el-button
-                    round
-                    size="small"
-                    type="success"
-                    plain
-                    @click="updateCategoryRowStatus(element, 1)"
-                  >
-                    Enable
-                  </el-button>
-                  <el-button
-                    round
-                    size="small"
-                    type="warning"
-                    plain
-                    @click="updateCategoryRowStatus(element, 0)"
-                  >
-                    Disable
-                  </el-button>
-                  <el-button round size="small" type="danger" plain @click="deleteCategoryRow(element)">
-                    Delete
-                  </el-button>
-                </div>
-              </div>
-            </template>
-          </VueDraggable>
-          <el-empty v-if="!categoryRows.length && !categoryLoading" description="No categories yet." />
-        </div>
+                </template>
+              </VueDraggable>
+              <el-empty v-if="!categoryRows.length" description="No categories yet." />
+            </div>
+          </template>
+        </el-skeleton>
         <div class="pager">
           <el-pagination
             v-model:current-page="categoryQuery.page"
