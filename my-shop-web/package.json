@@ -13,19 +13,27 @@
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3",
+    "@vueuse/core": "^14.2.1",
+    "@vueuse/motion": "^3.0.3",
+    "animate.css": "^4.1.1",
     "axios": "^1.13.5",
+    "echarts": "^6.0.0",
     "element-plus": "^2.13.2",
+    "vee-validate": "^4.15.1",
     "vue": "^3.5.25",
-    "vue-router": "^5.0.3"
+    "vue-echarts": "^8.0.1",
+    "vue-router": "^5.0.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.9.3",
     "unplugin-auto-import": "^20.2.0",
     "unplugin-vue-components": "^29.1.0",
-    "typescript": "~5.9.3",
     "vite": "^8.0.0-beta.13",
     "vue-tsc": "^3.1.5"
   },
