@@ -12,6 +12,7 @@ Frontend: Vue 3 + TypeScript.
 - Order, payment, and stock services use local DB transactions + `outbox_event` for reliable messaging.
 - Outbox relay runs inside each service (scheduled polling) and publishes to RocketMQ.
 - Consumers are idempotent (Redis-based) to tolerate replays.
+- User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
 - Seata dependencies/config exist, but there are no `@GlobalTransactional` flows in code. `payment-service` has Seata disabled.
 
 ## Modules And Ports
@@ -20,7 +21,7 @@ Frontend: Vue 3 + TypeScript.
 | --- | --- | --- |
 | `gateway` | `8080` | Unified gateway for `/api/**` and `/auth/**` |
 | `auth-service` | `8081` | OAuth2/JWT auth and GitHub login |
-| `user-service` | `8082` | User, merchant, admin, profile, address |
+| `user-service` | `8082` | User, merchant (enable + audit status), admin, profile, address |
 | `order-service` | `8083` | Order and refund |
 | `product-service` | `8084` | Product and category |
 | `stock-service` | `8085` | Inventory and stock movement |

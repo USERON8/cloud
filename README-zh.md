@@ -10,6 +10,7 @@ Version: 1.1.0
 - 订单/支付/库存采用本地事务 + `outbox_event` 可靠投递
 - Outbox 由 `order/payment/stock` 服务内部定时轮询发布到 RocketMQ
 - 消费端使用 Redis 幂等（`MessageIdempotencyService`）防重
+- 用户通知改为 RocketMQ 异步投递（`user-notification` 主题），失败会触发重试
 - Seata 依赖/配置保留，但当前代码未使用 `@GlobalTransactional`，`payment-service` 配置中已关闭 Seata
 
 ## 模块与端口
@@ -18,7 +19,7 @@ Version: 1.1.0
 | --- | --- | --- |
 | `gateway` | `8080` | 统一网关，转发 `/api/**`、`/auth/**` |
 | `auth-service` | `8081` | OAuth2/JWT 认证与 GitHub 登录 |
-| `user-service` | `8082` | 用户、商家、管理员、资料与地址 |
+| `user-service` | `8082` | 用户、商家（启用/审核状态）、管理员、资料与地址 |
 | `order-service` | `8083` | 订单与退款 |
 | `product-service` | `8084` | 商品与分类 |
 | `stock-service` | `8085` | 库存与库存变更 |
