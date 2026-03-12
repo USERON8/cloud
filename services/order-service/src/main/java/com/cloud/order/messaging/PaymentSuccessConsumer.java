@@ -81,7 +81,7 @@ public class PaymentSuccessConsumer {
                     if (!CONFIRMABLE_STATUSES.contains(subOrder.getOrderStatus())) {
                         continue;
                     }
-                    confirmStockForSubOrder(subOrder, wrapped.getItems());
+                    confirmStockForSubOrder(subOrder, wrapped.getItems(), event.getOrderNo());
                     orderService.advanceSubOrderStatus(subOrder.getId(), "PAY");
                 }
 
@@ -96,7 +96,7 @@ public class PaymentSuccessConsumer {
         };
     }
 
-    private void confirmStockForSubOrder(OrderSub subOrder, List<OrderItem> items) {
+    private void confirmStockForSubOrder(OrderSub subOrder, List<OrderItem> items, String orderNo) {
         if (items == null || items.isEmpty()) {
             return;
         }
@@ -110,6 +110,7 @@ public class PaymentSuccessConsumer {
         for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
             StockOperateCommandDTO command = new StockOperateCommandDTO();
             command.setSubOrderNo(subOrder.getSubOrderNo());
+            command.setOrderNo(orderNo);
             command.setSkuId(entry.getKey());
             command.setQuantity(entry.getValue());
             command.setReason("confirm stock for payment " + subOrder.getSubOrderNo());

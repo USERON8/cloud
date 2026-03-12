@@ -16,6 +16,8 @@ public class StockOperateCommandDTO implements Serializable {
     @NotBlank
     private String subOrderNo;
 
+    private String orderNo;
+
     @NotNull
     private Long skuId;
 

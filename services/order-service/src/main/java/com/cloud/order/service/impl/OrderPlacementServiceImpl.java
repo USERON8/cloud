@@ -202,6 +202,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     private void reserveTask(StockReservationTask task) {
         StockOperateCommandDTO command = new StockOperateCommandDTO();
         command.setSubOrderNo(task.getSubOrderNo());
+        command.setOrderNo(task.getMainOrderNo());
         command.setSkuId(task.getSkuId());
         command.setQuantity(task.getQuantity());
         command.setReason("reserve stock for " + task.getMainOrderNo());

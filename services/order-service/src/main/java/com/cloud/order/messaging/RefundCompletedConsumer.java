@@ -114,6 +114,7 @@ public class RefundCompletedConsumer {
         for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
             StockOperateCommandDTO command = new StockOperateCommandDTO();
             command.setSubOrderNo(subOrder.getSubOrderNo());
+            command.setOrderNo(event.getMainOrderNo());
             command.setSkuId(entry.getKey());
             command.setQuantity(entry.getValue());
             command.setReason("refund restore " + afterSale.getAfterSaleNo());
