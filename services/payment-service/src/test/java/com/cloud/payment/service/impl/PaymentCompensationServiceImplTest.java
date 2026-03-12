@@ -3,11 +3,13 @@ package com.cloud.payment.service.impl;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
+import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
+import com.cloud.common.metrics.TradeMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,12 @@ class PaymentCompensationServiceImplTest {
     @Mock
     private PaymentProviderGateway paymentProviderGateway;
 
+    @Mock
+    private PaymentMessageProducer paymentMessageProducer;
+
+    @Mock
+    private TradeMetrics tradeMetrics;
+
     private PaymentCompensationServiceImpl paymentCompensationService;
 
     @BeforeEach
@@ -46,7 +54,9 @@ class PaymentCompensationServiceImplTest {
                 paymentOrderMapper,
                 paymentRefundMapper,
                 properties,
-                List.of(paymentProviderGateway)
+                List.of(paymentProviderGateway),
+                paymentMessageProducer,
+                tradeMetrics
         );
     }
 
