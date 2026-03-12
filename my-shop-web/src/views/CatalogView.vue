@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  combinedSearchProducts,
   createProduct,
   listProducts,
   listSearchHotKeywordsWithFallback,
@@ -13,7 +14,7 @@ import {
   updateProduct,
   updateProductStatus
 } from '../api/product'
-import type { ProductItem, ProductUpsertPayload, SearchProductDocument } from '../types/domain'
+import type { ProductDocument, ProductItem, ProductUpsertPayload, SearchProductDocument } from '../types/domain'
 import { useRole } from '../auth/permission'
 import { sessionState } from '../auth/session'
 import { addToCart } from '../store/cart'
@@ -43,6 +44,16 @@ const params = reactive({
   size: 10,
   name: ''
 })
+const showAdvanced = ref(false)
+const advancedFilters = reactive({
+  categoryId: undefined as number | undefined,
+  brandId: undefined as number | undefined,
+  shopId: undefined as number | undefined,
+  minPrice: undefined as number | undefined,
+  maxPrice: undefined as number | undefined,
+  sortBy: 'hotScore',
+  sortOrder: 'desc' as 'asc' | 'desc'
+})
 
 const { isAdmin, isMerchant } = useRole()
 const isManagementMode = computed(() => Boolean(route.meta.manageProduct))
@@ -57,6 +68,15 @@ const hotKeywords = ref<string[]>([])
 const recommendedKeywords = ref<string[]>([])
 const blurTimer = ref<number | null>(null)
 const suggestTimer = ref<number | null>(null)
+const hasAdvancedFilters = computed(() => {
+  if (advancedFilters.categoryId || advancedFilters.brandId || advancedFilters.shopId) {
+    return true
+  }
+  if (advancedFilters.minPrice != null || advancedFilters.maxPrice != null) {
+    return true
+  }
+  return advancedFilters.sortBy !== 'hotScore' || advancedFilters.sortOrder !== 'desc'
+})
 
 const dialogVisible = ref(false)
 const formSubmitting = ref(false)
@@ -106,6 +126,22 @@ function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
     shopId: item.shopId,
     name: item.productName || 'Unnamed Product',
     price: item.price,
+    stockQuantity: item.stockQuantity,
+    categoryId: item.categoryId,
+    brandId: item.brandId,
+    status: item.status,
+    description: item.description,
+    imageUrl: item.imageUrl
+  }
+}
+
+function mapProductDocumentToProduct(item: ProductDocument): ProductItem {
+  const price = item.price != null ? Number(item.price) : undefined
+  return {
+    id: typeof item.productId === 'number' ? item.productId : 0,
+    shopId: item.shopId,
+    name: item.productName || 'Unnamed Product',
+    price: Number.isFinite(price) ? price : undefined,
     stockQuantity: item.stockQuantity,
     categoryId: item.categoryId,
     brandId: item.brandId,
@@ -193,17 +229,34 @@ async function loadProducts(): Promise<void> {
       rows.value = result.records
       total.value = result.total
     } else {
-      const searchResult = await smartSearchProductsWithFallback({
-        keyword: params.name || undefined,
-        page: params.page,
-        size: params.size,
-        sortField: 'score',
-        sortOrder: 'desc'
-      })
+      if (hasAdvancedFilters.value) {
+        const result = await combinedSearchProducts({
+          keyword: params.name || undefined,
+          categoryId: advancedFilters.categoryId,
+          brandId: advancedFilters.brandId,
+          shopId: advancedFilters.shopId,
+          minPrice: advancedFilters.minPrice,
+          maxPrice: advancedFilters.maxPrice,
+          sortBy: advancedFilters.sortBy,
+          sortOrder: advancedFilters.sortOrder,
+          page: Math.max(0, params.page - 1),
+          size: params.size
+        })
+        rows.value = (result.list || []).map(mapProductDocumentToProduct)
+        total.value = result.total
+      } else {
+        const searchResult = await smartSearchProductsWithFallback({
+          keyword: params.name || undefined,
+          page: params.page,
+          size: params.size,
+          sortField: 'score',
+          sortOrder: 'desc'
+        })
 
-      rows.value = searchResult.documents.map(mapSearchDocumentToProduct)
-      total.value = searchResult.total
-      await refreshKeywordRecommendations(params.name)
+        rows.value = searchResult.documents.map(mapSearchDocumentToProduct)
+        total.value = searchResult.total
+        await refreshKeywordRecommendations(params.name)
+      }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load products'
@@ -214,6 +267,23 @@ async function loadProducts(): Promise<void> {
 }
 
 function onSearch(): void {
+  params.page = 1
+  void loadProducts()
+}
+
+function onAdvancedSearch(): void {
+  params.page = 1
+  void loadProducts()
+}
+
+function resetAdvancedFilters(): void {
+  advancedFilters.categoryId = undefined
+  advancedFilters.brandId = undefined
+  advancedFilters.shopId = undefined
+  advancedFilters.minPrice = undefined
+  advancedFilters.maxPrice = undefined
+  advancedFilters.sortBy = 'hotScore'
+  advancedFilters.sortOrder = 'desc'
   params.page = 1
   void loadProducts()
 }
@@ -456,6 +526,9 @@ onBeforeUnmount(() => {
             Search
           </span>
         </el-button>
+        <el-button v-if="!isManagementMode" round @click="showAdvanced = !showAdvanced">
+          {{ showAdvanced ? 'Hide Filters' : 'Advanced Filters' }}
+        </el-button>
         <router-link v-if="canEnterManagePage && !isManagementMode" class="inline-link" to="/app/catalog/manage">
           <el-button round type="success">Open Management</el-button>
         </router-link>
@@ -463,6 +536,45 @@ onBeforeUnmount(() => {
           <el-button round>Back to Catalog</el-button>
         </router-link>
         <el-button v-if="canManageProducts" round type="success" @click="onCreate">New Product</el-button>
+      </div>
+    </div>
+
+    <div v-if="!isManagementMode && showAdvanced" class="advanced-panel">
+      <div class="advanced-grid">
+        <el-input-number v-model="advancedFilters.categoryId" :min="1" controls-position="right" placeholder="Category ID" />
+        <el-input-number v-model="advancedFilters.brandId" :min="1" controls-position="right" placeholder="Brand ID" />
+        <el-input-number v-model="advancedFilters.shopId" :min="1" controls-position="right" placeholder="Shop ID" />
+        <el-input-number
+          v-model="advancedFilters.minPrice"
+          :min="0"
+          :step="0.01"
+          :precision="2"
+          controls-position="right"
+          placeholder="Min Price"
+        />
+        <el-input-number
+          v-model="advancedFilters.maxPrice"
+          :min="0"
+          :step="0.01"
+          :precision="2"
+          controls-position="right"
+          placeholder="Max Price"
+        />
+        <el-select v-model="advancedFilters.sortBy" placeholder="Sort By">
+          <el-option value="hotScore" label="Hot Score" />
+          <el-option value="price" label="Price" />
+          <el-option value="salesCount" label="Sales Count" />
+          <el-option value="rating" label="Rating" />
+          <el-option value="createdAt" label="Created At" />
+        </el-select>
+        <el-select v-model="advancedFilters.sortOrder" placeholder="Sort Order">
+          <el-option value="desc" label="Desc" />
+          <el-option value="asc" label="Asc" />
+        </el-select>
+      </div>
+      <div class="advanced-actions">
+        <el-button round type="primary" @click="onAdvancedSearch">Apply Filters</el-button>
+        <el-button round @click="resetAdvancedFilters">Reset</el-button>
       </div>
     </div>
 
@@ -640,6 +752,28 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
+.advanced-panel {
+  margin: 10px 0 12px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.7);
+  display: grid;
+  gap: 8px;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.advanced-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .keyword-board {
   margin-bottom: 12px;
   display: grid;
@@ -732,6 +866,10 @@ onBeforeUnmount(() => {
   .search-row {
     width: 100%;
     flex-wrap: wrap;
+  }
+
+  .advanced-grid {
+    grid-template-columns: 1fr;
   }
 
   .keyword-title {
