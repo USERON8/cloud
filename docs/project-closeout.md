@@ -1,4 +1,5 @@
 # Project Closeout
+Version: 1.1.0
 
 This note captures the current frozen state of the repository before the project is temporarily paused.
 

@@ -1,4 +1,5 @@
 # Seata Order Transaction
+Version: 1.1.0
 
 ## Scope
 

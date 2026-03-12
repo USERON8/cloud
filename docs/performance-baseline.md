@@ -1,4 +1,5 @@
 # Performance Baseline
+Version: 1.1.0
 
 This document captures the local-development performance baseline that was established during the final tuning pass in March 2026.
 

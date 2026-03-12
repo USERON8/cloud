@@ -1,4 +1,5 @@
 # Dev Startup
+Version: 1.1.0
 
 This project now has a unified startup entrypoint for local development.
 

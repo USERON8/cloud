@@ -1,3 +1,4 @@
+Version: 1.1.0
 The MySQL JDBC driver is now baked into the Logstash image during
 `docker compose up --build`.
 

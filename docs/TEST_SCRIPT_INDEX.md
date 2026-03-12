@@ -1,4 +1,5 @@
 # Test Script Index
+Version: 1.1.0
 
 This repository keeps executable test scripts in two stable groups.
 

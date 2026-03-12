@@ -1,4 +1,5 @@
 # 可观测性栈（SkyWalking + Prometheus + Grafana）
+Version: 1.1.0
 
 本文说明如何在本项目中同时监控业务服务和中间件。
 

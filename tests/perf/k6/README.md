@@ -1,4 +1,5 @@
 # k6 Scripts
+Version: 1.1.0
 
 This directory contains the canonical k6 runners and scenario files for the cloud shop system.
 
