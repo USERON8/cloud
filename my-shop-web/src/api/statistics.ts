@@ -5,6 +5,16 @@ export function getStatisticsOverview(): Promise<UserStatisticsOverview> {
   return http.get<UserStatisticsOverview, UserStatisticsOverview>('/api/statistics/overview')
 }
 
+export function getStatisticsOverviewAsync(): Promise<UserStatisticsOverview> {
+  return http.get<UserStatisticsOverview, UserStatisticsOverview>('/api/statistics/overview/async')
+}
+
+export function getRegistrationTrendRange(startDate: string, endDate: string): Promise<Record<string, number>> {
+  return http.get<Record<string, number>, Record<string, number>>('/api/statistics/registration-trend', {
+    params: { startDate, endDate }
+  })
+}
+
 export function getRegistrationTrend(days = 30): Promise<Record<string, number>> {
   return http.get<Record<string, number>, Record<string, number>>('/api/statistics/registration-trend/async', {
     params: { days }

@@ -65,12 +65,17 @@ import { combinedSearchProducts, smartSearchProducts } from '../api/product'
 import { findUserByUsername, updateUsersBatch } from '../api/user-management'
 import { approveMerchantsBatch, deleteMerchantsBatch, updateMerchantStatusBatch } from '../api/merchant'
 import { reviewMerchantAuthBatch } from '../api/merchant-auth'
+import { createPaymentOrder, createPaymentRefund, handlePaymentCallback } from '../api/payment'
+import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../api/statistics'
 import type {
   CategoryItem,
   LegacyAfterSale,
   LegacyCreateMainOrderRequest,
   LegacyOrderAggregate,
   LegacyOrderSub,
+  PaymentCallbackCommand,
+  PaymentOrderCommand,
+  PaymentRefundCommand,
   ProductFilterRequest,
   ProductSearchRequest,
   SpuCreateRequest,
@@ -633,6 +638,41 @@ const merchantAuthStatus = ref<number | undefined>(undefined)
 const merchantAuthRemark = ref('')
 const merchantAuthBatchResult = ref<boolean | null>(null)
 
+const statsOverviewAsyncResult = ref<unknown>(null)
+const statsTrendStart = ref('')
+const statsTrendEnd = ref('')
+const statsTrendRangeResult = ref<unknown>(null)
+const statsCacheResult = ref<boolean | null>(null)
+
+const paymentOrderJson = ref(`{
+  \"paymentNo\": \"PAY-001\",
+  \"mainOrderNo\": \"MAIN-001\",
+  \"subOrderNo\": \"SUB-001\",
+  \"userId\": 1,
+  \"amount\": 0.01,
+  \"channel\": \"mock\",
+  \"idempotencyKey\": \"pay-req-001\"
+}`)
+const paymentOrderResult = ref<number | null>(null)
+const paymentRefundJson = ref(`{
+  \"refundNo\": \"REF-001\",
+  \"paymentNo\": \"PAY-001\",
+  \"afterSaleNo\": \"AS-001\",
+  \"refundAmount\": 0.01,
+  \"reason\": \"manual refund\",
+  \"idempotencyKey\": \"refund-req-001\"
+}`)
+const paymentRefundResult = ref<number | null>(null)
+const paymentCallbackJson = ref(`{
+  \"paymentNo\": \"PAY-001\",
+  \"callbackNo\": \"CB-001\",
+  \"callbackStatus\": \"SUCCESS\",
+  \"providerTxnNo\": \"PROV-001\",
+  \"idempotencyKey\": \"callback-req-001\",
+  \"payload\": \"{}\"
+}`)
+const paymentCallbackResult = ref<boolean | null>(null)
+
 async function lookupUser(): Promise<void> {
   if (!userLookupUsername.value.trim()) {
     ElMessage.warning('Provide username.')
@@ -792,6 +832,70 @@ async function reviewMerchantAuthBatchRow(): Promise<void> {
     ElMessage.success('Merchant auth batch review submitted.')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : 'Failed to review merchant auth batch')
+  }
+}
+
+async function loadStatsOverviewAsync(): Promise<void> {
+  try {
+    statsOverviewAsyncResult.value = await getStatisticsOverviewAsync()
+    ElMessage.success('Async overview loaded.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to load async overview')
+  }
+}
+
+async function loadStatsTrendRange(): Promise<void> {
+  if (!statsTrendStart.value || !statsTrendEnd.value) {
+    ElMessage.warning('Provide start and end dates (YYYY-MM-DD).')
+    return
+  }
+  try {
+    statsTrendRangeResult.value = await getRegistrationTrendRange(statsTrendStart.value, statsTrendEnd.value)
+    ElMessage.success('Registration trend loaded.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to load registration trend')
+  }
+}
+
+async function refreshStatsCache(): Promise<void> {
+  try {
+    statsCacheResult.value = await refreshStatisticsCache()
+    ElMessage.success('Statistics cache refreshed.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to refresh statistics cache')
+  }
+}
+
+async function submitPaymentOrder(): Promise<void> {
+  const payload = parseJson<PaymentOrderCommand>(paymentOrderJson.value, 'Payment order')
+  if (!payload) return
+  try {
+    paymentOrderResult.value = await createPaymentOrder(payload)
+    ElMessage.success('Payment order created.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to create payment order')
+  }
+}
+
+async function submitPaymentRefund(): Promise<void> {
+  const payload = parseJson<PaymentRefundCommand>(paymentRefundJson.value, 'Payment refund')
+  if (!payload) return
+  try {
+    paymentRefundResult.value = await createPaymentRefund(payload)
+    ElMessage.success('Payment refund created.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to create refund')
+  }
+}
+
+async function submitPaymentCallback(): Promise<void> {
+  const payload = parseJson<PaymentCallbackCommand>(paymentCallbackJson.value, 'Payment callback')
+  if (!payload) return
+  try {
+    paymentCallbackResult.value = await handlePaymentCallback(payload)
+    ElMessage.success('Payment callback handled.')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to handle callback')
   }
 }
 
@@ -1314,6 +1418,48 @@ async function runSearch(): Promise<void> {
             <el-input v-model="merchantAuthRemark" placeholder="Remark (optional)" />
             <el-button round type="primary" @click="reviewMerchantAuthBatchRow">Review Batch</el-button>
             <div v-if="merchantAuthBatchResult !== null" class="muted">Result: {{ merchantAuthBatchResult }}</div>
+          </section>
+
+          <section class="card-block wide">
+            <h4>Statistics Tools</h4>
+            <div class="row">
+              <el-button round @click="loadStatsOverviewAsync">Load Overview (Async)</el-button>
+              <el-button round type="warning" @click="refreshStatsCache">Refresh Cache</el-button>
+            </div>
+            <pre v-if="statsOverviewAsyncResult" class="json">{{ formatJson(statsOverviewAsyncResult) }}</pre>
+            <div class="row">
+              <el-input v-model="statsTrendStart" placeholder="Start date (YYYY-MM-DD)" />
+              <el-input v-model="statsTrendEnd" placeholder="End date (YYYY-MM-DD)" />
+              <el-button round @click="loadStatsTrendRange">Load Trend</el-button>
+            </div>
+            <pre v-if="statsTrendRangeResult" class="json">{{ formatJson(statsTrendRangeResult) }}</pre>
+            <div v-if="statsCacheResult !== null" class="muted">Cache refreshed: {{ statsCacheResult }}</div>
+          </section>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="Payment Ops" name="payment-ops">
+        <el-alert v-if="!isAdmin" type="warning" title="Admin access required for payment ops." />
+        <div v-else class="ops-grid">
+          <section class="card-block wide">
+            <h4>Create Payment Order</h4>
+            <el-input v-model="paymentOrderJson" type="textarea" rows="6" />
+            <el-button round type="primary" @click="submitPaymentOrder">Create</el-button>
+            <div v-if="paymentOrderResult !== null" class="muted">Created: {{ paymentOrderResult }}</div>
+          </section>
+
+          <section class="card-block wide">
+            <h4>Create Refund</h4>
+            <el-input v-model="paymentRefundJson" type="textarea" rows="6" />
+            <el-button round type="primary" @click="submitPaymentRefund">Create</el-button>
+            <div v-if="paymentRefundResult !== null" class="muted">Created: {{ paymentRefundResult }}</div>
+          </section>
+
+          <section class="card-block wide">
+            <h4>Handle Callback</h4>
+            <el-input v-model="paymentCallbackJson" type="textarea" rows="6" />
+            <el-button round type="primary" @click="submitPaymentCallback">Submit Callback</el-button>
+            <div v-if="paymentCallbackResult !== null" class="muted">Result: {{ paymentCallbackResult }}</div>
           </section>
         </div>
       </el-tab-pane>

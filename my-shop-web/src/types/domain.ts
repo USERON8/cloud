@@ -343,6 +343,34 @@ export interface PaymentRefundInfo {
   updatedAt?: string
 }
 
+export interface PaymentOrderCommand {
+  paymentNo: string
+  mainOrderNo: string
+  subOrderNo: string
+  userId: number
+  amount: number
+  channel: string
+  idempotencyKey: string
+}
+
+export interface PaymentRefundCommand {
+  refundNo: string
+  paymentNo: string
+  afterSaleNo: string
+  refundAmount: number
+  reason: string
+  idempotencyKey: string
+}
+
+export interface PaymentCallbackCommand {
+  paymentNo: string
+  callbackNo: string
+  callbackStatus: string
+  providerTxnNo?: string
+  idempotencyKey: string
+  payload?: string
+}
+
 export interface StockLedger {
   id?: number
   skuId?: number
