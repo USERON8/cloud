@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useInfiniteScroll } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -37,6 +38,7 @@ interface SearchSuggestionItem {
 
 const route = useRoute()
 const loading = ref(false)
+const loadingMore = ref(false)
 const rows = ref<ProductItem[]>([])
 const total = ref(0)
 const params = reactive({
@@ -68,6 +70,8 @@ const hotKeywords = ref<string[]>([])
 const recommendedKeywords = ref<string[]>([])
 const blurTimer = ref<number | null>(null)
 const suggestTimer = ref<number | null>(null)
+const infiniteTarget = ref<Window | null>(null)
+const hasMore = ref(true)
 const hasAdvancedFilters = computed(() => {
   if (advancedFilters.categoryId || advancedFilters.brandId || advancedFilters.shopId) {
     return true
@@ -217,8 +221,12 @@ async function refreshKeywordRecommendations(seedKeyword = ''): Promise<void> {
   recommendedKeywords.value = recommendationResult.status === 'fulfilled' ? recommendationResult.value : []
 }
 
-async function loadProducts(): Promise<void> {
-  loading.value = true
+async function loadProducts(append = false): Promise<void> {
+  if (append) {
+    loadingMore.value = true
+  } else {
+    loading.value = true
+  }
   try {
     if (isManagementMode.value) {
       const result = await listProducts({
@@ -228,6 +236,7 @@ async function loadProducts(): Promise<void> {
       })
       rows.value = result.records
       total.value = result.total
+      hasMore.value = rows.value.length < total.value
     } else {
       if (hasAdvancedFilters.value) {
         const result = await combinedSearchProducts({
@@ -242,8 +251,10 @@ async function loadProducts(): Promise<void> {
           page: Math.max(0, params.page - 1),
           size: params.size
         })
-        rows.value = (result.list || []).map(mapProductDocumentToProduct)
+        const items = (result.list || []).map(mapProductDocumentToProduct)
+        rows.value = append ? rows.value.concat(items) : items
         total.value = result.total
+        hasMore.value = rows.value.length < total.value
       } else {
         const searchResult = await smartSearchProductsWithFallback({
           keyword: params.name || undefined,
@@ -253,8 +264,10 @@ async function loadProducts(): Promise<void> {
           sortOrder: 'desc'
         })
 
-        rows.value = searchResult.documents.map(mapSearchDocumentToProduct)
+        const items = searchResult.documents.map(mapSearchDocumentToProduct)
+        rows.value = append ? rows.value.concat(items) : items
         total.value = searchResult.total
+        hasMore.value = rows.value.length < total.value
         await refreshKeywordRecommendations(params.name)
       }
     }
@@ -263,16 +276,27 @@ async function loadProducts(): Promise<void> {
     ElMessage.error(message)
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
+}
+
+async function loadMore(): Promise<void> {
+  if (loading.value || loadingMore.value || !hasMore.value) {
+    return
+  }
+  params.page += 1
+  await loadProducts(true)
 }
 
 function onSearch(): void {
   params.page = 1
+  hasMore.value = true
   void loadProducts()
 }
 
 function onAdvancedSearch(): void {
   params.page = 1
+  hasMore.value = true
   void loadProducts()
 }
 
@@ -285,6 +309,7 @@ function resetAdvancedFilters(): void {
   advancedFilters.sortBy = 'hotScore'
   advancedFilters.sortOrder = 'desc'
   params.page = 1
+  hasMore.value = true
   void loadProducts()
 }
 
@@ -475,6 +500,7 @@ onMounted(() => {
     params.name = route.query.keyword.trim()
   }
   void loadProducts()
+  infiniteTarget.value = window
 })
 
 watch(
@@ -483,6 +509,7 @@ watch(
     if (typeof value === 'string' && value.trim() !== params.name) {
       params.name = value.trim()
       params.page = 1
+      hasMore.value = true
       void loadProducts()
     }
   }
@@ -496,6 +523,17 @@ onBeforeUnmount(() => {
     window.clearTimeout(suggestTimer.value)
   }
 })
+
+useInfiniteScroll(
+  infiniteTarget,
+  async () => {
+    if (isManagementMode.value) {
+      return
+    }
+    await loadMore()
+  },
+  { distance: 160 }
+)
 </script>
 
 <template>
@@ -656,7 +694,7 @@ onBeforeUnmount(() => {
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div v-if="isManagementMode" class="pager">
       <el-pagination
         v-model:current-page="params.page"
         v-model:page-size="params.size"
@@ -667,6 +705,11 @@ onBeforeUnmount(() => {
         @current-change="loadProducts"
         @size-change="loadProducts"
       />
+    </div>
+
+    <div v-else class="infinite-hint">
+      <el-button v-if="hasMore" :loading="loadingMore" round @click="loadMore">Load More</el-button>
+      <span v-else class="muted">No more products.</span>
     </div>
   </section>
 
