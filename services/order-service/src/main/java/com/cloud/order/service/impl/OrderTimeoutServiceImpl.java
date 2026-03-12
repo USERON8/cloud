@@ -47,7 +47,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         LocalDateTime timeoutPoint = LocalDateTime.now().minusMinutes(effectiveTimeout);
         return orderSubMapper.selectList(
                 new LambdaQueryWrapper<OrderSub>()
-                        .eq(OrderSub::getOrderStatus, "CREATED")
+                        .in(OrderSub::getOrderStatus, List.of("CREATED", "STOCK_RESERVED"))
                         .lt(OrderSub::getCreatedAt, timeoutPoint)
                         .eq(OrderSub::getDeleted, 0)
                         .orderByAsc(OrderSub::getCreatedAt)
