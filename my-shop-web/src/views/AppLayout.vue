@@ -16,6 +16,8 @@ interface NavItem {
     | 'products-admin'
     | 'orders'
     | 'orders-admin'
+    | 'payments'
+    | 'stock'
     | 'profile'
     | 'cart'
     | 'addresses'
@@ -35,6 +37,8 @@ const navItems: NavItem[] = [
   { label: 'Product Admin', path: '/app/catalog/manage', icon: 'products-admin', roles: ['MERCHANT', 'ADMIN'] },
   { label: 'Orders', path: '/app/orders', icon: 'orders', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Order Admin', path: '/app/orders/manage', icon: 'orders-admin', roles: ['MERCHANT', 'ADMIN'] },
+  { label: 'Payments', path: '/app/payments', icon: 'payments', roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  { label: 'Stock Ledger', path: '/app/stock', icon: 'stock', roles: ['ADMIN'] },
   { label: 'Cart', path: '/app/cart', icon: 'cart', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Addresses', path: '/app/addresses', icon: 'addresses', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Merchant Center', path: '/app/merchant', icon: 'merchant', roles: ['MERCHANT'] },
@@ -79,6 +83,8 @@ const iconMap: Record<NavItem['icon'], string> = {
   'products-admin': 'M4 5h16v4H4V5Zm0 5.5h10V20H4v-9.5Zm12 2h4v7.5h-4v-7.5Z',
   orders: 'M6 5h10l3 3v11H6V5Zm10 0v3h3M9 12h6M9 15h6',
   'orders-admin': 'M7 4h10v2h3v14H4V6h3V4Zm2 2h6M8 12h8M8 16h5',
+  payments: 'M4 6h16v12H4V6Zm2 3h4m4 0h4M6 13h6',
+  stock: 'M5 6h14v12H5V6Zm2 3h10M7 14h6',
   profile: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 1.8-7 4.5h14c-1-2.7-3.7-4.5-7-4.5Z',
   cart: 'M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z',
   addresses: 'M6 4h12v16H6V4Zm2 3h4M8 10h8M8 14h6',

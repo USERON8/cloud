@@ -95,6 +95,18 @@ const router = createRouter({
           meta: { title: 'Shopping Cart', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
         },
         {
+          path: 'payments',
+          name: 'payments',
+          component: () => import('../views/PaymentLookupView.vue'),
+          meta: { title: 'Payments', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
+        },
+        {
+          path: 'stock',
+          name: 'stock',
+          component: () => import('../views/StockLedgerView.vue'),
+          meta: { title: 'Stock Ledger', roles: ['ADMIN'] as UserRole[] }
+        },
+        {
           path: 'merchant',
           name: 'merchant-center',
           component: () => import('../views/MerchantCenterView.vue'),
@@ -111,6 +123,8 @@ const router = createRouter({
     { path: '/home', redirect: '/app/home' },
     { path: '/addresses', redirect: '/app/addresses' },
     { path: '/cart', redirect: '/app/cart' },
+    { path: '/payments', redirect: '/app/payments' },
+    { path: '/stock', redirect: '/app/stock' },
     { path: '/catalog', redirect: '/app/catalog' },
     { path: '/catalog/manage', redirect: '/app/catalog/manage' },
     { path: '/orders', redirect: '/app/orders' },
