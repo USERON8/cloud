@@ -1,0 +1,11 @@
+{
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "REPLACE_WITH_BACKEND_URL/api/$1" },
+    { "source": "/auth/(.*)", "destination": "REPLACE_WITH_BACKEND_URL/auth/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

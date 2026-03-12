@@ -102,5 +102,14 @@ export interface OrderQuery {
   status?: number
 }
 
+export interface CreateOrderPayload {
+  shopId: number
+  items: Array<{
+    productId: number
+    quantity: number
+    price: number
+  }>
+}
+
 export type ProductPage = PageResult<ProductItem>
 export type OrderPage = PageResult<OrderItem>

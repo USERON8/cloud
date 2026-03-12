@@ -1,5 +1,9 @@
 import http from './http'
-import type { OrderItem, OrderPage, OrderQuery } from '../types/domain'
+import type { CreateOrderPayload, OrderItem, OrderPage, OrderQuery } from '../types/domain'
+
+export function createOrder(payload: CreateOrderPayload): Promise<number> {
+  return http.post<number, number>('/api/v2/orders', payload)
+}
 
 export function listOrders(params: OrderQuery = {}): Promise<OrderPage> {
   return http.get<OrderPage, OrderPage>('/api/v2/orders', { params })
