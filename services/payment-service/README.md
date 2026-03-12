@@ -13,6 +13,13 @@ Version: 1.1.0
 - 支付单：`/api/payments/**`
 - 支付宝：`/api/v1/payment/alipay/** (create/query/refund/close/notify/verify)`
 
+## 消息与一致性
+
+- 生产消息：`PAYMENT_SUCCESS` / `REFUND_COMPLETED`
+- 可靠投递：写入 `outbox_event`，由 `PaymentOutboxRelay` 定时发布到 RocketMQ
+- 消费消息：`REFUND_PROCESS`（触发退款单创建）
+- 事务模式：本地事务 + Outbox（Seata 依赖存在，但 `payment-service` 当前关闭 Seata）
+
 ## 调度任务
 
 - 业务补偿任务通过 `XXL-JOB` 执行

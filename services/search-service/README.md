@@ -5,7 +5,7 @@ Version: 1.1.0
 
 - 服务名：`search-service`
 - 端口：`8087`
-- 主要依赖：Elasticsearch、Redis、Nacos、RocketMQ（搜索事件消费）
+- 主要依赖：Elasticsearch、Redis、Nacos
 
 ## 核心接口
 
@@ -15,7 +15,8 @@ Version: 1.1.0
 ## 说明
 
 - 当前服务不维护独立 MySQL 初始化脚本
-- 商品数据由业务事件同步到 Elasticsearch
+- 商品数据由上游同步到 Elasticsearch（当前未启用 MQ 消费端）
+- 内置 L1/L2 缓存与热词刷新策略（配置见 `application.yml`）
 
 ## 本地启动
 

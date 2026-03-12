@@ -21,6 +21,12 @@ Version: 1.1.0
 
 网关已开启 `DedupeResponseHeader`，避免重复 `Access-Control-Allow-Origin` 导致浏览器拦截。
 
+## 限流与缓存
+
+- Sentinel 已启用，默认保护 v2 路由（默认阈值 `80 QPS / 1s`，可通过环境变量覆盖）
+- 搜索回退缓存：`SearchFallbackCache` 按路由/参数分级 TTL 缓存搜索回退响应
+  - 配置前缀：`app.search.fallback.cache`
+
 ## 本地启动
 
 ```bash
