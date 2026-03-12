@@ -4,6 +4,7 @@ import { useDebounceFn, useInfiniteScroll } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import {
   combinedSearchProducts,
   createProduct,
@@ -72,6 +73,7 @@ const recommendedKeywords = ref<string[]>([])
 const blurTimer = ref<number | null>(null)
 const infiniteTarget = ref<Window | null>(null)
 const hasMore = ref(true)
+const productItemSize = 128
 const hasAdvancedFilters = computed(() => {
   if (advancedFilters.categoryId || advancedFilters.brandId || advancedFilters.shopId) {
     return true
@@ -652,7 +654,7 @@ useInfiniteScroll(
         </div>
       </template>
       <template #default>
-        <el-table :data="rows" stripe>
+        <el-table v-if="isManagementMode" :data="rows" stripe>
           <el-table-column label="ID" prop="id" width="90" />
           <el-table-column label="Name" prop="name" min-width="220" />
           <el-table-column label="Price" min-width="120">
@@ -697,6 +699,47 @@ useInfiniteScroll(
             </template>
           </el-table-column>
         </el-table>
+        <RecycleScroller
+          v-else
+          class="product-scroller"
+          :items="rows"
+          :item-size="productItemSize"
+          key-field="id"
+          page-mode
+        >
+          <template #default="{ item }">
+            <article class="product-card">
+              <div class="product-main">
+                <div class="product-title">{{ item.name }}</div>
+                <div class="product-meta">
+                  <span class="price">{{ formatPrice(item.price) }}</span>
+                  <span class="stock">Stock {{ item.stockQuantity ?? '--' }}</span>
+                  <el-tag :type="statusType(item.status)" round>
+                    {{ statusText(item.status) }}
+                  </el-tag>
+                </div>
+              </div>
+              <div class="product-actions">
+                <el-button
+                  v-if="item.status === 1"
+                  round
+                  size="small"
+                  type="primary"
+                  plain
+                  @click="onAddToCart(item)"
+                >
+                  <span class="btn-wrap">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0-4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0-4 2 2 0 1 0 0-4Z" />
+                    </svg>
+                    Add to Cart
+                  </span>
+                </el-button>
+                <span v-else class="out-of-sale">Unavailable</span>
+              </div>
+            </article>
+          </template>
+        </RecycleScroller>
       </template>
     </el-skeleton>
 
@@ -904,6 +947,60 @@ useInfiniteScroll(
 .out-of-sale {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.product-scroller {
+  display: grid;
+  gap: 10px;
+}
+
+.product-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  align-items: center;
+}
+
+.product-main {
+  display: grid;
+  gap: 6px;
+}
+
+.product-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.price {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.stock {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .table-skeleton {
