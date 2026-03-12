@@ -19,6 +19,7 @@ import type { ProductDocument, ProductItem, ProductUpsertPayload, SearchProductD
 import { useRole } from '../auth/permission'
 import { sessionState } from '../auth/session'
 import { addToCart } from '../store/cart'
+import RichTextEditor from '../components/RichTextEditor.vue'
 
 interface ProductFormModel {
   shopId: number
@@ -753,7 +754,7 @@ useInfiniteScroll(
         </el-form-item>
 
         <el-form-item class="span-2" label="Description (Optional)">
-          <el-input v-model="form.description" :rows="3" type="textarea" />
+          <RichTextEditor v-model="form.description" :min-height="160" />
         </el-form-item>
       </div>
     </el-form>
