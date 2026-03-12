@@ -1,4 +1,5 @@
 # Cloud Shop Microservices
+Version: 1.1.0
 
 [English](./README-en.md)
 
