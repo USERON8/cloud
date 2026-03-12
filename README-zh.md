@@ -281,7 +281,6 @@ flowchart LR
 - `tests/perf/k6/`：主链路压测脚本
 - `docs/`：运维与排障文档
 - `docs/code-audit-2026-03-13-zh.md`：2026-03-13 后端代码审查与修复记录（中文）
-- `docs/code-audit-2026-03-13-en.md`：2026-03-13 后端代码审查与修复记录（英文）
 - `docs/project-closeout.md`：项目暂停前的冻结状态与恢复顺序
 - `docs/performance-baseline.md`：本地性能基线、瓶颈说明与回归口径
 - `docs/TEST_SCRIPT_INDEX.md`：测试脚本入口索引
