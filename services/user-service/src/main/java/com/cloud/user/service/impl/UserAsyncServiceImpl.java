@@ -8,6 +8,7 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserAsyncService;
 import com.cloud.user.service.UserService;
+import com.cloud.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import cn.hutool.core.util.StrUtil;
 
 @Slf4j
 @Service
@@ -94,7 +96,18 @@ public class UserAsyncServiceImpl implements UserAsyncService {
         }
         Map<String, Boolean> result = new LinkedHashMap<>();
         for (String username : usernames) {
-            result.put(username, userService.findByUsername(username) != null);
+            if (StrUtil.isBlank(username)) {
+                continue;
+            }
+            try {
+                result.put(username, userService.findByUsername(username) != null);
+            } catch (BusinessException e) {
+                log.warn("Username validation failed, username={}", username);
+                result.put(username, false);
+            } catch (Exception e) {
+                log.error("Failed to check username existence, username={}", username, e);
+                result.put(username, false);
+            }
         }
         return CompletableFuture.completedFuture(result);
     }
