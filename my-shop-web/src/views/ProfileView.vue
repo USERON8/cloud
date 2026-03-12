@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getCurrentProfile, updateCurrentProfile } from '../api/user'
+import { changeCurrentPassword, getCurrentProfile, updateCurrentProfile, uploadCurrentAvatar } from '../api/user'
 import { patchSessionUser, sessionState } from '../auth/session'
 import type { UserInfo } from '../types/domain'
 
@@ -9,6 +9,9 @@ const loading = ref(false)
 const saveLoading = ref(false)
 const warning = ref('')
 const avatarLoadFailed = ref(false)
+const avatarUploading = ref(false)
+const passwordSaving = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive<Required<Pick<UserInfo, 'nickname' | 'email' | 'phone' | 'avatarUrl'>>>(
   {
@@ -18,6 +21,12 @@ const form = reactive<Required<Pick<UserInfo, 'nickname' | 'email' | 'phone' | '
     avatarUrl: ''
   }
 )
+
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
 const accountName = computed(() => sessionState.user?.username || 'Unknown')
 const accountType = computed(() => sessionState.user?.roles?.[0] || 'Unknown')
@@ -106,6 +115,60 @@ watch(
 function onAvatarError(): void {
   avatarLoadFailed.value = true
 }
+
+function openAvatarPicker(): void {
+  fileInputRef.value?.click()
+}
+
+async function onAvatarSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement | null
+  const file = input?.files?.[0]
+  if (!file) {
+    return
+  }
+  avatarUploading.value = true
+  try {
+    const url = await uploadCurrentAvatar(file)
+    form.avatarUrl = url
+    patchSessionUser({ avatarUrl: url })
+    ElMessage.success('Avatar uploaded.')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Avatar upload failed'
+    ElMessage.error(message)
+  } finally {
+    avatarUploading.value = false
+    if (input) {
+      input.value = ''
+    }
+  }
+}
+
+async function savePassword(): Promise<void> {
+  if (!passwordForm.oldPassword || !passwordForm.newPassword) {
+    ElMessage.warning('Provide both old and new password.')
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.warning('New password does not match confirmation.')
+    return
+  }
+  passwordSaving.value = true
+  try {
+    await changeCurrentPassword({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    })
+    ElMessage.success('Password updated.')
+    passwordForm.oldPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.confirmPassword = ''
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Password update failed'
+    ElMessage.error(message)
+  } finally {
+    passwordSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -137,8 +200,27 @@ function onAvatarError(): void {
           <el-input v-model="form.avatarUrl" />
         </el-form-item>
       </el-form>
+      <div class="actions">
+        <input ref="fileInputRef" class="hidden-input" type="file" accept="image/*" @change="onAvatarSelected" />
+        <el-button :loading="avatarUploading" round @click="openAvatarPicker">Upload Avatar</el-button>
+        <el-button :loading="saveLoading" round type="primary" @click="saveProfile">Save Profile</el-button>
+      </div>
+    </section>
 
-      <el-button :loading="saveLoading" round type="primary" @click="saveProfile">Save Profile</el-button>
+    <section class="glass-card card">
+      <p class="label">Security</p>
+      <el-form class="form" label-position="top">
+        <el-form-item label="Current Password">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="New Password">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="Confirm New Password">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+        </el-form-item>
+      </el-form>
+      <el-button :loading="passwordSaving" round type="primary" @click="savePassword">Update Password</el-button>
     </section>
 
     <section class="glass-card card">
@@ -169,6 +251,17 @@ function onAvatarError(): void {
 
 .form {
   margin-top: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hidden-input {
+  display: none;
 }
 
 .label {
