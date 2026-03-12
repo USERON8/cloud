@@ -117,6 +117,7 @@ pnpm --dir my-shop-web build
 - Prometheus: `http://127.0.0.1:19099`
 - Grafana: `http://127.0.0.1:13000`
 - SkyWalking UI: `http://127.0.0.1:13001`
+- Sentinel Dashboard: `http://127.0.0.1:18718`
 
 ## Druid / SkyWalking / XXL-Job
 
@@ -136,7 +137,7 @@ pnpm --dir my-shop-web build
 - Sentinel is enabled in `gateway` and protects core v2 routes.
 - Default threshold: `80 QPS / 1s` (configurable by env vars).
 - Blocked requests return HTTP `429` with unified JSON payload.
-- Sentinel dashboard is available via docker compose.
+- Sentinel dashboard: `http://127.0.0.1:18718` (docker compose).
 
 ## Service-To-Service Auth (API Key)
 

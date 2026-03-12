@@ -1,7 +1,7 @@
 # Cloud Shop Microservices
 Version: 1.1.0
 
-[English](./README-en.md)
+[English](./README.md)
 
 简化版电商微服务项目，后端基于 Spring Boot + Spring Cloud Alibaba，前端为 Vue 3 + TypeScript。
 
@@ -35,6 +35,30 @@ Version: 1.1.0
 bash scripts/dev/start-containers.sh
 # 兼容 Windows PowerShell:
 # powershell -File scripts/dev/start-containers.ps1
+```
+
+可选：启动完整监控栈（Prometheus + Grafana + exporters）：
+
+```bash
+bash scripts/dev/start-containers.sh --with-monitoring
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-containers.ps1 --with-monitoring
+```
+
+一键启动（容器 + 服务）：
+
+```bash
+bash scripts/dev/start-platform.sh --with-monitoring
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-platform.ps1 --with-monitoring
+```
+
+兼容命令别名：
+
+```bash
+bash scripts/dev/start-all.sh --with-monitoring
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-all.ps1 --with-monitoring
 ```
 
 2. 初始化数据库（先 `init` 再 `test`，可选）：见 `db/README.md`。
@@ -82,6 +106,8 @@ pnpm --dir my-shop-web build
 - Kibana：`http://127.0.0.1:15601`
 - Prometheus：`http://127.0.0.1:19099`
 - Grafana：`http://127.0.0.1:13000`
+- SkyWalking UI：`http://127.0.0.1:13001`
+- Sentinel Dashboard：`http://127.0.0.1:18718`
 
 ## 搜索接入策略
 
