@@ -517,7 +517,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchantIds == null || merchantIds.isEmpty()) {
             return Map.of();
         }
-        return authPrincipalRemoteService.getRoleCodesByUserIds(merchantIds);
+        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(merchantIds);
+        return roleMap == null ? Map.of() : roleMap;
     }
 
     private Merchant toMerchantEntity(MerchantUpsertRequestDTO requestDTO) {
