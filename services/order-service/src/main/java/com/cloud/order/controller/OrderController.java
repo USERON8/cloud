@@ -59,6 +59,8 @@ public class OrderController {
             } else if (!Objects.equals(request.getUserId(), currentUserId)) {
                 return Result.forbidden("forbidden to create order for another user");
             }
+        } else if (request.getUserId() == null) {
+            return Result.badRequest("userId is required for admin order creation");
         }
         request.setIdempotencyKey(idempotencyKey.trim());
         return Result.success(orderPlacementService.createOrder(request));

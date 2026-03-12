@@ -99,15 +99,12 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public OrderMain createMainOrder(CreateMainOrderRequest request) {
         try {
-            String idempotencyKey = request.getIdempotencyKey();
-            if (StrUtil.isBlank(idempotencyKey)) {
-                throw new BusinessException("idempotency key is required");
-            }
+            String idempotencyKey = buildScopedIdempotencyKey(request.getUserId(), request.getIdempotencyKey());
             if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
                 throw new BusinessException("subOrders is required");
             }
 
-            OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
+            OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey);
             if (existing != null) {
                 tradeMetrics.incrementOrder("success");
                 return existing;
@@ -120,12 +117,12 @@ public class OrderServiceImpl implements OrderService {
             main.setTotalAmount(defaultAmount(request.getTotalAmount()));
             main.setPayableAmount(defaultAmount(request.getPayableAmount()));
             main.setRemark(request.getRemark());
-            main.setIdempotencyKey(idempotencyKey.trim());
+            main.setIdempotencyKey(idempotencyKey);
 
             try {
                 orderMainMapper.insert(main);
             } catch (DuplicateKeyException duplicateKeyException) {
-                OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey.trim());
+                OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey);
                 if (duplicated != null) {
                     tradeMetrics.incrementOrder("success");
                     return duplicated;
@@ -500,6 +497,21 @@ public class OrderServiceImpl implements OrderService {
 
     private BigDecimal defaultAmount(BigDecimal amount) {
         return amount == null ? BigDecimal.ZERO : amount;
+    }
+
+    private String buildScopedIdempotencyKey(Long userId, String idempotencyKey) {
+        if (StrUtil.isBlank(idempotencyKey)) {
+            throw new BusinessException("idempotency key is required");
+        }
+        if (userId == null) {
+            throw new BusinessException("user id is required for idempotency");
+        }
+        String trimmed = idempotencyKey.trim();
+        String prefix = userId + ":";
+        if (trimmed.startsWith(prefix)) {
+            return trimmed;
+        }
+        return prefix + trimmed;
     }
 }
 

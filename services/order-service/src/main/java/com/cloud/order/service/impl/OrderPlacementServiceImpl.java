@@ -75,7 +75,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     }
 
     private OrderAggregateResponse createOrLoadAggregate(CreateMainOrderRequest request) {
-        String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey());
+        String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
         OrderMain existing = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
         if (existing != null) {
             return loadExistingAggregate(existing.getId());
@@ -305,11 +305,19 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         return item;
     }
 
-    private String normalizeIdempotencyKey(String idempotencyKey) {
+    private String normalizeIdempotencyKey(String idempotencyKey, Long userId) {
         if (StrUtil.isBlank(idempotencyKey)) {
             throw new BusinessException("idempotency key is required");
         }
-        return idempotencyKey.trim();
+        if (userId == null) {
+            throw new BusinessException("user id is required for idempotency");
+        }
+        String trimmed = idempotencyKey.trim();
+        String prefix = userId + ":";
+        if (trimmed.startsWith(prefix)) {
+            return trimmed;
+        }
+        return prefix + trimmed;
     }
 
     private String resolveMainOrderStatus(List<OrderAggregateResponse.SubOrderWithItems> subOrders) {
