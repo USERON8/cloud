@@ -62,7 +62,7 @@ public class RedisUserNotificationDeliveryProvider implements UserNotificationDe
             return true;
         } catch (Exception e) {
             log.error("Failed to publish notification payload, key={}", key, e);
-            return false;
+            throw new IllegalStateException("failed to publish notification payload", e);
         }
     }
 
@@ -72,7 +72,7 @@ public class RedisUserNotificationDeliveryProvider implements UserNotificationDe
             return true;
         } catch (Exception e) {
             log.error("Failed to publish notification payload with ttl, key={}", key, e);
-            return false;
+            throw new IllegalStateException("failed to publish notification payload with ttl", e);
         }
     }
 }

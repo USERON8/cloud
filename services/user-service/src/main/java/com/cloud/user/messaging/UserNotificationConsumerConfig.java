@@ -7,7 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.StringUtils;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -17,12 +20,31 @@ import java.util.function.Consumer;
 @ConditionalOnProperty(name = "spring.cloud.stream.rocketmq.binder.name-server")
 public class UserNotificationConsumerConfig {
 
+    private static final String PROCESSING_PREFIX = "notification:processing:";
+    private static final String DONE_PREFIX = "notification:done:";
+    private static final long PROCESSING_TTL_MINUTES = 5;
+    private static final long DONE_TTL_DAYS = 7;
+
     private final UserNotificationService userNotificationService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Bean
     public Consumer<UserNotificationEvent> userNotificationConsumer() {
         return event -> {
             if (event == null || event.getEventType() == null) {
+                return;
+            }
+            String eventId = event.getEventId();
+            if (!StringUtils.hasText(eventId)) {
+                log.warn("Notification event missing eventId: eventType={}", event.getEventType());
+                return;
+            }
+            if (isAlreadyProcessed(eventId)) {
+                log.debug("Duplicate notification event ignored: eventId={}, eventType={}", eventId, event.getEventType());
+                return;
+            }
+            if (!markProcessing(eventId)) {
+                log.debug("Notification event is being processed by another worker: eventId={}", eventId);
                 return;
             }
             try {
@@ -86,13 +108,35 @@ public class UserNotificationConsumerConfig {
                     }
                 };
                 if (!delivered) {
-                    throw new IllegalStateException("notification delivery failed");
+                    log.warn("Notification delivery skipped or failed without exception: eventId={}, eventType={}",
+                            eventId, event.getEventType());
                 }
+                markProcessed(eventId);
             } catch (Exception e) {
                 log.error("Failed to dispatch notification event: eventId={}, eventType={}",
                         event.getEventId(), event.getEventType(), e);
                 throw e;
+            } finally {
+                clearProcessing(eventId);
             }
         };
+    }
+
+    private boolean isAlreadyProcessed(String eventId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(DONE_PREFIX + eventId));
+    }
+
+    private boolean markProcessing(String eventId) {
+        Boolean locked = redisTemplate.opsForValue()
+                .setIfAbsent(PROCESSING_PREFIX + eventId, "1", PROCESSING_TTL_MINUTES, TimeUnit.MINUTES);
+        return Boolean.TRUE.equals(locked);
+    }
+
+    private void markProcessed(String eventId) {
+        redisTemplate.opsForValue().set(DONE_PREFIX + eventId, "1", DONE_TTL_DAYS, TimeUnit.DAYS);
+    }
+
+    private void clearProcessing(String eventId) {
+        redisTemplate.delete(PROCESSING_PREFIX + eventId);
     }
 }
