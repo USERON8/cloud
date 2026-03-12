@@ -155,12 +155,10 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         boolean updated = update(updateEntity, new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserAddress>()
                 .eq(UserAddress::getUserId, userId)
                 .eq(UserAddress::getIsDefault, 1));
-        if (updated) {
-            Cache cache = cacheManager.getCache(USER_ADDRESS_CACHE_NAME);
-            if (cache != null) {
-                for (Long addressId : defaultIds) {
-                    cache.evict("detail:" + addressId);
-                }
+        Cache cache = cacheManager.getCache(USER_ADDRESS_CACHE_NAME);
+        if (cache != null) {
+            for (Long addressId : defaultIds) {
+                cache.evict("detail:" + addressId);
             }
         }
         return updated;
