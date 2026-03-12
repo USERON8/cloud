@@ -159,6 +159,7 @@ public class BaseAsyncConfig {
 
     private RejectedExecutionHandler getRejectedExecutionHandler(String handlerType) {
         return switch (handlerType.toUpperCase()) {
+            case "FAST_FAIL" -> new com.cloud.common.threadpool.FastFailRejectedExecutionHandler();
             case "ABORT" -> new ThreadPoolExecutor.AbortPolicy();
             case "DISCARD" -> new ThreadPoolExecutor.DiscardPolicy();
             case "DISCARD_OLDEST" -> new ThreadPoolExecutor.DiscardOldestPolicy();

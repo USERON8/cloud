@@ -143,7 +143,7 @@ public class DynamicAsyncProperties {
 
 
 
-        private String rejectedExecutionHandler = "CALLER_RUNS";
+        private String rejectedExecutionHandler = "FAST_FAIL";
 
         
 
