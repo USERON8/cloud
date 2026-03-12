@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.stock.messaging.StockMessageProducer;
 import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.mapper.StockReservationMapper;
 import com.cloud.stock.module.entity.StockLedger;
@@ -29,6 +30,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     private final StockLedgerMapper stockLedgerMapper;
     private final StockReservationMapper stockReservationMapper;
     private final StockTxnAsyncWriter stockTxnAsyncWriter;
+    private final StockMessageProducer stockMessageProducer;
     private final TradeMetrics tradeMetrics;
 
     @Override
@@ -62,6 +64,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             return true;
         } catch (Exception ex) {
             tradeMetrics.incrementStockFreeze("failed");
+            handleReserveFailure(command, ex);
             throw ex;
         }
     }
@@ -202,6 +205,27 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             return false;
         }
         throw new BusinessException("reservation status invalid for reserve: " + status);
+    }
+
+    private void handleReserveFailure(StockOperateCommandDTO command, Exception ex) {
+        if (command == null) {
+            return;
+        }
+        if (!isInsufficientStock(ex)) {
+            return;
+        }
+        String orderNo = command.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            return;
+        }
+        stockMessageProducer.sendStockFreezeFailedEvent(orderNo, ex.getMessage());
+    }
+
+    private boolean isInsufficientStock(Exception ex) {
+        if (ex == null || ex.getMessage() == null) {
+            return false;
+        }
+        return ex.getMessage().toLowerCase().contains("insufficient salable stock");
     }
 
     private void insertRollbackMarker(StockOperateCommandDTO command) {
