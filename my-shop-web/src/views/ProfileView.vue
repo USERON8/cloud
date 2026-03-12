@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { VueCropper } from 'vue-cropper'
+import 'vue-cropper/dist/index.css'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
@@ -12,7 +14,11 @@ const loading = ref(false)
 const saveLoading = ref(false)
 const warning = ref('')
 const avatarLoadFailed = ref(false)
-const avatarUploading = ref(false)
+const cropperVisible = ref(false)
+const cropperImage = ref('')
+const cropperUploading = ref(false)
+const pendingAvatarName = ref('avatar.png')
+const cropperRef = ref<InstanceType<typeof VueCropper> | null>(null)
 const passwordSaving = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -174,20 +180,59 @@ async function onAvatarSelected(event: Event): Promise<void> {
   if (!file) {
     return
   }
-  avatarUploading.value = true
+  pendingAvatarName.value = file.name || 'avatar.png'
+  const reader = new FileReader()
+  reader.onload = () => {
+    cropperImage.value = typeof reader.result === 'string' ? reader.result : ''
+    cropperVisible.value = true
+  }
+  reader.readAsDataURL(file)
+  if (input) {
+    input.value = ''
+  }
+}
+
+function resetCropper(): void {
+  cropperImage.value = ''
+  pendingAvatarName.value = 'avatar.png'
+}
+
+function getCroppedBlob(): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (!cropperRef.value) {
+      reject(new Error('Cropper is not ready'))
+      return
+    }
+    cropperRef.value.getCropBlob((blob) => {
+      if (blob) {
+        resolve(blob)
+        return
+      }
+      reject(new Error('Failed to crop image'))
+    })
+  })
+}
+
+async function uploadCroppedAvatar(): Promise<void> {
+  if (cropperUploading.value) {
+    return
+  }
+  cropperUploading.value = true
   try {
+    const blob = await getCroppedBlob()
+    const file = new File([blob], pendingAvatarName.value || 'avatar.png', {
+      type: blob.type || 'image/png'
+    })
     const url = await uploadCurrentAvatar(file)
     profileValues.avatarUrl = url
     patchSessionUser({ avatarUrl: url })
     ElMessage.success('Avatar uploaded.')
+    cropperVisible.value = false
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Avatar upload failed'
     ElMessage.error(message)
   } finally {
-    avatarUploading.value = false
-    if (input) {
-      input.value = ''
-    }
+    cropperUploading.value = false
   }
 }
 
@@ -244,7 +289,7 @@ const savePasswordWithValidation = handlePasswordSubmit(async (values) => {
       </el-form>
       <div class="actions">
         <input ref="fileInputRef" class="hidden-input" type="file" accept="image/*" @change="onAvatarSelected" />
-        <el-button :loading="avatarUploading" round @click="openAvatarPicker">Upload Avatar</el-button>
+        <el-button round @click="openAvatarPicker">Upload Avatar</el-button>
         <el-button :loading="saveLoading" round type="primary" @click="saveProfileWithValidation">Save Profile</el-button>
       </div>
     </section>
@@ -275,6 +320,29 @@ const savePasswordWithValidation = handlePasswordSubmit(async (values) => {
         <el-descriptions-item label="iOS">Capacitor Ready</el-descriptions-item>
       </el-descriptions>
     </section>
+
+    <el-dialog v-model="cropperVisible" width="640px" align-center @closed="resetCropper">
+      <template #header>
+        <strong>Crop Avatar</strong>
+      </template>
+      <div class="cropper-wrapper">
+        <VueCropper
+          ref="cropperRef"
+          :img="cropperImage"
+          :auto-crop="true"
+          :fixed="true"
+          :fixed-number="[1, 1]"
+          :can-move-box="true"
+          :center-box="true"
+          :info="true"
+          output-type="png"
+        />
+      </div>
+      <template #footer>
+        <el-button round @click="cropperVisible = false">Cancel</el-button>
+        <el-button :loading="cropperUploading" round type="primary" @click="uploadCroppedAvatar">Upload</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -330,6 +398,13 @@ h3 {
   box-shadow: 0 12px 24px rgba(28, 53, 101, 0.2);
   object-fit: cover;
   margin-top: 0.45rem;
+}
+
+.cropper-wrapper {
+  height: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 @media (max-width: 900px) {
