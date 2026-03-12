@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -105,11 +107,26 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             return Collections.emptyList();
         }
 
+        List<Long> spuIds = spus.stream()
+                .map(Spu::getId)
+                .filter(id -> id != null)
+                .toList();
+        Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
+        if (!spuIds.isEmpty()) {
+            List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
+                    .in(Sku::getSpuId, spuIds)
+                    .eq(Sku::getDeleted, 0));
+            for (Sku sku : skus) {
+                if (sku.getSpuId() == null) {
+                    continue;
+                }
+                skusBySpuId.computeIfAbsent(sku.getSpuId(), ignored -> new ArrayList<>()).add(sku);
+            }
+        }
+
         List<SpuDetailVO> result = new ArrayList<>(spus.size());
         for (Spu spu : spus) {
-            List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                    .eq(Sku::getSpuId, spu.getId())
-                    .eq(Sku::getDeleted, 0));
+            List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
             result.add(toSpuDetail(spu, skus));
         }
         return result;
