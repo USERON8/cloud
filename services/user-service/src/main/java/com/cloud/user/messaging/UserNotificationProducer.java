@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -24,6 +25,12 @@ public class UserNotificationProducer {
     public boolean send(UserNotificationEvent event) {
         if (event == null || event.getEventType() == null) {
             return false;
+        }
+        if (event.getEventId() == null || event.getEventId().isBlank()) {
+            event.setEventId(UUID.randomUUID().toString());
+        }
+        if (event.getTimestamp() == null) {
+            event.setTimestamp(System.currentTimeMillis());
         }
         Map<String, Object> headers = new HashMap<>();
         headers.put(MessageConst.PROPERTY_KEYS, event.getEventId());

@@ -19,6 +19,8 @@ spring:
   main:
     allow-bean-definition-overriding: true
   cloud:
+    function:
+      definition: userNotificationConsumer
     nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
@@ -44,8 +46,6 @@ spring:
         import-check:
           enabled: false
     stream:
-      function:
-        definition: userNotificationConsumer
       default:
         producer:
           partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}

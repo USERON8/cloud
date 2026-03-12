@@ -4,6 +4,7 @@ import com.cloud.common.messaging.event.UserNotificationEvent;
 import com.cloud.user.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +13,8 @@ import java.util.function.Consumer;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "user.notification.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "spring.cloud.stream.rocketmq.binder.name-server")
 public class UserNotificationConsumerConfig {
 
     private final UserNotificationService userNotificationService;
