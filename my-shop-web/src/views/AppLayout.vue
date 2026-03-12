@@ -23,6 +23,7 @@ interface NavItem {
     | 'addresses'
     | 'merchant'
     | 'admin'
+    | 'ops'
   roles: UserRole[]
 }
 
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { label: 'Addresses', path: '/app/addresses', icon: 'addresses', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Merchant Center', path: '/app/merchant', icon: 'merchant', roles: ['MERCHANT'] },
   { label: 'Admin Center', path: '/app/admin', icon: 'admin', roles: ['ADMIN'] },
+  { label: 'Ops Center', path: '/app/ops', icon: 'ops', roles: ['MERCHANT', 'ADMIN'] },
   { label: 'Profile', path: '/app/profile', icon: 'profile', roles: ['USER', 'MERCHANT', 'ADMIN'] }
 ]
 
@@ -89,7 +91,8 @@ const iconMap: Record<NavItem['icon'], string> = {
   cart: 'M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z',
   addresses: 'M6 4h12v16H6V4Zm2 3h4M8 10h8M8 14h6',
   merchant: 'M4 7h16l-1.5 12H5.5L4 7Zm2-3h12l1 3H5l1-3Zm3 7h6',
-  admin: 'M12 3 4.5 6v6c0 4.7 3.4 8 7.5 9 4.1-1 7.5-4.3 7.5-9V6L12 3Z'
+  admin: 'M12 3 4.5 6v6c0 4.7 3.4 8 7.5 9 4.1-1 7.5-4.3 7.5-9V6L12 3Z',
+  ops: 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm7 3.5a6.9 6.9 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6c.1-.3.1-.7.1-1Z'
 }
 
 function getIconPath(icon: NavItem['icon']): string {

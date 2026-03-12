@@ -117,6 +117,12 @@ const router = createRouter({
           name: 'admin-center',
           component: () => import('../views/AdminCenterView.vue'),
           meta: { title: 'Admin Center', roles: ['ADMIN'] as UserRole[] }
+        },
+        {
+          path: 'ops',
+          name: 'ops-center',
+          component: () => import('../views/OpsCenterView.vue'),
+          meta: { title: 'Ops Center', roles: ['MERCHANT', 'ADMIN'] as UserRole[] }
         }
       ]
     },
@@ -131,7 +137,8 @@ const router = createRouter({
     { path: '/orders/manage', redirect: '/app/orders/manage' },
     { path: '/profile', redirect: '/app/profile' },
     { path: '/merchant', redirect: '/app/merchant' },
-    { path: '/admin', redirect: '/app/admin' }
+    { path: '/admin', redirect: '/app/admin' },
+    { path: '/ops', redirect: '/app/ops' }
   ]
 })
 
