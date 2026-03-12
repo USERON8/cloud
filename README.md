@@ -5,6 +5,13 @@ Version: 1.1.0
 
 简化版电商微服务项目，后端基于 Spring Boot + Spring Cloud Alibaba，前端为 Vue 3 + TypeScript。
 
+## 当前一致性与消息模式
+
+- 订单/支付/库存采用本地事务 + `outbox_event` 可靠投递
+- Outbox 由 `order/payment/stock` 服务内部定时轮询发布到 RocketMQ
+- 消费端使用 Redis 幂等（`MessageIdempotencyService`）防重
+- Seata 依赖/配置保留，但当前代码未使用 `@GlobalTransactional`，`payment-service` 配置中已关闭 Seata
+
 ## 模块与端口
 
 | 模块 | 端口 | 说明 |
@@ -111,6 +118,8 @@ pnpm --dir my-shop-web build
   - 已内置执行器自动配置，默认关闭。
   - 通过 `XXL_JOB_ENABLED=true` 启用。
   - 常用参数：`XXL_JOB_ADMIN_ADDRESSES`、`XXL_JOB_APPNAME`、`XXL_JOB_ACCESS_TOKEN`、`XXL_JOB_PORT`。
+- 消息可靠投递：`order/payment/stock` 采用 `outbox_event` + 定时 Relay 发送到 RocketMQ
+
 
 ## Sentinel 断路器（网关）
 
@@ -185,6 +194,7 @@ sequenceDiagram
     participant C as Client
     participant GW as Gateway
     participant O as order-service
+    participant OB as Outbox Relay
     participant S as stock-service
     participant P as payment-service
     participant MQ as RocketMQ
@@ -193,12 +203,14 @@ sequenceDiagram
     GW->>O: create mainOrder + subOrders
     O->>S: reserve(skuId, qty)
     S-->>O: reserved
-    O->>MQ: outbox event(order.created)
+    O->>OB: write outbox_event
+    OB->>MQ: publish order.created
     O-->>C: CREATED / STOCK_RESERVED
 
     C->>GW: POST /api/payments/orders
     GW->>P: create payment_order
-    P->>MQ: payment.paid
+    P->>OB: write outbox_event
+    OB->>MQ: publish payment.paid
     MQ->>O: consume payment.paid
     O->>S: confirm reservation
     S-->>O: stock deducted

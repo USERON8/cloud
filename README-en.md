@@ -7,6 +7,13 @@ A simplified e-commerce microservices project.
 Backend: Spring Boot + Spring Cloud Alibaba.  
 Frontend: Vue 3 + TypeScript.
 
+## Current Consistency Model
+
+- Order, payment, and stock services use local DB transactions + `outbox_event` for reliable messaging.
+- Outbox relay runs inside each service (scheduled polling) and publishes to RocketMQ.
+- Consumers are idempotent (Redis-based) to tolerate replays.
+- Seata dependencies/config exist, but there are no `@GlobalTransactional` flows in code. `payment-service` has Seata disabled.
+
 ## Modules And Ports
 
 | Module | Port | Description |
@@ -113,7 +120,8 @@ pnpm --dir my-shop-web build
 ## Druid / SkyWalking / XXL-Job
 
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
-- Seata AT now covers `order-service -> stock-service` order creation and stock reservation.
+- Transactional messaging is implemented via `outbox_event` + scheduled relay in `order-service`, `payment-service`, and `stock-service`.
+- Seata configuration is present but not actively used by global transactions.
 - SkyWalking javaagent injection is supported by startup scripts.
 - SkyWalking javaagent auto-download/caching is enabled by default via `.tmp/skywalking/`.
 - Set `SKYWALKING_AUTO_ENABLE=false` to disable the automatic agent wiring.
@@ -162,6 +170,7 @@ sequenceDiagram
     participant C as Client
     participant GW as Gateway
     participant O as order-service
+    participant OB as Outbox Relay
     participant S as stock-service
     participant P as payment-service
     participant MQ as RocketMQ
@@ -169,10 +178,12 @@ sequenceDiagram
     C->>GW: Create order
     GW->>O: mainOrder + subOrders
     O->>S: reserve(skuId, qty)
-    O->>MQ: outbox(order.created)
+    O->>OB: write outbox_event
+    OB->>MQ: publish order.created
     C->>GW: pay
     GW->>P: create payment
-    P->>MQ: payment.paid
+    P->>OB: write outbox_event
+    OB->>MQ: publish payment.paid
     MQ->>O: consume payment.paid
     O->>S: confirm reservation
 ```
