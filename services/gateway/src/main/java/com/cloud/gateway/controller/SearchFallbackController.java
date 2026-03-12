@@ -1,6 +1,7 @@
 package com.cloud.gateway.controller;
 
 import com.cloud.common.result.Result;
+import com.cloud.gateway.cache.SearchFallbackCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -41,6 +42,7 @@ public class SearchFallbackController {
     private final WebClient.Builder loadBalancedWebClientBuilder;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final SearchFallbackCache searchFallbackCache;
     private final Map<String, Counter> fallbackCounters = new ConcurrentHashMap<>();
     private final Map<String, Timer> fallbackLatencyTimers = new ConcurrentHashMap<>();
     private volatile WebClient productClient;
@@ -65,9 +67,20 @@ public class SearchFallbackController {
         String routeType = resolveRouteType(originalPath, explicitRoute);
         Timer.Sample sample = Timer.start(meterRegistry);
 
+        String cacheKey = buildCacheKey(routeType, queryParams);
+        String cachedBody = getCachedResponse(routeType, cacheKey);
+        if (cachedBody != null) {
+            counter(routeType, "cache_hit").increment();
+            return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(cachedBody))
+                    .doFinally(signal -> sample.stop(latencyTimer(routeType)));
+        }
+
         return routeFallback(routeType, queryParams)
                 .timeout(Duration.ofMillis(fallbackTimeoutMs))
-                .doOnSuccess(response -> counter(routeType, "success").increment())
+                .doOnSuccess(response -> {
+                    counter(routeType, "success").increment();
+                    cacheIfEligible(routeType, cacheKey, response);
+                })
                 .onErrorResume(ex -> {
                     counter(routeType, "degraded").increment();
                     log.warn("Search fallback degraded: path={}, query={}, reason={}",
@@ -239,6 +252,58 @@ public class SearchFallbackController {
         } catch (Exception e) {
             log.error("Serialize fallback payload failed", e);
             return "{\"code\":500,\"message\":\"Serialize fallback payload failed\",\"data\":null}";
+        }
+    }
+
+    private String buildCacheKey(String routeType, MultiValueMap<String, String> queryParams) {
+        if (routeType == null || routeType.isBlank()) {
+            return "";
+        }
+        if (queryParams == null || queryParams.isEmpty()) {
+            return routeType;
+        }
+        StringBuilder builder = new StringBuilder(routeType);
+        queryParams.keySet().stream()
+                .sorted()
+                .forEach(key -> {
+                    List<String> values = queryParams.get(key);
+                    if (values == null || values.isEmpty()) {
+                        return;
+                    }
+                    values.stream().sorted().forEach(value -> {
+                        builder.append('|').append(key).append('=').append(value);
+                    });
+                });
+        return builder.toString();
+    }
+
+    private String getCachedResponse(String routeType, String cacheKey) {
+        if (cacheKey == null || cacheKey.isBlank()) {
+            return null;
+        }
+        return switch (routeType) {
+            case "search", "smart-search" -> searchFallbackCache.getSearch(cacheKey);
+            case "suggestions" -> searchFallbackCache.getSuggestions(cacheKey);
+            default -> null;
+        };
+    }
+
+    private void cacheIfEligible(String routeType, String cacheKey, ResponseEntity<String> response) {
+        if (cacheKey == null || cacheKey.isBlank()) {
+            return;
+        }
+        if (response == null || !response.getStatusCode().is2xxSuccessful()) {
+            return;
+        }
+        String body = response.getBody();
+        if (!isSuccessResult(body)) {
+            return;
+        }
+        switch (routeType) {
+            case "search", "smart-search" -> searchFallbackCache.putSearch(cacheKey, body);
+            case "suggestions" -> searchFallbackCache.putSuggestions(cacheKey, body);
+            default -> {
+            }
         }
     }
 }
