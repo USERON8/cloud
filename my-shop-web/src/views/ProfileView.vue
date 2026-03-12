@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { VueCropper } from 'vue-cropper'
-import 'vue-cropper/dist/index.css'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { z } from 'zod'
