@@ -26,34 +26,72 @@ public class UserNotificationConsumerConfig {
                 return;
             }
             try {
-                switch (event.getEventType()) {
-                    case UserNotificationEvent.TYPE_WELCOME -> userNotificationService.sendWelcomeEmailAsync(event.getUserId());
-                    case UserNotificationEvent.TYPE_PASSWORD_RESET ->
-                            userNotificationService.sendPasswordResetEmailAsync(event.getUserId(), event.getToken());
-                    case UserNotificationEvent.TYPE_ACTIVATION ->
-                            userNotificationService.sendActivationEmailAsync(event.getUserId(), event.getToken());
-                    case UserNotificationEvent.TYPE_STATUS_CHANGE ->
-                            userNotificationService.sendStatusChangeNotificationAsync(
-                                    event.getUserId(),
-                                    event.getNewStatus(),
-                                    event.getReason()
-                            );
-                    case UserNotificationEvent.TYPE_BATCH ->
-                            userNotificationService.sendBatchNotificationAsync(
-                                    event.getUserIds(),
-                                    event.getTitle(),
-                                    event.getContent()
-                            );
-                    case UserNotificationEvent.TYPE_SYSTEM ->
-                            userNotificationService.sendSystemAnnouncementAsync(
-                                    event.getTitle(),
-                                    event.getContent()
-                            );
-                    default -> log.warn("Unknown notification event type: {}", event.getEventType());
+                boolean delivered = switch (event.getEventType()) {
+                    case UserNotificationEvent.TYPE_WELCOME -> {
+                        if (event.getUserId() == null) {
+                            log.warn("Notification event missing userId: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendWelcomeEmail(event.getUserId());
+                    }
+                    case UserNotificationEvent.TYPE_PASSWORD_RESET -> {
+                        if (event.getUserId() == null || event.getToken() == null) {
+                            log.warn("Notification event missing password reset payload: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendPasswordResetEmail(event.getUserId(), event.getToken());
+                    }
+                    case UserNotificationEvent.TYPE_ACTIVATION -> {
+                        if (event.getUserId() == null || event.getToken() == null) {
+                            log.warn("Notification event missing activation payload: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendActivationEmail(event.getUserId(), event.getToken());
+                    }
+                    case UserNotificationEvent.TYPE_STATUS_CHANGE -> {
+                        if (event.getUserId() == null) {
+                            log.warn("Notification event missing status change payload: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendStatusChangeNotification(
+                                event.getUserId(),
+                                event.getNewStatus(),
+                                event.getReason()
+                        );
+                    }
+                    case UserNotificationEvent.TYPE_BATCH -> {
+                        if (event.getUserIds() == null || event.getUserIds().isEmpty()) {
+                            log.warn("Notification event missing batch payload: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendBatchNotification(
+                                event.getUserIds(),
+                                event.getTitle(),
+                                event.getContent()
+                        );
+                    }
+                    case UserNotificationEvent.TYPE_SYSTEM -> {
+                        if (event.getTitle() == null || event.getContent() == null) {
+                            log.warn("Notification event missing system payload: eventId={}", event.getEventId());
+                            yield true;
+                        }
+                        yield userNotificationService.sendSystemAnnouncement(
+                                event.getTitle(),
+                                event.getContent()
+                        );
+                    }
+                    default -> {
+                        log.warn("Unknown notification event type: {}", event.getEventType());
+                        yield true;
+                    }
+                };
+                if (!delivered) {
+                    throw new IllegalStateException("notification delivery failed");
                 }
             } catch (Exception e) {
                 log.error("Failed to dispatch notification event: eventId={}, eventType={}",
                         event.getEventId(), event.getEventType(), e);
+                throw e;
             }
         };
     }
