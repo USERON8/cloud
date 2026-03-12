@@ -214,7 +214,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
         User user = toUserEntity(requestDTO);
-        save(user);
+        if (!save(user)) {
+            throw new BusinessException("failed to create user");
+        }
         List<String> roles = requestDTO.getRoles() == null || requestDTO.getRoles().isEmpty()
                 ? List.of("USER")
                 : requestDTO.getRoles();
@@ -230,7 +232,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     })
     public Long createProfile(UserProfileUpsertDTO profileUpsertDTO) {
         User user = toUserEntity(profileUpsertDTO);
-        save(user);
+        if (!save(user)) {
+            throw new BusinessException("failed to create user profile");
+        }
         return user.getId();
     }
 
