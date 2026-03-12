@@ -37,6 +37,15 @@ public class SentinelGatewayConfig {
     @Value("${app.sentinel.gateway.interval-sec:1}")
     private int intervalSec;
 
+    @Value("${app.sentinel.gateway.search-qps:30}")
+    private double searchQps;
+
+    @Value("${app.sentinel.gateway.search-interval-sec:1}")
+    private int searchIntervalSec;
+
+    @Value("${app.sentinel.gateway.search-route-ids:search-service-api-v2}")
+    private String searchRouteIds;
+
     @Value("${app.sentinel.gateway.route-ids:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}")
     private String routeIds;
 
@@ -46,10 +55,9 @@ public class SentinelGatewayConfig {
             log.info("Sentinel gateway rules disabled.");
             return;
         }
+        Set<String> searchRouteSet = parseRouteIds(searchRouteIds);
         Set<GatewayFlowRule> rules = parseRouteIds(routeIds).stream()
-                .map(routeId -> new GatewayFlowRule(routeId)
-                        .setCount(defaultQps)
-                        .setIntervalSec(intervalSec))
+                .map(routeId -> buildRule(routeId, searchRouteSet))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         GatewayRuleManager.loadRules(rules);
         GatewayCallbackManager.setBlockHandler((exchange, t) -> buildBlockedResponse(t));
@@ -62,6 +70,17 @@ public class SentinelGatewayConfig {
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private GatewayFlowRule buildRule(String routeId, Set<String> searchRouteSet) {
+        if (searchRouteSet.contains(routeId)) {
+            return new GatewayFlowRule(routeId)
+                    .setCount(searchQps)
+                    .setIntervalSec(searchIntervalSec);
+        }
+        return new GatewayFlowRule(routeId)
+                .setCount(defaultQps)
+                .setIntervalSec(intervalSec);
     }
 
     private Mono<ServerResponse> buildBlockedResponse(Throwable throwable) {
@@ -77,4 +96,3 @@ public class SentinelGatewayConfig {
                 .bodyValue(payload);
     }
 }
-

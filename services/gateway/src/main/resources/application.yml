@@ -133,6 +133,9 @@ app:
       enabled: ${APP_SENTINEL_GATEWAY_ENABLED:true}
       default-qps: ${APP_SENTINEL_GATEWAY_DEFAULT_QPS:80}
       interval-sec: ${APP_SENTINEL_GATEWAY_INTERVAL_SEC:1}
+      search-qps: ${APP_SENTINEL_GATEWAY_SEARCH_QPS:30}
+      search-interval-sec: ${APP_SENTINEL_GATEWAY_SEARCH_INTERVAL_SEC:1}
+      search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-api-v2}
       route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
   security:
     api-docs-enabled: false
