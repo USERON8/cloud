@@ -8,6 +8,8 @@ import com.cloud.user.service.UserStatisticsService;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -37,6 +39,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
+    private final CacheManager cacheManager;
 
     @Override
     @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
@@ -264,11 +267,28 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
     @Async("userStatisticsExecutor")
     public CompletableFuture<Boolean> refreshStatisticsCacheAsync() {
         try {
-            getUserStatisticsOverview();
-            getRoleDistribution();
-            getUserStatusDistribution();
-            countActiveUsers(7);
-            countActiveUsers(30);
+            UserStatisticsVO overview = getUserStatisticsOverview();
+            Map<String, Long> roleDistribution = overview.getRoleDistribution();
+            Map<String, Long> statusDistribution = overview.getUserStatusDistribution();
+            Long active7 = overview.getActiveUsers();
+            Long active30 = countActiveUsers(30);
+
+            Cache cache = cacheManager.getCache("user:statistics");
+            if (cache != null) {
+                cache.put("overview", overview);
+                if (roleDistribution != null) {
+                    cache.put("role_distribution", roleDistribution);
+                }
+                if (statusDistribution != null) {
+                    cache.put("status_distribution", statusDistribution);
+                }
+                if (active7 != null) {
+                    cache.put("active:7", active7);
+                }
+                if (active30 != null) {
+                    cache.put("active:30", active30);
+                }
+            }
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
             log.error("Failed to refresh statistics cache", e);
