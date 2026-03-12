@@ -22,77 +22,66 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     private final UserNotificationDeliveryProvider deliveryProvider;
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
+    public boolean sendWelcomeEmail(Long userId) {
         try {
             UserDTO user = getUserForNotification(userId);
             if (user == null || StrUtil.isBlank(user.getEmail())) {
-                return CompletableFuture.completedFuture(false);
+                return false;
             }
-            return CompletableFuture.completedFuture(deliveryProvider.deliverWelcome(userId));
+            return deliveryProvider.deliverWelcome(userId);
         } catch (Exception e) {
             log.error("Failed to send welcome email", e);
-            return CompletableFuture.completedFuture(false);
+            return false;
         }
     }
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendPasswordResetEmailAsync(Long userId, String resetToken) {
+    public boolean sendPasswordResetEmail(Long userId, String resetToken) {
         try {
             UserDTO user = getUserForNotification(userId);
             if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(resetToken)) {
-                return CompletableFuture.completedFuture(false);
+                return false;
             }
-            return CompletableFuture.completedFuture(
-                    deliveryProvider.deliverPasswordResetToken(userId, resetToken.trim())
-            );
+            return deliveryProvider.deliverPasswordResetToken(userId, resetToken.trim());
         } catch (Exception e) {
             log.error("Failed to send password reset email", e);
-            return CompletableFuture.completedFuture(false);
+            return false;
         }
     }
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendActivationEmailAsync(Long userId, String activationToken) {
+    public boolean sendActivationEmail(Long userId, String activationToken) {
         try {
             UserDTO user = getUserForNotification(userId);
             if (user == null || StrUtil.isBlank(user.getEmail()) || StrUtil.isBlank(activationToken)) {
-                return CompletableFuture.completedFuture(false);
+                return false;
             }
-            return CompletableFuture.completedFuture(
-                    deliveryProvider.deliverActivationToken(userId, activationToken.trim())
-            );
+            return deliveryProvider.deliverActivationToken(userId, activationToken.trim());
         } catch (Exception e) {
             log.error("Failed to send activation email", e);
-            return CompletableFuture.completedFuture(false);
+            return false;
         }
     }
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendStatusChangeNotificationAsync(Long userId, Integer newStatus, String reason) {
+    public boolean sendStatusChangeNotification(Long userId, Integer newStatus, String reason) {
         try {
             UserDTO user = getUserForNotification(userId);
             if (user == null) {
-                return CompletableFuture.completedFuture(false);
+                return false;
             }
-            return CompletableFuture.completedFuture(
-                    deliveryProvider.deliverStatusChange(userId, newStatus, reason)
-            );
+            return deliveryProvider.deliverStatusChange(userId, newStatus, reason);
         } catch (Exception e) {
             log.error("Failed to send status change notification", e);
-            return CompletableFuture.completedFuture(false);
+            return false;
         }
     }
 
     @Override
-    @Async("userNotificationExecutor")
-    public CompletableFuture<Boolean> sendBatchNotificationAsync(List<Long> userIds, String title, String content) {
+    public boolean sendBatchNotification(List<Long> userIds, String title, String content) {
         try {
             if (userIds == null || userIds.isEmpty()) {
-                return CompletableFuture.completedFuture(false);
+                return false;
             }
             int successCount = 0;
             for (Long userId : userIds) {
@@ -104,24 +93,57 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                     successCount++;
                 }
             }
-            return CompletableFuture.completedFuture(successCount > 0);
+            return successCount > 0;
         } catch (Exception e) {
             log.error("Failed to send batch notification", e);
-            return CompletableFuture.completedFuture(false);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean sendSystemAnnouncement(String title, String content) {
+        try {
+            return deliveryProvider.deliverSystemAnnouncement(title, content);
+        } catch (Exception e) {
+            log.error("Failed to send system announcement", e);
+            return false;
         }
     }
 
     @Override
     @Async("userNotificationExecutor")
+    public CompletableFuture<Boolean> sendWelcomeEmailAsync(Long userId) {
+        return CompletableFuture.completedFuture(sendWelcomeEmail(userId));
+    }
+
+    @Override
+    @Async("userNotificationExecutor")
+    public CompletableFuture<Boolean> sendPasswordResetEmailAsync(Long userId, String resetToken) {
+        return CompletableFuture.completedFuture(sendPasswordResetEmail(userId, resetToken));
+    }
+
+    @Override
+    @Async("userNotificationExecutor")
+    public CompletableFuture<Boolean> sendActivationEmailAsync(Long userId, String activationToken) {
+        return CompletableFuture.completedFuture(sendActivationEmail(userId, activationToken));
+    }
+
+    @Override
+    @Async("userNotificationExecutor")
+    public CompletableFuture<Boolean> sendStatusChangeNotificationAsync(Long userId, Integer newStatus, String reason) {
+        return CompletableFuture.completedFuture(sendStatusChangeNotification(userId, newStatus, reason));
+    }
+
+    @Override
+    @Async("userNotificationExecutor")
+    public CompletableFuture<Boolean> sendBatchNotificationAsync(List<Long> userIds, String title, String content) {
+        return CompletableFuture.completedFuture(sendBatchNotification(userIds, title, content));
+    }
+
+    @Override
+    @Async("userNotificationExecutor")
     public CompletableFuture<Boolean> sendSystemAnnouncementAsync(String title, String content) {
-        try {
-            return CompletableFuture.completedFuture(
-                    deliveryProvider.deliverSystemAnnouncement(title, content)
-            );
-        } catch (Exception e) {
-            log.error("Failed to send system announcement", e);
-            return CompletableFuture.completedFuture(false);
-        }
+        return CompletableFuture.completedFuture(sendSystemAnnouncement(title, content));
     }
 
     private UserDTO getUserForNotification(Long userId) {
