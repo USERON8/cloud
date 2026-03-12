@@ -1,19 +1,14 @@
 package com.cloud.order.service.impl;
 
-import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.order.config.OrderAutomationProperties;
 import com.cloud.order.entity.AfterSale;
-import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.AfterSaleMapper;
-import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
-import com.cloud.order.service.support.PaymentOrderRemoteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,16 +29,10 @@ class OrderAutomationServiceImplTest {
     private OrderSubMapper orderSubMapper;
 
     @Mock
-    private OrderMainMapper orderMainMapper;
-
-    @Mock
     private AfterSaleMapper afterSaleMapper;
 
     @Mock
     private OrderService orderService;
-
-    @Mock
-    private PaymentOrderRemoteService paymentOrderRemoteService;
 
     private OrderAutomationServiceImpl orderAutomationService;
 
@@ -54,10 +43,8 @@ class OrderAutomationServiceImplTest {
         properties.getAfterSale().setBatchSize(20);
         orderAutomationService = new OrderAutomationServiceImpl(
                 orderSubMapper,
-                orderMainMapper,
                 afterSaleMapper,
                 orderService,
-                paymentOrderRemoteService,
                 properties
         );
     }
@@ -93,35 +80,14 @@ class OrderAutomationServiceImplTest {
         AfterSale approved = copyAfterSale(applied, "APPROVED");
         AfterSale refunding = copyAfterSale(applied, "REFUNDING");
 
-        OrderMain mainOrder = new OrderMain();
-        mainOrder.setId(31L);
-        mainOrder.setMainOrderNo("M100");
-
-        OrderSub subOrder = new OrderSub();
-        subOrder.setId(41L);
-        subOrder.setSubOrderNo("S100");
-
-        PaymentOrderVO paymentOrder = new PaymentOrderVO();
-        paymentOrder.setPaymentNo("PAY100");
-
         when(afterSaleMapper.selectList(any())).thenReturn(List.of(applied));
         when(orderService.advanceAfterSaleStatus(21L, "AUDIT", "system timeout auto audit")).thenReturn(auditing);
         when(orderService.advanceAfterSaleStatus(21L, "APPROVE", "system timeout auto approve")).thenReturn(approved);
         when(orderService.advanceAfterSaleStatus(21L, "PROCESS", "system timeout auto refund")).thenReturn(refunding);
-        when(orderMainMapper.selectById(31L)).thenReturn(mainOrder);
-        when(orderSubMapper.selectById(41L)).thenReturn(subOrder);
-        when(paymentOrderRemoteService.getPaymentOrderByOrderNo("M100", "S100")).thenReturn(paymentOrder);
-        when(paymentOrderRemoteService.createRefund(any())).thenReturn(51L);
 
         int handled = orderAutomationService.autoApproveTimedOutAfterSales();
 
         assertThat(handled).isEqualTo(1);
-        ArgumentCaptor<com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO> captor =
-                ArgumentCaptor.forClass(com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO.class);
-        verify(paymentOrderRemoteService).createRefund(captor.capture());
-        assertThat(captor.getValue().getPaymentNo()).isEqualTo("PAY100");
-        assertThat(captor.getValue().getAfterSaleNo()).isEqualTo("AS100");
-        assertThat(captor.getValue().getRefundAmount()).isEqualByComparingTo("18.80");
         verify(orderService).advanceAfterSaleStatus(21L, "PROCESS", "system timeout auto refund");
     }
 
