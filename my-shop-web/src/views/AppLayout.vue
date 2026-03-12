@@ -5,11 +5,12 @@ import { ElMessage } from 'element-plus'
 import { logout } from '../api/auth'
 import { clearSession, sessionState } from '../auth/session'
 import { useRole, type UserRole } from '../auth/permission'
+import { cartCount } from '../store/cart'
 
 interface NavItem {
   label: string
   path: string
-  icon: 'dashboard' | 'products' | 'products-admin' | 'orders' | 'orders-admin' | 'profile'
+  icon: 'dashboard' | 'products' | 'products-admin' | 'orders' | 'orders-admin' | 'profile' | 'cart'
   roles: UserRole[]
 }
 
@@ -23,7 +24,8 @@ const navItems: NavItem[] = [
   { label: 'Product Admin', path: '/app/catalog/manage', icon: 'products-admin', roles: ['MERCHANT', 'ADMIN'] },
   { label: 'Orders', path: '/app/orders', icon: 'orders', roles: ['USER', 'MERCHANT', 'ADMIN'] },
   { label: 'Order Admin', path: '/app/orders/manage', icon: 'orders-admin', roles: ['MERCHANT', 'ADMIN'] },
-  { label: 'Profile', path: '/app/profile', icon: 'profile', roles: ['USER', 'MERCHANT', 'ADMIN'] }
+  { label: 'Profile', path: '/app/profile', icon: 'profile', roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  { label: 'Cart', path: '/app/cart', icon: 'cart', roles: ['USER', 'MERCHANT', 'ADMIN'] }
 ]
 
 const visibleNavItems = computed(() => navItems.filter((item) => item.roles.includes(role.value)))
@@ -63,7 +65,8 @@ const iconMap: Record<NavItem['icon'], string> = {
   'products-admin': 'M4 5h16v4H4V5Zm0 5.5h10V20H4v-9.5Zm12 2h4v7.5h-4v-7.5Z',
   orders: 'M6 5h10l3 3v11H6V5Zm10 0v3h3M9 12h6M9 15h6',
   'orders-admin': 'M7 4h10v2h3v14H4V6h3V4Zm2 2h6M8 12h8M8 16h5',
-  profile: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 1.8-7 4.5h14c-1-2.7-3.7-4.5-7-4.5Z'
+  profile: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 1.8-7 4.5h14c-1-2.7-3.7-4.5-7-4.5Z',
+  cart: 'M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0 4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4Z'
 }
 
 function getIconPath(icon: NavItem['icon']): string {
@@ -127,6 +130,7 @@ async function handleLogout(): Promise<void> {
           </svg>
         </span>
         <span class="nav-label">{{ item.label }}</span>
+        <span v-if="item.icon === 'cart' && cartCount > 0" class="cart-badge">{{ cartCount }}</span>
       </router-link>
     </aside>
 
@@ -159,10 +163,11 @@ async function handleLogout(): Promise<void> {
         class="tab-item"
         :class="{ active: isNavActive(item.path) }"
       >
-        <span class="nav-icon" aria-hidden="true">
+        <span class="nav-icon tab-icon-wrap" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path :d="getIconPath(item.icon)" />
           </svg>
+          <span v-if="item.icon === 'cart' && cartCount > 0" class="cart-badge cart-badge-tab">{{ cartCount }}</span>
         </span>
         <span>{{ item.label }}</span>
       </router-link>
@@ -324,6 +329,32 @@ async function handleLogout(): Promise<void> {
 .muted {
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+.cart-badge {
+  margin-left: auto;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.tab-icon-wrap {
+  position: relative;
+}
+
+.cart-badge-tab {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  margin-left: 0;
+  padding: 1px 4px;
+  font-size: 0.6rem;
 }
 
 @media (max-width: 900px) {

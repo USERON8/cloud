@@ -16,6 +16,7 @@ import {
 import type { ProductItem, ProductUpsertPayload, SearchProductDocument } from '../types/domain'
 import { useRole } from '../auth/permission'
 import { sessionState } from '../auth/session'
+import { addToCart } from '../store/cart'
 
 interface ProductFormModel {
   shopId: number
@@ -372,6 +373,28 @@ async function submitForm(): Promise<void> {
   }
 }
 
+function onAddToCart(row: ProductItem): void {
+  if (typeof row.price !== 'number' || row.price <= 0) {
+    ElMessage.warning('This product has no valid price.')
+    return
+  }
+  if (typeof row.shopId !== 'number' || row.shopId <= 0) {
+    ElMessage.warning('This product is missing shop information.')
+    return
+  }
+  if (typeof row.stockQuantity === 'number' && row.stockQuantity <= 0) {
+    ElMessage.warning('This product is out of stock.')
+    return
+  }
+  addToCart({
+    productId: row.id,
+    productName: row.name,
+    price: row.price,
+    shopId: row.shopId
+  })
+  ElMessage.success(`"${row.name}" added to cart.`)
+}
+
 function onDialogClosed(): void {
   resetForm()
   formRef.value?.clearValidate()
@@ -489,6 +512,25 @@ onBeforeUnmount(() => {
           <el-tag :type="statusType(scope.row.status)" round>
             {{ statusText(scope.row.status) }}
           </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column v-if="!isManagementMode" label="Actions" min-width="160">
+        <template #default="scope">
+          <el-button
+            v-if="scope.row.status === 1"
+            round
+            size="small"
+            type="primary"
+            plain
+            @click="onAddToCart(scope.row)"
+          >
+            <span class="btn-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0-4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0-4 2 2 0 1 0 0-4Z" /></svg>
+              Add to Cart
+            </span>
+          </el-button>
+          <span v-else class="out-of-sale">Unavailable</span>
         </template>
       </el-table-column>
 
@@ -674,6 +716,11 @@ onBeforeUnmount(() => {
   margin-top: 4px;
   color: var(--text-muted);
   font-size: 0.75rem;
+}
+
+.out-of-sale {
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 @media (max-width: 900px) {

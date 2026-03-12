@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { isAuthenticated, sessionState } from '../auth/session'
 import { smartSearchProductsWithFallback } from '../api/product'
 import type { SearchProductDocument } from '../types/domain'
+import { addToCart } from '../store/cart'
 
 interface ShopCard {
   id: number
@@ -134,6 +135,34 @@ function toCatalogSearch(name: string): void {
   void router.push({ path: '/app/catalog', query: { keyword: name } })
 }
 
+function onAddToCartFromMarket(item: SearchProductDocument): void {
+  if (typeof item.productId !== 'number') {
+    ElMessage.warning('This product is unavailable.')
+    return
+  }
+  if (typeof item.price !== 'number' || item.price <= 0) {
+    ElMessage.warning('This product has no valid price.')
+    return
+  }
+  if (typeof item.shopId !== 'number' || item.shopId <= 0) {
+    ElMessage.warning('This product is missing shop information.')
+    return
+  }
+  if (!isAuthenticated()) {
+    pendingPath.value = '/app/cart'
+    pendingFeature.value = '购物车'
+    loginGateVisible.value = true
+    return
+  }
+  addToCart({
+    productId: item.productId,
+    productName: item.productName || 'Unnamed Product',
+    price: item.price,
+    shopId: item.shopId
+  })
+  ElMessage.success(`"${item.productName}" added to cart.`)
+}
+
 onMounted(() => {
   void loadMarketData()
   void loadExchangeRates()
@@ -166,6 +195,7 @@ onMounted(() => {
       </div>
       <div class="quick-actions">
         <el-button round @click="goProtected('/app/orders', '订单管理')">我的订单</el-button>
+        <el-button round @click="goProtected('/app/cart', '购物车')">购物车</el-button>
         <el-button round @click="goProtected('/app/profile', '个人中心')">个人中心</el-button>
         <el-button round @click="goProtected('/app/catalog/manage', '商家商品管理')">商家管理</el-button>
       </div>
@@ -219,8 +249,8 @@ onMounted(() => {
       <span>{{ featuredProducts.length }} 件</span>
     </section>
     <section class="product-grid">
-      <article v-for="item in featuredProducts" :key="item.productId" class="glass-card product-card" @click="toCatalogSearch(item.productName || '')">
-        <div class="cover-svg" aria-hidden="true">
+      <article v-for="item in featuredProducts" :key="item.productId" class="glass-card product-card">
+        <div class="cover-svg" aria-hidden="true" @click="toCatalogSearch(item.productName || '')">
           <svg viewBox="0 0 120 80">
             <defs>
               <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -232,9 +262,22 @@ onMounted(() => {
             <path d="M22 52h76M30 42h60M40 32h40" stroke="#3a6fe9" stroke-width="3" stroke-linecap="round" />
           </svg>
         </div>
-        <h3>{{ item.productName || '未命名商品' }}</h3>
+        <h3 @click="toCatalogSearch(item.productName || '')">{{ item.productName || '未命名商品' }}</h3>
         <p class="muted">{{ item.shopName || `Shop #${item.shopId ?? '-'}` }}</p>
-        <p class="price">CNY {{ typeof item.price === 'number' ? item.price.toFixed(2) : '--' }}</p>
+        <div class="product-footer">
+          <p class="price">CNY {{ typeof item.price === 'number' ? item.price.toFixed(2) : '--' }}</p>
+          <el-button
+            v-if="typeof item.productId === 'number'"
+            circle
+            plain
+            size="small"
+            type="primary"
+            title="Add to Cart"
+            @click.stop="onAddToCartFromMarket(item)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0-4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0-4 2 2 0 1 0 0-4Z" /></svg>
+          </el-button>
+        </div>
       </article>
     </section>
 
@@ -460,10 +503,29 @@ onMounted(() => {
   font-size: 0.85rem;
 }
 
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  gap: 0.4rem;
+}
+
 .price {
-  margin: 0.35rem 0 0;
+  margin: 0;
   font-weight: 700;
   color: #17336d;
+}
+
+.product-footer .el-button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
 }
 
 .login-gate-title {

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { hydrateSessionFromStorage, isAuthenticated } from '../auth/session'
 import { hasAnyRole, type UserRole } from '../auth/permission'
+import { hydrateCartFromStorage } from '../store/cart'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -80,10 +81,17 @@ const router = createRouter({
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),
           meta: { title: 'Profile', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
+        },
+        {
+          path: 'cart',
+          name: 'cart',
+          component: () => import('../views/CartView.vue'),
+          meta: { title: 'Shopping Cart', roles: ['USER', 'MERCHANT', 'ADMIN'] as UserRole[] }
         }
       ]
     },
     { path: '/home', redirect: '/app/home' },
+    { path: '/cart', redirect: '/app/cart' },
     { path: '/catalog', redirect: '/app/catalog' },
     { path: '/catalog/manage', redirect: '/app/catalog/manage' },
     { path: '/orders', redirect: '/app/orders' },
@@ -93,6 +101,7 @@ const router = createRouter({
 })
 
 hydrateSessionFromStorage()
+hydrateCartFromStorage()
 
 router.beforeEach(async (to) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
