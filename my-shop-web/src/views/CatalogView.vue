@@ -709,6 +709,16 @@ useInfiniteScroll(
         >
           <template #default="{ item }">
             <article class="product-card">
+              <div class="product-media">
+                <img
+                  v-if="item.imageUrl"
+                  class="product-image"
+                  v-lazy="item.imageUrl"
+                  :alt="item.name || 'Product image'"
+                  loading="lazy"
+                />
+                <div v-else class="product-image placeholder">No Image</div>
+              </div>
               <div class="product-main">
                 <div class="product-title">{{ item.name }}</div>
                 <div class="product-meta">
@@ -964,6 +974,33 @@ useInfiniteScroll(
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   align-items: center;
+}
+
+.product-media {
+  width: 86px;
+  height: 86px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.product-image.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 .product-main {
