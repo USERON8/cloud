@@ -129,10 +129,7 @@ public class MerchantAuthController {
         if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
             return Result.forbidden("no permission to revoke merchant auth");
         }
-
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        boolean removed = merchantAuthService.remove(queryWrapper);
+        boolean removed = merchantAuthService.removeByMerchantId(merchantId);
         if (!removed) {
             return Result.success("merchant auth not found", false);
         }

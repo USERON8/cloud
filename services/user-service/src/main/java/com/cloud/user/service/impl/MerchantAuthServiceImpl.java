@@ -8,6 +8,8 @@ import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -31,6 +33,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     private static final String MERCHANT_AUTH_CACHE_NAME = "merchantAuthCache";
     private final MerchantAuthMapper merchantAuthMapper;
     private final MerchantAuthConverter merchantAuthConverter;
+    private final CacheManager cacheManager;
 
     public MerchantAuthDTO getMerchantAuthById(Long id) {
         return getMerchantAuthByIdWithCache(id);
@@ -68,6 +71,27 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     public MerchantAuthDTO getMerchantAuthByMerchantIdWithCache(Long merchantId) {
         MerchantAuth merchantAuth = lambdaQuery().eq(MerchantAuth::getMerchantId, merchantId).one();
         return merchantAuth != null ? merchantAuthConverter.toDTO(merchantAuth) : null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByMerchantId(Long merchantId) {
+        if (merchantId == null) {
+            return false;
+        }
+        MerchantAuth merchantAuth = lambdaQuery().eq(MerchantAuth::getMerchantId, merchantId).one();
+        if (merchantAuth == null) {
+            return false;
+        }
+        boolean removed = super.removeById(merchantAuth.getId());
+        if (removed) {
+            Cache cache = cacheManager.getCache(MERCHANT_AUTH_CACHE_NAME);
+            if (cache != null) {
+                cache.evict("id:" + merchantAuth.getId());
+                cache.evict("merchantId:" + merchantId);
+            }
+        }
+        return removed;
     }
 
     

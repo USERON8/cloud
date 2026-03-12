@@ -27,4 +27,6 @@ public interface MerchantAuthService extends IService<MerchantAuth> {
 
     MerchantAuthDTO getMerchantAuthByMerchantIdWithCache(Long merchantId);
 
+    boolean removeByMerchantId(Long merchantId);
+
 }
