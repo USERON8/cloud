@@ -1,0 +1,24 @@
+rules:
+  trade_service_resp_time:
+    expression: avg(service_resp_time) > 1000
+    period: 5
+    count: 3
+    silence-period: 5
+    message: Service {name} average response time > 1000ms in 3 of last 5 minutes.
+    include-names:
+      - gateway
+      - order-service
+      - payment-service
+      - stock-service
+
+  trade_service_sla:
+    expression: avg(service_sla) < 95
+    period: 5
+    count: 2
+    silence-period: 10
+    message: Service {name} success rate < 95% in 2 of last 5 minutes.
+    include-names:
+      - gateway
+      - order-service
+      - payment-service
+      - stock-service

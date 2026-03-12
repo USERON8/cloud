@@ -451,6 +451,10 @@
       - "${PORT_SKYWALKING_OAP_GRPC:-11800}:11800"
       - "${PORT_SKYWALKING_OAP_HTTP:-12800}:12800"
       - "${PORT_SKYWALKING_OAP_PROMETHEUS:-1234}:1234"
+    volumes:
+      - type: bind
+        source: ./monitor/skywalking/alarm-settings.yml
+        target: /skywalking/config/alarm-settings.yml
     environment:
       SW_STORAGE: elasticsearch
       SW_STORAGE_ES_CLUSTER_NODES: elasticsearch-oap:9200
