@@ -22,6 +22,7 @@ const emit = defineEmits<{
 
 const editor = shallowRef<Editor | null>(null)
 const stateVersion = ref(0)
+const editorInstance = computed(() => editor.value ?? undefined)
 
 const minHeightStyle = computed(() => {
   const value = props.minHeight
@@ -64,7 +65,7 @@ watch(
     const normalizedIncoming = value || ''
     const normalizedCurrent = instance.isEmpty ? '' : instance.getHTML()
     if (normalizedIncoming !== normalizedCurrent) {
-      instance.commands.setContent(normalizedIncoming, false)
+      instance.commands.setContent(normalizedIncoming)
     }
   }
 )
@@ -211,7 +212,7 @@ const canRedo = computed(() => {
     </div>
 
     <div class="rich-text__content">
-      <EditorContent :editor="editor" />
+      <EditorContent :editor="editorInstance" />
     </div>
   </div>
 </template>

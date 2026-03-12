@@ -190,6 +190,10 @@ function formatPrice(price?: number): string {
   return `CNY ${price.toFixed(2)}`
 }
 
+function asProduct(item: unknown): ProductItem {
+  return item as ProductItem
+}
+
 function statusText(status?: number): string {
   if (status === 1) {
     return 'Active'
@@ -711,32 +715,32 @@ useInfiniteScroll(
             <article class="product-card">
               <div class="product-media">
                 <img
-                  v-if="item.imageUrl"
+                  v-if="asProduct(item).imageUrl"
                   class="product-image"
-                  v-lazy="item.imageUrl"
-                  :alt="item.name || 'Product image'"
+                  v-lazy="asProduct(item).imageUrl"
+                  :alt="asProduct(item).name || 'Product image'"
                   loading="lazy"
                 />
                 <div v-else class="product-image placeholder">No Image</div>
               </div>
               <div class="product-main">
-                <div class="product-title">{{ item.name }}</div>
+                <div class="product-title">{{ asProduct(item).name }}</div>
                 <div class="product-meta">
-                  <span class="price">{{ formatPrice(item.price) }}</span>
-                  <span class="stock">Stock {{ item.stockQuantity ?? '--' }}</span>
-                  <el-tag :type="statusType(item.status)" round>
-                    {{ statusText(item.status) }}
+                  <span class="price">{{ formatPrice(asProduct(item).price) }}</span>
+                  <span class="stock">Stock {{ asProduct(item).stockQuantity ?? '--' }}</span>
+                  <el-tag :type="statusType(asProduct(item).status)" round>
+                    {{ statusText(asProduct(item).status) }}
                   </el-tag>
                 </div>
               </div>
               <div class="product-actions">
                 <el-button
-                  v-if="item.status === 1"
+                  v-if="asProduct(item).status === 1"
                   round
                   size="small"
                   type="primary"
                   plain
-                  @click="onAddToCart(item)"
+                  @click="onAddToCart(asProduct(item))"
                 >
                   <span class="btn-wrap">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
