@@ -32,4 +32,7 @@ public interface UserAddressService extends IService<UserAddress> {
 
     @Transactional(rollbackFor = Exception.class)
     boolean removeById(Long id);
+
+    @Transactional(rollbackFor = Exception.class)
+    boolean resetDefaultAddress(Long userId);
 }

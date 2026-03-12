@@ -64,7 +64,7 @@ public class UserAddressController {
         userAddress.setUpdatedAt(LocalDateTime.now());
 
         if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-            setUserAddressNotDefault(userId);
+            userAddressService.resetDefaultAddress(userId);
         }
 
         userAddressService.save(userAddress);
@@ -96,7 +96,7 @@ public class UserAddressController {
         userAddress.setUpdatedAt(LocalDateTime.now());
 
         if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-            setUserAddressNotDefault(existingAddress.getUserId());
+            userAddressService.resetDefaultAddress(existingAddress.getUserId());
         }
 
         userAddressService.updateById(userAddress);
@@ -277,7 +277,7 @@ public class UserAddressController {
                 userAddress.setUpdatedAt(LocalDateTime.now());
 
                 if (Integer.valueOf(1).equals(userAddress.getIsDefault())) {
-                    setUserAddressNotDefault(existingAddress.getUserId());
+                    userAddressService.resetDefaultAddress(existingAddress.getUserId());
                 }
 
                 if (userAddressService.updateById(userAddress)) {
@@ -292,13 +292,4 @@ public class UserAddressController {
         return Result.success(message, true);
     }
 
-    private void setUserAddressNotDefault(Long userId) {
-        LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(UserAddress::getUserId, userId);
-        queryWrapper.eq(UserAddress::getIsDefault, 1);
-
-        UserAddress userAddress = new UserAddress();
-        userAddress.setIsDefault(0);
-        userAddressService.update(userAddress, queryWrapper);
-    }
 }

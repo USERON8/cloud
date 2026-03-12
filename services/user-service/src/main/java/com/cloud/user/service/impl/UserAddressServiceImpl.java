@@ -10,6 +10,8 @@ import com.cloud.user.module.entity.UserAddress;
 import com.cloud.user.service.UserAddressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -28,6 +30,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     private static final String USER_ADDRESS_CACHE_NAME = "userAddressCache";
     private final UserAddressMapper userAddressMapper;
     private final UserAddressConverter userAddressConverter;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -126,5 +129,40 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             throw new BusinessException(500, "Failed to delete user address");
         }
         return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
+    public boolean resetDefaultAddress(Long userId) {
+        if (userId == null) {
+            throw new BusinessException("user id is required");
+        }
+
+        List<Long> defaultIds = lambdaQuery()
+                .eq(UserAddress::getUserId, userId)
+                .eq(UserAddress::getIsDefault, 1)
+                .list()
+                .stream()
+                .map(UserAddress::getId)
+                .toList();
+        if (defaultIds.isEmpty()) {
+            return true;
+        }
+
+        UserAddress updateEntity = new UserAddress();
+        updateEntity.setIsDefault(0);
+        boolean updated = update(updateEntity, new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserAddress>()
+                .eq(UserAddress::getUserId, userId)
+                .eq(UserAddress::getIsDefault, 1));
+        if (updated) {
+            Cache cache = cacheManager.getCache(USER_ADDRESS_CACHE_NAME);
+            if (cache != null) {
+                for (Long addressId : defaultIds) {
+                    cache.evict("detail:" + addressId);
+                }
+            }
+        }
+        return updated;
     }
 }

@@ -8,6 +8,8 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class MinioServiceImpl implements MinioService {
 
     private final UserMapper userMapper;
     private final MinioClient minioClient;
+    private final CacheManager cacheManager;
 
     @Value("${minio.bucket-name:user-avatars}")
     private String bucketName;
@@ -70,6 +73,7 @@ public class MinioServiceImpl implements MinioService {
             user.setId(userId);
             user.setAvatarUrl(avatarUrl);
             userMapper.updateById(user);
+            evictUserCaches(userId);
             return avatarUrl;
         } catch (Exception e) {
             log.error("Failed to upload avatar", e);
@@ -113,6 +117,20 @@ public class MinioServiceImpl implements MinioService {
             return Long.parseLong(userId);
         } catch (NumberFormatException e) {
             throw new IllegalStateException("invalid current user id: " + userId, e);
+        }
+    }
+
+    private void evictUserCaches(Long userId) {
+        if (userId == null) {
+            return;
+        }
+        Cache userCache = cacheManager.getCache("user");
+        if (userCache != null) {
+            userCache.evict(userId);
+        }
+        Cache userListCache = cacheManager.getCache("userList");
+        if (userListCache != null) {
+            userListCache.clear();
         }
     }
 }
