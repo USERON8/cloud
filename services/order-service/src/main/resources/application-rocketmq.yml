@@ -31,6 +31,9 @@ spring:
           orderCancelledProducer-out-0:
             producer:
               <<: *orderProducerDefaults
+          refundProcessProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
           refundCreatedProducer-out-0:
             producer:
               <<: *orderProducerDefaults
@@ -86,6 +89,9 @@ spring:
           content-type: application/json
         orderCancelledProducer-out-0:
           destination: order-cancelled
+          content-type: application/json
+        refundProcessProducer-out-0:
+          destination: refund-process
           content-type: application/json
         refundCreatedProducer-out-0:
           destination: refund-created

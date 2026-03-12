@@ -38,6 +38,8 @@ public class PaymentSuccessEvent implements Serializable {
 
     private String orderNo;
 
+    private String subOrderNo;
+
     
 
 

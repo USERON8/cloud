@@ -1,6 +1,8 @@
 package com.cloud.order.messaging;
 
+import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
+import com.cloud.common.messaging.event.StockRestoreEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageConst;
@@ -135,25 +137,24 @@ public class OrderMessageProducer {
 
 
 
-    public boolean sendStockRestoreEvent(Long orderId, String orderNo, Long refundId,
-                                         String refundNo, Map<Long, Integer> productQuantityMap) {
+    public boolean sendStockRestoreEvent(StockRestoreEvent event) {
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("eventId", UUID.randomUUID().toString());
-            payload.put("eventType", "STOCK_RESTORE");
-            payload.put("timestamp", System.currentTimeMillis());
-            payload.put("orderId", orderId);
-            payload.put("orderNo", orderNo);
-            payload.put("refundId", refundId);
-            payload.put("refundNo", refundNo);
-            payload.put("productQuantityMap", productQuantityMap);
+            if (event.getEventId() == null) {
+                event.setEventId(UUID.randomUUID().toString());
+            }
+            if (event.getTimestamp() == null) {
+                event.setTimestamp(System.currentTimeMillis());
+            }
+            if (event.getEventType() == null || event.getEventType().isBlank()) {
+                event.setEventType("STOCK_RESTORE");
+            }
 
             Map<String, Object> headers = new HashMap<>();
-            headers.put(MessageConst.PROPERTY_KEYS, refundNo);
+            headers.put(MessageConst.PROPERTY_KEYS, event.getRefundNo());
             headers.put(MessageConst.PROPERTY_TAGS, "STOCK_RESTORE");
 
-            Message<Map<String, Object>> message = MessageBuilder
-                    .withPayload(payload)
+            Message<StockRestoreEvent> message = MessageBuilder
+                    .withPayload(event)
                     .copyHeaders(headers)
                     .build();
 
@@ -163,15 +164,35 @@ public class OrderMessageProducer {
                 
 
             } else {
-                log.error("?? orderId={}, refundNo={}",
-                        orderId, refundNo);
+                log.error("?? refundNo={}", event.getRefundNo());
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("?? orderId={}, refundNo={}",
-                    orderId, refundNo, e);
+            log.error("?? refundNo={}", event == null ? null : event.getRefundNo(), e);
+            return false;
+        }
+    }
+
+    public boolean sendRefundProcessEvent(PaymentRefundCommandDTO command) {
+        try {
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(MessageConst.PROPERTY_KEYS, command.getRefundNo());
+            headers.put(MessageConst.PROPERTY_TAGS, "REFUND_PROCESS");
+
+            Message<PaymentRefundCommandDTO> message = MessageBuilder
+                    .withPayload(command)
+                    .copyHeaders(headers)
+                    .build();
+
+            boolean result = streamBridge.send("refundProcessProducer-out-0", message);
+            if (!result) {
+                log.error("?? refundNo={}", command.getRefundNo());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("?? refundNo={}", command == null ? null : command.getRefundNo(), e);
             return false;
         }
     }

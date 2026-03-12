@@ -1,7 +1,7 @@
 spring:
   cloud:
     function:
-      definition: orderCreatedConsumer;refundProcessConsumer
+      definition: refundProcessConsumer
     stream:
       default:
         producer:
@@ -31,10 +31,6 @@ spring:
           refundCompletedProducer-out-0:
             producer:
               <<: *paymentProducerDefaults
-          orderCreatedConsumer-in-0:
-            consumer:
-              subscription: 'ORDER_CREATED'
-              <<: *paymentConsumerDefaults
           refundProcessConsumer-in-0:
             consumer:
               subscription: 'REFUND_PROCESS'
@@ -46,10 +42,6 @@ spring:
         refundCompletedProducer-out-0:
           destination: refund-completed
           content-type: application/json
-        orderCreatedConsumer-in-0:
-          destination: order-created
-          content-type: application/json
-          group: payment-order-created-consumer-group
         refundProcessConsumer-in-0:
           destination: refund-process
           content-type: application/json

@@ -2,6 +2,7 @@ package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.AfterSale;
@@ -12,7 +13,10 @@ import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.PaymentOrderRemoteService;
+import com.cloud.order.service.support.StockReservationRemoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -22,9 +26,12 @@ import cn.hutool.core.util.StrUtil;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
+import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +89,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderSubMapper orderSubMapper;
     private final OrderItemMapper orderItemMapper;
     private final AfterSaleMapper afterSaleMapper;
+    private final StockReservationRemoteService stockReservationRemoteService;
+    private final PaymentOrderRemoteService paymentOrderRemoteService;
+    private final OrderMessageProducer orderMessageProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -209,6 +219,10 @@ public class OrderServiceImpl implements OrderService {
         }
         validateSubTransition(sub.getOrderStatus(), targetStatus);
 
+        if (requiresStockRelease(sub.getOrderStatus(), targetStatus)) {
+            releaseReservedStock(sub);
+        }
+
         sub.setOrderStatus(targetStatus);
         if ("SHIPPED".equals(targetStatus)) {
             sub.setShippedAt(LocalDateTime.now());
@@ -264,6 +278,10 @@ public class OrderServiceImpl implements OrderService {
         }
         afterSaleMapper.updateById(afterSale);
         syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
+
+        if ("PROCESS".equalsIgnoreCase(action)) {
+            dispatchRefundProcess(afterSale, remark);
+        }
         return afterSale;
     }
 
@@ -283,6 +301,35 @@ public class OrderServiceImpl implements OrderService {
         Set<String> allowed = SUB_STATUS_TRANSITIONS.getOrDefault(current, Set.of());
         if (!allowed.contains(target)) {
             throw new BusinessException("invalid order status transition: " + current + " -> " + target);
+        }
+    }
+
+    private boolean requiresStockRelease(String currentStatus, String targetStatus) {
+        if (!Set.of("CANCELLED", "CLOSED").contains(targetStatus)) {
+            return false;
+        }
+        return "STOCK_RESERVED".equals(currentStatus);
+    }
+
+    private void releaseReservedStock(OrderSub subOrder) {
+        List<OrderItem> items = orderItemMapper.listActiveBySubOrderId(subOrder.getId());
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+        for (OrderItem item : items) {
+            if (item.getSkuId() == null || item.getQuantity() == null) {
+                continue;
+            }
+            skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
+        }
+        for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
+            StockOperateCommandDTO command = new StockOperateCommandDTO();
+            command.setSubOrderNo(subOrder.getSubOrderNo());
+            command.setSkuId(entry.getKey());
+            command.setQuantity(entry.getValue());
+            command.setReason("cancel order " + subOrder.getSubOrderNo());
+            stockReservationRemoteService.release(command);
         }
     }
 
@@ -327,6 +374,79 @@ public class OrderServiceImpl implements OrderService {
             mainOrder.setOrderStatus("CREATED");
         }
         orderMainMapper.updateById(mainOrder);
+    }
+
+    private void dispatchRefundProcess(AfterSale afterSale, String remark) {
+        if (afterSale == null) {
+            return;
+        }
+        OrderMain mainOrder = requireOrderMain(afterSale.getMainOrderId());
+        OrderSub subOrder = requireSubOrder(afterSale.getSubOrderId());
+        PaymentOrderVO paymentOrder = paymentOrderRemoteService.getPaymentOrderByOrderNo(
+                mainOrder.getMainOrderNo(), subOrder.getSubOrderNo()
+        );
+        if (paymentOrder == null) {
+            throw new BusinessException("payment order not found for refund process");
+        }
+
+        PaymentRefundCommandDTO command = new PaymentRefundCommandDTO();
+        command.setRefundNo(buildRefundNo(afterSale));
+        command.setPaymentNo(paymentOrder.getPaymentNo());
+        command.setAfterSaleNo(afterSale.getAfterSaleNo());
+        command.setRefundAmount(resolveRefundAmount(afterSale));
+        command.setReason(buildRefundReason(afterSale, remark));
+        command.setIdempotencyKey("after-sale:refund:" + afterSale.getAfterSaleNo());
+
+        boolean sent = orderMessageProducer.sendRefundProcessEvent(command);
+        if (!sent) {
+            throw new BusinessException("failed to dispatch refund process event");
+        }
+    }
+
+    private OrderMain requireOrderMain(Long mainOrderId) {
+        if (mainOrderId == null) {
+            throw new BusinessException("main order id is required");
+        }
+        OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
+        if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
+            throw new BusinessException("main order not found");
+        }
+        return mainOrder;
+    }
+
+    private OrderSub requireSubOrder(Long subOrderId) {
+        if (subOrderId == null) {
+            throw new BusinessException("sub order id is required");
+        }
+        OrderSub subOrder = orderSubMapper.selectById(subOrderId);
+        if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
+            throw new BusinessException("sub order not found");
+        }
+        return subOrder;
+    }
+
+    private String buildRefundNo(AfterSale afterSale) {
+        return "RF" + afterSale.getAfterSaleNo();
+    }
+
+    private BigDecimal resolveRefundAmount(AfterSale afterSale) {
+        if (afterSale.getApprovedAmount() != null && afterSale.getApprovedAmount().compareTo(BigDecimal.ZERO) > 0) {
+            return afterSale.getApprovedAmount();
+        }
+        if (afterSale.getApplyAmount() != null) {
+            return afterSale.getApplyAmount();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private String buildRefundReason(AfterSale afterSale, String remark) {
+        if (remark != null && !remark.isBlank()) {
+            return remark;
+        }
+        if (afterSale.getReason() != null && !afterSale.getReason().isBlank()) {
+            return afterSale.getReason();
+        }
+        return "after-sale refund";
     }
 
     private BigDecimal defaultAmount(BigDecimal amount) {

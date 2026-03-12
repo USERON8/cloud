@@ -6,10 +6,13 @@ import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
+import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
+import com.cloud.common.messaging.event.RefundCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     private final PaymentRefundMapper paymentRefundMapper;
     private final PaymentCompensationProperties properties;
     private final List<PaymentProviderGateway> providerGateways;
+    private final PaymentMessageProducer paymentMessageProducer;
 
     @Override
     public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
@@ -97,6 +101,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     }
 
     private void applyOrderQueryResult(PaymentOrderEntity order, PaymentOrderQueryResult result, LocalDateTime now) {
+        String previousStatus = order.getStatus();
         int nextAttempt = defaultNumber(order.getPollCount()) + 1;
         order.setPollCount(nextAttempt);
         order.setLastPolledAt(now);
@@ -110,6 +115,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
                 order.setPaidAt(result.paidAt() != null ? result.paidAt() : now);
                 order.setNextPollAt(null);
                 order.setLastPollError(null);
+                publishPaymentSuccessIfNeeded(order, previousStatus);
             }
             case FAILED -> {
                 order.setStatus(ORDER_STATUS_FAILED);
@@ -129,6 +135,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
 
     private void applyRefundAttempt(PaymentOrderEntity order, PaymentRefundEntity refund, int attemptNumber, boolean firstAttempt) {
         LocalDateTime now = LocalDateTime.now();
+        String previousStatus = refund.getStatus();
         PaymentRefundResult result = executeRefund(order, refund);
 
         refund.setRetryCount(attemptNumber);
@@ -140,6 +147,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
                 refund.setRefundedAt(result.refundedAt() != null ? result.refundedAt() : now);
                 refund.setNextRetryAt(null);
                 refund.setLastError(null);
+                publishRefundCompletedIfNeeded(order, refund, previousStatus);
             }
             case PENDING, ERROR, FAILED -> {
                 boolean exhausted = attemptNumber >= properties.getRefundRetry().getMaxAttempts();
@@ -156,6 +164,37 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
                     refund.getRefundNo(), refund.getPaymentNo(), refund.getStatus(), attemptNumber, firstAttempt
             );
         }
+    }
+
+    private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
+        if (ORDER_STATUS_PAID.equals(previousStatus)) {
+            return;
+        }
+        PaymentSuccessEvent event = PaymentSuccessEvent.builder()
+                .paymentId(order.getId())
+                .orderNo(order.getMainOrderNo())
+                .subOrderNo(order.getSubOrderNo())
+                .userId(order.getUserId())
+                .amount(order.getAmount())
+                .paymentMethod(order.getChannel())
+                .transactionNo(order.getProviderTxnNo())
+                .build();
+        paymentMessageProducer.sendPaymentSuccessEvent(event);
+    }
+
+    private void publishRefundCompletedIfNeeded(PaymentOrderEntity order, PaymentRefundEntity refund, String previousStatus) {
+        if (REFUND_STATUS_REFUNDED.equals(previousStatus)) {
+            return;
+        }
+        RefundCompletedEvent event = RefundCompletedEvent.builder()
+                .refundId(refund.getId())
+                .refundNo(refund.getRefundNo())
+                .paymentNo(refund.getPaymentNo())
+                .afterSaleNo(refund.getAfterSaleNo())
+                .mainOrderNo(order.getMainOrderNo())
+                .subOrderNo(order.getSubOrderNo())
+                .build();
+        paymentMessageProducer.sendRefundCompletedEvent(event);
     }
 
     private PaymentOrderQueryResult queryOrder(PaymentOrderEntity order) {

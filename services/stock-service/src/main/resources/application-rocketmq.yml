@@ -1,7 +1,7 @@
 spring:
   cloud:
     function:
-      definition: orderCreatedConsumer;paymentSuccessConsumer;stockRestoreConsumer
+      definition: stockRestoreConsumer
     stream:
       default:
         producer:
@@ -28,14 +28,6 @@ spring:
           stockFreezeFailedProducer-out-0:
             producer:
               <<: *stockProducerDefaults
-          orderCreatedConsumer-in-0:
-            consumer:
-              subscription: 'ORDER_CREATED'
-              <<: *stockConsumerDefaults
-          paymentSuccessConsumer-in-0:
-            consumer:
-              subscription: 'PAYMENT_SUCCESS'
-              <<: *stockConsumerDefaults
           stockRestoreConsumer-in-0:
             consumer:
               subscription: 'STOCK_RESTORE'
@@ -44,14 +36,6 @@ spring:
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
           content-type: application/json
-        orderCreatedConsumer-in-0:
-          destination: order-created
-          content-type: application/json
-          group: stock-order-created-consumer-group
-        paymentSuccessConsumer-in-0:
-          destination: payment-success
-          content-type: application/json
-          group: stock-payment-success-consumer-group
         stockRestoreConsumer-in-0:
           destination: stock-restore
           content-type: application/json

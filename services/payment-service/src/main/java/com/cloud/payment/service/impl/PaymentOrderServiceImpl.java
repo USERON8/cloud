@@ -10,11 +10,14 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
+import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
+import com.cloud.payment.service.support.OrderStatusRemoteService;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +32,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final PaymentRefundMapper paymentRefundMapper;
     private final PaymentCallbackLogMapper paymentCallbackLogMapper;
     private final PaymentCompensationService paymentCompensationService;
+    private final OrderStatusRemoteService orderStatusRemoteService;
+    private final PaymentMessageProducer paymentMessageProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPaymentOrder(PaymentOrderCommandDTO command) {
+        ensureOrderReadyForPayment(command);
+
         PaymentOrderEntity existing = paymentOrderMapper.selectOne(new LambdaQueryWrapper<PaymentOrderEntity>()
                 .eq(PaymentOrderEntity::getIdempotencyKey, command.getIdempotencyKey())
                 .eq(PaymentOrderEntity::getDeleted, 0)
@@ -53,6 +60,19 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         paymentCompensationService.initializePaymentOrderCompensation(entity);
         paymentOrderMapper.insert(entity);
         return entity.getId();
+    }
+
+    private void ensureOrderReadyForPayment(PaymentOrderCommandDTO command) {
+        if (command == null) {
+            throw new BusinessException("payment command is required");
+        }
+        var orderStatus = orderStatusRemoteService.getSubOrderStatus(command.getMainOrderNo(), command.getSubOrderNo());
+        if (orderStatus == null) {
+            throw new BusinessException("order status not found for payment");
+        }
+        if (!"STOCK_RESERVED".equals(orderStatus.getOrderStatus()) && !"PAID".equals(orderStatus.getOrderStatus())) {
+            throw new BusinessException("order is not ready for payment: " + orderStatus.getOrderStatus());
+        }
     }
 
     @Override
@@ -108,6 +128,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             if (order.getPaidAt() == null) {
                 order.setPaidAt(LocalDateTime.now());
             }
+            publishPaymentSuccess(order, command);
         } else if ("FAIL".equalsIgnoreCase(command.getCallbackStatus())) {
             order.setStatus("FAILED");
         }
@@ -116,6 +137,19 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         order.setLastPollError(null);
         paymentOrderMapper.updateById(order);
         return true;
+    }
+
+    private void publishPaymentSuccess(PaymentOrderEntity order, PaymentCallbackCommandDTO command) {
+        PaymentSuccessEvent event = PaymentSuccessEvent.builder()
+                .paymentId(order.getId())
+                .orderNo(order.getMainOrderNo())
+                .subOrderNo(order.getSubOrderNo())
+                .userId(order.getUserId())
+                .amount(order.getAmount())
+                .paymentMethod(order.getChannel())
+                .transactionNo(command.getProviderTxnNo())
+                .build();
+        paymentMessageProducer.sendPaymentSuccessEvent(event);
     }
 
     @Override
