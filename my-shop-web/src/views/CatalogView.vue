@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useInfiniteScroll } from '@vueuse/core'
+import { useDebounceFn, useInfiniteScroll } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -70,7 +70,6 @@ const currentMerchantId = computed(() =>
 const hotKeywords = ref<string[]>([])
 const recommendedKeywords = ref<string[]>([])
 const blurTimer = ref<number | null>(null)
-const suggestTimer = ref<number | null>(null)
 const infiniteTarget = ref<Window | null>(null)
 const hasMore = ref(true)
 const hasAdvancedFilters = computed(() => {
@@ -338,25 +337,25 @@ function onSuggestionSelect(item: SearchSuggestionItem): void {
   onSearch()
 }
 
-function fetchSuggestions(queryString: string, callback: (items: SearchSuggestionItem[]) => void): void {
-  const normalizedQuery = queryString.trim()
-  if (!normalizedQuery) {
-    callback(recommendedKeywords.value.map((item) => ({ value: item })))
-    return
-  }
-
-  if (suggestTimer.value != null) {
-    window.clearTimeout(suggestTimer.value)
-  }
-
-  suggestTimer.value = window.setTimeout(async () => {
+const debouncedFetchSuggestions = useDebounceFn(
+  async (queryString: string, callback: (items: SearchSuggestionItem[]) => void) => {
+    const normalizedQuery = queryString.trim()
+    if (!normalizedQuery) {
+      callback(recommendedKeywords.value.map((item) => ({ value: item })))
+      return
+    }
     try {
       const suggestions = await listSearchSuggestionsWithFallback(normalizedQuery, 10)
       callback(suggestions.map((item) => ({ value: item })))
     } catch {
       callback([])
     }
-  }, 180)
+  },
+  300
+)
+
+function fetchSuggestions(queryString: string, callback: (items: SearchSuggestionItem[]) => void): void {
+  debouncedFetchSuggestions(queryString, callback)
 }
 
 function onCreate(): void {
@@ -519,9 +518,6 @@ watch(
 onBeforeUnmount(() => {
   if (blurTimer.value != null) {
     window.clearTimeout(blurTimer.value)
-  }
-  if (suggestTimer.value != null) {
-    window.clearTimeout(suggestTimer.value)
   }
 })
 
