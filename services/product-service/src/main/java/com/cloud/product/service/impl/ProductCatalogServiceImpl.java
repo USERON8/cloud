@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -70,14 +71,56 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         List<Sku> oldSkus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
                 .eq(Sku::getSpuId, spuId)
                 .eq(Sku::getDeleted, 0));
+        Map<Long, Sku> existingById = new LinkedHashMap<>();
+        Map<String, Sku> existingByCode = new LinkedHashMap<>();
         for (Sku oldSku : oldSkus) {
-            oldSku.setDeleted(1);
-            skuMapper.updateById(oldSku);
+            if (oldSku.getId() != null) {
+                existingById.put(oldSku.getId(), oldSku);
+            }
+            if (oldSku.getSkuCode() != null && !oldSku.getSkuCode().isBlank()) {
+                existingByCode.put(oldSku.getSkuCode(), oldSku);
+            }
         }
 
+        Set<Long> retainedIds = new java.util.HashSet<>();
         for (SkuDTO skuDTO : request.getSkus()) {
-            Sku sku = toSkuEntity(spuId, skuDTO);
-            skuMapper.insert(sku);
+            Sku existingSku = null;
+            if (skuDTO.getSkuId() != null) {
+                existingSku = existingById.get(skuDTO.getSkuId());
+            }
+            if (existingSku == null && skuDTO.getSkuCode() != null && !skuDTO.getSkuCode().isBlank()) {
+                existingSku = existingByCode.get(skuDTO.getSkuCode());
+            }
+
+            if (existingSku != null) {
+                existingSku.setSkuCode(skuDTO.getSkuCode());
+                existingSku.setSkuName(skuDTO.getSkuName());
+                existingSku.setSpecJson(skuDTO.getSpecJson());
+                existingSku.setSalePrice(skuDTO.getSalePrice());
+                existingSku.setMarketPrice(skuDTO.getMarketPrice());
+                existingSku.setCostPrice(skuDTO.getCostPrice());
+                existingSku.setStatus(skuDTO.getStatus());
+                existingSku.setImageUrl(skuDTO.getImageUrl());
+                existingSku.setDeleted(0);
+                skuMapper.updateById(existingSku);
+                if (existingSku.getId() != null) {
+                    retainedIds.add(existingSku.getId());
+                }
+            } else {
+                Sku sku = toSkuEntity(spuId, skuDTO);
+                skuMapper.insert(sku);
+            }
+        }
+
+        for (Sku oldSku : oldSkus) {
+            if (oldSku.getId() == null) {
+                continue;
+            }
+            if (retainedIds.contains(oldSku.getId())) {
+                continue;
+            }
+            oldSku.setDeleted(1);
+            skuMapper.updateById(oldSku);
         }
         return true;
     }
