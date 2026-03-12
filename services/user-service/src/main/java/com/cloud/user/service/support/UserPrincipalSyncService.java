@@ -59,8 +59,12 @@ public class UserPrincipalSyncService {
         if (nickname != null && !nickname.isBlank()) {
             user.setNickname(nickname);
         }
-        user.setEmail(email);
-        user.setPhone(phone);
+        if (email != null && !email.isBlank()) {
+            user.setEmail(email);
+        }
+        if (phone != null && !phone.isBlank()) {
+            user.setPhone(phone);
+        }
         if (status != null) {
             user.setStatus(status);
         }
