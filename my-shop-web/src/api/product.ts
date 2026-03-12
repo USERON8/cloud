@@ -11,6 +11,34 @@ import type {
 } from '../types/domain'
 
 const SEARCH_FALLBACK_TIMEOUT_MS = Number(import.meta.env.VITE_SEARCH_FALLBACK_TIMEOUT || 1200)
+const SUGGESTION_CACHE_TTL = 30_000
+const HOT_KEYWORD_CACHE_TTL = 60_000
+const RECOMMENDATION_CACHE_TTL = 45_000
+
+type CacheEntry<T> = {
+  expiresAt: number
+  value: T
+}
+
+const suggestionCache = new Map<string, CacheEntry<string[]>>()
+const hotKeywordCache = new Map<string, CacheEntry<string[]>>()
+const recommendationCache = new Map<string, CacheEntry<string[]>>()
+
+function getCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key)
+  if (!entry) {
+    return null
+  }
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key)
+    return null
+  }
+  return entry.value
+}
+
+function setCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttl: number): void {
+  cache.set(key, { value, expiresAt: Date.now() + ttl })
+}
 
 export function listProducts(params: ProductQuery = {}): Promise<ProductPage> {
   return http.get<ProductPage, ProductPage>('/api/product', { params })
@@ -97,30 +125,57 @@ export async function smartSearchProductsWithFallback(params: {
 }
 
 export async function listSearchSuggestionsWithFallback(keyword: string, size = 10): Promise<string[]> {
+  const cacheKey = `${keyword.toLowerCase()}::${size}`
+  const cached = getCachedValue(suggestionCache, cacheKey)
+  if (cached) {
+    return cached
+  }
   try {
-    return await withTimeout(listSearchSuggestions(keyword, size))
+    const result = await withTimeout(listSearchSuggestions(keyword, size))
+    setCachedValue(suggestionCache, cacheKey, result, SUGGESTION_CACHE_TTL)
+    return result
   } catch {
     const products = await searchProducts(keyword)
-    return products
+    const result = products
       .map((item) => item.name)
       .filter((name): name is string => typeof name === 'string' && name.trim().length > 0)
       .slice(0, size)
+    setCachedValue(suggestionCache, cacheKey, result, SUGGESTION_CACHE_TTL)
+    return result
   }
 }
 
 export async function listSearchHotKeywordsWithFallback(size = 10): Promise<string[]> {
+  const cacheKey = `hot::${size}`
+  const cached = getCachedValue(hotKeywordCache, cacheKey)
+  if (cached) {
+    return cached
+  }
   try {
-    return await withTimeout(listSearchHotKeywords(size))
+    const result = await withTimeout(listSearchHotKeywords(size))
+    setCachedValue(hotKeywordCache, cacheKey, result, HOT_KEYWORD_CACHE_TTL)
+    return result
   } catch {
-    return []
+    const fallback: string[] = []
+    setCachedValue(hotKeywordCache, cacheKey, fallback, HOT_KEYWORD_CACHE_TTL)
+    return fallback
   }
 }
 
 export async function listSearchKeywordRecommendationsWithFallback(keyword = '', size = 10): Promise<string[]> {
+  const cacheKey = `${keyword.toLowerCase()}::${size}`
+  const cached = getCachedValue(recommendationCache, cacheKey)
+  if (cached) {
+    return cached
+  }
   try {
-    return await withTimeout(listSearchKeywordRecommendations(keyword, size))
+    const result = await withTimeout(listSearchKeywordRecommendations(keyword, size))
+    setCachedValue(recommendationCache, cacheKey, result, RECOMMENDATION_CACHE_TTL)
+    return result
   } catch {
-    return listSearchSuggestionsWithFallback(keyword, size)
+    const result = await listSearchSuggestionsWithFallback(keyword, size)
+    setCachedValue(recommendationCache, cacheKey, result, RECOMMENDATION_CACHE_TTL)
+    return result
   }
 }
 
