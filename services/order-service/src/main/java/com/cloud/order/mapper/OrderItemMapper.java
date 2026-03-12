@@ -1,6 +1,7 @@
 package com.cloud.order.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cloud.order.entity.OrderItem;
 import org.apache.ibatis.annotations.Mapper;
@@ -21,4 +22,19 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
             ORDER BY id ASC
             """)
     List<OrderItem> listActiveBySubOrderId(@Param("subOrderId") Long subOrderId);
+
+    @InterceptorIgnore(illegalSql = "1")
+    @Select("""
+            <script>
+            SELECT *
+            FROM order_item FORCE INDEX (idx_order_item_sub_deleted)
+            WHERE deleted = 0
+              AND sub_order_id IN
+              <foreach collection="subOrderIds" item="id" open="(" separator="," close=")">
+                #{id}
+              </foreach>
+            ORDER BY sub_order_id ASC, id ASC
+            </script>
+            """)
+    List<OrderItem> listActiveBySubOrderIds(@Param("subOrderIds") List<Long> subOrderIds);
 }

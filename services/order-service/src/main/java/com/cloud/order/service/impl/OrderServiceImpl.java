@@ -185,8 +185,25 @@ public class OrderServiceImpl implements OrderService {
         response.setMainOrder(main);
         List<OrderAggregateResponse.SubOrderWithItems> wrapped = new ArrayList<>(subOrders.size());
 
+        Map<Long, List<OrderItem>> itemsBySubOrder = new LinkedHashMap<>();
+        if (!subOrders.isEmpty()) {
+            List<Long> subOrderIds = subOrders.stream()
+                    .map(OrderSub::getId)
+                    .filter(id -> id != null)
+                    .toList();
+            if (!subOrderIds.isEmpty()) {
+                List<OrderItem> items = orderItemMapper.listActiveBySubOrderIds(subOrderIds);
+                for (OrderItem item : items) {
+                    if (item.getSubOrderId() == null) {
+                        continue;
+                    }
+                    itemsBySubOrder.computeIfAbsent(item.getSubOrderId(), ignored -> new ArrayList<>()).add(item);
+                }
+            }
+        }
+
         for (OrderSub subOrder : subOrders) {
-            List<OrderItem> items = orderItemMapper.listActiveBySubOrderId(subOrder.getId());
+            List<OrderItem> items = itemsBySubOrder.getOrDefault(subOrder.getId(), List.of());
             OrderAggregateResponse.SubOrderWithItems item = new OrderAggregateResponse.SubOrderWithItems();
             item.setSubOrder(subOrder);
             item.setItems(items);
