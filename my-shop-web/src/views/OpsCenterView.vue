@@ -42,6 +42,16 @@ import {
   searchByShop,
   searchProducts
 } from '../api/search-ops'
+import {
+  getShopById,
+  getShopFilters,
+  listHotShops,
+  listRecommendedShops,
+  listShopSuggestions,
+  searchShops,
+  searchShopsByLocation,
+  type ShopSearchRequest
+} from '../api/shop-search'
 import { combinedSearchProducts, smartSearchProducts } from '../api/product'
 import type {
   LegacyAfterSale,
@@ -582,6 +592,13 @@ type SearchEndpointKey =
   | 'filter-price'
   | 'filter-shop'
   | 'filter-combined'
+  | 'shop-complex'
+  | 'shop-filters'
+  | 'shop-suggestions'
+  | 'shop-hot'
+  | 'shop-by-id'
+  | 'shop-recommended'
+  | 'shop-by-location'
 
 const searchEndpoint = ref<SearchEndpointKey>('complex-search')
 const searchParamsRaw = ref('{}')
@@ -604,7 +621,14 @@ const searchSamples: Record<SearchEndpointKey, Record<string, unknown>> = {
   'filter-brand': { brandId: 1, page: 0, size: 10 },
   'filter-price': { minPrice: 0, maxPrice: 100, page: 0, size: 10 },
   'filter-shop': { shopId: 1, page: 0, size: 10 },
-  'filter-combined': { keyword: 'phone', categoryId: 1, minPrice: 0, maxPrice: 100, page: 0, size: 10 }
+  'filter-combined': { keyword: 'phone', categoryId: 1, minPrice: 0, maxPrice: 100, page: 0, size: 10 },
+  'shop-complex': { keyword: 'store', page: 0, size: 10, sortBy: 'hotScore', sortOrder: 'desc' },
+  'shop-filters': { keyword: 'store', page: 0, size: 10 },
+  'shop-suggestions': { keyword: 'store', size: 10 },
+  'shop-hot': { size: 10 },
+  'shop-by-id': { shopId: 1 },
+  'shop-recommended': { page: 0, size: 10 },
+  'shop-by-location': { location: 'Downtown', page: 0, size: 10 }
 }
 
 watch(
@@ -714,6 +738,36 @@ async function runSearch(): Promise<void> {
           size?: number
         })
         break
+      case 'shop-complex':
+        searchResult.value = await searchShops(params as ShopSearchRequest)
+        break
+      case 'shop-filters':
+        searchResult.value = await getShopFilters(params as ShopSearchRequest)
+        break
+      case 'shop-suggestions': {
+        const keyword = String(params.keyword || '').trim()
+        if (!keyword) throw new Error('keyword is required')
+        searchResult.value = await listShopSuggestions(keyword, Number(params.size ?? 10))
+        break
+      }
+      case 'shop-hot':
+        searchResult.value = await listHotShops(Number(params.size ?? 10))
+        break
+      case 'shop-by-id': {
+        const shopId = Number(params.shopId)
+        if (!shopId) throw new Error('shopId is required')
+        searchResult.value = await getShopById(shopId)
+        break
+      }
+      case 'shop-recommended':
+        searchResult.value = await listRecommendedShops(Number(params.page ?? 0), Number(params.size ?? 20))
+        break
+      case 'shop-by-location': {
+        const location = String(params.location || '').trim()
+        if (!location) throw new Error('location is required')
+        searchResult.value = await searchShopsByLocation(location, Number(params.page ?? 0), Number(params.size ?? 20))
+        break
+      }
       default:
         throw new Error('Unsupported endpoint')
     }
@@ -973,6 +1027,13 @@ async function runSearch(): Promise<void> {
               <el-option label="Filter by Price" value="filter-price" />
               <el-option label="Filter by Shop" value="filter-shop" />
               <el-option label="Combined Filter" value="filter-combined" />
+              <el-option label="Shop Search (Complex)" value="shop-complex" />
+              <el-option label="Shop Filters" value="shop-filters" />
+              <el-option label="Shop Suggestions" value="shop-suggestions" />
+              <el-option label="Shop Hot" value="shop-hot" />
+              <el-option label="Shop By ID" value="shop-by-id" />
+              <el-option label="Shop Recommended" value="shop-recommended" />
+              <el-option label="Shop By Location" value="shop-by-location" />
             </el-select>
             <el-button round type="primary" @click="runSearch">Run</el-button>
           </div>
