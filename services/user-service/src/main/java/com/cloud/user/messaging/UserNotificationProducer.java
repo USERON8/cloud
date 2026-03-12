@@ -23,7 +23,7 @@ public class UserNotificationProducer {
     private final StreamBridge streamBridge;
 
     public boolean send(UserNotificationEvent event) {
-        if (event == null || event.getEventType() == null) {
+        if (event == null || event.getEventType() == null || event.getEventType().isBlank()) {
             return false;
         }
         if (event.getEventId() == null || event.getEventId().isBlank()) {
