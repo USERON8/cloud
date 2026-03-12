@@ -976,26 +976,35 @@ onMounted(() => {
           <el-button round type="primary" @click="loadMerchants">Search</el-button>
           <el-button round @click="openMerchantCreate">New Merchant</el-button>
         </div>
-        <el-table v-loading="merchantLoading" :data="merchantRows" stripe>
-          <el-table-column label="ID" prop="id" width="80" />
-          <el-table-column label="Name" prop="merchantName" min-width="160" />
-          <el-table-column label="Email" prop="email" min-width="180" />
-          <el-table-column label="Status" min-width="120">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === 1 ? 'success' : scope.row.status === 2 ? 'danger' : 'warning'" round>
-                {{ scope.row.status === 1 ? 'Approved' : scope.row.status === 2 ? 'Rejected' : 'Pending' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="Actions" width="280">
-            <template #default="scope">
-              <el-button round size="small" @click="openMerchantEdit(scope.row)">Edit</el-button>
-              <el-button round size="small" type="success" plain @click="approveMerchantRow(scope.row)">Approve</el-button>
-              <el-button round size="small" type="warning" plain @click="rejectMerchantRow(scope.row)">Reject</el-button>
-              <el-button round size="small" type="danger" plain @click="confirmDeleteMerchant(scope.row)">Delete</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <el-skeleton :loading="merchantLoading" animated>
+          <template #template>
+            <div class="table-skeleton">
+              <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+            </div>
+          </template>
+          <template #default>
+            <el-table :data="merchantRows" stripe>
+              <el-table-column label="ID" prop="id" width="80" />
+              <el-table-column label="Name" prop="merchantName" min-width="160" />
+              <el-table-column label="Email" prop="email" min-width="180" />
+              <el-table-column label="Status" min-width="120">
+                <template #default="scope">
+                  <el-tag :type="scope.row.status === 1 ? 'success' : scope.row.status === 2 ? 'danger' : 'warning'" round>
+                    {{ scope.row.status === 1 ? 'Approved' : scope.row.status === 2 ? 'Rejected' : 'Pending' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Actions" width="280">
+                <template #default="scope">
+                  <el-button round size="small" @click="openMerchantEdit(scope.row)">Edit</el-button>
+                  <el-button round size="small" type="success" plain @click="approveMerchantRow(scope.row)">Approve</el-button>
+                  <el-button round size="small" type="warning" plain @click="rejectMerchantRow(scope.row)">Reject</el-button>
+                  <el-button round size="small" type="danger" plain @click="confirmDeleteMerchant(scope.row)">Delete</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </template>
+        </el-skeleton>
         <div class="pager">
           <el-pagination
             v-model:current-page="merchantQuery.page"
@@ -1019,24 +1028,33 @@ onMounted(() => {
           </el-select>
           <el-button round @click="loadMerchantAuth">Refresh</el-button>
         </div>
-        <el-table v-loading="authLoading" :data="authRows" stripe>
-          <el-table-column label="Merchant ID" prop="merchantId" width="120" />
-          <el-table-column label="License" prop="businessLicenseNumber" min-width="160" />
-          <el-table-column label="Contact" prop="contactPhone" min-width="140" />
-          <el-table-column label="Status" min-width="120">
-            <template #default="scope">
-              <el-tag :type="scope.row.authStatus === 1 ? 'success' : scope.row.authStatus === 2 ? 'danger' : 'warning'" round>
-                {{ scope.row.authStatus === 1 ? 'Approved' : scope.row.authStatus === 2 ? 'Rejected' : 'Pending' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="Actions" width="220">
-            <template #default="scope">
-              <el-button round size="small" type="success" plain @click="reviewMerchantAuthRow(scope.row, 1)">Approve</el-button>
-              <el-button round size="small" type="danger" plain @click="reviewMerchantAuthRow(scope.row, 2)">Reject</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <el-skeleton :loading="authLoading" animated>
+          <template #template>
+            <div class="table-skeleton">
+              <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+            </div>
+          </template>
+          <template #default>
+            <el-table :data="authRows" stripe>
+              <el-table-column label="Merchant ID" prop="merchantId" width="120" />
+              <el-table-column label="License" prop="businessLicenseNumber" min-width="160" />
+              <el-table-column label="Contact" prop="contactPhone" min-width="140" />
+              <el-table-column label="Status" min-width="120">
+                <template #default="scope">
+                  <el-tag :type="scope.row.authStatus === 1 ? 'success' : scope.row.authStatus === 2 ? 'danger' : 'warning'" round>
+                    {{ scope.row.authStatus === 1 ? 'Approved' : scope.row.authStatus === 2 ? 'Rejected' : 'Pending' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Actions" width="220">
+                <template #default="scope">
+                  <el-button round size="small" type="success" plain @click="reviewMerchantAuthRow(scope.row, 1)">Approve</el-button>
+                  <el-button round size="small" type="danger" plain @click="reviewMerchantAuthRow(scope.row, 2)">Reject</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </template>
+        </el-skeleton>
       </el-tab-pane>
 
       <el-tab-pane label="Categories" name="categories">
@@ -1207,27 +1225,36 @@ onMounted(() => {
           <el-button round type="primary" @click="loadAdmins">Refresh</el-button>
           <el-button round @click="openAdminCreate">New Admin</el-button>
         </div>
-        <el-table v-loading="adminLoading" :data="adminRows" stripe>
-          <el-table-column label="ID" prop="id" width="90" />
-          <el-table-column label="Username" prop="username" min-width="160" />
-          <el-table-column label="Role" prop="role" min-width="120" />
-          <el-table-column label="Status" width="120">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" round>
-                {{ scope.row.status === 1 ? 'Active' : 'Disabled' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="Actions" width="260">
-            <template #default="scope">
-              <el-button round size="small" @click="openAdminEdit(scope.row)">Edit</el-button>
-              <el-button round size="small" type="success" plain @click="updateAdminRowStatus(scope.row, 1)">Enable</el-button>
-              <el-button round size="small" type="warning" plain @click="updateAdminRowStatus(scope.row, 0)">Disable</el-button>
-              <el-button round size="small" @click="resetPassword(scope.row)">Reset PW</el-button>
-              <el-button round size="small" type="danger" plain @click="confirmDeleteAdmin(scope.row)">Delete</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <el-skeleton :loading="adminLoading" animated>
+          <template #template>
+            <div class="table-skeleton">
+              <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+            </div>
+          </template>
+          <template #default>
+            <el-table :data="adminRows" stripe>
+              <el-table-column label="ID" prop="id" width="90" />
+              <el-table-column label="Username" prop="username" min-width="160" />
+              <el-table-column label="Role" prop="role" min-width="120" />
+              <el-table-column label="Status" width="120">
+                <template #default="scope">
+                  <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" round>
+                    {{ scope.row.status === 1 ? 'Active' : 'Disabled' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Actions" width="260">
+                <template #default="scope">
+                  <el-button round size="small" @click="openAdminEdit(scope.row)">Edit</el-button>
+                  <el-button round size="small" type="success" plain @click="updateAdminRowStatus(scope.row, 1)">Enable</el-button>
+                  <el-button round size="small" type="warning" plain @click="updateAdminRowStatus(scope.row, 0)">Disable</el-button>
+                  <el-button round size="small" @click="resetPassword(scope.row)">Reset PW</el-button>
+                  <el-button round size="small" type="danger" plain @click="confirmDeleteAdmin(scope.row)">Delete</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </template>
+        </el-skeleton>
         <div class="pager">
           <el-pagination
             v-model:current-page="adminQuery.page"
@@ -1469,6 +1496,16 @@ onMounted(() => {
 
 .muted {
   color: var(--text-muted);
+}
+
+.table-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 42px;
+  border-radius: 10px;
 }
 
 .user-virtual-list {

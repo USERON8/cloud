@@ -1196,14 +1196,23 @@ async function runSearch(): Promise<void> {
             <el-input v-model="threadPoolName" placeholder="Thread pool bean name" />
             <el-button round @click="loadThreadPoolDetail">Load Detail</el-button>
           </div>
-          <el-table v-loading="threadPoolLoading" :data="threadPoolRows" stripe>
-            <el-table-column label="Name" prop="name" min-width="160" />
-            <el-table-column label="Core" prop="corePoolSize" width="90" />
-            <el-table-column label="Max" prop="maxPoolSize" width="90" />
-            <el-table-column label="Active" prop="activeCount" width="90" />
-            <el-table-column label="Queue" prop="queueSize" width="90" />
-            <el-table-column label="Completed" prop="completedTaskCount" width="120" />
-          </el-table>
+          <el-skeleton :loading="threadPoolLoading" animated>
+            <template #template>
+              <div class="table-skeleton">
+                <el-skeleton-item v-for="index in 5" :key="index" class="skeleton-row" variant="rect" />
+              </div>
+            </template>
+            <template #default>
+              <el-table :data="threadPoolRows" stripe>
+                <el-table-column label="Name" prop="name" min-width="160" />
+                <el-table-column label="Core" prop="corePoolSize" width="90" />
+                <el-table-column label="Max" prop="maxPoolSize" width="90" />
+                <el-table-column label="Active" prop="activeCount" width="90" />
+                <el-table-column label="Queue" prop="queueSize" width="90" />
+                <el-table-column label="Completed" prop="completedTaskCount" width="120" />
+              </el-table>
+            </template>
+          </el-skeleton>
           <pre v-if="threadPoolDetail" class="json">{{ formatJson(threadPoolDetail) }}</pre>
         </div>
       </el-tab-pane>
@@ -1548,6 +1557,16 @@ async function runSearch(): Promise<void> {
 
 .form {
   margin-top: 6px;
+}
+
+.table-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 42px;
+  border-radius: 10px;
 }
 
 .json {
