@@ -5,6 +5,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart, LineChart, BarChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
+import { VueDraggable } from 'vue-draggable-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type {
   AdminInfo,
@@ -39,6 +40,7 @@ import {
   deleteCategory,
   getCategories,
   updateCategory,
+  updateCategorySort,
   updateCategoryStatus
 } from '../api/category'
 import {
@@ -384,6 +386,7 @@ async function reviewMerchantAuthRow(row: MerchantAuthInfo, status: number): Pro
 const categoryLoading = ref(false)
 const categoryRows = ref<CategoryItem[]>([])
 const categoryTotal = ref(0)
+const categorySortSaving = ref(false)
 const categoryQuery = reactive({
   page: 1,
   size: 10
@@ -409,6 +412,56 @@ async function loadCategories(): Promise<void> {
   } finally {
     categoryLoading.value = false
   }
+}
+
+function resolveCategorySortBase(): number {
+  const orders = categoryRows.value
+    .map((row) => (typeof row.sortOrder === 'number' ? row.sortOrder : null))
+    .filter((value): value is number => value != null)
+  if (orders.length === 0) {
+    return (categoryQuery.page - 1) * categoryQuery.size + 1
+  }
+  return Math.min(...orders)
+}
+
+async function persistCategorySort(): Promise<void> {
+  if (categorySortSaving.value) {
+    return
+  }
+
+  const base = resolveCategorySortBase()
+  const updates = categoryRows.value
+    .map((row, index) => ({
+      id: row.id,
+      sort: base + index,
+      current: row.sortOrder
+    }))
+    .filter((item) => typeof item.id === 'number' && item.current !== item.sort)
+
+  if (updates.length === 0) {
+    return
+  }
+
+  categorySortSaving.value = true
+  try {
+    for (const item of updates) {
+      await updateCategorySort(item.id as number, item.sort)
+    }
+    categoryRows.value.forEach((row, index) => {
+      row.sortOrder = base + index
+    })
+    ElMessage.success('Category order saved.')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update category sort'
+    ElMessage.error(message)
+    await loadCategories()
+  } finally {
+    categorySortSaving.value = false
+  }
+}
+
+function onCategorySortEnd(): void {
+  void persistCategorySort()
 }
 
 function openCategoryEdit(row: CategoryItem): void {
@@ -920,27 +973,63 @@ onMounted(() => {
         <div class="toolbar">
           <el-button round type="primary" @click="loadCategories">Refresh</el-button>
           <el-button round @click="openCategoryCreate">New Category</el-button>
+          <span class="hint">Drag rows to reorder. Changes save automatically.</span>
         </div>
-        <el-table v-loading="categoryLoading" :data="categoryRows" stripe>
-          <el-table-column label="ID" prop="id" width="90" />
-          <el-table-column label="Name" prop="name" min-width="160" />
-          <el-table-column label="Parent" prop="parentId" width="120" />
-          <el-table-column label="Status" width="120">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" round>
-                {{ scope.row.status === 1 ? 'Enabled' : 'Disabled' }}
-              </el-tag>
+        <div v-loading="categoryLoading" class="category-board">
+          <VueDraggable
+            v-model="categoryRows"
+            item-key="id"
+            handle=".drag-handle"
+            :animation="180"
+            :disabled="categoryLoading || categorySortSaving"
+            class="category-list"
+            @end="onCategorySortEnd"
+          >
+            <template #item="{ element, index }">
+              <div class="category-row">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <div class="category-info">
+                  <div class="category-title">
+                    <strong>{{ element.name }}</strong>
+                    <span class="muted">#{{ element.id ?? '--' }}</span>
+                  </div>
+                  <div class="category-meta">
+                    <span class="chip">Parent {{ element.parentId ?? '-' }}</span>
+                    <span class="chip">Sort {{ element.sortOrder ?? index + 1 }}</span>
+                    <el-tag :type="element.status === 1 ? 'success' : 'info'" round>
+                      {{ element.status === 1 ? 'Enabled' : 'Disabled' }}
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="category-actions">
+                  <el-button round size="small" @click="openCategoryEdit(element)">Edit</el-button>
+                  <el-button
+                    round
+                    size="small"
+                    type="success"
+                    plain
+                    @click="updateCategoryRowStatus(element, 1)"
+                  >
+                    Enable
+                  </el-button>
+                  <el-button
+                    round
+                    size="small"
+                    type="warning"
+                    plain
+                    @click="updateCategoryRowStatus(element, 0)"
+                  >
+                    Disable
+                  </el-button>
+                  <el-button round size="small" type="danger" plain @click="deleteCategoryRow(element)">
+                    Delete
+                  </el-button>
+                </div>
+              </div>
             </template>
-          </el-table-column>
-          <el-table-column label="Actions" width="200">
-            <template #default="scope">
-              <el-button round size="small" @click="openCategoryEdit(scope.row)">Edit</el-button>
-              <el-button round size="small" type="success" plain @click="updateCategoryRowStatus(scope.row, 1)">Enable</el-button>
-              <el-button round size="small" type="warning" plain @click="updateCategoryRowStatus(scope.row, 0)">Disable</el-button>
-              <el-button round size="small" type="danger" plain @click="deleteCategoryRow(scope.row)">Delete</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+          </VueDraggable>
+          <el-empty v-if="!categoryRows.length && !categoryLoading" description="No categories yet." />
+        </div>
         <div class="pager">
           <el-pagination
             v-model:current-page="categoryQuery.page"
@@ -1204,6 +1293,11 @@ onMounted(() => {
   align-items: center;
 }
 
+.hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 .pager {
   display: flex;
   justify-content: flex-end;
@@ -1231,6 +1325,80 @@ onMounted(() => {
 
 .card-block h4 {
   margin: 0;
+}
+
+.category-board {
+  display: grid;
+  gap: 10px;
+}
+
+.category-list {
+  display: grid;
+  gap: 10px;
+}
+
+.category-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.drag-handle {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px dashed rgba(148, 163, 184, 0.9);
+  color: #64748b;
+  cursor: grab;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.category-info {
+  display: grid;
+  gap: 4px;
+}
+
+.category-title {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.category-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.category-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-self: end;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.muted {
+  color: var(--text-muted);
 }
 
 .stats-grid {
