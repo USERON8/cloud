@@ -31,7 +31,9 @@ import org.springframework.util.CollectionUtils;
 import cn.hutool.core.util.StrUtil;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -97,7 +99,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (CollectionUtils.isEmpty(ids)) {
             return List.of();
         }
-        return listByIds(ids).stream().map(this::toEnrichedDTO).collect(Collectors.toList());
+        return toEnrichedDTOList(listByIds(ids));
     }
 
     @Override
@@ -111,7 +113,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                 .page(pageParam);
 
         Page<MerchantDTO> dtoPage = new Page<>(merchantPage.getCurrent(), merchantPage.getSize(), merchantPage.getTotal());
-        dtoPage.setRecords(merchantPage.getRecords().stream().map(this::toEnrichedDTO).collect(Collectors.toList()));
+        dtoPage.setRecords(toEnrichedDTOList(merchantPage.getRecords()));
         return dtoPage;
     }
 
@@ -450,6 +452,72 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         merchantDTO.setRoles(authPrincipalRemoteService.getRoleCodesByUserId(merchant.getId()));
 
         return merchantDTO;
+    }
+
+    private List<MerchantDTO> toEnrichedDTOList(List<Merchant> merchants) {
+        if (merchants == null || merchants.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> merchantIds = merchants.stream()
+                .map(Merchant::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        Map<Long, Integer> authStatusMap = loadAuthStatusMap(merchantIds);
+        Map<Long, String> emailMap = loadEmailMap(merchantIds);
+        Map<Long, List<String>> roleMap = loadRoleMap(merchantIds);
+
+        List<MerchantDTO> dtos = merchants.stream()
+                .map(merchantConverter::toDTO)
+                .collect(Collectors.toList());
+        dtos.forEach(dto -> {
+            if (dto == null || dto.getId() == null) {
+                return;
+            }
+            dto.setAuthStatus(authStatusMap.get(dto.getId()));
+            dto.setEmail(emailMap.get(dto.getId()));
+            dto.setRoles(roleMap.getOrDefault(dto.getId(), List.of()));
+        });
+        return dtos;
+    }
+
+    private Map<Long, Integer> loadAuthStatusMap(List<Long> merchantIds) {
+        if (merchantIds == null || merchantIds.isEmpty()) {
+            return Map.of();
+        }
+        List<MerchantAuth> auths = merchantAuthMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MerchantAuth>()
+                        .in(MerchantAuth::getMerchantId, merchantIds)
+        );
+        Map<Long, Integer> result = new LinkedHashMap<>();
+        for (MerchantAuth auth : auths) {
+            if (auth != null && auth.getMerchantId() != null) {
+                result.put(auth.getMerchantId(), auth.getAuthStatus());
+            }
+        }
+        return result;
+    }
+
+    private Map<Long, String> loadEmailMap(List<Long> merchantIds) {
+        if (merchantIds == null || merchantIds.isEmpty()) {
+            return Map.of();
+        }
+        List<User> users = userMapper.selectBatchIds(merchantIds);
+        Map<Long, String> result = new LinkedHashMap<>();
+        for (User user : users) {
+            if (user != null && user.getId() != null) {
+                result.put(user.getId(), user.getEmail());
+            }
+        }
+        return result;
+    }
+
+    private Map<Long, List<String>> loadRoleMap(List<Long> merchantIds) {
+        if (merchantIds == null || merchantIds.isEmpty()) {
+            return Map.of();
+        }
+        return authPrincipalRemoteService.getRoleCodesByUserIds(merchantIds);
     }
 
     private Merchant toMerchantEntity(MerchantUpsertRequestDTO requestDTO) {
