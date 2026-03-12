@@ -104,6 +104,12 @@ spring:
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+    batch-size: ${OUTBOX_BATCH_SIZE:100}
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:2000}
+    max-retry: ${OUTBOX_MAX_RETRY:8}
+    retry-backoff-seconds: ${OUTBOX_RETRY_BACKOFF_SECONDS:30}
 unified:
   security:
     enabled: true

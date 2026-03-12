@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.order", "com.cloud.common"}
@@ -15,9 +16,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableDubbo
 @EnableDiscoveryClient
 @EnableAsync
+@EnableScheduling
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@MapperScan("com.cloud.order.mapper")
+@MapperScan({"com.cloud.order.mapper", "com.cloud.common.messaging.outbox"})
 public class OrderApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");

@@ -3,12 +3,10 @@ package com.cloud.order.messaging;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
+import com.cloud.common.messaging.outbox.OutboxEventService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.common.message.MessageConst;
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -26,7 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderMessageProducer {
 
-    private final StreamBridge streamBridge;
+    private final OutboxEventService outboxEventService;
+    private final ObjectMapper objectMapper;
 
     
 
@@ -48,31 +47,15 @@ public class OrderMessageProducer {
                 event.setEventType("ORDER_CREATED");
             }
 
-            
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(MessageConst.PROPERTY_KEYS, event.getOrderNo());
-            headers.put(MessageConst.PROPERTY_TAGS, "ORDER_CREATED");
-            headers.put("eventId", event.getEventId());
-            headers.put("eventType", event.getEventType());
-
-            
-            Message<OrderCreatedEvent> message = MessageBuilder
-                    .withPayload(event)
-                    .copyHeaders(headers)
-                    .build();
-
-            
-            boolean result = streamBridge.send("orderCreatedProducer-out-0", message);
-
-            if (result) {
-                
-
-            } else {
-                log.error("?? orderId={}, orderNo={}",
-                        event.getOrderId(), event.getOrderNo());
-            }
-
-            return result;
+            String payload = objectMapper.writeValueAsString(event);
+            outboxEventService.enqueue(
+                    "ORDER",
+                    event.getOrderNo(),
+                    event.getEventType(),
+                    payload,
+                    event.getEventId()
+            );
+            return true;
 
         } catch (Exception e) {
             log.error("?? orderId={}, orderNo={}",
@@ -96,28 +79,19 @@ public class OrderMessageProducer {
             payload.put("orderNo", orderNo);
             payload.put("reason", reason);
             payload.put("timestamp", System.currentTimeMillis());
-            payload.put("eventId", UUID.randomUUID().toString());
+            String eventId = UUID.randomUUID().toString();
+            payload.put("eventId", eventId);
+            payload.put("eventType", "ORDER_CANCELLED");
+            String payloadJson = objectMapper.writeValueAsString(payload);
 
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(MessageConst.PROPERTY_KEYS, orderNo);
-            headers.put(MessageConst.PROPERTY_TAGS, "ORDER_CANCELLED");
-
-            Message<Map<String, Object>> message = MessageBuilder
-                    .withPayload(payload)
-                    .copyHeaders(headers)
-                    .build();
-
-            boolean result = streamBridge.send("orderCancelledProducer-out-0", message);
-
-            if (result) {
-                
-
-            } else {
-                log.error("?? orderId={}, orderNo={}",
-                        orderId, orderNo);
-            }
-
-            return result;
+            outboxEventService.enqueue(
+                    "ORDER",
+                    orderNo,
+                    "ORDER_CANCELLED",
+                    payloadJson,
+                    eventId
+            );
+            return true;
 
         } catch (Exception e) {
             log.error("?? orderId={}, orderNo={}",
@@ -148,26 +122,15 @@ public class OrderMessageProducer {
             if (event.getEventType() == null || event.getEventType().isBlank()) {
                 event.setEventType("STOCK_RESTORE");
             }
-
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(MessageConst.PROPERTY_KEYS, event.getRefundNo());
-            headers.put(MessageConst.PROPERTY_TAGS, "STOCK_RESTORE");
-
-            Message<StockRestoreEvent> message = MessageBuilder
-                    .withPayload(event)
-                    .copyHeaders(headers)
-                    .build();
-
-            boolean result = streamBridge.send("stockRestoreProducer-out-0", message);
-
-            if (result) {
-                
-
-            } else {
-                log.error("?? refundNo={}", event.getRefundNo());
-            }
-
-            return result;
+            String payload = objectMapper.writeValueAsString(event);
+            outboxEventService.enqueue(
+                    "REFUND",
+                    event.getRefundNo(),
+                    event.getEventType(),
+                    payload,
+                    event.getEventId()
+            );
+            return true;
 
         } catch (Exception e) {
             log.error("?? refundNo={}", event == null ? null : event.getRefundNo(), e);
@@ -177,20 +140,16 @@ public class OrderMessageProducer {
 
     public boolean sendRefundProcessEvent(PaymentRefundCommandDTO command) {
         try {
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(MessageConst.PROPERTY_KEYS, command.getRefundNo());
-            headers.put(MessageConst.PROPERTY_TAGS, "REFUND_PROCESS");
-
-            Message<PaymentRefundCommandDTO> message = MessageBuilder
-                    .withPayload(command)
-                    .copyHeaders(headers)
-                    .build();
-
-            boolean result = streamBridge.send("refundProcessProducer-out-0", message);
-            if (!result) {
-                log.error("?? refundNo={}", command.getRefundNo());
-            }
-            return result;
+            String eventId = UUID.randomUUID().toString();
+            String payload = objectMapper.writeValueAsString(command);
+            outboxEventService.enqueue(
+                    "REFUND",
+                    command.getRefundNo(),
+                    "REFUND_PROCESS",
+                    payload,
+                    eventId
+            );
+            return true;
         } catch (Exception e) {
             log.error("?? refundNo={}", command == null ? null : command.getRefundNo(), e);
             return false;
