@@ -145,7 +145,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
 
         Merchant merchant = toMerchantEntity(requestDTO);
         if (merchant.getStatus() == null) {
-            merchant.setStatus(STATUS_PENDING);
+            merchant.setStatus(STATUS_ENABLED);
+        }
+        if (merchant.getAuditStatus() == null) {
+            merchant.setAuditStatus(STATUS_PENDING);
         }
 
         if (!save(merchant)) {
@@ -220,6 +223,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant.getStatus() == null) {
             merchant.setStatus(existing.getStatus());
         }
+        if (merchant.getAuditStatus() == null) {
+            merchant.setAuditStatus(existing.getAuditStatus());
+        }
         boolean updated = updateById(merchant);
         if (updated) {
             Merchant current = resolveCurrentMerchant(requestDTO, existing);
@@ -284,6 +290,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(id);
         }
+        if (!isValidEnableStatus(status)) {
+            throw new MerchantException.MerchantStatusException(id, String.valueOf(status));
+        }
         merchant.setStatus(status);
         boolean updated = updateById(merchant);
         if (updated) {
@@ -305,6 +314,28 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             }
         }
         return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
+    @DistributedLock(
+            key = "'audit:' + #id",
+            prefix = "merchant",
+            waitTime = 10,
+            leaseTime = 30,
+            failMessage = "failed to acquire audit merchant lock"
+    )
+    public boolean updateMerchantAuditStatus(Long id, Integer auditStatus) throws MerchantException.MerchantNotFoundException {
+        Merchant merchant = getById(id);
+        if (merchant == null) {
+            throw new MerchantException.MerchantNotFoundException(id);
+        }
+        if (!isValidAuditStatus(auditStatus)) {
+            throw new MerchantException.MerchantAuditException("invalid audit status: " + auditStatus);
+        }
+        merchant.setAuditStatus(auditStatus);
+        return updateById(merchant);
     }
 
     @Override
@@ -337,11 +368,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(id);
         }
-        if (!STATUS_PENDING.equals(merchant.getStatus())) {
+        if (!STATUS_PENDING.equals(merchant.getAuditStatus())) {
             throw new MerchantException.MerchantAuditException("merchant status is not pending");
         }
-        merchant.setStatus(STATUS_APPROVED);
-        return updateById(merchant);
+        return updateMerchantAuditStatus(id, STATUS_APPROVED);
     }
 
     @Override
@@ -364,11 +394,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchant == null) {
             throw new MerchantException.MerchantNotFoundException(id);
         }
-        if (!STATUS_PENDING.equals(merchant.getStatus())) {
+        if (!STATUS_PENDING.equals(merchant.getAuditStatus())) {
             throw new MerchantException.MerchantAuditException("merchant status is not pending");
         }
-        merchant.setStatus(STATUS_REJECTED);
-        return updateById(merchant);
+        return updateMerchantAuditStatus(id, STATUS_REJECTED);
     }
 
     @Override
@@ -383,6 +412,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
                 "merchantId", id,
                 "merchantName", merchant.getMerchantName(),
                 "status", merchant.getStatus(),
+                "auditStatus", merchant.getAuditStatus(),
                 "createdAt", merchant.getCreatedAt()
         );
     }
@@ -434,6 +464,20 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         merged.setPhone(requestDTO.getPhone() == null ? existing.getPhone() : requestDTO.getPhone());
         merged.setStatus(requestDTO.getStatus() == null ? existing.getStatus() : requestDTO.getStatus());
         return merged;
+    }
+
+    private boolean isValidEnableStatus(Integer status) {
+        if (status == null) {
+            return false;
+        }
+        return STATUS_ENABLED.equals(status) || STATUS_DISABLED.equals(status);
+    }
+
+    private boolean isValidAuditStatus(Integer status) {
+        if (status == null) {
+            return false;
+        }
+        return STATUS_PENDING.equals(status) || STATUS_APPROVED.equals(status) || STATUS_REJECTED.equals(status);
     }
 
     private AuthPrincipalDTO toAuthPrincipalDTO(Merchant merchant, String email, String password) {

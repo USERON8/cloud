@@ -34,8 +34,8 @@ VALUES (23001, 20001, 40001, 41001, 'ACTIVE', 0, 0);
 INSERT INTO admin (id, username, real_name, phone, role, status, deleted, version)
 VALUES (24001, 't_admin_24001', 'Test Admin 1', '13900010001', 'ADMIN', 1, 0, 0);
 
-INSERT INTO merchant (id, username, merchant_name, phone, status, deleted, version)
-VALUES (30001, 't_merchant_30001', 'Test Merchant A', '13900020001', 1, 0, 0);
+INSERT INTO merchant (id, username, merchant_name, phone, status, audit_status, deleted, version)
+VALUES (30001, 't_merchant_30001', 'Test Merchant A', '13900020001', 1, 1, 0, 0);
 
 INSERT INTO merchant_auth (id, merchant_id, business_license_number, business_license_url, id_card_front_url,
                            id_card_back_url, contact_phone, contact_address, auth_status, auth_remark, deleted, version)

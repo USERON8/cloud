@@ -39,4 +39,7 @@ public class Merchant extends BaseEntity<Merchant> {
 
     @TableField(value = "status")
     private Integer status;
+
+    @TableField(value = "audit_status")
+    private Integer auditStatus;
 }

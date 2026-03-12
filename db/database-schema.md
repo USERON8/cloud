@@ -711,6 +711,7 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | merchant_name | VARCHAR(100) |
 | phone | VARCHAR(20) |
 | status | TINYINT |
+| audit_status | TINYINT |
 | created_at | DATETIME |
 | updated_at | DATETIME |
 | deleted | TINYINT |

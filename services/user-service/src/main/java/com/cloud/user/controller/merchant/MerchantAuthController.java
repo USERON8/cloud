@@ -86,7 +86,7 @@ public class MerchantAuthController {
         }
 
         try {
-            merchantService.updateMerchantStatus(merchantId, STATUS_PENDING);
+            merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
         } catch (Exception e) {
             log.error("Failed to set merchant status pending, merchantId={}", merchantId, e);
             return Result.error("merchant auth submitted but failed to update merchant status");
@@ -138,7 +138,7 @@ public class MerchantAuthController {
         }
 
         try {
-            merchantService.updateMerchantStatus(merchantId, STATUS_PENDING);
+            merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
         } catch (Exception e) {
             log.error("Failed to reset merchant status after revoke, merchantId={}", merchantId, e);
             return Result.error("merchant auth revoked but failed to update merchant status");
@@ -182,7 +182,7 @@ public class MerchantAuthController {
         }
 
         try {
-            merchantService.updateMerchantStatus(merchantId, authStatus);
+            merchantService.updateMerchantAuditStatus(merchantId, authStatus);
         } catch (Exception e) {
             log.error("Failed to update merchant status after auth review, merchantId={}, authStatus={}", merchantId, authStatus, e);
             return Result.error("merchant auth reviewed but failed to update merchant status");
@@ -251,7 +251,7 @@ public class MerchantAuthController {
                 merchantAuth.setAuthRemark(remark);
                 merchantAuth.setUpdatedAt(LocalDateTime.now());
                 if (merchantAuthService.updateById(merchantAuth)
-                        && merchantService.updateMerchantStatus(merchantId, authStatus)) {
+                        && merchantService.updateMerchantAuditStatus(merchantId, authStatus)) {
                     successCount++;
                 }
             } catch (Exception e) {

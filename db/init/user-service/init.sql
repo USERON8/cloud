@@ -119,14 +119,16 @@ CREATE TABLE IF NOT EXISTS merchant
     merchant_name VARCHAR(100) NOT NULL,
     phone         VARCHAR(20)  NULL,
     status        TINYINT      NOT NULL DEFAULT 1,
+    audit_status  TINYINT      NOT NULL DEFAULT 0,
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted       TINYINT      NOT NULL DEFAULT 0,
     version       INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_merchant_username_deleted (username, deleted),
     INDEX idx_merchant_deleted (deleted),
-    INDEX idx_merchant_status_deleted (status, deleted)
-) ENGINE = InnoDB
+    INDEX idx_merchant_status_deleted (status, deleted),
+    INDEX idx_merchant_audit_status_deleted (audit_status, deleted)
+  ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 

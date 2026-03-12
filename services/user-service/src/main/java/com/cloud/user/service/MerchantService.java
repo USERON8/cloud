@@ -114,6 +114,8 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean updateMerchantStatus(Long id, Integer status) throws MerchantException.MerchantNotFoundException;
 
+    boolean updateMerchantAuditStatus(Long id, Integer auditStatus) throws MerchantException.MerchantNotFoundException;
+
     
 
 
