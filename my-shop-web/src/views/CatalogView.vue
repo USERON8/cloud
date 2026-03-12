@@ -645,51 +645,60 @@ useInfiniteScroll(
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="rows" stripe>
-      <el-table-column label="ID" prop="id" width="90" />
-      <el-table-column label="Name" prop="name" min-width="220" />
-      <el-table-column label="Price" min-width="120">
-        <template #default="scope">
-          {{ formatPrice(scope.row.price) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Stock" min-width="100" prop="stockQuantity" />
-      <el-table-column label="Status" min-width="120">
-        <template #default="scope">
-          <el-tag :type="statusType(scope.row.status)" round>
-            {{ statusText(scope.row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
+    <el-skeleton :loading="loading" animated>
+      <template #template>
+        <div class="table-skeleton">
+          <el-skeleton-item v-for="index in 6" :key="index" class="skeleton-row" variant="rect" />
+        </div>
+      </template>
+      <template #default>
+        <el-table :data="rows" stripe>
+          <el-table-column label="ID" prop="id" width="90" />
+          <el-table-column label="Name" prop="name" min-width="220" />
+          <el-table-column label="Price" min-width="120">
+            <template #default="scope">
+              {{ formatPrice(scope.row.price) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="Stock" min-width="100" prop="stockQuantity" />
+          <el-table-column label="Status" min-width="120">
+            <template #default="scope">
+              <el-tag :type="statusType(scope.row.status)" round>
+                {{ statusText(scope.row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
 
-      <el-table-column v-if="!isManagementMode" label="Actions" min-width="160">
-        <template #default="scope">
-          <el-button
-            v-if="scope.row.status === 1"
-            round
-            size="small"
-            type="primary"
-            plain
-            @click="onAddToCart(scope.row)"
-          >
-            <span class="btn-wrap">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0-4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0-4 2 2 0 1 0 0-4Z" /></svg>
-              Add to Cart
-            </span>
-          </el-button>
-          <span v-else class="out-of-sale">Unavailable</span>
-        </template>
-      </el-table-column>
+          <el-table-column v-if="!isManagementMode" label="Actions" min-width="160">
+            <template #default="scope">
+              <el-button
+                v-if="scope.row.status === 1"
+                round
+                size="small"
+                type="primary"
+                plain
+                @click="onAddToCart(scope.row)"
+              >
+                <span class="btn-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2H3L2 11h18l-1-9h-3M6 2l2 9h8l2-9M9 19a2 2 0 1 0 0-4 2 2 0 1 0 0-4Zm7 0a2 2 0 1 0 0-4 2 2 0 1 0 0-4Z" /></svg>
+                  Add to Cart
+                </span>
+              </el-button>
+              <span v-else class="out-of-sale">Unavailable</span>
+            </template>
+          </el-table-column>
 
-      <el-table-column v-if="canManageProducts" label="Actions" min-width="220">
-        <template #default="scope">
-          <el-button v-if="canManageRow(scope.row)" round size="small" @click="onEdit(scope.row)">Edit</el-button>
-          <el-button v-if="canManageRow(scope.row)" round size="small" @click="toggleStatus(scope.row)">
-            {{ scope.row.status === 1 ? 'Disable' : 'Enable' }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+          <el-table-column v-if="canManageProducts" label="Actions" min-width="220">
+            <template #default="scope">
+              <el-button v-if="canManageRow(scope.row)" round size="small" @click="onEdit(scope.row)">Edit</el-button>
+              <el-button v-if="canManageRow(scope.row)" round size="small" @click="toggleStatus(scope.row)">
+                {{ scope.row.status === 1 ? 'Disable' : 'Enable' }}
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
+    </el-skeleton>
 
     <div v-if="isManagementMode" class="pager">
       <el-pagination
@@ -895,6 +904,16 @@ useInfiniteScroll(
 .out-of-sale {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.table-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 42px;
+  border-radius: 10px;
 }
 
 @media (max-width: 900px) {
