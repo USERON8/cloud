@@ -1,5 +1,5 @@
 import http from './http'
-import type { RegisterRequest, OAuthTokenResponse } from '../types/domain'
+import type { RegisterRequest, OAuthTokenResponse, UserInfo } from '../types/domain'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID || 'web-client'
@@ -176,6 +176,18 @@ export function logout(): Promise<void> {
   return http.delete<never, void>('/auth/sessions')
 }
 
+export function logoutAllSessions(username: string): Promise<string> {
+  return http.delete<string, string>(`/auth/users/${username}/sessions`)
+}
+
 export function validateToken(): Promise<string> {
   return http.get<string, string>('/auth/tokens/validate')
+}
+
+export function getGitHubAuthStatus(): Promise<boolean> {
+  return http.get<boolean, boolean>('/auth/oauth2/github/status')
+}
+
+export function getGitHubUserInfo(): Promise<UserInfo> {
+  return http.get<UserInfo, UserInfo>('/auth/oauth2/github/user-info')
 }

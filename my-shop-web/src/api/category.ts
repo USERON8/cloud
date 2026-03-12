@@ -17,6 +17,10 @@ export function getCategoryTree(enabledOnly = false): Promise<CategoryItem[]> {
   return http.get<CategoryItem[], CategoryItem[]>('/api/category/tree', { params: { enabledOnly } })
 }
 
+export function getCategoryChildren(id: number, enabledOnly = false): Promise<CategoryItem[]> {
+  return http.get<CategoryItem[], CategoryItem[]>(`/api/category/${id}/children`, { params: { enabledOnly } })
+}
+
 export function createCategory(payload: CategoryItem): Promise<CategoryItem> {
   return http.post<CategoryItem, CategoryItem>('/api/category', payload)
 }
