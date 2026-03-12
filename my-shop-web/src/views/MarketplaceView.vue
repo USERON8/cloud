@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -26,8 +26,8 @@ const exchangeRates = ref<Record<'JPY' | 'USD' | 'EUR' | 'GBP', number>>({
   GBP: 0
 })
 
-const displayName = computed(() => sessionState.user?.nickname || sessionState.user?.username || '访客')
-const loginStatus = computed(() => (isAuthenticated() ? '已登�? : '未登�?))
+const displayName = computed(() => sessionState.user?.nickname || sessionState.user?.username || 'Guest')
+const loginStatus = computed(() => (isAuthenticated() ? 'Signed In' : 'Guest'))
 
 const featuredProducts = computed(() => products.value.slice(0, 12))
 const featuredShops = computed(() => shops.value.slice(0, 8))
@@ -74,7 +74,7 @@ async function loadMarketData(): Promise<void> {
     products.value = normalized
     await loadShopData(keywordValue)
   } catch (error) {
-    const message = error instanceof Error ? error.message : '加载首页失败'
+    const message = error instanceof Error ? error.message : 'Failed to load marketplace'
     ElMessage.error(message)
   } finally {
     loading.value = false
@@ -89,7 +89,7 @@ async function loadExchangeRates(): Promise<void> {
       'https://api.frankfurter.app/latest?from=CNY&to=JPY,USD,EUR,GBP'
     )
     if (!response.ok) {
-      throw new Error(`汇率接口异常: HTTP ${response.status}`)
+      throw new Error(`Exchange rate API failed: HTTP ${response.status}`)
     }
     const payload = (await response.json()) as {
       date?: string
@@ -103,7 +103,7 @@ async function loadExchangeRates(): Promise<void> {
     }
     rateUpdatedAt.value = payload.date || ''
   } catch (error) {
-    ratesError.value = error instanceof Error ? error.message : '汇率加载失败'
+    ratesError.value = error instanceof Error ? error.message : 'Failed to load exchange rates'
   } finally {
     ratesLoading.value = false
   }
@@ -143,7 +143,7 @@ function onAddToCartFromMarket(item: SearchProductDocument): void {
   }
   if (!isAuthenticated()) {
     pendingPath.value = '/app/cart'
-    pendingFeature.value = '购物�?
+    pendingFeature.value = 'Shopping cart'
     loginGateVisible.value = true
     return
   }
@@ -172,12 +172,12 @@ onMounted(() => {
     >
       <div class="brand-wrap">
         <p class="eyebrow">My Shop Marketplace</p>
-        <h1>认证商家与在售商�?/h1>
-        <p class="sub">当前用户：{{ displayName }} · {{ loginStatus }} · 可先浏览再登�?/p>
+        <h1>Verified shops and products, ready to explore.</h1>
+        <p class="sub">Current user: {{ displayName }} | {{ loginStatus }} | You can browse before signing in.</p>
       </div>
       <div class="entry-actions">
-        <el-button round @click="$router.push('/login')">用户登录</el-button>
-        <el-button round type="primary" @click="$router.push('/login?entry=merchant')">商家登录入口</el-button>
+        <el-button round @click="$router.push('/login')">User Sign In</el-button>
+        <el-button round type="primary" @click="$router.push('/login?entry=merchant')">Merchant Sign In</el-button>
       </div>
     </header>
 
@@ -191,16 +191,16 @@ onMounted(() => {
         <el-input
           v-model="keyword"
           clearable
-          placeholder="搜索已开店商�?/ 已上架商�?
+          placeholder="Search verified shops or listed products"
           @keyup.enter="loadMarketData"
         />
-        <el-button :loading="loading" round type="primary" @click="loadMarketData">搜索</el-button>
+        <el-button :loading="loading" round type="primary" @click="loadMarketData">Search</el-button>
       </div>
       <div class="quick-actions">
-        <el-button round @click="goProtected('/app/orders', '订单管理')">我的订单</el-button>
-        <el-button round @click="goProtected('/app/cart', '购物�?)">购物�?/el-button>
-        <el-button round @click="goProtected('/app/profile', '个人中心')">个人中心</el-button>
-        <el-button round @click="goProtected('/app/catalog/manage', '商家商品管理')">商家管理</el-button>
+        <el-button round @click="goProtected('/app/orders', 'Order management')">My Orders</el-button>
+        <el-button round @click="goProtected('/app/cart', 'Shopping cart')">Cart</el-button>
+        <el-button round @click="goProtected('/app/profile', 'Profile center')">Profile</el-button>
+        <el-button round @click="goProtected('/app/catalog/manage', 'Merchant products')">Merchant Ops</el-button>
       </div>
     </section>
 
@@ -211,47 +211,47 @@ onMounted(() => {
       :enter="{ opacity: 1, y: 0, transition: { duration: 0.3 } }"
     >
       <div class="rates-head">
-        <h2>实时汇率面板（基准：1 CNY�?/h2>
-        <el-button :loading="ratesLoading" round size="small" @click="loadExchangeRates">刷新汇率</el-button>
+        <h2>Live exchange rates (base 1 CNY)</h2>
+        <el-button :loading="ratesLoading" round size="small" @click="loadExchangeRates">Refresh rates</el-button>
       </div>
-      <p v-if="rateUpdatedAt" class="rate-time">更新时间：{{ rateUpdatedAt }}</p>
+      <p v-if="rateUpdatedAt" class="rate-time">Updated: {{ rateUpdatedAt }}</p>
       <el-alert v-if="ratesError" :closable="false" show-icon type="warning" :title="ratesError" />
       <div class="rate-grid">
         <article
-        class="rate-card"
-        v-motion
-        :initial="{ opacity: 0, y: 8 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
-      >
-          <p>日元 ¥ (JPY)</p>
-          <strong>¥ {{ exchangeRates.JPY.toFixed(4) }}</strong>
+          class="rate-card"
+          v-motion
+          :initial="{ opacity: 0, y: 8 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
+        >
+          <p>Japanese Yen (JPY)</p>
+          <strong>JPY {{ exchangeRates.JPY.toFixed(4) }}</strong>
         </article>
         <article
-        class="rate-card"
-        v-motion
-        :initial="{ opacity: 0, y: 8 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
-      >
-          <p>美元 $ (USD)</p>
-          <strong>$ {{ exchangeRates.USD.toFixed(4) }}</strong>
+          class="rate-card"
+          v-motion
+          :initial="{ opacity: 0, y: 8 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
+        >
+          <p>US Dollar (USD)</p>
+          <strong>USD {{ exchangeRates.USD.toFixed(4) }}</strong>
         </article>
         <article
-        class="rate-card"
-        v-motion
-        :initial="{ opacity: 0, y: 8 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
-      >
-          <p>欧元 �?(EUR)</p>
-          <strong>�?{{ exchangeRates.EUR.toFixed(4) }}</strong>
+          class="rate-card"
+          v-motion
+          :initial="{ opacity: 0, y: 8 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
+        >
+          <p>Euro (EUR)</p>
+          <strong>EUR {{ exchangeRates.EUR.toFixed(4) }}</strong>
         </article>
         <article
-        class="rate-card"
-        v-motion
-        :initial="{ opacity: 0, y: 8 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
-      >
-          <p>英镑 £ (GBP)</p>
-          <strong>£ {{ exchangeRates.GBP.toFixed(4) }}</strong>
+          class="rate-card"
+          v-motion
+          :initial="{ opacity: 0, y: 8 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
+        >
+          <p>Pound Sterling (GBP)</p>
+          <strong>GBP {{ exchangeRates.GBP.toFixed(4) }}</strong>
         </article>
       </div>
     </section>
@@ -262,8 +262,8 @@ onMounted(() => {
       :initial="{ opacity: 0, y: 8 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
     >
-      <h2>已认证已开店商�?/h2>
-      <span>{{ featuredShops.length }} �?/span>
+      <h2>Verified Shops</h2>
+      <span>{{ featuredShops.length }} shops</span>
     </section>
     <section class="shop-grid">
       <article
@@ -295,8 +295,8 @@ onMounted(() => {
       :initial="{ opacity: 0, y: 8 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 0.25 } }"
     >
-      <h2>已上架商�?/h2>
-      <span>{{ featuredProducts.length }} �?/span>
+      <h2>Featured Products</h2>
+      <span>{{ featuredProducts.length }} items</span>
     </section>
     <section class="product-grid">
       <article
@@ -319,7 +319,7 @@ onMounted(() => {
             <path d="M22 52h76M30 42h60M40 32h40" stroke="#3a6fe9" stroke-width="3" stroke-linecap="round" />
           </svg>
         </div>
-        <h3 @click="toCatalogSearch(item.productName || '')">{{ item.productName || '未命名商�? }}</h3>
+        <h3 @click="toCatalogSearch(item.productName || '')">{{ item.productName || 'Unnamed Product' }}</h3>
         <p class="muted">{{ item.shopName || `Shop #${item.shopId ?? '-'}` }}</p>
         <div class="product-footer">
           <p class="price">CNY {{ typeof item.price === 'number' ? item.price.toFixed(2) : '--' }}</p>
@@ -348,14 +348,14 @@ onMounted(() => {
       modal-class="login-gate-mask"
     >
       <template #header>
-        <div class="login-gate-title">需要登�?/div>
+        <div class="login-gate-title">Sign in required</div>
       </template>
       <p class="login-gate-text">
-        {{ pendingFeature }} 需要登录后使用。你可以先继续浏览商家和商品，或立即登录�?
+        {{ pendingFeature }} requires sign in to continue. You can keep browsing or sign in now.
       </p>
       <div class="login-gate-actions">
-        <el-button round @click="loginGateVisible = false">继续浏览</el-button>
-        <el-button round type="primary" @click="toLoginFromGate">去登�?/el-button>
+        <el-button round @click="loginGateVisible = false">Keep browsing</el-button>
+        <el-button round type="primary" @click="toLoginFromGate">Sign in</el-button>
       </div>
     </el-dialog>
   </div>
@@ -623,5 +623,3 @@ onMounted(() => {
   }
 }
 </style>
-
-
