@@ -51,7 +51,7 @@ import java.util.Map;
 public class RedisConfig {
 
     
-    @Value("${cache.ttl.user:1800}")
+    @Value("${cache.ttl.user:600}") // user-service: 10分钟
     private long userTtl;
 
     @Value("${cache.ttl.product:2700}")
@@ -60,13 +60,13 @@ public class RedisConfig {
     @Value("${cache.ttl.stock:300}")
     private long stockTtl;
 
-    @Value("${cache.ttl.order:900}")
+    @Value("${cache.ttl.order:3600}") // order-service: 1小时
     private long orderTtl;
 
     @Value("${cache.ttl.payment:600}")
     private long paymentTtl;
 
-    @Value("${cache.ttl.search:1200}")
+    @Value("${cache.ttl.search:600}") // search-service: 2-10分钟（默认10分钟）
     private long searchTtl;
 
     @Value("${cache.ttl.auth:3600}")
