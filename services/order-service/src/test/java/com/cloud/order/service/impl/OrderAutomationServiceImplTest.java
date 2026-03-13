@@ -60,7 +60,7 @@ class OrderAutomationServiceImplTest {
         int handled = orderAutomationService.autoConfirmShippedOrders();
 
         assertThat(handled).isEqualTo(1);
-        verify(orderService).advanceSubOrderStatus(11L, "RECEIVE");
+        verify(orderService).advanceSubOrderStatus(11L, "DONE");
     }
 
     @Test

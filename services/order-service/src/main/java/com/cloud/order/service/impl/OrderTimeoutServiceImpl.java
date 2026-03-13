@@ -112,7 +112,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
                 new LambdaQueryWrapper<OrderSub>()
                         .eq(OrderSub::getMainOrderId, mainOrderId)
                         .eq(OrderSub::getDeleted, 0)
-                        .in(OrderSub::getOrderStatus, List.of("CREATED", "STOCK_RESERVED", "PAID", "SHIPPED", "RECEIVED"))
+                        .in(OrderSub::getOrderStatus, List.of("CREATED", "STOCK_RESERVED", "PAID", "SHIPPED"))
         );
         if (!remainingActiveSubs.isEmpty()) {
             return;

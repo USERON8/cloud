@@ -13,6 +13,10 @@ import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.messaging.OrderAutoReceiveMessageProducer;
+import com.cloud.order.messaging.OrderShippedMessageProducer;
+import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
+import com.cloud.common.messaging.event.OrderShippedEvent;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
@@ -25,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import cn.hutool.core.util.StrUtil;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,8 +46,8 @@ public class OrderServiceImpl implements OrderService {
             "RESERVE", "STOCK_RESERVED",
             "PAY", "PAID",
             "SHIP", "SHIPPED",
-            "RECEIVE", "RECEIVED",
             "DONE", "DONE",
+            "RECEIVE", "DONE",
             "CANCEL", "CANCELLED",
             "CLOSE", "CLOSED"
     );
@@ -51,8 +56,7 @@ public class OrderServiceImpl implements OrderService {
             "CREATED", Set.of("STOCK_RESERVED", "CANCELLED", "CLOSED"),
             "STOCK_RESERVED", Set.of("PAID", "CANCELLED", "CLOSED"),
             "PAID", Set.of("SHIPPED", "CANCELLED", "CLOSED"),
-            "SHIPPED", Set.of("RECEIVED", "CLOSED"),
-            "RECEIVED", Set.of("DONE", "CLOSED"),
+            "SHIPPED", Set.of("DONE", "CLOSED"),
             "DONE", Set.of(),
             "CANCELLED", Set.of(),
             "CLOSED", Set.of()
@@ -93,6 +97,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRefundSagaCoordinator orderRefundSagaCoordinator;
     private final TradeMetrics tradeMetrics;
     private final OrderAggregateCacheService orderAggregateCacheService;
+    private final OrderShippedMessageProducer orderShippedMessageProducer;
+    private final OrderAutoReceiveMessageProducer orderAutoReceiveMessageProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -251,18 +257,31 @@ public class OrderServiceImpl implements OrderService {
         if (requiresStockRelease(sub.getOrderStatus(), targetStatus)) {
             releaseReservedStock(sub);
         }
+        if ("SHIPPED".equals(targetStatus)) {
+            assertLogisticsInfoReady(sub.getShippingCompany(), sub.getTrackingNumber());
+        }
 
         sub.setOrderStatus(targetStatus);
         if ("SHIPPED".equals(targetStatus)) {
-            sub.setShippedAt(LocalDateTime.now());
-        } else if ("RECEIVED".equals(targetStatus)) {
-            sub.setReceivedAt(LocalDateTime.now());
+            if (sub.getShippedAt() == null) {
+                sub.setShippedAt(LocalDateTime.now());
+            }
+            if (sub.getEstimatedArrival() == null) {
+                sub.setEstimatedArrival(LocalDate.now().plusDays(3));
+            }
         } else if ("DONE".equals(targetStatus)) {
+            if (sub.getReceivedAt() == null) {
+                sub.setReceivedAt(LocalDateTime.now());
+            }
             sub.setDoneAt(LocalDateTime.now());
         } else if ("CLOSED".equals(targetStatus) || "CANCELLED".equals(targetStatus)) {
             sub.setClosedAt(LocalDateTime.now());
         }
         orderSubMapper.updateById(sub);
+        if ("SHIPPED".equals(targetStatus)) {
+            orderShippedMessageProducer.sendAfterCommit(buildOrderShippedEvent(sub));
+            orderAutoReceiveMessageProducer.sendAfterCommit(buildOrderAutoReceiveEvent(sub));
+        }
         refreshMainOrderStatus(sub.getMainOrderId());
         orderAggregateCacheService.evict(sub.getMainOrderId());
         return sub;
@@ -339,6 +358,12 @@ public class OrderServiceImpl implements OrderService {
         orderSubMapper.updateById(subOrder);
     }
 
+    private void assertLogisticsInfoReady(String company, String trackingNumber) {
+        if (StrUtil.isBlank(company) || StrUtil.isBlank(trackingNumber)) {
+            throw new BusinessException("shipping company and tracking number are required");
+        }
+    }
+
     private void validateSubTransition(String current, String target) {
         Set<String> allowed = SUB_STATUS_TRANSITIONS.getOrDefault(current, Set.of());
         if (!allowed.contains(target)) {
@@ -406,7 +431,7 @@ public class OrderServiceImpl implements OrderService {
         boolean allDone = subOrders.stream().allMatch(s -> "DONE".equals(s.getOrderStatus()));
         boolean allClosed = subOrders.stream().allMatch(s -> "CANCELLED".equals(s.getOrderStatus()) || "CLOSED".equals(s.getOrderStatus()));
         boolean anyReserved = subOrders.stream().anyMatch(s -> "STOCK_RESERVED".equals(s.getOrderStatus()));
-        boolean anyPaidOrLater = subOrders.stream().anyMatch(s -> Set.of("PAID", "SHIPPED", "RECEIVED", "DONE").contains(s.getOrderStatus()));
+        boolean anyPaidOrLater = subOrders.stream().anyMatch(s -> Set.of("PAID", "SHIPPED", "DONE").contains(s.getOrderStatus()));
 
         if (allDone) {
             mainOrder.setOrderStatus("DONE");
@@ -424,6 +449,30 @@ public class OrderServiceImpl implements OrderService {
             mainOrder.setOrderStatus("CREATED");
         }
         orderMainMapper.updateById(mainOrder);
+    }
+
+    private OrderShippedEvent buildOrderShippedEvent(OrderSub subOrder) {
+        OrderMain mainOrder = subOrder.getMainOrderId() == null ? null : orderMainMapper.selectById(subOrder.getMainOrderId());
+        return OrderShippedEvent.builder()
+                .subOrderId(subOrder.getId())
+                .mainOrderNo(mainOrder == null ? null : mainOrder.getMainOrderNo())
+                .subOrderNo(subOrder.getSubOrderNo())
+                .userId(mainOrder == null ? null : mainOrder.getUserId())
+                .shippingCompany(subOrder.getShippingCompany())
+                .trackingNumber(subOrder.getTrackingNumber())
+                .shippedAt(subOrder.getShippedAt())
+                .estimatedArrival(subOrder.getEstimatedArrival())
+                .build();
+    }
+
+    private OrderAutoReceiveEvent buildOrderAutoReceiveEvent(OrderSub subOrder) {
+        OrderMain mainOrder = subOrder.getMainOrderId() == null ? null : orderMainMapper.selectById(subOrder.getMainOrderId());
+        return OrderAutoReceiveEvent.builder()
+                .subOrderId(subOrder.getId())
+                .mainOrderNo(mainOrder == null ? null : mainOrder.getMainOrderNo())
+                .subOrderNo(subOrder.getSubOrderNo())
+                .userId(mainOrder == null ? null : mainOrder.getUserId())
+                .build();
     }
 
     private AfterSale startRefundSaga(Long afterSaleId, String remark) {

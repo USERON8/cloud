@@ -149,6 +149,8 @@ order:
   timeout:
     minutes: ${ORDER_TIMEOUT_MINUTES:30}
     delay-level: ${ORDER_TIMEOUT_DELAY_LEVEL:16}
+  auto-receive:
+    delay-level: ${ORDER_AUTO_RECEIVE_DELAY_LEVEL:16}
   automation:
     auto-confirm:
       batch-size: ${ORDER_AUTO_CONFIRM_BATCH_SIZE:100}

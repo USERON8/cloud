@@ -42,7 +42,7 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
         int handledCount = 0;
         for (OrderSub subOrder : subOrders) {
             try {
-                orderService.advanceSubOrderStatus(subOrder.getId(), "RECEIVE");
+                orderService.advanceSubOrderStatus(subOrder.getId(), "DONE");
                 handledCount++;
             } catch (Exception ex) {
                 log.warn("Auto confirm receipt skipped, subOrderId={}, reason={}", subOrder.getId(), ex.getMessage());

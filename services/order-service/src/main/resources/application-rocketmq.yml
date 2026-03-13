@@ -1,7 +1,7 @@
 spring:
   cloud:
     function:
-      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundCancelledNotificationConsumer;orderTimeoutConsumer
+      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundCancelledNotificationConsumer;orderTimeoutConsumer;orderAutoReceiveConsumer
     stream:
       default:
         producer:
@@ -34,6 +34,12 @@ spring:
           orderTimeoutProducer-out-0:
             producer:
               <<: *orderProducerDefaults
+          orderAutoReceiveProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
+          orderShippedProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
           refundCreatedProducer-out-0:
             producer:
               <<: *orderProducerDefaults
@@ -52,6 +58,10 @@ spring:
           orderTimeoutConsumer-in-0:
             consumer:
               subscription: 'ORDER_TIMEOUT'
+              <<: *orderConsumerDefaults
+          orderAutoReceiveConsumer-in-0:
+            consumer:
+              subscription: 'ORDER_AUTO_RECEIVE'
               <<: *orderConsumerDefaults
           paymentSuccessConsumer-in-0:
             consumer:
@@ -90,6 +100,12 @@ spring:
         orderTimeoutProducer-out-0:
           destination: order-timeout
           content-type: application/json
+        orderAutoReceiveProducer-out-0:
+          destination: order-auto-receive
+          content-type: application/json
+        orderShippedProducer-out-0:
+          destination: order-shipped
+          content-type: application/json
         refundCreatedProducer-out-0:
           destination: refund-created
           content-type: application/json
@@ -106,6 +122,10 @@ spring:
           destination: order-timeout
           content-type: application/json
           group: order-timeout-consumer-group
+        orderAutoReceiveConsumer-in-0:
+          destination: order-auto-receive
+          content-type: application/json
+          group: order-auto-receive-consumer-group
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json
