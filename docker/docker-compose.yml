@@ -485,6 +485,12 @@
       SW_TELEMETRY_PROMETHEUS_HOST: 0.0.0.0
       SW_TELEMETRY_PROMETHEUS_PORT: 1234
       SW_JAVA_OPTS: -Xms512m -Xmx512m
+      # 不需要100%采样，10%够分析用（1000=10%，10000=100%）
+      SW_TRACE_SAMPLE_RATE: "1000"
+      # 慢SQL阈值（毫秒）
+      SW_SLOW_DB_THRESHOLD: "500"
+      # 关闭不需要的功能
+      SW_ENVOY_METRIC_ALS_HTTP_ANALYSIS: "false"
 
   skywalking-ui:
     image: apache/skywalking-ui:10.3.0
