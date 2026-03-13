@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -22,10 +24,13 @@ public class UserNotificationConsumerConfig {
 
     private static final String PROCESSING_PREFIX = "notification:processing:";
     private static final String DONE_PREFIX = "notification:done:";
-    private static final String INVALID_PREFIX = "notification:invalid:";
+    private static final String DONE_BUCKET_PREFIX = "notification:done:bucket:";
+    private static final String INVALID_BUCKET_PREFIX = "notification:invalid:bucket:";
     private static final long PROCESSING_TTL_MINUTES = 5;
     private static final long DONE_TTL_DAYS = 7;
     private static final long INVALID_TTL_DAYS = 7;
+    private static final int DONE_LOOKBACK_DAYS = 7;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final UserNotificationService userNotificationService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -131,7 +136,19 @@ public class UserNotificationConsumerConfig {
     }
 
     private boolean isAlreadyProcessed(String eventId) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(DONE_PREFIX + eventId));
+        try {
+            for (int i = 0; i < DONE_LOOKBACK_DAYS; i++) {
+                String bucketKey = buildBucketKey(DONE_BUCKET_PREFIX, i);
+                Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, eventId);
+                if (Boolean.TRUE.equals(exists)) {
+                    return true;
+                }
+            }
+            return Boolean.TRUE.equals(redisTemplate.hasKey(DONE_PREFIX + eventId));
+        } catch (Exception e) {
+            log.warn("Check notification processed state failed: eventId={}", eventId, e);
+            return false;
+        }
     }
 
     private boolean markProcessing(String eventId) {
@@ -141,7 +158,9 @@ public class UserNotificationConsumerConfig {
     }
 
     private void markProcessed(String eventId) {
-        redisTemplate.opsForValue().set(DONE_PREFIX + eventId, "1", DONE_TTL_DAYS, TimeUnit.DAYS);
+        String bucketKey = buildBucketKey(DONE_BUCKET_PREFIX, 0);
+        redisTemplate.opsForHash().put(bucketKey, eventId, "1");
+        redisTemplate.expire(bucketKey, DONE_TTL_DAYS, TimeUnit.DAYS);
     }
 
     private void clearProcessing(String eventId) {
@@ -152,6 +171,13 @@ public class UserNotificationConsumerConfig {
         if (!StringUtils.hasText(eventId)) {
             return;
         }
-        redisTemplate.opsForValue().set(INVALID_PREFIX + eventId, reason, INVALID_TTL_DAYS, TimeUnit.DAYS);
+        String bucketKey = buildBucketKey(INVALID_BUCKET_PREFIX, 0);
+        redisTemplate.opsForHash().put(bucketKey, eventId, reason);
+        redisTemplate.expire(bucketKey, INVALID_TTL_DAYS, TimeUnit.DAYS);
+    }
+
+    private String buildBucketKey(String prefix, int offsetDays) {
+        LocalDate date = LocalDate.now().minusDays(offsetDays);
+        return prefix + date.format(DATE_FORMATTER);
     }
 }
