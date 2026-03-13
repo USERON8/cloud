@@ -83,13 +83,16 @@ public class OrderRefundSagaCoordinator {
     }
 
     private BigDecimal resolveRefundAmount(AfterSale afterSale) {
-        if (afterSale.getApprovedAmount() != null && afterSale.getApprovedAmount().compareTo(BigDecimal.ZERO) > 0) {
-            return afterSale.getApprovedAmount();
+        BigDecimal amount = null;
+        if (afterSale.getApprovedAmount() != null) {
+            amount = afterSale.getApprovedAmount();
+        } else if (afterSale.getApplyAmount() != null) {
+            amount = afterSale.getApplyAmount();
         }
-        if (afterSale.getApplyAmount() != null) {
-            return afterSale.getApplyAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("refund amount must be greater than 0");
         }
-        return BigDecimal.ZERO;
+        return amount;
     }
 
     private String buildRefundReason(AfterSale afterSale, String remark) {

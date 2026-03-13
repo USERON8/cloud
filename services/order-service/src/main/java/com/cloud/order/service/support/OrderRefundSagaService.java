@@ -61,12 +61,15 @@ public class OrderRefundSagaService {
         if (refundNo == null || paymentNo == null || afterSaleNo == null) {
             throw new BusinessException("refund parameters missing");
         }
+        if (refundAmount == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("refund amount must be greater than 0");
+        }
 
         PaymentRefundCommandDTO command = new PaymentRefundCommandDTO();
         command.setRefundNo(refundNo);
         command.setPaymentNo(paymentNo);
         command.setAfterSaleNo(afterSaleNo);
-        command.setRefundAmount(refundAmount == null ? BigDecimal.ZERO : refundAmount);
+        command.setRefundAmount(refundAmount);
         command.setReason(reason);
         command.setIdempotencyKey(idempotencyKey);
 
