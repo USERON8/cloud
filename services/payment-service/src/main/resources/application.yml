@@ -104,6 +104,22 @@ payment:
       batch-size: ${PAYMENT_REFUND_RETRY_BATCH_SIZE:50}
       interval-seconds: ${PAYMENT_REFUND_RETRY_INTERVAL_SECONDS:300}
       max-attempts: ${PAYMENT_REFUND_RETRY_MAX_ATTEMPTS:6}
+  security:
+    # 幂等 key TTL（秒）：防重复支付
+    idempotent-ttl-seconds: ${PAYMENT_IDEMPOTENT_TTL_SECONDS:600}
+    # 支付结果短缓存 TTL（秒）：重复请求快速返回（不含金额与终态数据）
+    result-ttl-seconds: ${PAYMENT_RESULT_TTL_SECONDS:600}
+    # 支付状态（非终态）TTL（秒）：挡前端轮询
+    status-ttl-seconds: ${PAYMENT_STATUS_TTL_SECONDS:3}
+    rate-limit:
+      # 支付防刷单限流开关
+      enabled: ${PAYMENT_RATE_LIMIT_ENABLED:true}
+      # 滑动窗口（秒）
+      window-seconds: ${PAYMENT_RATE_LIMIT_WINDOW_SECONDS:60}
+      # 每窗口最大请求数
+      max-requests: ${PAYMENT_RATE_LIMIT_MAX_REQUESTS:20}
+    # 第三方 token 缓存 TTL（秒）：减少换 token 请求
+    alipay-token-ttl-seconds: ${PAYMENT_ALIPAY_TOKEN_TTL_SECONDS:1500}
 redis:
   host: 127.0.0.1
   port: 16379
