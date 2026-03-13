@@ -117,7 +117,14 @@
       # 兼容性注释已标准化。
       JVM_XMS: 256m
       JVM_XMX: 256m
+      # 关闭 CMDB（不需要）
+      NACOS_CMDB_ENABLED: "false"
+      # 关闭 Istio MCP（不需要）
+      NACOS_ISTIO_MCP_SERVER_ENABLED: "false"
+      # 空服务自动清理（保留开启）
       NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
+      # 调小心跳间隔，减少网络开销（毫秒）
+      NACOS_NAMING_CLIENT_BEAT_INTERVAL: "5000"
 
     mem_limit: 384m
     ports:
