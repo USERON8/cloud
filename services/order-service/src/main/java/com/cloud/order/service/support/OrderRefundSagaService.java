@@ -93,10 +93,7 @@ public class OrderRefundSagaService {
             String compensationReason = reason == null || reason.isBlank()
                     ? "saga compensate refund"
                     : "saga compensate refund: " + reason;
-            Boolean cancelled = paymentOrderRemoteService.cancelRefund(refundNo, compensationReason);
-            if (Boolean.FALSE.equals(cancelled)) {
-                throw new BusinessException("refund already completed, cannot compensate");
-            }
+            paymentOrderRemoteService.cancelRefund(refundNo, compensationReason);
         }
         return doCancelRefund(params);
     }

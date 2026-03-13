@@ -242,7 +242,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         }
         String status = refund.getStatus();
         if ("REFUNDED".equals(status)) {
-            throw new BusinessException("refund already completed, cannot cancel");
+            return false;
         }
         if ("CANCELLED".equals(status)) {
             return true;
