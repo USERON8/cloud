@@ -15,6 +15,7 @@ import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.support.PaymentOrderRemoteService;
 import com.cloud.order.service.support.StockReservationRemoteService;
 import com.cloud.common.metrics.TradeMetrics;
@@ -95,6 +96,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentOrderRemoteService paymentOrderRemoteService;
     private final OrderMessageProducer orderMessageProducer;
     private final TradeMetrics tradeMetrics;
+    private final OrderAggregateCacheService orderAggregateCacheService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -182,6 +184,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderAggregateResponse getOrderAggregate(Long mainOrderId) {
+        OrderAggregateResponse cached = orderAggregateCacheService.get(mainOrderId);
+        if (cached != null) {
+            return cached;
+        }
         OrderMain main = orderMainMapper.selectById(mainOrderId);
         if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
             return null;
@@ -217,6 +223,9 @@ public class OrderServiceImpl implements OrderService {
             wrapped.add(item);
         }
         response.setSubOrders(wrapped);
+        if ("DONE".equals(main.getOrderStatus())) {
+            orderAggregateCacheService.put(mainOrderId, response);
+        }
         return response;
     }
 
@@ -259,6 +268,7 @@ public class OrderServiceImpl implements OrderService {
         }
         orderSubMapper.updateById(sub);
         refreshMainOrderStatus(sub.getMainOrderId());
+        orderAggregateCacheService.evict(sub.getMainOrderId());
         return sub;
     }
 
@@ -271,6 +281,7 @@ public class OrderServiceImpl implements OrderService {
         }
         afterSaleMapper.insert(afterSale);
         syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
+        orderAggregateCacheService.evict(afterSale.getMainOrderId());
         return afterSale;
     }
 
@@ -307,6 +318,7 @@ public class OrderServiceImpl implements OrderService {
             }
             afterSaleMapper.updateById(afterSale);
             syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
+            orderAggregateCacheService.evict(afterSale.getMainOrderId());
 
             if (refundProcess) {
                 dispatchRefundProcess(afterSale, remark);
