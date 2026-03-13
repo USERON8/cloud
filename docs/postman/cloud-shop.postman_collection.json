@@ -1,595 +1,735 @@
 ﻿{
-  "info": {
-    "_postman_id": "2f2b51b8-ffb3-4cf6-a2a4-2c7b8b3a2b1f",
-    "name": "Cloud Shop API Tests",
-    "description": "Postman collection for Cloud Shop gateway APIs. Base URL defaults to http://127.0.0.1:18080. Use testenv profile or set accessToken to a valid JWT.\n\nDefault test data comes from db/test/*/test.sql (userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001).",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {"key": "token", "value": "{{accessToken}}", "type": "string"}
-    ]
-  },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "if (!pm.environment.get('idempotencyKey')) {",
-          "  pm.environment.set('idempotencyKey', 'idem-' + pm.variables.replaceIn('{{$guid}}'));",
-          "}"
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "const contentType = pm.response.headers.get('Content-Type') || '';",
-          "if (contentType.includes('application/json')) {",
-          "  let body = {};",
-          "  try { body = pm.response.json(); } catch (e) {}",
-          "  if (body && Object.prototype.hasOwnProperty.call(body, 'code')) {",
-          "    pm.test('Result code is success', function () {",
-          "      pm.expect(body.code).to.eql(200);",
-          "    });",
-          "  }",
-          "}"
-        ]
-      }
-    }
-  ],
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register User",
-          "request": {
-            "auth": {"type": "noauth"},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"puser_{{$randomInt}}\",\n  \"password\": \"{{registerPassword}}\",\n  \"phone\": \"{{registerPhone}}\",\n  \"nickname\": \"Postman User\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/auth/users/register"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "let body = {};",
-                  "try { body = pm.response.json(); } catch (e) {}",
-                  "if (body && body.data) {",
-                  "  if (body.data.id) pm.environment.set('userId', String(body.data.id));",
-                  "  if (body.data.username) pm.environment.set('username', body.data.username);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Validate Token",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/auth/tokens/validate"
-          }
-        },
-        {
-          "name": "Logout Current Session",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/auth/sessions"
-          }
-        },
-        {
-          "name": "OAuth2 Token (Client Credentials - internal_api)",
-          "request": {
-            "auth": {
-              "type": "basic",
-              "basic": [
-                {"key": "username", "value": "{{internalClientId}}", "type": "string"},
-                {"key": "password", "value": "{{internalClientSecret}}", "type": "string"}
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {"key": "grant_type", "value": "client_credentials", "type": "text"},
-                {"key": "scope", "value": "internal_api", "type": "text"}
-              ]
-            },
-            "url": "{{baseUrl}}/oauth2/token"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "let body = {};",
-                  "try { body = pm.response.json(); } catch (e) {}",
-                  "if (body && body.access_token) {",
-                  "  pm.environment.set('accessToken', body.access_token);",
-                  "  if (body.refresh_token) pm.environment.set('refreshToken', body.refresh_token);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "User",
-      "item": [
-        {
-          "name": "Get Current Profile",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/user/profile/current"
-          }
-        },
-        {
-          "name": "Update Current Profile",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nickname\": \"Postman User\",\n  \"email\": \"postman_user@example.com\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/user/profile/current"
-          }
-        },
-        {
-          "name": "Change Current Password",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"oldPassword\": \"{{passwordOld}}\",\n  \"newPassword\": \"{{passwordNew}}\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/user/profile/current/password"
-          }
-        },
-        {
-          "name": "List Addresses",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/user/address/list/{{userId}}"
-          }
-        },
-        {
-          "name": "Get Default Address",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/user/address/default/{{userId}}"
-          }
-        },
-        {
-          "name": "Add Address",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/user/address/add/{{userId}}"
-          }
-        },
-        {
-          "name": "Update Address",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/user/address/update/{{addressId}}"
-          }
-        },
-        {
-          "name": "Delete Address",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/user/address/delete/{{addressId}}"
-          }
-        },
-        {
-          "name": "Page Addresses",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"current\": 1,\n  \"size\": 10,\n  \"userId\": {{userId}}\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/user/address/page"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Merchant",
-      "item": [
-        {
-          "name": "List Merchants",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/merchant?page=1&size=10"
-          }
-        },
-        {
-          "name": "Get Merchant By Id",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/merchant/{{merchantId}}"
-          }
-        },
-        {
-          "name": "Apply Merchant Auth",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"businessLicenseNumber\": \"BL-POSTMAN-001\",\n  \"businessLicenseUrl\": \"https://example.com/license.png\",\n  \"idCardFrontUrl\": \"https://example.com/id-front.png\",\n  \"idCardBackUrl\": \"https://example.com/id-back.png\",\n  \"contactPhone\": \"13900000003\",\n  \"contactAddress\": \"Shanghai Test Street\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}"
-          }
-        },
-        {
-          "name": "Review Merchant Auth",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1&remark=ok"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Product",
-      "item": [
-        {
-          "name": "Get Categories",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/category?page=1&size=10"
-          }
-        },
-        {
-          "name": "Get Category By Id",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/category/{{categoryId}}"
-          }
-        },
-        {
-          "name": "Get Category Tree",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/category/tree?enabledOnly=true"
-          }
-        },
-        {
-          "name": "Get SPU By Id",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/product/spu/{{spuId}}"
-          }
-        },
-        {
-          "name": "List SPU By Category",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
-          }
-        },
-        {
-          "name": "List SKU By Ids",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Order",
-      "item": [
-        {
-          "name": "Create Main Order",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Idempotency-Key", "value": "{{idempotencyKey}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/orders"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "let body = {};",
-                  "try { body = pm.response.json(); } catch (e) {}",
-                  "if (body && body.data && body.data.mainOrder) {",
-                  "  if (body.data.mainOrder.id) pm.environment.set('mainOrderId', String(body.data.mainOrder.id));",
-                  "  if (body.data.mainOrder.mainOrderNo) pm.environment.set('mainOrderNo', body.data.mainOrder.mainOrderNo);",
-                  "}",
-                  "if (body && body.data && body.data.subOrders && body.data.subOrders.length > 0) {",
-                  "  const sub = body.data.subOrders[0].subOrder;",
-                  "  if (sub && sub.id) pm.environment.set('subOrderId', String(sub.id));",
-                  "  if (sub && sub.subOrderNo) pm.environment.set('subOrderNo', sub.subOrderNo);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Get Main Order",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
-          }
-        },
-        {
-          "name": "List Sub Orders",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
-          }
-        },
-        {
-          "name": "Advance Sub Order (CANCEL)",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
-          }
-        },
-        {
-          "name": "Apply After Sale",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mainOrderId\": {{mainOrderId}},\n  \"subOrderId\": {{subOrderId}},\n  \"userId\": {{userId}},\n  \"merchantId\": {{merchantId}},\n  \"afterSaleType\": \"REFUND\",\n  \"reason\": \"quality issue\",\n  \"description\": \"box damaged\",\n  \"applyAmount\": 4999.00\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/orders/after-sales"
-          }
-        },
-        {
-          "name": "Advance After Sale (CANCEL)",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Stock",
-      "item": [
-        {
-          "name": "Get Stock Ledger",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/stocks/ledger/{{skuId}}"
-          }
-        },
-        {
-          "name": "Reserve Stock",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"reserve for order\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/stocks/reserve"
-          }
-        },
-        {
-          "name": "Confirm Stock",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"confirm after pay\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/stocks/confirm"
-          }
-        },
-        {
-          "name": "Release Stock",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"release reservation\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/stocks/release"
-          }
-        },
-        {
-          "name": "Rollback Stock",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"rollback failure\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/stocks/rollback"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Payment",
-      "item": [
-        {
-          "name": "Get Payment Order",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
-          }
-        },
-        {
-          "name": "Create Payment Order (internal scope)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"paymentNo\": \"PAY{{$timestamp}}\",\n  \"mainOrderNo\": \"{{mainOrderNo}}\",\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"userId\": {{userId}},\n  \"amount\": 4999.00,\n  \"channel\": \"ALIPAY\",\n  \"idempotencyKey\": \"idem-pay-{{$guid}}\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/payments/orders"
-          }
-        },
-        {
-          "name": "Payment Callback (internal scope)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"callbackNo\": \"CB{{$timestamp}}\",\n  \"callbackStatus\": \"SUCCESS\",\n  \"providerTxnNo\": \"ALI-TXN-{{$randomInt}}\",\n  \"idempotencyKey\": \"idem-cb-{{$guid}}\",\n  \"payload\": \"{\\\"tradeStatus\\\":\\\"TRADE_SUCCESS\\\"}\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/payments/callbacks"
-          }
-        },
-        {
-          "name": "Create Refund (internal scope)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refundNo\": \"REF{{$timestamp}}\",\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"afterSaleNo\": \"{{afterSaleNo}}\",\n  \"refundAmount\": 4999.00,\n  \"reason\": \"quality issue\",\n  \"idempotencyKey\": \"idem-refund-{{$guid}}\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": "{{baseUrl}}/api/payments/refunds"
-          }
-        },
-        {
-          "name": "Get Refund",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Search",
-      "item": [
-        {
-          "name": "Search Products",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}&page=0&size=20"
-          }
-        },
-        {
-          "name": "Search Suggestions",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}&size=10"
-          }
-        },
-        {
-          "name": "Hot Keywords",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/hot-keywords?size=10"
-          }
-        },
-        {
-          "name": "Smart Search",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}&page=1&size=20"
-          }
-        },
-        {
-          "name": "Recommended Shops",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/shops/recommended?page=0&size=20"
-          }
-        }
-      ]
-    }
-  ]
+    "info":  {
+                 "_postman_id":  "2f2b51b8-ffb3-4cf6-a2a4-2c7b8b3a2b1f",
+                 "name":  "??API??",
+                 "description":  "Cloud Shop ?? API ? Postman ???Base URL ??? http://127.0.0.1:18080??? testenv profile ??? accessToken ??? JWT?\n\n????????? db/test/*/test.sql?userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001??",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "auth":  {
+                 "type":  "bearer",
+                 "bearer":  [
+                                {
+                                    "key":  "token",
+                                    "value":  "{{accessToken}}",
+                                    "type":  "string"
+                                }
+                            ]
+             },
+    "event":  [
+                  {
+                      "listen":  "prerequest",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+                                                  "if (!pm.environment.get(\u0027idempotencyKey\u0027)) {",
+                                                  "  pm.environment.set(\u0027idempotencyKey\u0027, \u0027idem-\u0027 + pm.variables.replaceIn(\u0027{{$guid}}\u0027));",
+                                                  "}"
+                                              ]
+                                 }
+                  },
+                  {
+                      "listen":  "test",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+                                                  "const contentType = pm.response.headers.get(\u0027Content-Type\u0027) || \u0027\u0027;",
+                                                  "if (contentType.includes(\u0027application/json\u0027)) {",
+                                                  "  let body = {};",
+                                                  "  try { body = pm.response.json(); } catch (e) {}",
+                                                  "  if (body \u0026\u0026 Object.prototype.hasOwnProperty.call(body, \u0027code\u0027)) {",
+                                                  "    pm.test(\u0027??????\u0027, function () {",
+                                                  "      pm.expect(body.code).to.eql(200);",
+                                                  "    });",
+                                                  "  }",
+                                                  "}"
+                                              ]
+                                 }
+                  }
+              ],
+    "item":  [
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"puser_{{$randomInt}}\",\n  \"password\": \"{{registerPassword}}\",\n  \"phone\": \"{{registerPhone}}\",\n  \"nickname\": \"Postman User\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/users/register"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "let body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) {}",
+                                                                                    "if (body \u0026\u0026 body.data) {",
+                                                                                    "  if (body.data.id) pm.environment.set(\u0027userId\u0027, String(body.data.id));",
+                                                                                    "  if (body.data.username) pm.environment.set(\u0027username\u0027, body.data.username);",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "??Token",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/auth/tokens/validate"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "url":  "{{baseUrl}}/auth/sessions"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "OAuth2 Token?????? internal_api?",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "basic",
+                                                                   "basic":  [
+                                                                                 {
+                                                                                     "key":  "username",
+                                                                                     "value":  "{{internalClientId}}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "key":  "password",
+                                                                                     "value":  "{{internalClientSecret}}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/x-www-form-urlencoded"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "urlencoded",
+                                                                   "urlencoded":  [
+                                                                                      {
+                                                                                          "key":  "grant_type",
+                                                                                          "value":  "client_credentials",
+                                                                                          "type":  "text"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "scope",
+                                                                                          "value":  "internal_api",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/oauth2/token"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "let body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) {}",
+                                                                                    "if (body \u0026\u0026 body.access_token) {",
+                                                                                    "  pm.environment.set(\u0027accessToken\u0027, body.access_token);",
+                                                                                    "  if (body.refresh_token) pm.environment.set(\u0027refreshToken\u0027, body.refresh_token);",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "????????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/user/profile/current"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????????",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"nickname\": \"Postman User\",\n  \"email\": \"postman_user@example.com\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/user/profile/current"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"oldPassword\": \"{{passwordOld}}\",\n  \"newPassword\": \"{{passwordNew}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/user/profile/current/password"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/user/address/list/{{userId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/user/address/default/{{userId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/user/address/add/{{userId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/user/address/update/{{addressId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "url":  "{{baseUrl}}/api/user/address/delete/{{addressId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"current\": 1,\n  \"size\": 10,\n  \"userId\": {{userId}}\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/user/address/page"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/merchant?page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/merchant/{{merchantId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"businessLicenseNumber\": \"BL-POSTMAN-001\",\n  \"businessLicenseUrl\": \"https://example.com/license.png\",\n  \"idCardFrontUrl\": \"https://example.com/id-front.png\",\n  \"idCardBackUrl\": \"https://example.com/id-back.png\",\n  \"contactPhone\": \"13900000003\",\n  \"contactAddress\": \"Shanghai Test Street\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1\u0026remark=ok"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/category/{{categoryId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "?????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??SPU??",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "?????SPU",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????SKU",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "?????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Idempotency-Key",
+                                                                         "value":  "{{idempotencyKey}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/orders"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "let body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) {}",
+                                                                                    "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                    "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                    "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                    "}",
+                                                                                    "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                    "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                    "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                    "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "?????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "???????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????????CANCEL?",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"mainOrderId\": {{mainOrderId}},\n  \"subOrderId\": {{subOrderId}},\n  \"userId\": {{userId}},\n  \"merchantId\": {{merchantId}},\n  \"afterSaleType\": \"REFUND\",\n  \"reason\": \"quality issue\",\n  \"description\": \"box damaged\",\n  \"applyAmount\": 4999.00\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/orders/after-sales"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "???????CANCEL?",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/stocks/ledger/{{skuId}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"reserve for order\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/stocks/reserve"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"confirm after pay\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/stocks/confirm"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"release reservation\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/stocks/release"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"rollback failure\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/stocks/rollback"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "?????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "??????internal scope?",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"paymentNo\": \"PAY{{$timestamp}}\",\n  \"mainOrderNo\": \"{{mainOrderNo}}\",\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"userId\": {{userId}},\n  \"amount\": 4999.00,\n  \"channel\": \"ALIPAY\",\n  \"idempotencyKey\": \"idem-pay-{{$guid}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/payments/orders"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "?????internal scope?",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"callbackNo\": \"CB{{$timestamp}}\",\n  \"callbackStatus\": \"SUCCESS\",\n  \"providerTxnNo\": \"ALI-TXN-{{$randomInt}}\",\n  \"idempotencyKey\": \"idem-cb-{{$guid}}\",\n  \"payload\": \"{\\\"tradeStatus\\\":\\\"TRADE_SUCCESS\\\"}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/payments/callbacks"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "?????internal scope?",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"refundNo\": \"REF{{$timestamp}}\",\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"afterSaleNo\": \"{{afterSaleNo}}\",\n  \"refundAmount\": 4999.00,\n  \"reason\": \"quality issue\",\n  \"idempotencyKey\": \"idem-refund-{{$guid}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/payments/refunds"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "??",
+                     "item":  [
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "?????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "????",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
+                                                  }
+                                  }
+                              ]
+                 }
+             ]
 }
