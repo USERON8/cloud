@@ -1,7 +1,7 @@
 spring:
   cloud:
     function:
-      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer
+      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundProcessNotificationConsumer;refundCancelledNotificationConsumer;orderTimeoutConsumer
     stream:
       default:
         producer:
@@ -31,6 +31,9 @@ spring:
           orderCancelledProducer-out-0:
             producer:
               <<: *orderProducerDefaults
+          orderTimeoutProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
           refundProcessProducer-out-0:
             producer:
               <<: *orderProducerDefaults
@@ -52,6 +55,10 @@ spring:
           stockRestoreProducer-out-0:
             producer:
               <<: *orderProducerDefaults
+          orderTimeoutConsumer-in-0:
+            consumer:
+              subscription: 'ORDER_TIMEOUT'
+              <<: *orderConsumerDefaults
           paymentSuccessConsumer-in-0:
             consumer:
               subscription: 'PAYMENT_SUCCESS'
@@ -90,6 +97,9 @@ spring:
         orderCancelledProducer-out-0:
           destination: order-cancelled
           content-type: application/json
+        orderTimeoutProducer-out-0:
+          destination: order-timeout
+          content-type: application/json
         refundProcessProducer-out-0:
           destination: refund-process
           content-type: application/json
@@ -108,6 +118,10 @@ spring:
         stockRestoreProducer-out-0:
           destination: stock-restore
           content-type: application/json
+        orderTimeoutConsumer-in-0:
+          destination: order-timeout
+          content-type: application/json
+          group: order-timeout-consumer-group
         paymentSuccessConsumer-in-0:
           destination: payment-success
           content-type: application/json

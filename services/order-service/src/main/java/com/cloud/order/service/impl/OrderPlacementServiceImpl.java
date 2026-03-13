@@ -11,14 +11,17 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.messaging.OrderTimeoutMessageProducer;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
+import com.cloud.common.messaging.event.OrderTimeoutEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -48,6 +51,10 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     private final StockReservationRemoteService stockReservationRemoteService;
     private final TransactionOperations transactionOperations;
     private final Executor orderStockReservationExecutor;
+    private final OrderTimeoutMessageProducer orderTimeoutMessageProducer;
+
+    @Value("${order.timeout.minutes:30}")
+    private int timeoutMinutes;
 
     public OrderPlacementServiceImpl(OrderMainMapper orderMainMapper,
                                      OrderSubMapper orderSubMapper,
@@ -55,7 +62,8 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
                                      OrderService orderService,
                                      StockReservationRemoteService stockReservationRemoteService,
                                      TransactionOperations transactionOperations,
-                                     @Qualifier("orderStockReservationExecutor") Executor orderStockReservationExecutor) {
+                                     @Qualifier("orderStockReservationExecutor") Executor orderStockReservationExecutor,
+                                     OrderTimeoutMessageProducer orderTimeoutMessageProducer) {
         this.orderMainMapper = orderMainMapper;
         this.orderSubMapper = orderSubMapper;
         this.orderItemMapper = orderItemMapper;
@@ -63,6 +71,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         this.stockReservationRemoteService = stockReservationRemoteService;
         this.transactionOperations = transactionOperations;
         this.orderStockReservationExecutor = orderStockReservationExecutor;
+        this.orderTimeoutMessageProducer = orderTimeoutMessageProducer;
     }
 
     @Override
@@ -74,6 +83,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         reserveStockIfNeeded(aggregate);
         return transactionOperations.execute(status -> {
             persistReservedStatuses(aggregate);
+            scheduleTimeouts(aggregate);
             return aggregate;
         });
     }
@@ -276,6 +286,30 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         if (!Objects.equals(mainOrder.getOrderStatus(), targetStatus)) {
             mainOrder.setOrderStatus(targetStatus);
             orderMainMapper.updateById(mainOrder);
+        }
+    }
+
+    private void scheduleTimeouts(OrderAggregateResponse aggregate) {
+        if (aggregate == null || aggregate.getSubOrders() == null) {
+            return;
+        }
+        OrderMain mainOrder = aggregate.getMainOrder();
+        for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
+            OrderSub subOrder = wrapped.getSubOrder();
+            if (subOrder == null) {
+                continue;
+            }
+            if (!Set.of("CREATED", "STOCK_RESERVED").contains(subOrder.getOrderStatus())) {
+                continue;
+            }
+            OrderTimeoutEvent event = OrderTimeoutEvent.builder()
+                    .subOrderId(subOrder.getId())
+                    .subOrderNo(subOrder.getSubOrderNo())
+                    .mainOrderNo(mainOrder == null ? null : mainOrder.getMainOrderNo())
+                    .userId(mainOrder == null ? null : mainOrder.getUserId())
+                    .timeoutMinutes(timeoutMinutes)
+                    .build();
+            orderTimeoutMessageProducer.sendAfterCommit(event);
         }
     }
 
