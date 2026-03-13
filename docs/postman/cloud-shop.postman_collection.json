@@ -1,4 +1,4 @@
-﻿{
+{
     "info":  {
                  "_postman_id":  "2f2b51b8-ffb3-4cf6-a2a4-2c7b8b3a2b1f",
                  "name":  "云购API测试",
@@ -319,7 +319,7 @@
                                                                                   ],
                                                                        "body":  {
                                                                                     "mode":  "raw",
-                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
                                                                                     "options":  {
                                                                                                     "raw":  {
                                                                                                                 "language":  "json"
@@ -958,7 +958,7 @@
                                                                                   ],
                                                                        "body":  {
                                                                                     "mode":  "raw",
-                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
                                                                                     "options":  {
                                                                                                     "raw":  {
                                                                                                                 "language":  "json"
