@@ -53,6 +53,7 @@
       service_net:
         ipv4_address: 172.28.0.20
     command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes --requirepass root
+    mem_limit: 256m
     environment:
       REDIS_PASSWORD: root
     volumes:
@@ -113,10 +114,11 @@
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
       NACOS_CORE_AUTH_DEFAULT_RESOURCE: "public:*:*"
       # 兼容性注释已标准化。
-      JVM_XMS: 512m
-      JVM_XMX: 512m
+      JVM_XMS: 256m
+      JVM_XMX: 256m
       NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
 
+    mem_limit: 384m
     ports:
       - "${PORT_NACOS_HTTP:-18848}:8848"
       - "${PORT_NACOS_GRPC:-19090}:9090"
@@ -167,6 +169,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.50
+    mem_limit: 512m
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -185,6 +188,7 @@
         target: /home/rocketmq/conf
     environment:
       - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-Xms256m -Xmx256m
     # 兼容性注释已标准化。
     command:
       - /bin/sh
@@ -236,6 +240,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.80
+    mem_limit: 256m
     ports:
       - "${PORT_MINIO_API:-19000}:9000"
       - "${PORT_MINIO_CONSOLE:-19001}:9001"
@@ -255,10 +260,11 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.90  # 兼容性注释已标准化。
+    mem_limit: 768m
     environment:
       # 兼容性注释已标准化。
       - discovery.type=single-node  # 兼容性注释已标准化。
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g  # 兼容性注释已标准化。
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m  # 兼容性注释已标准化。
       - bootstrap.memory_lock=true  # 兼容性注释已标准化。
       - xpack.security.enabled=false  # 兼容性注释已标准化。
       - http.cors.enabled=true
@@ -293,9 +299,10 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.91
+    mem_limit: 768m
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - http.cors.enabled=true
@@ -326,6 +333,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.100
+    mem_limit: 768m
     ports:
       - "${PORT_KIBANA_HTTP:-15601}:5601"
     environment:
@@ -335,7 +343,7 @@
       - SERVER_NAME=kibana-service
 
       # 兼容性注释已标准化。
-      - NODE_OPTIONS=--max-old-space-size=2048
+      - NODE_OPTIONS=--max-old-space-size=512
 
       # 兼容性注释已标准化。
       - XPACK_APM_ENABLED=false
@@ -372,6 +380,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.110
+    mem_limit: 512m
     ports:
       - "${PORT_LOGSTASH_BEATS:-15044}:5044"
       - "${PORT_LOGSTASH_API:-19600}:9600"
@@ -384,6 +393,7 @@
       MYSQL_PASSWORD: root
       ES_HOST: elasticsearch
       ES_PORT: 9200
+      LS_JAVA_OPTS: -Xms256m -Xmx256m
     volumes:
       - type: bind
         source: ./monitor/logstash/config/logstash.yml
@@ -447,6 +457,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.120
+    mem_limit: 768m
     ports:
       - "${PORT_SKYWALKING_OAP_GRPC:-11800}:11800"
       - "${PORT_SKYWALKING_OAP_HTTP:-12800}:12800"
@@ -461,6 +472,7 @@
       SW_TELEMETRY: prometheus
       SW_TELEMETRY_PROMETHEUS_HOST: 0.0.0.0
       SW_TELEMETRY_PROMETHEUS_PORT: 1234
+      SW_JAVA_OPTS: -Xms512m -Xmx512m
 
   skywalking-ui:
     image: apache/skywalking-ui:10.3.0
@@ -475,34 +487,35 @@
     environment:
       SW_OAP_ADDRESS: http://skywalking-oap:12800
 
-  jenkins:
-    build:
-      context: ./docker-compose/jenkins
-      dockerfile: Dockerfile
-    image: cloud/jenkins:jdk17-docker
-    container_name: cloud-jenkins
-    user: root
-    networks:
-      service_net:
-        ipv4_address: 172.28.0.130
-    ports:
-      - "${PORT_JENKINS_HTTP:-18088}:8080"
-      - "${PORT_JENKINS_AGENT:-15000}:50000"
-    environment:
-      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
-      TZ: Asia/Shanghai
-      DOCKER_HOST: unix:///var/run/docker.sock
-    volumes:
-      - type: bind
-        source: ./docker-compose/jenkins/home
-        target: /var/jenkins_home
-      - type: bind
-        source: ../
-        target: /workspace/cloud
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-    restart: unless-stopped
+  # jenkins:
+  #   build:
+  #     context: ./docker-compose/jenkins
+  #     dockerfile: Dockerfile
+  #   image: cloud/jenkins:jdk17-docker
+  #   container_name: cloud-jenkins
+  #   user: root
+  #   networks:
+  #     service_net:
+  #       ipv4_address: 172.28.0.130
+  #   ports:
+  #     - "${PORT_JENKINS_HTTP:-18088}:8080"
+  #     - "${PORT_JENKINS_AGENT:-15000}:50000"
+  #   mem_limit: 1g
+  #   environment:
+  #     JAVA_OPTS: -Djenkins.install.runSetupWizard=false -Xmx1g
+  #     TZ: Asia/Shanghai
+  #     DOCKER_HOST: unix:///var/run/docker.sock
+  #   volumes:
+  #     - type: bind
+  #       source: ./docker-compose/jenkins/home
+  #       target: /var/jenkins_home
+  #     - type: bind
+  #       source: ../
+  #       target: /workspace/cloud
+  #     - type: bind
+  #       source: /var/run/docker.sock
+  #       target: /var/run/docker.sock
+  #   restart: unless-stopped
 
   sentinel-dashboard:
     image: bladex/sentinel-dashboard:1.8.6
@@ -510,6 +523,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.132
+    mem_limit: 256m
     ports:
       - "${PORT_SENTINEL_DASHBOARD_HTTP:-18718}:8858"
     environment:
@@ -526,6 +540,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.131
+    mem_limit: 256m
     ports:
       - "${PORT_XXL_JOB_ADMIN_HTTP:-18089}:8080"
     environment:
@@ -552,6 +567,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.133
+    mem_limit: 256m
     ports:
       - "${PORT_SEATA_SERVER:-18091}:8091"
     environment:
