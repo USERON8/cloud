@@ -48,264 +48,411 @@
               ],
     "item":  [
                  {
-                     "name":  "认证",
-                     "item":  [
-                                  {
-                                      "name":  "用户注册",
-                                      "request":  {
-                                                      "auth":  {
-                                                                   "type":  "noauth"
-                                                               },
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"username\": \"puser_{{$randomInt}}\",\n  \"password\": \"{{registerPassword}}\",\n  \"phone\": \"{{registerPhone}}\",\n  \"nickname\": \"Postman User\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/auth/users/register"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "type":  "text/javascript",
-                                                                       "exec":  [
-                                                                                    "let body = {};",
-                                                                                    "try { body = pm.response.json(); } catch (e) {}",
-                                                                                    "if (body \u0026\u0026 body.data) {",
-                                                                                    "  if (body.data.id) pm.environment.set(\u0027userId\u0027, String(body.data.id));",
-                                                                                    "  if (body.data.username) pm.environment.set(\u0027username\u0027, body.data.username);",
-                                                                                    "}"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "校验Token",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/auth/tokens/validate"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "退出当前会话",
-                                      "request":  {
-                                                      "method":  "DELETE",
-                                                      "url":  "{{baseUrl}}/auth/sessions"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "OAuth2 Token（客户端凭证 internal_api）",
-                                      "request":  {
-                                                      "auth":  {
-                                                                   "type":  "basic",
-                                                                   "basic":  [
-                                                                                 {
-                                                                                     "key":  "username",
-                                                                                     "value":  "{{internalClientId}}",
-                                                                                     "type":  "string"
-                                                                                 },
-                                                                                 {
-                                                                                     "key":  "password",
-                                                                                     "value":  "{{internalClientSecret}}",
-                                                                                     "type":  "string"
-                                                                                 }
-                                                                             ]
-                                                               },
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/x-www-form-urlencoded"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "urlencoded",
-                                                                   "urlencoded":  [
-                                                                                      {
-                                                                                          "key":  "grant_type",
-                                                                                          "value":  "client_credentials",
-                                                                                          "type":  "text"
-                                                                                      },
-                                                                                      {
-                                                                                          "key":  "scope",
-                                                                                          "value":  "internal_api",
-                                                                                          "type":  "text"
-                                                                                      }
-                                                                                  ]
-                                                               },
-                                                      "url":  "{{baseUrl}}/oauth2/token"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "type":  "text/javascript",
-                                                                       "exec":  [
-                                                                                    "let body = {};",
-                                                                                    "try { body = pm.response.json(); } catch (e) {}",
-                                                                                    "if (body \u0026\u0026 body.access_token) {",
-                                                                                    "  pm.environment.set(\u0027accessToken\u0027, body.access_token);",
-                                                                                    "  if (body.refresh_token) pm.environment.set(\u0027refreshToken\u0027, body.refresh_token);",
-                                                                                    "}"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  }
-                              ]
-                 },
-                 {
                      "name":  "用户",
                      "item":  [
                                   {
-                                      "name":  "获取当前用户资料",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/user/profile/current"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "更新当前用户资料",
-                                      "request":  {
-                                                      "method":  "PUT",
-                                                      "header":  [
+                                      "name":  "认证",
+                                      "item":  [
+                                                   {
+                                                       "name":  "用户注册",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"username\": \"puser_{{$randomInt}}\",\n  \"password\": \"{{registerPassword}}\",\n  \"phone\": \"{{registerPhone}}\",\n  \"nickname\": \"Postman User\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/auth/users/register"
+                                                                   },
+                                                       "event":  [
                                                                      {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data) {",
+                                                                                                     "  if (body.data.id) pm.environment.set(\u0027userId\u0027, String(body.data.id));",
+                                                                                                     "  if (body.data.username) pm.environment.set(\u0027username\u0027, body.data.username);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
                                                                      }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"nickname\": \"Postman User\",\n  \"email\": \"postman_user@example.com\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/user/profile/current"
-                                                  }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "校验Token",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/auth/tokens/validate"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "退出当前会话",
+                                                       "request":  {
+                                                                       "method":  "DELETE",
+                                                                       "url":  "{{baseUrl}}/auth/sessions"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "修改当前密码",
-                                      "request":  {
-                                                      "method":  "PUT",
-                                                      "header":  [
+                                      "name":  "用户",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取当前用户资料",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "更新当前用户资料",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"nickname\": \"Postman User\",\n  \"email\": \"postman_user@example.com\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "修改当前密码",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"oldPassword\": \"{{passwordOld}}\",\n  \"newPassword\": \"{{passwordNew}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current/password"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "地址列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/address/list/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取默认地址",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/address/default/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "新增地址",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/add/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "更新地址",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/update/{{addressId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "删除地址",
+                                                       "request":  {
+                                                                       "method":  "DELETE",
+                                                                       "url":  "{{baseUrl}}/api/user/address/delete/{{addressId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "地址分页",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"current\": 1,\n  \"size\": 10,\n  \"userId\": {{userId}}\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/page"
+                                                                   }
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "商品",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取分类列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/{{categoryId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类树",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取SPU详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "按分类查询SPU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "批量查询SKU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
+                                                                   }
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "订单",
+                                      "item":  [
+                                                   {
+                                                       "name":  "创建主订单",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
                                                                      {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
                                                                      }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"oldPassword\": \"{{passwordOld}}\",\n  \"newPassword\": \"{{passwordNew}}\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/user/profile/current/password"
-                                                  }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "获取主订单",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "查询子订单列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "子订单状态流转（CANCEL）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "url":  "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "申请售后",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"mainOrderId\": {{mainOrderId}},\n  \"subOrderId\": {{subOrderId}},\n  \"userId\": {{userId}},\n  \"merchantId\": {{merchantId}},\n  \"afterSaleType\": \"REFUND\",\n  \"reason\": \"quality issue\",\n  \"description\": \"box damaged\",\n  \"applyAmount\": 4999.00\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders/after-sales"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "售后状态流转（CANCEL）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "url":  "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "地址列表",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/user/address/list/{{userId}}"
-                                                  }
+                                      "name":  "支付",
+                                      "item":  [
+                                                   {
+                                                       "name":  "查询支付单",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "获取默认地址",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/user/address/default/{{userId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "新增地址",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/user/address/add/{{userId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "更新地址",
-                                      "request":  {
-                                                      "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/user/address/update/{{addressId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "删除地址",
-                                      "request":  {
-                                                      "method":  "DELETE",
-                                                      "url":  "{{baseUrl}}/api/user/address/delete/{{addressId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "地址分页",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"current\": 1,\n  \"size\": 10,\n  \"userId\": {{userId}}\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/user/address/page"
-                                                  }
+                                      "name":  "搜索",
+                                      "item":  [
+                                                   {
+                                                       "name":  "搜索商品",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "搜索联想",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "热门搜索词",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "智能搜索",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "推荐商家",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
+                                                                   }
+                                                   }
+                                               ]
                                   }
                               ]
                  },
@@ -313,421 +460,811 @@
                      "name":  "商家",
                      "item":  [
                                   {
-                                      "name":  "商家列表",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/merchant?page=1\u0026size=10"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "获取商家详情",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/merchant/{{merchantId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "商家认证申请",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"businessLicenseNumber\": \"BL-POSTMAN-001\",\n  \"businessLicenseUrl\": \"https://example.com/license.png\",\n  \"idCardFrontUrl\": \"https://example.com/id-front.png\",\n  \"idCardBackUrl\": \"https://example.com/id-back.png\",\n  \"contactPhone\": \"13900000003\",\n  \"contactAddress\": \"Shanghai Test Street\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "商家认证审核",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "url":  "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1\u0026remark=ok"
-                                                  }
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "商品",
-                     "item":  [
-                                  {
-                                      "name":  "获取分类列表",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "获取分类详情",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/category/{{categoryId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "获取分类树",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "获取SPU详情",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "按分类查询SPU",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "批量查询SKU",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
-                                                  }
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "订单",
-                     "item":  [
-                                  {
-                                      "name":  "创建主订单",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Idempotency-Key",
-                                                                         "value":  "{{idempotencyKey}}"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/orders"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "type":  "text/javascript",
-                                                                       "exec":  [
-                                                                                    "let body = {};",
-                                                                                    "try { body = pm.response.json(); } catch (e) {}",
-                                                                                    "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
-                                                                                    "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
-                                                                                    "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
-                                                                                    "}",
-                                                                                    "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
-                                                                                    "  const sub = body.data.subOrders[0].subOrder;",
-                                                                                    "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
-                                                                                    "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
-                                                                                    "}"
-                                                                                ]
+                                      "name":  "认证",
+                                      "item":  [
+                                                   {
+                                                       "name":  "校验Token",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/auth/tokens/validate"
                                                                    }
-                                                    }
-                                                ]
+                                                   },
+                                                   {
+                                                       "name":  "退出当前会话",
+                                                       "request":  {
+                                                                       "method":  "DELETE",
+                                                                       "url":  "{{baseUrl}}/auth/sessions"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "获取主订单",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
-                                                  }
+                                      "name":  "商家",
+                                      "item":  [
+                                                   {
+                                                       "name":  "商家列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/merchant?page=1\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取商家详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/merchant/{{merchantId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "商家认证申请",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"businessLicenseNumber\": \"BL-POSTMAN-001\",\n  \"businessLicenseUrl\": \"https://example.com/license.png\",\n  \"idCardFrontUrl\": \"https://example.com/id-front.png\",\n  \"idCardBackUrl\": \"https://example.com/id-back.png\",\n  \"contactPhone\": \"13900000003\",\n  \"contactAddress\": \"Shanghai Test Street\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "查询子订单列表",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
-                                                  }
+                                      "name":  "商品",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取分类列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/{{categoryId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类树",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取SPU详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "按分类查询SPU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "批量查询SKU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "子订单状态流转（CANCEL）",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "url":  "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
-                                                  }
+                                      "name":  "订单",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取主订单",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "申请售后",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"mainOrderId\": {{mainOrderId}},\n  \"subOrderId\": {{subOrderId}},\n  \"userId\": {{userId}},\n  \"merchantId\": {{merchantId}},\n  \"afterSaleType\": \"REFUND\",\n  \"reason\": \"quality issue\",\n  \"description\": \"box damaged\",\n  \"applyAmount\": 4999.00\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/orders/after-sales"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "售后状态流转（CANCEL）",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "url":  "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
-                                                  }
+                                      "name":  "搜索",
+                                      "item":  [
+                                                   {
+                                                       "name":  "搜索商品",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "搜索联想",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "热门搜索词",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "智能搜索",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "推荐商家",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
+                                                                   }
+                                                   }
+                                               ]
                                   }
                               ]
                  },
                  {
-                     "name":  "库存",
+                     "name":  "管理员",
                      "item":  [
                                   {
-                                      "name":  "获取库存台账",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/stocks/ledger/{{skuId}}"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "预占库存",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
+                                      "name":  "认证",
+                                      "item":  [
+                                                   {
+                                                       "name":  "校验Token",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/auth/tokens/validate"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "退出当前会话",
+                                                       "request":  {
+                                                                       "method":  "DELETE",
+                                                                       "url":  "{{baseUrl}}/auth/sessions"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "OAuth2 Token（客户端凭证 internal_api）",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "basic",
+                                                                                    "basic":  [
+                                                                                                  {
+                                                                                                      "key":  "username",
+                                                                                                      "value":  "{{internalClientId}}",
+                                                                                                      "type":  "string"
+                                                                                                  },
+                                                                                                  {
+                                                                                                      "key":  "password",
+                                                                                                      "value":  "{{internalClientSecret}}",
+                                                                                                      "type":  "string"
+                                                                                                  }
+                                                                                              ]
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/x-www-form-urlencoded"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "urlencoded",
+                                                                                    "urlencoded":  [
+                                                                                                       {
+                                                                                                           "key":  "grant_type",
+                                                                                                           "value":  "client_credentials",
+                                                                                                           "type":  "text"
+                                                                                                       },
+                                                                                                       {
+                                                                                                           "key":  "scope",
+                                                                                                           "value":  "internal_api",
+                                                                                                           "type":  "text"
+                                                                                                       }
+                                                                                                   ]
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/oauth2/token"
+                                                                   },
+                                                       "event":  [
                                                                      {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.access_token) {",
+                                                                                                     "  pm.environment.set(\u0027accessToken\u0027, body.access_token);",
+                                                                                                     "  if (body.refresh_token) pm.environment.set(\u0027refreshToken\u0027, body.refresh_token);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
                                                                      }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"reserve for order\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/stocks/reserve"
-                                                  }
+                                                                 ]
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "确认扣减库存",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
+                                      "name":  "用户",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取当前用户资料",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "更新当前用户资料",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"nickname\": \"Postman User\",\n  \"email\": \"postman_user@example.com\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "修改当前密码",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"oldPassword\": \"{{passwordOld}}\",\n  \"newPassword\": \"{{passwordNew}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/profile/current/password"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "地址列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/address/list/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取默认地址",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/user/address/default/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "新增地址",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/add/{{userId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "更新地址",
+                                                       "request":  {
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/update/{{addressId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "删除地址",
+                                                       "request":  {
+                                                                       "method":  "DELETE",
+                                                                       "url":  "{{baseUrl}}/api/user/address/delete/{{addressId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "地址分页",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"current\": 1,\n  \"size\": 10,\n  \"userId\": {{userId}}\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/user/address/page"
+                                                                   }
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "商家",
+                                      "item":  [
+                                                   {
+                                                       "name":  "商家列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/merchant?page=1\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取商家详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/merchant/{{merchantId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "商家认证申请",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"businessLicenseNumber\": \"BL-POSTMAN-001\",\n  \"businessLicenseUrl\": \"https://example.com/license.png\",\n  \"idCardFrontUrl\": \"https://example.com/id-front.png\",\n  \"idCardBackUrl\": \"https://example.com/id-back.png\",\n  \"contactPhone\": \"13900000003\",\n  \"contactAddress\": \"Shanghai Test Street\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "商家认证审核",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "url":  "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1\u0026remark=ok"
+                                                                   }
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "商品",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取分类列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/{{categoryId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取分类树",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "获取SPU详情",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "按分类查询SPU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "批量查询SKU",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
+                                                                   }
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "订单",
+                                      "item":  [
+                                                   {
+                                                       "name":  "创建主订单",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"totalAmount\": 4999.00,\n  \"payableAmount\": 4999.00,\n  \"remark\": \"postman create order\",\n  \"subOrders\": [\n    {\n      \"merchantId\": {{merchantId}},\n      \"itemAmount\": 4999.00,\n      \"shippingFee\": 0.00,\n      \"discountAmount\": 0.00,\n      \"payableAmount\": 4999.00,\n      \"receiverName\": \"{{receiverName}}\",\n      \"receiverPhone\": \"{{receiverPhone}}\",\n      \"receiverAddress\": \"{{receiverAddress}}\",\n      \"items\": [\n        {\n          \"spuId\": {{spuId}},\n          \"skuId\": {{skuId}},\n          \"skuCode\": \"CP15-256-BLK\",\n          \"skuName\": \"Cloud Phone 15 256G Black\",\n          \"skuSnapshot\": \"color:black;storage:256G\",\n          \"quantity\": 1,\n          \"unitPrice\": 4999.00,\n          \"totalPrice\": 4999.00\n        }\n      ]\n    }\n  ]\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
                                                                      {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
                                                                      }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"confirm after pay\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/stocks/confirm"
-                                                  }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "获取主订单",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "查询子订单列表",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "子订单状态流转（CANCEL）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "url":  "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "申请售后",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"mainOrderId\": {{mainOrderId}},\n  \"subOrderId\": {{subOrderId}},\n  \"userId\": {{userId}},\n  \"merchantId\": {{merchantId}},\n  \"afterSaleType\": \"REFUND\",\n  \"reason\": \"quality issue\",\n  \"description\": \"box damaged\",\n  \"applyAmount\": 4999.00\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders/after-sales"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "售后状态流转（CANCEL）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "url":  "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "释放库存",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"release reservation\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/stocks/release"
-                                                  }
+                                      "name":  "库存",
+                                      "item":  [
+                                                   {
+                                                       "name":  "获取库存台账",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/stocks/ledger/{{skuId}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "预占库存",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"reserve for order\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/stocks/reserve"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "确认扣减库存",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"confirm after pay\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/stocks/confirm"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "释放库存",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"release reservation\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/stocks/release"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "库存回滚",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"rollback failure\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/stocks/rollback"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "库存回滚",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"reason\": \"rollback failure\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/stocks/rollback"
-                                                  }
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "支付",
-                     "item":  [
-                                  {
-                                      "name":  "查询支付单",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
-                                                  }
+                                      "name":  "支付",
+                                      "item":  [
+                                                   {
+                                                       "name":  "查询支付单",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "创建支付单（internal scope）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"paymentNo\": \"PAY{{$timestamp}}\",\n  \"mainOrderNo\": \"{{mainOrderNo}}\",\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"userId\": {{userId}},\n  \"amount\": 4999.00,\n  \"channel\": \"ALIPAY\",\n  \"idempotencyKey\": \"idem-pay-{{$guid}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/payments/orders"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "支付回调（internal scope）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"callbackNo\": \"CB{{$timestamp}}\",\n  \"callbackStatus\": \"SUCCESS\",\n  \"providerTxnNo\": \"ALI-TXN-{{$randomInt}}\",\n  \"idempotencyKey\": \"idem-cb-{{$guid}}\",\n  \"payload\": \"{\\\"tradeStatus\\\":\\\"TRADE_SUCCESS\\\"}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/payments/callbacks"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "创建退款（internal scope）",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"refundNo\": \"REF{{$timestamp}}\",\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"afterSaleNo\": \"{{afterSaleNo}}\",\n  \"refundAmount\": 4999.00,\n  \"reason\": \"quality issue\",\n  \"idempotencyKey\": \"idem-refund-{{$guid}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/payments/refunds"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "查询退款",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
+                                                                   }
+                                                   }
+                                               ]
                                   },
                                   {
-                                      "name":  "创建支付单（internal scope）",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"paymentNo\": \"PAY{{$timestamp}}\",\n  \"mainOrderNo\": \"{{mainOrderNo}}\",\n  \"subOrderNo\": \"{{subOrderNo}}\",\n  \"userId\": {{userId}},\n  \"amount\": 4999.00,\n  \"channel\": \"ALIPAY\",\n  \"idempotencyKey\": \"idem-pay-{{$guid}}\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/payments/orders"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "支付回调（internal scope）",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"callbackNo\": \"CB{{$timestamp}}\",\n  \"callbackStatus\": \"SUCCESS\",\n  \"providerTxnNo\": \"ALI-TXN-{{$randomInt}}\",\n  \"idempotencyKey\": \"idem-cb-{{$guid}}\",\n  \"payload\": \"{\\\"tradeStatus\\\":\\\"TRADE_SUCCESS\\\"}\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/payments/callbacks"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "创建退款（internal scope）",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\n  \"refundNo\": \"REF{{$timestamp}}\",\n  \"paymentNo\": \"{{paymentNo}}\",\n  \"afterSaleNo\": \"{{afterSaleNo}}\",\n  \"refundAmount\": 4999.00,\n  \"reason\": \"quality issue\",\n  \"idempotencyKey\": \"idem-refund-{{$guid}}\"\n}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/api/payments/refunds"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "查询退款",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
-                                                  }
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "搜索",
-                     "item":  [
-                                  {
-                                      "name":  "搜索商品",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "搜索联想",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "热门搜索词",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "智能搜索",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
-                                                  }
-                                  },
-                                  {
-                                      "name":  "推荐商家",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
-                                                  }
+                                      "name":  "搜索",
+                                      "item":  [
+                                                   {
+                                                       "name":  "搜索商品",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "搜索联想",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "热门搜索词",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "智能搜索",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
+                                                                   }
+                                                   },
+                                                   {
+                                                       "name":  "推荐商家",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
+                                                                   }
+                                                   }
+                                               ]
                                   }
                               ]
                  }
