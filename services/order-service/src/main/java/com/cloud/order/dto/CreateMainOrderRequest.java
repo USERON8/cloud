@@ -1,5 +1,6 @@
 package com.cloud.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
@@ -15,6 +16,12 @@ public class CreateMainOrderRequest {
     private Long userId;
 
     private Long cartId;
+
+    private Long spuId;
+
+    private Long skuId;
+
+    private Integer quantity;
 
     @DecimalMin("0.00")
     private BigDecimal totalAmount;
@@ -33,11 +40,14 @@ public class CreateMainOrderRequest {
     private String receiverAddress;
 
     @Valid
+    @JsonIgnore
     private List<CreateSubOrderRequest> subOrders;
 
-    @AssertTrue(message = "cartId or subOrders is required")
+    @AssertTrue(message = "cartId or single item (spuId, skuId, quantity) is required")
     public boolean isOrderSourceValid() {
-        return cartId != null || (subOrders != null && !subOrders.isEmpty());
+        boolean cartOrder = cartId != null && spuId == null && skuId == null;
+        boolean singleItemOrder = cartId == null && spuId != null && skuId != null && quantity != null && quantity > 0;
+        return cartOrder || singleItemOrder;
     }
 
     @Data

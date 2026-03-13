@@ -88,6 +88,8 @@ public class OrderCreateTccAction {
         }
         if (request.getCartId() != null) {
             buildFromCart(request);
+        } else {
+            buildFromSingleItem(request);
         }
         if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
             throw new BusinessException("subOrders is required");
@@ -376,6 +378,58 @@ public class OrderCreateTccAction {
         request.setSubOrders(subOrders);
         request.setTotalAmount(total);
         request.setPayableAmount(total);
+    }
+
+    private void buildFromSingleItem(CreateMainOrderRequest request) {
+        if (request.getSpuId() == null || request.getSkuId() == null) {
+            return;
+        }
+        Integer quantity = request.getQuantity();
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException("quantity is required for direct item checkout");
+        }
+
+        SpuDetailVO spuDetail = productDubboApi.getSpuById(request.getSpuId());
+        if (spuDetail == null || spuDetail.getMerchantId() == null) {
+            throw new BusinessException("spu not found for direct checkout");
+        }
+        List<SkuDetailVO> skuDetails = productDubboApi.listSkuByIds(List.of(request.getSkuId()));
+        SkuDetailVO skuDetail = skuDetails == null || skuDetails.isEmpty() ? null : skuDetails.get(0);
+        if (skuDetail == null) {
+            throw new BusinessException("sku not found for direct checkout");
+        }
+        if (skuDetail.getSpuId() != null && !skuDetail.getSpuId().equals(request.getSpuId())) {
+            throw new BusinessException("sku does not belong to requested spu");
+        }
+        BigDecimal unitPrice = skuDetail.getSalePrice();
+        if (unitPrice == null) {
+            throw new BusinessException("sku price missing for direct checkout");
+        }
+        BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+        CreateMainOrderRequest.CreateOrderItemRequest item = new CreateMainOrderRequest.CreateOrderItemRequest();
+        item.setSpuId(request.getSpuId());
+        item.setSkuId(request.getSkuId());
+        item.setSkuCode(skuDetail.getSkuCode());
+        item.setSkuName(skuDetail.getSkuName());
+        item.setQuantity(quantity);
+        item.setUnitPrice(unitPrice);
+        item.setTotalPrice(totalPrice);
+
+        CreateMainOrderRequest.CreateSubOrderRequest sub = new CreateMainOrderRequest.CreateSubOrderRequest();
+        sub.setMerchantId(spuDetail.getMerchantId());
+        sub.setReceiverName(request.getReceiverName());
+        sub.setReceiverPhone(request.getReceiverPhone());
+        sub.setReceiverAddress(request.getReceiverAddress());
+        sub.setItems(List.of(item));
+        sub.setItemAmount(totalPrice);
+        sub.setDiscountAmount(BigDecimal.ZERO);
+        sub.setShippingFee(BigDecimal.ZERO);
+        sub.setPayableAmount(totalPrice);
+
+        request.setSubOrders(List.of(sub));
+        request.setTotalAmount(totalPrice);
+        request.setPayableAmount(totalPrice);
     }
 
     private Map<Long, SpuDetailVO> loadSpuDetails(List<CartItem> cartItems) {
