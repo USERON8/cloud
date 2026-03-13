@@ -1,8 +1,8 @@
 ﻿{
     "info":  {
                  "_postman_id":  "2f2b51b8-ffb3-4cf6-a2a4-2c7b8b3a2b1f",
-                 "name":  "??API??",
-                 "description":  "Cloud Shop ?? API ? Postman ???Base URL ??? http://127.0.0.1:18080??? testenv profile ??? accessToken ??? JWT?\n\n????????? db/test/*/test.sql?userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001??",
+                 "name":  "云购API测试",
+                 "description":  "Cloud Shop 网关 API 的 Postman 集合。Base URL 默认为 http://127.0.0.1:18080。使用 testenv profile 或设置 accessToken 为有效 JWT。\\n\\n默认测试数据来源于 db/test/*/test.sql（userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001）。",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
              },
     "auth":  {
@@ -37,7 +37,7 @@
                                                   "  let body = {};",
                                                   "  try { body = pm.response.json(); } catch (e) {}",
                                                   "  if (body \u0026\u0026 Object.prototype.hasOwnProperty.call(body, \u0027code\u0027)) {",
-                                                  "    pm.test(\u0027??????\u0027, function () {",
+                                                  "    pm.test(\u0027返回码为成功\u0027, function () {",
                                                   "      pm.expect(body.code).to.eql(200);",
                                                   "    });",
                                                   "  }",
@@ -48,10 +48,10 @@
               ],
     "item":  [
                  {
-                     "name":  "??",
+                     "name":  "认证",
                      "item":  [
                                   {
-                                      "name":  "????",
+                                      "name":  "用户注册",
                                       "request":  {
                                                       "auth":  {
                                                                    "type":  "noauth"
@@ -92,21 +92,21 @@
                                                 ]
                                   },
                                   {
-                                      "name":  "??Token",
+                                      "name":  "校验Token",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/auth/tokens/validate"
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "退出当前会话",
                                       "request":  {
                                                       "method":  "DELETE",
                                                       "url":  "{{baseUrl}}/auth/sessions"
                                                   }
                                   },
                                   {
-                                      "name":  "OAuth2 Token?????? internal_api?",
+                                      "name":  "OAuth2 Token（客户端凭证 internal_api）",
                                       "request":  {
                                                       "auth":  {
                                                                    "type":  "basic",
@@ -167,17 +167,17 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "用户",
                      "item":  [
                                   {
-                                      "name":  "????????",
+                                      "name":  "获取当前用户资料",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/user/profile/current"
                                                   }
                                   },
                                   {
-                                      "name":  "????????",
+                                      "name":  "更新当前用户资料",
                                       "request":  {
                                                       "method":  "PUT",
                                                       "header":  [
@@ -199,7 +199,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "修改当前密码",
                                       "request":  {
                                                       "method":  "PUT",
                                                       "header":  [
@@ -221,21 +221,21 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "地址列表",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/user/address/list/{{userId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "获取默认地址",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/user/address/default/{{userId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "新增地址",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -257,7 +257,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "更新地址",
                                       "request":  {
                                                       "method":  "PUT",
                                                       "header":  [
@@ -279,14 +279,14 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "删除地址",
                                       "request":  {
                                                       "method":  "DELETE",
                                                       "url":  "{{baseUrl}}/api/user/address/delete/{{addressId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "地址分页",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -310,24 +310,24 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "商家",
                      "item":  [
                                   {
-                                      "name":  "????",
+                                      "name":  "商家列表",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/merchant?page=1\u0026size=10"
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "获取商家详情",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/merchant/{{merchantId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "商家认证申请",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -349,7 +349,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "商家认证审核",
                                       "request":  {
                                                       "method":  "POST",
                                                       "url":  "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1\u0026remark=ok"
@@ -358,45 +358,45 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "商品",
                      "item":  [
                                   {
-                                      "name":  "??????",
+                                      "name":  "获取分类列表",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/category?page=1\u0026size=10"
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "获取分类详情",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/category/{{categoryId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "?????",
+                                      "name":  "获取分类树",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/category/tree?enabledOnly=true"
                                                   }
                                   },
                                   {
-                                      "name":  "??SPU??",
+                                      "name":  "获取SPU详情",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/product/spu/{{spuId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "?????SPU",
+                                      "name":  "按分类查询SPU",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
                                                   }
                                   },
                                   {
-                                      "name":  "????SKU",
+                                      "name":  "批量查询SKU",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
@@ -405,10 +405,10 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "订单",
                      "item":  [
                                   {
-                                      "name":  "?????",
+                                      "name":  "创建主订单",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -455,28 +455,28 @@
                                                 ]
                                   },
                                   {
-                                      "name":  "?????",
+                                      "name":  "获取主订单",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "???????",
+                                      "name":  "查询子订单列表",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/orders/main/{{mainOrderId}}/sub-orders"
                                                   }
                                   },
                                   {
-                                      "name":  "????????CANCEL?",
+                                      "name":  "子订单状态流转（CANCEL）",
                                       "request":  {
                                                       "method":  "POST",
                                                       "url":  "{{baseUrl}}/api/orders/sub/{{subOrderId}}/actions/CANCEL"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "申请售后",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -498,7 +498,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "???????CANCEL?",
+                                      "name":  "售后状态流转（CANCEL）",
                                       "request":  {
                                                       "method":  "POST",
                                                       "url":  "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
@@ -507,17 +507,17 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "库存",
                      "item":  [
                                   {
-                                      "name":  "??????",
+                                      "name":  "获取库存台账",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/stocks/ledger/{{skuId}}"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "预占库存",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -539,7 +539,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "??????",
+                                      "name":  "确认扣减库存",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -561,7 +561,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "释放库存",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -583,7 +583,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "库存回滚",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -607,17 +607,17 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "支付",
                      "item":  [
                                   {
-                                      "name":  "?????",
+                                      "name":  "查询支付单",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
                                                   }
                                   },
                                   {
-                                      "name":  "??????internal scope?",
+                                      "name":  "创建支付单（internal scope）",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -639,7 +639,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "?????internal scope?",
+                                      "name":  "支付回调（internal scope）",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -661,7 +661,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "?????internal scope?",
+                                      "name":  "创建退款（internal scope）",
                                       "request":  {
                                                       "method":  "POST",
                                                       "header":  [
@@ -683,7 +683,7 @@
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "查询退款",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
@@ -692,38 +692,38 @@
                               ]
                  },
                  {
-                     "name":  "??",
+                     "name":  "搜索",
                      "item":  [
                                   {
-                                      "name":  "????",
+                                      "name":  "搜索商品",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}\u0026page=0\u0026size=20"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "搜索联想",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}\u0026size=10"
                                                   }
                                   },
                                   {
-                                      "name":  "?????",
+                                      "name":  "热门搜索词",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/search/hot-keywords?size=10"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "智能搜索",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}\u0026page=1\u0026size=20"
                                                   }
                                   },
                                   {
-                                      "name":  "????",
+                                      "name":  "推荐商家",
                                       "request":  {
                                                       "method":  "GET",
                                                       "url":  "{{baseUrl}}/api/search/shops/recommended?page=0\u0026size=20"
