@@ -37,9 +37,9 @@ public class OrderController {
             "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RETURN", "RECEIVE",
             "PROCESS", "REFUND", "CANCEL", "CLOSE"
     );
-    private static final Set<String> USER_AFTER_SALE_ACTIONS = Set.of("CANCEL", "RETURN");
+    private static final Set<String> USER_AFTER_SALE_ACTIONS = Set.of("CANCEL");
     private static final Set<String> MERCHANT_AFTER_SALE_ACTIONS = Set.of(
-            "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RECEIVE"
+            "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RETURN", "RECEIVE"
     );
 
     private final OrderService orderService;
