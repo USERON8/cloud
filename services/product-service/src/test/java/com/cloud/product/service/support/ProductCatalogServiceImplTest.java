@@ -4,9 +4,11 @@ import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
+import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.impl.ProductCatalogServiceImpl;
+import com.cloud.product.service.support.ProductDetailCacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,11 +32,22 @@ class ProductCatalogServiceImplTest {
     @Mock
     private SkuMapper skuMapper;
 
+    @Mock
+    private ProductDetailCacheService productDetailCacheService;
+
+    @Mock
+    private ProductSyncMessageProducer productSyncMessageProducer;
+
     private ProductCatalogServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new ProductCatalogServiceImpl(spuMapper, skuMapper);
+        service = new ProductCatalogServiceImpl(
+                spuMapper,
+                skuMapper,
+                productDetailCacheService,
+                productSyncMessageProducer
+        );
     }
 
     @Test

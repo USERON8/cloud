@@ -2,6 +2,7 @@ package com.cloud.payment.controller;
 
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.payment.service.PaymentOrderService;
+import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,6 +23,9 @@ class PaymentOrderControllerTest {
     @Mock
     private PaymentOrderService paymentOrderService;
 
+    @Mock
+    private PaymentSecurityCacheService paymentSecurityCacheService;
+
     @Test
     void getPaymentOrderByNoShouldAllowOwner() {
         PaymentOrderVO order = new PaymentOrderVO();
@@ -29,7 +33,7 @@ class PaymentOrderControllerTest {
         order.setUserId(12L);
         when(paymentOrderService.getPaymentOrderByNo("PAY-1")).thenReturn(order);
 
-        PaymentOrderController controller = new PaymentOrderController(paymentOrderService);
+        PaymentOrderController controller = new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
         var result = controller.getPaymentOrderByNo("PAY-1", authentication("12", "ROLE_USER"));
 
         assertThat(result.getCode()).isEqualTo(200);
@@ -43,7 +47,7 @@ class PaymentOrderControllerTest {
         order.setUserId(18L);
         when(paymentOrderService.getPaymentOrderByNo("PAY-2")).thenReturn(order);
 
-        PaymentOrderController controller = new PaymentOrderController(paymentOrderService);
+        PaymentOrderController controller = new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
         var result = controller.getPaymentOrderByNo("PAY-2", authentication("99", "ROLE_USER"));
 
         assertThat(result.getCode()).isEqualTo(403);
@@ -57,7 +61,7 @@ class PaymentOrderControllerTest {
         order.setUserId(18L);
         when(paymentOrderService.getPaymentOrderByNo("PAY-3")).thenReturn(order);
 
-        PaymentOrderController controller = new PaymentOrderController(paymentOrderService);
+        PaymentOrderController controller = new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
         var result = controller.getPaymentOrderByNo("PAY-3", authentication(null, "SCOPE_internal_api"));
 
         assertThat(result.getCode()).isEqualTo(200);
