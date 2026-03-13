@@ -9,6 +9,7 @@
     networks:
       service_net:
         ipv4_address: 172.28.0.10
+    mem_limit: 512m
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: nacos_config
