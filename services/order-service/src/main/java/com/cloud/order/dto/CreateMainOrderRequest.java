@@ -1,8 +1,8 @@
 package com.cloud.order.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -14,6 +14,8 @@ public class CreateMainOrderRequest {
     @NotNull
     private Long userId;
 
+    private Long cartId;
+
     @DecimalMin("0.00")
     private BigDecimal totalAmount;
 
@@ -24,9 +26,19 @@ public class CreateMainOrderRequest {
 
     private String idempotencyKey;
 
+    private String receiverName;
+
+    private String receiverPhone;
+
+    private String receiverAddress;
+
     @Valid
-    @NotEmpty
     private List<CreateSubOrderRequest> subOrders;
+
+    @AssertTrue(message = "cartId or subOrders is required")
+    public boolean isOrderSourceValid() {
+        return cartId != null || (subOrders != null && !subOrders.isEmpty());
+    }
 
     @Data
     public static class CreateSubOrderRequest {

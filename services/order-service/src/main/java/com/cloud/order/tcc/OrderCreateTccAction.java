@@ -2,19 +2,28 @@ package com.cloud.order.tcc;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
+import com.cloud.common.domain.vo.product.SkuDetailVO;
+import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.order.dto.CreateMainOrderRequest;
+import com.cloud.order.entity.Cart;
+import com.cloud.order.entity.CartItem;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.entity.OrderTccLog;
+import com.cloud.order.mapper.CartItemMapper;
+import com.cloud.order.mapper.CartMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.mapper.OrderTccLogMapper;
 import com.cloud.order.messaging.OrderTimeoutMessageProducer;
 import com.cloud.order.service.support.OrderAggregateCacheService;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.seata.rm.tcc.api.BusinessActionContext;
 import org.apache.seata.rm.tcc.api.BusinessActionContextParameter;
 import org.apache.seata.rm.tcc.api.LocalTCC;
@@ -26,7 +35,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,6 +53,8 @@ public class OrderCreateTccAction {
     private static final String STATUS_TRY = "TRY";
     private static final String STATUS_CONFIRM = "CONFIRM";
     private static final String STATUS_CANCEL = "CANCEL";
+    private static final String CART_STATUS_ACTIVE = "ACTIVE";
+    private static final String CART_STATUS_CHECKED_OUT = "CHECKED_OUT";
 
     private static final Set<String> CANCELLABLE_STATUSES = Set.of("CREATED", "STOCK_RESERVED");
 
@@ -49,6 +64,11 @@ public class OrderCreateTccAction {
     private final OrderTccLogMapper orderTccLogMapper;
     private final OrderAggregateCacheService orderAggregateCacheService;
     private final OrderTimeoutMessageProducer orderTimeoutMessageProducer;
+    private final CartMapper cartMapper;
+    private final CartItemMapper cartItemMapper;
+
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private ProductDubboApi productDubboApi;
 
     @TwoPhaseBusinessAction(
             name = "orderCreateTcc",
@@ -58,11 +78,18 @@ public class OrderCreateTccAction {
     @Transactional(rollbackFor = Exception.class)
     public boolean prepare(BusinessActionContext actionContext,
                            @BusinessActionContextParameter(paramName = "idempotencyKey") String idempotencyKey,
+                           @BusinessActionContextParameter(paramName = "cartId") Long cartId,
                            CreateMainOrderRequest request) {
         if (StrUtil.isBlank(idempotencyKey)) {
             throw new BusinessException("idempotency key is required");
         }
-        if (request == null || request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
+        if (request == null) {
+            throw new BusinessException("order request is required");
+        }
+        if (request.getCartId() != null) {
+            buildFromCart(request);
+        }
+        if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
             throw new BusinessException("subOrders is required");
         }
 
@@ -108,6 +135,9 @@ public class OrderCreateTccAction {
         }
 
         attachOrderInfo(logEntity, mainOrder);
+        if (request.getCartId() != null) {
+            markCartCheckedOut(request.getCartId(), request.getUserId());
+        }
         return true;
     }
 
@@ -204,6 +234,10 @@ public class OrderCreateTccAction {
         mainOrder.setCancelReason("tcc rollback");
         orderMainMapper.updateById(mainOrder);
         orderAggregateCacheService.evict(mainOrder.getId());
+        Long cartId = resolveCartId(actionContext);
+        if (cartId != null) {
+            resetCartCheckedOut(cartId);
+        }
         return true;
     }
 
@@ -241,6 +275,185 @@ public class OrderCreateTccAction {
         mainOrder.setRemark(request.getRemark());
         mainOrder.setIdempotencyKey(idempotencyKey);
         return mainOrder;
+    }
+
+    private void buildFromCart(CreateMainOrderRequest request) {
+        Long cartId = request.getCartId();
+        if (cartId == null) {
+            return;
+        }
+        if (request.getUserId() == null) {
+            throw new BusinessException("user id is required for cart checkout");
+        }
+        Cart cart = cartMapper.selectById(cartId);
+        if (cart == null || cart.getDeleted() == 1) {
+            throw new BusinessException("cart not found");
+        }
+        if (!request.getUserId().equals(cart.getUserId())) {
+            throw new BusinessException("cart does not belong to current user");
+        }
+        if (cart.getCartStatus() != null && !CART_STATUS_ACTIVE.equals(cart.getCartStatus())) {
+            throw new BusinessException("cart is not active");
+        }
+
+        List<CartItem> cartItems = cartItemMapper.selectList(new LambdaQueryWrapper<CartItem>()
+                .eq(CartItem::getCartId, cartId)
+                .eq(CartItem::getUserId, request.getUserId())
+                .eq(CartItem::getSelected, 1)
+                .eq(CartItem::getCheckedOut, 0)
+                .eq(CartItem::getDeleted, 0));
+        if (cartItems == null || cartItems.isEmpty()) {
+            throw new BusinessException("cart has no selectable items");
+        }
+
+        Map<Long, SpuDetailVO> spuDetails = loadSpuDetails(cartItems);
+        Map<Long, SkuDetailVO> skuDetails = loadSkuDetails(cartItems);
+        Map<Long, List<CartItem>> itemsByMerchant = new HashMap<>();
+        for (CartItem item : cartItems) {
+            if (item.getSpuId() == null) {
+                throw new BusinessException("cart item missing spu id");
+            }
+            SpuDetailVO spu = spuDetails.get(item.getSpuId());
+            if (spu == null || spu.getMerchantId() == null) {
+                throw new BusinessException("missing merchant for spuId=" + item.getSpuId());
+            }
+            itemsByMerchant.computeIfAbsent(spu.getMerchantId(), ignored -> new ArrayList<>()).add(item);
+        }
+
+        List<CreateMainOrderRequest.CreateSubOrderRequest> subOrders = new ArrayList<>(itemsByMerchant.size());
+        BigDecimal total = BigDecimal.ZERO;
+        for (Map.Entry<Long, List<CartItem>> entry : itemsByMerchant.entrySet()) {
+            CreateMainOrderRequest.CreateSubOrderRequest sub = new CreateMainOrderRequest.CreateSubOrderRequest();
+            sub.setMerchantId(entry.getKey());
+            sub.setReceiverName(request.getReceiverName());
+            sub.setReceiverPhone(request.getReceiverPhone());
+            sub.setReceiverAddress(request.getReceiverAddress());
+
+            BigDecimal itemAmount = BigDecimal.ZERO;
+            List<CreateMainOrderRequest.CreateOrderItemRequest> items = new ArrayList<>();
+            for (CartItem cartItem : entry.getValue()) {
+                BigDecimal unitPrice = cartItem.getUnitPrice();
+                if (unitPrice == null) {
+                    SkuDetailVO skuDetail = skuDetails.get(cartItem.getSkuId());
+                    unitPrice = skuDetail != null ? skuDetail.getSalePrice() : null;
+                }
+                if (unitPrice == null) {
+                    throw new BusinessException("cart item missing unit price for skuId=" + cartItem.getSkuId());
+                }
+                Integer quantity = cartItem.getQuantity();
+                if (quantity == null || quantity <= 0) {
+                    throw new BusinessException("invalid cart item quantity for skuId=" + cartItem.getSkuId());
+                }
+                BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+                itemAmount = itemAmount.add(totalPrice);
+
+                CreateMainOrderRequest.CreateOrderItemRequest item = new CreateMainOrderRequest.CreateOrderItemRequest();
+                item.setSpuId(cartItem.getSpuId());
+                item.setSkuId(cartItem.getSkuId());
+                item.setSkuName(cartItem.getSkuName());
+                SkuDetailVO skuDetail = skuDetails.get(cartItem.getSkuId());
+                if (skuDetail != null) {
+                    item.setSkuCode(skuDetail.getSkuCode());
+                    if (item.getSkuName() == null) {
+                        item.setSkuName(skuDetail.getSkuName());
+                    }
+                }
+                item.setQuantity(quantity);
+                item.setUnitPrice(unitPrice);
+                item.setTotalPrice(totalPrice);
+                items.add(item);
+            }
+            sub.setItems(items);
+            sub.setItemAmount(itemAmount);
+            sub.setDiscountAmount(BigDecimal.ZERO);
+            sub.setShippingFee(BigDecimal.ZERO);
+            sub.setPayableAmount(itemAmount);
+            total = total.add(itemAmount);
+            subOrders.add(sub);
+        }
+
+        subOrders.sort(Comparator.comparing(CreateMainOrderRequest.CreateSubOrderRequest::getMerchantId));
+        request.setSubOrders(subOrders);
+        request.setTotalAmount(total);
+        request.setPayableAmount(total);
+    }
+
+    private Map<Long, SpuDetailVO> loadSpuDetails(List<CartItem> cartItems) {
+        Map<Long, SpuDetailVO> result = new HashMap<>();
+        for (CartItem item : cartItems) {
+            if (item.getSpuId() == null || result.containsKey(item.getSpuId())) {
+                continue;
+            }
+            SpuDetailVO detail = productDubboApi.getSpuById(item.getSpuId());
+            if (detail != null) {
+                result.put(item.getSpuId(), detail);
+            }
+        }
+        return result;
+    }
+
+    private Map<Long, SkuDetailVO> loadSkuDetails(List<CartItem> cartItems) {
+        List<Long> skuIds = cartItems.stream()
+                .map(CartItem::getSkuId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (skuIds.isEmpty()) {
+            return Map.of();
+        }
+        List<SkuDetailVO> skuDetails = productDubboApi.listSkuByIds(skuIds);
+        if (skuDetails == null || skuDetails.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, SkuDetailVO> result = new HashMap<>();
+        for (SkuDetailVO detail : skuDetails) {
+            if (detail != null && detail.getSkuId() != null) {
+                result.put(detail.getSkuId(), detail);
+            }
+        }
+        return result;
+    }
+
+    private void markCartCheckedOut(Long cartId, Long userId) {
+        if (cartId == null) {
+            return;
+        }
+        cartItemMapper.update(null, new LambdaUpdateWrapper<CartItem>()
+                .eq(CartItem::getCartId, cartId)
+                .eq(CartItem::getUserId, userId)
+                .eq(CartItem::getCheckedOut, 0)
+                .set(CartItem::getCheckedOut, 1));
+        cartMapper.update(null, new LambdaUpdateWrapper<Cart>()
+                .eq(Cart::getId, cartId)
+                .set(Cart::getCartStatus, CART_STATUS_CHECKED_OUT));
+    }
+
+    private void resetCartCheckedOut(Long cartId) {
+        if (cartId == null) {
+            return;
+        }
+        cartItemMapper.update(null, new LambdaUpdateWrapper<CartItem>()
+                .eq(CartItem::getCartId, cartId)
+                .eq(CartItem::getCheckedOut, 1)
+                .set(CartItem::getCheckedOut, 0));
+        cartMapper.update(null, new LambdaUpdateWrapper<Cart>()
+                .eq(Cart::getId, cartId)
+                .set(Cart::getCartStatus, CART_STATUS_ACTIVE));
+    }
+
+    private Long resolveCartId(BusinessActionContext actionContext) {
+        if (actionContext == null) {
+            return null;
+        }
+        Object value = actionContext.getActionContext("cartId");
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private OrderSub buildSubOrder(OrderMain mainOrder,

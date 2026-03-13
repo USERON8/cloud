@@ -40,7 +40,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     @GlobalTransactional(rollbackFor = Exception.class)
     public OrderAggregateResponse createOrder(CreateMainOrderRequest request) {
         String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
-        boolean prepared = orderCreateTccAction.prepare(null, idempotencyKey, request);
+        boolean prepared = orderCreateTccAction.prepare(null, idempotencyKey, request.getCartId(), request);
         if (!prepared) {
             throw new BusinessException("failed to create order aggregate");
         }
