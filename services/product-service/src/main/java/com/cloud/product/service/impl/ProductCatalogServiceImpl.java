@@ -12,6 +12,7 @@ import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
+import com.cloud.product.service.support.ProductDetailCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
     private final SpuMapper spuMapper;
     private final SkuMapper skuMapper;
+    private final ProductDetailCacheService productDetailCacheService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -122,19 +124,13 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             oldSku.setDeleted(1);
             skuMapper.updateById(oldSku);
         }
+        productDetailCacheService.evict(spuId);
         return true;
     }
 
     @Override
     public SpuDetailVO getSpuById(Long spuId) {
-        Spu spu = spuMapper.selectById(spuId);
-        if (spu == null || spu.getDeleted() == 1) {
-            return null;
-        }
-        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                .eq(Sku::getSpuId, spuId)
-                .eq(Sku::getDeleted, 0));
-        return toSpuDetail(spu, skus);
+        return productDetailCacheService.getOrLoad(spuId, () -> loadSpuDetail(spuId));
     }
 
     @Override
@@ -200,7 +196,11 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             throw new BusinessException("spu not found");
         }
         spu.setStatus(status);
-        return spuMapper.updateById(spu) > 0;
+        boolean updated = spuMapper.updateById(spu) > 0;
+        if (updated) {
+            productDetailCacheService.evict(spuId);
+        }
+        return updated;
     }
 
     private Spu toSpuEntity(SpuDTO dto) {
@@ -256,6 +256,17 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         }
         vo.setSkus(skuDetails);
         return vo;
+    }
+
+    private SpuDetailVO loadSpuDetail(Long spuId) {
+        Spu spu = spuMapper.selectById(spuId);
+        if (spu == null || spu.getDeleted() == 1) {
+            return null;
+        }
+        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
+                .eq(Sku::getSpuId, spuId)
+                .eq(Sku::getDeleted, 0));
+        return toSpuDetail(spu, skus);
     }
 
     private SkuDetailVO toSkuDetail(Sku sku) {
