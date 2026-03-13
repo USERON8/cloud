@@ -228,6 +228,36 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean cancelRefund(String refundNo, String reason) {
+        if (refundNo == null || refundNo.isBlank()) {
+            throw new BusinessException("refund no is required");
+        }
+        PaymentRefundEntity refund = paymentRefundMapper.selectOne(new LambdaQueryWrapper<PaymentRefundEntity>()
+                .eq(PaymentRefundEntity::getRefundNo, refundNo)
+                .eq(PaymentRefundEntity::getDeleted, 0)
+                .last("LIMIT 1"));
+        if (refund == null) {
+            return true;
+        }
+        String status = refund.getStatus();
+        if ("REFUNDED".equals(status)) {
+            throw new BusinessException("refund already completed, cannot cancel");
+        }
+        if ("CANCELLED".equals(status)) {
+            return true;
+        }
+        refund.setStatus("CANCELLED");
+        if (reason != null && !reason.isBlank()) {
+            refund.setLastError(reason);
+        }
+        refund.setNextRetryAt(null);
+        refund.setLastRetryAt(LocalDateTime.now());
+        paymentRefundMapper.updateById(refund);
+        return true;
+    }
+
+    @Override
     public PaymentRefundVO getRefundByNo(String refundNo) {
         PaymentRefundEntity entity = paymentRefundMapper.selectOne(new LambdaQueryWrapper<PaymentRefundEntity>()
                 .eq(PaymentRefundEntity::getRefundNo, refundNo)

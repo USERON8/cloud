@@ -82,6 +82,26 @@ public class OrderRefundSagaService {
 
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelRefund(Map<String, Object> params) {
+        return doCancelRefund(params);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean cancelRefundWithPayment(Map<String, Object> params) {
+        String refundNo = asText(params.get("refundNo"));
+        String reason = asText(params.get("reason"));
+        if (refundNo != null && !refundNo.isBlank()) {
+            String compensationReason = reason == null || reason.isBlank()
+                    ? "saga compensate refund"
+                    : "saga compensate refund: " + reason;
+            Boolean cancelled = paymentOrderRemoteService.cancelRefund(refundNo, compensationReason);
+            if (Boolean.FALSE.equals(cancelled)) {
+                throw new BusinessException("refund already completed, cannot compensate");
+            }
+        }
+        return doCancelRefund(params);
+    }
+
+    private boolean doCancelRefund(Map<String, Object> params) {
         Long afterSaleId = asLong(params.get("afterSaleId"));
         String previousStatus = asText(params.get("previousStatus"));
         if (afterSaleId == null) {
@@ -134,7 +154,7 @@ public class OrderRefundSagaService {
             return v;
         }
         if (value instanceof Number n) {
-            return BigDecimal.valueOf(n.doubleValue());
+            return new BigDecimal(String.valueOf(n));
         }
         if (value == null) {
             return null;

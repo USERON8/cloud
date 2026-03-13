@@ -21,4 +21,8 @@ public class PaymentOrderRemoteService {
     public Long createRefund(PaymentRefundCommandDTO command) {
         return paymentDubboApi.createRefund(command);
     }
+
+    public Boolean cancelRefund(String refundNo, String reason) {
+        return paymentDubboApi.cancelRefund(refundNo, reason);
+    }
 }

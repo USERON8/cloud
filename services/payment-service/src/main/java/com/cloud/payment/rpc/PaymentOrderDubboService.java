@@ -45,5 +45,10 @@ public class PaymentOrderDubboService implements PaymentDubboApi {
     public PaymentRefundVO getRefundByNo(String refundNo) {
         return paymentOrderService.getRefundByNo(refundNo);
     }
+
+    @Override
+    public Boolean cancelRefund(String refundNo, String reason) {
+        return paymentOrderService.cancelRefund(refundNo, reason);
+    }
 }
 

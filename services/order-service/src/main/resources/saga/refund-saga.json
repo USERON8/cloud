@@ -23,7 +23,7 @@
     },
     "refundCreateCompensate": {
       "type": "serviceTask",
-      "serviceName": "orderRefundSagaService.cancelRefund",
+      "serviceName": "orderRefundSagaService.cancelRefundWithPayment",
       "end": true
     }
   }

@@ -19,5 +19,7 @@ public interface PaymentDubboApi {
     Long createRefund(PaymentRefundCommandDTO command);
 
     PaymentRefundVO getRefundByNo(String refundNo);
+
+    Boolean cancelRefund(String refundNo, String reason);
 }
 

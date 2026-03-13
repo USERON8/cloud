@@ -24,7 +24,7 @@ public class PaymentRefundCommandDTO implements Serializable {
     private String afterSaleNo;
 
     @NotNull
-    @DecimalMin("0.00")
+    @DecimalMin(value = "0.00", inclusive = false)
     private BigDecimal refundAmount;
 
     @NotBlank
