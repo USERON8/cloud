@@ -11,6 +11,7 @@ import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.module.entity.StockReservation;
 import com.cloud.stock.module.entity.StockTxn;
 import com.cloud.stock.service.StockLedgerService;
+import com.cloud.stock.service.support.StockRedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     private final StockTxnAsyncWriter stockTxnAsyncWriter;
     private final StockMessageProducer stockMessageProducer;
     private final TradeMetrics tradeMetrics;
+    private final StockRedisCacheService stockRedisCacheService;
 
     @Override
     public StockLedgerVO getLedgerBySkuId(Long skuId) {
-        StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
-        return ledger == null ? null : toVO(ledger);
+        return stockRedisCacheService.getOrLoadLedger(skuId);
     }
 
     @Override
@@ -59,6 +60,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
 
             reservation.setStatus("RESERVED");
             stockReservationMapper.updateById(reservation);
+            StockRedisCacheService.CacheResult cacheResult = stockRedisCacheService.applyReserveIfCached(
+                    command.getSkuId(), command.getQuantity());
+            if (cacheResult != StockRedisCacheService.CacheResult.OK) {
+                stockRedisCacheService.refreshFromDb(command.getSkuId());
+            }
             writeTxn(command, "RESERVE", command.getReason());
             tradeMetrics.incrementStockFreeze("success");
             return true;
@@ -90,6 +96,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         stockReservationMapper.updateById(reservation);
 
         StockLedger after = requireLedger(command.getSkuId());
+        StockRedisCacheService.CacheResult cacheResult = stockRedisCacheService.applyConfirmIfCached(
+                command.getSkuId(), command.getQuantity());
+        if (cacheResult != StockRedisCacheService.CacheResult.OK) {
+            stockRedisCacheService.cacheLedger(after);
+        }
         writeTxn(command, "CONFIRM", after, command.getReason());
         return true;
     }
@@ -114,6 +125,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         stockReservationMapper.updateById(reservation);
 
         StockLedger after = requireLedger(command.getSkuId());
+        StockRedisCacheService.CacheResult cacheResult = stockRedisCacheService.applyReleaseIfCached(
+                command.getSkuId(), command.getQuantity());
+        if (cacheResult != StockRedisCacheService.CacheResult.OK) {
+            stockRedisCacheService.cacheLedger(after);
+        }
         writeTxn(command, "RELEASE", after, command.getReason());
         return true;
     }
@@ -130,12 +146,13 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             return true;
         }
 
-        if ("RESERVED".equals(reservation.getStatus())) {
+        String previousStatus = reservation.getStatus();
+        if ("RESERVED".equals(previousStatus)) {
             int affected = stockLedgerMapper.release(command.getSkuId(), command.getQuantity());
             if (affected <= 0) {
                 throw new BusinessException("rollback release failed");
             }
-        } else if ("CONFIRMED".equals(reservation.getStatus())) {
+        } else if ("CONFIRMED".equals(previousStatus)) {
             int affected = stockLedgerMapper.rollbackAfterConfirm(command.getSkuId(), command.getQuantity());
             if (affected <= 0) {
                 throw new BusinessException("rollback confirm failed");
@@ -148,6 +165,12 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         stockReservationMapper.updateById(reservation);
 
         StockLedger after = requireLedger(command.getSkuId());
+        StockRedisCacheService.CacheResult cacheResult = "RESERVED".equals(previousStatus)
+                ? stockRedisCacheService.applyReleaseIfCached(command.getSkuId(), command.getQuantity())
+                : stockRedisCacheService.applyRollbackAfterConfirmIfCached(command.getSkuId(), command.getQuantity());
+        if (cacheResult != StockRedisCacheService.CacheResult.OK) {
+            stockRedisCacheService.cacheLedger(after);
+        }
         writeTxn(command, "ROLLBACK", after, command.getReason());
         return true;
     }
