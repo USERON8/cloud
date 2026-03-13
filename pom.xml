@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -77,7 +77,7 @@
         <skywalking.version>9.6.0</skywalking.version>
         <xxl-job.version>2.5.0</xxl-job.version>
         <sentinel.version>1.8.8</sentinel.version>
-        <seata.version>2.0.0</seata.version>
+        <seata.version>2.3.0</seata.version>
 
         <!-- Encoding-safe comment -->
         <junit.version>5.10.3</junit.version>
@@ -338,7 +338,7 @@
                 <version>${alipay-sdk.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.seata</groupId>
+                <groupId>org.apache.seata</groupId>
                 <artifactId>seata-spring-boot-starter</artifactId>
                 <version>${seata.version}</version>
             </dependency>
