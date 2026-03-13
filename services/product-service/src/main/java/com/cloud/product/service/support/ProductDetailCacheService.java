@@ -1,6 +1,7 @@
 package com.cloud.product.service.support;
 
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
@@ -10,6 +11,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -19,6 +24,8 @@ import java.util.function.Supplier;
 public class ProductDetailCacheService {
 
     private static final String KEY_PREFIX = "product:detail:";
+    private static final String HASH_FIELD_SPU = "spu";
+    private static final String HASH_FIELD_SKUS = "skus";
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -58,10 +65,20 @@ public class ProductDetailCacheService {
 
         String key = buildKey(spuId);
         try {
-            Object value = redisTemplate.opsForValue().get(key);
-            if (value instanceof SpuDetailVO cachedVo) {
-                l1Cache.put(spuId, cachedVo);
-                return cachedVo;
+            var dataType = redisTemplate.type(key);
+            if (org.springframework.data.redis.connection.DataType.HASH.equals(dataType)) {
+                SpuDetailVO cachedVo = readFromHash(key);
+                if (cachedVo != null) {
+                    l1Cache.put(spuId, cachedVo);
+                    return cachedVo;
+                }
+            } else if (org.springframework.data.redis.connection.DataType.STRING.equals(dataType)) {
+                SpuDetailVO cachedVo = readLegacyValue(key);
+                if (cachedVo != null) {
+                    l1Cache.put(spuId, cachedVo);
+                    cacheToHash(key, cachedVo);
+                    return cachedVo;
+                }
             }
         } catch (Exception ex) {
             log.warn("Read product detail cache failed: spuId={}", spuId, ex);
@@ -73,12 +90,7 @@ public class ProductDetailCacheService {
         }
 
         l1Cache.put(spuId, loaded);
-        try {
-            long ttlSeconds = addJitter(detailTtlSeconds, detailJitterSeconds);
-            redisTemplate.opsForValue().set(key, loaded, ttlSeconds, TimeUnit.SECONDS);
-        } catch (Exception ex) {
-            log.warn("Write product detail cache failed: spuId={}", spuId, ex);
-        }
+        cacheToHash(key, loaded);
         return loaded;
     }
 
@@ -96,6 +108,76 @@ public class ProductDetailCacheService {
 
     private String buildKey(Long spuId) {
         return KEY_PREFIX + spuId;
+    }
+
+    private SpuDetailVO readFromHash(String key) {
+        try {
+            Object baseValue = redisTemplate.opsForHash().get(key, HASH_FIELD_SPU);
+            if (!(baseValue instanceof SpuDetailVO base)) {
+                return null;
+            }
+            Object skusValue = redisTemplate.opsForHash().get(key, HASH_FIELD_SKUS);
+            List<SkuDetailVO> skus = null;
+            if (skusValue instanceof List<?> list) {
+                @SuppressWarnings("unchecked")
+                List<SkuDetailVO> casted = (List<SkuDetailVO>) list;
+                skus = casted;
+            }
+            SpuDetailVO merged = copyBase(base);
+            merged.setSkus(skus);
+            return merged;
+        } catch (Exception ex) {
+            log.warn("Read product detail hash cache failed: key={}", key, ex);
+            return null;
+        }
+    }
+
+    private SpuDetailVO readLegacyValue(String key) {
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value instanceof SpuDetailVO cachedVo) {
+                return cachedVo;
+            }
+        } catch (Exception ex) {
+            log.warn("Read legacy product detail cache failed: key={}", key, ex);
+        }
+        return null;
+    }
+
+    private void cacheToHash(String key, SpuDetailVO loaded) {
+        if (loaded == null) {
+            return;
+        }
+        try {
+            long ttlSeconds = addJitter(detailTtlSeconds, detailJitterSeconds);
+            SpuDetailVO base = copyBase(loaded);
+            List<SkuDetailVO> skus = loaded.getSkus() == null ? Collections.emptyList() : loaded.getSkus();
+            Map<String, Object> payload = new HashMap<>(4);
+            payload.put(HASH_FIELD_SPU, base);
+            payload.put(HASH_FIELD_SKUS, skus);
+            redisTemplate.delete(key);
+            redisTemplate.opsForHash().putAll(key, payload);
+            redisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            log.warn("Write product detail hash cache failed: key={}", key, ex);
+        }
+    }
+
+    private SpuDetailVO copyBase(SpuDetailVO source) {
+        SpuDetailVO target = new SpuDetailVO();
+        target.setSpuId(source.getSpuId());
+        target.setSpuName(source.getSpuName());
+        target.setSubtitle(source.getSubtitle());
+        target.setCategoryId(source.getCategoryId());
+        target.setBrandId(source.getBrandId());
+        target.setMerchantId(source.getMerchantId());
+        target.setStatus(source.getStatus());
+        target.setDescription(source.getDescription());
+        target.setMainImage(source.getMainImage());
+        target.setCreatedAt(source.getCreatedAt());
+        target.setUpdatedAt(source.getUpdatedAt());
+        target.setSkus(null);
+        return target;
     }
 
     private long addJitter(long baseSeconds, long jitterSeconds) {
