@@ -7,6 +7,7 @@ import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.payment.service.PaymentOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class PaymentOrderController {
 
     private final PaymentOrderService paymentOrderService;
+    private final PaymentSecurityCacheService paymentSecurityCacheService;
 
     @PostMapping("/orders")
     @PreAuthorize("hasAuthority('SCOPE_internal_api')")
@@ -43,6 +47,38 @@ public class PaymentOrderController {
             return Result.forbidden("forbidden to query other user's payment order");
         }
         return Result.success(order);
+    }
+
+    @GetMapping("/orders/{paymentNo}/status")
+    @PreAuthorize("isAuthenticated()")
+    public Result<Map<String, Object>> getPaymentStatus(@PathVariable String paymentNo, Authentication authentication) {
+        PaymentSecurityCacheService.CachedStatus cached = paymentSecurityCacheService.getCachedStatus(paymentNo);
+        if (cached != null) {
+            if (!canReadStatus(authentication, cached.userId())) {
+                return Result.forbidden("forbidden to query other user's payment status");
+            }
+            return Result.success(Map.of(
+                    "paymentNo", paymentNo,
+                    "status", cached.status()
+            ));
+        }
+
+        PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
+        if (order == null) {
+            return Result.notFound("payment order not found");
+        }
+        if (!canReadOrder(authentication, order)) {
+            return Result.forbidden("forbidden to query other user's payment status");
+        }
+        if (!paymentSecurityCacheService.isFinalStatus(order.getStatus())) {
+            paymentSecurityCacheService.cacheStatus(paymentNo, order.getUserId(), order.getStatus());
+        } else {
+            paymentSecurityCacheService.evictStatus(paymentNo);
+        }
+        return Result.success(Map.of(
+                "paymentNo", order.getPaymentNo(),
+                "status", order.getStatus()
+        ));
     }
 
     @PostMapping("/callbacks")
@@ -70,5 +106,14 @@ public class PaymentOrderController {
         }
         String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
         return currentUserId != null && currentUserId.equals(String.valueOf(order.getUserId()));
+    }
+
+    private boolean canReadStatus(Authentication authentication, Long userId) {
+        if (SecurityPermissionUtils.hasAuthority(authentication, "SCOPE_internal_api")
+                || SecurityPermissionUtils.isAdmin(authentication)) {
+            return true;
+        }
+        String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
+        return currentUserId != null && userId != null && currentUserId.equals(String.valueOf(userId));
     }
 }

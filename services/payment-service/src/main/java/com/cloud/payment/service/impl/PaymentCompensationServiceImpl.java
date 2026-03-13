@@ -11,6 +11,7 @@ import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
+import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.metrics.TradeMetrics;
@@ -40,6 +41,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     private final List<PaymentProviderGateway> providerGateways;
     private final PaymentMessageProducer paymentMessageProducer;
     private final TradeMetrics tradeMetrics;
+    private final PaymentSecurityCacheService paymentSecurityCacheService;
 
     @Override
     public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
@@ -133,6 +135,9 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
             }
         }
         paymentOrderMapper.updateById(order);
+        if (ORDER_STATUS_PAID.equals(order.getStatus()) || ORDER_STATUS_FAILED.equals(order.getStatus())) {
+            paymentSecurityCacheService.evictStatus(order.getPaymentNo());
+        }
         if (!ORDER_STATUS_PAID.equals(previousStatus) && ORDER_STATUS_PAID.equals(order.getStatus())) {
             tradeMetrics.incrementPayment("success");
         } else if (!ORDER_STATUS_FAILED.equals(previousStatus) && ORDER_STATUS_FAILED.equals(order.getStatus())) {
