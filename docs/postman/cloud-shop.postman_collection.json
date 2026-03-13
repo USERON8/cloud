@@ -304,6 +304,147 @@
                                       "name":  "订单",
                                       "item":  [
                                                    {
+                                                       "name":  "创建主订单(购物车)",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "创建主订单",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "创建主订单(单品直购)",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"spuId\": {{spuId}},\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
+                                                   {
                                                        "name":  "创建主订单",
                                                        "request":  {
                                                                        "method":  "POST",
@@ -942,6 +1083,147 @@
                                   {
                                       "name":  "订单",
                                       "item":  [
+                                                   {
+                                                       "name":  "创建主订单(购物车)",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "创建主订单",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"cartId\": {{cartId}},\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
+                                                   {
+                                                       "name":  "创建主订单(单品直购)",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json"
+                                                                                      },
+                                                                                      {
+                                                                                          "key":  "Idempotency-Key",
+                                                                                          "value":  "{{idempotencyKey}}"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"userId\": {{userId}},\n  \"spuId\": {{spuId}},\n  \"skuId\": {{skuId}},\n  \"quantity\": 1,\n  \"remark\": \"postman create order\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "{{baseUrl}}/api/orders"
+                                                                   },
+                                                       "event":  [
+                                                                     {
+                                                                         "listen":  "test",
+                                                                         "script":  {
+                                                                                        "type":  "text/javascript",
+                                                                                        "exec":  [
+                                                                                                     "let body = {};",
+                                                                                                     "try { body = pm.response.json(); } catch (e) {}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.mainOrder) {",
+                                                                                                     "  if (body.data.mainOrder.id) pm.environment.set(\u0027mainOrderId\u0027, String(body.data.mainOrder.id));",
+                                                                                                     "  if (body.data.mainOrder.mainOrderNo) pm.environment.set(\u0027mainOrderNo\u0027, body.data.mainOrder.mainOrderNo);",
+                                                                                                     "}",
+                                                                                                     "if (body \u0026\u0026 body.data \u0026\u0026 body.data.subOrders \u0026\u0026 body.data.subOrders.length \u003e 0) {",
+                                                                                                     "  const sub = body.data.subOrders[0].subOrder;",
+                                                                                                     "  if (sub \u0026\u0026 sub.id) pm.environment.set(\u0027subOrderId\u0027, String(sub.id));",
+                                                                                                     "  if (sub \u0026\u0026 sub.subOrderNo) pm.environment.set(\u0027subOrderNo\u0027, sub.subOrderNo);",
+                                                                                                     "}"
+                                                                                                 ]
+                                                                                    }
+                                                                     }
+                                                                 ]
+                                                   },
                                                    {
                                                        "name":  "创建主订单",
                                                        "request":  {
