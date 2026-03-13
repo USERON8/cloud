@@ -311,7 +311,7 @@
     volumes:
       - es-oap-data:/usr/share/elasticsearch/data
       - type: bind
-        source: ./docker-compose/elasticsearch/config/elasticsearch.yml
+        source: ./docker-compose/elasticsearch/config/elasticsearch.oap.yml
         target: /usr/share/elasticsearch/config/elasticsearch.yml
     ports:
       - "${PORT_ES_OAP_HTTP:-19210}:9200"

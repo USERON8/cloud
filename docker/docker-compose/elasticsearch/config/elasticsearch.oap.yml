@@ -1,4 +1,4 @@
-# elasticsearch.yml (search 实例 — 面向业务搜索)
+# elasticsearch.yml (oap 实例 — 面向 SkyWalking 写入)
 
 # 集群与节点标识
 cluster.name: my-application
@@ -28,16 +28,12 @@ http.cors.enabled: true
 http.cors.allow-origin: "*"
 http.cors.allow-credentials: true
 
-# 查询与索引调优（业务搜索）
-indices.query.bool.max_clause_count: 4096          # 复杂查询的最大子句数
-search.max_buckets: 200000                         # 聚合桶上限
-indices.memory.index_buffer_size: 20%              # 索引缓冲区比例（搜索场景）
-indices.queries.cache.size: 10%                    # 查询缓存比例
-indices.fielddata.cache.size: 20%                  # 字段数据缓存比例
-thread_pool.search.size: 4                         # 搜索线程池大小
-thread_pool.search.queue_size: 2000                # 搜索队列
-thread_pool.write.size: 2                          # 写线程池大小
-thread_pool.write.queue_size: 1000                 # 写队列
+# 写多读少优化（SkyWalking OAP）
+indices.memory.index_buffer_size: 30%              # 写入缓冲区比例
+indices.queries.cache.size: 10%                    # 查询缓存比例（保持适中）
+thread_pool.write.size: 4                          # 写线程池大小
+thread_pool.search.size: 2                         # 搜索线程池大小
+index.refresh_interval: 10s                        # SkyWalking 不需要实时刷新
 
 # 磁盘水位（单机容忍度）
 cluster.routing.allocation.disk.watermark.low: 92%       # 低水位
