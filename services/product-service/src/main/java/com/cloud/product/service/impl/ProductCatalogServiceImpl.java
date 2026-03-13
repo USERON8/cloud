@@ -9,6 +9,7 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
+import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
@@ -32,6 +33,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     private final SpuMapper spuMapper;
     private final SkuMapper skuMapper;
     private final ProductDetailCacheService productDetailCacheService;
+    private final ProductSyncMessageProducer productSyncMessageProducer;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -48,6 +50,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             Sku sku = toSkuEntity(spu.getId(), skuDTO);
             skuMapper.insert(sku);
         }
+        productSyncMessageProducer.sendUpsert(spu.getId());
         return spu.getId();
     }
 
@@ -125,6 +128,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             skuMapper.updateById(oldSku);
         }
         productDetailCacheService.evict(spuId);
+        productSyncMessageProducer.sendUpsert(spuId);
         return true;
     }
 
@@ -199,6 +203,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         boolean updated = spuMapper.updateById(spu) > 0;
         if (updated) {
             productDetailCacheService.evict(spuId);
+            productSyncMessageProducer.sendUpsert(spuId);
         }
         return updated;
     }

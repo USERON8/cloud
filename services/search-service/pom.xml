@@ -49,6 +49,14 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-registry-nacos</artifactId>
+        </dependency>
 
         <!-- Encoding-safe comment -->
         <dependency>
@@ -84,11 +92,19 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-messaging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-security</artifactId>
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-db</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-api</artifactId>
         </dependency>
     </dependencies>
 

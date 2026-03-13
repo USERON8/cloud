@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    stream:
+      rocketmq:
+        binder:
+          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
+        bindings:
+          productSyncProducer-out-0:
+            producer:
+              group: product-producer-group
+              sync: false
+              retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
+              retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
+              sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
+      bindings:
+        productSyncProducer-out-0:
+          destination: product-sync
+          content-type: application/json

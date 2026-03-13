@@ -103,6 +103,10 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-messaging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-api</artifactId>
         </dependency>
 
@@ -147,7 +151,6 @@
         </plugins>
     </build>
 </project>
-
 
 
 
