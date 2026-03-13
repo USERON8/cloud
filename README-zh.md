@@ -11,7 +11,7 @@ Version: 1.1.0
 - Outbox 由 `order/payment/stock` 服务内部定时轮询发布到 RocketMQ
 - 消费端使用 Redis 幂等（`MessageIdempotencyService`）防重
 - 用户通知改为 RocketMQ 异步投递（`user-notification` 主题），失败会触发重试
-- Seata 依赖/配置保留，但当前代码未使用 `@GlobalTransactional`，`payment-service` 配置中已关闭 Seata
+- Seata 用于下单扣库存 TCC 与退款 SAGA（在 `order-service` 中实现），`payment-service` 仍禁用 Seata
 
 ## 模块与端口
 

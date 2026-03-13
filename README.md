@@ -13,7 +13,7 @@ Frontend: Vue 3 + TypeScript.
 - Outbox relay runs inside each service (scheduled polling) and publishes to RocketMQ.
 - Consumers are idempotent (Redis-based) to tolerate replays.
 - User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
-- Seata dependencies/config exist, but there are no `@GlobalTransactional` flows in code. `payment-service` has Seata disabled.
+- Seata is used for order placement TCC and refund SAGA in `order-service`. `payment-service` has Seata disabled.
 
 ## Modules And Ports
 
