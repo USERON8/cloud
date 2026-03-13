@@ -17,6 +17,7 @@ import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
+import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import lombok.RequiredArgsConstructor;
@@ -36,18 +37,44 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final OrderStatusRemoteService orderStatusRemoteService;
     private final PaymentMessageProducer paymentMessageProducer;
     private final TradeMetrics tradeMetrics;
+    private final PaymentSecurityCacheService paymentSecurityCacheService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPaymentOrder(PaymentOrderCommandDTO command) {
         ensureOrderReadyForPayment(command);
 
+        if (!paymentSecurityCacheService.allowRateLimit(command.getUserId())) {
+            throw new BusinessException("payment rate limit exceeded");
+        }
+
+        String orderKey = buildOrderKey(command);
+        Long cachedResult = paymentSecurityCacheService.getCachedResult(orderKey);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+
         PaymentOrderEntity existing = paymentOrderMapper.selectOne(new LambdaQueryWrapper<PaymentOrderEntity>()
                 .eq(PaymentOrderEntity::getIdempotencyKey, command.getIdempotencyKey())
                 .eq(PaymentOrderEntity::getDeleted, 0)
                 .last("LIMIT 1"));
         if (existing != null) {
+            paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
+            paymentSecurityCacheService.cacheResult(orderKey, existing.getId());
             return existing.getId();
+        }
+
+        boolean acquired = paymentSecurityCacheService.tryAcquireIdempotent(orderKey, command.getIdempotencyKey());
+        if (!acquired) {
+            PaymentOrderEntity duplicated = paymentOrderMapper.selectOne(new LambdaQueryWrapper<PaymentOrderEntity>()
+                    .eq(PaymentOrderEntity::getIdempotencyKey, command.getIdempotencyKey())
+                    .eq(PaymentOrderEntity::getDeleted, 0)
+                    .last("LIMIT 1"));
+            if (duplicated != null) {
+                paymentSecurityCacheService.cacheResult(orderKey, duplicated.getId());
+                return duplicated.getId();
+            }
+            throw new BusinessException("duplicate payment request");
         }
 
         PaymentOrderEntity entity = new PaymentOrderEntity();
@@ -61,6 +88,8 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         entity.setIdempotencyKey(command.getIdempotencyKey());
         paymentCompensationService.initializePaymentOrderCompensation(entity);
         paymentOrderMapper.insert(entity);
+        paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
+        paymentSecurityCacheService.cacheResult(orderKey, entity.getId());
         return entity.getId();
     }
 
@@ -139,6 +168,9 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         order.setLastPolledAt(LocalDateTime.now());
         order.setLastPollError(null);
         paymentOrderMapper.updateById(order);
+        if ("PAID".equals(order.getStatus()) || "FAILED".equals(order.getStatus())) {
+            paymentSecurityCacheService.evictStatus(order.getPaymentNo());
+        }
         if (!"PAID".equals(previousStatus) && "PAID".equals(order.getStatus())) {
             tradeMetrics.incrementPayment("success");
         } else if (!"FAILED".equals(previousStatus) && "FAILED".equals(order.getStatus())) {
@@ -236,5 +268,9 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
+    }
+
+    private String buildOrderKey(PaymentOrderCommandDTO command) {
+        return command.getMainOrderNo() + ":" + command.getSubOrderNo();
     }
 }
