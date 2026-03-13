@@ -42,6 +42,8 @@ spring:
         namespace: public
         import-check:
           enabled: false
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
   security:
     oauth2:
       resourceserver:

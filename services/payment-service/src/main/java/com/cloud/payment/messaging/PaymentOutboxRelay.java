@@ -1,6 +1,5 @@
 package com.cloud.payment.messaging;
 
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.outbox.OutboxEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
@@ -66,27 +65,12 @@ public class PaymentOutboxRelay {
         }
 
         return switch (eventType) {
-            case "PAYMENT_SUCCESS" -> sendPaymentSuccess(event);
             case "REFUND_COMPLETED" -> sendRefundCompleted(event);
             default -> {
                 log.warn("Unknown outbox event type: eventId={}, eventType={}", event.getEventId(), eventType);
                 yield false;
             }
         };
-    }
-
-    private boolean sendPaymentSuccess(OutboxEvent event) throws Exception {
-        PaymentSuccessEvent payload = objectMapper.readValue(event.getPayload(), PaymentSuccessEvent.class);
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(MessageConst.PROPERTY_KEYS, payload.getOrderNo());
-        headers.put(MessageConst.PROPERTY_TAGS, "PAYMENT_SUCCESS");
-        headers.put("eventId", payload.getEventId());
-        headers.put("eventType", payload.getEventType());
-
-        Message<PaymentSuccessEvent> message = MessageBuilder.withPayload(payload)
-                .copyHeaders(headers)
-                .build();
-        return streamBridge.send("paymentSuccessProducer-out-0", message);
     }
 
     private boolean sendRefundCompleted(OutboxEvent event) throws Exception {

@@ -25,9 +25,6 @@ spring:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:
-          paymentSuccessProducer-out-0:
-            producer:
-              <<: *paymentProducerDefaults
           refundCompletedProducer-out-0:
             producer:
               <<: *paymentProducerDefaults
@@ -36,9 +33,6 @@ spring:
               subscription: 'REFUND_PROCESS'
               <<: *paymentConsumerDefaults
       bindings:
-        paymentSuccessProducer-out-0:
-          destination: payment-success
-          content-type: application/json
         refundCompletedProducer-out-0:
           destination: refund-completed
           content-type: application/json

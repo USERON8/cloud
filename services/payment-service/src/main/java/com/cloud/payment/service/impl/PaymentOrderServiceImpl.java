@@ -11,7 +11,7 @@ import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
-import com.cloud.payment.messaging.PaymentMessageProducer;
+import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
@@ -35,7 +35,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final PaymentCallbackLogMapper paymentCallbackLogMapper;
     private final PaymentCompensationService paymentCompensationService;
     private final OrderStatusRemoteService orderStatusRemoteService;
-    private final PaymentMessageProducer paymentMessageProducer;
+    private final PaymentSuccessTxProducer paymentSuccessTxProducer;
     private final TradeMetrics tradeMetrics;
     private final PaymentSecurityCacheService paymentSecurityCacheService;
 
@@ -189,7 +189,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 .paymentMethod(order.getChannel())
                 .transactionNo(command.getProviderTxnNo())
                 .build();
-        paymentMessageProducer.sendPaymentSuccessEvent(event);
+        paymentSuccessTxProducer.send(event);
     }
 
     @Override

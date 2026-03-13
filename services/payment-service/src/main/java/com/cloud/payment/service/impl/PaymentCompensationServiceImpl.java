@@ -7,6 +7,7 @@ import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.messaging.PaymentMessageProducer;
+import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
@@ -40,6 +41,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     private final PaymentCompensationProperties properties;
     private final List<PaymentProviderGateway> providerGateways;
     private final PaymentMessageProducer paymentMessageProducer;
+    private final PaymentSuccessTxProducer paymentSuccessTxProducer;
     private final TradeMetrics tradeMetrics;
     private final PaymentSecurityCacheService paymentSecurityCacheService;
 
@@ -191,7 +193,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
                 .paymentMethod(order.getChannel())
                 .transactionNo(order.getProviderTxnNo())
                 .build();
-        paymentMessageProducer.sendPaymentSuccessEvent(event);
+        paymentSuccessTxProducer.send(event);
     }
 
     private void publishRefundCompletedIfNeeded(PaymentOrderEntity order, PaymentRefundEntity refund, String previousStatus) {
