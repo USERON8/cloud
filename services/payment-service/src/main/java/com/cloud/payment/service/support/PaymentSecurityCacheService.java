@@ -17,6 +17,8 @@ public class PaymentSecurityCacheService {
     private static final String IDEMPOTENT_PREFIX = "pay:idempotent:";
     private static final String RESULT_PREFIX = "pay:result:";
     private static final String STATUS_PREFIX = "pay:status:";
+    private static final String STATUS_HASH_USER_ID = "userId";
+    private static final String STATUS_HASH_STATUS = "status";
     private static final String RATE_PREFIX = "pay:rate:";
     private static final String ALIPAY_TOKEN_KEY = "pay:alipay:token";
     private static final String STATUS_SEPARATOR = "|";
@@ -129,21 +131,19 @@ public class PaymentSecurityCacheService {
         }
         String key = STATUS_PREFIX + paymentKey;
         try {
-            String value = stringRedisTemplate.opsForValue().get(key);
-            if (value == null || value.isBlank()) {
+            Object userIdValue = stringRedisTemplate.opsForHash().get(key, STATUS_HASH_USER_ID);
+            Object statusValue = stringRedisTemplate.opsForHash().get(key, STATUS_HASH_STATUS);
+            if (userIdValue == null || statusValue == null) {
                 return null;
             }
-            int idx = value.indexOf(STATUS_SEPARATOR);
-            if (idx <= 0 || idx == value.length() - 1) {
+            Long userId = Long.parseLong(String.valueOf(userIdValue));
+            String status = String.valueOf(statusValue);
+            if (status.isBlank()) {
                 return null;
             }
-            String userIdPart = value.substring(0, idx);
-            String status = value.substring(idx + 1);
-            Long userId = Long.parseLong(userIdPart);
             return new CachedStatus(userId, status);
         } catch (Exception ex) {
-            log.warn("Read payment status cache failed: key={}", key, ex);
-            return null;
+            return readLegacyStatusCache(key, ex);
         }
     }
 
@@ -155,10 +155,13 @@ public class PaymentSecurityCacheService {
             return;
         }
         String key = STATUS_PREFIX + paymentKey;
-        String value = userId + STATUS_SEPARATOR + status;
         try {
-            stringRedisTemplate.opsForValue()
-                    .set(key, value, Duration.ofSeconds(safeSeconds(statusTtlSeconds, 1)));
+            stringRedisTemplate.delete(key);
+            stringRedisTemplate.opsForHash().putAll(key, java.util.Map.of(
+                    STATUS_HASH_USER_ID, String.valueOf(userId),
+                    STATUS_HASH_STATUS, status
+            ));
+            stringRedisTemplate.expire(key, Duration.ofSeconds(safeSeconds(statusTtlSeconds, 1)));
         } catch (Exception ex) {
             log.warn("Write payment status cache failed: key={}", key, ex);
         }
@@ -231,6 +234,27 @@ public class PaymentSecurityCacheService {
 
     private String safeValue(String value) {
         return value == null ? "" : value;
+    }
+
+    private CachedStatus readLegacyStatusCache(String key, Exception cause) {
+        try {
+            String value = stringRedisTemplate.opsForValue().get(key);
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+            int idx = value.indexOf(STATUS_SEPARATOR);
+            if (idx <= 0 || idx == value.length() - 1) {
+                return null;
+            }
+            String userIdPart = value.substring(0, idx);
+            String status = value.substring(idx + 1);
+            Long userId = Long.parseLong(userIdPart);
+            cacheStatus(key.substring(STATUS_PREFIX.length()), userId, status);
+            return new CachedStatus(userId, status);
+        } catch (Exception ex) {
+            log.warn("Read payment status cache failed: key={}", key, cause);
+            return null;
+        }
     }
 
     public record CachedStatus(Long userId, String status) {
