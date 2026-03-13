@@ -77,6 +77,32 @@ public class StockLedgerServiceImpl implements StockLedgerService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public Boolean confirmReservation(StockOperateCommandDTO command) {
+        if (command == null) {
+            return true;
+        }
+        StockReservation reservation = getReservation(command);
+        if (reservation == null) {
+            return true;
+        }
+        ensureReservationQuantityMatches(reservation, command);
+        String status = reservation.getStatus();
+        if ("RESERVED".equals(status) || "CONFIRMED".equals(status)) {
+            return true;
+        }
+        if ("ROLLED_BACK".equals(status) || "RELEASED".equals(status)) {
+            return true;
+        }
+        if ("RESERVING".equals(status)) {
+            reservation.setStatus("RESERVED");
+            stockReservationMapper.updateById(reservation);
+            return true;
+        }
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean confirm(StockOperateCommandDTO command) {
         StockReservation reservation = requireReservation(command);
         if ("CONFIRMED".equals(reservation.getStatus())) {

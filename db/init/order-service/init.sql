@@ -215,6 +215,23 @@ CREATE TABLE IF NOT EXISTS after_sale_timeline
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS order_tcc_log
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    business_key     VARCHAR(128)    NOT NULL,
+    main_order_id    BIGINT UNSIGNED NULL,
+    main_order_no    VARCHAR(64)     NULL,
+    status           VARCHAR(16)     NOT NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_order_tcc_business (business_key),
+    INDEX idx_order_tcc_status_deleted (status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS outbox_event
 (
     id                 BIGINT UNSIGNED PRIMARY KEY,

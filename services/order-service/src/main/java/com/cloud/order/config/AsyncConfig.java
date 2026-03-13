@@ -129,20 +129,4 @@ public class AsyncConfig extends BaseAsyncConfig {
 
         return executor;
     }
-
-    @Bean("orderStockReservationExecutor")
-    public Executor orderStockReservationExecutor() {
-        ThreadPoolTaskExecutor executor = createConfiguredExecutor(
-                "orderStockReservationExecutor",
-                8,
-                32,
-                500,
-                60,
-                "order-stock-"
-        );
-        executor.initialize();
-
-        return executor;
-    }
-
 }

@@ -23,12 +23,4 @@ class AsyncConfigTest {
         assertEquals("order-payment-", pool.getThreadNamePrefix());
         assertEquals(4, pool.getCorePoolSize());
     }
-
-    @Test
-    void orderStockReservationExecutorShouldBeProvisioned() {
-        ThreadPoolTaskExecutor pool = (ThreadPoolTaskExecutor) asyncConfig.orderStockReservationExecutor();
-        assertEquals("order-stock-", pool.getThreadNamePrefix());
-        assertEquals(8, pool.getCorePoolSize());
-        assertEquals(32, pool.getMaxPoolSize());
-    }
 }

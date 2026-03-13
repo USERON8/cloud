@@ -9,6 +9,8 @@ public interface StockLedgerService {
 
     Boolean reserve(StockOperateCommandDTO command);
 
+    Boolean confirmReservation(StockOperateCommandDTO command);
+
     Boolean confirm(StockOperateCommandDTO command);
 
     Boolean release(StockOperateCommandDTO command);
