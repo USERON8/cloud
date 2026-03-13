@@ -10,6 +10,7 @@ import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.impl.OrderShippingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,6 +44,7 @@ public class OrderController {
 
     private final OrderService orderService;
     private final OrderPlacementService orderPlacementService;
+    private final OrderShippingService orderShippingService;
 
     @PostMapping
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
@@ -102,8 +104,10 @@ public class OrderController {
     @PostMapping("/sub/{subOrderId}/actions/{action}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
     public Result<OrderSub> advanceSubOrderStatus(@PathVariable Long subOrderId,
-                                                     @PathVariable String action,
-                                                     Authentication authentication) {
+                                                      @PathVariable String action,
+                                                      @RequestParam(required = false) String shippingCompany,
+                                                      @RequestParam(required = false) String trackingNumber,
+                                                      Authentication authentication) {
         OrderSub subOrder = requireAccessibleSubOrder(subOrderId, authentication);
         if (subOrder == null) {
             return Result.notFound("sub order not found");
@@ -112,7 +116,23 @@ public class OrderController {
         if (!isAllowedSubOrderAction(normalizedAction, authentication)) {
             return Result.forbidden("forbidden to perform action: " + normalizedAction);
         }
+        if ("SHIP".equals(normalizedAction)) {
+            return Result.success(orderShippingService.ship(subOrderId, shippingCompany, trackingNumber));
+        }
         return Result.success(orderService.advanceSubOrderStatus(subOrderId, normalizedAction));
+    }
+
+    @PostMapping("/sub/{subOrderId}/ship")
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    public Result<OrderSub> shipOrder(@PathVariable Long subOrderId,
+                                      @RequestParam String shippingCompany,
+                                      @RequestParam String trackingNumber,
+                                      Authentication authentication) {
+        OrderSub subOrder = requireAccessibleSubOrder(subOrderId, authentication);
+        if (subOrder == null) {
+            return Result.notFound("sub order not found");
+        }
+        return Result.success(orderShippingService.ship(subOrderId, shippingCompany, trackingNumber));
     }
 
     @PostMapping("/after-sales")
