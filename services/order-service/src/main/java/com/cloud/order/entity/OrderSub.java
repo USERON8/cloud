@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -53,8 +54,17 @@ public class OrderSub extends BaseEntity<OrderSub> {
     @TableField("receiver_address")
     private String receiverAddress;
 
+    @TableField("shipping_company")
+    private String shippingCompany;
+
+    @TableField("tracking_number")
+    private String trackingNumber;
+
     @TableField("shipped_at")
     private LocalDateTime shippedAt;
+
+    @TableField("estimated_arrival")
+    private LocalDate estimatedArrival;
 
     @TableField("received_at")
     private LocalDateTime receivedAt;
@@ -68,4 +78,3 @@ public class OrderSub extends BaseEntity<OrderSub> {
     @TableField("close_reason")
     private String closeReason;
 }
-

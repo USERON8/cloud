@@ -6,7 +6,10 @@ import com.cloud.order.entity.OrderSub;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -33,4 +36,21 @@ public interface OrderSubMapper extends BaseMapper<OrderSub> {
             """)
     OrderSub selectActiveByMainOrderIdAndSubOrderNo(@Param("mainOrderId") Long mainOrderId,
                                                     @Param("subOrderNo") String subOrderNo);
+
+    @Update("""
+            UPDATE order_sub
+            SET shipping_company = #{company},
+                tracking_number = #{trackingNumber},
+                estimated_arrival = #{estimatedArrival},
+                shipping_status = #{shippingStatus},
+                shipped_at = COALESCE(shipped_at, #{shippedAt})
+            WHERE id = #{subOrderId}
+              AND deleted = 0
+            """)
+    int updateShippingInfo(@Param("subOrderId") Long subOrderId,
+                           @Param("company") String company,
+                           @Param("trackingNumber") String trackingNumber,
+                           @Param("estimatedArrival") LocalDate estimatedArrival,
+                           @Param("shippedAt") LocalDateTime shippedAt,
+                           @Param("shippingStatus") String shippingStatus);
 }

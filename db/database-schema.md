@@ -275,7 +275,10 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | receiver_name | VARCHAR(64) |
 | receiver_phone | VARCHAR(32) |
 | receiver_address | VARCHAR(255) |
+| shipping_company | VARCHAR(50) |
+| tracking_number | VARCHAR(100) |
 | shipped_at | DATETIME |
+| estimated_arrival | DATE |
 | received_at | DATETIME |
 | done_at | DATETIME |
 | closed_at | DATETIME |
