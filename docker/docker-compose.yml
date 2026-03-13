@@ -42,9 +42,9 @@
       - "${PORT_MYSQL:-13306}:3306"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
-      interval: 5s
-      timeout: 10s
-      retries: 10
+      interval: 10s    # 从 5s 改 10s，降低健康检查频率
+      timeout: 5s      # 超时时间
+      retries: 8       # 重试次数
 
   # 兼容性注释已标准化。
   redis:
