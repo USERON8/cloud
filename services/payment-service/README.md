@@ -15,10 +15,9 @@ Version: 1.1.0
 
 ## 消息与一致性
 
-- 生产消息：`PAYMENT_SUCCESS` / `REFUND_COMPLETED`
-- 可靠投递：写入 `outbox_event`，由 `PaymentOutboxRelay` 定时发布到 RocketMQ
-- 消费消息：`REFUND_PROCESS`（触发退款单创建）
-- 事务模式：本地事务 + Outbox（Seata 依赖存在，但 `payment-service` 当前关闭 Seata）
+- 生产消息：`PAYMENT_SUCCESS`（RocketMQ 事务消息） / `REFUND_COMPLETED`（Outbox）
+- 可靠投递：`REFUND_COMPLETED` 写入 `outbox_event`，由 `PaymentOutboxRelay` 定时发布到 RocketMQ
+- 事务模式：支付成功使用 RocketMQ 事务消息；退款使用本地事务 + Outbox
 
 ## 调度任务
 

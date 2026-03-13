@@ -18,7 +18,7 @@ Version: 1.1.0
 - 生产消息：库存不足时发送 `STOCK_FREEZE_FAILED`
 - 可靠投递：写入 `outbox_event`，由 `StockOutboxRelay` 定时发布到 RocketMQ
 - 消费消息：`STOCK_RESTORE`（退款完成后回滚库存）
-- 事务模式：本地事务 + Outbox（Seata 配置存在，但未启用全局事务）
+- 事务模式：参与 Seata TCC（下单预占 Try/Confirm/Cancel），其余本地事务 + Outbox
 
 ## 本地启动
 

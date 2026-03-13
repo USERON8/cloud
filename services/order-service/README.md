@@ -14,20 +14,21 @@ Version: 1.1.0
 
 ## 消息与一致性
 
-- 生产消息：`ORDER_CREATED` / `ORDER_CANCELLED` / `REFUND_PROCESS` / `STOCK_RESTORE`
-- 可靠投递：写入 `outbox_event`，由 `OrderOutboxRelay` 定时发布到 RocketMQ
+- 生产消息：`ORDER_CREATED` / `ORDER_CANCELLED` / `STOCK_RESTORE` / `ORDER_TIMEOUT`
+- 可靠投递：`ORDER_CREATED` / `ORDER_CANCELLED` / `STOCK_RESTORE` 写入 `outbox_event`，由 `OrderOutboxRelay` 定时发布到 RocketMQ
+- 延迟消息：`ORDER_TIMEOUT` 通过 RocketMQ 延迟等级直接发送
 - 消费幂等：使用 `MessageIdempotencyService`（Redis）防重
-- 事务模式：当前为本地事务 + Outbox（Seata 配置存在，但未启用全局事务）
+- 事务模式：下单扣库存使用 Seata TCC；退款走 Seata SAGA（补偿）；超时取消使用 RocketMQ 延迟消息
 
 ## 库存交互
 
 - Dubbo 调用 `stock-service`：`reserve` / `confirm` / `release` / `rollback`
-- 下单时并行预占库存，支付成功后确认，取消/退款时释放或回滚
+- 下单时通过 TCC 预占库存，支付成功后确认，取消/退款时释放或回滚
 
 ## 调度任务
 
 - 业务定时任务通过 `XXL-JOB` 执行
-- 当前已接入 handler：`orderTimeoutCheckJob`
+- 订单超时取消通过 RocketMQ 延迟消息处理
 - 当前已接入 handler：`orderAutoConfirmReceiptJob`
 - 当前已接入 handler：`afterSaleAutoApproveJob`
 

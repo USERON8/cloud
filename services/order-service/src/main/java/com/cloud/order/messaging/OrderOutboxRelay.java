@@ -1,6 +1,5 @@
 package com.cloud.order.messaging;
 
-import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.messaging.outbox.OutboxEvent;
@@ -71,7 +70,6 @@ public class OrderOutboxRelay {
             case "ORDER_CREATED" -> sendOrderCreated(event);
             case "ORDER_CANCELLED" -> sendOrderCancelled(event);
             case "STOCK_RESTORE" -> sendStockRestore(event);
-            case "REFUND_PROCESS" -> sendRefundProcess(event);
             default -> {
                 log.warn("Unknown outbox event type: eventId={}, eventType={}", event.getEventId(), eventType);
                 yield false;
@@ -119,19 +117,6 @@ public class OrderOutboxRelay {
                 .copyHeaders(headers)
                 .build();
         return streamBridge.send("stockRestoreProducer-out-0", message);
-    }
-
-    private boolean sendRefundProcess(OutboxEvent event) throws Exception {
-        PaymentRefundCommandDTO payload = objectMapper.readValue(event.getPayload(), PaymentRefundCommandDTO.class);
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(MessageConst.PROPERTY_KEYS, payload.getRefundNo());
-        headers.put(MessageConst.PROPERTY_TAGS, "REFUND_PROCESS");
-
-        Message<PaymentRefundCommandDTO> message = MessageBuilder
-                .withPayload(payload)
-                .copyHeaders(headers)
-                .build();
-        return streamBridge.send("refundProcessProducer-out-0", message);
     }
 
     private String asText(Object value) {

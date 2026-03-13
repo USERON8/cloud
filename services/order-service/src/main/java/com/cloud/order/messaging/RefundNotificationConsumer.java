@@ -20,7 +20,6 @@ public class RefundNotificationConsumer {
 
     private static final String NS_REFUND_CREATED = "order:notify:refundCreated";
     private static final String NS_REFUND_AUDITED = "order:notify:refundAudited";
-    private static final String NS_REFUND_PROCESS = "order:notify:refundProcess";
     private static final String NS_REFUND_CANCELLED = "order:notify:refundCancelled";
 
     private final MessageIdempotencyService messageIdempotencyService;
@@ -85,36 +84,6 @@ public class RefundNotificationConsumer {
             } catch (Exception ex) {
                 log.error("Handle refund-audited notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-audited notification failed", ex);
-            }
-        };
-    }
-
-    @Bean
-    public Consumer<Message<Map<String, Object>>> refundProcessNotificationConsumer() {
-        return message -> {
-            Map<String, Object> event = message.getPayload();
-            String eventId = getEventId(event, "REFUND_PROCESS");
-            if (!messageIdempotencyService.tryAcquire(NS_REFUND_PROCESS, eventId)) {
-                log.warn("Duplicate refund-process notification event, skip: eventId={}", eventId);
-                return;
-            }
-
-            try {
-                String refundNo = getString(event, "refundNo");
-                Long userId = getLong(event, "userId");
-                if (userId != null) {
-                    sendNotification(
-                            "USER",
-                            userId,
-                            "Refund is processing",
-                            String.format("Your refund is in processing. refundNo=%s", refundNo)
-                    );
-                }
-                messageIdempotencyService.markSuccess(NS_REFUND_PROCESS, eventId);
-                
-            } catch (Exception ex) {
-                log.error("Handle refund-process notification failed: eventId={}", eventId, ex);
-                throw new RuntimeException("Handle refund-process notification failed", ex);
             }
         };
     }

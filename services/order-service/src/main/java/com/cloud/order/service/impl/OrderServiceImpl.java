@@ -13,10 +13,9 @@ import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
-import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
-import com.cloud.order.service.support.PaymentOrderRemoteService;
+import com.cloud.order.service.support.OrderRefundSagaCoordinator;
 import com.cloud.order.service.support.StockReservationRemoteService;
 import com.cloud.common.metrics.TradeMetrics;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
-import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 
 @Service
 @RequiredArgsConstructor
@@ -93,8 +90,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemMapper orderItemMapper;
     private final AfterSaleMapper afterSaleMapper;
     private final StockReservationRemoteService stockReservationRemoteService;
-    private final PaymentOrderRemoteService paymentOrderRemoteService;
-    private final OrderMessageProducer orderMessageProducer;
+    private final OrderRefundSagaCoordinator orderRefundSagaCoordinator;
     private final TradeMetrics tradeMetrics;
     private final OrderAggregateCacheService orderAggregateCacheService;
 
@@ -293,7 +289,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AfterSale advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
-        boolean refundProcess = false;
+        if ("PROCESS".equalsIgnoreCase(action)) {
+            return startRefundSaga(afterSaleId, remark);
+        }
+
         boolean refundSuccess = false;
         try {
             AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
@@ -305,7 +304,6 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("unsupported after-sale action: " + action);
             }
             validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
-            refundProcess = "PROCESS".equalsIgnoreCase(action);
             refundSuccess = "REFUNDED".equals(targetStatus);
 
             afterSale.setStatus(targetStatus);
@@ -320,17 +318,11 @@ public class OrderServiceImpl implements OrderService {
             syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
             orderAggregateCacheService.evict(afterSale.getMainOrderId());
 
-            if (refundProcess) {
-                dispatchRefundProcess(afterSale, remark);
-            }
             if (refundSuccess) {
                 tradeMetrics.incrementRefund("success");
             }
             return afterSale;
         } catch (Exception ex) {
-            if (refundProcess) {
-                tradeMetrics.incrementRefund("failed");
-            }
             throw ex;
         }
     }
@@ -434,30 +426,21 @@ public class OrderServiceImpl implements OrderService {
         orderMainMapper.updateById(mainOrder);
     }
 
-    private void dispatchRefundProcess(AfterSale afterSale, String remark) {
-        if (afterSale == null) {
-            return;
+    private AfterSale startRefundSaga(Long afterSaleId, String remark) {
+        AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
+        if (afterSale == null || afterSale.getDeleted() == 1) {
+            throw new BusinessException("after sale not found");
         }
-        OrderMain mainOrder = requireOrderMain(afterSale.getMainOrderId());
-        OrderSub subOrder = requireSubOrder(afterSale.getSubOrderId());
-        PaymentOrderVO paymentOrder = paymentOrderRemoteService.getPaymentOrderByOrderNo(
-                mainOrder.getMainOrderNo(), subOrder.getSubOrderNo()
-        );
-        if (paymentOrder == null) {
-            throw new BusinessException("payment order not found for refund process");
-        }
+        String targetStatus = AFTER_SALE_ACTION_TARGET.get("PROCESS");
+        validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
 
-        PaymentRefundCommandDTO command = new PaymentRefundCommandDTO();
-        command.setRefundNo(buildRefundNo(afterSale));
-        command.setPaymentNo(paymentOrder.getPaymentNo());
-        command.setAfterSaleNo(afterSale.getAfterSaleNo());
-        command.setRefundAmount(resolveRefundAmount(afterSale));
-        command.setReason(buildRefundReason(afterSale, remark));
-        command.setIdempotencyKey("after-sale:refund:" + afterSale.getAfterSaleNo());
-
-        boolean sent = orderMessageProducer.sendRefundProcessEvent(command);
-        if (!sent) {
-            throw new BusinessException("failed to dispatch refund process event");
+        try {
+            orderRefundSagaCoordinator.startRefundSaga(afterSale, remark);
+            AfterSale latest = afterSaleMapper.selectById(afterSaleId);
+            return latest == null ? afterSale : latest;
+        } catch (Exception ex) {
+            tradeMetrics.incrementRefund("failed");
+            throw ex;
         }
     }
 
@@ -481,30 +464,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("sub order not found");
         }
         return subOrder;
-    }
-
-    private String buildRefundNo(AfterSale afterSale) {
-        return "RF" + afterSale.getAfterSaleNo();
-    }
-
-    private BigDecimal resolveRefundAmount(AfterSale afterSale) {
-        if (afterSale.getApprovedAmount() != null && afterSale.getApprovedAmount().compareTo(BigDecimal.ZERO) > 0) {
-            return afterSale.getApprovedAmount();
-        }
-        if (afterSale.getApplyAmount() != null) {
-            return afterSale.getApplyAmount();
-        }
-        return BigDecimal.ZERO;
-    }
-
-    private String buildRefundReason(AfterSale afterSale, String remark) {
-        if (remark != null && !remark.isBlank()) {
-            return remark;
-        }
-        if (afterSale.getReason() != null && !afterSale.getReason().isBlank()) {
-            return afterSale.getReason();
-        }
-        return "after-sale refund";
     }
 
     private BigDecimal defaultAmount(BigDecimal amount) {

@@ -249,6 +249,13 @@ seata:
   tx-service-group: ${SEATA_TX_SERVICE_GROUP:default_tx_group}
   enable-auto-data-source-proxy: true
   data-source-proxy-mode: AT
+  saga:
+    enabled: true
+    state-machine:
+      resources: classpath:saga/*.json
+      async-thread-pool:
+        core-pool-size: 2
+        max-pool-size: 4
   service:
     vgroup-mapping:
       default_tx_group: ${SEATA_TX_CLUSTER:default}

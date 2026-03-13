@@ -1,0 +1,30 @@
+{
+  "name": "refundSaga",
+  "comment": "Refund saga for after-sale process",
+  "version": "1.0.0",
+  "startState": "refundApply",
+  "states": {
+    "refundApply": {
+      "type": "serviceTask",
+      "serviceName": "orderRefundSagaService.applyRefund",
+      "compensateState": "refundApplyCompensate",
+      "next": "refundCreate"
+    },
+    "refundCreate": {
+      "type": "serviceTask",
+      "serviceName": "orderRefundSagaService.createRefund",
+      "compensateState": "refundCreateCompensate",
+      "end": true
+    },
+    "refundApplyCompensate": {
+      "type": "serviceTask",
+      "serviceName": "orderRefundSagaService.cancelRefund",
+      "end": true
+    },
+    "refundCreateCompensate": {
+      "type": "serviceTask",
+      "serviceName": "orderRefundSagaService.cancelRefund",
+      "end": true
+    }
+  }
+}

@@ -1,6 +1,5 @@
 package com.cloud.order.messaging;
 
-import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
@@ -138,21 +137,4 @@ public class OrderMessageProducer {
         }
     }
 
-    public boolean sendRefundProcessEvent(PaymentRefundCommandDTO command) {
-        try {
-            String eventId = UUID.randomUUID().toString();
-            String payload = objectMapper.writeValueAsString(command);
-            outboxEventService.enqueue(
-                    "REFUND",
-                    command.getRefundNo(),
-                    "REFUND_PROCESS",
-                    payload,
-                    eventId
-            );
-            return true;
-        } catch (Exception e) {
-            log.error("?? refundNo={}", command == null ? null : command.getRefundNo(), e);
-            return false;
-        }
-    }
 }
