@@ -13,7 +13,7 @@ import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReserveTccRemoteService;
 import com.cloud.order.tcc.OrderCreateTccAction;
-import io.seata.spring.annotation.GlobalTransactional;
+import org.apache.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

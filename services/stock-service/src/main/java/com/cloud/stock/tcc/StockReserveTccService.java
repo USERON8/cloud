@@ -3,7 +3,7 @@ package com.cloud.stock.tcc;
 import com.cloud.api.stock.StockReserveTccApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.stock.service.StockLedgerService;
-import io.seata.rm.tcc.api.BusinessActionContext;
+import org.apache.seata.rm.tcc.api.BusinessActionContext;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.stereotype.Component;
