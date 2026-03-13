@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class CategorySearchServiceImpl implements CategorySearchService {
 
-    private static final String PROCESSED_EVENT_KEY_PREFIX = "search:category:processed:";
     private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:category:processed:bucket:";
     private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
     private static final int PROCESSED_LOOKBACK_DAYS = 1;
@@ -89,7 +88,7 @@ public class CategorySearchServiceImpl implements CategorySearchService {
                     return true;
                 }
             }
-            return Boolean.TRUE.equals(redisTemplate.hasKey(PROCESSED_EVENT_KEY_PREFIX + traceId));
+            return false;
         } catch (Exception e) {
             log.warn("Check category processed event failed: traceId={}", traceId, e);
             return false;

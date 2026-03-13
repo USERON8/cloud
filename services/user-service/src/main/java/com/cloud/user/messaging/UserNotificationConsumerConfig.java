@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 public class UserNotificationConsumerConfig {
 
     private static final String PROCESSING_PREFIX = "notification:processing:";
-    private static final String DONE_PREFIX = "notification:done:";
     private static final String DONE_BUCKET_PREFIX = "notification:done:bucket:";
     private static final String INVALID_BUCKET_PREFIX = "notification:invalid:bucket:";
     private static final long PROCESSING_TTL_MINUTES = 5;
@@ -144,7 +143,7 @@ public class UserNotificationConsumerConfig {
                     return true;
                 }
             }
-            return Boolean.TRUE.equals(redisTemplate.hasKey(DONE_PREFIX + eventId));
+            return false;
         } catch (Exception e) {
             log.warn("Check notification processed state failed: eventId={}", eventId, e);
             return false;

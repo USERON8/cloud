@@ -65,20 +65,10 @@ public class ProductDetailCacheService {
 
         String key = buildKey(spuId);
         try {
-            var dataType = redisTemplate.type(key);
-            if (org.springframework.data.redis.connection.DataType.HASH.equals(dataType)) {
-                SpuDetailVO cachedVo = readFromHash(key);
-                if (cachedVo != null) {
-                    l1Cache.put(spuId, cachedVo);
-                    return cachedVo;
-                }
-            } else if (org.springframework.data.redis.connection.DataType.STRING.equals(dataType)) {
-                SpuDetailVO cachedVo = readLegacyValue(key);
-                if (cachedVo != null) {
-                    l1Cache.put(spuId, cachedVo);
-                    cacheToHash(key, cachedVo);
-                    return cachedVo;
-                }
+            SpuDetailVO cachedVo = readFromHash(key);
+            if (cachedVo != null) {
+                l1Cache.put(spuId, cachedVo);
+                return cachedVo;
             }
         } catch (Exception ex) {
             log.warn("Read product detail cache failed: spuId={}", spuId, ex);
@@ -130,18 +120,6 @@ public class ProductDetailCacheService {
             log.warn("Read product detail hash cache failed: key={}", key, ex);
             return null;
         }
-    }
-
-    private SpuDetailVO readLegacyValue(String key) {
-        try {
-            Object value = redisTemplate.opsForValue().get(key);
-            if (value instanceof SpuDetailVO cachedVo) {
-                return cachedVo;
-            }
-        } catch (Exception ex) {
-            log.warn("Read legacy product detail cache failed: key={}", key, ex);
-        }
-        return null;
     }
 
     private void cacheToHash(String key, SpuDetailVO loaded) {

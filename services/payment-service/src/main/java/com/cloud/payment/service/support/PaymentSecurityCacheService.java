@@ -21,7 +21,6 @@ public class PaymentSecurityCacheService {
     private static final String STATUS_HASH_STATUS = "status";
     private static final String RATE_PREFIX = "pay:rate:";
     private static final String ALIPAY_TOKEN_KEY = "pay:alipay:token";
-    private static final String STATUS_SEPARATOR = "|";
 
     private final StringRedisTemplate stringRedisTemplate;
 
@@ -143,7 +142,8 @@ public class PaymentSecurityCacheService {
             }
             return new CachedStatus(userId, status);
         } catch (Exception ex) {
-            return readLegacyStatusCache(key, ex);
+            log.warn("Read payment status cache failed: key={}", key, ex);
+            return null;
         }
     }
 
@@ -236,26 +236,6 @@ public class PaymentSecurityCacheService {
         return value == null ? "" : value;
     }
 
-    private CachedStatus readLegacyStatusCache(String key, Exception cause) {
-        try {
-            String value = stringRedisTemplate.opsForValue().get(key);
-            if (value == null || value.isBlank()) {
-                return null;
-            }
-            int idx = value.indexOf(STATUS_SEPARATOR);
-            if (idx <= 0 || idx == value.length() - 1) {
-                return null;
-            }
-            String userIdPart = value.substring(0, idx);
-            String status = value.substring(idx + 1);
-            Long userId = Long.parseLong(userIdPart);
-            cacheStatus(key.substring(STATUS_PREFIX.length()), userId, status);
-            return new CachedStatus(userId, status);
-        } catch (Exception ex) {
-            log.warn("Read payment status cache failed: key={}", key, cause);
-            return null;
-        }
-    }
 
     public record CachedStatus(Long userId, String status) {
     }

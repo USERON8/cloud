@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ShopSearchServiceImpl implements ShopSearchService {
 
-    private static final String PROCESSED_EVENT_KEY_PREFIX = "search:shop:processed:";
     private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
     private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
     private static final int PROCESSED_LOOKBACK_DAYS = 1;
@@ -99,7 +98,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                     return true;
                 }
             }
-            return Boolean.TRUE.equals(redisTemplate.hasKey(PROCESSED_EVENT_KEY_PREFIX + traceId));
+            return false;
         } catch (Exception e) {
             log.warn("Check shop processed event failed: traceId={}", traceId, e);
             return false;
