@@ -13,6 +13,8 @@ import cn.hutool.core.util.StrUtil;
 
 import java.util.Collections;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -21,7 +23,10 @@ import java.util.concurrent.TimeUnit;
 public class CategorySearchServiceImpl implements CategorySearchService {
 
     private static final String PROCESSED_EVENT_KEY_PREFIX = "search:category:processed:";
+    private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:category:processed:bucket:";
     private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
+    private static final int PROCESSED_LOOKBACK_DAYS = 1;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final CategoryDocumentRepository categoryDocumentRepository;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -77,6 +82,13 @@ public class CategorySearchServiceImpl implements CategorySearchService {
             return false;
         }
         try {
+            for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
+                String bucketKey = buildProcessedBucketKey(i);
+                Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
+                if (Boolean.TRUE.equals(exists)) {
+                    return true;
+                }
+            }
             return Boolean.TRUE.equals(redisTemplate.hasKey(PROCESSED_EVENT_KEY_PREFIX + traceId));
         } catch (Exception e) {
             log.warn("Check category processed event failed: traceId={}", traceId, e);
@@ -90,15 +102,17 @@ public class CategorySearchServiceImpl implements CategorySearchService {
             return;
         }
         try {
-            redisTemplate.opsForValue().set(
-                    PROCESSED_EVENT_KEY_PREFIX + traceId,
-                    "1",
-                    PROCESSED_EVENT_TTL_SECONDS,
-                    TimeUnit.SECONDS
-            );
+            String bucketKey = buildProcessedBucketKey(0);
+            redisTemplate.opsForHash().put(bucketKey, traceId, "1");
+            redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Mark category event processed failed: traceId={}", traceId, e);
         }
+    }
+
+    private String buildProcessedBucketKey(int offsetDays) {
+        LocalDate date = LocalDate.now().minusDays(offsetDays);
+        return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
     }
 
     @Override

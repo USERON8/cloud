@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,7 +33,10 @@ import java.util.stream.Collectors;
 public class ShopSearchServiceImpl implements ShopSearchService {
 
     private static final String PROCESSED_EVENT_KEY_PREFIX = "search:shop:processed:";
+    private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
     private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
+    private static final int PROCESSED_LOOKBACK_DAYS = 1;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final ShopDocumentRepository shopDocumentRepository;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -87,6 +92,13 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             return false;
         }
         try {
+            for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
+                String bucketKey = buildProcessedBucketKey(i);
+                Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
+                if (Boolean.TRUE.equals(exists)) {
+                    return true;
+                }
+            }
             return Boolean.TRUE.equals(redisTemplate.hasKey(PROCESSED_EVENT_KEY_PREFIX + traceId));
         } catch (Exception e) {
             log.warn("Check shop processed event failed: traceId={}", traceId, e);
@@ -100,15 +112,17 @@ public class ShopSearchServiceImpl implements ShopSearchService {
             return;
         }
         try {
-            redisTemplate.opsForValue().set(
-                    PROCESSED_EVENT_KEY_PREFIX + traceId,
-                    "1",
-                    PROCESSED_EVENT_TTL_SECONDS,
-                    TimeUnit.SECONDS
-            );
+            String bucketKey = buildProcessedBucketKey(0);
+            redisTemplate.opsForHash().put(bucketKey, traceId, "1");
+            redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Mark shop event processed failed: traceId={}", traceId, e);
         }
+    }
+
+    private String buildProcessedBucketKey(int offsetDays) {
+        LocalDate date = LocalDate.now().minusDays(offsetDays);
+        return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
     }
 
     @Override
