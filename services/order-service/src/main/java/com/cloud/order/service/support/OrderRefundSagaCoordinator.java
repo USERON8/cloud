@@ -53,7 +53,7 @@ public class OrderRefundSagaCoordinator {
         params.put("subOrderNo", subOrder.getSubOrderNo());
         params.put("userId", afterSale.getUserId());
 
-        stateMachineEngine.startWithBusinessKey("refundSaga", afterSale.getAfterSaleNo(), params);
+        stateMachineEngine.startWithBusinessKey("refundSaga", afterSale.getAfterSaleNo(), "refundApply", params);
     }
 
     private OrderMain requireMainOrder(Long mainOrderId) {

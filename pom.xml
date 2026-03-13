@@ -78,6 +78,7 @@
         <xxl-job.version>2.5.0</xxl-job.version>
         <sentinel.version>1.8.8</sentinel.version>
         <seata.version>2.3.0</seata.version>
+        <rocketmq-spring.version>2.2.3</rocketmq-spring.version>
 
         <!-- Encoding-safe comment -->
         <junit.version>5.10.3</junit.version>
