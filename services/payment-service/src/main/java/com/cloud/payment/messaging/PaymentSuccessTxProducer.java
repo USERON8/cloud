@@ -18,7 +18,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentSuccessTxProducer {
 
-    public static final String TX_GROUP = "payment-success-tx-group";
     private static final String DESTINATION = "payment-success:PAYMENT_SUCCESS";
 
     private final RocketMQTemplate rocketMQTemplate;
@@ -44,7 +43,7 @@ public class PaymentSuccessTxProducer {
                 .setHeader("eventType", event.getEventType())
                 .build();
         try {
-            rocketMQTemplate.sendMessageInTransaction(TX_GROUP, DESTINATION, message, event);
+            rocketMQTemplate.sendMessageInTransaction(DESTINATION, message, event);
         } catch (Exception ex) {
             log.error("Send payment success tx message failed: orderNo={}", event.getOrderNo(), ex);
             throw ex;

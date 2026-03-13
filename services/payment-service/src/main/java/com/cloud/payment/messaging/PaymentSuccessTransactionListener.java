@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@RocketMQTransactionListener(txProducerGroup = PaymentSuccessTxProducer.TX_GROUP)
+@RocketMQTransactionListener
 public class PaymentSuccessTransactionListener implements RocketMQLocalTransactionListener {
 
     private final PaymentOrderMapper paymentOrderMapper;
