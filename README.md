@@ -85,7 +85,7 @@ bash scripts/dev/start-services.sh
 ```
 
 When `start-services.*` is run directly, it auto-exports the local runtime addresses and development secrets required by gateway/auth, including `GATEWAY_SIGNATURE_SECRET`, `CLIENT_SERVICE_SECRET`, `APP_OAUTH2_*_CLIENT_SECRET`, and `APP_JWT_ALLOW_GENERATED_KEYPAIR`.
-`start-platform.*` and `start-services.*` also auto-wire SkyWalking by default. On first use, the javaagent is downloaded into `.tmp/skywalking/` and then injected into every Java service so HTTP, Dubbo, Redis, and JDBC/MyBatis traces are available in SkyWalking UI.
+`start-platform.*` and `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services, using the agent under `docker/monitor/skywalking/agent/`, so HTTP, Dubbo, Redis, and JDBC/MyBatis traces show up in SkyWalking UI.
 
 Restart only the services you changed:
 
@@ -124,10 +124,9 @@ pnpm --dir my-shop-web build
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
 - Transactional messaging is implemented via `outbox_event` + scheduled relay in `order-service`, `payment-service`, and `stock-service`.
 - Seata configuration is present but not actively used by global transactions.
-- SkyWalking javaagent injection is supported by startup scripts.
-- SkyWalking javaagent auto-download/caching is enabled by default via `.tmp/skywalking/`.
-- Set `SKYWALKING_AUTO_ENABLE=false` to disable the automatic agent wiring.
-- Set `SKYWALKING_AGENT_PATH` to use a custom agent jar.
+- SkyWalking agent is stored under `docker/monitor/skywalking/agent/`.
+- `start-platform.*` / `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services.
+- Ignore paths are configured in `docker/monitor/skywalking/agent/config/apm-trace-ignore-plugin.config` (filters health check noise).
 - SkyWalking OAP telemetry is exposed for Prometheus at `http://127.0.0.1:1234/metrics`.
 - SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
 - XXL-Job executor is built in and disabled by default.

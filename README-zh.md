@@ -84,7 +84,7 @@ bash scripts/dev/start-services.sh
 
 说明：服务交互参数统一由 Nacos `common.yaml` 配置中心下发，不依赖启动脚本外部注入。
 补充：直接执行 `start-services.*` 时，脚本会自动注入本地开发环境所需的基础地址和默认 key/secret，例如 `GATEWAY_SIGNATURE_SECRET`、`CLIENT_SERVICE_SECRET`、`APP_OAUTH2_*_CLIENT_SECRET`、`APP_JWT_ALLOW_GENERATED_KEYPAIR`。
-补充：`start-platform.*` / `start-services.*` 也会默认自动接入 SkyWalking，首次会把 agent 下载并缓存到 `.tmp/skywalking/`，随后所有 Java 服务会自动注入 `javaagent`，方便在 SkyWalking UI 里查 HTTP、Dubbo、Redis、JDBC/MyBatis 链路。
+补充：`start-platform.*` / `start-services.*` 会为 8 个业务服务设置 `JAVA_TOOL_OPTIONS` 与 `SW_AGENT_NAME`，使用 `docker/monitor/skywalking/agent/` 的 agent，方便在 SkyWalking UI 里查 HTTP、Dubbo、Redis、JDBC/MyBatis 链路。
 
 5. 构建前端并部署到 Nginx 静态目录：
 
@@ -136,10 +136,9 @@ pnpm --dir my-shop-web build
   - 已切换为 `com.alibaba.druid.pool.DruidDataSource`。
   - 常用环境变量：`DB_POOL_SIZE`、`DB_MIN_IDLE`、`DB_CONNECTION_TIMEOUT`。
 - SkyWalking：
-  - 启动脚本默认自动注入 `javaagent`，首次会下载并缓存到 `.tmp/skywalking/`。
-  - 可用 `SKYWALKING_AUTO_ENABLE=false` 关闭自动接入。
-  - 可通过 `SKYWALKING_AGENT_PATH` 指定自定义 agent jar。
-  - 可选设置 `SKYWALKING_COLLECTOR_BACKEND_SERVICE`（默认 `127.0.0.1:11800`）。
+  - Agent 固定放在 `docker/monitor/skywalking/agent/`。
+  - `start-platform.*` / `start-services.*` 会为 8 个业务服务设置 `JAVA_TOOL_OPTIONS` 与 `SW_AGENT_NAME`。
+  - 忽略路径配置在 `docker/monitor/skywalking/agent/config/apm-trace-ignore-plugin.config`（过滤健康检查噪音）。
   - agent 日志写入 `.tmp/service-runtime/<service>/skywalking-agent/`。
 - xxl-job：
   - 已内置执行器自动配置，默认关闭。
