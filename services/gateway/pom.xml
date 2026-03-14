@@ -79,7 +79,7 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-web</artifactId>
+            <artifactId>common-async</artifactId>
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>

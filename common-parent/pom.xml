@@ -16,6 +16,7 @@
     <modules>
         <module>common-core</module>
         <module>common-domain</module>
+        <module>common-async</module>
         <module>common-web</module>
         <module>common-db</module>
         <module>common-security</module>
