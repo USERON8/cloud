@@ -6,17 +6,18 @@ import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.mapper.SearchRequestMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,11 +30,31 @@ public class SearchFacadeService {
     private final ObjectMapper objectMapper;
 
     public SearchResult<ProductDocument> searchProducts(ProductSearchRequest request) {
-        return productSearchService.searchProducts(request);
+        return searchProducts(request, null);
+    }
+
+    public SearchResult<ProductDocument> searchProducts(ProductSearchRequest request, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.searchProducts(request);
+        }
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        int safePage = resolvePage(request == null ? null : request.getPage());
+        int safeSize = resolveSize(request == null ? null : request.getSize());
+        return toSearchResult(esResult, safePage, safeSize, System.currentTimeMillis() - start);
     }
 
     public SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request) {
-        return productSearchService.getProductFilters(request);
+        return getProductFilters(request, null);
+    }
+
+    public SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request, String searchAfter) {
+        SearchResult<ProductDocument> base = searchProducts(request, searchAfter);
+        List<ProductDocument> list = base.getList() == null ? new ArrayList<>() : base.getList();
+        base.setAggregations(buildFilterAggregations(list));
+        return base;
     }
 
     public List<String> getSearchSuggestions(String keyword, Integer size) {
@@ -51,76 +72,137 @@ public class SearchFacadeService {
         return elasticsearchOptimizedService.getKeywordRecommendations(keyword, safeSize);
     }
 
-    public Page<ProductDocument> searchByKeyword(String keyword, int page, int size, String sortBy, String sortDir) {
+    public SearchResult<ProductDocument> searchByKeyword(String keyword, int page, int size, String sortBy, String sortDir, String searchAfter) {
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 20 : size;
-        int from = safePage * safeSize;
-        ElasticsearchOptimizedService.SearchResult optimizedResult = elasticsearchOptimizedService.smartProductSearch(
-                keyword,
-                null,
-                null,
-                null,
-                sortBy,
-                sortDir,
-                from,
-                safeSize
-        );
-
-        List<ProductDocument> records = optimizedResult.getDocuments().stream()
-                .map(document -> objectMapper.convertValue(document, ProductDocument.class))
-                .toList();
-        long total = optimizedResult.getTotal();
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         String safeSortBy = (sortBy == null || sortBy.isBlank()) ? "hotScore" : sortBy;
-        return new PageImpl<>(records, PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy)), total);
+        String safeSortDir = (sortDir == null || sortDir.isBlank()) ? "desc" : sortDir;
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        long start = System.currentTimeMillis();
+
+        ElasticsearchOptimizedService.SearchResult optimizedResult;
+        if (!searchAfterValues.isEmpty()) {
+            optimizedResult = elasticsearchOptimizedService.smartProductSearchAfter(
+                    keyword,
+                    null,
+                    null,
+                    null,
+                    safeSortBy,
+                    safeSortDir,
+                    searchAfterValues,
+                    safeSize
+            );
+        } else {
+            int from = safePage * safeSize;
+            optimizedResult = elasticsearchOptimizedService.smartProductSearch(
+                    keyword,
+                    null,
+                    null,
+                    null,
+                    safeSortBy,
+                    safeSortDir,
+                    from,
+                    safeSize
+            );
+        }
+
+        return toSearchResult(optimizedResult, safePage, safeSize, System.currentTimeMillis() - start);
     }
 
-    public Page<ProductDocument> searchByCategory(Long categoryId, String keyword, int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
-                keyword,
-                categoryId,
-                null,
-                null,
-                null,
-                null,
-                "hotScore",
-                "desc",
-                page,
-                size
-        );
-        return toPage(result, page, size, "hotScore", "desc");
+    public SearchResult<ProductDocument> searchByCategory(Long categoryId, String keyword, int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.combinedSearch(
+                    keyword,
+                    categoryId,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "hotScore",
+                    "desc",
+                    page,
+                    size
+            );
+        }
+
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setKeyword(keyword);
+        request.setCategoryId(categoryId);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public Page<ProductDocument> searchByShop(Long shopId, String keyword, int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
-                keyword,
-                null,
-                null,
-                null,
-                null,
-                shopId,
-                "hotScore",
-                "desc",
-                page,
-                size
-        );
-        return toPage(result, page, size, "hotScore", "desc");
+    public SearchResult<ProductDocument> searchByShop(Long shopId, String keyword, int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.combinedSearch(
+                    keyword,
+                    null,
+                    null,
+                    null,
+                    null,
+                    shopId,
+                    "hotScore",
+                    "desc",
+                    page,
+                    size
+            );
+        }
+
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setKeyword(keyword);
+        request.setShopId(shopId);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public Page<ProductDocument> advancedSearch(String keyword, BigDecimal minPrice, BigDecimal maxPrice, int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.combinedSearch(
-                keyword,
-                null,
-                null,
-                minPrice != null ? minPrice : BigDecimal.ZERO,
-                maxPrice != null ? maxPrice : new BigDecimal("999999"),
-                null,
-                "hotScore",
-                "desc",
-                page,
-                size
-        );
-        return toPage(result, page, size, "hotScore", "desc");
+    public SearchResult<ProductDocument> advancedSearch(String keyword, BigDecimal minPrice, BigDecimal maxPrice, int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        BigDecimal safeMinPrice = minPrice != null ? minPrice : BigDecimal.ZERO;
+        BigDecimal safeMaxPrice = maxPrice != null ? maxPrice : new BigDecimal("999999");
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.combinedSearch(
+                    keyword,
+                    null,
+                    null,
+                    safeMinPrice,
+                    safeMaxPrice,
+                    null,
+                    "hotScore",
+                    "desc",
+                    page,
+                    size
+            );
+        }
+
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setKeyword(keyword);
+        request.setMinPrice(safeMinPrice);
+        request.setMaxPrice(safeMaxPrice);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
     public ElasticsearchOptimizedService.SearchResult smartSearch(String keyword, Long categoryId, Double minPrice, Double maxPrice,
@@ -154,62 +236,233 @@ public class SearchFacadeService {
         );
     }
 
-    public Page<ProductDocument> getRecommendedProducts(int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.getRecommendedProducts(page, size);
-        return toPage(result, page, size, "hotScore", "desc");
+    public SearchResult<ProductDocument> getRecommendedProducts(int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.getRecommendedProducts(page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setRecommended(true);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public Page<ProductDocument> getNewProducts(int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.getNewProducts(page, size);
-        return toPage(result, page, size, "createdAt", "desc");
+    public SearchResult<ProductDocument> getNewProducts(int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.getNewProducts(page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setIsNew(true);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("createdAt");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public Page<ProductDocument> getHotProducts(int page, int size) {
-        SearchResult<ProductDocument> result = productSearchService.getHotProducts(page, size);
-        return toPage(result, page, size, "salesCount", "desc");
+    public SearchResult<ProductDocument> getHotProducts(int page, int size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.getHotProducts(page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setIsHot(true);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("salesCount");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size) {
-        return productSearchService.basicSearch(keyword, page, size);
+    public SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.basicSearch(keyword, page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setKeyword(keyword);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> filterSearch(ProductFilterRequest request) {
+    public SearchResult<ProductDocument> filterSearch(ProductFilterRequest request, String searchAfter) {
         ProductSearchRequest searchRequest = searchRequestMapper.toSearchRequest(request);
-        return productSearchService.filterSearch(searchRequest);
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.filterSearch(searchRequest);
+        }
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(searchRequest, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(searchRequest == null ? null : searchRequest.getPage()),
+                resolveSize(searchRequest == null ? null : searchRequest.getSize()),
+                System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> searchByCategoryFilter(Long categoryId, Integer page, Integer size) {
-        return productSearchService.searchByCategory(categoryId, page, size);
+    public SearchResult<ProductDocument> searchByCategoryFilter(Long categoryId, Integer page, Integer size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.searchByCategory(categoryId, page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setCategoryId(categoryId);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> searchByBrandFilter(Long brandId, Integer page, Integer size) {
-        return productSearchService.searchByBrand(brandId, page, size);
+    public SearchResult<ProductDocument> searchByBrandFilter(Long brandId, Integer page, Integer size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.searchByBrand(brandId, page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setBrandId(brandId);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> searchByPriceFilter(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size) {
-        return productSearchService.searchByPriceRange(minPrice, maxPrice, page, size);
+    public SearchResult<ProductDocument> searchByPriceFilter(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.searchByPriceRange(minPrice, maxPrice, page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setMinPrice(minPrice);
+        request.setMaxPrice(maxPrice);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    public SearchResult<ProductDocument> searchByShopFilter(Long shopId, Integer page, Integer size) {
-        return productSearchService.searchByShop(shopId, page, size);
+    public SearchResult<ProductDocument> searchByShopFilter(Long shopId, Integer page, Integer size, String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.searchByShop(shopId, page, size);
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setShopId(shopId);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy("hotScore");
+        request.setSortOrder("desc");
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
     public SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
                                                         BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
-                                                        String sortBy, String sortOrder, Integer page, Integer size) {
-        return productSearchService.combinedSearch(
-                keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size
-        );
+                                                        String sortBy, String sortOrder, Integer page, Integer size,
+                                                        String searchAfter) {
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (searchAfterValues.isEmpty()) {
+            return productSearchService.combinedSearch(
+                    keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size
+            );
+        }
+        ProductSearchRequest request = new ProductSearchRequest();
+        request.setKeyword(keyword);
+        request.setCategoryId(categoryId);
+        request.setBrandId(brandId);
+        request.setMinPrice(minPrice);
+        request.setMaxPrice(maxPrice);
+        request.setShopId(shopId);
+        request.setSortBy(sortBy);
+        request.setSortOrder(sortOrder);
+        request.setPage(page);
+        request.setSize(size);
+        long start = System.currentTimeMillis();
+        ElasticsearchOptimizedService.SearchResult esResult = elasticsearchOptimizedService
+                .productSearchAfter(request, searchAfterValues);
+        return toSearchResult(esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
     }
 
-    private Page<ProductDocument> toPage(SearchResult<ProductDocument> result, int page, int size, String sortBy, String sortDir) {
-        int safePage = page < 0 ? 0 : page;
-        int safeSize = size <= 0 ? 20 : size;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        String safeSortBy = (sortBy == null || sortBy.isBlank()) ? "hotScore" : sortBy;
-        List<ProductDocument> list = result == null || result.getList() == null ? Collections.emptyList() : result.getList();
-        long total = result == null || result.getTotal() == null ? list.size() : result.getTotal();
-        return new PageImpl<>(list, PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy)), total);
+    private int resolvePage(Integer page) {
+        return page == null || page < 0 ? 0 : page;
+    }
+
+    private int resolveSize(Integer size) {
+        return size == null || size <= 0 ? 20 : size;
+    }
+
+    private SearchResult<ProductDocument> toSearchResult(ElasticsearchOptimizedService.SearchResult esResult,
+                                                         int page, int size, long took) {
+        int safePage = resolvePage(page);
+        int safeSize = resolveSize(size);
+        List<ProductDocument> list = esResult == null || esResult.getDocuments() == null
+                ? Collections.emptyList()
+                : esResult.getDocuments().stream()
+                .map(document -> objectMapper.convertValue(document, ProductDocument.class))
+                .toList();
+        long total = esResult == null ? list.size() : esResult.getTotal();
+        int totalPages = safeSize <= 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+        boolean hasPrevious = safePage > 0;
+        boolean hasNext;
+        if (esResult != null && esResult.getSearchAfter() != null && !esResult.getSearchAfter().isEmpty()) {
+            hasNext = esResult.hasMore();
+        } else {
+            hasNext = safePage < totalPages - 1;
+        }
+        return SearchResult.<ProductDocument>builder()
+                .list(list)
+                .total(total)
+                .page(safePage)
+                .size(safeSize)
+                .totalPages(totalPages)
+                .hasNext(hasNext)
+                .hasPrevious(hasPrevious)
+                .took(took)
+                .aggregations(esResult == null ? Map.of() : esResult.getAggregations())
+                .searchAfter(esResult == null ? List.of() : esResult.getSearchAfter())
+                .build();
+    }
+
+    private Map<String, Object> buildFilterAggregations(List<ProductDocument> list) {
+        Map<String, Object> aggregations = new LinkedHashMap<>();
+        aggregations.put("categories", list.stream()
+                .filter(item -> item != null && StrUtil.isNotBlank(item.getCategoryName()))
+                .collect(Collectors.groupingBy(ProductDocument::getCategoryName, Collectors.counting())));
+        aggregations.put("brands", list.stream()
+                .filter(item -> item != null && StrUtil.isNotBlank(item.getBrandName()))
+                .collect(Collectors.groupingBy(ProductDocument::getBrandName, Collectors.counting())));
+        return aggregations;
     }
 
     private List<Object> parseSearchAfter(String searchAfter) {
