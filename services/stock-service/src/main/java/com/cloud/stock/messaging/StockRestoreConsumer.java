@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -26,35 +28,55 @@ public class StockRestoreConsumer {
     private final TradeMetrics tradeMetrics;
 
     @Bean
-    public Consumer<Message<StockRestoreEvent>> stockRestoreConsumer() {
-        return message -> {
-            StockRestoreEvent event = message.getPayload();
-            String eventId = resolveEventId(event);
-            if (!messageIdempotencyService.tryAcquire(NS_STOCK_RESTORE, eventId)) {
-                log.warn("Duplicate stock restore event, skip: eventId={}", eventId);
+    public Consumer<List<Message<StockRestoreEvent>>> stockRestoreConsumer() {
+        return messages -> {
+            if (messages == null || messages.isEmpty()) {
                 return;
             }
+            Set<String> inFlight = new HashSet<>();
 
             try {
-                if (event == null || event.getItems() == null) {
-                    tradeMetrics.incrementMessageConsume("stock_restore", "failed");
-                    messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
-                    return;
-                }
-                List<StockOperateCommandDTO> items = event.getItems();
-                for (StockOperateCommandDTO command : items) {
-                    if (command == null) {
+                for (Message<StockRestoreEvent> message : messages) {
+                    if (message == null) {
                         continue;
                     }
-                    stockLedgerService.rollback(command);
+                    StockRestoreEvent event = message.getPayload();
+                    String eventId = resolveEventId(event);
+                    if (!messageIdempotencyService.tryAcquire(NS_STOCK_RESTORE, eventId)) {
+                        log.warn("Duplicate stock restore event, skip: eventId={}", eventId);
+                        continue;
+                    }
+                    inFlight.add(eventId);
+
+                    try {
+                        if (event == null || event.getItems() == null) {
+                            tradeMetrics.incrementMessageConsume("stock_restore", "failed");
+                            messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
+                            inFlight.remove(eventId);
+                            continue;
+                        }
+                        List<StockOperateCommandDTO> items = event.getItems();
+                        for (StockOperateCommandDTO command : items) {
+                            if (command == null) {
+                                continue;
+                            }
+                            stockLedgerService.rollback(command);
+                        }
+                        tradeMetrics.incrementMessageConsume("stock_restore", "success");
+                        messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
+                        inFlight.remove(eventId);
+                    } catch (Exception ex) {
+                        tradeMetrics.incrementMessageConsume("stock_restore", "retry");
+                        log.error("Handle stock restore failed: eventId={}, refundNo={}", eventId,
+                                event == null ? null : event.getRefundNo(), ex);
+                        throw new RuntimeException("Handle stock restore failed", ex);
+                    }
                 }
-                tradeMetrics.incrementMessageConsume("stock_restore", "success");
-                messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
             } catch (Exception ex) {
-                tradeMetrics.incrementMessageConsume("stock_restore", "retry");
-                log.error("Handle stock restore failed: eventId={}, refundNo={}", eventId,
-                        event == null ? null : event.getRefundNo(), ex);
-                throw new RuntimeException("Handle stock restore failed", ex);
+                for (String eventId : inFlight) {
+                    messageIdempotencyService.release(NS_STOCK_RESTORE, eventId);
+                }
+                throw ex;
             }
         };
     }

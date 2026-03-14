@@ -15,9 +15,12 @@ import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 
@@ -36,40 +39,67 @@ public class ProductSyncConsumer {
     private ProductDubboApi productDubboApi;
 
     @Bean
-    public Consumer<Message<ProductSyncEvent>> productSyncConsumer() {
-        return message -> {
-            ProductSyncEvent event = message.getPayload();
-            String eventId = resolveEventId(event);
-            if (!messageIdempotencyService.tryAcquire(NS_PRODUCT_SYNC, eventId)) {
-                log.warn("Duplicate product sync event, skip: eventId={}", eventId);
+    public Consumer<List<Message<ProductSyncEvent>>> productSyncConsumer() {
+        return messages -> {
+            if (messages == null || messages.isEmpty()) {
                 return;
             }
 
+            List<ProductDocument> upserts = new ArrayList<>();
+            List<String> deletes = new ArrayList<>();
+            List<String> readyToMark = new ArrayList<>();
+            Set<String> inFlight = new HashSet<>();
+
             try {
-                if (event == null || event.getSpuId() == null) {
-                    messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-                    return;
+                for (Message<ProductSyncEvent> message : messages) {
+                    if (message == null) {
+                        continue;
+                    }
+                    ProductSyncEvent event = message.getPayload();
+                    String eventId = resolveEventId(event);
+                    if (!messageIdempotencyService.tryAcquire(NS_PRODUCT_SYNC, eventId)) {
+                        log.warn("Duplicate product sync event, skip: eventId={}", eventId);
+                        continue;
+                    }
+                    inFlight.add(eventId);
+
+                    if (event == null || event.getSpuId() == null) {
+                        readyToMark.add(eventId);
+                        continue;
+                    }
+
+                    if ("PRODUCT_DELETE".equalsIgnoreCase(event.getEventType())) {
+                        deletes.add(String.valueOf(event.getSpuId()));
+                        readyToMark.add(eventId);
+                        continue;
+                    }
+
+                    SpuDetailVO spu = productDubboApi.getSpuById(event.getSpuId());
+                    if (spu == null) {
+                        deletes.add(String.valueOf(event.getSpuId()));
+                        readyToMark.add(eventId);
+                        continue;
+                    }
+
+                    upserts.add(toDocument(spu));
+                    readyToMark.add(eventId);
                 }
 
-                if ("PRODUCT_DELETE".equalsIgnoreCase(event.getEventType())) {
-                    productDocumentRepository.deleteById(String.valueOf(event.getSpuId()));
-                    messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-                    return;
+                if (!deletes.isEmpty()) {
+                    productDocumentRepository.deleteAllById(deletes);
                 }
-
-                SpuDetailVO spu = productDubboApi.getSpuById(event.getSpuId());
-                if (spu == null) {
-                    productDocumentRepository.deleteById(String.valueOf(event.getSpuId()));
-                    messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-                    return;
+                if (!upserts.isEmpty()) {
+                    productDocumentRepository.saveAll(upserts);
                 }
-
-                ProductDocument document = toDocument(spu);
-                productDocumentRepository.save(document);
-                messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
+                for (String eventId : readyToMark) {
+                    messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
+                    inFlight.remove(eventId);
+                }
             } catch (Exception ex) {
-                log.error("Handle product sync failed: eventId={}, spuId={}", eventId,
-                        event == null ? null : event.getSpuId(), ex);
+                for (String eventId : inFlight) {
+                    messageIdempotencyService.release(NS_PRODUCT_SYNC, eventId);
+                }
+                log.error("Handle product sync batch failed", ex);
                 throw new RuntimeException("Handle product sync failed", ex);
             }
         };
