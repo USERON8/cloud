@@ -147,6 +147,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categoryTreeCache", key = "'tree-dto:' + (#onlyEnabled == null ? 'all' : #onlyEnabled)")
     public List<CategoryDTO> getCategoryTree(Boolean onlyEnabled) {
         
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
