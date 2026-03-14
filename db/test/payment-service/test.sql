@@ -6,6 +6,19 @@ DELETE FROM payment_callback_log;
 DELETE FROM payment_refund;
 DELETE FROM payment_order;
 
+-- index optimization
+ALTER TABLE payment_order
+    ADD INDEX idx_payment_order_idem_deleted (idempotency_key, deleted);
+
+ALTER TABLE payment_order
+    ADD INDEX idx_payment_order_status_deleted_next_poll (status, deleted, next_poll_at);
+
+ALTER TABLE payment_refund
+    ADD INDEX idx_payment_refund_idem_deleted (idempotency_key, deleted);
+
+ALTER TABLE payment_refund
+    ADD INDEX idx_payment_refund_status_deleted_next_retry (status, deleted, next_retry_at);
+
 INSERT INTO payment_order (id, payment_no, main_order_no, sub_order_no, user_id, amount, channel, status, idempotency_key, deleted, version)
 VALUES (70001, 'PAY202603050001', 'M2026000001', 'S2026000001', 20001, 4999.00, 'ALIPAY', 'CREATED', 'idem-pay-70001', 0, 0);
 
