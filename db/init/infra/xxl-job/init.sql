@@ -478,3 +478,99 @@ WHERE g.app_name = 'auth-service'
       WHERE j.job_group = g.id
         AND j.executor_handler = 'authTokenCleanupJob'
   );
+
+INSERT INTO xxl_job_group (app_name, title, address_type, address_list)
+SELECT 'stock-service', 'stock-service', 0, NULL
+WHERE NOT EXISTS (SELECT 1 FROM xxl_job_group WHERE app_name = 'stock-service');
+
+INSERT INTO xxl_job_info (
+    job_group,
+    job_desc,
+    author,
+    schedule_type,
+    schedule_conf,
+    misfire_strategy,
+    executor_route_strategy,
+    executor_handler,
+    executor_param,
+    executor_block_strategy,
+    executor_timeout,
+    executor_fail_retry_count,
+    glue_type,
+    glue_remark,
+    trigger_status,
+    trigger_last_time,
+    trigger_next_time
+)
+SELECT
+    g.id,
+    'Warmup stock cache',
+    'system',
+    'CRON',
+    '0 0 3 * * ?',
+    'DO_NOTHING',
+    'FIRST',
+    'stockCacheWarmUpJob',
+    NULL,
+    'SERIAL_EXECUTION',
+    300,
+    2,
+    'BEAN',
+    'seeded by init.sql',
+    1,
+    0,
+    0
+FROM xxl_job_group g
+WHERE g.app_name = 'stock-service'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM xxl_job_info j
+      WHERE j.job_group = g.id
+        AND j.executor_handler = 'stockCacheWarmUpJob'
+  );
+
+INSERT INTO xxl_job_info (
+    job_group,
+    job_desc,
+    author,
+    schedule_type,
+    schedule_conf,
+    misfire_strategy,
+    executor_route_strategy,
+    executor_handler,
+    executor_param,
+    executor_block_strategy,
+    executor_timeout,
+    executor_fail_retry_count,
+    glue_type,
+    glue_remark,
+    trigger_status,
+    trigger_last_time,
+    trigger_next_time
+)
+SELECT
+    g.id,
+    'Verify stock cache',
+    'system',
+    'CRON',
+    '0 0 * * * ?',
+    'DO_NOTHING',
+    'FIRST',
+    'stockCacheVerifyJob',
+    NULL,
+    'SERIAL_EXECUTION',
+    300,
+    2,
+    'BEAN',
+    'seeded by init.sql',
+    1,
+    0,
+    0
+FROM xxl_job_group g
+WHERE g.app_name = 'stock-service'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM xxl_job_info j
+      WHERE j.job_group = g.id
+        AND j.executor_handler = 'stockCacheVerifyJob'
+  );
