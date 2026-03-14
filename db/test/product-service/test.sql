@@ -7,7 +7,7 @@ DELETE FROM sku;
 DELETE FROM spu;
 DELETE FROM category;
 
--- 索引优化
+-- index optimization
 ALTER TABLE category
     ADD INDEX idx_category_parent_deleted_sort (parent_id, deleted, sort_order);
 

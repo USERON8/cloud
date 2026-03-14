@@ -12,7 +12,7 @@ DELETE FROM admin;
 DELETE FROM users;
 DELETE FROM test_access_token WHERE id = 1;
 
--- 索引优化
+-- index optimization
 ALTER TABLE users
     ADD INDEX idx_users_deleted_created (deleted, created_at);
 

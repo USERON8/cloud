@@ -12,7 +12,7 @@ DELETE FROM order_item;
 DELETE FROM order_sub;
 DELETE FROM order_main;
 
--- 索引优化
+-- index optimization
 ALTER TABLE order_sub
     ADD INDEX idx_order_sub_status_deleted_created (order_status, deleted, created_at);
 

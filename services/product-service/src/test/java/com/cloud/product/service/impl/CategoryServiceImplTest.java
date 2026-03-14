@@ -38,7 +38,9 @@ class CategoryServiceImplTest {
         level3.setParentId(2L);
         level3.setStatus(1);
 
-        doReturn(List.of(level1, level2, level3)).when(service).list(any());
+        doReturn(List.of(level1, level2, level3))
+                .when(service)
+                .list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<Category>>any());
 
         List<CategoryDTO> tree = service.getCategoryTree(true);
 
