@@ -510,7 +510,7 @@ services:
     networks:
       service_net:
         ipv4_address: 172.28.0.90  # 兼容性注释已标准化。
-    mem_limit: 768m
+    mem_limit: 1g
     environment:
       # 兼容性注释已标准化。
       - discovery.type=single-node  # 兼容性注释已标准化。
