@@ -13,14 +13,7 @@
 
     <modules>
         <module>common-parent</module>
-        <module>services/gateway</module>
-        <module>services/auth-service</module>
-        <module>services/user-service</module>
-        <module>services/order-service</module>
-        <module>services/stock-service</module>
-        <module>services/payment-service</module>
-        <module>services/search-service</module>
-        <module>services/product-service</module>
+        <module>services</module>
     </modules>
 
     <parent>

@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.cloud</groupId>
-        <artifactId>cloud</artifactId>
+        <artifactId>services</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>payment-service</artifactId>
@@ -156,5 +156,6 @@
         </plugins>
     </build>
 </project>
+
 
 
