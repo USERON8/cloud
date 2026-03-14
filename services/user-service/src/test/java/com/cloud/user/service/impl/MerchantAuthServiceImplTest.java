@@ -4,17 +4,20 @@ import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,9 +40,9 @@ class MerchantAuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        merchantAuthService = new MerchantAuthServiceImpl(merchantAuthMapper, merchantAuthConverter, cacheManager);
+        merchantAuthService = Mockito.spy(new MerchantAuthServiceImpl(merchantAuthMapper, merchantAuthConverter, cacheManager));
         ReflectionTestUtils.setField(merchantAuthService, "baseMapper", merchantAuthMapper);
-        when(cacheManager.getCache("merchantAuthCache")).thenReturn(cache);
+        lenient().when(cacheManager.getCache("merchantAuthCache")).thenReturn(cache);
     }
 
     @Test
@@ -61,7 +64,10 @@ class MerchantAuthServiceImplTest {
         MerchantAuth auth = new MerchantAuth();
         auth.setId(2L);
         auth.setMerchantId(9L);
-        when(merchantAuthMapper.selectOne(any())).thenReturn(auth);
+        LambdaQueryChainWrapper<MerchantAuth> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
+        doReturn(queryWrapper).when(merchantAuthService).lambdaQuery();
+        doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
+        when(queryWrapper.one()).thenReturn(auth);
         when(merchantAuthMapper.deleteById(2L)).thenReturn(1);
 
         boolean removed = merchantAuthService.removeByMerchantId(9L);

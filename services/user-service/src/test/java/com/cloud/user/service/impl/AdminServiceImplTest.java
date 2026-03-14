@@ -9,10 +9,12 @@ import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,20 +49,27 @@ class AdminServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        adminService = new AdminServiceImpl(
+        adminService = Mockito.spy(new AdminServiceImpl(
                 adminMapper,
                 adminConverter,
                 authPrincipalRemoteService,
                 userPrincipalSyncService,
                 cacheManager
-        );
+        ));
         ReflectionTestUtils.setField(adminService, "baseMapper", adminMapper);
     }
 
     @Test
     void createAdmin_success_callsRemoteSync() {
-        when(adminMapper.selectCount(any())).thenReturn(0L);
-        when(adminMapper.insert(org.mockito.ArgumentMatchers.<Admin>any())).thenReturn(1);
+        LambdaQueryChainWrapper<Admin> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
+        doReturn(queryWrapper).when(adminService).lambdaQuery();
+        doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
+        when(queryWrapper.count()).thenReturn(0L);
+        when(adminMapper.insert(org.mockito.ArgumentMatchers.<Admin>any())).thenAnswer(invocation -> {
+            Admin admin = invocation.getArgument(0);
+            admin.setId(1L);
+            return 1;
+        });
         when(adminConverter.toDTO(any())).thenAnswer(invocation -> {
             AdminDTO dto = new AdminDTO();
             Admin admin = invocation.getArgument(0);

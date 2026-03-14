@@ -11,10 +11,12 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
 import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -23,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,21 +57,28 @@ class MerchantServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        merchantService = new MerchantServiceImpl(
+        merchantService = Mockito.spy(new MerchantServiceImpl(
                 merchantAuthMapper,
                 userMapper,
                 merchantConverter,
                 authPrincipalRemoteService,
                 userPrincipalSyncService,
                 cacheManager
-        );
+        ));
         ReflectionTestUtils.setField(merchantService, "baseMapper", merchantMapper);
     }
 
     @Test
     void createMerchant_success_callsRemoteSync() {
-        when(merchantMapper.selectCount(any())).thenReturn(0L);
-        when(merchantMapper.insert(org.mockito.ArgumentMatchers.<Merchant>any())).thenReturn(1);
+        LambdaQueryChainWrapper<Merchant> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
+        doReturn(queryWrapper).when(merchantService).lambdaQuery();
+        doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
+        when(queryWrapper.count()).thenReturn(0L);
+        when(merchantMapper.insert(org.mockito.ArgumentMatchers.<Merchant>any())).thenAnswer(invocation -> {
+            Merchant merchant = invocation.getArgument(0);
+            merchant.setId(1L);
+            return 1;
+        });
         when(merchantConverter.toDTO(any())).thenAnswer(invocation -> {
             MerchantDTO dto = new MerchantDTO();
             Merchant merchant = invocation.getArgument(0);

@@ -5,10 +5,12 @@ import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
 import com.cloud.user.module.entity.UserAddress;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -19,6 +21,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,13 +45,17 @@ class UserAddressServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        userAddressService = new UserAddressServiceImpl(userAddressMapper, userAddressConverter, cacheManager);
+        userAddressService = Mockito.spy(new UserAddressServiceImpl(userAddressMapper, userAddressConverter, cacheManager));
         ReflectionTestUtils.setField(userAddressService, "baseMapper", userAddressMapper);
-        when(cacheManager.getCache("userAddressCache")).thenReturn(cache);
+        lenient().when(cacheManager.getCache("userAddressCache")).thenReturn(cache);
     }
 
     @Test
     void save_defaultAddress_resetsOldDefaults() {
+        LambdaQueryChainWrapper<UserAddress> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
+        doReturn(queryWrapper).when(userAddressService).lambdaQuery();
+        doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
+
         UserAddress defaultAddress = new UserAddress();
         defaultAddress.setId(9L);
         defaultAddress.setUserId(1L);
@@ -57,7 +65,7 @@ class UserAddressServiceImplTest {
         entity.setUserId(1L);
         entity.setIsDefault(1);
 
-        when(userAddressMapper.selectList(any())).thenReturn(List.of(defaultAddress));
+        when(queryWrapper.list()).thenReturn(List.of(defaultAddress));
         when(userAddressMapper.update(any(), any())).thenReturn(1);
         when(userAddressMapper.insert(org.mockito.ArgumentMatchers.<UserAddress>any())).thenReturn(1);
 

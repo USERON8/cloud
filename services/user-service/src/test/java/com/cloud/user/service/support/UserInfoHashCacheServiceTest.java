@@ -54,7 +54,7 @@ class UserInfoHashCacheServiceTest {
         assertThat(cache).isNotNull();
         assertThat(cache.id()).isEqualTo(1L);
         assertThat(cache.username()).isEqualTo("u1");
-        verify(redisTemplate).expire(anyString(), any(Duration.class));
+        verify(redisTemplate, times(2)).expire(anyString(), any(Duration.class));
     }
 
     @Test

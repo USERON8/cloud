@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,8 +59,8 @@ class MinioServiceImplTest {
     void setUp() {
         ReflectionTestUtils.setField(minioService, "bucketName", "avatars");
         ReflectionTestUtils.setField(minioService, "publicEndpoint", "http://cdn.test");
-        when(cacheManager.getCache("user")).thenReturn(userCache);
-        when(cacheManager.getCache("userList")).thenReturn(userListCache);
+        lenient().when(cacheManager.getCache("user")).thenReturn(userCache);
+        lenient().when(cacheManager.getCache("userList")).thenReturn(userListCache);
 
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
