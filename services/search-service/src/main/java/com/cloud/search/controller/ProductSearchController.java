@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,14 +35,18 @@ public class ProductSearchController {
 
     @Operation(summary = "Complex search", description = "Run full search by request payload")
     @PostMapping("/complex-search")
-    public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request) {
-        return Result.success("Search success", searchFacadeService.searchProducts(request));
+    public Result<SearchResult<ProductDocument>> complexSearch(@Valid @RequestBody ProductSearchRequest request,
+                                                               @Parameter(description = "search_after values, json array or comma separated")
+                                                               @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.searchProducts(request, searchAfter));
     }
 
     @Operation(summary = "Get filter data", description = "Return available filter data for current search")
     @PostMapping("/filters")
-    public Result<SearchResult<ProductDocument>> getProductFilters(@Valid @RequestBody ProductSearchRequest request) {
-        return Result.success("Get filters success", searchFacadeService.getProductFilters(request));
+    public Result<SearchResult<ProductDocument>> getProductFilters(@Valid @RequestBody ProductSearchRequest request,
+                                                                   @Parameter(description = "search_after values, json array or comma separated")
+                                                                   @RequestParam(required = false) String searchAfter) {
+        return Result.success("Get filters success", searchFacadeService.getProductFilters(request, searchAfter));
     }
 
     @Operation(summary = "Search suggestions", description = "Get search suggestions by keyword")
@@ -71,44 +74,48 @@ public class ProductSearchController {
 
     @Operation(summary = "Basic search", description = "Search products by keyword and pagination")
     @GetMapping("/search")
-    public Result<Page<ProductDocument>> searchProducts(
+    public Result<SearchResult<ProductDocument>> searchProducts(
             @Parameter(description = "Keyword") @RequestParam String keyword,
             @Parameter(description = "Page number, starts from 0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "hotScore") String sortBy,
-            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String sortDir) {
-        return Result.success("Search success", searchFacadeService.searchByKeyword(keyword, page, size, sortBy, sortDir));
+            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc") String sortDir,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.searchByKeyword(keyword, page, size, sortBy, sortDir, searchAfter));
     }
 
     @Operation(summary = "Search by category", description = "Search products by category and optional keyword")
     @GetMapping("/search/category/{categoryId}")
-    public Result<Page<ProductDocument>> searchByCategory(
+    public Result<SearchResult<ProductDocument>> searchByCategory(
             @Parameter(description = "Category id") @PathVariable Long categoryId,
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Search success", searchFacadeService.searchByCategory(categoryId, keyword, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.searchByCategory(categoryId, keyword, page, size, searchAfter));
     }
 
     @Operation(summary = "Search by shop", description = "Search products by shop and optional keyword")
     @GetMapping("/search/shop/{shopId}")
-    public Result<Page<ProductDocument>> searchByShop(
+    public Result<SearchResult<ProductDocument>> searchByShop(
             @Parameter(description = "Shop id") @PathVariable Long shopId,
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Search success", searchFacadeService.searchByShop(shopId, keyword, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.searchByShop(shopId, keyword, page, size, searchAfter));
     }
 
     @Operation(summary = "Advanced search", description = "Search by keyword and price range")
     @GetMapping("/search/advanced")
-    public Result<Page<ProductDocument>> advancedSearch(
+    public Result<SearchResult<ProductDocument>> advancedSearch(
             @Parameter(description = "Keyword") @RequestParam String keyword,
             @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
             @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Search success", searchFacadeService.advancedSearch(keyword, minPrice, maxPrice, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.advancedSearch(keyword, minPrice, maxPrice, page, size, searchAfter));
     }
 
     @Operation(summary = "Smart search", description = "Search via optimized Elasticsearch query")
@@ -130,26 +137,29 @@ public class ProductSearchController {
 
     @Operation(summary = "Recommended products", description = "Get recommended products")
     @GetMapping("/recommended")
-    public Result<Page<ProductDocument>> getRecommendedProducts(
+    public Result<SearchResult<ProductDocument>> getRecommendedProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Query recommended products success", searchFacadeService.getRecommendedProducts(page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Query recommended products success", searchFacadeService.getRecommendedProducts(page, size, searchAfter));
     }
 
     @Operation(summary = "New products", description = "Get new products")
     @GetMapping("/new")
-    public Result<Page<ProductDocument>> getNewProducts(
+    public Result<SearchResult<ProductDocument>> getNewProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Query new products success", searchFacadeService.getNewProducts(page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Query new products success", searchFacadeService.getNewProducts(page, size, searchAfter));
     }
 
     @Operation(summary = "Hot products", description = "Get hot products")
     @GetMapping("/hot")
-    public Result<Page<ProductDocument>> getHotProducts(
+    public Result<SearchResult<ProductDocument>> getHotProducts(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return Result.success("Query hot products success", searchFacadeService.getHotProducts(page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Query hot products success", searchFacadeService.getHotProducts(page, size, searchAfter));
     }
 
     @Operation(summary = "Basic API search", description = "Basic paged search API")
@@ -157,14 +167,17 @@ public class ProductSearchController {
     public Result<SearchResult<ProductDocument>> basicSearch(
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-        return Result.success("Search success", searchFacadeService.basicSearch(keyword, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.basicSearch(keyword, page, size, searchAfter));
     }
 
     @Operation(summary = "Filter search", description = "Search products with filter payload")
     @PostMapping("/filter")
-    public Result<SearchResult<ProductDocument>> filterSearch(@Valid @RequestBody ProductFilterRequest request) {
-        return Result.success("Search success", searchFacadeService.filterSearch(request));
+    public Result<SearchResult<ProductDocument>> filterSearch(@Valid @RequestBody ProductFilterRequest request,
+                                                             @Parameter(description = "search_after values, json array or comma separated")
+                                                             @RequestParam(required = false) String searchAfter) {
+        return Result.success("Search success", searchFacadeService.filterSearch(request, searchAfter));
     }
 
     @Operation(summary = "Filter by category", description = "Filter products by category")
@@ -172,8 +185,9 @@ public class ProductSearchController {
     public Result<SearchResult<ProductDocument>> filterByCategory(
             @Parameter(description = "Category id") @PathVariable Long categoryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-        return Result.success("Filter success", searchFacadeService.searchByCategoryFilter(categoryId, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Filter success", searchFacadeService.searchByCategoryFilter(categoryId, page, size, searchAfter));
     }
 
     @Operation(summary = "Filter by brand", description = "Filter products by brand")
@@ -181,8 +195,9 @@ public class ProductSearchController {
     public Result<SearchResult<ProductDocument>> filterByBrand(
             @Parameter(description = "Brand id") @PathVariable Long brandId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-        return Result.success("Filter success", searchFacadeService.searchByBrandFilter(brandId, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Filter success", searchFacadeService.searchByBrandFilter(brandId, page, size, searchAfter));
     }
 
     @Operation(summary = "Filter by price", description = "Filter products by price range")
@@ -191,8 +206,9 @@ public class ProductSearchController {
             @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
             @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-        return Result.success("Filter success", searchFacadeService.searchByPriceFilter(minPrice, maxPrice, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Filter success", searchFacadeService.searchByPriceFilter(minPrice, maxPrice, page, size, searchAfter));
     }
 
     @Operation(summary = "Filter by shop", description = "Filter products by shop")
@@ -200,8 +216,9 @@ public class ProductSearchController {
     public Result<SearchResult<ProductDocument>> filterByShop(
             @Parameter(description = "Shop id") @PathVariable Long shopId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
-        return Result.success("Filter success", searchFacadeService.searchByShopFilter(shopId, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
+        return Result.success("Filter success", searchFacadeService.searchByShopFilter(shopId, page, size, searchAfter));
     }
 
     @Operation(summary = "Combined filter", description = "Filter with multiple conditions")
@@ -216,9 +233,10 @@ public class ProductSearchController {
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "hotScore") String sortBy,
             @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size) {
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
         return Result.success("Filter success", searchFacadeService.combinedSearch(
-                keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size
+                keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size, searchAfter
         ));
     }
 }
