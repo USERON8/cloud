@@ -535,9 +535,9 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "--max-time", "5", "http://172.28.0.90:9200" ]
+      test: [ "CMD", "curl", "-fsS", "--max-time", "10", "http://172.28.0.90:9200" ]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 12
 
   elasticsearch-oap:
@@ -570,9 +570,9 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "--max-time", "5", "http://172.28.0.91:9200" ]
+      test: [ "CMD", "curl", "-fsS", "--max-time", "10", "http://172.28.0.91:9200" ]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 12
   # Kibana
   kibana:
