@@ -12,6 +12,16 @@ DELETE FROM order_item;
 DELETE FROM order_sub;
 DELETE FROM order_main;
 
+-- 索引优化
+ALTER TABLE order_sub
+    ADD INDEX idx_order_sub_status_created_deleted (order_status, created_at, deleted);
+
+ALTER TABLE after_sale
+    ADD INDEX idx_after_sale_status_created_deleted (status, created_at, deleted);
+
+ALTER TABLE cart_item
+    ADD INDEX idx_cart_item_cart_user_selected_checked_deleted (cart_id, user_id, selected, checked_out, deleted);
+
 INSERT INTO order_main (id, main_order_no, user_id, order_status, total_amount, payable_amount, idempotency_key, deleted, version)
 VALUES (10001, 'M2026000001', 20001, 'CREATED', 199.00, 199.00, 'idem-main-10001', 0, 0);
 
