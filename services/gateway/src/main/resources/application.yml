@@ -46,6 +46,14 @@ spring:
         import-check:
           enabled: false
     gateway:
+      httpclient:
+        http2:
+          enabled: true
+        pool:
+          max-connections: 500
+          acquire-timeout: 3000
+        connect-timeout: 2000
+        response-timeout: 10s
       server:
         webflux:
           default-filters:
