@@ -275,6 +275,10 @@ services:
       SW_AGENT_NAME: gateway
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       GATEWAY_SIGNATURE_SECRET: ${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}
       SEATA_SERVER_ADDR: seata-server:8091
     command:
@@ -305,10 +309,17 @@ services:
       SW_AGENT_NAME: auth-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       CLIENT_SERVICE_SECRET: ${CLIENT_SERVICE_SECRET:-cloud-client-service-secret-dev}
       APP_OAUTH2_SERVICE_CLIENT_SECRET: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:-cloud-client-service-secret-dev}
       APP_OAUTH2_INTERNAL_CLIENT_SECRET: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:-cloud-internal-client-secret-dev}
       APP_JWT_ALLOW_GENERATED_KEYPAIR: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:-true}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-cloud-github-client-dev}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-cloud-github-secret-dev}
       SEATA_ENABLED: "false"
       SEATA_SERVER_ADDR: seata-server:8091
     command:
@@ -339,6 +350,11 @@ services:
       SW_AGENT_NAME: user-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -368,6 +384,11 @@ services:
       SW_AGENT_NAME: order-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -397,6 +418,11 @@ services:
       SW_AGENT_NAME: product-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -426,6 +452,11 @@ services:
       SW_AGENT_NAME: stock-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -455,6 +486,11 @@ services:
       SW_AGENT_NAME: payment-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -484,6 +520,11 @@ services:
       SW_AGENT_NAME: search-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
