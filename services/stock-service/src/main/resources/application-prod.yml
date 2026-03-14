@@ -5,13 +5,19 @@ spring:
     url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    hikari:
-      minimum-idle: 10
-      maximum-pool-size: 40
-      idle-timeout: 300000
-      connection-timeout: 30000
-      max-lifetime: 1800000
-      leak-detection-threshold: 60000
+    druid:
+      initial-size: 10
+      min-idle: 10
+      max-active: 40
+      max-wait: 30000
+      keep-alive: true
+      async-init: true
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      validation-query: SELECT 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
   data:
     redis:
       host: ${REDIS_HOST:prod-redis}
