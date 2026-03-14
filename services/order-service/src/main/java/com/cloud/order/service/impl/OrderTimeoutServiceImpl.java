@@ -29,6 +29,9 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
     @Value("${order.timeout.minutes:30}")
     private Integer timeoutMinutes;
 
+    @Value("${order.timeout.batch-size:200}")
+    private Integer timeoutBatchSize;
+
     @Override
     public int checkAndHandleTimeoutOrders() {
         List<Long> timeoutSubOrderIds = getTimeoutSubOrderIds(timeoutMinutes);
@@ -43,6 +46,9 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         int effectiveTimeout = (timeoutMinutes == null || timeoutMinutes <= 0)
                 ? this.timeoutMinutes
                 : timeoutMinutes;
+        int effectiveBatchSize = (timeoutBatchSize == null || timeoutBatchSize <= 0)
+                ? 200
+                : timeoutBatchSize;
 
         LocalDateTime timeoutPoint = LocalDateTime.now().minusMinutes(effectiveTimeout);
         return orderSubMapper.selectList(
@@ -51,6 +57,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
                         .lt(OrderSub::getCreatedAt, timeoutPoint)
                         .eq(OrderSub::getDeleted, 0)
                         .orderByAsc(OrderSub::getCreatedAt)
+                        .last("LIMIT " + effectiveBatchSize)
         ).stream().map(OrderSub::getId).toList();
     }
 
@@ -108,13 +115,13 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         if (mainOrderId == null) {
             return;
         }
-        List<OrderSub> remainingActiveSubs = orderSubMapper.selectList(
+        long remainingCount = orderSubMapper.selectCount(
                 new LambdaQueryWrapper<OrderSub>()
                         .eq(OrderSub::getMainOrderId, mainOrderId)
                         .eq(OrderSub::getDeleted, 0)
                         .in(OrderSub::getOrderStatus, List.of("CREATED", "STOCK_RESERVED", "PAID", "SHIPPED"))
         );
-        if (!remainingActiveSubs.isEmpty()) {
+        if (remainingCount > 0) {
             return;
         }
         OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
