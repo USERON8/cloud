@@ -197,7 +197,6 @@ $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
 . (Join-Path $PSScriptRoot "lib\runtime.ps1")
-. (Join-Path $PSScriptRoot "lib\skywalking.ps1")
 
 $catalog = Get-ServiceCatalog
 $services = Resolve-SelectedServices -Catalog $catalog -RequestedServices $Services
@@ -230,11 +229,13 @@ $runtimeLogRoot = if ([string]::IsNullOrWhiteSpace($env:SERVICE_RUNTIME_LOG_ROOT
 }
 New-Item -ItemType Directory -Force -Path $runtimeLogRoot | Out-Null
 
-$skywalkingEnabled = Configure-SkyWalkingRuntime -RepoRoot $root -AllowDownload
-$skywalkingAgentPath = $env:SKYWALKING_AGENT_PATH
-$skywalkingBackend = $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE
+$skywalkingAgentJar = Join-Path $root "docker\monitor\skywalking\agent\skywalking-agent.jar"
+$skywalkingAgentAvailable = Test-Path $skywalkingAgentJar
+if (-not $skywalkingAgentAvailable) {
+    Write-Host ("SKYWALKING disabled reason=agent-not-found path={0}" -f $skywalkingAgentJar)
+}
 $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
-    "-Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heap.hprof"
+    "-Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError"
 } else {
     $env:SERVICE_JVM_OPTS
 }
@@ -350,26 +351,55 @@ foreach ($svc in $services) {
     if (Test-Path $errLog) { Remove-Item $errLog -Force }
 
     $argsList = @()
-    if ($skywalkingEnabled) {
+    $previousJavaToolOptions = $env:JAVA_TOOL_OPTIONS
+    $previousAgentName = $env:SW_AGENT_NAME
+    $previousLoggingDir = $env:SW_LOGGING_DIR
+    if ($skywalkingAgentAvailable) {
         $skywalkingLogDir = Join-Path $runtimeLogDir "skywalking-agent"
         New-Item -ItemType Directory -Force -Path $skywalkingLogDir | Out-Null
-        $argsList += "-javaagent:$skywalkingAgentPath"
-        $argsList += "-Dskywalking.agent.service_name=$name"
-        $argsList += "-Dskywalking.agent.instance_name=$name-$port"
-        $argsList += "-Dskywalking.collector.backend_service=$skywalkingBackend"
-        $argsList += "-Dskywalking.logging.dir=$skywalkingLogDir"
+        $javaToolOptions = "-javaagent:$skywalkingAgentJar"
+        if (-not [string]::IsNullOrWhiteSpace($previousJavaToolOptions)) {
+            $javaToolOptions = "$previousJavaToolOptions $javaToolOptions"
+        }
+        $env:JAVA_TOOL_OPTIONS = $javaToolOptions
+        $env:SW_AGENT_NAME = $name
+        $env:SW_LOGGING_DIR = $skywalkingLogDir
     }
     foreach ($jvmOpt in ($serviceJvmOpts -split '\s+')) {
         if (-not [string]::IsNullOrWhiteSpace($jvmOpt)) {
             $argsList += $jvmOpt
         }
     }
+    if ($serviceJvmOpts -notmatch "HeapDumpPath") {
+        $heapDumpPath = Join-Path $serviceLogDir "heap.hprof"
+        $argsList += "-XX:HeapDumpPath=$heapDumpPath"
+    }
     $argsList += "-jar"
     $argsList += $jarPath
     $argsList += "--spring.profiles.active=$($svc.profiles)"
     $argsList += "--logging.file.path=$serviceLogDir"
     $start = Get-Date
-    $proc = Start-Process -FilePath $java -ArgumentList $argsList -WorkingDirectory $root -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
+    try {
+        $proc = Start-Process -FilePath $java -ArgumentList $argsList -WorkingDirectory $root -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
+    } finally {
+        if ($skywalkingAgentAvailable) {
+            if ($null -ne $previousJavaToolOptions) {
+                $env:JAVA_TOOL_OPTIONS = $previousJavaToolOptions
+            } else {
+                Remove-Item Env:\JAVA_TOOL_OPTIONS -ErrorAction SilentlyContinue
+            }
+            if ($null -ne $previousAgentName) {
+                $env:SW_AGENT_NAME = $previousAgentName
+            } else {
+                Remove-Item Env:\SW_AGENT_NAME -ErrorAction SilentlyContinue
+            }
+            if ($null -ne $previousLoggingDir) {
+                $env:SW_LOGGING_DIR = $previousLoggingDir
+            } else {
+                Remove-Item Env:\SW_LOGGING_DIR -ErrorAction SilentlyContinue
+            }
+        }
+    }
 
     $deadline = $start.AddSeconds($startupTimeoutSeconds)
     $status = "TIMEOUT"

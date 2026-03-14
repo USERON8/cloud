@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
 source "$SCRIPT_DIR/lib/runtime.sh"
-source "$SCRIPT_DIR/lib/skywalking.sh"
 
 trim_value() {
   local value="$1"
@@ -119,12 +118,15 @@ fi
 RUNTIME_LOG_ROOT="${SERVICE_RUNTIME_LOG_ROOT:-$ROOT_DIR/.tmp/service-runtime}"
 mkdir -p "$RUNTIME_LOG_ROOT"
 
-SKYWALKING_ENABLED=0
-skywalking_download_allowed=1
-if configure_skywalking_runtime "$ROOT_DIR" 0 "${SKYWALKING_AGENT_PATH:-}" "${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-}" "$skywalking_download_allowed"; then
-  SKYWALKING_ENABLED=1
+SKYWALKING_AGENT_DIR="$ROOT_DIR/docker/monitor/skywalking/agent"
+SKYWALKING_AGENT_JAR="$SKYWALKING_AGENT_DIR/skywalking-agent.jar"
+SKYWALKING_AGENT_AVAILABLE=0
+if [ -f "$SKYWALKING_AGENT_JAR" ]; then
+  SKYWALKING_AGENT_AVAILABLE=1
+else
+  echo "SKYWALKING disabled reason=agent-not-found path=$SKYWALKING_AGENT_JAR" >&2
 fi
-SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heap.hprof}"
+SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError}"
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 
 RESULT_ROWS=()
@@ -226,20 +228,12 @@ for svc in "${SERVICES[@]}"; do
   : > "$err_log"
 
   java_args=()
-  if [ "$SKYWALKING_ENABLED" = "1" ]; then
-    skywalking_log_dir="$runtime_log_dir/skywalking-agent"
-    mkdir -p "$skywalking_log_dir"
-    java_args+=(
-      "-javaagent:${SKYWALKING_AGENT_PATH}"
-      "-Dskywalking.agent.service_name=${name}"
-      "-Dskywalking.agent.instance_name=${name}-${port}"
-      "-Dskywalking.collector.backend_service=${SKYWALKING_COLLECTOR_BACKEND_SERVICE}"
-      "-Dskywalking.logging.dir=${skywalking_log_dir}"
-    )
-  fi
   if [ -n "$SERVICE_JVM_OPTS" ]; then
     read -r -a jvm_opts_array <<< "$SERVICE_JVM_OPTS"
     java_args+=("${jvm_opts_array[@]}")
+  fi
+  if [[ "$SERVICE_JVM_OPTS" != *HeapDumpPath* ]]; then
+    java_args+=("-XX:HeapDumpPath=${service_log_dir}/heap.hprof")
   fi
   java_args+=(
     "-jar" "$jar_path"
@@ -247,11 +241,30 @@ for svc in "${SERVICES[@]}"; do
     "--logging.file.path=$service_log_dir"
   )
 
+  env_args=()
+  if [ "$SKYWALKING_AGENT_AVAILABLE" = "1" ]; then
+    skywalking_log_dir="$runtime_log_dir/skywalking-agent"
+    mkdir -p "$skywalking_log_dir"
+    java_tool_opts="-javaagent:${SKYWALKING_AGENT_JAR}"
+    if [ -n "${JAVA_TOOL_OPTIONS:-}" ]; then
+      java_tool_opts="${JAVA_TOOL_OPTIONS} ${java_tool_opts}"
+    fi
+    env_args+=("JAVA_TOOL_OPTIONS=${java_tool_opts}" "SW_AGENT_NAME=${name}" "SW_LOGGING_DIR=${skywalking_log_dir}")
+  fi
+
   start_ts="$(date +%s)"
   if command -v setsid >/dev/null 2>&1; then
-    nohup setsid "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    if [ "${#env_args[@]}" -gt 0 ]; then
+      nohup setsid env "${env_args[@]}" "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    else
+      nohup setsid "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    fi
   else
-    nohup "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    if [ "${#env_args[@]}" -gt 0 ]; then
+      nohup env "${env_args[@]}" "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    else
+      nohup "$JAVA_CMD" "${java_args[@]}" >"$out_log" 2>"$err_log" < /dev/null &
+    fi
   fi
   pid=$!
 
