@@ -55,7 +55,8 @@ class StockLedgerServiceImplTest {
         command.setQuantity(2);
         command.setOrderNo("M1");
 
-        when(stockReservationMapper.insert(any())).thenThrow(new DuplicateKeyException("dup"));
+        when(stockReservationMapper.insert(org.mockito.ArgumentMatchers.<StockReservation>any()))
+                .thenThrow(new DuplicateKeyException("dup"));
         StockReservation existing = new StockReservation();
         existing.setSubOrderNo("S1");
         existing.setSkuId(10L);
