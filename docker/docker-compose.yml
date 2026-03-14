@@ -275,6 +275,7 @@ services:
       SW_AGENT_NAME: gateway
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      GATEWAY_SIGNATURE_SECRET: ${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
@@ -304,6 +305,11 @@ services:
       SW_AGENT_NAME: auth-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      CLIENT_SERVICE_SECRET: ${CLIENT_SERVICE_SECRET:-cloud-client-service-secret-dev}
+      APP_OAUTH2_SERVICE_CLIENT_SECRET: ${APP_OAUTH2_SERVICE_CLIENT_SECRET:-cloud-client-service-secret-dev}
+      APP_OAUTH2_INTERNAL_CLIENT_SECRET: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:-cloud-internal-client-secret-dev}
+      APP_JWT_ALLOW_GENERATED_KEYPAIR: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:-true}
+      SEATA_ENABLED: "false"
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
