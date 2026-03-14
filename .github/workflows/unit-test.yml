@@ -1,0 +1,87 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unit-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-maven:
+    name: Backend Unit Tests (JDK17)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run Unit Tests
+        run: mvn -B -T 1C -DskipITs clean test
+
+      - name: Upload JUnit Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-reports
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
+
+      - name: Upload JAR Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jars
+          path: '**/target/*.jar'
+          if-no-files-found: ignore
+
+  frontend-web:
+    name: Frontend Build (Node + pnpm)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my-shop-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: my-shop-web/pnpm-lock.yaml
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+  compose-validate:
+    name: Docker Compose Validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate compose syntax
+        run: docker compose -f docker-compose.yml config -q

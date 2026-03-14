@@ -1,27 +1,19 @@
-name: CI
+name: Integration Tests
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main, develop ]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: integration-test-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  backend-maven:
-    name: Backend Maven (JDK17)
+  backend-unit:
+    name: Backend Unit Tests (JDK17)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,9 +29,6 @@ jobs:
       - name: Run Unit Tests
         run: mvn -B -T 1C -DskipITs clean test
 
-      - name: Package
-        run: mvn -B -T 1C -DskipTests package
-
       - name: Upload JUnit Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,12 +37,29 @@ jobs:
           path: '**/target/surefire-reports/*.xml'
           if-no-files-found: ignore
 
-      - name: Upload JAR Artifacts
-        if: success()
+  backend-integration:
+    name: Backend Integration Tests (JDK17)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run Integration Tests
+        run: mvn -B -T 1C -Dtest=*IT,*ITTest -Dsurefire.failIfNoSpecifiedTests=false test
+
+      - name: Upload JUnit Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-jars
-          path: '**/target/*.jar'
+          name: junit-reports-it
+          path: '**/target/surefire-reports/*.xml'
           if-no-files-found: ignore
 
   frontend-web:

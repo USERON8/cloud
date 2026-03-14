@@ -71,6 +71,8 @@ docker/docker-compose/jenkins/home/*
 # Spring Boot
 application-local.yml
 application-local.properties
+# Local env
+.env
 # Frontend build output
 my-shop-web/dist/
 
