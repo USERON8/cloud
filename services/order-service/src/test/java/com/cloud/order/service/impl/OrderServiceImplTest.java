@@ -99,9 +99,9 @@ class OrderServiceImplTest {
         OrderMain result = orderService.createMainOrder(request);
 
         assertThat(result).isSameAs(existing);
-        verify(orderMainMapper, never()).insert(any());
-        verify(orderSubMapper, never()).insert(any());
-        verify(orderItemMapper, never()).insert(any());
+        verify(orderMainMapper, never()).insert(any(OrderMain.class));
+        verify(orderSubMapper, never()).insert(any(OrderSub.class));
+        verify(orderItemMapper, never()).insert(any(OrderItem.class));
         verify(tradeMetrics).incrementOrder("success");
     }
 
