@@ -549,7 +549,7 @@ services:
     networks:
       service_net:
         ipv4_address: 172.28.0.91
-    mem_limit: 768m
+    mem_limit: 1g
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
