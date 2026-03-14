@@ -6,6 +6,8 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.service.ProductCatalogService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
+@Tag(name = "Product Catalog API", description = "SPU/SKU catalog management APIs")
 public class ProductCatalogController {
 
     private final ProductCatalogService productCatalogService;
@@ -32,6 +35,7 @@ public class ProductCatalogController {
     @PostMapping("/spu")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
             + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @Operation(summary = "Create SPU")
     public Result<Long> createSpu(@Valid @RequestBody SpuCreateRequestDTO request, Authentication authentication) {
         if (!canWriteMerchantData(authentication, request.getSpu().getMerchantId())) {
             return Result.forbidden("forbidden to create product for another merchant");
@@ -42,6 +46,7 @@ public class ProductCatalogController {
     @PutMapping("/spu/{spuId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
             + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @Operation(summary = "Update SPU")
     public Result<Boolean> updateSpu(@PathVariable Long spuId,
                                      @Valid @RequestBody SpuCreateRequestDTO request,
                                      Authentication authentication) {
@@ -59,17 +64,20 @@ public class ProductCatalogController {
     }
 
     @GetMapping("/spu/{spuId}")
+    @Operation(summary = "Get SPU detail")
     public Result<SpuDetailVO> getSpu(@PathVariable Long spuId) {
         return Result.success(productCatalogService.getSpuById(spuId));
     }
 
     @GetMapping("/spu/category/{categoryId}")
+    @Operation(summary = "List SPU by category")
     public Result<List<SpuDetailVO>> listByCategory(@PathVariable Long categoryId,
                                                      @RequestParam(required = false) Integer status) {
         return Result.success(productCatalogService.listSpuByCategory(categoryId, status));
     }
 
     @GetMapping("/sku/batch")
+    @Operation(summary = "Batch query SKU details")
     public Result<List<SkuDetailVO>> listSkuByIds(@RequestParam List<Long> skuIds) {
         return Result.success(productCatalogService.listSkuByIds(skuIds));
     }
@@ -77,6 +85,7 @@ public class ProductCatalogController {
     @PatchMapping("/spu/{spuId}/status")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
             + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @Operation(summary = "Update SPU status")
     public Result<Boolean> updateSpuStatus(@PathVariable Long spuId,
                                            @RequestParam Integer status,
                                            Authentication authentication) {

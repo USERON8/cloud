@@ -11,6 +11,8 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.impl.OrderShippingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@Tag(name = "Order API", description = "Order creation and after-sale APIs")
 public class OrderController {
 
     private static final Set<String> SUB_ORDER_ACTIONS = Set.of(
@@ -48,6 +51,7 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Create main order")
     public Result<OrderAggregateResponse> createMainOrder(@RequestBody @Valid CreateMainOrderRequest request,
                                                            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                            Authentication authentication) {
@@ -70,6 +74,7 @@ public class OrderController {
 
     @GetMapping("/main/{mainOrderId}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Get main order detail")
     public Result<OrderAggregateResponse> getMainOrder(@PathVariable Long mainOrderId, Authentication authentication) {
         OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
         if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
@@ -86,6 +91,7 @@ public class OrderController {
 
     @GetMapping("/main/{mainOrderId}/sub-orders")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "List sub orders")
     public Result<List<OrderSub>> listSubOrders(@PathVariable Long mainOrderId,
                                                    Authentication authentication) {
         OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
@@ -103,6 +109,7 @@ public class OrderController {
 
     @PostMapping("/sub/{subOrderId}/actions/{action}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Advance sub order status")
     public Result<OrderSub> advanceSubOrderStatus(@PathVariable Long subOrderId,
                                                       @PathVariable String action,
                                                       @RequestParam(required = false) String shippingCompany,
@@ -124,6 +131,7 @@ public class OrderController {
 
     @PostMapping("/sub/{subOrderId}/ship")
     @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Ship sub order")
     public Result<OrderSub> shipOrder(@PathVariable Long subOrderId,
                                       @RequestParam String shippingCompany,
                                       @RequestParam String trackingNumber,
@@ -137,6 +145,7 @@ public class OrderController {
 
     @PostMapping("/after-sales")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Apply after-sale")
     public Result<AfterSale> applyAfterSale(@RequestBody AfterSale afterSale,
                                                Authentication authentication) {
         Long currentUserId = requireCurrentUserId(authentication);
@@ -152,6 +161,7 @@ public class OrderController {
 
     @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Advance after-sale status")
     public Result<AfterSale> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
                                                        @PathVariable String action,
                                                        @RequestParam(required = false) String remark,

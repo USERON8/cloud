@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,7 @@ import java.util.Set;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Gateway Search Fallback", description = "Search fallback endpoints for gateway degradation")
 public class SearchFallbackController {
 
     private static final String FALLBACK_METRIC_COUNT = "gateway.search.fallback.count";
@@ -60,6 +63,7 @@ public class SearchFallbackController {
     private String fallbackSuggestionsPath;
 
     @GetMapping("/gateway/fallback/search")
+    @Operation(summary = "Search fallback handler")
     public Mono<ResponseEntity<String>> searchFallback(ServerWebExchange exchange,
                                                        @RequestParam(value = "route", required = false) String explicitRoute) {
         String originalPath = resolveOriginalPath(exchange);

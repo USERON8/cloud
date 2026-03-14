@@ -9,6 +9,8 @@ import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.payment.service.PaymentOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@Tag(name = "Payment API", description = "Payment order and refund APIs")
 public class PaymentOrderController {
 
     private final PaymentOrderService paymentOrderService;
@@ -32,12 +35,14 @@ public class PaymentOrderController {
 
     @PostMapping("/orders")
     @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @Operation(summary = "Create payment order")
     public Result<Long> createPaymentOrder(@Valid @RequestBody PaymentOrderCommandDTO command) {
         return Result.success(paymentOrderService.createPaymentOrder(command));
     }
 
     @GetMapping("/orders/{paymentNo}")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get payment order by number")
     public Result<PaymentOrderVO> getPaymentOrderByNo(@PathVariable String paymentNo, Authentication authentication) {
         PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
         if (order == null) {
@@ -51,6 +56,7 @@ public class PaymentOrderController {
 
     @GetMapping("/orders/{paymentNo}/status")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get payment order status")
     public Result<Map<String, Object>> getPaymentStatus(@PathVariable String paymentNo, Authentication authentication) {
         PaymentSecurityCacheService.CachedStatus cached = paymentSecurityCacheService.getCachedStatus(paymentNo);
         if (cached != null) {
@@ -83,18 +89,21 @@ public class PaymentOrderController {
 
     @PostMapping("/callbacks")
     @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @Operation(summary = "Handle payment callback")
     public Result<Boolean> handleCallback(@Valid @RequestBody PaymentCallbackCommandDTO command) {
         return Result.success(paymentOrderService.handlePaymentCallback(command));
     }
 
     @PostMapping("/refunds")
     @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @Operation(summary = "Create payment refund")
     public Result<Long> createRefund(@Valid @RequestBody PaymentRefundCommandDTO command) {
         return Result.success(paymentOrderService.createRefund(command));
     }
 
     @GetMapping("/refunds/{refundNo}")
     @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @Operation(summary = "Get refund by number")
     public Result<PaymentRefundVO> getRefundByNo(@PathVariable String refundNo) {
         return Result.success(paymentOrderService.getRefundByNo(refundNo));
     }
