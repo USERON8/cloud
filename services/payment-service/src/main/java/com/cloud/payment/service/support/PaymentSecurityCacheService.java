@@ -3,11 +3,9 @@ package com.cloud.payment.service.support;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -44,23 +42,6 @@ public class PaymentSecurityCacheService {
 
     @Value("${payment.security.alipay-token-ttl-seconds:1500}")
     private long alipayTokenTtlSeconds;
-
-    private final RedisScript<List> slidingWindowScript = RedisScript.of("""
-            local key = KEYS[1]
-            local now = tonumber(ARGV[1])
-            local window_start = now - tonumber(ARGV[2])
-            local limit = tonumber(ARGV[3])
-            local window_size = tonumber(ARGV[2])
-            redis.call('ZREMRANGEBYSCORE', key, 0, window_start)
-            local current_count = redis.call('ZCARD', key)
-            if current_count < limit then
-                redis.call('ZADD', key, now, now .. ':' .. math.random())
-                redis.call('EXPIRE', key, window_size)
-                return {1, limit - current_count - 1, window_size}
-            else
-                return {0, 0, window_size}
-            end
-            """, List.class);
 
     public PaymentSecurityCacheService(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
@@ -186,10 +167,11 @@ public class PaymentSecurityCacheService {
         int limit = Math.max(1, rateLimitMaxRequests);
         String key = RATE_PREFIX + userId;
         try {
-            long now = System.currentTimeMillis() / 1000L;
-            List result = stringRedisTemplate.execute(slidingWindowScript, List.of(key), now, windowSeconds, limit);
-            boolean allowed = result != null && !result.isEmpty() && ((Number) result.get(0)).longValue() == 1;
-            return allowed;
+            Long count = stringRedisTemplate.opsForValue().increment(key);
+            if (count != null && count == 1L) {
+                stringRedisTemplate.expire(key, Duration.ofSeconds(windowSeconds));
+            }
+            return count == null || count <= limit;
         } catch (Exception ex) {
             log.warn("Rate limit check failed: userId={}", userId, ex);
             return true;
