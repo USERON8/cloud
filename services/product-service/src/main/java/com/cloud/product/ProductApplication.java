@@ -1,5 +1,7 @@
 package com.cloud.product;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
@@ -12,6 +14,11 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+@OpenAPIDefinition(info = @Info(
+        title = "Product Service API",
+        description = "Product service endpoints",
+        version = "1.0.0"
+))
 @SpringBootApplication
 @EnableDubbo
 @EnableDiscoveryClient

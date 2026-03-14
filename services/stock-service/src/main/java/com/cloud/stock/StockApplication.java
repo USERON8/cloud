@@ -1,5 +1,7 @@
 package com.cloud.stock;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
@@ -13,9 +15,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
-@SpringBootApplication(
-        scanBasePackages = {"com.cloud.stock", "com.cloud.common"}
-)
+@OpenAPIDefinition(info = @Info(
+        title = "Stock Service API",
+        description = "Stock service endpoints",
+        version = "1.0.0"
+))
+@SpringBootApplication(scanBasePackages = {"com.cloud.stock", "com.cloud.common"})
 @EnableDubbo
 @ComponentScan(
         basePackages = {"com.cloud.stock", "com.cloud.common"}

@@ -1,6 +1,7 @@
 package com.cloud.payment;
 
-
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
@@ -10,9 +11,12 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(
-        scanBasePackages = {"com.cloud.payment", "com.cloud.common"}
-)
+@OpenAPIDefinition(info = @Info(
+        title = "Payment Service API",
+        description = "Payment service endpoints",
+        version = "1.0.0"
+))
+@SpringBootApplication(scanBasePackages = {"com.cloud.payment", "com.cloud.common"})
 @EnableDubbo
 @EnableDiscoveryClient
 @Slf4j

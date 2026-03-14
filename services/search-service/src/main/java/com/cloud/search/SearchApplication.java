@@ -1,6 +1,7 @@
 package com.cloud.search;
 
-
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,6 +10,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
 
+@OpenAPIDefinition(info = @Info(
+        title = "Search Service API",
+        description = "Search service endpoints",
+        version = "1.0.0"
+))
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.search", "com.cloud.common"},
         exclude = {
