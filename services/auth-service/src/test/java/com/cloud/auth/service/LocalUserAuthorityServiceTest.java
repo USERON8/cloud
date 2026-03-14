@@ -1,0 +1,106 @@
+package com.cloud.auth.service;
+
+import com.cloud.auth.service.support.AuthPermissionQueryService;
+import com.cloud.common.config.PermissionConfig;
+import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class LocalUserAuthorityServiceTest {
+
+    @Mock
+    private AuthPermissionQueryService authPermissionQueryService;
+
+    private PermissionConfig permissionConfig;
+
+    private LocalUserAuthorityService localUserAuthorityService;
+
+    @BeforeEach
+    void setUp() {
+        permissionConfig = new PermissionConfig();
+        permissionConfig.setEnabled(true);
+        permissionConfig.setStrictMode(false);
+        permissionConfig.setDefaultPermissions(List.of("user:read"));
+        localUserAuthorityService = new LocalUserAuthorityService(permissionConfig, authPermissionQueryService);
+    }
+
+    @Test
+    void buildAuthorities_expandsRoleAndPermissions() {
+        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_ADMIN")))
+                .thenReturn(Map.of("ROLE_ADMIN", List.of("order:read", "order:write")));
+
+        var authorities = localUserAuthorityService.buildAuthorities(List.of("ADMIN"));
+
+        assertThat(authorities)
+                .extracting(auth -> auth.getAuthority())
+                .contains("ROLE_ADMIN", "SCOPE_openid", "SCOPE_profile", "SCOPE_read",
+                        "SCOPE_order:read", "SCOPE_order:write");
+    }
+
+    @Test
+    void buildAuthorities_appliesDefaultPermissionsWhenMissing() {
+        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_USER")))
+                .thenReturn(Map.of());
+
+        var authorities = localUserAuthorityService.buildAuthorities(List.of());
+
+        assertThat(authorities)
+                .extracting(auth -> auth.getAuthority())
+                .contains("ROLE_USER", "SCOPE_user:read", "SCOPE_openid", "SCOPE_profile", "SCOPE_read");
+    }
+
+    @Test
+    void buildAuthorities_superAdminIncludesAdminRole() {
+        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_SUPER_ADMIN", "ROLE_ADMIN")))
+                .thenReturn(Map.of("ROLE_SUPER_ADMIN", List.of("admin:read")));
+
+        var authorities = localUserAuthorityService.buildAuthorities(List.of("SUPER_ADMIN"));
+
+        assertThat(authorities)
+                .extracting(auth -> auth.getAuthority())
+                .contains("ROLE_SUPER_ADMIN", "ROLE_ADMIN", "SCOPE_admin:read");
+    }
+
+    @Test
+    void createAuthenticatedPrincipal_disabledUserThrows() {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUsername("blocked");
+        userDTO.setStatus(0);
+
+        assertThatThrownBy(() -> localUserAuthorityService.createAuthenticatedPrincipal(userDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ResultCode.USER_DISABLED.getMessage());
+    }
+
+    @Test
+    void createAuthenticatedPrincipal_returnsAuthentication() {
+        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_USER")))
+                .thenReturn(Map.of());
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUsername("alice");
+        userDTO.setStatus(1);
+        userDTO.setRoles(List.of("USER"));
+
+        Authentication authentication = localUserAuthorityService.createAuthenticatedPrincipal(userDTO);
+
+        assertThat(authentication.getName()).isEqualTo("alice");
+        assertThat(authentication.getAuthorities())
+                .extracting(auth -> auth.getAuthority())
+                .contains("ROLE_USER", "SCOPE_user:read");
+    }
+}
