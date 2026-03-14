@@ -2,6 +2,9 @@ package com.cloud.payment;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.security.SecuritySchemeType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
@@ -11,11 +14,20 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@OpenAPIDefinition(info = @Info(
-        title = "Payment Service API",
-        description = "Payment service endpoints",
-        version = "1.0.0"
-))
+@SecurityScheme(
+        name = "Authorization",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
+@OpenAPIDefinition(
+        info = @Info(
+                title = "Payment Service API",
+                description = "Payment service endpoints",
+                version = "1.0.0"
+        ),
+        security = @SecurityRequirement(name = "Authorization")
+)
 @SpringBootApplication(scanBasePackages = {"com.cloud.payment", "com.cloud.common"})
 @EnableDubbo
 @EnableDiscoveryClient

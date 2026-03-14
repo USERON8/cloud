@@ -2,6 +2,9 @@ package com.cloud.search;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.security.SecuritySchemeType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,11 +13,20 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
 
-@OpenAPIDefinition(info = @Info(
-        title = "Search Service API",
-        description = "Search service endpoints",
-        version = "1.0.0"
-))
+@SecurityScheme(
+        name = "Authorization",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
+@OpenAPIDefinition(
+        info = @Info(
+                title = "Search Service API",
+                description = "Search service endpoints",
+                version = "1.0.0"
+        ),
+        security = @SecurityRequirement(name = "Authorization")
+)
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.search", "com.cloud.common"},
         exclude = {
