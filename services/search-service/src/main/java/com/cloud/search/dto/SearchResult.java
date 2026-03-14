@@ -46,6 +46,9 @@ public class SearchResult<T> {
     @Schema(description = "Highlight data")
     private Map<String, List<String>> highlights;
 
+    @Schema(description = "Search after values")
+    private List<Object> searchAfter;
+
     public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took) {
         int safeSize = size == null || size <= 0 ? 20 : size;
         int safePage = page == null || page < 0 ? 0 : page;
@@ -77,6 +80,14 @@ public class SearchResult<T> {
                                          Map<String, Object> aggregations, Map<String, List<String>> highlights) {
         SearchResult<T> result = of(list, total, page, size, took, aggregations);
         result.setHighlights(highlights);
+        return result;
+    }
+
+    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
+                                         Map<String, Object> aggregations, Map<String, List<String>> highlights,
+                                         List<Object> searchAfter) {
+        SearchResult<T> result = of(list, total, page, size, took, aggregations, highlights);
+        result.setSearchAfter(searchAfter);
         return result;
     }
 }
