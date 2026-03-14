@@ -17,7 +17,7 @@ import java.util.HexFormat;
 @Slf4j
 public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
 
-    private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
+    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
 
     private final RedisTemplate<String, Object> redisTemplate;
 

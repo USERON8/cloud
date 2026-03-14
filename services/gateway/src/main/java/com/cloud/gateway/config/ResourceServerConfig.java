@@ -40,7 +40,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ResourceServerConfig {
 
-    private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
+    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
 
     private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
     private final Environment environment;

@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class TokenBlacklistService {
 
-    private static final String BLACKLIST_KEY_PREFIX = "oauth2:blacklist:";
-    private static final String BLACKLIST_STATS_KEY = "oauth2:blacklist:stats";
+    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
+    private static final String BLACKLIST_STATS_KEY = "token:blacklist:stats";
 
     private final RedisTemplate<String, Object> redisTemplate;
 
