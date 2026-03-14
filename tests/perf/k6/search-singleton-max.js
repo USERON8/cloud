@@ -5,10 +5,10 @@ import { Rate, Trend } from "k6/metrics";
 const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080").replace(/\/+$/, "");
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "5s";
 
-const TARGET_P95_MS = Number(__ENV.SEARCH_MAX_P95_THRESHOLD_MS || 750);
-const TARGET_ERROR_RATE = Number(__ENV.SEARCH_MAX_ERROR_RATE_THRESHOLD || 0.03);
-const TARGET_TIMEOUT_RATE = Number(__ENV.SEARCH_MAX_TIMEOUT_RATE_THRESHOLD || 0.08);
-const TIMEOUT_MS = Number(__ENV.SEARCH_MAX_TIMEOUT_MS || 900);
+const TARGET_P95_MS = Number(__ENV.SEARCH_MAX_P95_THRESHOLD_MS || 500);
+const TARGET_ERROR_RATE = Number(__ENV.SEARCH_MAX_ERROR_RATE_THRESHOLD || 0.01);
+const TARGET_TIMEOUT_RATE = Number(__ENV.SEARCH_MAX_TIMEOUT_RATE_THRESHOLD || 0.01);
+const TIMEOUT_MS = Number(__ENV.SEARCH_MAX_TIMEOUT_MS || 500);
 
 const searchLatency = new Trend("search_singleton_latency_ms", true);
 const searchErrorRate = new Rate("search_singleton_error_rate");
@@ -20,23 +20,24 @@ export const options = {
     singleton_max: {
       executor: "ramping-arrival-rate",
       timeUnit: "1s",
-      preAllocatedVUs: Number(__ENV.SEARCH_MAX_PRE_ALLOCATED_VUS || 40),
-      maxVUs: Number(__ENV.SEARCH_MAX_MAX_VUS || 180),
+      preAllocatedVUs: Number(__ENV.SEARCH_MAX_PRE_ALLOCATED_VUS || 200),
+      maxVUs: Number(__ENV.SEARCH_MAX_MAX_VUS || 1000),
       stages: [
-        { target: Number(__ENV.SEARCH_MAX_STAGE1_RATE || 25), duration: __ENV.SEARCH_MAX_STAGE1_DURATION || "40s" },
-        { target: Number(__ENV.SEARCH_MAX_STAGE2_RATE || 45), duration: __ENV.SEARCH_MAX_STAGE2_DURATION || "40s" },
-        { target: Number(__ENV.SEARCH_MAX_STAGE3_RATE || 70), duration: __ENV.SEARCH_MAX_STAGE3_DURATION || "50s" },
-        { target: Number(__ENV.SEARCH_MAX_STAGE4_RATE || 90), duration: __ENV.SEARCH_MAX_STAGE4_DURATION || "50s" },
-        { target: 0, duration: __ENV.SEARCH_MAX_COOLDOWN_DURATION || "15s" },
+        { target: Number(__ENV.SEARCH_MAX_STAGE1_RATE || 50), duration: __ENV.SEARCH_MAX_STAGE1_DURATION || "2m" },
+        { target: Number(__ENV.SEARCH_MAX_STAGE2_RATE || 200), duration: __ENV.SEARCH_MAX_STAGE2_DURATION || "5m" },
+        { target: Number(__ENV.SEARCH_MAX_STAGE3_RATE || 500), duration: __ENV.SEARCH_MAX_STAGE3_DURATION || "2m" },
+        { target: Number(__ENV.SEARCH_MAX_STAGE4_RATE || 900), duration: __ENV.SEARCH_MAX_STAGE4_DURATION || "2m" },
+        { target: 0, duration: __ENV.SEARCH_MAX_COOLDOWN_DURATION || "2m" },
       ],
       exec: "runSearch",
     },
   },
   thresholds: {
     search_singleton_latency_ms: [`p(95)<${TARGET_P95_MS}`],
-    search_singleton_error_rate: [`rate<=${TARGET_ERROR_RATE}`],
-    search_singleton_timeout_rate: [`rate<=${TARGET_TIMEOUT_RATE}`],
-    http_req_failed: [`rate<=${TARGET_ERROR_RATE}`],
+    search_singleton_error_rate: [`rate<${TARGET_ERROR_RATE}`],
+    search_singleton_timeout_rate: [`rate<${TARGET_TIMEOUT_RATE}`],
+    http_req_duration: [`p(95)<${TARGET_P95_MS}`],
+    http_req_failed: [`rate<${TARGET_ERROR_RATE}`],
   },
 };
 
