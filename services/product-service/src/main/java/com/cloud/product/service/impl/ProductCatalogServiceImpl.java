@@ -15,6 +15,7 @@ import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.support.ProductDetailCacheService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,9 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     private final SkuMapper skuMapper;
     private final ProductDetailCacheService productDetailCacheService;
     private final ProductSyncMessageProducer productSyncMessageProducer;
+
+    @Value("${product.config.page.max-size:100}")
+    private Integer maxListSize;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -139,12 +143,14 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
     @Override
     public List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status) {
+        int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
         LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
                 .eq(Spu::getCategoryId, categoryId)
                 .eq(Spu::getDeleted, 0);
         if (status != null) {
             wrapper.eq(Spu::getStatus, status);
         }
+        wrapper.last("LIMIT " + effectiveMax);
         List<Spu> spus = spuMapper.selectList(wrapper);
         if (spus == null || spus.isEmpty()) {
             return Collections.emptyList();

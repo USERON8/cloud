@@ -15,6 +15,7 @@ import com.cloud.product.module.vo.ShopVO;
 import com.cloud.product.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -32,6 +33,9 @@ import java.util.List;
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements ShopService {
 
     private final ShopConverter shopConverter;
+
+    @Value("${product.config.batch.max-size:100}")
+    private Integer shopListMaxSize;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -161,6 +165,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             queryWrapper.eq(Shop::getStatus, status);
         }
         queryWrapper.orderByDesc(Shop::getCreatedAt);
+        queryWrapper.last("LIMIT " + resolveShopListLimit());
         return shopConverter.toVOList(list(queryWrapper));
     }
 
@@ -179,6 +184,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             queryWrapper.eq(Shop::getStatus, status);
         }
         queryWrapper.orderByDesc(Shop::getCreatedAt);
+        queryWrapper.last("LIMIT " + resolveShopListLimit());
         return shopConverter.toVOList(list(queryWrapper));
     }
 
@@ -355,6 +361,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             throw new BusinessException(operation + " shops failed");
         }
         return true;
+    }
+
+    private int resolveShopListLimit() {
+        return (shopListMaxSize == null || shopListMaxSize <= 0) ? 100 : shopListMaxSize;
     }
 }
 
