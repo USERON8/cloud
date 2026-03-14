@@ -119,6 +119,9 @@ public class ElasticsearchOptimizedService {
     @Value("${search.optimized.limit.max-search-size:100}")
     private int maxSearchSize;
 
+    @Value("${search.optimized.limit.max-from:10000}")
+    private int maxSearchFrom;
+
     @Value("${search.optimized.elasticsearch.request-timeout-ms:700}")
     private int esRequestTimeoutMs;
 
@@ -238,6 +241,11 @@ public class ElasticsearchOptimizedService {
         Timer.Sample sample = Timer.start(meterRegistry);
         int safeFrom = Math.max(0, from);
         int safeSize = size <= 0 ? defaultSearchSize() : Math.min(size, maxSearchSize());
+        if (safeFrom >= Math.max(1, maxSearchFrom)) {
+            log.warn("Smart search deep pagination blocked, from={}, size={}, maxFrom={}", safeFrom, safeSize, maxSearchFrom);
+            recordTimer(sample, "smart-search", "deep-page-blocked");
+            return SearchResult.empty(safeFrom, safeSize);
+        }
         String safeKeyword = normalizeKeyword(keyword);
         SmartSearchCacheKey cacheKey = new SmartSearchCacheKey(
                 safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize
@@ -271,6 +279,34 @@ public class ElasticsearchOptimizedService {
                     safeKeyword, categoryId, safeFrom, safeSize, e);
             recordTimer(sample, "smart-search", "error");
             return SearchResult.empty(safeFrom, safeSize);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public SearchResult smartProductSearchAfter(String keyword, Long categoryId,
+                                                Double minPrice, Double maxPrice,
+                                                String sortField, String sortOrder,
+                                                List<Object> searchAfterValues, int size) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        int safeSize = size <= 0 ? defaultSearchSize() : Math.min(size, maxSearchSize());
+        String safeKeyword = normalizeKeyword(keyword);
+        SmartSearchCacheKey cacheKey = new SmartSearchCacheKey(
+                safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, 0, safeSize
+        );
+
+        try {
+            List<FieldValue> searchAfter = toSearchAfterValues(searchAfterValues);
+            SearchResult result = querySmartSearchFromElasticsearch(cacheKey, searchAfter);
+            recordHotSearch(safeKeyword);
+            recordTimer(sample, "smart-search", "search-after");
+            return result;
+
+        } catch (Exception e) {
+            incrementEsError("smart-search");
+            log.error("Smart product search (search_after) failed, keyword={}, categoryId={}, size={}",
+                    safeKeyword, categoryId, safeSize, e);
+            recordTimer(sample, "smart-search", "error");
+            return SearchResult.empty(0, safeSize);
         }
     }
 
@@ -449,18 +485,31 @@ public class ElasticsearchOptimizedService {
     }
 
     private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
+        return querySmartSearchFromElasticsearch(key, List.of());
+    }
+
+    private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key, List<FieldValue> searchAfter) {
         Query query = buildProductSearchQuery(key.keyword(), key.categoryId(), key.minPrice(), key.maxPrice());
-        SearchRequest searchRequest = SearchRequest.of(s -> s
-                .index(PRODUCT_INDEX)
-                .query(query)
-                .from(key.from())
-                .size(key.size())
-                .timeout(esRequestTimeoutMs + "ms")
-                .sort(buildSortOptions(key.sortField(), key.sortOrder()))
-                .highlight(buildHighlight())
-                .aggregations(buildAggregations())
-                .source(src -> src.fetch(true))
-        );
+        boolean useSearchAfter = searchAfter != null && !searchAfter.isEmpty();
+        SearchRequest searchRequest = SearchRequest.of(s -> {
+            SearchRequest.Builder builder = s
+                    .index(PRODUCT_INDEX)
+                    .query(query)
+                    .size(key.size())
+                    .timeout(esRequestTimeoutMs + "ms")
+                    .sort(useSearchAfter
+                            ? buildSortOptionsWithTieBreaker(key.sortField(), key.sortOrder())
+                            : buildSortOptions(key.sortField(), key.sortOrder()))
+                    .highlight(buildHighlight())
+                    .aggregations(buildAggregations())
+                    .source(src -> src.fetch(true));
+            if (useSearchAfter) {
+                builder.searchAfter(searchAfter);
+            } else {
+                builder.from(key.from());
+            }
+            return builder;
+        });
 
         try {
             SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
@@ -477,12 +526,14 @@ public class ElasticsearchOptimizedService {
 
             long total = response.hits().total() != null ? response.hits().total().value() : 0L;
             Map<String, Object> aggregations = processAggregations(response.aggregations());
+            List<Object> nextSearchAfter = resolveNextSearchAfter(response.hits().hits(), key.size());
             return SearchResult.builder()
                     .documents(products)
                     .total(total)
                     .from(key.from())
                     .size(key.size())
                     .aggregations(aggregations)
+                    .searchAfter(nextSearchAfter)
                     .build();
         } catch (Exception ex) {
             throw new IllegalStateException("smart search query failed", ex);
@@ -615,6 +666,14 @@ public class ElasticsearchOptimizedService {
                     .score(sc -> sc.order(SortOrder.Desc))));
         }
 
+        return sortOptions;
+    }
+
+    private List<co.elastic.clients.elasticsearch._types.SortOptions> buildSortOptionsWithTieBreaker(String sortField, String sortOrder) {
+        List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>(buildSortOptions(sortField, sortOrder));
+        SortOrder order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
+        sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                .field(f -> f.field("_id").order(order))));
         return sortOptions;
     }
 
@@ -790,6 +849,10 @@ public class ElasticsearchOptimizedService {
             long total = root.path("total").asLong(0);
             int from = root.path("from").asInt(0);
             int size = root.path("size").asInt(defaultSearchSize());
+            List<Object> searchAfter = objectMapper.convertValue(
+                    root.path("searchAfter"), new TypeReference<List<Object>>() {
+                    }
+            );
             Map<String, Object> aggregations = objectMapper.convertValue(
                     root.path("aggregations"), new TypeReference<Map<String, Object>>() {
                     }
@@ -801,6 +864,7 @@ public class ElasticsearchOptimizedService {
                     .from(from)
                     .size(size)
                     .aggregations(aggregations == null ? Map.of() : aggregations)
+                    .searchAfter(searchAfter == null ? List.of() : searchAfter)
                     .build();
         } catch (Exception e) {
             log.warn("Read smart search cache failed, key={}", key, e);
@@ -954,6 +1018,74 @@ public class ElasticsearchOptimizedService {
         return Math.max(safeMax, defaultSearchSize());
     }
 
+    private List<FieldValue> toSearchAfterValues(List<Object> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        List<FieldValue> converted = new ArrayList<>();
+        for (Object value : values) {
+            if (value == null) {
+                converted.add(FieldValue.NULL);
+            } else if (value instanceof Integer || value instanceof Long || value instanceof Short || value instanceof Byte) {
+                converted.add(FieldValue.of(((Number) value).longValue()));
+            } else if (value instanceof Number) {
+                converted.add(FieldValue.of(((Number) value).doubleValue()));
+            } else if (value instanceof Boolean) {
+                converted.add(FieldValue.of((Boolean) value));
+            } else {
+                converted.add(FieldValue.of(value.toString()));
+            }
+        }
+        return converted;
+    }
+
+    private List<Object> resolveNextSearchAfter(List<Hit<Map>> hits, int size) {
+        if (hits == null || hits.isEmpty()) {
+            return List.of();
+        }
+        if (hits.size() < size) {
+            return List.of();
+        }
+        Hit<Map> lastHit = hits.get(hits.size() - 1);
+        if (lastHit == null || lastHit.sort() == null || lastHit.sort().isEmpty()) {
+            return List.of();
+        }
+        List<Object> values = new ArrayList<>();
+        for (FieldValue value : lastHit.sort()) {
+            values.add(toSearchAfterValue(value));
+        }
+        return values;
+    }
+
+    private Object toSearchAfterValue(FieldValue value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.isString()) {
+            return value.stringValue();
+        }
+        if (value.isLong()) {
+            return value.longValue();
+        }
+        if (value.isDouble()) {
+            return value.doubleValue();
+        }
+        if (value.isBoolean()) {
+            return value.booleanValue();
+        }
+        if (value.isAny()) {
+            try {
+                return objectMapper.readValue(value._toJsonString(), Object.class);
+            } catch (Exception ex) {
+                return value._toJsonString();
+            }
+        }
+        if (value.isNull()) {
+            return null;
+        }
+        return value._get();
+    }
+
     private record SmartSearchCacheKey(String keyword,
                                        Long categoryId,
                                        Double minPrice,
@@ -986,13 +1118,16 @@ public class ElasticsearchOptimizedService {
         private final int from;
         private final int size;
         private final Map<String, Object> aggregations;
+        private final List<Object> searchAfter;
 
-        private SearchResult(List<Map<String, Object>> documents, long total, int from, int size, Map<String, Object> aggregations) {
+        private SearchResult(List<Map<String, Object>> documents, long total, int from, int size,
+                             Map<String, Object> aggregations, List<Object> searchAfter) {
             this.documents = documents;
             this.total = total;
             this.from = from;
             this.size = size;
             this.aggregations = aggregations;
+            this.searchAfter = searchAfter;
         }
 
         public static SearchResultBuilder builder() {
@@ -1000,7 +1135,7 @@ public class ElasticsearchOptimizedService {
         }
 
         public static SearchResult empty(int from, int size) {
-            return new SearchResult(List.of(), 0, from, size, Map.of());
+            return new SearchResult(List.of(), 0, from, size, Map.of(), List.of());
         }
 
         public List<Map<String, Object>> getDocuments() {
@@ -1023,7 +1158,14 @@ public class ElasticsearchOptimizedService {
             return aggregations;
         }
 
+        public List<Object> getSearchAfter() {
+            return searchAfter;
+        }
+
         public boolean hasMore() {
+            if (searchAfter != null && !searchAfter.isEmpty()) {
+                return documents != null && documents.size() >= size;
+            }
             return from + size < total;
         }
 
@@ -1033,6 +1175,7 @@ public class ElasticsearchOptimizedService {
             private int from;
             private int size;
             private Map<String, Object> aggregations;
+            private List<Object> searchAfter;
 
             public SearchResultBuilder documents(List<Map<String, Object>> documents) {
                 this.documents = documents;
@@ -1059,8 +1202,13 @@ public class ElasticsearchOptimizedService {
                 return this;
             }
 
+            public SearchResultBuilder searchAfter(List<Object> searchAfter) {
+                this.searchAfter = searchAfter;
+                return this;
+            }
+
             public SearchResult build() {
-                return new SearchResult(documents, total, from, size, aggregations);
+                return new SearchResult(documents, total, from, size, aggregations, searchAfter);
             }
         }
     }

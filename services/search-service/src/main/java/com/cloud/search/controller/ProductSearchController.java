@@ -121,9 +121,10 @@ public class ProductSearchController {
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "score") String sortField,
             @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
             @Parameter(description = "Page number, starts from 1") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "search_after values, json array or comma separated") @RequestParam(required = false) String searchAfter) {
         return Result.success("Search success", searchFacadeService.smartSearch(
-                keyword, categoryId, minPrice, maxPrice, sortField, sortOrder, page, size
+                keyword, categoryId, minPrice, maxPrice, sortField, sortOrder, page, size, searchAfter
         ));
     }
 
@@ -221,4 +222,3 @@ public class ProductSearchController {
         ));
     }
 }
-

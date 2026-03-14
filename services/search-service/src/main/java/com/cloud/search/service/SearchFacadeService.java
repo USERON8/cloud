@@ -124,9 +124,23 @@ public class SearchFacadeService {
     }
 
     public ElasticsearchOptimizedService.SearchResult smartSearch(String keyword, Long categoryId, Double minPrice, Double maxPrice,
-                                                                  String sortField, String sortOrder, int page, int size) {
+                                                                  String sortField, String sortOrder, int page, int size,
+                                                                  String searchAfter) {
         int safePage = Math.max(page, 1);
         int safeSize = size <= 0 ? 20 : size;
+        List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+        if (!searchAfterValues.isEmpty()) {
+            return elasticsearchOptimizedService.smartProductSearchAfter(
+                    keyword,
+                    categoryId,
+                    minPrice,
+                    maxPrice,
+                    sortField,
+                    sortOrder,
+                    searchAfterValues,
+                    safeSize
+            );
+        }
         int from = (safePage - 1) * safeSize;
         return elasticsearchOptimizedService.smartProductSearch(
                 keyword,
@@ -196,5 +210,52 @@ public class SearchFacadeService {
         List<ProductDocument> list = result == null || result.getList() == null ? Collections.emptyList() : result.getList();
         long total = result == null || result.getTotal() == null ? list.size() : result.getTotal();
         return new PageImpl<>(list, PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy)), total);
+    }
+
+    private List<Object> parseSearchAfter(String searchAfter) {
+        if (searchAfter == null || searchAfter.isBlank()) {
+            return List.of();
+        }
+        String raw = searchAfter.trim();
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+            try {
+                return objectMapper.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<List<Object>>() {
+                });
+            } catch (Exception e) {
+                log.warn("Parse searchAfter json failed, raw={}", raw, e);
+            }
+        }
+        String[] tokens = raw.split(",");
+        List<Object> values = new java.util.ArrayList<>();
+        for (String token : tokens) {
+            if (token == null) {
+                continue;
+            }
+            String value = token.trim();
+            if (value.isBlank()) {
+                continue;
+            }
+            Object parsed = parseScalar(value);
+            values.add(parsed);
+        }
+        return values;
+    }
+
+    private Object parseScalar(String value) {
+        String lowered = value.toLowerCase();
+        if ("true".equals(lowered)) {
+            return Boolean.TRUE;
+        }
+        if ("false".equals(lowered)) {
+            return Boolean.FALSE;
+        }
+        try {
+            if (value.contains(".")) {
+                return Double.parseDouble(value);
+            }
+            return Long.parseLong(value);
+        } catch (Exception ignored) {
+            return value;
+        }
     }
 }
