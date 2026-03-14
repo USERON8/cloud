@@ -11,12 +11,15 @@ import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
 import com.cloud.common.metrics.TradeMetrics;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +33,15 @@ public class PaymentSuccessConsumer {
 
     private static final String NS_PAYMENT_SUCCESS = "order:payment:success";
     private static final Set<String> CONFIRMABLE_STATUSES = Set.of("STOCK_RESERVED");
+    private static final String WS_CHANNEL_PREFIX = "ws:message:";
 
     private final MessageIdempotencyService messageIdempotencyService;
     private final OrderMainMapper orderMainMapper;
     private final OrderService orderService;
     private final StockReservationRemoteService stockReservationRemoteService;
     private final TradeMetrics tradeMetrics;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public Consumer<Message<PaymentSuccessEvent>> paymentSuccessConsumer() {
@@ -85,6 +91,7 @@ public class PaymentSuccessConsumer {
                     orderService.advanceSubOrderStatus(subOrder.getId(), "PAY");
                 }
 
+                pushPaymentSuccessMessage(event);
                 tradeMetrics.incrementMessageConsume("payment_success", "success");
                 messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
             } catch (Exception ex) {
@@ -126,5 +133,26 @@ public class PaymentSuccessConsumer {
             return "PAYMENT_SUCCESS:" + event.getOrderNo();
         }
         return "PAYMENT_SUCCESS:" + System.currentTimeMillis();
+    }
+
+    private void pushPaymentSuccessMessage(PaymentSuccessEvent event) {
+        if (event == null || event.getUserId() == null) {
+            return;
+        }
+        try {
+            Map<String, Object> message = Map.of(
+                    "type", "PAYMENT_SUCCESS",
+                    "userId", String.valueOf(event.getUserId()),
+                    "data", Map.of(
+                            "orderId", event.getOrderNo(),
+                            "subOrderNo", event.getSubOrderNo()
+                    ),
+                    "timestamp", Instant.now().toEpochMilli()
+            );
+            String payload = objectMapper.writeValueAsString(message);
+            stringRedisTemplate.convertAndSend(WS_CHANNEL_PREFIX + event.getUserId(), payload);
+        } catch (Exception ex) {
+            log.warn("Send payment success WS message failed: orderNo={}", event.getOrderNo(), ex);
+        }
     }
 }
