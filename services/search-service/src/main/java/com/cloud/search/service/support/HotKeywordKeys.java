@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 public final class HotKeywordKeys {
 
     public static final String TOTAL_KEY = "search:hot:total";
-    private static final String DAILY_PREFIX = "search:hot:day:";
+    private static final String DAILY_PREFIX = "search:hot:";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private HotKeywordKeys() {
