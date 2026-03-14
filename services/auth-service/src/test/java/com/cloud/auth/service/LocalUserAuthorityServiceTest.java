@@ -40,7 +40,7 @@ class LocalUserAuthorityServiceTest {
 
     @Test
     void buildAuthorities_expandsRoleAndPermissions() {
-        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_ADMIN")))
+        when(authPermissionQueryService.getPermissionsByRoles(java.util.Set.of("ROLE_ADMIN")))
                 .thenReturn(Map.of("ROLE_ADMIN", List.of("order:read", "order:write")));
 
         var authorities = localUserAuthorityService.buildAuthorities(List.of("ADMIN"));
@@ -53,7 +53,7 @@ class LocalUserAuthorityServiceTest {
 
     @Test
     void buildAuthorities_appliesDefaultPermissionsWhenMissing() {
-        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_USER")))
+        when(authPermissionQueryService.getPermissionsByRoles(java.util.Set.of("ROLE_USER")))
                 .thenReturn(Map.of());
 
         var authorities = localUserAuthorityService.buildAuthorities(List.of());
@@ -65,7 +65,7 @@ class LocalUserAuthorityServiceTest {
 
     @Test
     void buildAuthorities_superAdminIncludesAdminRole() {
-        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_SUPER_ADMIN", "ROLE_ADMIN")))
+        when(authPermissionQueryService.getPermissionsByRoles(java.util.Set.of("ROLE_SUPER_ADMIN", "ROLE_ADMIN")))
                 .thenReturn(Map.of("ROLE_SUPER_ADMIN", List.of("admin:read")));
 
         var authorities = localUserAuthorityService.buildAuthorities(List.of("SUPER_ADMIN"));
@@ -88,7 +88,7 @@ class LocalUserAuthorityServiceTest {
 
     @Test
     void createAuthenticatedPrincipal_returnsAuthentication() {
-        when(authPermissionQueryService.getPermissionsByRoles(List.of("ROLE_USER")))
+        when(authPermissionQueryService.getPermissionsByRoles(java.util.Set.of("ROLE_USER")))
                 .thenReturn(Map.of());
 
         UserDTO userDTO = new UserDTO();

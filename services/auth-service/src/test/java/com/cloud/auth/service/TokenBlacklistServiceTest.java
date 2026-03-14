@@ -9,9 +9,14 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,25 +38,25 @@ class TokenBlacklistServiceTest {
     @BeforeEach
     void setUp() {
         tokenBlacklistService = new TokenBlacklistService(redisTemplate);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForHash()).thenReturn(hashOperations);
     }
 
     @Test
     void addToBlacklist_emptyToken_skips() {
         tokenBlacklistService.addToBlacklist(" ", "sub", 60, "reason");
 
-        verify(valueOperations, never()).set(anyString(), any(), any(), any());
+        verify(valueOperations, never()).set(anyString(), any(), anyLong(), any(TimeUnit.class));
     }
 
     @Test
     void addToBlacklist_writesStats() {
         tokenBlacklistService.addToBlacklist("token", "sub", 60, "reason");
 
-        verify(valueOperations).set(anyString(), any(), any(), any());
+        verify(valueOperations).set(anyString(), any(), anyLong(), eq(TimeUnit.SECONDS));
         verify(hashOperations).increment("oauth2:blacklist:stats", "total_blacklisted", 1);
         verify(hashOperations).increment("oauth2:blacklist:stats", "active_blacklisted", 1);
-        verify(hashOperations).put(anyString(), anyString(), any());
+        verify(hashOperations).put(eq("oauth2:blacklist:stats"), eq("last_updated"), any());
     }
 
     @Test
