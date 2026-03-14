@@ -63,7 +63,7 @@ class PaymentSecurityCacheServiceTest {
     void cacheStatus_nonFinal_writesHash() {
         paymentSecurityCacheService.cacheStatus("pay2", 2L, "CREATED");
 
-        verify(stringRedisTemplate).delete("pay:status:pay2");
+        verify(stringRedisTemplate).delete(org.mockito.ArgumentMatchers.<String>eq("pay:status:pay2"));
         verify(hashOperations).putAll(eq("pay:status:pay2"), any(Map.class));
         verify(stringRedisTemplate).expire(eq("pay:status:pay2"), any(Duration.class));
     }
