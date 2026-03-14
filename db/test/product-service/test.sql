@@ -7,6 +7,16 @@ DELETE FROM sku;
 DELETE FROM spu;
 DELETE FROM category;
 
+-- 索引优化
+ALTER TABLE category
+    ADD INDEX idx_category_parent_deleted_sort (parent_id, deleted, sort_order);
+
+ALTER TABLE category
+    ADD INDEX idx_category_level_deleted_sort (level, deleted, sort_order);
+
+ALTER TABLE category
+    ADD INDEX idx_category_status_deleted_sort (status, deleted, sort_order);
+
 INSERT INTO category (id, parent_id, name, level, path, sort_order, status, deleted, version)
 VALUES (100, 0, 'Electronics', 1, '/100', 1, 1, 0, 0),
        (200, 100, 'Phone', 2, '/100/200', 1, 1, 0, 0),
