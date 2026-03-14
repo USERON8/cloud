@@ -5,12 +5,19 @@ spring:
     url: jdbc:mysql://127.0.0.1:13306/auth_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
     username: root
     password: root
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 10
+      max-wait: 30000
+      keep-alive: true
+      async-init: true
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      validation-query: SELECT 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
 
 app:
   security:
