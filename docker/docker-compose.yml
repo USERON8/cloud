@@ -1,4 +1,14 @@
-﻿services:
+﻿x-skywalking-common: &skywalking-common
+  JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar"
+  SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
+
+x-skywalking-agent-volume: &skywalking-agent-volume
+  type: bind
+  source: ./monitor/skywalking/agent
+  target: /skywalking/agent
+  read_only: true
+
+services:
   # 兼容性注释已标准化。
   mysql:
     image: mysql:9.3.0
@@ -241,6 +251,238 @@
         target: /usr/share/nginx/html
     depends_on:
       - nacos
+
+  gateway:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-gateway
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8080:8080"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/gateway/target/gateway-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: gateway
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev,route
+
+  auth-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-auth-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8081:8081"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: auth-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  user-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-user-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8082:8082"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/user-service/target/user-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: user-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  order-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-order-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8083:8083"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/order-service/target/order-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: order-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  product-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-product-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8084:8084"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/product-service/target/product-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: product-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  stock-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-stock-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8085:8085"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: stock-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  payment-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-payment-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8086:8086"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: payment-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
+
+  search-service:
+    image: eclipse-temurin:17-jre
+    container_name: cloud-search-service
+    profiles:
+      - services
+    networks:
+      - service_net
+    ports:
+      - "8087:8087"
+    depends_on:
+      - nacos
+      - skywalking-oap
+    volumes:
+      - *skywalking-agent-volume
+      - type: bind
+        source: ../services/search-service/target/search-service-0.0.1-SNAPSHOT.jar
+        target: /workspace/app.jar
+    environment:
+      <<: *skywalking-common
+      SW_AGENT_NAME: search-service
+      NACOS_SERVER_ADDR: nacos:8848
+      ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_SERVER_ADDR: seata-server:8091
+    command:
+      - java
+      - -jar
+      - /workspace/app.jar
+      - --spring.profiles.active=dev
   # 兼容性注释已标准化。
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
