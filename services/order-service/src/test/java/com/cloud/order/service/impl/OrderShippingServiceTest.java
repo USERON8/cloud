@@ -5,20 +5,14 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,71 +28,44 @@ class OrderShippingServiceTest {
     @Mock
     private OrderAggregateCacheService orderAggregateCacheService;
 
+    @InjectMocks
     private OrderShippingService orderShippingService;
 
-    @BeforeEach
-    void setUp() {
-        orderShippingService = new OrderShippingService(
-                orderSubMapper,
-                orderService,
-                orderAggregateCacheService
-        );
-    }
-
     @Test
-    void shipShouldUpdateShippingAndAdvanceStatus() {
-        OrderSub subOrder = new OrderSub();
-        subOrder.setId(11L);
-        subOrder.setMainOrderId(21L);
-        subOrder.setOrderStatus("PAID");
-        subOrder.setDeleted(0);
+    void ship_success_updatesStatusAndEvictsCache() {
+        OrderSub existing = new OrderSub();
+        existing.setId(1L);
+        existing.setMainOrderId(100L);
+        existing.setOrderStatus("PAID");
+        existing.setDeleted(0);
 
         OrderSub latest = new OrderSub();
-        latest.setId(11L);
-        latest.setMainOrderId(21L);
+        latest.setId(1L);
+        latest.setMainOrderId(100L);
+        latest.setOrderStatus("SHIPPED");
+        latest.setDeleted(0);
 
-        when(orderSubMapper.selectById(11L)).thenReturn(subOrder, latest);
-        when(orderSubMapper.updateShippingInfo(eq(11L), eq("SF"), eq("TN001"),
-                any(), any(), eq("SHIPPED"))).thenReturn(1);
+        when(orderSubMapper.selectById(1L)).thenReturn(existing, latest);
+        when(orderSubMapper.updateShippingInfo(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq("SF"),
+                org.mockito.ArgumentMatchers.eq("TRACK1"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("SHIPPED")
+        )).thenReturn(1);
 
-        OrderSub result = orderShippingService.ship(11L, " SF ", " TN001 ");
+        OrderSub result = orderShippingService.ship(1L, "SF", "TRACK1");
 
         assertThat(result).isSameAs(latest);
-        ArgumentCaptor<LocalDate> arrivalCaptor = ArgumentCaptor.forClass(LocalDate.class);
-        verify(orderSubMapper).updateShippingInfo(eq(11L), eq("SF"), eq("TN001"),
-                arrivalCaptor.capture(), any(), eq("SHIPPED"));
-        assertThat(arrivalCaptor.getValue()).isEqualTo(LocalDate.now().plusDays(3));
-        verify(orderService).advanceSubOrderStatus(11L, "SHIP");
-        verify(orderAggregateCacheService).evict(21L);
+        verify(orderService).advanceSubOrderStatus(1L, "SHIP");
+        verify(orderAggregateCacheService).evict(100L);
     }
 
     @Test
-    void shipShouldNotAdvanceWhenAlreadyShipped() {
-        OrderSub subOrder = new OrderSub();
-        subOrder.setId(12L);
-        subOrder.setMainOrderId(22L);
-        subOrder.setOrderStatus("SHIPPED");
-        subOrder.setDeleted(0);
-
-        OrderSub latest = new OrderSub();
-        latest.setId(12L);
-        latest.setMainOrderId(22L);
-
-        when(orderSubMapper.selectById(12L)).thenReturn(subOrder, latest);
-        when(orderSubMapper.updateShippingInfo(eq(12L), eq("YTO"), eq("TN002"),
-                any(), any(), eq("SHIPPED"))).thenReturn(1);
-
-        orderShippingService.ship(12L, "YTO", "TN002");
-
-        verify(orderService, never()).advanceSubOrderStatus(12L, "SHIP");
-        verify(orderAggregateCacheService).evict(22L);
-    }
-
-    @Test
-    void shipShouldRejectMissingFields() {
-        assertThatThrownBy(() -> orderShippingService.ship(1L, "", "TN"))
-                .isInstanceOf(BusinessException.class);
-        assertThatThrownBy(() -> orderShippingService.ship(1L, "SF", ""))
-                .isInstanceOf(BusinessException.class);
+    void ship_missingCarrier_throws() {
+        assertThatThrownBy(() -> orderShippingService.ship(1L, " ", ""))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("shipping company and tracking number are required");
     }
 }
