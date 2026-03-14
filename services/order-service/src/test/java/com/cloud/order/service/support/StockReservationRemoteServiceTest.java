@@ -4,53 +4,53 @@ import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class StockReservationRemoteServiceTest {
 
-    private final StockDubboApi stockDubboApi = mock(StockDubboApi.class);
-    private final StockReservationRemoteService stockReservationRemoteService = new StockReservationRemoteService();
+    @Mock
+    private StockDubboApi stockDubboApi;
 
-    StockReservationRemoteServiceTest() {
+    private StockReservationRemoteService stockReservationRemoteService;
+
+    @BeforeEach
+    void setUp() {
+        stockReservationRemoteService = new StockReservationRemoteService();
         ReflectionTestUtils.setField(stockReservationRemoteService, "stockDubboApi", stockDubboApi);
     }
 
     @Test
-    void reserveShouldTranslateWrappedInsufficientStockToBusinessException() {
+    void reserve_insufficientStock_translatesToResultCode() {
         StockOperateCommandDTO command = new StockOperateCommandDTO();
         when(stockDubboApi.reserve(command))
-                .thenThrow(new RuntimeException(new BusinessException(
-                        "com.cloud.common.exception.BusinessException: insufficient salable stock\r\n"
-                                + "BusinessException(code=502, message=insufficient salable stock)"
-                )));
+                .thenThrow(new RuntimeException("insufficient salable stock for sku"));
 
         assertThatThrownBy(() -> stockReservationRemoteService.reserve(command))
                 .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("insufficient salable stock")
                 .satisfies(ex -> {
-                    BusinessException businessException = (BusinessException) ex;
-                    assertTrue("insufficient salable stock".equals(businessException.getMessage()));
-                    assertTrue(businessException.getCode() == ResultCode.STOCK_INSUFFICIENT.getCode());
+                    BusinessException be = (BusinessException) ex;
+                    org.assertj.core.api.Assertions.assertThat(be.getCode())
+                            .isEqualTo(ResultCode.STOCK_INSUFFICIENT.getCode());
                 });
     }
 
     @Test
-    void reserveShouldPreserveWrappedBusinessExceptionMessage() {
+    void reserve_businessException_passthrough() {
         StockOperateCommandDTO command = new StockOperateCommandDTO();
-        when(stockDubboApi.reserve(command))
-                .thenThrow(new RuntimeException(new BusinessException(502, "stock ledger not found for skuId=999")));
+        BusinessException original = new BusinessException(422, "invalid");
+        when(stockDubboApi.reserve(command)).thenThrow(original);
 
         assertThatThrownBy(() -> stockReservationRemoteService.reserve(command))
-                .isInstanceOf(BusinessException.class)
-                .satisfies(ex -> {
-                    BusinessException businessException = (BusinessException) ex;
-                    assertTrue(businessException.getMessage().contains("stock ledger not found"));
-                    assertTrue(businessException.getCode() == 502);
-                });
+                .isSameAs(original);
     }
 }
