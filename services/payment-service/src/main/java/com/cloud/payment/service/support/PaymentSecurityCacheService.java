@@ -20,7 +20,7 @@ public class PaymentSecurityCacheService {
     private static final String STATUS_HASH_USER_ID = "userId";
     private static final String STATUS_HASH_STATUS = "status";
     private static final String RATE_PREFIX = "pay:rate:";
-    private static final String ALIPAY_TOKEN_KEY = "pay:alipay:token";
+    private static final String ALIPAY_TOKEN_KEY = "pay:alipay:config";
 
     private final StringRedisTemplate stringRedisTemplate;
 
