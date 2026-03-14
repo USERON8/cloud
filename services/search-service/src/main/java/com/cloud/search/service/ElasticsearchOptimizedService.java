@@ -31,6 +31,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import cn.hutool.core.util.StrUtil;
+import com.cloud.search.service.support.HotKeywordKeys;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,7 +58,6 @@ import java.util.stream.Collectors;
 public class ElasticsearchOptimizedService {
 
     private static final String PRODUCT_INDEX = "product_index";
-    private static final String HOT_SEARCH_ZSET_KEY = "search:hot:zset";
     private static final String SEARCH_CACHE_KEY_PREFIX = "search:smart:";
     private static final String SUGGESTION_CACHE_KEY_PREFIX = "search:suggest:";
     private static final String HOT_CACHE_KEY_PREFIX = "search:hot:list:";
@@ -130,6 +131,9 @@ public class ElasticsearchOptimizedService {
     @Value("${search.optimized.hot-keyword.cache-invalidate-interval-ms:3000}")
     private long hotKeywordCacheInvalidateIntervalMs;
 
+    @Value("${search.hot-keyword.daily-ttl-days:7}")
+    private long hotKeywordDailyTtlDays;
+
     @Value("${search.optimized.cache.lock.wait-ms:120}")
     private long cacheLockWaitMs;
 
@@ -152,6 +156,7 @@ public class ElasticsearchOptimizedService {
     private final Map<String, Timer> searchLatencyTimers = new ConcurrentHashMap<>();
     private final Map<String, Counter> esErrorCounters = new ConcurrentHashMap<>();
     private final AtomicLong hotKeywordExpireRefreshedAt = new AtomicLong(0L);
+    private final AtomicReference<String> hotKeywordExpireKey = new AtomicReference<>("");
     private final AtomicLong hotKeywordCacheInvalidatedAt = new AtomicLong(0L);
 
     public ElasticsearchOptimizedService(ElasticsearchClient elasticsearchClient,
@@ -521,7 +526,7 @@ public class ElasticsearchOptimizedService {
     }
 
     private List<String> queryHotKeywordsFromRedis(int limit) {
-        Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, limit - 1L);
+        Set<String> hotKeywords = redisTemplate.opsForZSet().reverseRange(HotKeywordKeys.TOTAL_KEY, 0, limit - 1L);
         if (hotKeywords == null || hotKeywords.isEmpty()) {
             return List.of();
         }
@@ -683,23 +688,36 @@ public class ElasticsearchOptimizedService {
         }
         try {
             String normalized = keyword.toLowerCase();
-            redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
-            refreshHotKeywordExpiryIfNeeded();
+            String dailyKey = HotKeywordKeys.todayKey();
+            redisTemplate.opsForZSet().incrementScore(dailyKey, normalized, 1.0D);
+            refreshHotKeywordExpiryIfNeeded(dailyKey);
+            redisTemplate.opsForZSet().incrementScore(HotKeywordKeys.TOTAL_KEY, normalized, 1.0D);
             invalidateHotKeywordCachesIfNeeded();
         } catch (Exception e) {
             log.warn("Record hot search failed, keyword={}", keyword, e);
         }
     }
 
-    private void refreshHotKeywordExpiryIfNeeded() {
+    private void refreshHotKeywordExpiryIfNeeded(String dailyKey) {
+        if (StrUtil.isBlank(dailyKey)) {
+            return;
+        }
         long now = System.currentTimeMillis();
         long refreshIntervalMillis = Math.max(1, hotKeywordExpireRefreshSeconds) * 1000L;
         long lastRefreshed = hotKeywordExpireRefreshedAt.get();
-        if (now - lastRefreshed < refreshIntervalMillis) {
+        String lastKey = hotKeywordExpireKey.get();
+        boolean keyChanged = !dailyKey.equals(lastKey);
+        if (!keyChanged && now - lastRefreshed < refreshIntervalMillis) {
+            return;
+        }
+        if (keyChanged) {
+            hotKeywordExpireKey.set(dailyKey);
+            hotKeywordExpireRefreshedAt.set(now);
+            redisTemplate.expire(dailyKey, Math.max(1, hotKeywordDailyTtlDays), TimeUnit.DAYS);
             return;
         }
         if (hotKeywordExpireRefreshedAt.compareAndSet(lastRefreshed, now)) {
-            redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
+            redisTemplate.expire(dailyKey, Math.max(1, hotKeywordDailyTtlDays), TimeUnit.DAYS);
         }
     }
 

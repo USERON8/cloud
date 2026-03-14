@@ -1,4 +1,23 @@
 spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:prod-mysql}:${DB_PORT:3306}/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    druid:
+      initial-size: 12
+      min-idle: 12
+      max-active: 40
+      max-wait: 30000
+      keep-alive: true
+      async-init: true
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      validation-query: SELECT 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://prod-elasticsearch:9200}
     username: ${ELASTICSEARCH_USERNAME:}

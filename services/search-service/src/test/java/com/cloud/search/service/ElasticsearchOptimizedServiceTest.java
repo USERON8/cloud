@@ -94,14 +94,14 @@ class ElasticsearchOptimizedServiceTest {
         when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
         Set<String> hotKeywords = new LinkedHashSet<>(List.of("iphone", "xiaomi"));
         when(valueOperations.get("search:hot:list:2")).thenReturn(null);
-        when(zSetOperations.reverseRange("search:hot:zset", 0, 1)).thenReturn(hotKeywords);
+        when(zSetOperations.reverseRange("search:hot:total", 0, 1)).thenReturn(hotKeywords);
 
         List<String> first = service.getHotSearchKeywords(2);
         List<String> second = service.getHotSearchKeywords(2);
 
         assertThat(first).containsExactly("iphone", "xiaomi");
         assertThat(second).containsExactly("iphone", "xiaomi");
-        verify(zSetOperations, times(1)).reverseRange("search:hot:zset", 0, 1);
+        verify(zSetOperations, times(1)).reverseRange("search:hot:total", 0, 1);
         verify(valueOperations, times(1))
                 .set(eq("search:hot:list:2"), eq("[\"iphone\",\"xiaomi\"]"), longThat(ttl -> ttl >= 30L && ttl <= 32L), eq(TimeUnit.SECONDS));
     }

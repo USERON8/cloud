@@ -8,10 +8,12 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SecurityScheme(
         name = "Authorization",
@@ -30,9 +32,7 @@ import org.springframework.context.annotation.FilterType;
 @SpringBootApplication(
         scanBasePackages = {"com.cloud.search", "com.cloud.common"},
         exclude = {
-                org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration.class
+                HibernateJpaAutoConfiguration.class
         }
 )
 @ComponentScan(
@@ -47,6 +47,7 @@ import org.springframework.context.annotation.FilterType;
 @EnableDiscoveryClient
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
+@EnableScheduling
 public class SearchApplication {
     public static void main(String[] args) {
         System.setProperty("nacos.logging.default.config.enabled", "false");

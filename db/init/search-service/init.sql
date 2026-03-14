@@ -1,0 +1,14 @@
+DROP DATABASE IF EXISTS search_db;
+CREATE DATABASE IF NOT EXISTS search_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE search_db;
+
+CREATE TABLE IF NOT EXISTS search_hot_keyword_total
+(
+    keyword       VARCHAR(128) NOT NULL,
+    total_score   BIGINT       NOT NULL DEFAULT 0,
+    created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (keyword)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;

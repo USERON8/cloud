@@ -5,8 +5,10 @@ import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResult;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ProductSearchService;
+import com.cloud.search.service.support.HotKeywordKeys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,10 +32,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductSearchServiceImpl implements ProductSearchService {
 
-    private static final String HOT_SEARCH_ZSET_KEY = "search:hot:zset";
-
     private final ProductDocumentRepository productDocumentRepository;
     private final StringRedisTemplate redisTemplate;
+
+    @Value("${search.hot-keyword.daily-ttl-days:7}")
+    private long hotKeywordDailyTtlDays;
 
     @Override
     @Transactional(readOnly = true)
@@ -96,7 +99,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     public List<String> getHotSearchKeywords(Integer size) {
         int limit = size == null || size <= 0 ? 10 : Math.min(size, 100);
         try {
-            var keywords = redisTemplate.opsForZSet().reverseRange(HOT_SEARCH_ZSET_KEY, 0, limit - 1L);
+            var keywords = redisTemplate.opsForZSet().reverseRange(HotKeywordKeys.TOTAL_KEY, 0, limit - 1L);
             if (keywords == null || keywords.isEmpty()) {
                 return Collections.emptyList();
             }
@@ -255,8 +258,10 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         }
         try {
             String normalized = keyword.trim().toLowerCase();
-            redisTemplate.opsForZSet().incrementScore(HOT_SEARCH_ZSET_KEY, normalized, 1.0D);
-            redisTemplate.expire(HOT_SEARCH_ZSET_KEY, 7, TimeUnit.DAYS);
+            String dailyKey = HotKeywordKeys.todayKey();
+            redisTemplate.opsForZSet().incrementScore(dailyKey, normalized, 1.0D);
+            redisTemplate.expire(dailyKey, Math.max(1, hotKeywordDailyTtlDays), TimeUnit.DAYS);
+            redisTemplate.opsForZSet().incrementScore(HotKeywordKeys.TOTAL_KEY, normalized, 1.0D);
         } catch (Exception e) {
             log.warn("Record hot search failed: keyword={}", keyword, e);
         }

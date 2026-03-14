@@ -15,6 +15,21 @@ spring:
   profiles:
     active: dev
     include: rocketmq
+  datasource:
+    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
+    druid:
+      initial-size: ${SEARCH_DB_POOL_INITIAL_SIZE:5}
+      min-idle: ${SEARCH_DB_POOL_MIN_IDLE:5}
+      max-active: ${SEARCH_DB_POOL_MAX_ACTIVE:20}
+      max-wait: ${SEARCH_DB_POOL_MAX_WAIT:30000}
+      keep-alive: true
+      async-init: true
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      validation-query: SELECT 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
   cloud:
     nacos:
       discovery:
@@ -109,9 +124,15 @@ search:
         l1-refresh-after-write-ms: ${SEARCH_RECOMMEND_L1_REFRESH_MS:8000}
         # 推荐缓存 5 分钟，平衡新鲜度和命中率
         l2-ttl-seconds: ${SEARCH_RECOMMEND_L2_TTL_S:300}
-    hot-keyword:
-      expire-refresh-seconds: ${SEARCH_HOT_REFRESH_EXPIRE_S:60}
-      cache-invalidate-interval-ms: ${SEARCH_HOT_CACHE_INVALIDATE_MS:3000}
+  hot-keyword:
+    expire-refresh-seconds: ${SEARCH_HOT_REFRESH_EXPIRE_S:60}
+    cache-invalidate-interval-ms: ${SEARCH_HOT_CACHE_INVALIDATE_MS:3000}
+    daily-ttl-days: ${SEARCH_HOT_DAILY_TTL_DAYS:7}
+    db-sync:
+      enabled: ${SEARCH_HOT_DB_SYNC_ENABLED:true}
+      interval-ms: ${SEARCH_HOT_DB_SYNC_INTERVAL_MS:300000}
+      max-sync-size: ${SEARCH_HOT_DB_SYNC_MAX_SIZE:2000}
+      restore-size: ${SEARCH_HOT_DB_SYNC_RESTORE_SIZE:2000}
 springdoc:
   api-docs:
     enabled: false
