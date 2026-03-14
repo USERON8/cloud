@@ -234,7 +234,7 @@ $skywalkingEnabled = Configure-SkyWalkingRuntime -RepoRoot $root -AllowDownload
 $skywalkingAgentPath = $env:SKYWALKING_AGENT_PATH
 $skywalkingBackend = $env:SKYWALKING_COLLECTOR_BACKEND_SERVICE
 $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
-    "-XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8"
+    "-Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heap.hprof"
 } else {
     $env:SERVICE_JVM_OPTS
 }

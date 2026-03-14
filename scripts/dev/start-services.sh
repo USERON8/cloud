@@ -124,7 +124,7 @@ skywalking_download_allowed=1
 if configure_skywalking_runtime "$ROOT_DIR" 0 "${SKYWALKING_AGENT_PATH:-}" "${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-}" "$skywalking_download_allowed"; then
   SKYWALKING_ENABLED=1
 fi
-SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--XX:+UseG1GC -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseStringDeduplication -Dfile.encoding=UTF-8}"
+SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heap.hprof}"
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 
 RESULT_ROWS=()
