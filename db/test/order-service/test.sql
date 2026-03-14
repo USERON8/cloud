@@ -14,10 +14,10 @@ DELETE FROM order_main;
 
 -- 索引优化
 ALTER TABLE order_sub
-    ADD INDEX idx_order_sub_status_created_deleted (order_status, created_at, deleted);
+    ADD INDEX idx_order_sub_status_deleted_created (order_status, deleted, created_at);
 
 ALTER TABLE after_sale
-    ADD INDEX idx_after_sale_status_created_deleted (status, created_at, deleted);
+    ADD INDEX idx_after_sale_status_deleted_created (status, deleted, created_at);
 
 ALTER TABLE cart_item
     ADD INDEX idx_cart_item_cart_user_selected_checked_deleted (cart_id, user_id, selected, checked_out, deleted);
