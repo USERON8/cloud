@@ -59,7 +59,7 @@ class UserAddressServiceImplTest {
 
         when(userAddressMapper.selectList(any())).thenReturn(List.of(defaultAddress));
         when(userAddressMapper.update(any(), any())).thenReturn(1);
-        when(userAddressMapper.insert(any())).thenReturn(1);
+        when(userAddressMapper.insert(org.mockito.ArgumentMatchers.<UserAddress>any())).thenReturn(1);
 
         boolean result = userAddressService.save(entity);
 

@@ -68,7 +68,7 @@ class MerchantServiceImplTest {
     @Test
     void createMerchant_success_callsRemoteSync() {
         when(merchantMapper.selectCount(any())).thenReturn(0L);
-        when(merchantMapper.insert(any())).thenReturn(1);
+        when(merchantMapper.insert(org.mockito.ArgumentMatchers.<Merchant>any())).thenReturn(1);
         when(merchantConverter.toDTO(any())).thenAnswer(invocation -> {
             MerchantDTO dto = new MerchantDTO();
             Merchant merchant = invocation.getArgument(0);

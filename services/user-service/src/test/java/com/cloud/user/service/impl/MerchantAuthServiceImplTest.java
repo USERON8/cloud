@@ -74,7 +74,7 @@ class MerchantAuthServiceImplTest {
     @Test
     void save_setsTimestamps() {
         MerchantAuth auth = new MerchantAuth();
-        when(merchantAuthMapper.insert(any())).thenReturn(1);
+        when(merchantAuthMapper.insert(org.mockito.ArgumentMatchers.<MerchantAuth>any())).thenReturn(1);
 
         boolean saved = merchantAuthService.save(auth);
 
