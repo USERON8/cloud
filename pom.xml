@@ -289,11 +289,6 @@
                 <artifactId>common-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.cloud</groupId>
-                <artifactId>common-log</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <!-- Encoding-safe comment -->
             <dependency>
