@@ -55,7 +55,7 @@ class PaymentSecurityCacheServiceTest {
     void cacheStatus_finalStatus_ignored() {
         paymentSecurityCacheService.cacheStatus("pay1", 1L, "PAID");
 
-        verify(stringRedisTemplate, never()).delete(any());
+        verify(stringRedisTemplate, never()).delete(org.mockito.ArgumentMatchers.<String>any());
         verify(hashOperations, never()).putAll(any(), any(Map.class));
     }
 
