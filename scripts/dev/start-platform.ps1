@@ -11,9 +11,6 @@ $SkipContainers = $false
 $SkipServices = $false
 $Services = $null
 $OpenDashboards = $false
-$EnableSkyWalking = $false
-$SkyWalkingAgentPath = $null
-$SkyWalkingCollectorBackendService = $null
 $DryRun = $false
 
 for ($index = 0; $index -lt $CliArgs.Count; $index++) {
@@ -54,50 +51,14 @@ for ($index = 0; $index -lt $CliArgs.Count; $index++) {
         $OpenDashboards = $true
         continue
     }
-    if ($arg -in @("--enable-skywalking", "-EnableSkyWalking")) {
-        $EnableSkyWalking = $true
-        continue
-    }
     if ($arg -in @("--dry-run", "-DryRun")) {
         $DryRun = $true
         continue
-    }
-    if ($arg -like "--skywalking-agent-path=*") {
-        $SkyWalkingAgentPath = ($arg -split "=", 2)[1]
-        continue
-    }
-    if ($arg -like "-SkyWalkingAgentPath=*") {
-        $SkyWalkingAgentPath = ($arg -split "=", 2)[1]
-        continue
-    }
-    if ($arg -eq "-SkyWalkingAgentPath") {
-        if (($index + 1) -ge $CliArgs.Count) {
-            throw "Missing value for -SkyWalkingAgentPath"
-        }
-        $index += 1
-        $SkyWalkingAgentPath = $CliArgs[$index]
-        continue
-    }
-    if ($arg -like "--skywalking-backend=*") {
-        $SkyWalkingCollectorBackendService = ($arg -split "=", 2)[1]
-        continue
-    }
-    if ($arg -like "-SkyWalkingCollectorBackendService=*") {
-        $SkyWalkingCollectorBackendService = ($arg -split "=", 2)[1]
-        continue
-    }
-    if ($arg -eq "-SkyWalkingCollectorBackendService") {
-        if (($index + 1) -ge $CliArgs.Count) {
-            throw "Missing value for -SkyWalkingCollectorBackendService"
-        }
-        $index += 1
-        $SkyWalkingCollectorBackendService = $CliArgs[$index]
     }
 }
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\runtime.ps1")
-. (Join-Path $PSScriptRoot "lib\skywalking.ps1")
 
 function Invoke-Step {
     param(
@@ -152,15 +113,6 @@ function Wait-Infrastructure {
     }
 }
 
-function Configure-SkyWalking {
-    $allowDownload = -not $DryRun
-    return (Configure-SkyWalkingRuntime -RepoRoot $root `
-        -Requested:$EnableSkyWalking `
-        -AgentPath $SkyWalkingAgentPath `
-        -CollectorBackend $SkyWalkingCollectorBackendService `
-        -AllowDownload:$allowDownload)
-}
-
 Write-Host "=== START PLATFORM ==="
 
 $containerArgs = @()
@@ -177,11 +129,9 @@ if (-not $SkipContainers) {
     Write-Host "STEP 1/3 containers=skipped"
 }
 
-$skywalkingActive = Configure-SkyWalking
-
 if (-not $DryRun -and -not $SkipServices) {
     Write-Host "STEP 2/3 infrastructure=wait"
-    Wait-Infrastructure -RepoRoot $root -WaitMonitoring:$WithMonitoring -WaitSkyWalking:$skywalkingActive
+    Wait-Infrastructure -RepoRoot $root -WaitMonitoring:$WithMonitoring -WaitSkyWalking
 }
 
 Set-ServiceRuntimeEnvironment -Root $root
@@ -210,9 +160,7 @@ if ($WithMonitoring) {
         "http://127.0.0.1:{0}" -f (Get-DockerPortValue -Root $root -Name "PORT_GRAFANA_HTTP" -DefaultValue 13000)
     )
 }
-if ($skywalkingActive) {
-    $dashboardUrls += "http://127.0.0.1:{0}" -f (Get-DockerPortValue -Root $root -Name "PORT_SKYWALKING_UI" -DefaultValue 13001)
-}
+$dashboardUrls += "http://127.0.0.1:{0}" -f (Get-DockerPortValue -Root $root -Name "PORT_SKYWALKING_UI" -DefaultValue 13001)
 
 if ($OpenDashboards -and -not $DryRun) {
     foreach ($url in ($dashboardUrls | Select-Object -Unique)) {

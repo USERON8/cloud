@@ -4,7 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/runtime.sh"
-source "$SCRIPT_DIR/lib/skywalking.sh"
 
 WITH_MONITORING=0
 NO_KILL_PORTS=0
@@ -12,9 +11,6 @@ SKIP_CONTAINERS=0
 SKIP_SERVICES=0
 SERVICES_FILTER=""
 OPEN_DASHBOARDS=0
-ENABLE_SKYWALKING=0
-SKYWALKING_AGENT_PATH="${SKYWALKING_AGENT_PATH:-}"
-SKYWALKING_BACKEND="${SKYWALKING_COLLECTOR_BACKEND_SERVICE:-}"
 DRY_RUN=0
 
 for arg in "$@"; do
@@ -25,10 +21,7 @@ for arg in "$@"; do
     --skip-services) SKIP_SERVICES=1 ;;
     --services=*) SERVICES_FILTER="${arg#*=}" ;;
     --open-dashboards) OPEN_DASHBOARDS=1 ;;
-    --enable-skywalking) ENABLE_SKYWALKING=1 ;;
     --dry-run) DRY_RUN=1 ;;
-    --skywalking-agent-path=*) SKYWALKING_AGENT_PATH="${arg#*=}" ;;
-    --skywalking-backend=*) SKYWALKING_BACKEND="${arg#*=}" ;;
   esac
 done
 
@@ -79,23 +72,6 @@ wait_infrastructure() {
   done
 }
 
-configure_skywalking() {
-  local allow_download=1
-  if [ "$DRY_RUN" = "1" ]; then
-    allow_download=0
-  fi
-
-  if configure_skywalking_runtime "$ROOT_DIR" "$ENABLE_SKYWALKING" "$SKYWALKING_AGENT_PATH" "$SKYWALKING_BACKEND" "$allow_download"; then
-    return 0
-  fi
-
-  local skywalking_status=$?
-  if [ "$skywalking_status" -eq 2 ]; then
-    exit 1
-  fi
-  return 1
-}
-
 echo "=== START PLATFORM ==="
 
 container_args=()
@@ -110,14 +86,9 @@ else
   echo "STEP 1/3 containers=skipped"
 fi
 
-SKYWALKING_ACTIVE=0
-if configure_skywalking; then
-  SKYWALKING_ACTIVE=1
-fi
-
 if [ "$DRY_RUN" = "0" ] && [ "$SKIP_SERVICES" = "0" ]; then
   echo "STEP 2/3 infrastructure=wait"
-  wait_infrastructure "$WITH_MONITORING" "$SKYWALKING_ACTIVE"
+  wait_infrastructure "$WITH_MONITORING" "1"
 fi
 
 export_service_runtime_env "$ROOT_DIR"
@@ -144,9 +115,7 @@ if [ "$WITH_MONITORING" = "1" ]; then
     "http://127.0.0.1:$(docker_port_value "$ROOT_DIR" PORT_GRAFANA_HTTP 13000)"
   )
 fi
-if [ "$SKYWALKING_ACTIVE" = "1" ]; then
-  dashboard_urls+=("http://127.0.0.1:$(docker_port_value "$ROOT_DIR" PORT_SKYWALKING_UI 13001)")
-fi
+dashboard_urls+=("http://127.0.0.1:$(docker_port_value "$ROOT_DIR" PORT_SKYWALKING_UI 13001)")
 
 if [ "$OPEN_DASHBOARDS" = "1" ] && [ "$DRY_RUN" = "0" ]; then
   for url in "${dashboard_urls[@]}"; do
