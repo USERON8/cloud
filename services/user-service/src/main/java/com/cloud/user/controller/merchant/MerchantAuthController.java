@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +45,9 @@ public class MerchantAuthController {
     private final MerchantAuthService merchantAuthService;
     private final MerchantService merchantService;
     private final MerchantAuthConverter merchantAuthConverter;
+
+    @Value("${user.auth.list.max-size:200}")
+    private Integer authListMaxSize;
 
     @PostMapping("/apply/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
@@ -200,8 +204,10 @@ public class MerchantAuthController {
             return Result.badRequest("invalid auth status");
         }
 
+        int effectiveLimit = (authListMaxSize == null || authListMaxSize <= 0) ? 200 : authListMaxSize;
         LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getAuthStatus, authStatus);
+        queryWrapper.eq(MerchantAuth::getAuthStatus, authStatus)
+                .last("LIMIT " + effectiveLimit);
         List<MerchantAuthDTO> result = merchantAuthService.list(queryWrapper).stream()
                 .map(merchantAuthConverter::toDTO)
                 .toList();
