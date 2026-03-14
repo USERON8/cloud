@@ -283,4 +283,6 @@ flowchart LR
 - `docs/code-audit-2026-03-13-zh.md`：2026-03-13 后端代码审查与修复记录（中文）
 - `docs/project-closeout.md`：项目暂停前的冻结状态与恢复顺序
 - `docs/performance-baseline.md`：本地性能基线、瓶颈说明与回归口径
+- `docs/cache-strategy.md`：缓存策略、TTL 与服务级缓存清单
+- `docs/事务策略文档.md`：事务策略（TCC/SAGA/Outbox/RocketMQ）
 - `docs/TEST_SCRIPT_INDEX.md`：测试脚本入口索引

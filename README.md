@@ -199,6 +199,8 @@ sequenceDiagram
 - `docs/code-audit-2026-03-13-en.md`: 2026-03-13 backend code review & fix log (English)
 - `docs/project-closeout.md`: frozen project state and resume order
 - `docs/performance-baseline.md`: local performance ceilings, bottlenecks, and regression workflow
+- `docs/cache-strategy.md`: cache strategy, TTLs, and service-level cache map
+- `docs/事务策略文档.md`: transaction strategy (TCC/SAGA/Outbox/RocketMQ)
 - `docs/TEST_SCRIPT_INDEX.md`: test-script entrypoint index
 - `docs/dev-startup.md`: unified startup entrypoints and common flags
 - `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
