@@ -17,8 +17,11 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -47,8 +50,9 @@ public class ProductSyncConsumer {
 
             List<ProductDocument> upserts = new ArrayList<>();
             List<String> deletes = new ArrayList<>();
-            List<String> readyToMark = new ArrayList<>();
             Set<String> inFlight = new HashSet<>();
+            Map<Long, ProductSyncEvent> latestBySpu = new LinkedHashMap<>();
+            Map<Long, List<String>> eventIdsBySpu = new HashMap<>();
 
             try {
                 for (Message<ProductSyncEvent> message : messages) {
@@ -64,25 +68,32 @@ public class ProductSyncConsumer {
                     inFlight.add(eventId);
 
                     if (event == null || event.getSpuId() == null) {
-                        readyToMark.add(eventId);
+                        messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
+                        inFlight.remove(eventId);
                         continue;
                     }
 
+                    Long spuId = event.getSpuId();
+                    eventIdsBySpu.computeIfAbsent(spuId, key -> new ArrayList<>()).add(eventId);
+                    if (latestBySpu.containsKey(spuId)) {
+                        latestBySpu.remove(spuId);
+                    }
+                    latestBySpu.put(spuId, event);
+                }
+
+                for (ProductSyncEvent event : latestBySpu.values()) {
                     if ("PRODUCT_DELETE".equalsIgnoreCase(event.getEventType())) {
                         deletes.add(String.valueOf(event.getSpuId()));
-                        readyToMark.add(eventId);
                         continue;
                     }
 
                     SpuDetailVO spu = productDubboApi.getSpuById(event.getSpuId());
                     if (spu == null) {
                         deletes.add(String.valueOf(event.getSpuId()));
-                        readyToMark.add(eventId);
                         continue;
                     }
 
                     upserts.add(toDocument(spu));
-                    readyToMark.add(eventId);
                 }
 
                 if (!deletes.isEmpty()) {
@@ -91,9 +102,12 @@ public class ProductSyncConsumer {
                 if (!upserts.isEmpty()) {
                     productDocumentRepository.saveAll(upserts);
                 }
-                for (String eventId : readyToMark) {
-                    messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-                    inFlight.remove(eventId);
+
+                for (List<String> eventIds : eventIdsBySpu.values()) {
+                    for (String eventId : eventIds) {
+                        messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
+                        inFlight.remove(eventId);
+                    }
                 }
             } catch (Exception ex) {
                 for (String eventId : inFlight) {
