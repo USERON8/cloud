@@ -56,12 +56,7 @@ public class StockRestoreConsumer {
                             continue;
                         }
                         List<StockOperateCommandDTO> items = event.getItems();
-                        for (StockOperateCommandDTO command : items) {
-                            if (command == null) {
-                                continue;
-                            }
-                            stockLedgerService.rollback(command);
-                        }
+                        stockLedgerService.rollbackBatch(items);
                         tradeMetrics.incrementMessageConsume("stock_restore", "success");
                         messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
                         inFlight.remove(eventId);

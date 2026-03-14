@@ -19,6 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -163,41 +168,131 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean rollback(StockOperateCommandDTO command) {
-        StockReservation reservation = getReservation(command);
-        if (reservation == null) {
-            insertRollbackMarker(command);
+        if (command == null) {
             return true;
         }
-        if ("ROLLED_BACK".equals(reservation.getStatus())) {
+        rollbackBatch(List.of(command));
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean rollbackBatch(List<StockOperateCommandDTO> commands) {
+        if (commands == null || commands.isEmpty()) {
             return true;
         }
 
-        String previousStatus = reservation.getStatus();
-        if ("RESERVED".equals(previousStatus)) {
-            int affected = stockLedgerMapper.release(command.getSkuId(), command.getQuantity());
-            if (affected <= 0) {
-                throw new BusinessException("rollback release failed");
+        List<StockOperateCommandDTO> validCommands = new ArrayList<>();
+        Set<String> subOrderNos = new HashSet<>();
+        Set<Long> skuIds = new HashSet<>();
+        for (StockOperateCommandDTO command : commands) {
+            if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+                continue;
             }
-        } else if ("CONFIRMED".equals(previousStatus)) {
-            int affected = stockLedgerMapper.rollbackAfterConfirm(command.getSkuId(), command.getQuantity());
-            if (affected <= 0) {
-                throw new BusinessException("rollback confirm failed");
+            if (command.getQuantity() <= 0) {
+                continue;
             }
-        } else {
+            validCommands.add(command);
+            if (command.getSubOrderNo() != null) {
+                subOrderNos.add(command.getSubOrderNo());
+            }
+            skuIds.add(command.getSkuId());
+        }
+        if (validCommands.isEmpty()) {
             return true;
         }
 
-        reservation.setStatus("ROLLED_BACK");
-        stockReservationMapper.updateById(reservation);
-
-        StockLedger after = requireLedger(command.getSkuId());
-        StockRedisCacheService.CacheResult cacheResult = "RESERVED".equals(previousStatus)
-                ? stockRedisCacheService.applyReleaseIfCached(command.getSkuId(), command.getQuantity())
-                : stockRedisCacheService.applyRollbackAfterConfirmIfCached(command.getSkuId(), command.getQuantity());
-        if (cacheResult != StockRedisCacheService.CacheResult.OK) {
-            stockRedisCacheService.cacheLedger(after);
+        Map<String, StockReservation> reservationMap = new HashMap<>();
+        if (!subOrderNos.isEmpty() && !skuIds.isEmpty()) {
+            List<StockReservation> reservations = stockReservationMapper.selectActiveBySubOrderNosAndSkuIds(
+                    new ArrayList<>(subOrderNos), new ArrayList<>(skuIds));
+            for (StockReservation reservation : reservations) {
+                if (reservation == null || reservation.getSubOrderNo() == null || reservation.getSkuId() == null) {
+                    continue;
+                }
+                reservationMap.put(buildReservationKey(reservation.getSubOrderNo(), reservation.getSkuId()), reservation);
+            }
         }
-        writeTxn(command, "ROLLBACK", after, command.getReason());
+
+        List<StockOperateCommandDTO> reservedCommands = new ArrayList<>();
+        List<StockOperateCommandDTO> confirmedCommands = new ArrayList<>();
+        Set<Long> rollbackReservationIds = new HashSet<>();
+
+        for (StockOperateCommandDTO command : validCommands) {
+            if (command.getSubOrderNo() == null) {
+                insertRollbackMarker(command);
+                continue;
+            }
+            StockReservation reservation = reservationMap.get(buildReservationKey(command.getSubOrderNo(), command.getSkuId()));
+            if (reservation == null) {
+                insertRollbackMarker(command);
+                continue;
+            }
+            String previousStatus = reservation.getStatus();
+            if ("ROLLED_BACK".equals(previousStatus)) {
+                continue;
+            }
+            if ("RESERVED".equals(previousStatus)) {
+                reservedCommands.add(command);
+                rollbackReservationIds.add(reservation.getId());
+            } else if ("CONFIRMED".equals(previousStatus)) {
+                confirmedCommands.add(command);
+                rollbackReservationIds.add(reservation.getId());
+            }
+        }
+
+        Map<Long, Integer> reservedQtyBySku = aggregateQtyBySku(reservedCommands);
+        Map<Long, Integer> confirmedQtyBySku = aggregateQtyBySku(confirmedCommands);
+
+        if (!reservedQtyBySku.isEmpty()) {
+            List<StockOperateCommandDTO> aggregated = toAggregatedCommands(reservedQtyBySku);
+            int updated = stockLedgerMapper.batchRelease(aggregated);
+            if (updated != reservedQtyBySku.size()) {
+                throw new BusinessException("batch rollback release failed");
+            }
+        }
+        if (!confirmedQtyBySku.isEmpty()) {
+            List<StockOperateCommandDTO> aggregated = toAggregatedCommands(confirmedQtyBySku);
+            int updated = stockLedgerMapper.batchRollbackAfterConfirm(aggregated);
+            if (updated != confirmedQtyBySku.size()) {
+                throw new BusinessException("batch rollback confirm failed");
+            }
+        }
+
+        if (!rollbackReservationIds.isEmpty()) {
+            int updated = stockReservationMapper.markRolledBackByIds(new ArrayList<>(rollbackReservationIds));
+            if (updated != rollbackReservationIds.size()) {
+                throw new BusinessException("rollback reservation status failed");
+            }
+        }
+
+        Map<Long, StockLedger> afterLedgers = new HashMap<>();
+        for (Long skuId : reservedQtyBySku.keySet()) {
+            afterLedgers.put(skuId, requireLedger(skuId));
+        }
+        for (Long skuId : confirmedQtyBySku.keySet()) {
+            afterLedgers.putIfAbsent(skuId, requireLedger(skuId));
+        }
+
+        for (StockOperateCommandDTO command : reservedCommands) {
+            StockLedger after = afterLedgers.get(command.getSkuId());
+            StockRedisCacheService.CacheResult cacheResult = stockRedisCacheService.applyReleaseIfCached(
+                    command.getSkuId(), command.getQuantity());
+            if (cacheResult != StockRedisCacheService.CacheResult.OK && after != null) {
+                stockRedisCacheService.cacheLedger(after);
+            }
+            writeTxn(command, "ROLLBACK", after, command.getReason());
+        }
+        for (StockOperateCommandDTO command : confirmedCommands) {
+            StockLedger after = afterLedgers.get(command.getSkuId());
+            StockRedisCacheService.CacheResult cacheResult = stockRedisCacheService.applyRollbackAfterConfirmIfCached(
+                    command.getSkuId(), command.getQuantity());
+            if (cacheResult != StockRedisCacheService.CacheResult.OK && after != null) {
+                stockRedisCacheService.cacheLedger(after);
+            }
+            writeTxn(command, "ROLLBACK", after, command.getReason());
+        }
+
         return true;
     }
 
@@ -275,6 +370,33 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             return false;
         }
         return ex.getMessage().toLowerCase().contains("insufficient salable stock");
+    }
+
+    private String buildReservationKey(String subOrderNo, Long skuId) {
+        return subOrderNo + ":" + skuId;
+    }
+
+    private Map<Long, Integer> aggregateQtyBySku(List<StockOperateCommandDTO> commands) {
+        Map<Long, Integer> aggregate = new HashMap<>();
+        for (StockOperateCommandDTO command : commands) {
+            if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+                continue;
+            }
+            aggregate.merge(command.getSkuId(), command.getQuantity(), Integer::sum);
+        }
+        return aggregate;
+    }
+
+    private List<StockOperateCommandDTO> toAggregatedCommands(Map<Long, Integer> aggregated) {
+        List<StockOperateCommandDTO> commands = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : aggregated.entrySet()) {
+            StockOperateCommandDTO command = new StockOperateCommandDTO();
+            command.setSkuId(entry.getKey());
+            command.setQuantity(entry.getValue());
+            command.setSubOrderNo("BATCH");
+            commands.add(command);
+        }
+        return commands;
     }
 
     private void insertRollbackMarker(StockOperateCommandDTO command) {
