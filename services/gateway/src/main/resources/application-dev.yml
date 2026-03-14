@@ -29,11 +29,6 @@ app:
   security:
     api-docs-enabled: true
     enable-test-api: true
-springdoc:
-  api-docs:
-    enabled: true
-  swagger-ui:
-    enabled: true
 knife4j:
   enable: true
   production: false

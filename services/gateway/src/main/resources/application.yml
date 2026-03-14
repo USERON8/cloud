@@ -193,13 +193,6 @@ resilience4j:
         wait-duration-in-open-state: 5s
         permitted-number-of-calls-in-half-open-state: 3
 
-springdoc:
-  api-docs:
-    enabled: false
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: false
-    path: /doc.html
 knife4j:
   enable: false
   production: false
