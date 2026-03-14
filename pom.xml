@@ -68,7 +68,7 @@
         <poi.version>5.4.0</poi.version>
         <druid.version>1.2.24</druid.version>
         <skywalking.version>9.6.0</skywalking.version>
-        <xxl-job.version>2.5.0</xxl-job.version>
+        <xxl-job.version>2.4.0</xxl-job.version>
         <sentinel.version>1.8.8</sentinel.version>
         <seata.version>2.3.0</seata.version>
         <rocketmq-spring.version>2.2.3</rocketmq-spring.version>
