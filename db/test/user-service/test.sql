@@ -12,6 +12,16 @@ DELETE FROM admin;
 DELETE FROM users;
 DELETE FROM test_access_token WHERE id = 1;
 
+-- 索引优化
+ALTER TABLE users
+    ADD INDEX idx_users_deleted_created (deleted, created_at);
+
+ALTER TABLE users
+    ADD INDEX idx_users_status_deleted_created (status, deleted, created_at);
+
+ALTER TABLE merchant
+    ADD INDEX idx_merchant_name_deleted (merchant_name, deleted);
+
 INSERT INTO users (id, username, phone, nickname, avatar_url, email, status, deleted, version)
 VALUES (20001, 't_user_20001', '13900000001', 'Test User 1', 'https://example.com/u1.png',
         't_user_20001@example.com', 1, 0, 0),
