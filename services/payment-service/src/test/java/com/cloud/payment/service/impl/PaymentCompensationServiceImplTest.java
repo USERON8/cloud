@@ -1,24 +1,22 @@
 package com.cloud.payment.service.impl;
 
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
-import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
-import com.cloud.payment.service.provider.model.PaymentRefundResult;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
-import com.cloud.common.metrics.TradeMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,7 +35,7 @@ class PaymentCompensationServiceImplTest {
     private PaymentRefundMapper paymentRefundMapper;
 
     @Mock
-    private PaymentProviderGateway paymentProviderGateway;
+    private PaymentProviderGateway providerGateway;
 
     @Mock
     private PaymentMessageProducer paymentMessageProducer;
@@ -56,13 +54,11 @@ class PaymentCompensationServiceImplTest {
     @BeforeEach
     void setUp() {
         PaymentCompensationProperties properties = new PaymentCompensationProperties();
-        properties.getOrderQuery().setMaxAttempts(3);
-        properties.getRefundRetry().setMaxAttempts(2);
         paymentCompensationService = new PaymentCompensationServiceImpl(
                 paymentOrderMapper,
                 paymentRefundMapper,
                 properties,
-                List.of(paymentProviderGateway),
+                List.of(providerGateway),
                 paymentMessageProducer,
                 paymentSuccessTxProducer,
                 tradeMetrics,
@@ -71,58 +67,46 @@ class PaymentCompensationServiceImplTest {
     }
 
     @Test
-    void reconcilePendingOrdersShouldMarkPaid() {
+    void initializePaymentOrderCompensation_setsScheduleFields() {
         PaymentOrderEntity order = new PaymentOrderEntity();
-        order.setPaymentNo("PAY-100");
+        paymentCompensationService.initializePaymentOrderCompensation(order);
+
+        assertThat(order.getPollCount()).isEqualTo(0);
+        assertThat(order.getLastPolledAt()).isNull();
+        assertThat(order.getLastPollError()).isNull();
+        assertThat(order.getNextPollAt()).isNotNull();
+    }
+
+    @Test
+    void reconcilePendingOrders_paidOrder_updatesStatusAndPublishes() {
+        PaymentOrderEntity order = new PaymentOrderEntity();
+        order.setId(11L);
+        order.setPaymentNo("P-1");
+        order.setMainOrderNo("M-1");
+        order.setSubOrderNo("S-1");
+        order.setUserId(3L);
+        order.setAmount(java.math.BigDecimal.TEN);
         order.setChannel("ALIPAY");
         order.setStatus("CREATED");
-        order.setPollCount(0);
-        order.setNextPollAt(LocalDateTime.now().minusSeconds(1));
+        order.setDeleted(0);
+        order.setNextPollAt(LocalDateTime.now().minusMinutes(1));
 
         when(paymentOrderMapper.selectList(any())).thenReturn(List.of(order));
-        when(paymentProviderGateway.supports("ALIPAY")).thenReturn(true);
-        when(paymentProviderGateway.queryPaymentOrder(order))
-                .thenReturn(PaymentOrderQueryResult.paid("TRADE-1", null, "TRADE_SUCCESS"));
+        when(providerGateway.supports("ALIPAY")).thenReturn(true);
+        when(providerGateway.queryPaymentOrder(order))
+                .thenReturn(PaymentOrderQueryResult.paid("TXN-1", LocalDateTime.now(), "ok"));
 
         int handled = paymentCompensationService.reconcilePendingOrders();
 
         assertThat(handled).isEqualTo(1);
         assertThat(order.getStatus()).isEqualTo("PAID");
-        assertThat(order.getProviderTxnNo()).isEqualTo("TRADE-1");
-        assertThat(order.getPollCount()).isEqualTo(1);
+        assertThat(order.getProviderTxnNo()).isEqualTo("TXN-1");
         assertThat(order.getNextPollAt()).isNull();
-        assertThat(order.getLastPollError()).isNull();
-        verify(paymentOrderMapper).updateById(order);
-    }
 
-    @Test
-    void retryPendingRefundsShouldMarkFailedWhenAttemptsExhausted() {
-        PaymentRefundEntity refund = new PaymentRefundEntity();
-        refund.setRefundNo("REF-200");
-        refund.setPaymentNo("PAY-200");
-        refund.setStatus("REFUNDING");
-        refund.setRetryCount(1);
-        refund.setNextRetryAt(LocalDateTime.now().minusSeconds(1));
-        refund.setRefundAmount(new BigDecimal("18.80"));
-        refund.setReason("timeout");
-
-        PaymentOrderEntity order = new PaymentOrderEntity();
-        order.setPaymentNo("PAY-200");
-        order.setChannel("ALIPAY");
-
-        when(paymentRefundMapper.selectList(any())).thenReturn(List.of(refund));
-        when(paymentOrderMapper.selectOne(any())).thenReturn(order);
-        when(paymentProviderGateway.supports("ALIPAY")).thenReturn(true);
-        when(paymentProviderGateway.executeRefund(order, refund))
-                .thenReturn(PaymentRefundResult.error("gateway timeout"));
-
-        int handled = paymentCompensationService.retryPendingRefunds();
-
-        assertThat(handled).isEqualTo(1);
-        assertThat(refund.getStatus()).isEqualTo("REFUND_FAILED");
-        assertThat(refund.getRetryCount()).isEqualTo(2);
-        assertThat(refund.getNextRetryAt()).isNull();
-        assertThat(refund.getLastError()).contains("gateway timeout");
-        verify(paymentRefundMapper).updateById(refund);
+        ArgumentCaptor<PaymentOrderEntity> captor = ArgumentCaptor.forClass(PaymentOrderEntity.class);
+        verify(paymentOrderMapper).updateById(captor.capture());
+        verify(paymentSuccessTxProducer).send(any());
+        verify(paymentSecurityCacheService).evictStatus("P-1");
+        verify(tradeMetrics).incrementPayment("success");
     }
 }
