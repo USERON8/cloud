@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Highlight;
 import co.elastic.clients.elasticsearch.core.search.HighlightField;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.cloud.search.dto.ProductSearchRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.search.service.support.HotKeywordKeys;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -307,6 +309,87 @@ public class ElasticsearchOptimizedService {
                     safeKeyword, categoryId, safeSize, e);
             recordTimer(sample, "smart-search", "error");
             return SearchResult.empty(0, safeSize);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public SearchResult productSearchAfter(ProductSearchRequest request, List<Object> searchAfterValues) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        ProductSearchRequest safeRequest = request == null ? new ProductSearchRequest() : request;
+        int safeSize = safeRequest.getSize() == null || safeRequest.getSize() <= 0
+                ? defaultSearchSize()
+                : Math.min(safeRequest.getSize(), maxSearchSize());
+        int safePage = safeRequest.getPage() == null ? 0 : Math.max(0, safeRequest.getPage());
+        int safeFrom = safePage * safeSize;
+        List<FieldValue> searchAfter = toSearchAfterValues(searchAfterValues);
+        boolean useSearchAfter = searchAfter != null && !searchAfter.isEmpty();
+
+        if (!useSearchAfter && safeFrom >= Math.max(1, maxSearchFrom)) {
+            log.warn("Product search deep pagination blocked, from={}, size={}, maxFrom={}", safeFrom, safeSize, maxSearchFrom);
+            recordTimer(sample, "product-search", "deep-page-blocked");
+            return SearchResult.empty(safeFrom, safeSize);
+        }
+
+        Query query = buildProductSearchQuery(safeRequest);
+        SearchRequest searchRequest = SearchRequest.of(s -> {
+            SearchRequest.Builder builder = s
+                    .index(PRODUCT_INDEX)
+                    .query(query)
+                    .size(safeSize)
+                    .timeout(esRequestTimeoutMs + "ms")
+                    .sort(useSearchAfter
+                            ? buildSortOptionsWithTieBreaker(safeRequest.getSortBy(), safeRequest.getSortOrder())
+                            : buildSortOptions(safeRequest.getSortBy(), safeRequest.getSortOrder()))
+                    .source(src -> src.fetch(true));
+            if (Boolean.TRUE.equals(safeRequest.getHighlight())) {
+                builder.highlight(buildHighlight());
+            }
+            if (Boolean.TRUE.equals(safeRequest.getIncludeAggregations())) {
+                builder.aggregations(buildAggregations());
+            }
+            if (useSearchAfter) {
+                builder.searchAfter(searchAfter);
+            } else {
+                builder.from(safeFrom);
+            }
+            return builder;
+        });
+
+        try {
+            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+            List<Map<String, Object>> products = new ArrayList<>();
+            for (Hit<Map> hit : response.hits().hits()) {
+                Map<String, Object> product = hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
+                if (hit.highlight() != null && !hit.highlight().isEmpty()) {
+                    product.put("highlight", hit.highlight());
+                }
+                product.put("score", hit.score());
+                products.add(product);
+            }
+
+            long total = response.hits().total() != null ? response.hits().total().value() : 0L;
+            Map<String, Object> aggregations = Boolean.TRUE.equals(safeRequest.getIncludeAggregations())
+                    ? processAggregations(response.aggregations())
+                    : Map.of();
+            List<Object> nextSearchAfter = resolveNextSearchAfter(response.hits().hits(), safeSize);
+
+            if (StrUtil.isNotBlank(safeRequest.getKeyword())) {
+                recordHotSearch(safeRequest.getKeyword());
+            }
+            recordTimer(sample, "product-search", useSearchAfter ? "search-after" : "from");
+            return SearchResult.builder()
+                    .documents(products)
+                    .total(total)
+                    .from(useSearchAfter ? 0 : safeFrom)
+                    .size(safeSize)
+                    .aggregations(aggregations)
+                    .searchAfter(nextSearchAfter)
+                    .build();
+        } catch (Exception e) {
+            incrementEsError("product-search");
+            log.error("Product search failed, request={}, size={}", safeRequest, safeSize, e);
+            recordTimer(sample, "product-search", "error");
+            return SearchResult.empty(safeFrom, safeSize);
         }
     }
 
@@ -646,24 +729,126 @@ public class ElasticsearchOptimizedService {
         return Query.of(q -> q.bool(boolQuery.build()));
     }
 
+    private Query buildProductSearchQuery(ProductSearchRequest request) {
+        ProductSearchRequest safeRequest = request == null ? new ProductSearchRequest() : request;
+        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+        String keyword = normalizeKeyword(safeRequest.getKeyword());
+
+        if (StrUtil.isNotBlank(keyword)) {
+            Query keywordQuery = Query.of(q -> q.multiMatch(m -> m
+                    .query(keyword)
+                    .fields("productName^3", "productName.pinyin^2", "description", "categoryName", "brandName")
+                    .type(TextQueryType.BestFields)
+                    .fuzziness("AUTO")
+                    .minimumShouldMatch("75%")));
+            boolQuery.must(keywordQuery);
+        }
+
+        if (safeRequest.getCategoryId() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("categoryId").value(FieldValue.of(safeRequest.getCategoryId())))));
+        }
+        if (StrUtil.isNotBlank(safeRequest.getCategoryName())) {
+            boolQuery.filter(Query.of(q -> q.match(m -> m.field("categoryName").query(safeRequest.getCategoryName()))));
+        }
+
+        if (safeRequest.getBrandId() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("brandId").value(FieldValue.of(safeRequest.getBrandId())))));
+        }
+        if (StrUtil.isNotBlank(safeRequest.getBrandName())) {
+            boolQuery.filter(Query.of(q -> q.match(m -> m.field("brandName").query(safeRequest.getBrandName()))));
+        }
+
+        if (safeRequest.getShopId() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("shopId").value(FieldValue.of(safeRequest.getShopId())))));
+        }
+        if (StrUtil.isNotBlank(safeRequest.getShopName())) {
+            boolQuery.filter(Query.of(q -> q.match(m -> m.field("shopName").query(safeRequest.getShopName()))));
+        }
+
+        Double minPrice = toDouble(safeRequest.getMinPrice());
+        Double maxPrice = toDouble(safeRequest.getMaxPrice());
+        if (minPrice != null || maxPrice != null) {
+            boolQuery.filter(Query.of(q -> q.range(r -> r.number(n -> {
+                n.field("price");
+                if (minPrice != null) {
+                    n.gte(minPrice);
+                }
+                if (maxPrice != null) {
+                    n.lte(maxPrice);
+                }
+                return n;
+            }))));
+        }
+
+        Integer status = safeRequest.getStatus() != null ? safeRequest.getStatus() : 1;
+        boolQuery.filter(Query.of(q -> q.term(t -> t.field("status").value(FieldValue.of(status)))));
+
+        if (safeRequest.getStockStatus() != null) {
+            if (safeRequest.getStockStatus() > 0) {
+                boolQuery.filter(Query.of(q -> q.range(r -> r.number(n -> n.field("stockQuantity").gte(1.0)))));
+            } else {
+                boolQuery.filter(Query.of(q -> q.range(r -> r.number(n -> n.field("stockQuantity").lte(0.0)))));
+            }
+        }
+
+        if (safeRequest.getRecommended() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("recommended").value(FieldValue.of(safeRequest.getRecommended())))));
+        }
+        if (safeRequest.getIsNew() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("isNew").value(FieldValue.of(safeRequest.getIsNew())))));
+        }
+        if (safeRequest.getIsHot() != null) {
+            boolQuery.filter(Query.of(q -> q.term(t -> t.field("isHot").value(FieldValue.of(safeRequest.getIsHot())))));
+        }
+
+        if (safeRequest.getMinSalesCount() != null) {
+            boolQuery.filter(Query.of(q -> q.range(r -> r.number(n -> n
+                    .field("salesCount")
+                    .gte((double) Math.max(0, safeRequest.getMinSalesCount()))))));
+        }
+
+        Double minRating = toDouble(safeRequest.getMinRating());
+        if (minRating != null) {
+            boolQuery.filter(Query.of(q -> q.range(r -> r.number(n -> n.field("rating").gte(minRating)))));
+        }
+
+        if (safeRequest.getTags() != null && !safeRequest.getTags().isEmpty()) {
+            List<FieldValue> tagValues = safeRequest.getTags().stream()
+                    .filter(StrUtil::isNotBlank)
+                    .map(tag -> FieldValue.of(tag.trim()))
+                    .toList();
+            if (!tagValues.isEmpty()) {
+                boolQuery.filter(Query.of(q -> q.terms(t -> t.field("tags").terms(v -> v.value(tagValues)))));
+            }
+        }
+
+        return Query.of(q -> q.bool(boolQuery.build()));
+    }
+
     private List<co.elastic.clients.elasticsearch._types.SortOptions> buildSortOptions(String sortField, String sortOrder) {
         List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
         SortOrder order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
+        String normalized = sortField == null ? "" : sortField.trim().toLowerCase();
 
-        if (StrUtil.isNotBlank(sortField)) {
-            switch (sortField.toLowerCase()) {
-                case "price" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("price").order(order))));
-                case "sales" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("salesCount").order(order))));
-                case "created" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .field(f -> f.field("createdAt").order(order))));
-                default -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
-                        .score(sc -> sc.order(SortOrder.Desc))));
-            }
-        } else {
+        if (normalized.isEmpty()) {
             sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
                     .score(sc -> sc.order(SortOrder.Desc))));
+            return sortOptions;
+        }
+
+        switch (normalized) {
+            case "score", "_score" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .score(sc -> sc.order(order))));
+            case "price" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .field(f -> f.field("price").order(order))));
+            case "sales", "salescount", "sales_count" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .field(f -> f.field("salesCount").order(order))));
+            case "created", "createdat", "created_at" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .field(f -> f.field("createdAt").order(order))));
+            case "hotscore", "hot_score", "hot" -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .field(f -> f.field("hotScore").order(order))));
+            default -> sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(s -> s
+                    .field(f -> f.field(sortField).order(order))));
         }
 
         return sortOptions;
@@ -790,6 +975,10 @@ public class ElasticsearchOptimizedService {
         if (hotKeywordCacheInvalidatedAt.compareAndSet(lastInvalidated, now)) {
             clearL1HotCache();
         }
+    }
+
+    private Double toDouble(BigDecimal value) {
+        return value == null ? null : value.doubleValue();
     }
 
     private String normalizeKeyword(String keyword) {
