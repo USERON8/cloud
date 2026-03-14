@@ -17,7 +17,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class MessageIdempotencyService {
 
-    private static final String KEY_PREFIX = "mq:idempotent";
+    private static final String KEY_PREFIX = "mq:consumed";
     private static final String STATUS_PROCESSING = "PROCESSING";
     private static final String STATUS_SUCCESS = "SUCCESS";
 
