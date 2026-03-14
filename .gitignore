@@ -52,6 +52,8 @@ logs/
 # Elasticsearch
 docker/docker-compose/elasticsearch/data/
 docker/docker-compose/elasticsearch/data-v8/
+# Nginx static assets (built)
+docker/docker-compose/nginx/html/
 # MySQL
 docker/docker-compose/mysql/data/
 # Redis
@@ -69,6 +71,8 @@ docker/docker-compose/jenkins/home/*
 # Spring Boot
 application-local.yml
 application-local.properties
+# Frontend build output
+my-shop-web/dist/
 
 # Temporary files
 *.tmp
@@ -84,5 +88,4 @@ Thumbs.db
 
 # Keep essential files
 !README.md
-
 

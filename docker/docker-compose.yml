@@ -237,7 +237,7 @@
         source: ./docker-compose/nginx/logs
         target: /var/log/nginx
       - type: bind
-        source: ./docker-compose/nginx/html
+        source: ../my-shop-web/dist
         target: /usr/share/nginx/html
     depends_on:
       - nacos
