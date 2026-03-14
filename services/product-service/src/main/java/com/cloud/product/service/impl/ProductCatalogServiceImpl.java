@@ -1,6 +1,7 @@
 package com.cloud.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.product.SkuDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
@@ -152,33 +153,26 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         }
         wrapper.last("LIMIT " + effectiveMax);
         List<Spu> spus = spuMapper.selectList(wrapper);
-        if (spus == null || spus.isEmpty()) {
-            return Collections.emptyList();
-        }
+        return buildSpuDetails(spus);
+    }
 
-        List<Long> spuIds = spus.stream()
-                .map(Spu::getId)
-                .filter(id -> id != null)
-                .toList();
-        Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
-        if (!spuIds.isEmpty()) {
-            List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                    .in(Sku::getSpuId, spuIds)
-                    .eq(Sku::getDeleted, 0));
-            for (Sku sku : skus) {
-                if (sku.getSpuId() == null) {
-                    continue;
-                }
-                skusBySpuId.computeIfAbsent(sku.getSpuId(), ignored -> new ArrayList<>()).add(sku);
-            }
-        }
+    @Override
+    public List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status) {
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size <= 0 ? 100 : size;
+        int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
+        safeSize = Math.min(safeSize, effectiveMax);
 
-        List<SpuDetailVO> result = new ArrayList<>(spus.size());
-        for (Spu spu : spus) {
-            List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
-            result.add(toSpuDetail(spu, skus));
+        LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
+                .eq(Spu::getDeleted, 0);
+        if (status != null) {
+            wrapper.eq(Spu::getStatus, status);
         }
-        return result;
+        wrapper.orderByAsc(Spu::getId);
+
+        Page<Spu> pageData = new Page<>(safePage, safeSize);
+        Page<Spu> result = spuMapper.selectPage(pageData, wrapper);
+        return buildSpuDetails(result == null ? Collections.emptyList() : result.getRecords());
     }
 
     @Override
@@ -278,6 +272,36 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
                 .eq(Sku::getSpuId, spuId)
                 .eq(Sku::getDeleted, 0));
         return toSpuDetail(spu, skus);
+    }
+
+    private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
+        if (spus == null || spus.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> spuIds = spus.stream()
+                .map(Spu::getId)
+                .filter(id -> id != null)
+                .toList();
+        Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
+        if (!spuIds.isEmpty()) {
+            List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
+                    .in(Sku::getSpuId, spuIds)
+                    .eq(Sku::getDeleted, 0));
+            for (Sku sku : skus) {
+                if (sku.getSpuId() == null) {
+                    continue;
+                }
+                skusBySpuId.computeIfAbsent(sku.getSpuId(), ignored -> new ArrayList<>()).add(sku);
+            }
+        }
+
+        List<SpuDetailVO> result = new ArrayList<>(spus.size());
+        for (Spu spu : spus) {
+            List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
+            result.add(toSpuDetail(spu, skus));
+        }
+        return result;
     }
 
     private SkuDetailVO toSkuDetail(Sku sku) {

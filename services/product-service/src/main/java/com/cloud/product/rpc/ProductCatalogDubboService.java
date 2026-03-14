@@ -37,6 +37,11 @@ public class ProductCatalogDubboService implements ProductDubboApi {
     }
 
     @Override
+    public List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status) {
+        return productCatalogService.listSpuByPage(page, size, status);
+    }
+
+    @Override
     public List<SkuDetailVO> listSkuByIds(List<Long> skuIds) {
         return productCatalogService.listSkuByIds(skuIds);
     }

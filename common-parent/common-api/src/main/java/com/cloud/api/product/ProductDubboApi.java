@@ -16,6 +16,8 @@ public interface ProductDubboApi {
 
     List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status);
 
+    List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status);
+
     List<SkuDetailVO> listSkuByIds(List<Long> skuIds);
 
     Boolean updateSpuStatus(Long spuId, Integer status);
