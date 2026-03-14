@@ -1,6 +1,7 @@
 package com.cloud.auth.service;
 
 import lombok.extern.slf4j.Slf4j;
+import com.cloud.common.utils.RedisKeyScanUtils;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2Token;
@@ -15,6 +16,10 @@ import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -226,18 +231,49 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
 
 
     public TokenStorageStats getStorageStats() {
-        
-        
-        return new TokenStorageStats();
+        TokenStorageStats stats = new TokenStorageStats();
+        try {
+            stats.setAuthorizationCount(RedisKeyScanUtils.countKeysByPattern(redisTemplate, AUTHORIZATION_HASH_PREFIX + "*", 500));
+            stats.setTokenIndexCount(RedisKeyScanUtils.countKeysByPattern(redisTemplate, TOKEN_INDEX_PREFIX + "*", 500));
+        } catch (Exception e) {
+            log.warn("Failed to collect token storage stats", e);
+        }
+        return stats;
     }
 
     
 
 
     public void cleanupExpiredTokens() {
-        
-        
-        
+        try {
+            int cleanedAuth = cleanupKeysWithoutTtl(AUTHORIZATION_HASH_PREFIX + "*");
+            int cleanedToken = cleanupKeysWithoutTtl(TOKEN_INDEX_PREFIX + "*");
+            if (cleanedAuth + cleanedToken > 0) {
+                log.info("Cleanup oauth2 tokens finished: authKeys={}, tokenIndexKeys={}", cleanedAuth, cleanedToken);
+            }
+        } catch (Exception e) {
+            log.error("Cleanup oauth2 tokens failed", e);
+        }
+    }
+
+    private int cleanupKeysWithoutTtl(String pattern) {
+        Set<String> keys = RedisKeyScanUtils.scanKeys(redisTemplate, pattern, 500);
+        if (keys == null || keys.isEmpty()) {
+            return 0;
+        }
+        Map<String, Long> ttlMap = RedisKeyScanUtils.batchTtlSeconds(redisTemplate, keys, 200);
+        List<String> keysWithoutTtl = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : ttlMap.entrySet()) {
+            Long ttl = entry.getValue();
+            if (ttl != null && ttl == -1L) {
+                keysWithoutTtl.add(entry.getKey());
+            }
+        }
+        if (keysWithoutTtl.isEmpty()) {
+            return 0;
+        }
+        long deleted = RedisKeyScanUtils.deleteKeysInPipeline(redisTemplate, keysWithoutTtl, 200);
+        return (int) deleted;
     }
 
     
