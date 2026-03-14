@@ -84,7 +84,7 @@ class PaymentOrderServiceImplTest {
 
         assertThat(result).isEqualTo(88L);
         verify(paymentOrderMapper, never()).selectOne(any());
-        verify(paymentOrderMapper, never()).insert(any());
+        verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
     }
 
     @Test
@@ -106,7 +106,7 @@ class PaymentOrderServiceImplTest {
 
         assertThat(result).isEqualTo(77L);
         verify(paymentSecurityCacheService).cacheResult(command.getMainOrderNo() + ":" + command.getSubOrderNo(), 77L);
-        verify(paymentOrderMapper, never()).insert(any());
+        verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
     }
 
     private PaymentOrderCommandDTO buildCommand() {
