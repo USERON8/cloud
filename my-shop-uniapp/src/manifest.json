@@ -1,0 +1,10 @@
+{
+  "name": "My Shop",
+  "appid": "__UNI__MYSHOP",
+  "description": "My Shop UniApp Client",
+  "versionName": "0.0.0",
+  "versionCode": 100,
+  "h5": {
+    "title": "My Shop"
+  }
+}
