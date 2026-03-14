@@ -2,7 +2,7 @@ USE search_db;
 
 DELETE FROM search_hot_keyword_total;
 
--- 索引优化
+-- index optimization
 ALTER TABLE search_hot_keyword_total
     ADD INDEX idx_search_hot_keyword_total_score (total_score);
 
