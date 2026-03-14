@@ -535,7 +535,7 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9200" ]
+      test: [ "CMD", "curl", "-fsS", "--max-time", "5", "http://172.28.0.91:9200" ]
       interval: 10s
       timeout: 5s
       retries: 12
