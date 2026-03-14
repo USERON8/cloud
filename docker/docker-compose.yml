@@ -1,6 +1,7 @@
 ﻿x-skywalking-common: &skywalking-common
   JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar"
   SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
+  SW_LOGGING_OUTPUT: "CONSOLE"
 
 x-skywalking-agent-volume: &skywalking-agent-volume
   type: bind
