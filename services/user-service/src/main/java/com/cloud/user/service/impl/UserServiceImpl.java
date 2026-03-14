@@ -21,6 +21,7 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
+import com.cloud.user.service.support.UserInfoHashCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final UserConverter userConverter;
     private final AuthPrincipalRemoteService authPrincipalRemoteService;
     private final CacheManager cacheManager;
+    private final UserInfoHashCacheService userInfoCacheService;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,8 +53,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("username is required");
         }
 
+        UserInfoHashCacheService.UserCache cached = userInfoCacheService.getByUsername(username);
+        if (cached != null) {
+            return toDTOWithRoles(cached);
+        }
+
         User user = getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
-        return user == null ? null : toDTOWithRoles(user);
+        if (user == null) {
+            return null;
+        }
+        userInfoCacheService.put(user);
+        return toDTOWithRoles(user);
     }
 
     @Override
@@ -113,6 +125,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean deleted = removeById(id);
         if (deleted) {
             authPrincipalRemoteService.deletePrincipal(id);
+            userInfoCacheService.evict(id, user.getUsername());
         }
         return deleted;
     }
@@ -134,9 +147,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userIds == null || userIds.isEmpty()) {
             throw new BusinessException("user ids are required");
         }
+        List<User> users = listByIds(userIds);
         boolean deleted = removeByIds(userIds);
         if (deleted) {
             userIds.forEach(authPrincipalRemoteService::deletePrincipal);
+            if (users != null) {
+                users.forEach(user -> {
+                    if (user != null && user.getId() != null) {
+                        userInfoCacheService.evict(user.getId(), user.getUsername());
+                    }
+                });
+            }
         }
         return deleted;
     }
@@ -147,10 +168,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (id == null) {
             throw new BusinessException("user id is required");
         }
+        UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
+        if (cached != null) {
+            return toDTOWithRoles(cached);
+        }
         User user = getById(id);
         if (user == null) {
             throw new EntityNotFoundException("user", id);
         }
+        userInfoCacheService.put(user);
         return toDTOWithRoles(user);
     }
 
@@ -160,10 +186,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (id == null) {
             throw new BusinessException("user id is required");
         }
+        UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
+        if (cached != null) {
+            return toProfileDTO(cached);
+        }
         User user = getById(id);
         if (user == null) {
             throw new EntityNotFoundException("user", id);
         }
+        userInfoCacheService.put(user);
         return toProfileDTO(user);
     }
 
@@ -221,6 +252,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 ? List.of("USER")
                 : requestDTO.getRoles();
         authPrincipalRemoteService.createPrincipal(toCreatePrincipalDTO(requestDTO, user.getId(), roles));
+        userInfoCacheService.put(user);
         return user.getId();
     }
 
@@ -235,6 +267,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!save(user)) {
             throw new BusinessException("failed to create user profile");
         }
+        userInfoCacheService.put(user);
         return user.getId();
     }
 
@@ -280,6 +313,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (updated) {
             authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
             evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
+            updateUserCache(existingUser, requestDTO);
         }
         return updated;
     }
@@ -296,8 +330,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (profileUpsertDTO == null || profileUpsertDTO.getId() == null) {
             throw new BusinessException("user id is required");
         }
+        User existingUser = getById(profileUpsertDTO.getId());
+        if (existingUser == null) {
+            throw new EntityNotFoundException("user", profileUpsertDTO.getId());
+        }
         User user = toUserEntity(profileUpsertDTO);
-        return updateById(user);
+        boolean updated = updateById(user);
+        if (updated) {
+            updateUserCache(existingUser, profileUpsertDTO);
+        }
+        return updated;
     }
 
     @Override
@@ -315,9 +357,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "auth", allEntries = true)
     })
     public Boolean deleteUser(Long id) {
+        User existingUser = getById(id);
         boolean deleted = removeById(id);
         if (deleted) {
             authPrincipalRemoteService.deletePrincipal(id);
+            if (existingUser != null) {
+                userInfoCacheService.evict(id, existingUser.getUsername());
+            }
         }
         return deleted;
     }
@@ -344,6 +390,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             authPrincipalDTO.setId(id);
             authPrincipalDTO.setStatus(status);
             authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+            updateUserStatusCache(id, status);
         }
         return updated;
     }
@@ -462,6 +509,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                             authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
                         }
                     });
+            entityList.stream()
+                    .filter(entity -> entity != null && entity.getId() != null)
+                    .forEach(this::updateUserCache);
         }
         return updated;
     }
@@ -500,6 +550,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserDTO dto = userConverter.toDTO(user);
         dto.setRoles(roles == null ? authPrincipalRemoteService.getRoleCodesByUserId(user.getId()) : roles);
+        return dto;
+    }
+
+    private UserDTO toDTOWithRoles(UserInfoHashCacheService.UserCache cached) {
+        if (cached == null || cached.id() == null) {
+            return null;
+        }
+        UserDTO dto = new UserDTO();
+        dto.setId(cached.id());
+        dto.setUsername(cached.username());
+        dto.setPhone(cached.phone());
+        dto.setNickname(cached.nickname());
+        dto.setAvatarUrl(cached.avatarUrl());
+        dto.setEmail(cached.email());
+        dto.setStatus(cached.status());
+        dto.setRoles(authPrincipalRemoteService.getRoleCodesByUserId(cached.id()));
         return dto;
     }
 
@@ -563,6 +629,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return profile;
     }
 
+    private UserProfileDTO toProfileDTO(UserInfoHashCacheService.UserCache cached) {
+        if (cached == null || cached.id() == null) {
+            return null;
+        }
+        UserProfileDTO profile = new UserProfileDTO();
+        profile.setId(cached.id());
+        profile.setUsername(cached.username());
+        profile.setPhone(cached.phone());
+        profile.setNickname(cached.nickname());
+        profile.setAvatarUrl(cached.avatarUrl());
+        profile.setEmail(cached.email());
+        profile.setStatus(cached.status());
+        return profile;
+    }
+
     private AuthPrincipalDTO toCreatePrincipalDTO(UserUpsertRequestDTO requestDTO, Long userId, List<String> roles) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(userId);
@@ -587,6 +668,126 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         authPrincipalDTO.setStatus(requestDTO.getStatus() == null ? existingUser.getStatus() : requestDTO.getStatus());
         authPrincipalDTO.setRoles(requestDTO.getRoles());
         return authPrincipalDTO;
+    }
+
+    private void updateUserCache(User existingUser, UserUpsertRequestDTO requestDTO) {
+        if (existingUser == null || requestDTO == null) {
+            return;
+        }
+        Long id = existingUser.getId();
+        String oldUsername = existingUser.getUsername();
+        String newUsername = StrUtil.blankToDefault(requestDTO.getUsername(), oldUsername);
+        Map<String, String> fields = new HashMap<>();
+        if (StrUtil.isNotBlank(newUsername)) {
+            fields.put("username", newUsername);
+        }
+        if (requestDTO.getPhone() != null) {
+            fields.put("phone", requestDTO.getPhone());
+        }
+        if (requestDTO.getNickname() != null) {
+            fields.put("nickname", requestDTO.getNickname());
+        }
+        if (requestDTO.getAvatarUrl() != null) {
+            fields.put("avatarUrl", requestDTO.getAvatarUrl());
+        }
+        if (requestDTO.getEmail() != null) {
+            fields.put("email", requestDTO.getEmail());
+        }
+        if (requestDTO.getStatus() != null) {
+            fields.put("status", String.valueOf(requestDTO.getStatus()));
+        }
+        applyUserCacheUpdate(id, oldUsername, newUsername, fields);
+    }
+
+    private void updateUserCache(User existingUser, UserProfileUpsertDTO profileUpsertDTO) {
+        if (existingUser == null || profileUpsertDTO == null) {
+            return;
+        }
+        Long id = existingUser.getId();
+        String oldUsername = existingUser.getUsername();
+        String newUsername = StrUtil.blankToDefault(profileUpsertDTO.getUsername(), oldUsername);
+        Map<String, String> fields = new HashMap<>();
+        if (StrUtil.isNotBlank(newUsername)) {
+            fields.put("username", newUsername);
+        }
+        if (profileUpsertDTO.getPhone() != null) {
+            fields.put("phone", profileUpsertDTO.getPhone());
+        }
+        if (profileUpsertDTO.getNickname() != null) {
+            fields.put("nickname", profileUpsertDTO.getNickname());
+        }
+        if (profileUpsertDTO.getAvatarUrl() != null) {
+            fields.put("avatarUrl", profileUpsertDTO.getAvatarUrl());
+        }
+        if (profileUpsertDTO.getEmail() != null) {
+            fields.put("email", profileUpsertDTO.getEmail());
+        }
+        if (profileUpsertDTO.getStatus() != null) {
+            fields.put("status", String.valueOf(profileUpsertDTO.getStatus()));
+        }
+        applyUserCacheUpdate(id, oldUsername, newUsername, fields);
+    }
+
+    private void updateUserCache(User entity) {
+        if (entity == null || entity.getId() == null) {
+            return;
+        }
+        Map<String, String> fields = new HashMap<>();
+        if (entity.getUsername() != null) {
+            fields.put("username", entity.getUsername());
+        }
+        if (entity.getPhone() != null) {
+            fields.put("phone", entity.getPhone());
+        }
+        if (entity.getNickname() != null) {
+            fields.put("nickname", entity.getNickname());
+        }
+        if (entity.getAvatarUrl() != null) {
+            fields.put("avatarUrl", entity.getAvatarUrl());
+        }
+        if (entity.getEmail() != null) {
+            fields.put("email", entity.getEmail());
+        }
+        if (entity.getStatus() != null) {
+            fields.put("status", String.valueOf(entity.getStatus()));
+        }
+        if (fields.isEmpty()) {
+            return;
+        }
+        userInfoCacheService.updateFields(entity.getId(), entity.getUsername(), fields);
+    }
+
+    private void updateUserStatusCache(Long id, Integer status) {
+        if (id == null || status == null) {
+            return;
+        }
+        String username = resolveUsernameForCache(id);
+        Map<String, String> fields = new HashMap<>();
+        fields.put("status", String.valueOf(status));
+        userInfoCacheService.updateFields(id, username, fields);
+    }
+
+    private void applyUserCacheUpdate(Long id, String oldUsername, String newUsername, Map<String, String> fields) {
+        if (id == null || fields == null || fields.isEmpty()) {
+            return;
+        }
+        if (StrUtil.isNotBlank(oldUsername) && StrUtil.isNotBlank(newUsername) && !StrUtil.equals(oldUsername, newUsername)) {
+            userInfoCacheService.updateUsernameAtomic(id, oldUsername, newUsername, fields);
+            return;
+        }
+        userInfoCacheService.updateFields(id, newUsername, fields);
+    }
+
+    private String resolveUsernameForCache(Long id) {
+        if (id == null) {
+            return null;
+        }
+        UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
+        if (cached != null && StrUtil.isNotBlank(cached.username())) {
+            return cached.username();
+        }
+        User user = getById(id);
+        return user == null ? null : user.getUsername();
     }
 
     private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {

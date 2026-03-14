@@ -153,6 +153,9 @@ user:
     enabled: true
   statistics:
     enabled: true
+  cache:
+    info:
+      ttl-seconds: ${USER_INFO_CACHE_TTL_SECONDS:1800}
 springdoc:
   api-docs:
     enabled: false

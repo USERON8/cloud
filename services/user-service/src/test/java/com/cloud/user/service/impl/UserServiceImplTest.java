@@ -6,6 +6,7 @@ import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.support.AuthPrincipalRemoteService;
+import com.cloud.user.service.support.UserInfoHashCacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,11 +35,19 @@ class UserServiceImplTest {
     @Mock
     private CacheManager cacheManager;
 
+    @Mock
+    private UserInfoHashCacheService userInfoHashCacheService;
+
     private UserServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = spy(new UserServiceImpl(userConverter, authPrincipalRemoteService, cacheManager));
+        service = spy(new UserServiceImpl(
+                userConverter,
+                authPrincipalRemoteService,
+                cacheManager,
+                userInfoHashCacheService
+        ));
     }
 
     @Test
