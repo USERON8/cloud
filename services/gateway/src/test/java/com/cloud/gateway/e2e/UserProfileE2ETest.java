@@ -27,6 +27,7 @@ class UserProfileE2ETest {
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.jsonPath().getInt("code")).isEqualTo(200);
-        assertThat(response.jsonPath().get("data")).isNotNull();
+        Object data = response.jsonPath().get("data");
+        assertThat(data).isNotNull();
     }
 }
