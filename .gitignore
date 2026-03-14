@@ -89,3 +89,5 @@ Thumbs.db
 # Keep essential files
 !README.md
 
+# SkyWalking agent bundle
+!docker/monitor/skywalking/agent/**/*.jar
