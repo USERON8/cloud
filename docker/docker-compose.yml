@@ -840,7 +840,7 @@ services:
     restart: unless-stopped
 
   xxl-job-admin:
-    image: xuxueli/xxl-job-admin:2.4.0
+    image: xuxueli/xxl-job-admin:2.5.0
     container_name: cloud-xxl-job-admin
     depends_on:
       mysql:
