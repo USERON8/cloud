@@ -9,6 +9,7 @@ spring:
           error-channel-enabled: true
         consumer:
           max-attempts: 1
+          concurrency: ${ROCKETMQ_CONSUMER_CONCURRENCY:20}
       rocketmq:
         defaults:
           producer: &orderProducerDefaults
@@ -19,9 +20,10 @@ spring:
             sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
           consumer: &orderConsumerDefaults
             orderly: false
-            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
             delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
             suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+            consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
         bindings:

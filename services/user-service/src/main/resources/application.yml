@@ -50,6 +50,8 @@ spring:
         producer:
           partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
           error-channel-enabled: true
+        consumer:
+          concurrency: ${ROCKETMQ_CONSUMER_CONCURRENCY:20}
       rocketmq:
         defaults:
           producer: &userProducerDefaults
@@ -65,6 +67,13 @@ spring:
           userNotificationProducer-out-0:
             producer:
               <<: *userProducerDefaults
+          userNotificationConsumer-in-0:
+            consumer:
+              orderly: false
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
+              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
+              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+              consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
           userLog-out-0:
             producer:
               <<: *userProducerDefaults

@@ -6,6 +6,7 @@ spring:
       default:
         consumer:
           max-attempts: 1
+          concurrency: ${ROCKETMQ_CONSUMER_CONCURRENCY:20}
       rocketmq:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
@@ -14,11 +15,15 @@ spring:
             consumer:
               subscription: 'PRODUCT_UPSERT||PRODUCT_DELETE'
               orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
+              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
               delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
               suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
+              consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
+              consumeMessageBatchMaxSize: ${ROCKETMQ_CONSUMER_BATCH_MAX_SIZE:20}
       bindings:
         productSyncConsumer-in-0:
           destination: product-sync
           content-type: application/json
           group: search-product-sync-group
+          consumer:
+            batch-mode: true
