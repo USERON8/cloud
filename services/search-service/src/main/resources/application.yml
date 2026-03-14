@@ -107,8 +107,8 @@ search:
       smart-search:
         l1-expire-after-write-ms: ${SEARCH_SMART_L1_EXPIRE_MS:30000}
         l1-refresh-after-write-ms: ${SEARCH_SMART_L1_REFRESH_MS:10000}
-        # 搜索结果缓存 10 分钟
-        l2-ttl-seconds: ${SEARCH_SMART_L2_TTL_S:600}
+        # search cache ttl 2 minutes
+        l2-ttl-seconds: 
       suggestions:
         l1-expire-after-write-ms: ${SEARCH_SUGGESTION_L1_EXPIRE_MS:20000}
         l1-refresh-after-write-ms: ${SEARCH_SUGGESTION_L1_REFRESH_MS:8000}

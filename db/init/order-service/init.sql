@@ -283,5 +283,7 @@ CREATE TABLE undo_log (
   log_status INT NOT NULL,
   log_created DATETIME NOT NULL,
   log_modified DATETIME NOT NULL,
-  UNIQUE KEY ux_undo_log (xid,branch_id)
+  UNIQUE KEY ux_undo_log (xid,branch_id),
+  INDEX idx_undo_log_xid (xid),
+  INDEX idx_undo_log_branch (branch_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
