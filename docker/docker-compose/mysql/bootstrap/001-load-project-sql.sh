@@ -1,5 +1,8 @@
 #!/bin/bash
-set -eo pipefail
+set -e
+if set -o pipefail >/dev/null 2>&1; then
+  set -o pipefail
+fi
 
 run_sql_dir() {
   local dir="$1"
