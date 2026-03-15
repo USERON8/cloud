@@ -3,7 +3,11 @@
 on:
   workflow_dispatch:        # 手动触发
   schedule:
-    - cron: '0 2 * * *'    # 每天凌晨2点自动跑
+    - cron: '0 16 * * *'   # 每天凌晨0点（Asia/Shanghai = UTC+8）
+
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   e2e:
@@ -52,6 +56,62 @@ jobs:
         with:
           name: e2e-logs
           path: e2e-logs.txt
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const sha = context.sha.substring(0, 7);
+            const label = 'e2e-failure';
+            const title = `E2E 失败 ${new Date().toISOString().slice(0, 10)} (${sha})`;
+            const body = [
+              'E2E 任务失败，请查看日志与运行详情。',
+              '',
+              `Run: ${runUrl}`,
+              `Commit: ${context.sha}`,
+              `Workflow: ${context.workflow}`
+            ].join('\n');
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: label });
+            } catch (error) {
+              if (error.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name: label,
+                  color: 'd73a4a',
+                  description: 'E2E failures'
+                });
+              } else {
+                throw error;
+              }
+            }
+
+            const { data: existing } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue is:open label:${label} ${context.sha}`
+            });
+
+            if (existing.total_count > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.items[0].number,
+                body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels: [label]
+              });
+            }
 
       - name: Teardown
         if: always()
