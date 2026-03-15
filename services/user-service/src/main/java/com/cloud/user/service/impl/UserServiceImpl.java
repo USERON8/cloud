@@ -247,6 +247,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<String> roles = requestDTO.getRoles() == null || requestDTO.getRoles().isEmpty()
                 ? List.of("ROLE_USER")
                 : requestDTO.getRoles();
+        requestDTO.setRoles(roles);
         Long userId = authPrincipalService.createPrincipal(toCreatePrincipalDTO(requestDTO, null, roles));
         User created = userId == null ? null : getById(userId);
         if (created != null) {
