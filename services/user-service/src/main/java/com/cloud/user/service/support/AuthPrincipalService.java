@@ -178,6 +178,11 @@ public class AuthPrincipalService {
     }
 
     @Transactional(readOnly = true)
+    public List<String> getRoleCodesByUserId(Long userId) {
+        return roleAssignmentService.getRoleCodesByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
     public Map<Long, List<String>> getRoleCodesByUserIds(Collection<Long> userIds) {
         return roleAssignmentService.getRoleCodesByUserIds(userIds);
     }
