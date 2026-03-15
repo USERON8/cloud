@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
+import QiunDataCharts from 'qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue'
 import type {
   AdminInfo,
   AdminUpsertPayload,
@@ -74,6 +75,35 @@ function toNumber(value: string, fallback?: number): number | undefined {
   return fallback
 }
 
+function normalizeStatus(value: unknown, label: string): number | null {
+  const num = Number(value)
+  if (num === 0 || num === 1) {
+    return num
+  }
+  toast(`${label}状态需为 0 或 1`)
+  return null
+}
+
+function normalizeOptionalNumber(value: unknown): number | undefined {
+  if (value == null || value === '') {
+    return undefined
+  }
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return undefined
+  }
+  return num
+}
+
+function requireText(value: string, label: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    toast(`请输入${label}`)
+    return null
+  }
+  return trimmed
+}
+
 // Users
 const userLoading = ref(false)
 const userRows = ref<UserSummary[]>([])
@@ -100,6 +130,7 @@ const userForm = reactive<UserUpsertPayload>({
 const allUsersSelected = computed(
   () => userRows.value.length > 0 && userSelection.value.length === userRows.value.length
 )
+const userTotalPages = computed(() => Math.max(1, Math.ceil(userTotal.value / userQuery.size)))
 
 async function loadUsers(): Promise<void> {
   userLoading.value = true
@@ -119,6 +150,13 @@ async function loadUsers(): Promise<void> {
   } finally {
     userLoading.value = false
   }
+}
+
+function changeUserPage(delta: number): void {
+  const next = Math.min(userTotalPages.value, Math.max(1, userQuery.page + delta))
+  if (next === userQuery.page) return
+  userQuery.page = next
+  void loadUsers()
 }
 
 function toggleUserSelection(id: number): void {
@@ -158,8 +196,21 @@ async function saveUser(): Promise<void> {
     toast('请选择用户')
     return
   }
+  const username = requireText(userForm.username, '用户名')
+  if (!username) return
+  const status = normalizeStatus(userForm.status, '用户')
+  if (status === null) return
+  const payload: UserUpsertPayload = {
+    ...userForm,
+    username,
+    phone: userForm.phone.trim(),
+    nickname: userForm.nickname.trim(),
+    email: userForm.email.trim(),
+    avatarUrl: userForm.avatarUrl.trim(),
+    status
+  }
   try {
-    await updateUser(userEditId.value, userForm)
+    await updateUser(userEditId.value, payload)
     toast('用户已更新', 'success')
     closeUserEdit()
     await loadUsers()
@@ -224,6 +275,7 @@ const merchantQuery = reactive({
   size: 10,
   status: ''
 })
+const merchantTotalPages = computed(() => Math.max(1, Math.ceil(merchantTotal.value / merchantQuery.size)))
 const merchantDialogVisible = ref(false)
 const merchantEditId = ref<number | null>(null)
 const merchantForm = reactive<MerchantUpsertPayload>({
@@ -253,6 +305,13 @@ async function loadMerchants(): Promise<void> {
   }
 }
 
+function changeMerchantPage(delta: number): void {
+  const next = Math.min(merchantTotalPages.value, Math.max(1, merchantQuery.page + delta))
+  if (next === merchantQuery.page) return
+  merchantQuery.page = next
+  void loadMerchants()
+}
+
 function openMerchantEdit(row: MerchantInfo): void {
   merchantEditId.value = row.id
   merchantForm.merchantName = row.merchantName
@@ -277,12 +336,23 @@ function closeMerchantDialog(): void {
 }
 
 async function saveMerchant(): Promise<void> {
+  const merchantName = requireText(merchantForm.merchantName, '商家名称')
+  if (!merchantName) return
+  const status = normalizeStatus(merchantForm.status, '商家')
+  if (status === null) return
+  const payload: MerchantUpsertPayload = {
+    ...merchantForm,
+    merchantName,
+    email: merchantForm.email.trim(),
+    phone: merchantForm.phone.trim(),
+    status
+  }
   try {
     if (merchantEditId.value) {
-      await updateMerchant(merchantEditId.value, merchantForm)
+      await updateMerchant(merchantEditId.value, payload)
       toast('商家已更新', 'success')
     } else {
-      await createMerchant(merchantForm)
+      await createMerchant(payload)
       toast('商家已创建', 'success')
     }
     closeMerchantDialog()
@@ -370,6 +440,7 @@ const categoryQuery = reactive({
   page: 1,
   size: 10
 })
+const categoryTotalPages = computed(() => Math.max(1, Math.ceil(categoryTotal.value / categoryQuery.size)))
 const categoryDialogVisible = ref(false)
 const categoryEditId = ref<number | null>(null)
 const categoryForm = reactive<CategoryItem>({
@@ -391,6 +462,13 @@ async function loadCategories(): Promise<void> {
   } finally {
     categoryLoading.value = false
   }
+}
+
+function changeCategoryPage(delta: number): void {
+  const next = Math.min(categoryTotalPages.value, Math.max(1, categoryQuery.page + delta))
+  if (next === categoryQuery.page) return
+  categoryQuery.page = next
+  void loadCategories()
 }
 
 function openCategoryEdit(row: CategoryItem): void {
@@ -419,12 +497,24 @@ function closeCategoryDialog(): void {
 }
 
 async function saveCategory(): Promise<void> {
+  const name = requireText(categoryForm.name, '分类名称')
+  if (!name) return
+  const status = normalizeStatus(categoryForm.status, '分类')
+  if (status === null) return
+  const payload: CategoryItem = {
+    ...categoryForm,
+    name,
+    description: categoryForm.description.trim(),
+    parentId: normalizeOptionalNumber(categoryForm.parentId),
+    status,
+    sortOrder: normalizeOptionalNumber(categoryForm.sortOrder)
+  }
   try {
     if (categoryEditId.value) {
-      await updateCategory(categoryEditId.value, categoryForm)
+      await updateCategory(categoryEditId.value, payload)
       toast('分类已更新', 'success')
     } else {
-      await createCategory(categoryForm)
+      await createCategory(payload)
       toast('分类已创建', 'success')
     }
     closeCategoryDialog()
@@ -459,10 +549,13 @@ async function updateCategoryRowStatus(row: CategoryItem, status: number): Promi
 }
 
 async function updateCategoryRowSort(row: CategoryItem): Promise<void> {
-  if (!row.id || typeof row.sortOrder !== 'number') {
+  if (!row.id) return
+  const sort = Number(row.sortOrder)
+  if (!Number.isFinite(sort)) {
     toast('请输入排序值')
     return
   }
+  row.sortOrder = sort
   try {
     await updateCategorySort(row.id, row.sortOrder)
     toast('排序已更新', 'success')
@@ -556,8 +649,62 @@ const activityRanking = ref<Record<string, number>>({})
 const activeUsers = ref<number | null>(null)
 const growthRate = ref<number | null>(null)
 
-const trendList = computed(() => Object.entries(registrationTrend.value))
-const rankingList = computed(() => Object.entries(activityRanking.value))
+const trendList = computed(() =>
+  Object.entries(registrationTrend.value).sort(([left], [right]) => left.localeCompare(right))
+)
+const rankingList = computed(() =>
+  Object.entries(activityRanking.value).sort((left, right) => Number(right[1]) - Number(left[1]))
+)
+
+const roleChartData = computed(() => {
+  const entries = Object.entries(roleDistribution.value)
+  if (entries.length === 0) return null
+  return {
+    series: [
+      {
+        data: entries.map(([name, value]) => ({ name, value }))
+      }
+    ]
+  }
+})
+
+const statusChartData = computed(() => {
+  const entries = Object.entries(statusDistribution.value)
+  if (entries.length === 0) return null
+  return {
+    series: [
+      {
+        data: entries.map(([name, value]) => ({ name, value }))
+      }
+    ]
+  }
+})
+
+const trendChartData = computed(() => {
+  if (trendList.value.length === 0) return null
+  return {
+    categories: trendList.value.map((entry) => entry[0]),
+    series: [
+      {
+        name: '注册量',
+        data: trendList.value.map((entry) => entry[1])
+      }
+    ]
+  }
+})
+
+const rankingChartData = computed(() => {
+  if (rankingList.value.length === 0) return null
+  return {
+    categories: rankingList.value.map((entry) => entry[0]),
+    series: [
+      {
+        name: '活跃度',
+        data: rankingList.value.map((entry) => entry[1])
+      }
+    ]
+  }
+})
 
 async function loadStatistics(): Promise<void> {
   statsLoading.value = true
@@ -593,6 +740,7 @@ const adminQuery = reactive({
   page: 1,
   size: 10
 })
+const adminTotalPages = computed(() => Math.max(1, Math.ceil(adminTotal.value / adminQuery.size)))
 const adminDialogVisible = ref(false)
 const adminEditId = ref<number | null>(null)
 const adminForm = reactive<AdminUpsertPayload>({
@@ -614,6 +762,13 @@ async function loadAdmins(): Promise<void> {
   } finally {
     adminLoading.value = false
   }
+}
+
+function changeAdminPage(delta: number): void {
+  const next = Math.min(adminTotalPages.value, Math.max(1, adminQuery.page + delta))
+  if (next === adminQuery.page) return
+  adminQuery.page = next
+  void loadAdmins()
 }
 
 function openAdminEdit(row: AdminInfo): void {
@@ -642,12 +797,24 @@ function closeAdminDialog(): void {
 }
 
 async function saveAdmin(): Promise<void> {
+  const username = requireText(adminForm.username, '用户名')
+  if (!username) return
+  const status = normalizeStatus(adminForm.status, '管理员')
+  if (status === null) return
+  const payload: AdminUpsertPayload = {
+    ...adminForm,
+    username,
+    phone: adminForm.phone.trim(),
+    realName: adminForm.realName.trim(),
+    role: adminForm.role.trim(),
+    status
+  }
   try {
     if (adminEditId.value) {
-      await updateAdmin(adminEditId.value, adminForm)
+      await updateAdmin(adminEditId.value, payload)
       toast('管理员已更新', 'success')
     } else {
-      await createAdmin(adminForm)
+      await createAdmin(payload)
       toast('管理员已创建', 'success')
     }
     closeAdminDialog()
@@ -699,6 +866,28 @@ function onTabChange(key: string): void {
   if (key === 'statistics' && !statsOverview.value) void loadStatistics()
   if (key === 'admins' && adminRows.value.length === 0) void loadAdmins()
 }
+
+watch(
+  () => [userQuery.username, userQuery.email, userQuery.roleCode],
+  () => {
+    userQuery.page = 1
+  }
+)
+
+watch(
+  () => merchantQuery.status,
+  () => {
+    merchantQuery.page = 1
+  }
+)
+
+watch(
+  () => authStatusFilter.value,
+  () => {
+    authRows.value = []
+    void loadMerchantAuth()
+  }
+)
 
 onMounted(() => {
   void loadUsers()
@@ -752,6 +941,12 @@ onMounted(() => {
         </view>
       </view>
 
+      <view class="pagination">
+        <button class="btn-outline" :disabled="userQuery.page <= 1" @click="changeUserPage(-1)">上一页</button>
+        <text class="muted">第 {{ userQuery.page }} / {{ userTotalPages }} 页</text>
+        <button class="btn-outline" :disabled="userQuery.page >= userTotalPages" @click="changeUserPage(1)">下一页</button>
+      </view>
+
       <view v-if="userDialogVisible" class="dialog">
         <text class="section-title">编辑用户</text>
         <view class="form">
@@ -796,6 +991,12 @@ onMounted(() => {
             <button class="btn-outline" @click="confirmDeleteMerchant(row)">删除</button>
           </view>
         </view>
+      </view>
+
+      <view class="pagination">
+        <button class="btn-outline" :disabled="merchantQuery.page <= 1" @click="changeMerchantPage(-1)">上一页</button>
+        <text class="muted">第 {{ merchantQuery.page }} / {{ merchantTotalPages }} 页</text>
+        <button class="btn-outline" :disabled="merchantQuery.page >= merchantTotalPages" @click="changeMerchantPage(1)">下一页</button>
       </view>
 
       <view v-if="merchantDialogVisible" class="dialog">
@@ -857,6 +1058,12 @@ onMounted(() => {
             <button class="btn-outline" @click="deleteCategoryRow(row)">删除</button>
           </view>
         </view>
+      </view>
+
+      <view class="pagination">
+        <button class="btn-outline" :disabled="categoryQuery.page <= 1" @click="changeCategoryPage(-1)">上一页</button>
+        <text class="muted">第 {{ categoryQuery.page }} / {{ categoryTotalPages }} 页</text>
+        <button class="btn-outline" :disabled="categoryQuery.page >= categoryTotalPages" @click="changeCategoryPage(1)">下一页</button>
       </view>
 
       <view v-if="categoryDialogVisible" class="dialog">
@@ -942,39 +1149,23 @@ onMounted(() => {
       </view>
       <view class="section">
         <text class="section-title">角色分布</text>
-        <view class="list">
-          <view v-for="(value, key) in roleDistribution" :key="key" class="row-inline">
-            <text>{{ key }}</text>
-            <text class="stat-value">{{ value }}</text>
-          </view>
-        </view>
+        <view v-if="!roleChartData" class="muted">暂无数据</view>
+        <qiun-data-charts v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" />
       </view>
       <view class="section">
         <text class="section-title">状态分布</text>
-        <view class="list">
-          <view v-for="(value, key) in statusDistribution" :key="key" class="row-inline">
-            <text>{{ key }}</text>
-            <text class="stat-value">{{ value }}</text>
-          </view>
-        </view>
+        <view v-if="!statusChartData" class="muted">暂无数据</view>
+        <qiun-data-charts v-else class="chart" type="ring" canvasId="statusChart" :chartData="statusChartData" />
       </view>
       <view class="section">
         <text class="section-title">注册趋势(30天)</text>
-        <view class="list">
-          <view v-for="entry in trendList" :key="entry[0]" class="row-inline">
-            <text>{{ entry[0] }}</text>
-            <text class="stat-value">{{ entry[1] }}</text>
-          </view>
-        </view>
+        <view v-if="!trendChartData" class="muted">暂无数据</view>
+        <qiun-data-charts v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" />
       </view>
       <view class="section">
         <text class="section-title">活跃排行</text>
-        <view class="list">
-          <view v-for="entry in rankingList" :key="entry[0]" class="row-inline">
-            <text>用户 {{ entry[0] }}</text>
-            <text class="stat-value">{{ entry[1] }}</text>
-          </view>
-        </view>
+        <view v-if="!rankingChartData" class="muted">暂无数据</view>
+        <qiun-data-charts v-else class="chart" type="column" canvasId="rankingChart" :chartData="rankingChartData" />
       </view>
     </view>
 
@@ -1000,6 +1191,12 @@ onMounted(() => {
             <button class="btn-outline" @click="confirmDeleteAdmin(row)">删除</button>
           </view>
         </view>
+      </view>
+
+      <view class="pagination">
+        <button class="btn-outline" :disabled="adminQuery.page <= 1" @click="changeAdminPage(-1)">上一页</button>
+        <text class="muted">第 {{ adminQuery.page }} / {{ adminTotalPages }} 页</text>
+        <button class="btn-outline" :disabled="adminQuery.page >= adminTotalPages" @click="changeAdminPage(1)">下一页</button>
       </view>
 
       <view v-if="adminDialogVisible" class="dialog">
@@ -1116,6 +1313,12 @@ onMounted(() => {
   gap: 6px;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .dialog {
   padding: 12px;
   border-radius: 12px;
@@ -1155,6 +1358,11 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.chart {
+  width: 100%;
+  height: 260px;
 }
 
 .stat-label {
