@@ -171,6 +171,7 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:}
   bucket-name: ${MINIO_BUCKET_NAME:cloud-shop-avatars}
   cert-bucket-name: ${MINIO_CERT_BUCKET_NAME:cloud-shop-certs}
+  cert-presign-expire-seconds: ${MINIO_CERT_PRESIGN_EXPIRE_SECONDS:3600}
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
 xxl:
   job:

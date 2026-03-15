@@ -40,6 +40,9 @@ public class MinioConfiguration {
     private String certBucketName;
 
     
+    private Integer certPresignExpireSeconds;
+
+    
 
 
     private String publicEndpoint;

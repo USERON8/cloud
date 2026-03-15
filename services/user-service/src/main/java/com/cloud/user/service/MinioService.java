@@ -10,4 +10,8 @@ public interface MinioService {
 
 
     String uploadAvatar(MultipartFile file);
+
+    String uploadBusinessLicense(Long merchantId, MultipartFile file);
+
+    String getBusinessLicensePresignedUrl(String objectName);
 }
