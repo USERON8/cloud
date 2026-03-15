@@ -4,6 +4,7 @@ import com.cloud.common.domain.vo.order.OrderSubStatusVO;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderMainMapper;
+import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,14 @@ class OrderDubboServiceTest {
     @Mock
     private OrderSubMapper orderSubMapper;
 
+    @Mock
+    private OrderItemMapper orderItemMapper;
+
     private OrderDubboService orderDubboService;
 
     @BeforeEach
     void setUp() {
-        orderDubboService = new OrderDubboService(orderMainMapper, orderSubMapper);
+        orderDubboService = new OrderDubboService(orderMainMapper, orderSubMapper, orderItemMapper);
     }
 
     @Test
