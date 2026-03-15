@@ -7,7 +7,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer;
-
+import org.springframework.data.redis.core.ReactiveRedisOperations;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 @Slf4j
