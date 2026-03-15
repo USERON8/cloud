@@ -248,7 +248,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 ? List.of("ROLE_USER")
                 : requestDTO.getRoles();
         requestDTO.setRoles(roles);
-        Long userId = authPrincipalService.createPrincipal(toCreatePrincipalDTO(requestDTO, null, roles));
+        AuthPrincipalDTO principalDTO = toCreatePrincipalDTO(requestDTO, null, roles);
+        if (principalDTO.getRoles() == null || principalDTO.getRoles().isEmpty()) {
+            principalDTO.setRoles(List.of("ROLE_USER"));
+        }
+        Long userId = authPrincipalService.createPrincipal(principalDTO);
         User created = userId == null ? null : getById(userId);
         if (created != null) {
             userInfoCacheService.put(created);
