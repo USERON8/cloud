@@ -40,12 +40,6 @@ import java.util.Set;
 @Tag(name = "Order API", description = "Order creation and after-sale APIs")
 public class OrderController {
 
-    private static final Set<String> SUB_ORDER_ACTIONS = Set.of(
-            "RESERVE", "PAY", "SHIP", "RECEIVE", "DONE", "CANCEL", "CLOSE"
-    );
-    private static final Set<String> USER_SUB_ACTIONS = Set.of("CANCEL", "RECEIVE");
-    private static final Set<String> MERCHANT_SUB_ACTIONS = Set.of("SHIP");
-
     private static final Set<String> AFTER_SALE_ACTIONS = Set.of(
             "AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RETURN", "RECEIVE",
             "PROCESS", "REFUND", "CANCEL", "CLOSE"
@@ -210,77 +204,6 @@ public class OrderController {
     @Operation(summary = "Batch complete orders")
     public Result<Integer> batchComplete(@RequestBody List<Long> orderIds, Authentication authentication) {
         return Result.success(batchApply(orderIds, authentication, "DONE", null, null, null));
-    }
-
-    @GetMapping("/main/{mainOrderId}")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @Operation(summary = "Get main order detail")
-    public Result<OrderAggregateResponse> getMainOrder(@PathVariable Long mainOrderId, Authentication authentication) {
-        OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
-        if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
-            return Result.notFound("main order not found");
-        }
-        if (!isAdmin(authentication) && !isMerchant(authentication)) {
-            Long currentUserId = requireCurrentUserId(authentication);
-            if (!Objects.equals(mainOrder.getUserId(), currentUserId)) {
-                return Result.forbidden("forbidden to query other user's orders");
-            }
-        }
-        return Result.success(orderService.getOrderAggregate(mainOrderId));
-    }
-
-    @GetMapping("/main/{mainOrderId}/sub-orders")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @Operation(summary = "List sub orders")
-    public Result<List<OrderSub>> listSubOrders(@PathVariable Long mainOrderId,
-                                                   Authentication authentication) {
-        OrderMain mainOrder = orderService.getMainOrder(mainOrderId);
-        if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
-            return Result.notFound("main order not found");
-        }
-        if (!isAdmin(authentication)) {
-            Long currentUserId = requireCurrentUserId(authentication);
-            if (!Objects.equals(currentUserId, mainOrder.getUserId())) {
-                return Result.forbidden("forbidden to query other user's orders");
-            }
-        }
-        return Result.success(orderService.listSubOrders(mainOrderId));
-    }
-
-    @PostMapping("/sub/{subOrderId}/actions/{action}")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @Operation(summary = "Advance sub order status")
-    public Result<OrderSub> advanceSubOrderStatus(@PathVariable Long subOrderId,
-                                                      @PathVariable String action,
-                                                      @RequestParam(required = false) String shippingCompany,
-                                                      @RequestParam(required = false) String trackingNumber,
-                                                      Authentication authentication) {
-        OrderSub subOrder = requireAccessibleSubOrder(subOrderId, authentication);
-        if (subOrder == null) {
-            return Result.notFound("sub order not found");
-        }
-        String normalizedAction = normalizeAction(action, SUB_ORDER_ACTIONS, "sub order");
-        if (!isAllowedSubOrderAction(normalizedAction, authentication)) {
-            return Result.forbidden("forbidden to perform action: " + normalizedAction);
-        }
-        if ("SHIP".equals(normalizedAction)) {
-            return Result.success(orderShippingService.ship(subOrderId, shippingCompany, trackingNumber));
-        }
-        return Result.success(orderService.advanceSubOrderStatus(subOrderId, normalizedAction));
-    }
-
-    @PostMapping("/sub/{subOrderId}/ship")
-    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
-    @Operation(summary = "Ship sub order")
-    public Result<OrderSub> shipOrder(@PathVariable Long subOrderId,
-                                      @RequestParam String shippingCompany,
-                                      @RequestParam String trackingNumber,
-                                      Authentication authentication) {
-        OrderSub subOrder = requireAccessibleSubOrder(subOrderId, authentication);
-        if (subOrder == null) {
-            return Result.notFound("sub order not found");
-        }
-        return Result.success(orderShippingService.ship(subOrderId, shippingCompany, trackingNumber));
     }
 
     @PostMapping("/after-sales")
@@ -525,16 +448,6 @@ public class OrderController {
         return main;
     }
 
-    private boolean isAllowedSubOrderAction(String action, Authentication authentication) {
-        if (isAdmin(authentication)) {
-            return true;
-        }
-        if (isMerchant(authentication)) {
-            return MERCHANT_SUB_ACTIONS.contains(action);
-        }
-        return USER_SUB_ACTIONS.contains(action);
-    }
-
     private boolean isAllowedAfterSaleAction(String action, Authentication authentication) {
         if (isAdmin(authentication)) {
             return true;
@@ -568,28 +481,6 @@ public class OrderController {
         }
     }
 
-    private OrderSub requireAccessibleSubOrder(Long subOrderId, Authentication authentication) {
-        OrderSub subOrder = orderService.getSubOrder(subOrderId);
-        if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
-            throw new BusinessException("sub order not found");
-        }
-        if (isAdmin(authentication)) {
-            return subOrder;
-        }
-        Long currentUserId = requireCurrentUserId(authentication);
-        if (isMerchant(authentication)) {
-            if (!Objects.equals(currentUserId, subOrder.getMerchantId())) {
-                throw new BusinessException("forbidden");
-            }
-            return subOrder;
-        }
-        OrderMain mainOrder = orderService.getMainOrder(subOrder.getMainOrderId());
-        if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())
-                || !Objects.equals(mainOrder.getUserId(), currentUserId)) {
-            throw new BusinessException("forbidden");
-        }
-        return subOrder;
-    }
 }
 
 

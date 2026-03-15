@@ -31,12 +31,13 @@ class MainFlowE2ETest {
         Response queryResponse = given()
                 .header("Authorization", "Bearer " + E2ETestSupport.accessToken())
                 .when()
-                .get("/api/orders/main/" + order.mainOrderId);
+                .get("/api/orders/" + order.mainOrderId);
 
         assertThat(queryResponse.statusCode()).isEqualTo(200);
         JsonPath queryJson = queryResponse.jsonPath();
         assertThat(queryJson.getInt("code")).isEqualTo(200);
-        assertThat(queryJson.getString("data.mainOrderNo")).isEqualTo(order.mainOrderNo);
+        assertThat(queryJson.getLong("data.id")).isEqualTo(order.mainOrderId);
+        assertThat(queryJson.getString("data.orderNo")).isEqualTo(order.mainOrderNo);
     }
 
     @Test
