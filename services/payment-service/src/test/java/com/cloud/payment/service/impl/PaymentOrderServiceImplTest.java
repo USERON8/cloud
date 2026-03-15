@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,8 +95,6 @@ class PaymentOrderServiceImplTest {
                 .thenReturn(status);
         when(paymentSecurityCacheService.allowRateLimit(command.getUserId())).thenReturn(true);
         when(paymentSecurityCacheService.getCachedResult(any())).thenReturn(null);
-        when(paymentSecurityCacheService.tryAcquireIdempotent(any(), any())).thenReturn(false);
-
         PaymentOrderEntity duplicated = new PaymentOrderEntity();
         duplicated.setId(77L);
         when(paymentOrderMapper.selectOne(any())).thenReturn(duplicated);

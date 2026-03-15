@@ -1,6 +1,5 @@
 package com.cloud.payment.service.support;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,12 +11,10 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,12 +35,6 @@ class PaymentSecurityCacheServiceTest {
     @InjectMocks
     private PaymentSecurityCacheService paymentSecurityCacheService;
 
-    @BeforeEach
-    void setUp() {
-        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
-    }
-
     @Test
     void tryAcquireIdempotent_blankOrderKey_returnsTrue() {
         boolean result = paymentSecurityCacheService.tryAcquireIdempotent(" ", "key");
@@ -61,6 +52,8 @@ class PaymentSecurityCacheServiceTest {
 
     @Test
     void cacheStatus_nonFinal_writesHash() {
+        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+
         paymentSecurityCacheService.cacheStatus("pay2", 2L, "CREATED");
 
         verify(stringRedisTemplate).delete(org.mockito.ArgumentMatchers.<String>eq("pay:status:pay2"));
@@ -71,8 +64,8 @@ class PaymentSecurityCacheServiceTest {
     @Test
     void allowRateLimit_scriptAllows_returnsTrue() {
         ReflectionTestUtils.setField(paymentSecurityCacheService, "rateLimitEnabled", true);
-        when(stringRedisTemplate.execute(any(), anyList(), any(), any(), any()))
-                .thenReturn(List.of(1L, 9L, 60L));
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.increment("pay:rate:9")).thenReturn(1L);
 
         boolean allowed = paymentSecurityCacheService.allowRateLimit(9L);
 
@@ -81,6 +74,7 @@ class PaymentSecurityCacheServiceTest {
 
     @Test
     void getCachedResult_parsesValue() {
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("pay:result:order1")).thenReturn("123");
 
         Long result = paymentSecurityCacheService.getCachedResult("order1");
