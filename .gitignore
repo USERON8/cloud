@@ -43,6 +43,9 @@ AGENTS.md
 WARP.md
 AI_ASSISTANT_RULES_EN.md
 
+# Local temp workspace
+.tmp/
+
 # ===== Logs =====
 logs/
 *.log
@@ -80,6 +83,9 @@ my-shop-uniapp/dist/
 my-shop-uniapp/node_modules/
 my-shop-uniapp/.vite/
 my-shop-uniapp/.hbuilderx/
+my-shop-uniapp/.uni/
+my-shop-uniapp/.cache/
+my-shop-uniapp/unpackage/
 
 # Temporary files
 *.tmp
