@@ -1,5 +1,6 @@
 package com.cloud.stock.messaging;
 
+import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.messaging.outbox.OutboxEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
@@ -66,6 +67,7 @@ public class StockOutboxRelay {
 
         return switch (eventType) {
             case "STOCK_FREEZE_FAILED" -> sendStockFreezeFailed(event);
+            case "STOCK_ALERT" -> sendStockAlert(event);
             default -> {
                 log.warn("Unknown outbox event type: eventId={}, eventType={}", event.getEventId(), eventType);
                 yield false;
@@ -85,5 +87,19 @@ public class StockOutboxRelay {
                 .copyHeaders(headers)
                 .build();
         return streamBridge.send("stockFreezeFailedProducer-out-0", message);
+    }
+
+    private boolean sendStockAlert(OutboxEvent event) throws Exception {
+        StockAlertEvent payload = objectMapper.readValue(event.getPayload(), StockAlertEvent.class);
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(MessageConst.PROPERTY_KEYS, payload.getEventId());
+        headers.put(MessageConst.PROPERTY_TAGS, payload.getEventType());
+        headers.put("eventId", payload.getEventId());
+        headers.put("eventType", payload.getEventType());
+
+        Message<StockAlertEvent> message = MessageBuilder.withPayload(payload)
+                .copyHeaders(headers)
+                .build();
+        return streamBridge.send("stockAlertProducer-out-0", message);
     }
 }

@@ -1,5 +1,6 @@
 package com.cloud.stock.messaging;
 
+import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +47,37 @@ public class StockMessageProducer {
             return true;
         } catch (Exception ex) {
             log.warn("Send stock-freeze-failed event failed: orderNo={}", orderNo, ex);
+            return false;
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public boolean sendStockAlertEvent(StockAlertEvent event) {
+        if (event == null || event.getSkuId() == null || event.getMerchantId() == null) {
+            log.warn("Skip stock-alert event: skuId or merchantId missing");
+            return false;
+        }
+        try {
+            if (!StringUtils.hasText(event.getEventType())) {
+                event.setEventType("STOCK_ALERT");
+            }
+            if (!StringUtils.hasText(event.getEventId())) {
+                event.setEventId(UUID.randomUUID().toString());
+            }
+            if (event.getTimestamp() == null) {
+                event.setTimestamp(System.currentTimeMillis());
+            }
+            String payload = objectMapper.writeValueAsString(event);
+            outboxEventService.enqueue(
+                    "STOCK",
+                    String.valueOf(event.getSkuId()),
+                    event.getEventType(),
+                    payload,
+                    event.getEventId()
+            );
+            return true;
+        } catch (Exception ex) {
+            log.warn("Send stock-alert event failed: skuId={}", event.getSkuId(), ex);
             return false;
         }
     }

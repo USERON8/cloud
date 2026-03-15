@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.stock.module.entity.StockLedger;
+import com.cloud.stock.messaging.StockMessageProducer;
 import com.cloud.stock.mapper.StockLedgerMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -37,6 +39,7 @@ public class StockAlertXxlJob {
     private final StockLedgerMapper stockLedgerMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final StockMessageProducer stockMessageProducer;
 
     @Value("${stock.alert.enabled:true}")
     private boolean alertEnabled;
@@ -79,7 +82,9 @@ public class StockAlertXxlJob {
             if (merchantId == null) {
                 continue;
             }
-            if (sendAlertMessage(merchantId, ledger)) {
+            boolean sentWs = sendAlertMessage(merchantId, ledger);
+            boolean sentMq = sendAlertEvent(merchantId, ledger);
+            if (sentWs || sentMq) {
                 notified++;
             }
         }
@@ -179,5 +184,15 @@ public class StockAlertXxlJob {
             log.warn("Send stock alert failed: merchantId={}, skuId={}", merchantId, ledger.getSkuId(), ex);
             return false;
         }
+    }
+
+    private boolean sendAlertEvent(Long merchantId, StockLedger ledger) {
+        StockAlertEvent event = StockAlertEvent.builder()
+                .merchantId(merchantId)
+                .skuId(ledger.getSkuId())
+                .salableQty(ledger.getSalableQty())
+                .alertThreshold(ledger.getAlertThreshold())
+                .build();
+        return stockMessageProducer.sendStockAlertEvent(event);
     }
 }

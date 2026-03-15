@@ -30,6 +30,9 @@ spring:
           stockFreezeFailedProducer-out-0:
             producer:
               <<: *stockProducerDefaults
+          stockAlertProducer-out-0:
+            producer:
+              <<: *stockProducerDefaults
           stockRestoreConsumer-in-0:
             consumer:
               subscription: 'STOCK_RESTORE'
@@ -39,6 +42,9 @@ spring:
       bindings:
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
+          content-type: application/json
+        stockAlertProducer-out-0:
+          destination: stock-alert
           content-type: application/json
         stockRestoreConsumer-in-0:
           destination: stock-restore
