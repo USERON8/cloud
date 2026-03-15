@@ -8,7 +8,7 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'RUN_FRONTEND', defaultValue: true, description: 'Build frontend (my-shop-web)')
+        booleanParam(name: 'RUN_FRONTEND', defaultValue: true, description: 'Build frontend (my-shop-uniapp)')
         booleanParam(name: 'RUN_DEPLOY', defaultValue: false, description: 'Run local deployment after build')
         booleanParam(name: 'RUN_SMOKE', defaultValue: true, description: 'Run smoke test after deployment')
     }
@@ -53,9 +53,10 @@ pipeline {
                 expression { return params.RUN_FRONTEND }
             }
             steps {
-                dir('my-shop-web') {
-                    sh 'npm ci'
-                    sh 'npm run build'
+                dir('my-shop-uniapp') {
+                    sh 'corepack enable'
+                    sh 'pnpm install --frozen-lockfile'
+                    sh 'pnpm run build:h5'
                 }
             }
         }
@@ -63,7 +64,7 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true, allowEmptyArchive: false
-                archiveArtifacts artifacts: 'my-shop-web/dist/**', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'my-shop-uniapp/dist/**', allowEmptyArchive: true
             }
         }
 
