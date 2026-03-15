@@ -174,6 +174,13 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | DELETE | /auth/users/{username}/sessions | Logout all user sessions | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=username | Result<String> |
 | GET | /auth/tokens/validate | Validate access token | isAuthenticated() | header=Authorization(Bearer) | Result<String> |
 
+#### OAuth2Endpoint?/oauth2?
+
+| ?? | ?? | ?? | ?? | ??/Body | ?? |
+| --- | --- | --- | --- | --- | --- |
+| GET | /oauth2/authorize | OAuth2 authorize | ??? | query=AuthorizationRequestDTO | 302 Redirect |
+| POST | /oauth2/token | OAuth2 token | ??? | body=application/x-www-form-urlencoded | OAuthTokenResponse |
+
 #### GitHubOAuth2Controller（/auth/oauth2/github）
 
 | 方法 | 路径 | 说明 | 权限 | 参数/Body | 返回 |
