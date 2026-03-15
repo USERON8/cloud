@@ -1,7 +1,9 @@
 package com.cloud.auth.controller;
 
 import com.cloud.auth.service.OAuth2TokenManagementService;
+import com.cloud.auth.service.AuthUserAuthorityCacheService;
 import com.cloud.auth.service.support.AuthIdentityService;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.auth.RegisterResponseDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
@@ -19,6 +21,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,6 +42,8 @@ public class AuthController {
 
     private final OAuth2TokenManagementService tokenManagementService;
     private final AuthIdentityService authIdentityService;
+    private final JwtDecoder jwtDecoder;
+    private final AuthUserAuthorityCacheService authorityCacheService;
 
     @PostMapping("/users/register")
     @Operation(summary = "Register user")
@@ -67,6 +73,7 @@ public class AuthController {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String accessToken = authorizationHeader.substring(7);
             logoutSuccess = tokenManagementService.logout(accessToken, null);
+            evictAuthorityCache(accessToken);
         }
 
         HttpSession session = request.getSession(false);
@@ -91,6 +98,10 @@ public class AuthController {
             @Parameter(description = "Username", required = true)
             @NotBlank(message = "Username cannot be blank") String username) {
         int revokedCount = tokenManagementService.logoutAllSessions(username);
+        AuthPrincipalDTO principal = authIdentityService.findByUsername(username);
+        if (principal != null && principal.getId() != null) {
+            authorityCacheService.evict(principal.getId());
+        }
         String message = String.format("Revoked %d active sessions for user %s", revokedCount, username);
         return Result.success(message);
     }
@@ -123,6 +134,24 @@ public class AuthController {
                 String.join(", ", authorization.getAuthorizedScopes())
         );
         return Result.success(message);
+    }
+
+    private void evictAuthorityCache(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return;
+        }
+        try {
+            Jwt jwt = jwtDecoder.decode(accessToken);
+            String userId = jwt.getClaimAsString("userId");
+            if (userId == null || userId.isBlank()) {
+                userId = jwt.getClaimAsString("user_id");
+            }
+            if (userId != null && !userId.isBlank()) {
+                authorityCacheService.evict(Long.valueOf(userId));
+            }
+        } catch (Exception ignored) {
+            // Best-effort cache eviction; ignore decode failures.
+        }
     }
 }
 

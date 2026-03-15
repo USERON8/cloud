@@ -24,6 +24,7 @@ import java.util.List;
 public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
     private final LocalUserAuthorityService localUserAuthorityService;
+    private final AuthUserAuthorityCacheService authorityCacheService;
     private final AuthIdentityService authIdentityService;
 
     @Autowired(required = false)
@@ -45,7 +46,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             }
 
             List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
-                    localUserAuthorityService.buildAuthorities(principal.getRoles(), principal.getPermissions());
+                    resolveAuthorities(principal);
 
             UserDetails userDetails = User.builder()
                     .username(principal.getUsername())
@@ -79,6 +80,25 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             return principal.getEnabled() != 1;
         }
         return principal.getStatus() != null && principal.getStatus() != 1;
+    }
+
+    private List<org.springframework.security.core.authority.SimpleGrantedAuthority> resolveAuthorities(AuthPrincipalDTO principal) {
+        Long userId = principal == null ? null : principal.getId();
+        if (userId != null) {
+            List<org.springframework.security.core.authority.SimpleGrantedAuthority> cached =
+                    authorityCacheService.loadAuthorities(userId);
+            if (cached != null && !cached.isEmpty()) {
+                return cached;
+            }
+        }
+
+        List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+                localUserAuthorityService.buildAuthorities(principal.getRoles(), principal.getPermissions());
+
+        if (userId != null) {
+            authorityCacheService.cacheAuthorities(userId, authorities);
+        }
+        return authorities;
     }
 }
 

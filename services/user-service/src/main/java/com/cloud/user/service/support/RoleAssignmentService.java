@@ -27,6 +27,7 @@ public class RoleAssignmentService {
 
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
+    private final AuthAuthorityCacheEvictService cacheEvictService;
 
     @Transactional(readOnly = true)
     public List<String> getRoleCodesByUserId(Long userId) {
@@ -142,6 +143,7 @@ public class RoleAssignmentService {
         }
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
         addRoles(userId, roles);
+        cacheEvictService.evictUser(userId);
     }
 
     @Transactional
@@ -172,6 +174,7 @@ public class RoleAssignmentService {
             userRole.setRoleId(roleEntity.getId());
             userRoleMapper.insert(userRole);
         }
+        cacheEvictService.evictUser(userId);
     }
 
     private Map<String, Role> loadRolesByCode(Collection<String> roles) {
