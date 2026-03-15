@@ -12,11 +12,11 @@
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| GET | /api/user/address/list/:param | listUserAddresses | userId: number | - |
-| GET | /api/user/address/default/:param | getDefaultAddress | userId: number | - |
-| POST | /api/user/address/add/:param | addUserAddress | userId: number, payload: UserAddress | body |
-| PUT | /api/user/address/update/:param | updateUserAddress | addressId: number, payload: UserAddress | body |
-| DELETE | /api/user/address/delete/:param | deleteUserAddress | addressId: number | - |
+| GET | /api/user/address/list/{param} | listUserAddresses | userId: number | - |
+| GET | /api/user/address/default/{param} | getDefaultAddress | userId: number | - |
+| POST | /api/user/address/add/{param} | addUserAddress | userId: number, payload: UserAddress | body |
+| PUT | /api/user/address/update/{param} | updateUserAddress | addressId: number, payload: UserAddress | body |
+| DELETE | /api/user/address/delete/{param} | deleteUserAddress | addressId: number | - |
 | POST | /api/user/address/page | pageUserAddresses | payload: UserAddressPageQuery | body |
 | DELETE | /api/user/address/deleteBatch | deleteUserAddressesBatch | ids: number[] | body |
 | PUT | /api/user/address/updateBatch | updateUserAddressesBatch | payload: UserAddress[] | body |
@@ -26,20 +26,20 @@
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
 | GET | /api/admin | getAdmins | params: { page?: number; size?: number } = {} | query |
-| GET | /api/admin/:param | getAdminById | id: number | - |
+| GET | /api/admin/{param} | getAdminById | id: number | - |
 | POST | /api/admin | createAdmin | payload: AdminUpsertPayload | body |
-| PUT | /api/admin/:param | updateAdmin | id: number, payload: AdminUpsertPayload | body |
-| DELETE | /api/admin/:param | deleteAdmin | id: number | - |
-| PATCH | /api/admin/:param/status | updateAdminStatus | id: number, status: number | query |
-| POST | /api/admin/:param/reset-password | resetAdminPassword | id: number | - |
+| PUT | /api/admin/{param} | updateAdmin | id: number, payload: AdminUpsertPayload | body |
+| DELETE | /api/admin/{param} | deleteAdmin | id: number | - |
+| PATCH | /api/admin/{param}/status | updateAdminStatus | id: number, status: number | query |
+| POST | /api/admin/{param}/reset-password | resetAdminPassword | id: number | - |
 
 ## auth-tokens
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
 | GET | /auth/tokens/stats | getTokenStats | - | - |
-| GET | /auth/tokens/authorization/:param | getAuthorizationDetails | id: string | - |
-| DELETE | /auth/tokens/authorization/:param | revokeAuthorization | id: string | - |
+| GET | /auth/tokens/authorization/{param} | getAuthorizationDetails | id: string | - |
+| DELETE | /auth/tokens/authorization/{param} | revokeAuthorization | id: string | - |
 | POST | /auth/tokens/cleanup | cleanupExpiredTokens | - | - |
 | GET | /auth/tokens/storage-structure | getStorageStructure | - | - |
 | GET | /auth/tokens/blacklist/stats | getBlacklistStats | - | - |
@@ -56,7 +56,7 @@
 | POST | /oauth2/token | exchangeAuthorizationCode | code: string, state: string | headers, body |
 | POST | /auth/users/register | register | payload: RegisterRequest | body |
 | DELETE | /auth/sessions | logout | - | - |
-| DELETE | /auth/users/:param/sessions | logoutAllSessions | username: string | - |
+| DELETE | /auth/users/{param}/sessions | logoutAllSessions | username: string | - |
 | GET | /auth/tokens/validate | validateToken | - | - |
 | GET | /auth/oauth2/github/status | getGitHubAuthStatus | - | - |
 | GET | /auth/oauth2/github/user-info | getGitHubUserInfo | - | - |
@@ -66,15 +66,15 @@
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
 | GET | /api/category | getCategories | params: CategoryQuery = {} | query |
-| GET | /api/category/:param | getCategoryById | id: number | - |
+| GET | /api/category/{param} | getCategoryById | id: number | - |
 | GET | /api/category/tree | getCategoryTree | enabledOnly = false | query |
-| GET | /api/category/:param/children | getCategoryChildren | id: number, enabledOnly = false | query |
+| GET | /api/category/{param}/children | getCategoryChildren | id: number, enabledOnly = false | query |
 | POST | /api/category | createCategory | payload: CategoryItem | body |
-| PUT | /api/category/:param | updateCategory | id: number, payload: CategoryItem | body |
-| DELETE | /api/category/:param | deleteCategory | id: number, cascade = false | query |
-| PATCH | /api/category/:param/status | updateCategoryStatus | id: number, status: number | query |
-| PATCH | /api/category/:param/sort | updateCategorySort | id: number, sort: number | query |
-| PATCH | /api/category/:param/move | moveCategory | id: number, newParentId: number | query |
+| PUT | /api/category/{param} | updateCategory | id: number, payload: CategoryItem | body |
+| DELETE | /api/category/{param} | deleteCategory | id: number, cascade = false | query |
+| PATCH | /api/category/{param}/status | updateCategoryStatus | id: number, status: number | query |
+| PATCH | /api/category/{param}/sort | updateCategorySort | id: number, sort: number | query |
+| PATCH | /api/category/{param}/move | moveCategory | id: number, newParentId: number | query |
 | DELETE | /api/category/batch | deleteCategoriesBatch | ids: number[] | body |
 | PATCH | /api/category/batch/status | updateCategoryStatusBatch | ids: number[], status: number | query |
 | POST | /api/category/batch | createCategoriesBatch | payload: CategoryItem[] | body |
@@ -83,10 +83,10 @@
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| POST | /api/merchant/auth/apply/:param | applyMerchantAuth | merchantId: number, payload: MerchantAuthPayload | body |
-| GET | /api/merchant/auth/get/:param | getMerchantAuth | merchantId: number | - |
-| DELETE | /api/merchant/auth/revoke/:param | revokeMerchantAuth | merchantId: number | - |
-| POST | /api/merchant/auth/review/:param | reviewMerchantAuth | merchantId: number, authStatus: number, remark?: string | query |
+| POST | /api/merchant/auth/apply/{param} | applyMerchantAuth | merchantId: number, payload: MerchantAuthPayload | body |
+| GET | /api/merchant/auth/get/{param} | getMerchantAuth | merchantId: number | - |
+| DELETE | /api/merchant/auth/revoke/{param} | revokeMerchantAuth | merchantId: number | - |
+| POST | /api/merchant/auth/review/{param} | reviewMerchantAuth | merchantId: number, authStatus: number, remark?: string | query |
 | GET | /api/merchant/auth/list | listMerchantAuthByStatus | authStatus: number | query |
 | POST | /api/merchant/auth/review/batch | reviewMerchantAuthBatch | merchantIds: number[], authStatus: number, remark?: string | query, body |
 
@@ -95,14 +95,14 @@
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
 | GET | /api/merchant | getMerchants | params: { page?: number; size?: number; status?: number } = {} | query |
-| GET | /api/merchant/:param | getMerchantById | id: number | - |
+| GET | /api/merchant/{param} | getMerchantById | id: number | - |
 | POST | /api/merchant | createMerchant | payload: MerchantUpsertPayload | body |
-| PUT | /api/merchant/:param | updateMerchant | id: number, payload: MerchantUpsertPayload | body |
-| DELETE | /api/merchant/:param | deleteMerchant | id: number | - |
-| POST | /api/merchant/:param/approve | approveMerchant | id: number, remark?: string | query |
-| POST | /api/merchant/:param/reject | rejectMerchant | id: number, reason: string | query |
-| PATCH | /api/merchant/:param/status | updateMerchantStatus | id: number, status: number | query |
-| GET | /api/merchant/:param/statistics | getMerchantStatistics | id: number | - |
+| PUT | /api/merchant/{param} | updateMerchant | id: number, payload: MerchantUpsertPayload | body |
+| DELETE | /api/merchant/{param} | deleteMerchant | id: number | - |
+| POST | /api/merchant/{param}/approve | approveMerchant | id: number, remark?: string | query |
+| POST | /api/merchant/{param}/reject | rejectMerchant | id: number, reason: string | query |
+| PATCH | /api/merchant/{param}/status | updateMerchantStatus | id: number, status: number | query |
+| GET | /api/merchant/{param}/statistics | getMerchantStatistics | id: number | - |
 | DELETE | /api/merchant/batch | deleteMerchantsBatch | ids: number[] | body |
 | PATCH | /api/merchant/batch/status | updateMerchantStatusBatch | ids: number[], status: number | query |
 | POST | /api/merchant/batch/approve | approveMerchantsBatch | ids: number[], remark?: string | query, body |
@@ -111,8 +111,8 @@
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| POST | /api/user/notification/welcome/:param | sendWelcomeNotification | userId: number | - |
-| POST | /api/user/notification/status-change/:param | sendStatusChangeNotification | userId: number,
+| POST | /api/user/notification/welcome/{param} | sendWelcomeNotification | userId: number | - |
+| POST | /api/user/notification/status-change/{param} | sendStatusChangeNotification | userId: number,
   payload: { newStatus: number; reason?: string } | body |
 | POST | /api/user/notification/batch | sendBatchNotification | payload: { userIds: number[]; title: string; content: string } | body |
 | POST | /api/user/notification/system | sendSystemAnnouncement | payload: { title: string; content: string } | body |
@@ -123,11 +123,11 @@
 | --- | --- | --- | --- | --- |
 | POST | /api/orders | createOrder | payload: CreateOrderPayloadï¼å¿é¡»åå« skuIdï¼, idempotencyKey: string | headers, body |
 | GET | /api/orders | listOrders | params: OrderQuery = {} | query |
-| GET | /api/orders/:param | getOrderById | id: number | - |
-| POST | /api/orders/:param/pay | payOrder | id: number | - |
-| POST | /api/orders/:param/cancel | cancelOrder | id: number, cancelReason?: string | query |
-| POST | /api/orders/:param/ship | shipOrder | id: number, shippingCompany?: string, trackingNumber?: string | query |
-| POST | /api/orders/:param/complete | completeOrder | id: number | - |
+| GET | /api/orders/{param} | getOrderById | id: number | - |
+| POST | /api/orders/{param}/pay | payOrder | id: number | - |
+| POST | /api/orders/{param}/cancel | cancelOrder | id: number, cancelReason?: string | query |
+| POST | /api/orders/{param}/ship | shipOrder | id: number, shippingCompany?: string, trackingNumber?: string | query |
+| POST | /api/orders/{param}/complete | completeOrder | id: number | - |
 | POST | /api/orders/batch/pay | batchPayOrders | ids: number[] | body |
 | POST | /api/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
 | POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany?: string, trackingNumber?: string | query, body |
@@ -137,8 +137,8 @@
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| GET | /api/payments/orders/:param | getPaymentOrderByNo | paymentNo: string | - |
-| GET | /api/payments/refunds/:param | getRefundByNo | refundNo: string | - |
+| GET | /api/payments/orders/{param} | getPaymentOrderByNo | paymentNo: string | - |
+| GET | /api/payments/refunds/{param} | getRefundByNo | refundNo: string | - |
 | POST | /api/payments/orders | createPaymentOrder | payload: PaymentOrderCommand | body |
 | POST | /api/payments/refunds | createPaymentRefund | payload: PaymentRefundCommand | body |
 | POST | /api/payments/callbacks | handlePaymentCallback | payload: PaymentCallbackCommand | body |
@@ -148,11 +148,11 @@
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
 | POST | /api/product/spu | createSpu | payload: SpuCreateRequest | body |
-| PUT | /api/product/spu/:param | updateSpu | spuId: number, payload: SpuCreateRequest | body |
-| GET | /api/product/spu/:param | getSpu | spuId: number | - |
-| GET | /api/product/spu/category/:param | listSpuByCategory | categoryId: number, status?: number | query |
+| PUT | /api/product/spu/{param} | updateSpu | spuId: number, payload: SpuCreateRequest | body |
+| GET | /api/product/spu/{param} | getSpu | spuId: number | - |
+| GET | /api/product/spu/category/{param} | listSpuByCategory | categoryId: number, status?: number | query |
 | GET | /api/product/sku/batch | listSkuByIds | skuIds: number[] | query |
-| PATCH | /api/product/spu/:param/status | updateSpuStatus | spuId: number, status: number | query |
+| PATCH | /api/product/spu/{param}/status | updateSpuStatus | spuId: number, status: number | query |
 
 ## product
 
@@ -171,9 +171,9 @@
 | GET | /api/search/hot-keywords | listSearchHotKeywords | size = 10 | query |
 | GET | /api/search/keyword-recommendations | listSearchKeywordRecommendations | keyword = '', size = 10 | query |
 | GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams | query |
-| PATCH | /api/product/:param/status | updateProductStatus | id: number, status: 0 \| 1 | query |
-| POST | /api/product | createProduct | payload: ProductUpsertPayload | body |
-| PUT | /api/product/:param | updateProduct | id: number, payload: ProductUpsertPayload | body |
+| PATCH | /api/product/{param}/status | updateProductStatus | id: number, status: 0 \| 1 | query |
+| POST | /api/product/spu | createProduct | payload: ProductUpsertPayload | body |
+| PUT | /api/product/spu/{spuId} | updateProduct | spuId: number, payload: ProductUpsertPayload | body |
 
 ## search-ops
 
@@ -189,9 +189,9 @@
   sortBy?: string
   sortDir?: string
 } | query |
-| GET | /api/search/search/category/:param | searchByCategory | categoryId: number,
+| GET | /api/search/search/category/{param} | searchByCategory | categoryId: number,
   params: { keyword?: string; page?: number; size?: number } = {} | query |
-| GET | /api/search/search/shop/:param | searchByShop | shopId: number,
+| GET | /api/search/search/shop/{param} | searchByShop | shopId: number,
   params: { keyword?: string; page?: number; size?: number } = {} | query |
 | GET | /api/search/search/advanced | advancedSearch | params: {
   keyword: string
@@ -204,9 +204,9 @@
 | GET | /api/search/new | listNewProducts | page = 0, size = 20 | query |
 | GET | /api/search/hot | listHotProducts | page = 0, size = 20 | query |
 | POST | /api/search/filter | filterSearch | request: ProductFilterRequest | body |
-| GET | /api/search/filter/category/:param | filterByCategory | categoryId: number,
+| GET | /api/search/filter/category/{param} | filterByCategory | categoryId: number,
   params: { page?: number; size?: number } = {} | query |
-| GET | /api/search/filter/brand/:param | filterByBrand | brandId: number,
+| GET | /api/search/filter/brand/{param} | filterByBrand | brandId: number,
   params: { page?: number; size?: number } = {} | query |
 | GET | /api/search/filter/price | filterByPrice | params: {
   minPrice?: number
@@ -214,7 +214,7 @@
   page?: number
   size?: number
 } | query |
-| GET | /api/search/filter/shop/:param | filterByShop | shopId: number,
+| GET | /api/search/filter/shop/{param} | filterByShop | shopId: number,
   params: { page?: number; size?: number } = {} | query |
 
 ## shop-search
@@ -225,7 +225,7 @@
 | POST | /api/search/shops/filters | getShopFilters | request: ShopSearchRequest | body |
 | GET | /api/search/shops/suggestions | listShopSuggestions | keyword: string, size = 10 | query |
 | GET | /api/search/shops/hot-shops | listHotShops | size = 10 | query |
-| GET | /api/search/shops/:param | getShopById | shopId: number | - |
+| GET | /api/search/shops/{param} | getShopById | shopId: number | - |
 | GET | /api/search/shops/recommended | listRecommendedShops | page = 0, size = 20 | query |
 | GET | /api/search/shops/by-location | searchShopsByLocation | location: string, page = 0, size = 20 | query |
 
@@ -248,7 +248,7 @@
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| GET | /api/stocks/ledger/:param | getStockLedger | skuId: number | - |
+| GET | /api/stocks/ledger/{param} | getStockLedger | skuId: number | - |
 | POST | /api/stocks/reserve | reserveStock | payload: StockOperatePayload | body |
 | POST | /api/stocks/confirm | confirmStock | payload: StockOperatePayload | body |
 | POST | /api/stocks/release | releaseStock | payload: StockOperatePayload | body |
@@ -267,7 +267,7 @@
 | --- | --- | --- | --- | --- |
 | GET | /api/query/users | findUserByUsername | username: string | query |
 | GET | /api/query/users/search | searchUsers | params: UserSearchParams | query |
-| PUT | /api/manage/users/:param | updateUser | id: number, payload: UserUpsertPayload | body |
+| PUT | /api/manage/users/{param} | updateUser | id: number, payload: UserUpsertPayload | body |
 | POST | /api/manage/users/delete | deleteUser | id: number | body |
 | POST | /api/manage/users/deleteBatch | deleteUsersBatch | ids: number[] | body |
 | POST | /api/manage/users/updateBatch | updateUsersBatch | payload: UserUpsertPayload[] | body |
