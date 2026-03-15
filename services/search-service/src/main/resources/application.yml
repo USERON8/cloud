@@ -133,6 +133,9 @@ search:
       interval-ms: ${SEARCH_HOT_DB_SYNC_INTERVAL_MS:300000}
       max-sync-size: ${SEARCH_HOT_DB_SYNC_MAX_SIZE:2000}
       restore-size: ${SEARCH_HOT_DB_SYNC_RESTORE_SIZE:2000}
+  sell-rank:
+    limit: ${SEARCH_SELL_RANK_LIMIT:200}
+    ttl-days: ${SEARCH_SELL_RANK_TTL_DAYS:2}
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}
