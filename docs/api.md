@@ -207,17 +207,23 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 
 ### order-service
 
-#### OrderController（/api/orders）
+#### OrderController?/api/orders?
 
-| 方法 | 路径 | 说明 | 权限 | 参数/Body | 返回 |
+| ?? | ?? | ?? | ?? | ??/Body | ?? |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/orders | Create main order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | header=Idempotency-Key(必填), body=CreateMainOrderRequest | Result<OrderAggregateResponse> |
-| GET | /api/orders/main/{mainOrderId} | Get main order detail | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=mainOrderId | Result<OrderAggregateResponse> |
-| GET | /api/orders/main/{mainOrderId}/sub-orders | List sub orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | path=mainOrderId | Result<List<OrderSub>> |
-| POST | /api/orders/sub/{subOrderId}/actions/{action} | Advance sub order status | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=subOrderId, action∈{RESERVE,PAY,SHIP,RECEIVE,DONE,CANCEL,CLOSE}, query=shippingCompany,trackingNumber | Result<OrderSub> |
-| POST | /api/orders/sub/{subOrderId}/ship | Ship sub order | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=subOrderId, query=shippingCompany,trackingNumber | Result<OrderSub> |
+| POST | /api/orders | Create main order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | header=Idempotency-Key(??), body=CreateMainOrderRequest | Result<OrderAggregateResponse> |
+| GET | /api/orders | List orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | query=page,size,userId?,shopId?,status? | Result<PageResult<OrderSummaryDTO>> |
+| GET | /api/orders/{orderId} | Get order detail | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<OrderSummaryDTO> |
+| POST | /api/orders/{orderId}/pay | Pay order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<Boolean> |
+| POST | /api/orders/{orderId}/cancel | Cancel order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId, query=cancelReason? | Result<Boolean> |
+| POST | /api/orders/{orderId}/ship | Ship order | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId, query=shippingCompany?,trackingNumber? | Result<Boolean> |
+| POST | /api/orders/{orderId}/complete | Complete order | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<Boolean> |
+| POST | /api/orders/batch/pay | Batch pay orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long> | Result<Integer> |
+| POST | /api/orders/batch/cancel | Batch cancel orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=cancelReason? | Result<Integer> |
+| POST | /api/orders/batch/ship | Batch ship orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=shippingCompany?,trackingNumber? | Result<Integer> |
+| POST | /api/orders/batch/complete | Batch complete orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long> | Result<Integer> |
 | POST | /api/orders/after-sales | Apply after-sale | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=AfterSale | Result<AfterSale> |
-| POST | /api/orders/after-sales/{afterSaleId}/actions/{action} | Advance after-sale status | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=afterSaleId, action∈{AUDIT,APPROVE,REJECT,WAIT_RETURN,RETURN,RECEIVE,PROCESS,REFUND,CANCEL,CLOSE}, query=remark | Result<AfterSale> |
+| POST | /api/orders/after-sales/{afterSaleId}/actions/{action} | Advance after-sale status | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=afterSaleId, action?{AUDIT,APPROVE,REJECT,WAIT_RETURN,RETURN,RECEIVE,PROCESS,REFUND,CANCEL,CLOSE}, query=remark | Result<AfterSale> |
 
 ### payment-service
 
@@ -262,6 +268,14 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | GET | /api/product/spu/category/{categoryId} | List SPU by category | 未标注 | path=categoryId, query=status | Result<List<SpuDetailVO>> |
 | GET | /api/product/sku/batch | Batch query SKU details | 未标注 | query=skuIds | Result<List<SkuDetailVO>> |
 | PATCH | /api/product/spu/{spuId}/status | Update SPU status | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | path=spuId, query=status | Result<Boolean> |
+
+#### ProductQueryControllerï¼/api/productï¼
+
+| æ¹æ³ | è·¯å¾ | è¯´æ | æé | åæ°/Body | è¿å |
+| --- | --- | --- | --- | --- | --- |
+| GET | /api/product | List products | æªæ æ³¨ | query=page,size,name?,categoryId?,brandId?,shopId?,status? | Result<PageResult<ProductItemDTO>> |
+| GET | /api/product/search | Search products | æªæ æ³¨ | query=name | Result<List<ProductItemDTO>> |
+| PATCH | /api/product/{spuId}/status | Update SPU status | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | path=spuId, query=status | Result<Boolean> |
 
 ### search-service
 
@@ -451,7 +465,7 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 
 ### CreateMainOrderRequest
 
-| 字段 | 类型 |
+| ?? | ?? |
 | --- | --- |
 | userId | Long |
 | cartId | Long |
@@ -465,36 +479,8 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | receiverName | String |
 | receiverPhone | String |
 | receiverAddress | String |
-| subOrders | List<CreateSubOrderRequest>（标注 @JsonIgnore） |
 
-CreateMainOrderRequest 约束：cartId 或 (spuId, skuId, quantity) 二选一（源码 @AssertTrue 校验）。
-
-### CreateSubOrderRequest（CreateMainOrderRequest 内部类）
-
-| 字段 | 类型 |
-| --- | --- |
-| merchantId | Long |
-| itemAmount | BigDecimal |
-| shippingFee | BigDecimal |
-| discountAmount | BigDecimal |
-| payableAmount | BigDecimal |
-| receiverName | String |
-| receiverPhone | String |
-| receiverAddress | String |
-| items | List<CreateOrderItemRequest> |
-
-### CreateOrderItemRequest（CreateMainOrderRequest 内部类）
-
-| 字段 | 类型 |
-| --- | --- |
-| spuId | Long |
-| skuId | Long |
-| skuCode | String |
-| skuName | String |
-| skuSnapshot | String |
-| quantity | Integer |
-| unitPrice | BigDecimal |
-| totalPrice | BigDecimal |
+CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### AfterSale
 
