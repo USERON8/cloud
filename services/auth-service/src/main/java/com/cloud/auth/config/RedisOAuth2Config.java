@@ -1,7 +1,7 @@
 package com.cloud.auth.config;
 
 import com.cloud.auth.service.RedisOAuth2AuthorizationConsentService;
-import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
+import com.cloud.auth.service.RedisOAuth2AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,7 +29,7 @@ public class RedisOAuth2Config {
 
     @Bean
     public OAuth2AuthorizationService authorizationService() {
-        return new SimpleRedisHashOAuth2AuthorizationService(
+        return new RedisOAuth2AuthorizationService(
                 oauth2MainRedisTemplate(),
                 registeredClientRepository,
                 authorizationServerSettings

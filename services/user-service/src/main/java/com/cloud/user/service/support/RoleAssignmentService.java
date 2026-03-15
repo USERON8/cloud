@@ -1,10 +1,10 @@
-package com.cloud.auth.service.support;
+package com.cloud.user.service.support;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.auth.mapper.RoleMapper;
-import com.cloud.auth.mapper.UserRoleMapper;
-import com.cloud.auth.module.entity.Role;
-import com.cloud.auth.module.entity.UserRole;
+import com.cloud.user.mapper.RoleMapper;
+import com.cloud.user.mapper.UserRoleMapper;
+import com.cloud.user.module.entity.Role;
+import com.cloud.user.module.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +23,11 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AuthRoleAssignmentService {
+public class RoleAssignmentService {
 
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
+    private final AuthAuthorityCacheEvictService cacheEvictService;
 
     @Transactional(readOnly = true)
     public List<String> getRoleCodesByUserId(Long userId) {
@@ -57,10 +58,11 @@ public class AuthRoleAssignmentService {
         }
 
         Map<Long, String> roleCodeById = roleMapper.selectList(new LambdaQueryWrapper<Role>()
-                        .in(Role::getId, roleIds)).stream()
+                        .in(Role::getId, roleIds))
+                .stream()
                 .collect(Collectors.toMap(
                         Role::getId,
-                        role -> stripRolePrefix(role.getRoleCode()),
+                        role -> stripRolePrefix(role.getCode()),
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
@@ -84,7 +86,7 @@ public class AuthRoleAssignmentService {
             return List.of();
         }
         Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>()
-                .eq(Role::getRoleCode, normalizedRoleCode)
+                .eq(Role::getCode, normalizedRoleCode)
                 .last("limit 1"));
         if (role == null) {
             return List.of();
@@ -118,7 +120,7 @@ public class AuthRoleAssignmentService {
                 .stream()
                 .collect(Collectors.toMap(
                         Role::getId,
-                        Role::getRoleCode,
+                        Role::getCode,
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
@@ -141,6 +143,7 @@ public class AuthRoleAssignmentService {
         }
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
         addRoles(userId, roles);
+        cacheEvictService.evictUser(userId);
     }
 
     @Transactional
@@ -171,6 +174,7 @@ public class AuthRoleAssignmentService {
             userRole.setRoleId(roleEntity.getId());
             userRoleMapper.insert(userRole);
         }
+        cacheEvictService.evictUser(userId);
     }
 
     private Map<String, Role> loadRolesByCode(Collection<String> roles) {
@@ -179,10 +183,10 @@ public class AuthRoleAssignmentService {
             return Collections.emptyMap();
         }
         return roleMapper.selectList(new LambdaQueryWrapper<Role>()
-                        .in(Role::getRoleCode, normalized))
+                        .in(Role::getCode, normalized))
                 .stream()
                 .collect(Collectors.toMap(
-                        Role::getRoleCode,
+                        Role::getCode,
                         Function.identity(),
                         (left, right) -> left,
                         LinkedHashMap::new

@@ -73,39 +73,52 @@ public class OAuth2ComplianceChecker {
     private void validateRoleSpecificPermissions(OAuth2ComplianceResult result,
                                                  Set<String> authorities,
                                                  List<String> roles) {
-        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> normalizedRoles = roles.stream()
+                .map(String::toUpperCase)
+                .map(role -> role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role)
+                .collect(Collectors.toSet());
         if (normalizedRoles.contains("ADMIN")) {
                 if (!authorities.contains("ROLE_ADMIN")) {
                     result.addWarning("Admin user missing ROLE_ADMIN");
                 }
-                if (!authorities.contains("SCOPE_admin:read") || !authorities.contains("SCOPE_admin:write")) {
-                    result.addWarning("Admin user missing admin scopes");
+                if (!hasPermission(authorities, "admin:all")) {
+                    result.addWarning("Admin user missing admin:all permission");
                 }
         } else if (normalizedRoles.contains("MERCHANT")) {
                 if (!authorities.contains("ROLE_MERCHANT")) {
                     result.addWarning("Merchant user missing ROLE_MERCHANT");
                 }
-                if (!authorities.contains("SCOPE_merchant:read") || !authorities.contains("SCOPE_merchant:write")) {
-                    result.addWarning("Merchant user missing merchant scopes");
+                if (!hasPermission(authorities, "merchant:manage")) {
+                    result.addWarning("Merchant user missing merchant:manage permission");
                 }
-        } else if (!authorities.contains("SCOPE_user:read")) {
-            result.addWarning("User missing SCOPE_user:read");
+        } else if (!hasPermission(authorities, "user:profile") && !hasPermission(authorities, "user:address")) {
+            result.addWarning("User missing user permissions");
         }
     }
 
     private void validatePermissionInheritance(OAuth2ComplianceResult result,
                                                Set<String> authorities,
                                                List<String> roles) {
-        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> normalizedRoles = roles.stream()
+                .map(String::toUpperCase)
+                .map(role -> role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role)
+                .collect(Collectors.toSet());
         if (normalizedRoles.contains("ADMIN")) {
-            if (!authorities.contains("SCOPE_order:read")) {
-                result.addInfo("Admin should include SCOPE_order:read for support operations");
+            if (!hasPermission(authorities, "order:query")) {
+                result.addInfo("Admin should include order:query for support operations");
             }
         } else if (normalizedRoles.contains("MERCHANT")) {
-            if (!authorities.contains("SCOPE_order:read")) {
-                result.addInfo("Merchant should include SCOPE_order:read");
+            if (!hasPermission(authorities, "order:query")) {
+                result.addInfo("Merchant should include order:query");
             }
         }
+    }
+
+    private boolean hasPermission(Set<String> authorities, String permission) {
+        if (permission == null || permission.isBlank()) {
+            return false;
+        }
+        return authorities.contains(permission) || authorities.contains(SCOPE_PREFIX + permission);
     }
 
     public static class OAuth2ComplianceResult {

@@ -15,10 +15,6 @@
     <dependencies>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.cloud</groupId>
             <artifactId>common-domain</artifactId>
         </dependency>
         <dependency>

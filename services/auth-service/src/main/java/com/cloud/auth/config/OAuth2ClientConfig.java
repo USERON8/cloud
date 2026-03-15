@@ -72,7 +72,7 @@ public class OAuth2ClientConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .tokenUri(authTokenUri)
-                .scope("internal_api")
+                .scope("internal")
                 .build();
 
         registrations.add(clientService);

@@ -28,7 +28,7 @@ public class UserQueryController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Find user by username", description = "Get one user by username")
     public Result<UserDTO> findByUsername(
             @RequestParam
@@ -38,7 +38,7 @@ public class UserQueryController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Search users", description = "Search users with paging")
     public Result<PageResult<UserVO>> search(
             @RequestParam(defaultValue = "1") Integer page,

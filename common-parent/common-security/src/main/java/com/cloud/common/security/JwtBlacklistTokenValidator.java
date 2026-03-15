@@ -7,17 +7,10 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-
-
-
 @Slf4j
 public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
 
-    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
+    private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -32,8 +25,7 @@ public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
         }
 
         try {
-            String tokenId = extractTokenId(jwt);
-            String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
+            String blacklistKey = BLACKLIST_KEY_PREFIX + jwt.getTokenValue();
             boolean blacklisted = Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
             if (blacklisted) {
                 log.warn("JWT token blacklisted: sub={}, jti={}", jwt.getSubject(), jwt.getId());
@@ -50,20 +42,5 @@ public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
         }
     }
 
-    private String extractTokenId(Jwt jwt) {
-        String jti = jwt.getClaimAsString("jti");
-        if (jti != null && !jti.isBlank()) {
-            return jti;
-        }
-        return sha256Hex(jwt.getTokenValue());
-    }
-
-    private String sha256Hex(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
-        }
-    }
+    // Token value is used directly as blacklist key suffix to match auth:blacklist:{token} design.
 }

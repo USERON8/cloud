@@ -23,7 +23,7 @@ public class PolicyBasedAccessManager {
             return false;
         }
 
-        Long userId = jwt.getClaim("user_id");
+        Long userId = resolveUserId(jwt);
         if (userId == null) {
             return false;
         }
@@ -77,6 +77,22 @@ public class PolicyBasedAccessManager {
     private boolean checkUserAddressAccess(Long userId, String action, Map<String, Object> context) {
         Long addressId = (Long) context.get("addressId");
         return addressId != null;
+    }
+
+    private Long resolveUserId(Jwt jwt) {
+        Long userId = jwt.getClaim("user_id");
+        if (userId != null) {
+            return userId;
+        }
+        Object claim = jwt.getClaim("userId");
+        if (claim == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(claim.toString());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }
 

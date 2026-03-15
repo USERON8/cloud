@@ -99,6 +99,11 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-async</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-security</artifactId>
         </dependency>
         <dependency>
@@ -112,6 +117,10 @@
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
         </dependency>
 
         <!-- Encoding-safe comment -->

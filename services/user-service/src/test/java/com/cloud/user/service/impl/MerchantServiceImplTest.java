@@ -9,8 +9,7 @@ import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.mapper.MerchantMapper;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Merchant;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
-import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,10 +44,7 @@ class MerchantServiceImplTest {
     private MerchantConverter merchantConverter;
 
     @Mock
-    private AuthPrincipalRemoteService authPrincipalRemoteService;
-
-    @Mock
-    private UserPrincipalSyncService userPrincipalSyncService;
+    private AuthPrincipalService authPrincipalService;
 
     @Mock
     private CacheManager cacheManager;
@@ -61,8 +57,7 @@ class MerchantServiceImplTest {
                 merchantAuthMapper,
                 userMapper,
                 merchantConverter,
-                authPrincipalRemoteService,
-                userPrincipalSyncService,
+                authPrincipalService,
                 cacheManager
         ));
         ReflectionTestUtils.setField(merchantService, "baseMapper", merchantMapper);
@@ -86,7 +81,7 @@ class MerchantServiceImplTest {
             dto.setUsername(merchant.getUsername());
             return dto;
         });
-        when(authPrincipalRemoteService.getRoleCodesByUserId(anyLong())).thenReturn(java.util.List.of("MERCHANT"));
+        when(authPrincipalService.getRoleCodesByUserId(anyLong())).thenReturn(java.util.List.of("ROLE_MERCHANT"));
 
         MerchantUpsertRequestDTO request = new MerchantUpsertRequestDTO();
         request.setUsername("shop1");
@@ -97,9 +92,8 @@ class MerchantServiceImplTest {
         MerchantDTO result = merchantService.createMerchant(request);
 
         assertThat(result.getUsername()).isEqualTo("shop1");
-        verify(authPrincipalRemoteService).assertUsernameAvailable("shop1", null);
-        verify(userPrincipalSyncService).upsertUserPrincipal(anyLong(), any(), any(), any(), any(), any());
-        verify(authPrincipalRemoteService).createPrincipal(any(AuthPrincipalDTO.class));
+        verify(authPrincipalService).assertUsernameAvailable("shop1", null);
+        verify(authPrincipalService).createPrincipal(any(AuthPrincipalDTO.class));
     }
 
     @Test

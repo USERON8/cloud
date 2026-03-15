@@ -40,13 +40,13 @@ function changeQuantity(item: CartEntry, delta: number): void {
     void onRemove(item)
     return
   }
-  setCartItemQuantity(item.productId, next)
+  setCartItemQuantity(item.productId, item.skuId, next)
 }
 
 async function onRemove(item: CartEntry): Promise<void> {
   const ok = await confirm(`确认移除 ${item.productName}？`)
   if (!ok) return
-  removeFromCart(item.productId)
+  removeFromCart(item.productId, item.skuId)
   toast('已移除', 'success')
 }
 
@@ -59,10 +59,10 @@ async function onClearCart(): Promise<void> {
 
 async function onPlaceOrder(): Promise<void> {
   if (shopGroups.value.length === 0) {
-    toast('购物车为空')
+    toast('?????')
     return
   }
-  const ok = await confirm(`确认提交 ${shopGroups.value.length} 个订单？`)
+  const ok = await confirm(`???? ${shopGroups.value.length} ????`)
   if (!ok) return
 
   placing.value = true
@@ -70,20 +70,26 @@ async function onPlaceOrder(): Promise<void> {
   const failedShops: number[] = []
 
   for (const group of shopGroups.value) {
-    try {
-      await createOrder({
-        shopId: group.shopId,
-        items: group.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          price: i.price
-        }))
-      })
-      successShops.push(group.shopId)
-    } catch (error) {
-      failedShops.push(group.shopId)
-      const msg = error instanceof Error ? error.message : '订单创建失败'
-      toast(`店铺 ${group.shopId}：${msg}`)
+    for (const item of group.items) {
+      if (typeof item.skuId !== 'number') {
+        failedShops.push(group.shopId)
+        toast(`?? ${group.shopId}??? SKU ??`)
+        continue
+      }
+      try {
+        await createOrder({
+          shopId: group.shopId,
+          spuId: item.productId,
+          skuId: item.skuId,
+          quantity: item.quantity,
+          price: item.price
+        })
+        successShops.push(group.shopId)
+      } catch (error) {
+        failedShops.push(group.shopId)
+        const msg = error instanceof Error ? error.message : '??????'
+        toast(`?? ${group.shopId}?${msg}`)
+      }
     }
   }
 
@@ -91,7 +97,7 @@ async function onPlaceOrder(): Promise<void> {
 
   if (successShops.length > 0) {
     removeItemsByShops(successShops)
-    toast(`成功下单 ${successShops.length} 个`, 'success')
+    toast(`???? ${successShops.length} ?`, 'success')
     if (failedShops.length === 0) {
       navigateTo(Routes.appOrders, undefined, { requiresAuth: true })
       return
@@ -99,7 +105,7 @@ async function onPlaceOrder(): Promise<void> {
   }
 
   if (failedShops.length > 0) {
-    toast(`失败店铺：${failedShops.join(', ')}`)
+    toast(`?????${failedShops.join(', ')}`)
   }
 }
 </script>

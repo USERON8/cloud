@@ -26,15 +26,20 @@
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
+            <artifactId>common-async</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cloud</groupId>
             <artifactId>common-security</artifactId>
         </dependency>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-db</artifactId>
+            <artifactId>common-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.cloud</groupId>
-            <artifactId>common-api</artifactId>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
         </dependency>
 
         <!-- Encoding-safe comment -->
@@ -59,27 +64,6 @@
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>
-        </dependency>
-
-        <!-- Encoding-safe comment -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>protobuf-java</artifactId>
-                    <groupId>com.google.protobuf</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-3-starter</artifactId>
         </dependency>
 
         <!-- Encoding-safe comment -->
@@ -113,11 +97,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Encoding-safe comment -->
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
     </dependencies>
     <build>
         <plugins>

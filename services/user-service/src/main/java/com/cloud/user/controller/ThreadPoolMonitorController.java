@@ -30,7 +30,7 @@ public class ThreadPoolMonitorController {
     private final ApplicationContext applicationContext;
 
     @GetMapping("/info")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Get all thread pool metrics")
     public Result<List<Map<String, Object>>> getAllThreadPoolInfo() {
         List<Map<String, Object>> threadPoolInfoList = new ArrayList<>();
@@ -50,7 +50,7 @@ public class ThreadPoolMonitorController {
     }
 
     @GetMapping("/info/detail")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Get thread pool metrics by bean name")
     public Result<Map<String, Object>> getThreadPoolInfoByName(
             @Parameter(description = "Thread pool bean name")

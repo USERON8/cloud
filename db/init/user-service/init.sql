@@ -6,11 +6,13 @@ CREATE TABLE IF NOT EXISTS users
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
     username          VARCHAR(50)  NOT NULL,
+    password          VARCHAR(255) NOT NULL,
     phone             VARCHAR(20)  NULL,
     nickname          VARCHAR(50)  NOT NULL,
     avatar_url        VARCHAR(255) NULL,
     email             VARCHAR(100) NULL,
     status            TINYINT      NOT NULL DEFAULT 1,
+    enabled           TINYINT      NOT NULL DEFAULT 1,
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT      NOT NULL DEFAULT 0,
@@ -23,6 +25,135 @@ CREATE TABLE IF NOT EXISTS users
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS roles
+(
+    id          BIGINT UNSIGNED PRIMARY KEY,
+    code        VARCHAR(50)  NOT NULL,
+    name        VARCHAR(100) NOT NULL,
+    description VARCHAR(255) NULL,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted     TINYINT      NOT NULL DEFAULT 0,
+    version     INT          NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_roles_code_deleted (code, deleted),
+    INDEX idx_roles_deleted (deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS permissions
+(
+    id         BIGINT UNSIGNED PRIMARY KEY,
+    code       VARCHAR(100) NOT NULL,
+    name       VARCHAR(100) NOT NULL,
+    module     VARCHAR(50)  NOT NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted    TINYINT      NOT NULL DEFAULT 0,
+    version    INT          NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_permissions_code_deleted (code, deleted),
+    INDEX idx_permissions_module_deleted (module, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_roles
+(
+    id         BIGINT UNSIGNED PRIMARY KEY,
+    user_id    BIGINT UNSIGNED NOT NULL,
+    role_id    BIGINT UNSIGNED NOT NULL,
+    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted    TINYINT         NOT NULL DEFAULT 0,
+    version    INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_user_roles_user_role_deleted (user_id, role_id, deleted),
+    INDEX idx_user_roles_user_deleted (user_id, deleted),
+    INDEX idx_user_roles_role_deleted (role_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS role_permissions
+(
+    id            BIGINT UNSIGNED PRIMARY KEY,
+    role_id       BIGINT UNSIGNED NOT NULL,
+    permission_id BIGINT UNSIGNED NOT NULL,
+    created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted       TINYINT         NOT NULL DEFAULT 0,
+    version       INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_role_permissions_role_permission_deleted (role_id, permission_id, deleted),
+    INDEX idx_role_permissions_role_deleted (role_id, deleted),
+    INDEX idx_role_permissions_permission_deleted (permission_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+INSERT INTO roles (id, code, name, description, deleted, version)
+VALUES (26001, 'ROLE_USER', '普通用户', '基础用户角色', 0, 0),
+       (26002, 'ROLE_MERCHANT', '商家', '商家角色', 0, 0),
+       (26003, 'ROLE_ADMIN', '管理员', '管理员角色', 0, 0)
+ON DUPLICATE KEY UPDATE
+    code = VALUES(code),
+    name = VALUES(name),
+    description = VALUES(description),
+    deleted = VALUES(deleted),
+    version = VALUES(version);
+
+INSERT INTO permissions (id, code, name, module, deleted, version)
+VALUES (27001, 'order:create', '创建订单', 'order', 0, 0),
+       (27002, 'order:cancel', '取消订单', 'order', 0, 0),
+       (27003, 'order:query', '查询订单', 'order', 0, 0),
+       (27004, 'order:refund', '申请退款', 'order', 0, 0),
+       (27011, 'product:view', '查看商品', 'product', 0, 0),
+       (27012, 'product:create', '创建商品', 'product', 0, 0),
+       (27013, 'product:edit', '编辑商品', 'product', 0, 0),
+       (27014, 'product:delete', '删除商品', 'product', 0, 0),
+       (27021, 'user:profile', '编辑资料', 'user', 0, 0),
+       (27022, 'user:address', '管理地址', 'user', 0, 0),
+       (27031, 'merchant:manage', '商家管理', 'merchant', 0, 0),
+       (27032, 'merchant:audit', '商家审核', 'merchant', 0, 0),
+       (27041, 'admin:all', '所有权限', 'admin', 0, 0)
+ON DUPLICATE KEY UPDATE
+    code = VALUES(code),
+    name = VALUES(name),
+    module = VALUES(module),
+    deleted = VALUES(deleted),
+    version = VALUES(version);
+
+INSERT INTO role_permissions (id, role_id, permission_id, deleted, version)
+VALUES (28001, 26001, 27001, 0, 0),
+       (28002, 26001, 27002, 0, 0),
+       (28003, 26001, 27003, 0, 0),
+       (28004, 26001, 27004, 0, 0),
+       (28005, 26001, 27011, 0, 0),
+       (28006, 26001, 27021, 0, 0),
+       (28007, 26001, 27022, 0, 0),
+       (28011, 26002, 27011, 0, 0),
+       (28012, 26002, 27012, 0, 0),
+       (28013, 26002, 27013, 0, 0),
+       (28014, 26002, 27014, 0, 0),
+       (28015, 26002, 27031, 0, 0),
+       (28016, 26002, 27003, 0, 0),
+       (28031, 26003, 27041, 0, 0),
+       (28032, 26003, 27032, 0, 0),
+       (28033, 26003, 27031, 0, 0),
+       (28034, 26003, 27011, 0, 0),
+       (28035, 26003, 27012, 0, 0),
+       (28036, 26003, 27013, 0, 0),
+       (28037, 26003, 27014, 0, 0),
+       (28038, 26003, 27001, 0, 0),
+       (28039, 26003, 27002, 0, 0),
+       (28040, 26003, 27003, 0, 0),
+       (28041, 26003, 27004, 0, 0),
+       (28042, 26003, 27021, 0, 0),
+       (28043, 26003, 27022, 0, 0)
+ON DUPLICATE KEY UPDATE
+    role_id = VALUES(role_id),
+    permission_id = VALUES(permission_id),
+    deleted = VALUES(deleted),
+    version = VALUES(version);
 
 CREATE TABLE IF NOT EXISTS user_profile_ext
 (

@@ -78,6 +78,10 @@
             <artifactId>common-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-async</artifactId>
             <version>${project.version}</version>

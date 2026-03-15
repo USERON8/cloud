@@ -201,9 +201,9 @@ export function updateProductStatus(id: number, status: 0 | 1): Promise<boolean>
 }
 
 export function createProduct(payload: ProductUpsertPayload): Promise<number> {
-  return http.post<number, number>('/api/product', payload)
+  return http.post<number, number>('/api/product/spu', payload)
 }
 
 export function updateProduct(id: number, payload: ProductUpsertPayload): Promise<boolean> {
-  return http.put<boolean, boolean>(`/api/product/${id}`, payload)
+  return http.put<boolean, boolean>(`/api/product/spu/${id}`, payload)
 }

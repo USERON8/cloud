@@ -19,11 +19,21 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
             org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         authz.requestMatchers("/api/product/search", "/api/product/suggestions").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/product/spu")
-                .hasAnyAuthority("SCOPE_admin:write", "SCOPE_merchant:write")
+                .hasAuthority("product:create")
                 .requestMatchers(HttpMethod.PUT, "/api/product/spu/*")
-                .hasAnyAuthority("SCOPE_admin:write", "SCOPE_merchant:write")
+                .hasAuthority("product:edit")
                 .requestMatchers(HttpMethod.PATCH, "/api/product/spu/*/status")
-                .hasAnyAuthority("SCOPE_admin:write", "SCOPE_merchant:write")
+                .hasAuthority("product:edit")
+                .requestMatchers(HttpMethod.GET, "/api/product/**", "/api/category/**")
+                .hasAuthority("product:view")
+                .requestMatchers(HttpMethod.POST, "/api/product/**", "/api/category/**")
+                .hasAuthority("product:create")
+                .requestMatchers(HttpMethod.PUT, "/api/product/**", "/api/category/**")
+                .hasAuthority("product:edit")
+                .requestMatchers(HttpMethod.PATCH, "/api/product/**", "/api/category/**")
+                .hasAuthority("product:edit")
+                .requestMatchers(HttpMethod.DELETE, "/api/product/**", "/api/category/**")
+                .hasAuthority("product:delete")
                 .requestMatchers("/api/product/**", "/api/category/**").authenticated();
     }
 }

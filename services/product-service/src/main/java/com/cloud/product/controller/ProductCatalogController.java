@@ -33,8 +33,7 @@ public class ProductCatalogController {
     private final ProductCatalogService productCatalogService;
 
     @PostMapping("/spu")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @PreAuthorize("hasAuthority('product:create')")
     @Operation(summary = "Create SPU")
     public Result<Long> createSpu(@Valid @RequestBody SpuCreateRequestDTO request, Authentication authentication) {
         if (!canWriteMerchantData(authentication, request.getSpu().getMerchantId())) {
@@ -44,8 +43,7 @@ public class ProductCatalogController {
     }
 
     @PutMapping("/spu/{spuId}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update SPU")
     public Result<Boolean> updateSpu(@PathVariable Long spuId,
                                      @Valid @RequestBody SpuCreateRequestDTO request,
@@ -83,8 +81,7 @@ public class ProductCatalogController {
     }
 
     @PatchMapping("/spu/{spuId}/status")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update SPU status")
     public Result<Boolean> updateSpuStatus(@PathVariable Long spuId,
                                            @RequestParam Integer status,

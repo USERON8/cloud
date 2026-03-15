@@ -15,8 +15,7 @@ import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
-import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -51,8 +50,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
     private final MerchantAuthMapper merchantAuthMapper;
     private final UserMapper userMapper;
     private final MerchantConverter merchantConverter;
-    private final AuthPrincipalRemoteService authPrincipalRemoteService;
-    private final UserPrincipalSyncService userPrincipalSyncService;
+    private final AuthPrincipalService authPrincipalService;
     private final CacheManager cacheManager;
 
     @Override
@@ -141,7 +139,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (lambdaQuery().eq(Merchant::getUsername, requestDTO.getUsername()).count() > 0) {
             throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getUsername());
         }
-        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
+        authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), null);
 
         if (StrUtil.isNotBlank(requestDTO.getMerchantName())) {
             if (lambdaQuery().eq(Merchant::getMerchantName, requestDTO.getMerchantName()).count() > 0) {
@@ -160,15 +158,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (!save(merchant)) {
             throw new MerchantException("failed to create merchant");
         }
-        userPrincipalSyncService.upsertUserPrincipal(
-                merchant.getId(),
-                merchant.getUsername(),
-                merchant.getMerchantName(),
-                requestDTO.getEmail(),
-                merchant.getPhone(),
-                merchant.getStatus()
-        );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
+        authPrincipalService.createPrincipal(toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
         return toEnrichedDTO(merchant);
     }
 
@@ -202,7 +192,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             if (count > 0) {
                 throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getUsername());
             }
-            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
+            authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
         if (StrUtil.isNotBlank(requestDTO.getMerchantName()) && !requestDTO.getMerchantName().equals(existing.getMerchantName())) {
@@ -235,15 +225,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         boolean updated = updateById(merchant);
         if (updated) {
             Merchant current = resolveCurrentMerchant(requestDTO, existing);
-            userPrincipalSyncService.upsertUserPrincipal(
-                    current.getId(),
-                    current.getUsername(),
-                    current.getMerchantName(),
-                    requestDTO.getEmail(),
-                    current.getPhone(),
-                    current.getStatus()
-            );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getEmail(), requestDTO.getPassword()));
+            authPrincipalService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getEmail(), requestDTO.getPassword()));
             evictUsernameCacheIfChanged(existing.getUsername(), requestDTO.getUsername());
         }
         return updated;
@@ -266,8 +248,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         }
         boolean removed = removeById(id);
         if (removed) {
-            userPrincipalSyncService.deleteUserPrincipal(id);
-            authPrincipalRemoteService.deletePrincipal(id);
+            authPrincipalService.deletePrincipal(id);
         }
         return removed;
     }
@@ -282,8 +263,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         boolean removed = removeByIds(ids);
         if (removed) {
             ids.forEach(id -> {
-                userPrincipalSyncService.deleteUserPrincipal(id);
-                authPrincipalRemoteService.deletePrincipal(id);
+                authPrincipalService.deletePrincipal(id);
             });
         }
         return removed;
@@ -306,18 +286,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             Merchant refreshed = getById(id);
             if (refreshed != null) {
                 MerchantDTO merchantDTO = toEnrichedDTO(refreshed);
-                userPrincipalSyncService.upsertUserPrincipal(
-                        refreshed.getId(),
-                        refreshed.getUsername(),
-                        refreshed.getMerchantName(),
-                        merchantDTO.getEmail(),
-                        refreshed.getPhone(),
-                        refreshed.getStatus()
-                );
                 AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
                 authPrincipalDTO.setId(refreshed.getId());
                 authPrincipalDTO.setStatus(refreshed.getStatus());
-                authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                authPrincipalService.updatePrincipal(authPrincipalDTO);
             }
         }
         return updated;
@@ -449,7 +421,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (user != null) {
             merchantDTO.setEmail(user.getEmail());
         }
-        merchantDTO.setRoles(authPrincipalRemoteService.getRoleCodesByUserId(merchant.getId()));
+        merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(merchant.getId()));
 
         return merchantDTO;
     }
@@ -517,7 +489,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         if (merchantIds == null || merchantIds.isEmpty()) {
             return Map.of();
         }
-        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(merchantIds);
+        Map<Long, List<String>> roleMap = authPrincipalService.getRoleCodesByUserIds(merchantIds);
         return roleMap == null ? Map.of() : roleMap;
     }
 
@@ -563,7 +535,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         authPrincipalDTO.setEmail(email);
         authPrincipalDTO.setPhone(merchant.getPhone());
         authPrincipalDTO.setStatus(merchant.getStatus());
-        authPrincipalDTO.setRoles(List.of("USER", "MERCHANT"));
+        authPrincipalDTO.setRoles(List.of("ROLE_USER", "ROLE_MERCHANT"));
         return authPrincipalDTO;
     }
 

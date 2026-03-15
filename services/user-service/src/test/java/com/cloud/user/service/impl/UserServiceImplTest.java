@@ -5,7 +5,7 @@ import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.User;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import com.cloud.user.service.support.UserInfoHashCacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,6 @@ import org.springframework.cache.CacheManager;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -30,7 +29,7 @@ class UserServiceImplTest {
     private UserConverter userConverter;
 
     @Mock
-    private AuthPrincipalRemoteService authPrincipalRemoteService;
+    private AuthPrincipalService authPrincipalService;
 
     @Mock
     private CacheManager cacheManager;
@@ -44,7 +43,7 @@ class UserServiceImplTest {
     void setUp() {
         service = spy(new UserServiceImpl(
                 userConverter,
-                authPrincipalRemoteService,
+                authPrincipalService,
                 cacheManager,
                 userInfoHashCacheService
         ));
@@ -56,21 +55,20 @@ class UserServiceImplTest {
         request.setUsername("alice");
         request.setPassword("pwd-1");
 
-        doAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            user.setId(101L);
-            return true;
-        }).when(service).save(any(User.class));
+        doReturn(101L).when(authPrincipalService).createPrincipal(any(AuthPrincipalDTO.class));
+        User created = new User();
+        created.setId(101L);
+        doReturn(created).when(service).getById(101L);
 
         Long userId = service.createUser(request);
 
         assertThat(userId).isEqualTo(101L);
         ArgumentCaptor<AuthPrincipalDTO> captor = ArgumentCaptor.forClass(AuthPrincipalDTO.class);
-        verify(authPrincipalRemoteService).createPrincipal(captor.capture());
+        verify(authPrincipalService).createPrincipal(captor.capture());
         AuthPrincipalDTO dto = captor.getValue();
-        assertThat(dto.getId()).isEqualTo(101L);
+        assertThat(dto.getId()).isNull();
         assertThat(dto.getUsername()).isEqualTo("alice");
-        assertThat(dto.getRoles()).contains("USER");
+        assertThat(dto.getRoles()).contains("ROLE_USER");
     }
 
     @Test
@@ -91,6 +89,6 @@ class UserServiceImplTest {
         boolean result = service.deleteUserById(11L);
 
         assertThat(result).isTrue();
-        verify(authPrincipalRemoteService).deletePrincipal(11L);
+        verify(authPrincipalService).deletePrincipal(11L);
     }
 }

@@ -19,20 +19,20 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Slf4j
 @Configuration
@@ -40,7 +40,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ResourceServerConfig {
 
-    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
+    private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
 
     private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
     private final Environment environment;
@@ -89,15 +89,14 @@ public class ResourceServerConfig {
                 .authorizeExchange(exchanges -> {
                     var authExchanges = exchanges
                             .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .pathMatchers("/auth/**").permitAll()
                             .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo").permitAll()
                             .pathMatchers("/connect/**").permitAll()
                             .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**").permitAll()
                             .pathMatchers("/ws/**").permitAll()
                             .pathMatchers(HttpMethod.POST,
-                                    "/auth/users/register",
                                     "/api/v1/payment/alipay/notify"
                             ).permitAll()
-                            .pathMatchers(HttpMethod.DELETE, "/auth/sessions").permitAll()
                             .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return").permitAll()
                             .pathMatchers("/auth/oauth2/github/**").permitAll()
                             .pathMatchers("/login/**").permitAll()
@@ -145,13 +144,30 @@ public class ResourceServerConfig {
                     }
 
                     authExchanges
-                            .pathMatchers("/api/product/**", "/api/category/**").permitAll()
+                            .pathMatchers("/api/product/*/view").permitAll()
                             .pathMatchers("/api/search/**").permitAll()
-                            .pathMatchers("/api/**").authenticated()
+                            .pathMatchers("/api/user/**").hasRole("USER")
+                            .pathMatchers(HttpMethod.POST, "/api/orders").hasAuthority("order:create")
+                            .pathMatchers("/api/orders/**").hasAuthority("order:query")
+                            .pathMatchers(HttpMethod.GET, "/api/product/**").hasAuthority("product:view")
+                            .pathMatchers(HttpMethod.POST, "/api/product/**").hasAuthority("product:create")
+                            .pathMatchers(HttpMethod.PUT, "/api/product/**").hasAuthority("product:edit")
+                            .pathMatchers(HttpMethod.DELETE, "/api/product/**").hasAuthority("product:delete")
+                            .pathMatchers(HttpMethod.GET, "/api/category/**").hasAuthority("product:view")
+                            .pathMatchers(HttpMethod.POST, "/api/category/**").hasAuthority("product:create")
+                            .pathMatchers(HttpMethod.PUT, "/api/category/**").hasAuthority("product:edit")
+                            .pathMatchers(HttpMethod.PATCH, "/api/category/**").hasAuthority("product:edit")
+                            .pathMatchers(HttpMethod.DELETE, "/api/category/**").hasAuthority("product:delete")
+                            .pathMatchers("/api/merchant/manage/**").hasRole("MERCHANT")
+                            .pathMatchers("/api/admin/**").hasRole("ADMIN")
+                            .pathMatchers("/api/merchant/auth/review/**").hasAuthority("merchant:audit")
+                            .pathMatchers("/api/stocks/**", "/api/payments/**").hasAnyRole("USER", "ADMIN")
                             .anyExchange().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtDecoder(jwtDecoder()))
+                        .jwt(jwt -> jwt
+                                .jwtDecoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                         .authenticationEntryPoint((exchange, ex) -> {
                             log.warn("OAuth2 authentication failed: {}", ex.getMessage());
                             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -204,7 +220,7 @@ public class ResourceServerConfig {
         ));
 
         return token -> decoder.decode(token)
-                .flatMap(jwt -> reactiveStringRedisTemplate.hasKey(BLACKLIST_KEY_PREFIX + extractTokenId(jwt, token))
+                .flatMap(jwt -> reactiveStringRedisTemplate.hasKey(BLACKLIST_KEY_PREFIX + token)
                         .flatMap(blacklisted -> {
                             if (Boolean.TRUE.equals(blacklisted)) {
                                 return Mono.error(new BadJwtException("Token is blacklisted"));
@@ -217,22 +233,37 @@ public class ResourceServerConfig {
                         }));
     }
 
-    private String extractTokenId(Jwt jwt, String tokenValue) {
-        String jti = jwt.getClaimAsString("jti");
-        if (jti != null && !jti.isBlank()) {
-            return jti;
-        }
-        return sha256Hex(tokenValue);
+    @Bean
+    public ReactiveJwtAuthenticationConverter jwtAuthenticationConverter() {
+        ReactiveJwtAuthenticationConverter converter = new ReactiveJwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null) {
+                roles.stream()
+                        .filter(role -> role != null && !role.isBlank())
+                        .map(String::trim)
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase())
+                        .map(SimpleGrantedAuthority::new)
+                        .forEach(authorities::add);
+            }
+
+            List<String> permissions = jwt.getClaimAsStringList("permissions");
+            if (permissions != null) {
+                permissions.stream()
+                        .filter(permission -> permission != null && !permission.isBlank())
+                        .map(String::trim)
+                        .map(SimpleGrantedAuthority::new)
+                        .forEach(authorities::add);
+            }
+
+            return Flux.fromIterable(authorities);
+        });
+        return converter;
     }
 
-    private String sha256Hex(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
-        }
-    }
+    // Token value is used directly as blacklist key suffix to match auth:blacklist:{token} design.
 
     private boolean isProtectedProfile() {
         for (String profile : environment.getActiveProfiles()) {

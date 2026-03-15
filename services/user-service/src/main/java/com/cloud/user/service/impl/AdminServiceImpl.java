@@ -11,8 +11,7 @@ import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
-import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -40,8 +39,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     private final AdminMapper adminMapper;
     private final AdminConverter adminConverter;
-    private final AuthPrincipalRemoteService authPrincipalRemoteService;
-    private final UserPrincipalSyncService userPrincipalSyncService;
+    private final AuthPrincipalService authPrincipalService;
     private final CacheManager cacheManager;
 
     @Override
@@ -134,7 +132,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             log.warn("Admin already exists, username={}", requestDTO.getUsername());
             throw new AdminException.AdminAlreadyExistsException(requestDTO.getUsername());
         }
-        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
+        authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), null);
 
         Admin admin = toAdminEntity(requestDTO);
         if (admin.getStatus() == null) {
@@ -144,15 +142,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (!save(admin)) {
             throw new AdminException("failed to create admin");
         }
-        userPrincipalSyncService.upsertUserPrincipal(
-                admin.getId(),
-                admin.getUsername(),
-                admin.getRealName(),
-                null,
-                admin.getPhone(),
-                admin.getStatus()
-        );
-        authPrincipalRemoteService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
+        authPrincipalService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
         return adminConverter.toDTO(admin);
     }
 
@@ -188,7 +178,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             if (count > 0) {
                 throw new AdminException.AdminAlreadyExistsException(requestDTO.getUsername());
             }
-            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
+            authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
         Admin admin = toAdminEntity(requestDTO);
@@ -212,15 +202,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         boolean updated = updateById(admin);
         if (updated) {
             Admin current = resolveCurrentAdmin(requestDTO, existingAdmin);
-            userPrincipalSyncService.upsertUserPrincipal(
-                    current.getId(),
-                    current.getUsername(),
-                    current.getRealName(),
-                    null,
-                    current.getPhone(),
-                    current.getStatus()
-            );
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getPassword()));
+            authPrincipalService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getPassword()));
             evictUsernameCacheIfChanged(existingAdmin.getUsername(), requestDTO.getUsername());
         }
         return updated;
@@ -244,8 +226,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
         boolean removed = removeById(id);
         if (removed) {
-            userPrincipalSyncService.deleteUserPrincipal(id);
-            authPrincipalRemoteService.deletePrincipal(id);
+            authPrincipalService.deletePrincipal(id);
         }
         return removed;
     }
@@ -260,8 +241,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         boolean removed = removeByIds(ids);
         if (removed) {
             ids.forEach(id -> {
-                userPrincipalSyncService.deleteUserPrincipal(id);
-                authPrincipalRemoteService.deletePrincipal(id);
+                authPrincipalService.deletePrincipal(id);
             });
         }
         return removed;
@@ -279,18 +259,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         admin.setStatus(status);
         boolean updated = updateById(admin);
         if (updated) {
-            userPrincipalSyncService.upsertUserPrincipal(
-                    admin.getId(),
-                    admin.getUsername(),
-                    admin.getRealName(),
-                    null,
-                    admin.getPhone(),
-                    admin.getStatus()
-            );
             AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
             authPrincipalDTO.setId(admin.getId());
             authPrincipalDTO.setStatus(admin.getStatus());
-            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+            authPrincipalService.updatePrincipal(authPrincipalDTO);
         }
         return updated;
     }
@@ -326,7 +298,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(admin.getId());
         authPrincipalDTO.setPassword(newPassword);
-        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+        authPrincipalService.updatePrincipal(authPrincipalDTO);
         return true;
     }
 
@@ -345,7 +317,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new AdminException.AdminNotFoundException(id);
         }
 
-        if (!authPrincipalRemoteService.changePassword(id, oldPassword, newPassword)) {
+        if (!authPrincipalService.changePassword(id, oldPassword, newPassword)) {
             log.warn("Old password mismatch, adminId={}", id);
             throw new AdminException.AdminPasswordException("old password mismatch");
         }
@@ -409,12 +381,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     private List<String> resolveAdminRoles(String role) {
-        String normalized = StrUtil.blankToDefault(role, "ADMIN").trim().toUpperCase();
-        return switch (normalized) {
-            case "SUPER_ADMIN", "ROLE_SUPER_ADMIN" -> List.of("ADMIN", "SUPER_ADMIN");
-            case "OPS_ADMIN", "ROLE_OPS_ADMIN" -> List.of("ADMIN", "OPS_ADMIN");
-            default -> List.of("ADMIN");
-        };
+        return List.of("ROLE_ADMIN");
     }
 }
 

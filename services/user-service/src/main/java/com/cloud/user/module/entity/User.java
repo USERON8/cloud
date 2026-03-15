@@ -23,6 +23,9 @@ public class User extends BaseEntity<User> {
     @TableField(value = "username", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
     private String username;
 
+    @TableField(value = "password", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
+    private String password;
+
     
 
 
@@ -52,6 +55,9 @@ public class User extends BaseEntity<User> {
 
     @TableField(value = "status", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
     private Integer status;
+
+    @TableField(value = "enabled", insertStrategy = FieldStrategy.NOT_NULL, updateStrategy = FieldStrategy.NOT_NULL)
+    private Integer enabled;
 
     
 

@@ -15,11 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>com.cloud</groupId>
-            <artifactId>common-core</artifactId>
+            <artifactId>common-domain</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.cloud</groupId>
-            <artifactId>common-domain</artifactId>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

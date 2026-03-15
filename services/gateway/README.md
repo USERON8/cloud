@@ -12,7 +12,7 @@ Version: 1.1.0
 - `/auth/**`、`/oauth2/**`、`/.well-known/**` -> `auth-service`
 - `/api/manage/users/**`、`/api/query/users/**`、`/api/user/**`、`/api/merchant/**`、`/api/admin/**`、`/api/statistics/**` -> `user-service`
 - `/api/product/**`、`/api/category/**` -> `product-service`
-- `/api/v2/**` -> `order-service`
+- `/api/orders/**` -> `order-service`
 - `/api/payments/**`、`/api/v1/payment/alipay/**` -> `payment-service`
 - `/api/stocks/**` -> `stock-service`
 - `/api/search/**` -> `search-service`
@@ -23,7 +23,7 @@ Version: 1.1.0
 
 ## 限流与缓存
 
-- Sentinel 已启用，默认保护 v2 路由（默认阈值 `80 QPS / 1s`，可通过环境变量覆盖）
+- Sentinel 已启用，默认保护订单路由（默认阈值 `80 QPS / 1s`，可通过环境变量覆盖）
 - 搜索回退缓存：`SearchFallbackCache` 按路由/参数分级 TTL 缓存搜索回退响应
   - 配置前缀：`app.search.fallback.cache`
 

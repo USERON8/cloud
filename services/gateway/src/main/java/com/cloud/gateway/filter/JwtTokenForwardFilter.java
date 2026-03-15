@@ -29,9 +29,9 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
             "X-User-Nickname",
             "X-User-Status",
             "X-Client-Id",
-            "X-Token-Version",
             "X-User-Scopes",
-            "X-User-Roles"
+            "X-User-Roles",
+            "X-Auth-Token"
     };
 
     @Override
@@ -53,6 +53,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                                     headers.remove(header);
                                 }
                                 headers.set("Authorization", "Bearer " + token);
+                                headers.set("X-Auth-Token", token);
                             });
 
 
@@ -75,15 +76,12 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         try {
             
             addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
-            addHeaderIfPresent(requestBuilder, "X-User-Id", getClaimAsString(jwt, "user_id"));
+            addHeaderIfPresent(requestBuilder, "X-User-Id", getUserIdClaim(jwt));
             addHeaderIfPresent(requestBuilder, "X-User-Nickname", jwt.getClaimAsString("nickname"));
             addHeaderIfPresent(requestBuilder, "X-User-Status", getClaimAsString(jwt, "status"));
 
             
             addHeaderIfPresent(requestBuilder, "X-Client-Id", jwt.getClaimAsString("client_id"));
-
-            
-            addHeaderIfPresent(requestBuilder, "X-Token-Version", jwt.getClaimAsString("token_version"));
 
             
             if (jwt.getClaimAsString("scope") != null) {
@@ -118,6 +116,14 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
     private String getClaimAsString(Jwt jwt, String claimName) {
         Object claim = jwt.getClaim(claimName);
         return claim != null ? claim.toString() : null;
+    }
+
+    private String getUserIdClaim(Jwt jwt) {
+        String userId = getClaimAsString(jwt, "user_id");
+        if (StrUtil.isBlank(userId)) {
+            userId = getClaimAsString(jwt, "userId");
+        }
+        return userId;
     }
 
     @Override

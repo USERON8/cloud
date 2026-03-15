@@ -7,8 +7,7 @@ import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
-import com.cloud.user.service.support.UserPrincipalSyncService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,10 +36,7 @@ class AdminServiceImplTest {
     private AdminConverter adminConverter;
 
     @Mock
-    private AuthPrincipalRemoteService authPrincipalRemoteService;
-
-    @Mock
-    private UserPrincipalSyncService userPrincipalSyncService;
+    private AuthPrincipalService authPrincipalService;
 
     @Mock
     private CacheManager cacheManager;
@@ -52,8 +48,7 @@ class AdminServiceImplTest {
         adminService = Mockito.spy(new AdminServiceImpl(
                 adminMapper,
                 adminConverter,
-                authPrincipalRemoteService,
-                userPrincipalSyncService,
+                authPrincipalService,
                 cacheManager
         ));
         ReflectionTestUtils.setField(adminService, "baseMapper", adminMapper);
@@ -86,9 +81,8 @@ class AdminServiceImplTest {
         AdminDTO result = adminService.createAdmin(request);
 
         assertThat(result.getUsername()).isEqualTo("admin");
-        verify(authPrincipalRemoteService).assertUsernameAvailable("admin", null);
-        verify(userPrincipalSyncService).upsertUserPrincipal(anyLong(), any(), any(), any(), any(), any());
-        verify(authPrincipalRemoteService).createPrincipal(any(AuthPrincipalDTO.class));
+        verify(authPrincipalService).assertUsernameAvailable("admin", null);
+        verify(authPrincipalService).createPrincipal(any(AuthPrincipalDTO.class));
     }
 
     @Test
@@ -97,7 +91,7 @@ class AdminServiceImplTest {
         admin.setId(9L);
         admin.setUsername("admin");
         when(adminMapper.selectById(9L)).thenReturn(admin);
-        when(authPrincipalRemoteService.changePassword(9L, "old", "new")).thenReturn(false);
+        when(authPrincipalService.changePassword(9L, "old", "new")).thenReturn(false);
 
         assertThatThrownBy(() -> adminService.changePassword(9L, "old", "new"))
                 .isInstanceOf(AdminException.AdminPasswordException.class);

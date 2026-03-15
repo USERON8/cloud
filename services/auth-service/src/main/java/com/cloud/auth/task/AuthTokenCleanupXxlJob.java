@@ -1,6 +1,5 @@
 package com.cloud.auth.task;
 
-import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
 import com.cloud.auth.service.TokenBlacklistService;
 import com.cloud.common.annotation.DistributedLock;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AuthTokenCleanupXxlJob {
 
-    private final SimpleRedisHashOAuth2AuthorizationService authorizationService;
     private final TokenBlacklistService tokenBlacklistService;
 
     @XxlJob("authTokenCleanupJob")
@@ -26,7 +24,6 @@ public class AuthTokenCleanupXxlJob {
     )
     public void cleanup() {
         try {
-            authorizationService.cleanupExpiredTokens();
             int cleaned = tokenBlacklistService.cleanupExpiredEntries();
             String message = "authTokenCleanupJob finished, cleaned blacklist=" + cleaned;
             XxlJobHelper.log(message);

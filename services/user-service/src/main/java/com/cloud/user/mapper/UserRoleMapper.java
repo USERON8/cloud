@@ -1,7 +1,7 @@
-package com.cloud.auth.mapper;
+package com.cloud.user.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cloud.auth.module.entity.UserRole;
+import com.cloud.user.module.entity.UserRole;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

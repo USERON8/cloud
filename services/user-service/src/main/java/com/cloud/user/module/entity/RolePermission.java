@@ -1,4 +1,4 @@
-package com.cloud.auth.module.entity;
+package com.cloud.user.module.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_role_permission")
+@TableName(value = "role_permissions")
 @Data
 public class RolePermission extends BaseEntity<RolePermission> {
 

@@ -46,6 +46,9 @@ public class RateLimitConfig {
 
     private String resolvePrincipal(Jwt jwt) {
         String userId = jwt.getClaimAsString("user_id");
+        if (StrUtil.isBlank(userId)) {
+            userId = jwt.getClaimAsString("userId");
+        }
         if (StrUtil.isNotBlank(userId)) {
             return userId;
         }

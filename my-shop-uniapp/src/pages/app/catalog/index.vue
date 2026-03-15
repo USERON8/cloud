@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { listSearchHotKeywordsWithFallback, listSearchKeywordRecommendationsWithFallback, smartSearchProductsWithFallback } from '../../../api/product'
+import { getSpu } from '../../../api/product-catalog'
 import type { ProductItem, SearchProductDocument } from '../../../types/domain'
 import { addToCart } from '../../../store/cart'
 import { formatPrice } from '../../../utils/format'
@@ -91,26 +92,37 @@ function onLoadMore(): void {
   void loadProducts()
 }
 
-function onAddToCart(item: ProductItem): void {
+async function onAddToCart(item: ProductItem): Promise<void> {
   if (typeof item.price !== 'number' || item.price <= 0) {
-    toast('商品价格异常')
+    toast('??????')
     return
   }
   if (typeof item.shopId !== 'number' || item.shopId <= 0) {
-    toast('商品店铺信息缺失')
+    toast('????????')
     return
   }
   if (typeof item.stockQuantity === 'number' && item.stockQuantity <= 0) {
-    toast('商品库存不足')
+    toast('??????')
     return
   }
-  addToCart({
-    productId: item.id,
-    productName: item.name,
-    price: item.price,
-    shopId: item.shopId
-  })
-  toast('已加入购物车', 'success')
+  try {
+    const spu = await getSpu(item.id)
+    const skuId = spu?.skus?.[0]?.skuId
+    if (typeof skuId !== 'number') {
+      toast('???????')
+      return
+    }
+    addToCart({
+      productId: item.id,
+      skuId,
+      productName: item.name,
+      price: item.price,
+      shopId: item.shopId
+    })
+    toast('??????', 'success')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : '??????')
+  }
 }
 
 onMounted(() => {

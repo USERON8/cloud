@@ -28,6 +28,7 @@ export interface RegisterRequest {
 
 export interface ProductItem {
   id: number
+  skuId?: number
   shopId?: number
   name: string
   price?: number
@@ -104,11 +105,10 @@ export interface OrderQuery {
 
 export interface CreateOrderPayload {
   shopId: number
-  items: Array<{
-    productId: number
-    quantity: number
-    price: number
-  }>
+  spuId: number
+  skuId: number
+  quantity: number
+  price: number
 }
 
 export interface UserAddress {
@@ -524,132 +524,4 @@ export interface SpuDetail {
   createdAt?: string
   updatedAt?: string
   skus?: SkuDetail[]
-}
-
-export interface LegacyCreateOrderItemRequest {
-  spuId: number
-  skuId: number
-  skuCode?: string
-  skuName?: string
-  skuSnapshot?: string
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-}
-
-export interface LegacyCreateSubOrderRequest {
-  merchantId: number
-  itemAmount?: number
-  shippingFee?: number
-  discountAmount?: number
-  payableAmount?: number
-  receiverName?: string
-  receiverPhone?: string
-  receiverAddress?: string
-  items: LegacyCreateOrderItemRequest[]
-}
-
-export interface LegacyCreateMainOrderRequest {
-  userId: number
-  totalAmount?: number
-  payableAmount?: number
-  remark?: string
-  idempotencyKey?: string
-  subOrders: LegacyCreateSubOrderRequest[]
-}
-
-export interface LegacyOrderMain {
-  id?: number
-  mainOrderNo?: string
-  userId?: number
-  orderStatus?: string
-  totalAmount?: number
-  payableAmount?: number
-  payChannel?: string
-  paidAt?: string
-  cancelledAt?: string
-  cancelReason?: string
-  remark?: string
-  idempotencyKey?: string
-  createdAt?: string
-  updatedAt?: string
-  deleted?: number
-  version?: number
-}
-
-export interface LegacyOrderSub {
-  id?: number
-  subOrderNo?: string
-  mainOrderId?: number
-  merchantId?: number
-  orderStatus?: string
-  shippingStatus?: string
-  afterSaleStatus?: string
-  itemAmount?: number
-  shippingFee?: number
-  discountAmount?: number
-  payableAmount?: number
-  receiverName?: string
-  receiverPhone?: string
-  receiverAddress?: string
-  shippedAt?: string
-  receivedAt?: string
-  doneAt?: string
-  closedAt?: string
-  closeReason?: string
-  createdAt?: string
-  updatedAt?: string
-  deleted?: number
-  version?: number
-}
-
-export interface LegacyOrderItem {
-  id?: number
-  mainOrderId?: number
-  subOrderId?: number
-  spuId?: number
-  skuId?: number
-  skuCode?: string
-  skuName?: string
-  skuSnapshot?: string
-  quantity?: number
-  unitPrice?: number
-  totalPrice?: number
-  createdAt?: string
-  updatedAt?: string
-  deleted?: number
-  version?: number
-}
-
-export interface LegacyAfterSale {
-  id?: number
-  afterSaleNo?: string
-  mainOrderId?: number
-  subOrderId?: number
-  userId?: number
-  merchantId?: number
-  afterSaleType?: string
-  status?: string
-  reason?: string
-  description?: string
-  applyAmount?: number
-  approvedAmount?: number
-  returnLogisticsCompany?: string
-  returnLogisticsNo?: string
-  refundChannel?: string
-  refundedAt?: string
-  closedAt?: string
-  closeReason?: string
-  createdAt?: string
-  updatedAt?: string
-  deleted?: number
-  version?: number
-}
-
-export interface LegacyOrderAggregate {
-  mainOrder?: LegacyOrderMain
-  subOrders?: Array<{
-    subOrder: LegacyOrderSub
-    items: LegacyOrderItem[]
-  }>
 }

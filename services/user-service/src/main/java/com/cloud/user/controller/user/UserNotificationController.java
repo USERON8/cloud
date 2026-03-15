@@ -31,7 +31,7 @@ public class UserNotificationController {
     private final UserNotificationProducer userNotificationProducer;
 
     @PostMapping("/welcome/{userId}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Send welcome notification", description = "Send welcome notification to one user")
     public Result<Boolean> sendWelcomeNotification(
             @PathVariable
@@ -56,7 +56,7 @@ public class UserNotificationController {
     }
 
     @PostMapping("/status-change/{userId}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Send status change notification", description = "Send user status change notification")
     public Result<Boolean> sendStatusChangeNotification(
             @PathVariable
@@ -84,7 +84,7 @@ public class UserNotificationController {
     }
 
     @PostMapping("/batch")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Send batch notification", description = "Send one notification to multiple users")
     public Result<Boolean> sendBatchNotification(
             @RequestBody @Valid UserNotificationBatchRequestDTO requestDTO) {
@@ -106,7 +106,7 @@ public class UserNotificationController {
     }
 
     @PostMapping("/system")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Send system announcement", description = "Send one system announcement")
     public Result<Boolean> sendSystemAnnouncement(
             @RequestBody @Valid UserSystemAnnouncementRequestDTO requestDTO) {

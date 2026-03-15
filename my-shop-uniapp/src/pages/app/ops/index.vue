@@ -3,37 +3,6 @@ import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
 import {
-  addTokenToBlacklist,
-  checkBlacklist,
-  cleanupBlacklist,
-  cleanupExpiredTokens,
-  getAuthorizationDetails,
-  getBlacklistStats,
-  getStorageStructure,
-  getTokenStats,
-  revokeAuthorization
-} from '../../../api/auth-tokens'
-import { getThreadPoolDetail, getThreadPools } from '../../../api/thread-pool'
-import {
-  createCategoriesBatch,
-  deleteCategoriesBatch,
-  getCategoryById,
-  getCategoryChildren,
-  getCategoryTree,
-  moveCategory,
-  updateCategorySort,
-  updateCategoryStatusBatch
-} from '../../../api/category'
-import { createSpu, getSpu, listSkuByIds, listSpuByCategory, updateSpu, updateSpuStatus } from '../../../api/product-catalog'
-import {
-  applyAfterSale,
-  advanceAfterSaleStatus,
-  advanceSubOrderStatus,
-  createMainOrder,
-  getMainOrder,
-  listSubOrders
-} from '../../../api/order-legacy'
-import {
   advancedSearch,
   basicSearch,
   complexSearch,
@@ -67,8 +36,6 @@ import { reviewMerchantAuthBatch } from '../../../api/merchant-auth'
 import { createPaymentOrder, createPaymentRefund, handlePaymentCallback } from '../../../api/payment'
 import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../../../api/statistics'
 import type {
-  LegacyAfterSale,
-  LegacyCreateMainOrderRequest,
   PaymentCallbackCommand,
   PaymentOrderCommand,
   PaymentRefundCommand,
@@ -83,7 +50,6 @@ const tabs = [
   { key: 'system', label: '线程池' },
   { key: 'category', label: '分类运维' },
   { key: 'catalog', label: '商品目录' },
-  { key: 'legacy', label: '旧订单' },
   { key: 'search', label: '搜索运维' },
   { key: 'shops', label: '店铺搜索' },
   { key: 'batch', label: '批量运维' },
@@ -580,101 +546,7 @@ async function updateSpuStatusAction(): Promise<void> {
   }
 }
 
-// 旧订单
-const legacyMainOrderId = ref('')
-const legacySubOrderId = ref('')
-const legacyAfterSaleId = ref('')
-const legacyAction = ref('')
-const legacyAfterSaleAction = ref('')
-const legacyRemark = ref('')
-const legacyIdempotencyKey = ref('')
-const legacyCreatePayloadJson = ref('')
-const legacyAfterSalePayloadJson = ref('')
-const legacyMainOrder = ref<unknown>(null)
-const legacySubOrders = ref<unknown>(null)
-const legacyAfterSaleResult = ref<unknown>(null)
 
-async function createLegacyMainOrder(): Promise<void> {
-  const payload = parseJson<LegacyCreateMainOrderRequest>(legacyCreatePayloadJson.value, '主订单')
-  if (!payload || !legacyIdempotencyKey.value.trim()) {
-    toast('请输入幂等键并提供 JSON')
-    return
-  }
-  try {
-    legacyMainOrder.value = await createMainOrder(payload, legacyIdempotencyKey.value.trim())
-    toast('主订单已创建', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '创建失败')
-  }
-}
-
-async function loadLegacyMainOrder(): Promise<void> {
-  const id = Number(legacyMainOrderId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入主订单 ID')
-    return
-  }
-  try {
-    legacyMainOrder.value = await getMainOrder(id)
-    toast('已获取主订单', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
-  }
-}
-
-async function loadLegacySubOrders(): Promise<void> {
-  const id = Number(legacyMainOrderId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入主订单 ID')
-    return
-  }
-  try {
-    legacySubOrders.value = await listSubOrders(id)
-    toast('已获取子订单', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
-  }
-}
-
-async function advanceLegacySubOrder(): Promise<void> {
-  const id = Number(legacySubOrderId.value)
-  if (!Number.isFinite(id) || !legacyAction.value.trim()) {
-    toast('请输入子订单 ID 和动作')
-    return
-  }
-  try {
-    legacySubOrders.value = await advanceSubOrderStatus(id, legacyAction.value.trim())
-    toast('子订单已推进', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '操作失败')
-  }
-}
-
-async function applyLegacyAfterSale(): Promise<void> {
-  const payload = parseJson<LegacyAfterSale>(legacyAfterSalePayloadJson.value, '售后')
-  if (!payload) return
-  try {
-    legacyAfterSaleResult.value = await applyAfterSale(payload)
-    toast('售后已提交', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '提交失败')
-  }
-}
-
-async function advanceLegacyAfterSale(): Promise<void> {
-  const id = Number(legacyAfterSaleId.value)
-  if (!Number.isFinite(id) || !legacyAfterSaleAction.value.trim()) {
-    toast('请输入售后 ID 和动作')
-    return
-  }
-  try {
-    legacyAfterSaleResult.value = await advanceAfterSaleStatus(id, legacyAfterSaleAction.value.trim(), legacyRemark.value || undefined)
-    toast('售后状态已推进', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : '操作失败')
-  }
-}
-// 搜索运维
 const searchKeyword = ref('')
 const searchPage = ref('0')
 const searchSize = ref('20')
@@ -1350,29 +1222,6 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(skuList) }}</text>
     </view>
 
-    <view v-if="activeTab === 'legacy'" class="panel glass-card">
-      <text class="section-title">旧订单</text>
-      <input v-model="legacyMainOrderId" class="input" placeholder="主订单 ID" />
-      <input v-model="legacySubOrderId" class="input" placeholder="子订单 ID" />
-      <input v-model="legacyAfterSaleId" class="input" placeholder="售后 ID" />
-      <input v-model="legacyAction" class="input" placeholder="子订单动作" />
-      <input v-model="legacyAfterSaleAction" class="input" placeholder="售后动作" />
-      <input v-model="legacyRemark" class="input" placeholder="备注" />
-      <input v-model="legacyIdempotencyKey" class="input" placeholder="幂等键" />
-      <textarea v-model="legacyCreatePayloadJson" class="textarea" placeholder="主订单创建 JSON" />
-      <textarea v-model="legacyAfterSalePayloadJson" class="textarea" placeholder="售后申请 JSON" />
-      <view class="row-inline">
-        <button class="btn-outline" @click="createLegacyMainOrder">创建主订单</button>
-        <button class="btn-outline" @click="loadLegacyMainOrder">查询主订单</button>
-        <button class="btn-outline" @click="loadLegacySubOrders">查询子订单</button>
-        <button class="btn-outline" @click="advanceLegacySubOrder">推进子订单</button>
-        <button class="btn-outline" @click="applyLegacyAfterSale">申请售后</button>
-        <button class="btn-outline" @click="advanceLegacyAfterSale">推进售后</button>
-      </view>
-      <text class="code-block">{{ formatJson(legacyMainOrder) }}</text>
-      <text class="code-block">{{ formatJson(legacySubOrders) }}</text>
-      <text class="code-block">{{ formatJson(legacyAfterSaleResult) }}</text>
-    </view>
     <view v-if="activeTab === 'search'" class="panel glass-card">
       <text class="section-title">搜索运维</text>
       <input v-model="searchKeyword" class="input" placeholder="关键词" />

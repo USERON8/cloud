@@ -1,12 +1,12 @@
-package com.cloud.auth.service.support;
+package com.cloud.user.service.support;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.auth.mapper.PermissionMapper;
-import com.cloud.auth.mapper.RoleMapper;
-import com.cloud.auth.mapper.RolePermissionMapper;
-import com.cloud.auth.module.entity.Permission;
-import com.cloud.auth.module.entity.Role;
-import com.cloud.auth.module.entity.RolePermission;
+import com.cloud.user.mapper.PermissionMapper;
+import com.cloud.user.mapper.RoleMapper;
+import com.cloud.user.mapper.RolePermissionMapper;
+import com.cloud.user.module.entity.Permission;
+import com.cloud.user.module.entity.Role;
+import com.cloud.user.module.entity.RolePermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +22,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AuthPermissionQueryService {
+public class PermissionQueryService {
 
     private final RoleMapper roleMapper;
     private final PermissionMapper permissionMapper;
     private final RolePermissionMapper rolePermissionMapper;
+    private final RoleAssignmentService roleAssignmentService;
 
     @Transactional(readOnly = true)
     public Map<String, List<String>> getPermissionsByRoles(Collection<String> roles) {
@@ -36,7 +37,7 @@ public class AuthPermissionQueryService {
         }
 
         List<Role> roleEntities = roleMapper.selectList(new LambdaQueryWrapper<Role>()
-                .in(Role::getRoleCode, normalizedRoleCodes));
+                .in(Role::getCode, normalizedRoleCodes));
         if (roleEntities.isEmpty()) {
             return Map.of();
         }
@@ -44,7 +45,7 @@ public class AuthPermissionQueryService {
         Map<Long, String> roleCodeById = roleEntities.stream()
                 .collect(Collectors.toMap(
                         Role::getId,
-                        Role::getRoleCode,
+                        Role::getCode,
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
@@ -67,7 +68,7 @@ public class AuthPermissionQueryService {
                         .in(Permission::getId, permissionIds)).stream()
                 .collect(Collectors.toMap(
                         Permission::getId,
-                        Permission::getPermissionCode,
+                        Permission::getCode,
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
@@ -79,11 +80,58 @@ public class AuthPermissionQueryService {
             if (roleCode == null || permissionCode == null) {
                 continue;
             }
-            permissionsByRole.computeIfAbsent(roleCode, ignored -> new LinkedHashSet<>()).add(permissionCode);
+            permissionsByRole
+                    .computeIfAbsent(stripRolePrefix(roleCode), ignored -> new LinkedHashSet<>())
+                    .add(permissionCode);
         }
 
         Map<String, List<String>> result = new LinkedHashMap<>();
         permissionsByRole.forEach((roleCode, permissionCodes) -> result.put(roleCode, List.copyOf(permissionCodes)));
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getPermissionCodesByUserId(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        return getPermissionCodesByUserIds(List.of(userId)).getOrDefault(userId, List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, List<String>> getPermissionCodesByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, List<String>> roleCodesByUserId = roleAssignmentService.getRoleCodesByUserIds(userIds);
+        if (roleCodesByUserId.isEmpty()) {
+            return Map.of();
+        }
+
+        Set<String> allRoles = roleCodesByUserId.values().stream()
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (allRoles.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, List<String>> permissionsByRole = getPermissionsByRoles(allRoles);
+        Map<Long, List<String>> result = new LinkedHashMap<>();
+
+        roleCodesByUserId.forEach((userId, roles) -> {
+            if (roles == null || roles.isEmpty()) {
+                result.put(userId, List.of());
+                return;
+            }
+            LinkedHashSet<String> permissions = new LinkedHashSet<>();
+            for (String role : roles) {
+                permissions.addAll(permissionsByRole.getOrDefault(role, List.of()));
+            }
+            result.put(userId, List.copyOf(permissions));
+        });
+
         return result;
     }
 
@@ -98,5 +146,12 @@ public class AuthPermissionQueryService {
                 .map(String::toUpperCase)
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private String stripRolePrefix(String roleCode) {
+        if (roleCode == null || roleCode.isBlank()) {
+            return roleCode;
+        }
+        return roleCode.startsWith("ROLE_") ? roleCode.substring("ROLE_".length()) : roleCode;
     }
 }

@@ -49,7 +49,11 @@ public final class SecurityPermissionUtils {
     public static String getCurrentUserId(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             Jwt jwt = jwtAuth.getToken();
-            return jwt.getClaimAsString("user_id");
+            String userId = jwt.getClaimAsString("user_id");
+            if (userId == null || userId.isBlank()) {
+                userId = jwt.getClaimAsString("userId");
+            }
+            return userId;
         }
         return null;
     }

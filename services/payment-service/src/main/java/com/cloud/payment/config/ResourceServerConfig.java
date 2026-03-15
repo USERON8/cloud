@@ -22,9 +22,9 @@ public class ResourceServerConfig extends BaseResourceServerConfig {
         authz.requestMatchers("/api/v1/payment/alipay/notify").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/payments/orders/*").authenticated()
                 .requestMatchers("/api/payments/**")
-                .hasAuthority("SCOPE_internal_api")
+                .hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/v1/payment/alipay/**")
-                .hasAnyAuthority("SCOPE_read", "SCOPE_write", "ROLE_USER", "ROLE_ADMIN", "ROLE_MERCHANT");
+                .hasAnyRole("USER", "ADMIN");
     }
 
     @Override

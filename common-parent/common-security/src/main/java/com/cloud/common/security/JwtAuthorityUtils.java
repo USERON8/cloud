@@ -45,6 +45,7 @@ public final class JwtAuthorityUtils {
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scope"), lowerCaseScope));
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scp"), lowerCaseScope));
             authorities.addAll(extractRoleAuthorities(jwt.getClaim("roles")));
+            authorities.addAll(extractPermissionAuthorities(jwt.getClaim("permissions"), lowerCaseScope));
 
             if (includeAuthoritiesClaim) {
                 authorities.addAll(extractRawAuthorities(jwt.getClaim("authorities")));
@@ -125,14 +126,43 @@ public final class JwtAuthorityUtils {
         }
         return roles.stream()
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase(Locale.ROOT))
-                .flatMap(role -> {
-                    if ("ROLE_SUPER_ADMIN".equals(role)) {
-                        return java.util.stream.Stream.of(role, "ROLE_ADMIN");
-                    }
-                    return java.util.stream.Stream.of(role);
-                })
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<GrantedAuthority> extractPermissionAuthorities(Object permissionsClaim, boolean lowerCaseScope) {
+        Set<String> permissions = new LinkedHashSet<>();
+        if (permissionsClaim == null) {
+            return Set.of();
+        }
+        if (permissionsClaim instanceof String permissionString) {
+            permissions.addAll(Arrays.stream(permissionString.trim().split("\\s+|,"))
+                    .map(String::trim)
+                    .filter(permission -> !permission.isBlank())
+                    .collect(Collectors.toSet()));
+        } else if (permissionsClaim instanceof Collection<?> permissionCollection) {
+            permissions.addAll(permissionCollection.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(permission -> !permission.isBlank())
+                    .collect(Collectors.toSet()));
+        }
+
+        Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+        for (String permission : permissions) {
+            String normalized = normalizeScope(permission, lowerCaseScope);
+            if (normalized.isBlank()) {
+                continue;
+            }
+            String raw = normalized.startsWith("SCOPE_") ? normalized.substring("SCOPE_".length()) : normalized;
+            if (raw.isBlank()) {
+                continue;
+            }
+            authorities.add(new SimpleGrantedAuthority(raw));
+            authorities.add(new SimpleGrantedAuthority("SCOPE_" + raw));
+        }
+        return authorities;
     }
 
     private static String normalizeScope(String scope, boolean lowerCaseScope) {

@@ -1,8 +1,8 @@
-package com.cloud.auth.rpc;
+package com.cloud.user.rpc;
 
 import com.cloud.api.auth.AuthDubboApi;
-import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
+import com.cloud.user.service.support.AuthPrincipalService;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
@@ -14,55 +14,55 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthDubboService implements AuthDubboApi {
 
-    private final AuthIdentityService authIdentityService;
+    private final AuthPrincipalService authPrincipalService;
 
     @Override
     public AuthPrincipalDTO findPrincipalByUsername(String username) {
-        return authIdentityService.findPrincipalByUsername(username);
+        return authPrincipalService.findPrincipalByUsername(username);
     }
 
     @Override
     public AuthPrincipalDTO findPrincipalById(Long userId) {
-        return authIdentityService.findPrincipalById(userId);
+        return authPrincipalService.findPrincipalById(userId);
     }
 
     @Override
     public Long createPrincipal(AuthPrincipalDTO authPrincipalDTO) {
-        return authIdentityService.createPrincipal(authPrincipalDTO);
+        return authPrincipalService.createPrincipal(authPrincipalDTO);
     }
 
     @Override
     public Boolean updatePrincipal(AuthPrincipalDTO authPrincipalDTO) {
-        return authIdentityService.updatePrincipal(authPrincipalDTO);
+        return authPrincipalService.updatePrincipal(authPrincipalDTO);
     }
 
     @Override
     public Boolean deletePrincipal(Long userId) {
-        return authIdentityService.deletePrincipal(userId);
+        return authPrincipalService.deletePrincipal(userId);
     }
 
     @Override
     public Boolean changePassword(Long userId, String oldPassword, String newPassword) {
-        return authIdentityService.changePassword(userId, oldPassword, newPassword);
+        return authPrincipalService.changePassword(userId, oldPassword, newPassword);
     }
 
     @Override
     public List<String> getRoleCodes(Long userId) {
-        return authIdentityService.getRoleCodes(userId);
+        return authPrincipalService.getRoleCodes(userId);
     }
 
     @Override
     public Map<Long, List<String>> getRoleCodesByUserIds(Collection<Long> userIds) {
-        return authIdentityService.getRoleCodesByUserIds(userIds == null ? List.of() : List.copyOf(userIds));
+        return authPrincipalService.getRoleCodesByUserIds(userIds == null ? List.of() : List.copyOf(userIds));
     }
 
     @Override
     public List<Long> getUserIdsByRoleCode(String roleCode) {
-        return authIdentityService.getUserIdsByRoleCode(roleCode);
+        return authPrincipalService.getUserIdsByRoleCode(roleCode);
     }
 
     @Override
     public Map<String, Long> getRoleDistribution() {
-        return authIdentityService.getRoleDistribution();
+        return authPrincipalService.getRoleDistribution();
     }
 }

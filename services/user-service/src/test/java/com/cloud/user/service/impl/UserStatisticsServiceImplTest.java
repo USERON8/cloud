@@ -1,7 +1,7 @@
 package com.cloud.user.service.impl;
 
 import com.cloud.user.mapper.UserMapper;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +26,7 @@ class UserStatisticsServiceImplTest {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Mock
-    private AuthPrincipalRemoteService authPrincipalRemoteService;
+    private AuthPrincipalService authPrincipalService;
 
     @Mock
     private CacheManager cacheManager;
@@ -38,7 +38,7 @@ class UserStatisticsServiceImplTest {
         userStatisticsService = new UserStatisticsServiceImpl(
                 userMapper,
                 redisTemplate,
-                authPrincipalRemoteService,
+                authPrincipalService,
                 cacheManager
         );
     }
