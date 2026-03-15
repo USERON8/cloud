@@ -1,32 +1,32 @@
-ï»¿# Cloud Shop API æ–‡æ¡£ï¼ˆæºç æ ¡å¯¹ç‰ˆï¼‰
+# Cloud Shop API ÎÄµµ£¨Ô´ÂëĞ£¶Ô°æ£©
 
-ç”Ÿæˆæ—¶é—´ï¼š2026-03-14
-æ¥æºï¼š
-services/**/controller çš„æ¥å£å®šä¹‰ã€common-parent/common-core çš„è¿”å›ç»“æ„ä¸ç»“æœç ã€common-parent/common-domain çš„ DTO/VOã€docs/postman/cloud-shop.postman_collection.json çš„ç¤ºä¾‹è¯´æ˜ã€‚
+Éú³ÉÊ±¼ä£º2026-03-14
+À´Ô´£º
+services/**/controller µÄ½Ó¿Ú¶¨Òå¡¢common-parent/common-core µÄ·µ»Ø½á¹¹Óë½á¹ûÂë¡¢common-parent/common-domain µÄ DTO/VO¡¢docs/postman/cloud-shop.postman_collection.json µÄÊ¾ÀıËµÃ÷¡£
 
-## åŸºç¡€ä¿¡æ¯
+## »ù´¡ĞÅÏ¢
 
-| é¡¹ | è¯´æ˜ |
+| Ïî | ËµÃ÷ |
 | --- | --- |
-| ç½‘å…³é»˜è®¤åœ°å€ | http://127.0.0.1:18080 |
-| ç½‘å…³è·¯ç”± | /api/**, /auth/** |
-| ç½‘å…³æ–‡æ¡£å…¥å£ | /doc.html |
-| å¤‡æ³¨ | ä»¥ä¸Šä¿¡æ¯è§ README-zh.md |
+| Íø¹ØÄ¬ÈÏµØÖ· | http://127.0.0.1:18080 |
+| Íø¹ØÂ·ÓÉ | /api/**, /auth/** |
+| Íø¹ØÎÄµµÈë¿Ú | /doc.html |
+| ±¸×¢ | ÒÔÉÏĞÅÏ¢¼û README-zh.md |
 
-## ç»Ÿä¸€è¿”å›ç»“æ„
+## Í³Ò»·µ»Ø½á¹¹
 
-Result<T> å®šä¹‰è§ common-parent/common-core/src/main/java/com/cloud/common/result/Result.javaã€‚
+Result<T> ¶¨Òå¼û common-parent/common-core/src/main/java/com/cloud/common/result/Result.java¡£
 
-| å­—æ®µ | ç±»å‹ | è¯´æ˜ |
+| ×Ö¶Î | ÀàĞÍ | ËµÃ÷ |
 | --- | --- | --- |
-| code | Integer | ä¸šåŠ¡ç  |
-| message | String | æç¤ºä¿¡æ¯ |
-| data | T | ä¸šåŠ¡æ•°æ® |
-| timestamp | Long | æœåŠ¡å™¨æ—¶é—´æˆ³ï¼ˆSystem.currentTimeMillisï¼‰ |
+| code | Integer | ÒµÎñÂë |
+| message | String | ÌáÊ¾ĞÅÏ¢ |
+| data | T | ÒµÎñÊı¾İ |
+| timestamp | Long | ·şÎñÆ÷Ê±¼ä´Á£¨System.currentTimeMillis£© |
 
-## ç»“æœç ï¼ˆResultCodeï¼‰
+## ½á¹ûÂë£¨ResultCode£©
 
-æšä¸¾å®šä¹‰è§ common-parent/common-core/src/main/java/com/cloud/common/enums/ResultCode.javaã€‚
+Ã¶¾Ù¶¨Òå¼û common-parent/common-core/src/main/java/com/cloud/common/enums/ResultCode.java¡£
 
 | code | message | enum |
 | --- | --- | --- |
@@ -151,27 +151,28 @@ Result<T> å®šä¹‰è§ common-parent/common-core/src/main/java/com/cloud/common/res
 | 17054 | Refresh token invalid | REFRESH_TOKEN_INVALID |
 | 17055 | Refresh token expired | REFRESH_TOKEN_EXPIRED |
 
-## æƒé™è¯´æ˜
+## È¨ÏŞËµÃ÷
 
-æƒé™è¡¨è¾¾å¼ä»¥ @PreAuthorize ä¸ºå‡†ï¼›æœªæ ‡æ³¨è¡¨ç¤ºæ§åˆ¶å™¨æœªæ˜¾å¼é™åˆ¶ã€‚å¸¸è§æ ‡è¯†ç¤ºä¾‹ï¼š
+È¨ÏŞ±í´ïÊ½ÒÔ @PreAuthorize Îª×¼£»Î´±ê×¢±íÊ¾¿ØÖÆÆ÷Î´ÏÔÊ½ÏŞÖÆ¡£³£¼û±êÊ¶Ê¾Àı£º
 
-| ç±»å‹ | ç¤ºä¾‹ |
+| ÀàĞÍ | Ê¾Àı |
 | --- | --- |
-| è§’è‰² | hasRole('ADMIN'), hasRole('MERCHANT') |
-| Scope | hasAuthority('SCOPE_admin:read'), hasAuthority('SCOPE_admin:write'), hasAuthority('SCOPE_merchant:read'), hasAuthority('SCOPE_merchant:write'), hasAuthority('SCOPE_internal_api') |
-| é€šç”¨ | isAuthenticated() |
+| ½ÇÉ« | hasRole('ADMIN'), hasRole('MERCHANT') |
+| È¨ÏŞ | hasAuthority('admin:all'), hasAuthority('merchant:manage'), hasAuthority('merchant:audit'), hasAuthority('order:create'), hasAuthority('order:query'), hasAuthority('order:cancel'), hasAuthority('order:refund'), hasAuthority('product:view'), hasAuthority('product:create'), hasAuthority('product:edit'), hasAuthority('product:delete'), hasAuthority('user:profile'), hasAuthority('user:address') |
+| Scope | hasAuthority('SCOPE_openid'), hasAuthority('SCOPE_profile'), hasAuthority('SCOPE_read'), hasAuthority('SCOPE_internal') |
+| Í¨ÓÃ | isAuthenticated() |
 
-## æ¥å£æ¸…å•
+## ½Ó¿ÚÇåµ¥
 
 ### auth-service
 
-#### AuthControllerï¼ˆ/authï¼‰
+#### AuthController£¨/auth£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /auth/users/register | Register user | æœªæ ‡æ³¨ | body=RegisterRequestDTO | Result<RegisterResponseDTO> |
-| DELETE | /auth/sessions | Logout current session | æœªæ ‡æ³¨ | header=Authorization(Bearer) | Result<Void> |
-| DELETE | /auth/users/{username}/sessions | Logout all user sessions | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=username | Result<String> |
+| POST | /auth/users/register | Register user | Î´±ê×¢ | body=RegisterRequestDTO | Result<RegisterResponseDTO> |
+| DELETE | /auth/sessions | Logout current session | Î´±ê×¢ | header=Authorization(Bearer) | Result<Void> |
+| DELETE | /auth/users/{username}/sessions | Logout all user sessions | hasAuthority('admin:all') | path=username | Result<String> |
 | GET | /auth/tokens/validate | Validate access token | isAuthenticated() | header=Authorization(Bearer) | Result<String> |
 
 #### OAuth2Endpoint?/oauth2?
@@ -181,286 +182,290 @@ Result<T> å®šä¹‰è§ common-parent/common-core/src/main/java/com/cloud/common/res
 | GET | /oauth2/authorize | OAuth2 authorize | ??? | query=AuthorizationRequestDTO | 302 Redirect |
 | POST | /oauth2/token | OAuth2 token | ??? | body=application/x-www-form-urlencoded | OAuthTokenResponse |
 
-#### GitHubOAuth2Controllerï¼ˆ/auth/oauth2/githubï¼‰
+#### GitHubOAuth2Controller£¨/auth/oauth2/github£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /auth/oauth2/github/user-info | Get GitHub user info | æœªæ ‡æ³¨ | æ—  | Result<UserDTO> |
-| GET | /auth/oauth2/github/status | Check GitHub authorization status | æœªæ ‡æ³¨ | æ—  | Result<Boolean> |
-| GET | /auth/oauth2/github/login-url | Get GitHub OAuth2 login URL | æœªæ ‡æ³¨ | query=AuthorizationRequestDTO | Result<String> |
+| GET | /auth/oauth2/github/user-info | Get GitHub user info | Î´±ê×¢ | ÎŞ | Result<UserDTO> |
+| GET | /auth/oauth2/github/status | Check GitHub authorization status | Î´±ê×¢ | ÎŞ | Result<Boolean> |
+| GET | /auth/oauth2/github/login-url | Get GitHub OAuth2 login URL | Î´±ê×¢ | query=AuthorizationRequestDTO | Result<String> |
 
-#### OAuth2TokenManageControllerï¼ˆ/auth/tokensï¼‰
+#### OAuth2TokenManageController£¨/auth/tokens£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /auth/tokens/stats | Get token storage statistics | hasRole('ADMIN') | æ—  | Result<Map<String,Object>> |
-| GET | /auth/tokens/authorization/{id} | Get authorization details | hasRole('ADMIN') | path=id | Result<Map<String,Object>> |
-| DELETE | /auth/tokens/authorization/{id} | Revoke authorization | hasRole('ADMIN') | path=id | Result<Void> |
-| POST | /auth/tokens/cleanup | Cleanup expired tokens | hasRole('ADMIN') | æ—  | Result<Map<String,Object>> |
-| GET | /auth/tokens/storage-structure | Get Redis hash storage structure | hasRole('ADMIN') | æ—  | Result<Map<String,Object>> |
-| GET | /auth/tokens/blacklist/stats | Get blacklist statistics | hasRole('ADMIN') | æ—  | Result<TokenBlacklistService.BlacklistStats> |
-| POST | /auth/tokens/blacklist/add | Add token to blacklist | hasRole('ADMIN') | query=tokenValue, reason | Result<Void> |
-| GET | /auth/tokens/blacklist/check | Check blacklist status | hasRole('ADMIN') | query=tokenValue | Result<Map<String,Object>> |
-| POST | /auth/tokens/blacklist/cleanup | Cleanup blacklist entries | hasRole('ADMIN') | æ—  | Result<Map<String,Object>> |
+| GET | /auth/tokens/stats | Get token storage statistics | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Object>> |
+| GET | /auth/tokens/authorization/{id} | Get authorization details | hasAuthority('admin:all') | path=id | Result<Map<String,Object>> |
+| DELETE | /auth/tokens/authorization/{id} | Revoke authorization | hasAuthority('admin:all') | path=id | Result<Void> |
+| POST | /auth/tokens/cleanup | Cleanup expired tokens | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Object>> |
+| GET | /auth/tokens/storage-structure | Get Redis storage structure | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Object>> |
+| GET | /auth/tokens/blacklist/stats | Get blacklist statistics | hasAuthority('admin:all') | ÎŞ | Result<TokenBlacklistService.BlacklistStats> |
+| POST | /auth/tokens/blacklist/add | Add token to blacklist | hasAuthority('admin:all') | query=tokenValue, reason | Result<Void> |
+| GET | /auth/tokens/blacklist/check | Check blacklist status | hasAuthority('admin:all') | query=tokenValue | Result<Map<String,Object>> |
+| POST | /auth/tokens/blacklist/cleanup | Cleanup blacklist entries | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Object>> |
 
 ### order-service
 
-#### OrderController?/api/orders?
+#### OrderController£¨/api/orders£©
 
-| ?? | ?? | ?? | ?? | ??/Body | ?? |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/orders | Create main order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | header=Idempotency-Key(??), body=CreateMainOrderRequest | Result<OrderAggregateResponse> |
-| GET | /api/orders | List orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | query=page,size,userId?,shopId?,status? | Result<PageResult<OrderSummaryDTO>> |
-| GET | /api/orders/{orderId} | Get order detail | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<OrderSummaryDTO> |
-| POST | /api/orders/{orderId}/pay | Pay order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<Boolean> |
-| POST | /api/orders/{orderId}/cancel | Cancel order | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId, query=cancelReason? | Result<Boolean> |
-| POST | /api/orders/{orderId}/ship | Ship order | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId, query=shippingCompany?,trackingNumber? | Result<Boolean> |
-| POST | /api/orders/{orderId}/complete | Complete order | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=orderId | Result<Boolean> |
-| POST | /api/orders/batch/pay | Batch pay orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long> | Result<Integer> |
-| POST | /api/orders/batch/cancel | Batch cancel orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=cancelReason? | Result<Integer> |
-| POST | /api/orders/batch/ship | Batch ship orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=shippingCompany?,trackingNumber? | Result<Integer> |
-| POST | /api/orders/batch/complete | Batch complete orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long> | Result<Integer> |
+| POST | /api/orders | Create main order | hasAuthority('order:create') | header=Idempotency-Key, body=CreateMainOrderRequest | Result<OrderAggregateResponse> |
+| GET | /api/orders | List orders | hasAuthority('order:query') | query=page,size,userId?,shopId?,status? | Result<PageResult<OrderSummaryDTO>> |
+| GET | /api/orders/{orderId} | Get order detail | hasAuthority('order:query') | path=orderId | Result<OrderSummaryDTO> |
+| POST | /api/orders/{orderId}/pay | Pay order | hasAuthority('order:create') | path=orderId | Result<Boolean> |
+| POST | /api/orders/{orderId}/cancel | Cancel order | hasAuthority('order:cancel') | path=orderId, query=cancelReason? | Result<Boolean> |
+| POST | /api/orders/{orderId}/ship | Ship order | hasAuthority('order:query') | path=orderId, query=shippingCompany?,trackingNumber? | Result<Boolean> |
+| POST | /api/orders/{orderId}/complete | Complete order | hasAuthority('order:query') | path=orderId | Result<Boolean> |
+| POST | /api/orders/batch/pay | Batch pay orders | hasAuthority('order:create') | body=List<Long> | Result<Integer> |
+| POST | /api/orders/batch/cancel | Batch cancel orders | hasAuthority('order:cancel') | body=List<Long>, query=cancelReason? | Result<Integer> |
+| POST | /api/orders/batch/ship | Batch ship orders | hasAuthority('order:query') | body=List<Long>, query=shippingCompany?,trackingNumber? | Result<Integer> |
+| POST | /api/orders/batch/complete | Batch complete orders | hasAuthority('order:query') | body=List<Long> | Result<Integer> |
+| POST | /api/orders/after-sales | Apply after-sale | hasAuthority('order:refund') | body=AfterSale | Result<AfterSale> |
+| POST | /api/orders/after-sales/{afterSaleId}/actions/{action} | Advance after-sale status | hasAuthority('order:refund') | path=afterSaleId,action, query=remark? | Result<AfterSale> |
 
 ### payment-service
 
-#### PaymentOrderControllerï¼ˆ/api/paymentsï¼‰
+#### PaymentOrderController£¨/api/payments£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/payments/orders | Create payment order | hasAuthority('SCOPE_internal_api') | body=PaymentOrderCommandDTO | Result<Long> |
+| POST | /api/payments/orders | Create payment order | hasAuthority('order:create') | body=PaymentOrderCommandDTO | Result<Long> |
 | GET | /api/payments/orders/{paymentNo} | Get payment order by number | isAuthenticated() | path=paymentNo | Result<PaymentOrderVO> |
-| POST | /api/payments/callbacks | Handle payment callback | hasAuthority('SCOPE_internal_api') | body=PaymentCallbackCommandDTO | Result<Boolean> |
-| POST | /api/payments/refunds | Create payment refund | hasAuthority('SCOPE_internal_api') | body=PaymentRefundCommandDTO | Result<Long> |
-| GET | /api/payments/refunds/{refundNo} | Get refund by number | hasAuthority('SCOPE_internal_api') | path=refundNo | Result<PaymentRefundVO> |
+| GET | /api/payments/orders/{paymentNo}/status | Get payment order status | isAuthenticated() | path=paymentNo | Result<Map<String,Object>> |
+| POST | /api/payments/callbacks | Handle payment callback | hasAuthority('order:refund') | body=PaymentCallbackCommandDTO | Result<Boolean> |
+| POST | /api/payments/refunds | Create payment refund | hasAuthority('order:refund') | body=PaymentRefundCommandDTO | Result<Long> |
+| GET | /api/payments/refunds/{refundNo} | Get refund by number | hasAuthority('order:refund') | path=refundNo | Result<PaymentRefundVO> |
 
 ### product-service
 
-#### CategoryControllerï¼ˆ/api/categoryï¼‰
+#### CategoryController£¨/api/category£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/category | Get categories | æœªæ ‡æ³¨ | query=page,size,parentId,level | Result<PageResult<CategoryDTO>> |
-| GET | /api/category/{id} | Get category | æœªæ ‡æ³¨ | path=id | Result<CategoryDTO> |
-| GET | /api/category/tree | Get category tree | æœªæ ‡æ³¨ | query=enabledOnly | Result<List<CategoryDTO>> |
-| GET | /api/category/{id}/children | Get children | æœªæ ‡æ³¨ | path=id, query=enabledOnly | Result<List<CategoryDTO>> |
-| POST | /api/category | Create category | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=CategoryDTO | Result<CategoryDTO> |
-| PUT | /api/category/{id} | Update category | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, body=CategoryDTO | Result<Boolean> |
-| DELETE | /api/category/{id} | Delete category | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=cascade | Result<Boolean> |
-| PATCH | /api/category/{id}/status | Update status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=status | Result<Boolean> |
-| PATCH | /api/category/{id}/sort | Update sort | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=sort | Result<Boolean> |
-| PATCH | /api/category/{id}/move | Move category | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=newParentId | Result<Boolean> |
-| DELETE | /api/category/batch | Batch delete | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<Long> | Result<Boolean> |
-| PATCH | /api/category/batch/status | Batch update status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | query=ids,status | Result<Integer> |
-| POST | /api/category/batch | Batch create | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<CategoryDTO> | Result<Integer> |
+| GET | /api/category | Get categories | hasAuthority('product:view') | query=page,size,parentId,level | Result<PageResult<CategoryDTO>> |
+| GET | /api/category/{id} | Get category | hasAuthority('product:view') | path=id | Result<CategoryDTO> |
+| GET | /api/category/tree | Get category tree | hasAuthority('product:view') | query=enabledOnly | Result<List<CategoryDTO>> |
+| GET | /api/category/{id}/children | Get children | hasAuthority('product:view') | path=id, query=enabledOnly | Result<List<CategoryDTO>> |
+| POST | /api/category | Create category | hasAuthority('product:create') | body=CategoryDTO | Result<CategoryDTO> |
+| PUT | /api/category/{id} | Update category | hasAuthority('product:edit') | path=id, body=CategoryDTO | Result<Boolean> |
+| DELETE | /api/category/{id} | Delete category | hasAuthority('product:delete') | path=id, query=cascade | Result<Boolean> |
+| PATCH | /api/category/{id}/status | Update status | hasAuthority('product:edit') | path=id, query=status | Result<Boolean> |
+| PATCH | /api/category/{id}/sort | Update sort | hasAuthority('product:edit') | path=id, query=sort | Result<Boolean> |
+| PATCH | /api/category/{id}/move | Move category | hasAuthority('product:edit') | path=id, query=newParentId | Result<Boolean> |
+| DELETE | /api/category/batch | Batch delete | hasAuthority('product:delete') | body=List<Long> | Result<Boolean> |
+| PATCH | /api/category/batch/status | Batch update status | hasAuthority('product:edit') | query=ids,status | Result<Integer> |
+| POST | /api/category/batch | Batch create | hasAuthority('product:create') | body=List<CategoryDTO> | Result<Integer> |
 
-#### ProductCatalogControllerï¼ˆ/api/productï¼‰
+#### ProductCatalogController£¨/api/product£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/product/spu | Create SPU | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | body=SpuCreateRequestDTO | Result<Long> |
-| PUT | /api/product/spu/{spuId} | Update SPU | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | path=spuId, body=SpuCreateRequestDTO | Result<Boolean> |
-| GET | /api/product/spu/{spuId} | Get SPU detail | æœªæ ‡æ³¨ | path=spuId | Result<SpuDetailVO> |
-| GET | /api/product/spu/category/{categoryId} | List SPU by category | æœªæ ‡æ³¨ | path=categoryId, query=status | Result<List<SpuDetailVO>> |
-| GET | /api/product/sku/batch | Batch query SKU details | æœªæ ‡æ³¨ | query=skuIds | Result<List<SkuDetailVO>> |
-| PATCH | /api/product/spu/{spuId}/status | Update SPU status | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | path=spuId, query=status | Result<Boolean> |
+| POST | /api/product/spu | Create SPU | hasAuthority('product:create') | body=SpuCreateRequestDTO | Result<Long> |
+| PUT | /api/product/spu/{spuId} | Update SPU | hasAuthority('product:edit') | path=spuId, body=SpuCreateRequestDTO | Result<Boolean> |
+| GET | /api/product/spu/{spuId} | Get SPU detail | hasAuthority('product:view') | path=spuId | Result<SpuDetailVO> |
+| GET | /api/product/spu/category/{categoryId} | List SPU by category | hasAuthority('product:view') | path=categoryId, query=status | Result<List<SpuDetailVO>> |
+| GET | /api/product/sku/batch | Batch query SKU details | hasAuthority('product:view') | query=skuIds | Result<List<SkuDetailVO>> |
+| PATCH | /api/product/spu/{spuId}/status | Update SPU status | hasAuthority('product:edit') | path=spuId, query=status | Result<Boolean> |
 
-#### ProductQueryControllerÃ¯Â¼Âˆ/api/productÃ¯Â¼Â‰
+#### ProductQueryController£¨/api/product£©
 
-| Ã¦Â–Â¹Ã¦Â³Â• | Ã¨Â·Â¯Ã¥Â¾Â„ | Ã¨Â¯Â´Ã¦Â˜Â | Ã¦ÂÂƒÃ©Â™Â | Ã¥ÂÂ‚Ã¦Â•Â°/Body | Ã¨Â¿Â”Ã¥Â›Â |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/product | List products | Ã¦ÂœÂªÃ¦Â Â‡Ã¦Â³Â¨ | query=page,size,name?,categoryId?,brandId?,shopId?,status? | Result<PageResult<ProductItemDTO>> |
-| GET | /api/product/search | Search products | Ã¦ÂœÂªÃ¦Â Â‡Ã¦Â³Â¨ | query=name | Result<List<ProductItemDTO>> |
-| PATCH | /api/product/{spuId}/status | Update SPU status | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write')) | path=spuId, query=status | Result<Boolean> |
+| GET | /api/product | List products | hasAuthority('product:view') | query=page,size,name?,categoryId?,brandId?,status? | Result<PageResult<ProductItemDTO>> |
+| GET | /api/product/search | Search products | permitAll | query=name,size? | Result<List<ProductItemDTO>> |
+| PATCH | /api/product/{spuId}/status | Update SPU status | hasAuthority('product:edit') | path=spuId, query=status | Result<Boolean> |
 
 ### search-service
 
-#### ProductSearchControllerï¼ˆ/api/searchï¼‰
+#### ProductSearchController£¨/api/search£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/search/complex-search | Complex search | æœªæ ‡æ³¨ | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
-| POST | /api/search/filters | Get filter data | æœªæ ‡æ³¨ | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/suggestions | Search suggestions | æœªæ ‡æ³¨ | query=keyword,size | Result<List<String>> |
-| GET | /api/search/hot-keywords | Hot keywords | æœªæ ‡æ³¨ | query=size | Result<List<String>> |
-| GET | /api/search/keyword-recommendations | Keyword recommendations | æœªæ ‡æ³¨ | query=keyword,size | Result<List<String>> |
-| GET | /api/search/search | Basic search | æœªæ ‡æ³¨ | query=keyword,page,size,sortBy,sortDir | Result<Page<ProductDocument>> |
-| GET | /api/search/search/category/{categoryId} | Search by category | æœªæ ‡æ³¨ | path=categoryId, query=keyword,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/search/shop/{shopId} | Search by shop | æœªæ ‡æ³¨ | path=shopId, query=keyword,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/search/advanced | Advanced search | æœªæ ‡æ³¨ | query=keyword,minPrice,maxPrice,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/smart-search | Smart search | æœªæ ‡æ³¨ | query=keyword,categoryId,minPrice,maxPrice,sortField,sortOrder,page,size | Result<ElasticsearchOptimizedService.SearchResult> |
-| GET | /api/search/recommended | Recommended products | æœªæ ‡æ³¨ | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/new | New products | æœªæ ‡æ³¨ | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/hot | Hot products | æœªæ ‡æ³¨ | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/basic | Basic API search | æœªæ ‡æ³¨ | query=keyword,page,size | Result<SearchResult<ProductDocument>> |
-| POST | /api/search/filter | Filter search | æœªæ ‡æ³¨ | body=ProductFilterRequest | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/category/{categoryId} | Filter by category | æœªæ ‡æ³¨ | path=categoryId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/brand/{brandId} | Filter by brand | æœªæ ‡æ³¨ | path=brandId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/price | Filter by price | æœªæ ‡æ³¨ | query=minPrice,maxPrice,page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/shop/{shopId} | Filter by shop | æœªæ ‡æ³¨ | path=shopId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/combined | Combined filter | æœªæ ‡æ³¨ | query=keyword,categoryId,brandId,minPrice,maxPrice,shopId,sortBy,sortOrder,page,size | Result<SearchResult<ProductDocument>> |
+| POST | /api/search/complex-search | Complex search | Î´±ê×¢ | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
+| POST | /api/search/filters | Get filter data | Î´±ê×¢ | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/suggestions | Search suggestions | Î´±ê×¢ | query=keyword,size | Result<List<String>> |
+| GET | /api/search/hot-keywords | Hot keywords | Î´±ê×¢ | query=size | Result<List<String>> |
+| GET | /api/search/keyword-recommendations | Keyword recommendations | Î´±ê×¢ | query=keyword,size | Result<List<String>> |
+| GET | /api/search/search | Basic search | Î´±ê×¢ | query=keyword,page,size,sortBy,sortDir | Result<Page<ProductDocument>> |
+| GET | /api/search/search/category/{categoryId} | Search by category | Î´±ê×¢ | path=categoryId, query=keyword,page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/search/shop/{shopId} | Search by shop | Î´±ê×¢ | path=shopId, query=keyword,page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/search/advanced | Advanced search | Î´±ê×¢ | query=keyword,minPrice,maxPrice,page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/smart-search | Smart search | Î´±ê×¢ | query=keyword,categoryId,minPrice,maxPrice,sortField,sortOrder,page,size | Result<ElasticsearchOptimizedService.SearchResult> |
+| GET | /api/search/recommended | Recommended products | Î´±ê×¢ | query=page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/new | New products | Î´±ê×¢ | query=page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/hot | Hot products | Î´±ê×¢ | query=page,size | Result<Page<ProductDocument>> |
+| GET | /api/search/basic | Basic API search | Î´±ê×¢ | query=keyword,page,size | Result<SearchResult<ProductDocument>> |
+| POST | /api/search/filter | Filter search | Î´±ê×¢ | body=ProductFilterRequest | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/filter/category/{categoryId} | Filter by category | Î´±ê×¢ | path=categoryId, query=page,size | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/filter/brand/{brandId} | Filter by brand | Î´±ê×¢ | path=brandId, query=page,size | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/filter/price | Filter by price | Î´±ê×¢ | query=minPrice,maxPrice,page,size | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/filter/shop/{shopId} | Filter by shop | Î´±ê×¢ | path=shopId, query=page,size | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/filter/combined | Combined filter | Î´±ê×¢ | query=keyword,categoryId,brandId,minPrice,maxPrice,shopId,sortBy,sortOrder,page,size | Result<SearchResult<ProductDocument>> |
 
-#### ShopSearchControllerï¼ˆ/api/search/shopsï¼‰
+#### ShopSearchController£¨/api/search/shops£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/search/shops/complex-search | Complex shop search | æœªæ ‡æ³¨ | body=ShopSearchRequest | Result<SearchResult<ShopDocument>> |
-| POST | /api/search/shops/filters | Shop filter data | æœªæ ‡æ³¨ | body=ShopSearchRequest | Result<SearchResult<ShopDocument>> |
-| GET | /api/search/shops/suggestions | Shop suggestions | æœªæ ‡æ³¨ | query=keyword,size | Result<List<String>> |
-| GET | /api/search/shops/hot-shops | Hot shops | æœªæ ‡æ³¨ | query=size | Result<List<ShopDocument>> |
-| GET | /api/search/shops/{shopId} | Get shop by id | æœªæ ‡æ³¨ | path=shopId | Result<ShopDocument> |
-| GET | /api/search/shops/recommended | Recommended shops | æœªæ ‡æ³¨ | query=page,size | Result<SearchResult<ShopDocument>> |
-| GET | /api/search/shops/by-location | Search shops by location | æœªæ ‡æ³¨ | query=location,page,size | Result<SearchResult<ShopDocument>> |
+| POST | /api/search/shops/complex-search | Complex shop search | Î´±ê×¢ | body=ShopSearchRequest | Result<SearchResult<ShopDocument>> |
+| POST | /api/search/shops/filters | Shop filter data | Î´±ê×¢ | body=ShopSearchRequest | Result<SearchResult<ShopDocument>> |
+| GET | /api/search/shops/suggestions | Shop suggestions | Î´±ê×¢ | query=keyword,size | Result<List<String>> |
+| GET | /api/search/shops/hot-shops | Hot shops | Î´±ê×¢ | query=size | Result<List<ShopDocument>> |
+| GET | /api/search/shops/{shopId} | Get shop by id | Î´±ê×¢ | path=shopId | Result<ShopDocument> |
+| GET | /api/search/shops/recommended | Recommended shops | Î´±ê×¢ | query=page,size | Result<SearchResult<ShopDocument>> |
+| GET | /api/search/shops/by-location | Search shops by location | Î´±ê×¢ | query=location,page,size | Result<SearchResult<ShopDocument>> |
 
 ### stock-service
 
-#### StockLedgerControllerï¼ˆ/api/stocksï¼‰
+#### StockLedgerController£¨/api/stocks£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/stocks/ledger/{skuId} | Get stock ledger by sku | æœªæ ‡æ³¨ | path=skuId | Result<StockLedgerVO> |
-| POST | /api/stocks/reserve | Reserve stock | æœªæ ‡æ³¨ | body=StockOperateCommandDTO | Result<Boolean> |
-| POST | /api/stocks/confirm | Confirm stock reservation | æœªæ ‡æ³¨ | body=StockOperateCommandDTO | Result<Boolean> |
-| POST | /api/stocks/release | Release reserved stock | æœªæ ‡æ³¨ | body=StockOperateCommandDTO | Result<Boolean> |
-| POST | /api/stocks/rollback | Rollback stock reservation | æœªæ ‡æ³¨ | body=StockOperateCommandDTO | Result<Boolean> |
+| GET | /api/stocks/ledger/{skuId} | Get stock ledger by sku | Î´±ê×¢ | path=skuId | Result<StockLedgerVO> |
+| POST | /api/stocks/reserve | Reserve stock | Î´±ê×¢ | body=StockOperateCommandDTO | Result<Boolean> |
+| POST | /api/stocks/confirm | Confirm stock reservation | Î´±ê×¢ | body=StockOperateCommandDTO | Result<Boolean> |
+| POST | /api/stocks/release | Release reserved stock | Î´±ê×¢ | body=StockOperateCommandDTO | Result<Boolean> |
+| POST | /api/stocks/rollback | Rollback stock reservation | Î´±ê×¢ | body=StockOperateCommandDTO | Result<Boolean> |
 
 ### user-service
 
-#### AdminControllerï¼ˆ/api/adminï¼‰
+#### AdminController£¨/api/admin£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/admin | Get admins with pagination | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=page,size | Result<PageResult<AdminDTO>> |
-| GET | /api/admin/{id} | Get admin details | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | path=id | Result<AdminDTO> |
-| POST | /api/admin | Create admin | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=AdminUpsertRequestDTO | Result<AdminDTO> |
-| PUT | /api/admin/{id} | Update admin | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, body=AdminUpsertRequestDTO | Result<Boolean> |
-| DELETE | /api/admin/{id} | Delete admin | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id | Result<Boolean> |
-| PATCH | /api/admin/{id}/status | Update admin status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=status | Result<Boolean> |
-| POST | /api/admin/{id}/reset-password | Reset admin password | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id | Result<Boolean> |
+| GET | /api/admin | Get admins with pagination | hasAuthority('admin:all') | query=page,size | Result<PageResult<AdminDTO>> |
+| GET | /api/admin/{id} | Get admin details | hasAuthority('admin:all') | path=id | Result<AdminDTO> |
+| POST | /api/admin | Create admin | hasAuthority('admin:all') | body=AdminUpsertRequestDTO | Result<AdminDTO> |
+| PUT | /api/admin/{id} | Update admin | hasAuthority('admin:all') | path=id, body=AdminUpsertRequestDTO | Result<Boolean> |
+| DELETE | /api/admin/{id} | Delete admin | hasAuthority('admin:all') | path=id | Result<Boolean> |
+| PATCH | /api/admin/{id}/status | Update admin status | hasAuthority('admin:all') | path=id, query=status | Result<Boolean> |
+| POST | /api/admin/{id}/reset-password | Reset admin password | hasAuthority('admin:all') | path=id | Result<Boolean> |
 
-#### ThreadPoolMonitorControllerï¼ˆ/api/thread-poolï¼‰
+#### ThreadPoolMonitorController£¨/api/thread-pool£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/thread-pool/info | Get all thread pool metrics | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | æ—  | Result<List<Map<String,Object>>> |
-| GET | /api/thread-pool/info/detail | Get thread pool metrics by bean name | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=name | Result<Map<String,Object>> |
+| GET | /api/thread-pool/info | Get all thread pool metrics | hasAuthority('admin:all') | ÎŞ | Result<List<Map<String,Object>>> |
+| GET | /api/thread-pool/info/detail | Get thread pool metrics by bean name | hasAuthority('admin:all') | query=name | Result<Map<String,Object>> |
 
-#### MerchantAuthControllerï¼ˆ/api/merchant/authï¼‰
+#### MerchantAuthController£¨/api/merchant/auth£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/merchant/auth/apply/{merchantId} | Apply merchant auth | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasAuthority('SCOPE_merchant:write') and @permissionManager.isMerchantOwner(...)) | path=merchantId, body=MerchantAuthRequestDTO | Result<MerchantAuthDTO> |
-| GET | /api/merchant/auth/get/{merchantId} | Get merchant auth | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) or (hasAuthority('SCOPE_merchant:read') and @permissionManager.isMerchantOwner(...)) | path=merchantId | Result<MerchantAuthDTO> |
-| DELETE | /api/merchant/auth/revoke/{merchantId} | Revoke merchant auth | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasAuthority('SCOPE_merchant:write') and @permissionManager.isMerchantOwner(...)) | path=merchantId | Result<Boolean> |
-| POST | /api/merchant/auth/review/{merchantId} | Review merchant auth | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=merchantId, query=authStatus,remark | Result<Boolean> |
-| GET | /api/merchant/auth/list | List merchant auth by status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=authStatus | Result<List<MerchantAuthDTO>> |
-| POST | /api/merchant/auth/review/batch | Batch review merchant auth | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<Long>, query=authStatus,remark | Result<Boolean> |
+| POST | /api/merchant/auth/apply/{merchantId} | Apply merchant auth | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=merchantId, body=MerchantAuthRequestDTO | Result<MerchantAuthDTO> |
+| POST | /api/merchant/auth/upload/license/{merchantId} | Upload business license | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=merchantId, multipart file | Result<MerchantAuthFileUploadDTO> |
+| GET | /api/merchant/auth/get/{merchantId} | Get merchant auth | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=merchantId | Result<MerchantAuthDTO> |
+| DELETE | /api/merchant/auth/revoke/{merchantId} | Revoke merchant auth | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=merchantId | Result<Boolean> |
+| POST | /api/merchant/auth/review/{merchantId} | Review merchant auth | hasAuthority('merchant:audit') | path=merchantId, query=authStatus,remark | Result<Boolean> |
+| GET | /api/merchant/auth/list | List merchant auth by status | hasAuthority('merchant:audit') | query=authStatus | Result<List<MerchantAuthDTO>> |
+| POST | /api/merchant/auth/review/batch | Batch review merchant auth | hasAuthority('merchant:audit') | body=List<Long>, query=authStatus,remark | Result<Boolean> |
 
-#### MerchantControllerï¼ˆ/api/merchantï¼‰
+#### MerchantController£¨/api/merchant£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/merchant | Get merchants | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:read')) | query=page,size,status,auditStatus | Result<PageResult<MerchantDTO>> |
-| GET | /api/merchant/{id} | Get merchant by ID | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) or (hasAuthority('SCOPE_merchant:read') and @permissionManager.isMerchantOwner(...)) | path=id | Result<MerchantDTO> |
-| POST | /api/merchant | Create merchant | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=MerchantUpsertRequestDTO | Result<MerchantDTO> |
-| PUT | /api/merchant/{id} | Update merchant | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) or (hasAuthority('SCOPE_merchant:write') and @permissionManager.isMerchantOwner(...)) | path=id, body=MerchantUpsertRequestDTO | Result<Boolean> |
-| DELETE | /api/merchant/{id} | Delete merchant | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id | Result<Boolean> |
-| POST | /api/merchant/{id}/approve | Approve merchant | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=remark | Result<Boolean> |
-| POST | /api/merchant/{id}/reject | Reject merchant | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=reason | Result<Boolean> |
-| PATCH | /api/merchant/{id}/status | Update merchant status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, query=status | Result<Boolean> |
-| GET | /api/merchant/{id}/statistics | Get merchant statistics | (hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) or (hasAuthority('SCOPE_merchant:read') and @permissionManager.isMerchantOwner(...)) | path=id | Result<Object> |
-| DELETE | /api/merchant/batch | Batch delete merchants | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<Long> | Result<Boolean> |
-| PATCH | /api/merchant/batch/status | Batch update merchant status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | query=ids,status | Result<Boolean> |
-| POST | /api/merchant/batch/approve | Batch approve merchants | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<Long>, query=remark | Result<Boolean> |
+| GET | /api/merchant | Get merchants | hasAuthority('merchant:manage') | query=page,size,status,auditStatus | Result<PageResult<MerchantDTO>> |
+| GET | /api/merchant/{id} | Get merchant by ID | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=id | Result<MerchantDTO> |
+| POST | /api/merchant | Create merchant | hasAuthority('admin:all') | body=MerchantUpsertRequestDTO | Result<MerchantDTO> |
+| PUT | /api/merchant/{id} | Update merchant | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=id, body=MerchantUpsertRequestDTO | Result<Boolean> |
+| DELETE | /api/merchant/{id} | Delete merchant | hasAuthority('admin:all') | path=id | Result<Boolean> |
+| POST | /api/merchant/{id}/approve | Approve merchant | hasAuthority('merchant:audit') | path=id, query=remark | Result<Boolean> |
+| POST | /api/merchant/{id}/reject | Reject merchant | hasAuthority('merchant:audit') | path=id, query=reason | Result<Boolean> |
+| PATCH | /api/merchant/{id}/status | Update merchant status | hasAuthority('admin:all') | path=id, query=status | Result<Boolean> |
+| GET | /api/merchant/{id}/statistics | Get merchant statistics | hasAuthority('merchant:manage') and @permissionManager.isMerchantOwner(...) | path=id | Result<Object> |
+| DELETE | /api/merchant/batch | Batch delete merchants | hasAuthority('admin:all') | body=List<Long> | Result<Boolean> |
+| PATCH | /api/merchant/batch/status | Batch update merchant status | hasAuthority('admin:all') | query=ids,status | Result<Boolean> |
+| POST | /api/merchant/batch/approve | Batch approve merchants | hasAuthority('merchant:audit') | body=List<Long>, query=remark | Result<Boolean> |
 
-#### UserProfileControllerï¼ˆ/api/user/profileï¼‰
+#### UserProfileController£¨/api/user/profile£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/user/profile/current | Get current profile | isAuthenticated() | æ—  | Result<UserDTO> |
+| GET | /api/user/profile/current | Get current profile | isAuthenticated() | ÎŞ | Result<UserDTO> |
 | PUT | /api/user/profile/current | Update current profile | isAuthenticated() | body=UserProfileUpdateDTO | Result<Boolean> |
 | PUT | /api/user/profile/current/password | Change current password | isAuthenticated() | body=UserProfilePasswordChangeDTO | Result<Boolean> |
 | POST | /api/user/profile/current/avatar | Upload current avatar | isAuthenticated() | multipart/form-data file | Result<String> |
 
-#### UserAddressControllerï¼ˆ/api/user/addressï¼‰
+#### UserAddressController£¨/api/user/address£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/user/address/add/{userId} | Add user address | æœªæ ‡æ³¨ | path=userId, body=UserAddressRequestDTO | Result<UserAddressDTO> |
-| PUT | /api/user/address/update/{addressId} | Update user address | æœªæ ‡æ³¨ | path=addressId, body=UserAddressRequestDTO | Result<UserAddressDTO> |
-| DELETE | /api/user/address/delete/{addressId} | Delete user address | æœªæ ‡æ³¨ | path=addressId | Result<Boolean> |
-| GET | /api/user/address/list/{userId} | List user addresses | æœªæ ‡æ³¨ | path=userId | Result<List<UserAddressVO>> |
-| GET | /api/user/address/default/{userId} | Get default address | æœªæ ‡æ³¨ | path=userId | Result<UserAddressVO> |
-| POST | /api/user/address/page | Page user addresses | æœªæ ‡æ³¨ | body=UserAddressPageDTO | Result<PageResult<UserAddressVO>> |
-| DELETE | /api/user/address/deleteBatch | Batch delete addresses | æœªæ ‡æ³¨ | body=List<Long> | Result<Boolean> |
-| PUT | /api/user/address/updateBatch | Batch update addresses | æœªæ ‡æ³¨ | body=List<UserAddressRequestDTO> | Result<Boolean> |
+| POST | /api/user/address/add/{userId} | Add user address | Î´±ê×¢ | path=userId, body=UserAddressRequestDTO | Result<UserAddressDTO> |
+| PUT | /api/user/address/update/{addressId} | Update user address | Î´±ê×¢ | path=addressId, body=UserAddressRequestDTO | Result<UserAddressDTO> |
+| DELETE | /api/user/address/delete/{addressId} | Delete user address | Î´±ê×¢ | path=addressId | Result<Boolean> |
+| GET | /api/user/address/list/{userId} | List user addresses | Î´±ê×¢ | path=userId | Result<List<UserAddressVO>> |
+| GET | /api/user/address/default/{userId} | Get default address | Î´±ê×¢ | path=userId | Result<UserAddressVO> |
+| POST | /api/user/address/page | Page user addresses | Î´±ê×¢ | body=UserAddressPageDTO | Result<PageResult<UserAddressVO>> |
+| DELETE | /api/user/address/deleteBatch | Batch delete addresses | Î´±ê×¢ | body=List<Long> | Result<Boolean> |
+| PUT | /api/user/address/updateBatch | Batch update addresses | Î´±ê×¢ | body=List<UserAddressRequestDTO> | Result<Boolean> |
 
-#### UserManageControllerï¼ˆ/api/manage/usersï¼‰
+#### UserManageController£¨/api/manage/users£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| PUT | /api/manage/users/{id} | Update user | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=id, body=UserUpsertRequestDTO | Result<Boolean> |
-| POST | /api/manage/users/delete | Delete user | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=Long | Result<Boolean> |
-| POST | /api/manage/users/deleteBatch | Batch delete users | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=Long[] | Result<Boolean> |
-| POST | /api/manage/users/updateBatch | Batch update users | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=List<UserUpsertRequestDTO> | Result<Boolean> |
-| POST | /api/manage/users/updateStatusBatch | Batch update user status | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | query=ids,status | Result<Boolean> |
+| PUT | /api/manage/users/{id} | Update user | hasAuthority('admin:all') | path=id, body=UserUpsertRequestDTO | Result<Boolean> |
+| POST | /api/manage/users/delete | Delete user | hasAuthority('admin:all') | body=Long | Result<Boolean> |
+| POST | /api/manage/users/deleteBatch | Batch delete users | hasAuthority('admin:all') | body=Long[] | Result<Boolean> |
+| POST | /api/manage/users/updateBatch | Batch update users | hasAuthority('admin:all') | body=List<UserUpsertRequestDTO> | Result<Boolean> |
+| POST | /api/manage/users/updateStatusBatch | Batch update user status | hasAuthority('admin:all') | query=ids,status | Result<Boolean> |
 
-#### UserQueryControllerï¼ˆ/api/query/usersï¼‰
+#### UserQueryController£¨/api/query/users£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/query/users | Find user by username | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=username | Result<UserDTO> |
-| GET | /api/query/users/search | Search users | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=page,size,username,email,roleCode | Result<PageResult<UserVO>> |
+| GET | /api/query/users | Find user by username | hasAuthority('admin:all') | query=username | Result<UserDTO> |
+| GET | /api/query/users/search | Search users | hasAuthority('admin:all') | query=page,size,username,email,roleCode | Result<PageResult<UserVO>> |
 
-#### UserNotificationControllerï¼ˆ/api/user/notificationï¼‰
+#### UserNotificationController£¨/api/user/notification£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/user/notification/welcome/{userId} | Send welcome notification | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=userId | Result<Boolean> |
-| POST | /api/user/notification/status-change/{userId} | Send status change notification | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | path=userId, body=UserNotificationStatusChangeRequestDTO | Result<Boolean> |
-| POST | /api/user/notification/batch | Send batch notification | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=UserNotificationBatchRequestDTO | Result<Boolean> |
-| POST | /api/user/notification/system | Send system announcement | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | body=UserSystemAnnouncementRequestDTO | Result<Boolean> |
+| POST | /api/user/notification/welcome/{userId} | Send welcome notification | hasAuthority('admin:all') | path=userId | Result<Boolean> |
+| POST | /api/user/notification/status-change/{userId} | Send status change notification | hasAuthority('admin:all') | path=userId, body=UserNotificationStatusChangeRequestDTO | Result<Boolean> |
+| POST | /api/user/notification/batch | Send batch notification | hasAuthority('admin:all') | body=UserNotificationBatchRequestDTO | Result<Boolean> |
+| POST | /api/user/notification/system | Send system announcement | hasAuthority('admin:all') | body=UserSystemAnnouncementRequestDTO | Result<Boolean> |
 
-#### UserStatisticsControllerï¼ˆ/api/statisticsï¼‰
+#### UserStatisticsController£¨/api/statistics£©
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ | æƒé™ | å‚æ•°/Body | è¿”å› |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ | È¨ÏŞ | ²ÎÊı/Body | ·µ»Ø |
 | --- | --- | --- | --- | --- | --- |
-| GET | /api/statistics/overview | Get overview | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | æ—  | Result<UserStatisticsVO> |
-| GET | /api/statistics/overview/async | Get overview async | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | æ—  | CompletableFuture<Result<UserStatisticsVO>> |
-| GET | /api/statistics/registration-trend | Get registration trend | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=startDate,endDate | Result<Map<LocalDate,Long>> |
-| GET | /api/statistics/registration-trend/async | Get registration trend async | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=days | CompletableFuture<Result<Map<LocalDate,Long>>> |
-| GET | /api/statistics/role-distribution | Get role distribution | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | æ—  | Result<Map<String,Long>> |
-| GET | /api/statistics/status-distribution | Get status distribution | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | æ—  | Result<Map<String,Long>> |
-| GET | /api/statistics/active-users | Count active users | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=days | Result<Long> |
-| GET | /api/statistics/growth-rate | Calculate growth rate | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=days | Result<Double> |
-| GET | /api/statistics/activity-ranking | Get activity ranking | hasRole('ADMIN') and hasAuthority('SCOPE_admin:read') | query=limit,days | CompletableFuture<Result<Map<Long,Long>>> |
-| POST | /api/statistics/refresh-cache | Refresh statistics cache | hasRole('ADMIN') and hasAuthority('SCOPE_admin:write') | æ—  | CompletableFuture<Result<Boolean>> |
+| GET | /api/statistics/overview | Get overview | hasAuthority('admin:all') | ÎŞ | Result<UserStatisticsVO> |
+| GET | /api/statistics/overview/async | Get overview async | hasAuthority('admin:all') | ÎŞ | CompletableFuture<Result<UserStatisticsVO>> |
+| GET | /api/statistics/registration-trend | Get registration trend | hasAuthority('admin:all') | query=startDate,endDate | Result<Map<LocalDate,Long>> |
+| GET | /api/statistics/registration-trend/async | Get registration trend async | hasAuthority('admin:all') | query=days | CompletableFuture<Result<Map<LocalDate,Long>>> |
+| GET | /api/statistics/role-distribution | Get role distribution | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Long>> |
+| GET | /api/statistics/status-distribution | Get status distribution | hasAuthority('admin:all') | ÎŞ | Result<Map<String,Long>> |
+| GET | /api/statistics/active-users | Count active users | hasAuthority('admin:all') | query=days | Result<Long> |
+| GET | /api/statistics/growth-rate | Calculate growth rate | hasAuthority('admin:all') | query=days | Result<Double> |
+| GET | /api/statistics/activity-ranking | Get activity ranking | hasAuthority('admin:all') | query=limit,days | CompletableFuture<Result<Map<Long,Long>>> |
+| POST | /api/statistics/refresh-cache | Refresh statistics cache | hasAuthority('admin:all') | ÎŞ | CompletableFuture<Result<Boolean>> |
 
-## è¯·æ±‚ä½“ DTO å­—æ®µï¼ˆä»…åˆ—å‡ºæ¥å£å…¥å‚æ¶‰åŠçš„ç±»å‹ï¼‰
+## ÇëÇóÌå DTO ×Ö¶Î£¨½öÁĞ³ö½Ó¿ÚÈë²ÎÉæ¼°µÄÀàĞÍ£©
 
 ### RegisterRequestDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | username | String |
 | password | String |
 | phone | String |
 | nickname | String |
 
-### AuthorizationRequestDTOï¼ˆquery æ¨¡å‹ï¼‰
+### AuthorizationRequestDTO£¨query Ä£ĞÍ£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | clientId | String |
 | redirectUri | String |
 | scope | String |
 | state | String |
 | codeChallenge | String |
-| codeChallengeMethod | Stringï¼ˆé»˜è®¤ S256ï¼‰ |
+| codeChallengeMethod | String£¨Ä¬ÈÏ S256£© |
 | nonce | String |
 
 ### CreateMainOrderRequest
 
-| ?? | ?? |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | userId | Long |
 | cartId | Long |
@@ -475,11 +480,11 @@ Result<T> å®šä¹‰è§ common-parent/common-core/src/main/java/com/cloud/common/res
 | receiverPhone | String |
 | receiverAddress | String |
 
-CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
+ËµÃ÷£ºcartId Óë (spuId, skuId, quantity) ¶şÑ¡Ò»£»µ¥Æ·ÏÂµ¥±ØĞëÍ¬Ê±Ìá¹© spuId ºÍ skuId£¬²»½ÓÊÜÖ»´« spuId¡£
 
 ### AfterSale
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | afterSaleNo | String |
 | mainOrderId | Long |
@@ -498,15 +503,15 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | refundedAt | LocalDateTime |
 | closedAt | LocalDateTime |
 | closeReason | String |
-| id | Longï¼ˆBaseEntityï¼‰ |
-| createdAt | LocalDateTimeï¼ˆBaseEntityï¼‰ |
-| updatedAt | LocalDateTimeï¼ˆBaseEntityï¼‰ |
-| deleted | Integerï¼ˆBaseEntityï¼‰ |
-| version | Integerï¼ˆBaseEntityï¼‰ |
+| id | Long£¨BaseEntity£© |
+| createdAt | LocalDateTime£¨BaseEntity£© |
+| updatedAt | LocalDateTime£¨BaseEntity£© |
+| deleted | Integer£¨BaseEntity£© |
+| version | Integer£¨BaseEntity£© |
 
 ### PaymentOrderCommandDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | paymentNo | String |
 | mainOrderNo | String |
@@ -518,7 +523,7 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### PaymentCallbackCommandDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | paymentNo | String |
 | callbackNo | String |
@@ -529,7 +534,7 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### PaymentRefundCommandDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | refundNo | String |
 | paymentNo | String |
@@ -538,9 +543,9 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | reason | String |
 | idempotencyKey | String |
 
-### AdminUpsertRequestDTOï¼ˆç»§æ‰¿ BaseAccountUpsertRequestDTOï¼‰
+### AdminUpsertRequestDTO£¨¼Ì³Ğ BaseAccountUpsertRequestDTO£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | username | String |
 | password | String |
@@ -549,9 +554,9 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | realName | String |
 | role | String |
 
-### MerchantUpsertRequestDTOï¼ˆç»§æ‰¿ BaseAccountUpsertRequestDTOï¼‰
+### MerchantUpsertRequestDTO£¨¼Ì³Ğ BaseAccountUpsertRequestDTO£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | username | String |
 | password | String |
@@ -562,7 +567,7 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### MerchantAuthRequestDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | businessLicenseNumber | String |
 | businessLicenseUrl | String |
@@ -571,9 +576,9 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | contactPhone | String |
 | contactAddress | String |
 
-### UserAddressRequestDTOï¼ˆç»§æ‰¿ BaseEntityï¼‰
+### UserAddressRequestDTO£¨¼Ì³Ğ BaseEntity£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | consignee | String |
 | phone | String |
@@ -583,26 +588,26 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | street | String |
 | detailAddress | String |
 | isDefault | Integer |
-| id | Longï¼ˆBaseEntityï¼‰ |
-| createdAt | LocalDateTimeï¼ˆBaseEntityï¼‰ |
-| updatedAt | LocalDateTimeï¼ˆBaseEntityï¼‰ |
-| deleted | Integerï¼ˆBaseEntityï¼‰ |
-| version | Integerï¼ˆBaseEntityï¼‰ |
+| id | Long£¨BaseEntity£© |
+| createdAt | LocalDateTime£¨BaseEntity£© |
+| updatedAt | LocalDateTime£¨BaseEntity£© |
+| deleted | Integer£¨BaseEntity£© |
+| version | Integer£¨BaseEntity£© |
 
-### UserAddressPageDTOï¼ˆç»§æ‰¿ PageQueryï¼‰
+### UserAddressPageDTO£¨¼Ì³Ğ PageQuery£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
-| current | Longï¼ˆPageQueryï¼‰ |
-| size | Longï¼ˆPageQueryï¼‰ |
-| orderBy | Stringï¼ˆPageQueryï¼‰ |
-| orderDirection | Stringï¼ˆPageQueryï¼‰ |
+| current | Long£¨PageQuery£© |
+| size | Long£¨PageQuery£© |
+| orderBy | String£¨PageQuery£© |
+| orderDirection | String£¨PageQuery£© |
 | userId | Long |
 | consignee | String |
 
-### UserUpsertRequestDTOï¼ˆç»§æ‰¿ BaseAccountUpsertRequestDTOï¼‰
+### UserUpsertRequestDTO£¨¼Ì³Ğ BaseAccountUpsertRequestDTO£©
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | id | Long |
 | username | String |
@@ -616,7 +621,7 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### UserNotificationBatchRequestDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | userIds | List<Long> |
 | title | String |
@@ -624,21 +629,21 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### UserNotificationStatusChangeRequestDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | newStatus | Integer |
 | reason | String |
 
 ### UserSystemAnnouncementRequestDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | title | String |
 | content | String |
 
 ### UserProfileUpdateDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | nickname | String |
 | avatarUrl | String |
@@ -647,14 +652,14 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 
 ### UserProfilePasswordChangeDTO
 
-| å­—æ®µ | ç±»å‹ |
+| ×Ö¶Î | ÀàĞÍ |
 | --- | --- |
 | oldPassword | String |
 | newPassword | String |
 
-## å“åº”ä¸æŸ¥è¯¢å¯¹è±¡å‚è€ƒï¼ˆæºç è·¯å¾„ï¼‰
+## ÏìÓ¦Óë²éÑ¯¶ÔÏó²Î¿¼£¨Ô´ÂëÂ·¾¶£©
 
-| ç±»å‹ | è·¯å¾„ |
+| ÀàĞÍ | Â·¾¶ |
 | --- | --- |
 | RegisterResponseDTO | common-parent/common-domain/src/main/java/com/cloud/common/domain/dto/auth/RegisterResponseDTO.java |
 | UserDTO | common-parent/common-domain/src/main/java/com/cloud/common/domain/dto/user/UserDTO.java |
@@ -679,8 +684,20 @@ CreateMainOrderRequest ???cartId ? (spuId, skuId, quantity) ??????????? skuId?
 | ProductDocument | services/search-service/src/main/java/com/cloud/search/document/ProductDocument.java |
 | ShopDocument | services/search-service/src/main/java/com/cloud/search/document/ShopDocument.java |
 
-## æµ‹è¯•æ•°æ®ä¸ç¤ºä¾‹è¯´æ˜
+## ²âÊÔÊı¾İÓëÊ¾ÀıËµÃ÷
 
-Postman é›†åˆï¼šdocs/postman/cloud-shop.postman_collection.jsonã€‚
-é»˜è®¤æµ‹è¯•æ•°æ®æ¥æºäº db/test/*/test.sqlï¼ˆuserId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001ï¼‰ã€‚
+Postman ¼¯ºÏ£ºdocs/postman/cloud-shop.postman_collection.json¡£
+Ä¬ÈÏ²âÊÔÊı¾İÀ´Ô´ÓÚ db/test/*/test.sql£¨userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001£©¡£
+
+
+
+
+
+
+
+
+
+
+
+
 
