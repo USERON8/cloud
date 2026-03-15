@@ -13,6 +13,10 @@ services/**/controller µÄ½Ó¿Ú¶¨Òå¡¢common-parent/common-core µÄ·µ»Ø½á¹¹Óë½á¹ûÂë¡
 | Íø¹ØÎÄµµÈë¿Ú | /doc.html |
 | ±¸×¢ | ÒÔÉÏĞÅÏ¢¼û README-zh.md |
 
+## Ç°¶Ë API Çåµ¥
+
+Ç°¶Ëµ÷ÓÃÇåµ¥¼û my-shop-uniapp/docs/api.md£¨ÓÉ my-shop-uniapp/src/api/*.ts Éú³É£©¡£
+
 ## Í³Ò»·µ»Ø½á¹¹
 
 Result<T> ¶¨Òå¼û common-parent/common-core/src/main/java/com/cloud/common/result/Result.java¡£
@@ -688,6 +692,7 @@ Result<T> ¶¨Òå¼û common-parent/common-core/src/main/java/com/cloud/common/result
 
 Postman ¼¯ºÏ£ºdocs/postman/cloud-shop.postman_collection.json¡£
 Ä¬ÈÏ²âÊÔÊı¾İÀ´Ô´ÓÚ db/test/*/test.sql£¨userId=20001, merchantId=30001, categoryId=300, spuId=50001, skuId=51001£©¡£
+
 
 
 
