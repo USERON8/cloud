@@ -155,12 +155,20 @@ public final class JwtAuthorityUtils {
                     .collect(Collectors.toSet()));
         }
 
-        return permissions.stream()
-                .map(permission -> normalizeScope(permission, lowerCaseScope))
-                .map(permission -> permission.startsWith("SCOPE_") ? permission.substring("SCOPE_".length()) : permission)
-                .filter(permission -> !permission.isBlank())
-                .map(permission -> new SimpleGrantedAuthority("SCOPE_" + permission))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+        for (String permission : permissions) {
+            String normalized = normalizeScope(permission, lowerCaseScope);
+            if (normalized.isBlank()) {
+                continue;
+            }
+            String raw = normalized.startsWith("SCOPE_") ? normalized.substring("SCOPE_".length()) : normalized;
+            if (raw.isBlank()) {
+                continue;
+            }
+            authorities.add(new SimpleGrantedAuthority(raw));
+            authorities.add(new SimpleGrantedAuthority("SCOPE_" + raw));
+        }
+        return authorities;
     }
 
     private static String normalizeScope(String scope, boolean lowerCaseScope) {

@@ -43,7 +43,6 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
 
         context.getClaims()
                 .claim("client_id", context.getRegisteredClient().getClientId())
-                .claim("token_version", "v2")
                 .claim("roles", roles)
                 .claim("permissions", permissions)
                 .claim("aud", audiences);

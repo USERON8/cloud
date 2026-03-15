@@ -53,6 +53,7 @@ public class LocalUserAuthorityService {
         }
 
         for (String permission : resolvedPermissions) {
+            authorityNames.add(permission);
             authorityNames.add("SCOPE_" + permission);
         }
 

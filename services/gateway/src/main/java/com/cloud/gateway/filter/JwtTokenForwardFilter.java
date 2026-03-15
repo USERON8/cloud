@@ -29,9 +29,9 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
             "X-User-Nickname",
             "X-User-Status",
             "X-Client-Id",
-            "X-Token-Version",
             "X-User-Scopes",
-            "X-User-Roles"
+            "X-User-Roles",
+            "X-Auth-Token"
     };
 
     @Override
@@ -53,6 +53,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                                     headers.remove(header);
                                 }
                                 headers.set("Authorization", "Bearer " + token);
+                                headers.set("X-Auth-Token", token);
                             });
 
 
@@ -81,9 +82,6 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
             
             addHeaderIfPresent(requestBuilder, "X-Client-Id", jwt.getClaimAsString("client_id"));
-
-            
-            addHeaderIfPresent(requestBuilder, "X-Token-Version", jwt.getClaimAsString("token_version"));
 
             
             if (jwt.getClaimAsString("scope") != null) {
