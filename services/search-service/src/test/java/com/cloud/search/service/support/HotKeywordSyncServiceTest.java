@@ -50,6 +50,7 @@ class HotKeywordSyncServiceTest {
                         new HotKeywordJdbcRepository.HotKeywordRecord("phone", 10L),
                         new HotKeywordJdbcRepository.HotKeywordRecord("tablet", 5L)
                 ));
+        ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
         ReflectionTestUtils.setField(hotKeywordSyncService, "restoreSize", 2);
 
         hotKeywordSyncService.restoreFromDbOnStartup();
@@ -68,6 +69,7 @@ class HotKeywordSyncServiceTest {
                         new DefaultTypedTuple<>("phone", 12.0D),
                         new DefaultTypedTuple<>("tablet", 6.0D)
                 ));
+        ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
         ReflectionTestUtils.setField(hotKeywordSyncService, "maxSyncSize", 5);
 
         hotKeywordSyncService.syncToDb();
