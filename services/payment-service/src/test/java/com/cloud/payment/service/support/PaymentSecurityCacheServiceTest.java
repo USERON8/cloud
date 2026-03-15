@@ -47,7 +47,7 @@ class PaymentSecurityCacheServiceTest {
         paymentSecurityCacheService.cacheStatus("pay1", 1L, "PAID");
 
         verify(stringRedisTemplate, never()).delete(org.mockito.ArgumentMatchers.<String>any());
-        verify(hashOperations, never()).putAll(any(), any(Map.class));
+        verify(hashOperations, never()).putAll(any(), org.mockito.ArgumentMatchers.<Map<Object, Object>>any());
     }
 
     @Test
@@ -57,7 +57,7 @@ class PaymentSecurityCacheServiceTest {
         paymentSecurityCacheService.cacheStatus("pay2", 2L, "CREATED");
 
         verify(stringRedisTemplate).delete(org.mockito.ArgumentMatchers.<String>eq("pay:status:pay2"));
-        verify(hashOperations).putAll(eq("pay:status:pay2"), any(Map.class));
+        verify(hashOperations).putAll(eq("pay:status:pay2"), org.mockito.ArgumentMatchers.<Map<Object, Object>>any());
         verify(stringRedisTemplate).expire(eq("pay:status:pay2"), any(Duration.class));
     }
 

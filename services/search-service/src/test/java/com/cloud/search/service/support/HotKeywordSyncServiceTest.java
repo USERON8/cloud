@@ -41,6 +41,7 @@ class HotKeywordSyncServiceTest {
     private HotKeywordSyncService hotKeywordSyncService;
 
     @Test
+    @SuppressWarnings("unchecked")
     void restoreFromDbOnStartup_loadsWhenCacheEmpty() {
         when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
         when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
@@ -55,12 +56,14 @@ class HotKeywordSyncServiceTest {
 
         hotKeywordSyncService.restoreFromDbOnStartup();
 
-        ArgumentCaptor<Set<ZSetOperations.TypedTuple<String>>> captor = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<Set<ZSetOperations.TypedTuple<String>>> captor =
+                ArgumentCaptor.forClass((Class) Set.class);
         verify(zSetOperations).add(eq(HotKeywordKeys.TOTAL_KEY), captor.capture());
         assertThat(captor.getValue()).hasSize(2);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void syncToDb_pushesTopKeywords() {
         when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
         when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
@@ -74,7 +77,7 @@ class HotKeywordSyncServiceTest {
 
         hotKeywordSyncService.syncToDb();
 
-        ArgumentCaptor<Map<String, Long>> captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Long>> captor = ArgumentCaptor.forClass((Class) Map.class);
         verify(hotKeywordJdbcRepository).upsertBatch(captor.capture());
         assertThat(captor.getValue()).containsEntry("phone", 12L).containsEntry("tablet", 6L);
     }

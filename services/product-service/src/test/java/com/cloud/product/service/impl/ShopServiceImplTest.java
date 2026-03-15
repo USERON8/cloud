@@ -36,14 +36,15 @@ class ShopServiceImplTest {
         List<ShopVO> result = service.searchShopsByName("   ", null);
 
         assertThat(result).isEmpty();
-        verify(service, never()).list(org.mockito.ArgumentMatchers.any(com.baomidou.mybatisplus.core.conditions.Wrapper.class));
+        verify(service, never()).list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<Shop>>any());
     }
 
     @Test
     void getShopsByMerchantIdShouldMapResult() {
         Shop shop = new Shop();
         shop.setId(11L);
-        doReturn(List.of(shop)).when(service).list(org.mockito.ArgumentMatchers.any(com.baomidou.mybatisplus.core.conditions.Wrapper.class));
+        doReturn(List.of(shop)).when(service)
+                .list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<Shop>>any());
         doReturn(List.of(new ShopVO())).when(shopConverter).toVOList(List.of(shop));
 
         List<ShopVO> result = service.getShopsByMerchantId(99L, 1);

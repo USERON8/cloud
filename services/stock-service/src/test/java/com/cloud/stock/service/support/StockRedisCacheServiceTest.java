@@ -10,12 +10,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -62,7 +62,11 @@ class StockRedisCacheServiceTest {
 
     @Test
     void applyReserveIfCached_returnsOk() {
-        when(stringRedisTemplate.execute(any(), anyList(), anyString())).thenReturn(1L);
+        when(stringRedisTemplate.execute(
+                org.mockito.ArgumentMatchers.<DefaultRedisScript<Long>>any(),
+                org.mockito.ArgumentMatchers.<List<String>>any(),
+                anyString()))
+                .thenReturn(1L);
 
         var result = stockRedisCacheService.applyReserveIfCached(10L, 2);
 
@@ -81,6 +85,6 @@ class StockRedisCacheServiceTest {
         var result = stockRedisCacheService.getOrLoadLedger(5L);
 
         assertThat(result).isNotNull();
-        verify(hashOperations).putAll(anyString(), any(Map.class));
+        verify(hashOperations).putAll(anyString(), org.mockito.ArgumentMatchers.<Map<Object, Object>>any());
     }
 }

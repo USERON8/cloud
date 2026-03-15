@@ -56,7 +56,9 @@ class AdminServiceImplTest {
 
     @Test
     void createAdmin_success_callsRemoteSync() {
-        LambdaQueryChainWrapper<Admin> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
+        @SuppressWarnings("unchecked")
+        LambdaQueryChainWrapper<Admin> queryWrapper =
+                (LambdaQueryChainWrapper<Admin>) Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
         doReturn(queryWrapper).when(adminService).lambdaQuery();
         doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
         when(queryWrapper.count()).thenReturn(0L);
