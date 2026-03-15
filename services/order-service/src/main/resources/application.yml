@@ -253,6 +253,8 @@ seata:
   application-id: ${spring.application.name}
   tx-service-group: ${SEATA_TX_SERVICE_GROUP:default_tx_group}
   enable-auto-data-source-proxy: true
+  undo-log:
+    retention-days: ${SEATA_UNDO_LOG_RETENTION_DAYS:7}
   data-source-proxy-mode: AT
   saga:
     enabled: true
