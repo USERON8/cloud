@@ -32,7 +32,7 @@ class OAuth2ComplianceCheckerTest {
     }
 
     @Test
-    void validateCompliance_adminMissingAdminScopes_warns() {
+    void validateCompliance_adminMissingAdminPermission_warns() {
         UserDetails userDetails = User.builder()
                 .username("admin")
                 .password("pwd")
@@ -47,6 +47,6 @@ class OAuth2ComplianceCheckerTest {
         OAuth2ComplianceChecker.OAuth2ComplianceResult result =
                 complianceChecker.validateCompliance(userDetails, List.of("ADMIN"));
 
-        assertThat(result.getWarnings()).anyMatch(msg -> msg.contains("missing admin scopes"));
+        assertThat(result.getWarnings()).anyMatch(msg -> msg.contains("admin:all"));
     }
 }

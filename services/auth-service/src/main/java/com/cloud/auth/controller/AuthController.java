@@ -91,7 +91,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/users/{username}/sessions")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Logout all user sessions")
     public Result<String> logoutAllSessions(
             @PathVariable
