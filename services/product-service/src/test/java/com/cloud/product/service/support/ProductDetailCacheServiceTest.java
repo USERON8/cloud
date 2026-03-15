@@ -34,11 +34,12 @@ class ProductDetailCacheServiceTest {
     void setUp() {
         productDetailCacheService = new ProductDetailCacheService(redisTemplate);
         productDetailCacheService.init();
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
     }
 
     @Test
     void getOrLoad_readsFromHashCache() {
+        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+
         SpuDetailVO base = new SpuDetailVO();
         base.setSpuId(10L);
         base.setSpuName("spu");
