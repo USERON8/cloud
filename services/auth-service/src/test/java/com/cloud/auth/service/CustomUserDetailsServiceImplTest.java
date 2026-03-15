@@ -31,6 +31,9 @@ class CustomUserDetailsServiceImplTest {
     private LocalUserAuthorityService localUserAuthorityService;
 
     @Mock
+    private AuthUserAuthorityCacheService authorityCacheService;
+
+    @Mock
     private AuthIdentityService authIdentityService;
 
     @InjectMocks
@@ -79,6 +82,7 @@ class CustomUserDetailsServiceImplTest {
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("SCOPE_openid")
         );
+        when(authorityCacheService.loadAuthorities(1L)).thenReturn(List.of());
         when(localUserAuthorityService.buildAuthorities(List.of("ROLE_ADMIN"), null)).thenReturn(authorities);
 
         OAuth2ComplianceChecker complianceChecker = mock(OAuth2ComplianceChecker.class);
@@ -90,6 +94,7 @@ class CustomUserDetailsServiceImplTest {
         assertThat(userDetails.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
                 .containsExactly("ROLE_ADMIN", "SCOPE_openid");
+        verify(authorityCacheService).cacheAuthorities(1L, authorities);
         verify(complianceChecker).validateCompliance(eq(userDetails), eq(List.of("ROLE_ADMIN")));
     }
 }
