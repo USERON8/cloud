@@ -119,9 +119,9 @@
 
 ## order
 
-| æ¹æ³ | è·¯å¾ | å½æ° | åæ° | è¯·æ± |
+| 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| POST | /api/orders | createOrder | payload: CreateOrderPayloadï¼å¿é¡»åå« skuIdï¼, idempotencyKey: string | headers, body |
+| POST | /api/orders | createOrder | payload: CreateOrderPayload（必须包含 skuId）, idempotencyKey: string | headers, body |
 | GET | /api/orders | listOrders | params: OrderQuery = {} | query |
 | GET | /api/orders/{param} | getOrderById | id: number | - |
 | POST | /api/orders/{param}/pay | payOrder | id: number | - |
