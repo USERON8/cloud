@@ -54,6 +54,9 @@ public class MerchantAuthController {
     @Value("${user.auth.list.max-size:200}")
     private Integer authListMaxSize;
 
+    @Value("${minio.cert-bucket-name:cloud-shop-certs}")
+    private String certBucketName;
+
     @PostMapping("/apply/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
             + "or (hasAuthority('SCOPE_merchant:write') "
@@ -80,6 +83,14 @@ public class MerchantAuthController {
         MerchantAuth merchantAuth = merchantAuthConverter.toEntity(merchantAuthRequestDTO);
         merchantAuth.setMerchantId(merchantId);
         merchantAuth.setAuthStatus(STATUS_PENDING);
+        String normalizedLicenseUrl = normalizeBusinessLicenseUrl(
+                merchantAuth.getBusinessLicenseUrl(),
+                existingAuth == null ? null : existingAuth.getBusinessLicenseUrl()
+        );
+        if (normalizedLicenseUrl == null || normalizedLicenseUrl.isBlank()) {
+            return Result.badRequest("invalid business license url");
+        }
+        merchantAuth.setBusinessLicenseUrl(normalizedLicenseUrl);
 
         if (existingAuth != null) {
             merchantAuth.setId(existingAuth.getId());
@@ -123,6 +134,7 @@ public class MerchantAuthController {
 
         try {
             String objectName = minioService.uploadBusinessLicense(merchantId, file);
+            updateBusinessLicenseUrlIfExists(merchantId, objectName);
             String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
             MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
             response.setFileKey(objectName);
@@ -270,6 +282,53 @@ public class MerchantAuthController {
             log.warn("Failed to sign business license url, value={}", businessLicenseUrl, e);
         }
         return merchantAuthDTO;
+    }
+
+    private void updateBusinessLicenseUrlIfExists(Long merchantId, String objectName) {
+        if (merchantId == null || objectName == null || objectName.isBlank()) {
+            return;
+        }
+        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
+        MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
+        if (merchantAuth == null) {
+            return;
+        }
+        merchantAuth.setBusinessLicenseUrl(objectName);
+        merchantAuth.setUpdatedAt(LocalDateTime.now());
+        merchantAuthService.updateById(merchantAuth);
+    }
+
+    private String normalizeBusinessLicenseUrl(String businessLicenseUrl, String existingBusinessLicenseUrl) {
+        if (businessLicenseUrl == null || businessLicenseUrl.isBlank()) {
+            return existingBusinessLicenseUrl;
+        }
+        if (!isHttpUrl(businessLicenseUrl)) {
+            return businessLicenseUrl;
+        }
+        if (existingBusinessLicenseUrl != null && !existingBusinessLicenseUrl.isBlank()
+                && !isHttpUrl(existingBusinessLicenseUrl)) {
+            return existingBusinessLicenseUrl;
+        }
+        String objectName = extractObjectNameFromUrl(businessLicenseUrl);
+        return objectName == null || objectName.isBlank() ? null : objectName;
+    }
+
+    private String extractObjectNameFromUrl(String url) {
+        if (url == null || url.isBlank() || certBucketName == null || certBucketName.isBlank()) {
+            return null;
+        }
+        String bucketSegment = "/" + certBucketName + "/";
+        int bucketIndex = url.indexOf(bucketSegment);
+        if (bucketIndex < 0) {
+            return null;
+        }
+        String objectPart = url.substring(bucketIndex + bucketSegment.length());
+        int queryIndex = objectPart.indexOf('?');
+        if (queryIndex >= 0) {
+            objectPart = objectPart.substring(0, queryIndex);
+        }
+        return objectPart.isBlank() ? null : objectPart;
     }
 
     private boolean isHttpUrl(String value) {
