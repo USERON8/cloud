@@ -22,6 +22,7 @@ public class SkuDetailVO implements Serializable {
     private BigDecimal costPrice;
     private Integer status;
     private String imageUrl;
+    private String imageFile;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

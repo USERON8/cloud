@@ -34,4 +34,7 @@ public class Spu extends BaseEntity<Spu> {
 
     @TableField("main_image")
     private String mainImage;
+
+    @TableField("main_image_file")
+    private String mainImageFile;
 }

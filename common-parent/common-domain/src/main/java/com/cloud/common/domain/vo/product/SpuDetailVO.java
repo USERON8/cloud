@@ -21,6 +21,7 @@ public class SpuDetailVO implements Serializable {
     private Integer status;
     private String description;
     private String mainImage;
+    private String mainImageFile;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<SkuDetailVO> skus;

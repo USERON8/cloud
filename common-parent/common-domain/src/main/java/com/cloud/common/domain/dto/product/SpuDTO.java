@@ -32,4 +32,6 @@ public class SpuDTO implements Serializable {
     private String description;
 
     private String mainImage;
+
+    private String mainImageFile;
 }

@@ -67,6 +67,8 @@ public class ProductDTO implements Serializable {
 
     private String imageUrl;
 
+    private String imageFile;
+
     
 
 

@@ -39,4 +39,7 @@ public class Sku extends BaseEntity<Sku> {
 
     @TableField("image_url")
     private String imageUrl;
+
+    @TableField("image_file")
+    private String imageFile;
 }

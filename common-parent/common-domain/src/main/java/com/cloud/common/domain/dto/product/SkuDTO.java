@@ -35,4 +35,6 @@ public class SkuDTO implements Serializable {
     private Integer status = 1;
 
     private String imageUrl;
+
+    private String imageFile;
 }

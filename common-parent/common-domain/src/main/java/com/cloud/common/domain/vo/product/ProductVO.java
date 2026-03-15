@@ -60,6 +60,8 @@ public class ProductVO {
 
     private String imageUrl;
 
+    private String imageFile;
+
     
 
 

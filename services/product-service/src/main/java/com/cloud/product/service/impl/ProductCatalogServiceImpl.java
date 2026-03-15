@@ -76,6 +76,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         existing.setStatus(spuDTO.getStatus());
         existing.setDescription(spuDTO.getDescription());
         existing.setMainImage(spuDTO.getMainImage());
+        existing.setMainImageFile(spuDTO.getMainImageFile());
         spuMapper.updateById(existing);
 
         List<Sku> oldSkus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
@@ -111,6 +112,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
                 existingSku.setCostPrice(skuDTO.getCostPrice());
                 existingSku.setStatus(skuDTO.getStatus());
                 existingSku.setImageUrl(skuDTO.getImageUrl());
+                existingSku.setImageFile(skuDTO.getImageFile());
                 existingSku.setDeleted(0);
                 skuMapper.updateById(existingSku);
                 if (existingSku.getId() != null) {
@@ -221,6 +223,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         spu.setStatus(dto.getStatus());
         spu.setDescription(dto.getDescription());
         spu.setMainImage(dto.getMainImage());
+        spu.setMainImageFile(dto.getMainImageFile());
         return spu;
     }
 
@@ -238,6 +241,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         sku.setCostPrice(dto.getCostPrice());
         sku.setStatus(dto.getStatus());
         sku.setImageUrl(dto.getImageUrl());
+        sku.setImageFile(dto.getImageFile());
         return sku;
     }
 
@@ -252,6 +256,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         vo.setStatus(spu.getStatus());
         vo.setDescription(spu.getDescription());
         vo.setMainImage(spu.getMainImage());
+        vo.setMainImageFile(spu.getMainImageFile());
         vo.setCreatedAt(spu.getCreatedAt());
         vo.setUpdatedAt(spu.getUpdatedAt());
 
@@ -316,6 +321,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
         vo.setCostPrice(sku.getCostPrice());
         vo.setStatus(sku.getStatus());
         vo.setImageUrl(sku.getImageUrl());
+        vo.setImageFile(sku.getImageFile());
         vo.setCreatedAt(sku.getCreatedAt());
         vo.setUpdatedAt(sku.getUpdatedAt());
         return vo;
