@@ -407,7 +407,7 @@
                             </configuration>
                         </execution>
                     </executions>
-                    <configuration>
+                    <configuration combine.self="override">
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
                         <systemPropertyVariables>
@@ -448,7 +448,7 @@
                         </configuration>
                     </execution>
                 </executions>
-                <configuration>
+                <configuration combine.self="override">
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
                     <systemPropertyVariables>
