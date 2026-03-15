@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.common.utils.RedisKeyScanUtils;
+import com.cloud.auth.util.RedisKeyHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -172,7 +172,7 @@ public class OAuth2TokenManagementService {
             return 0;
         }
 
-        Set<String> authKeys = RedisKeyScanUtils.scanKeys(redisTemplate, "oauth2:auth:*", 500);
+        Set<String> authKeys = RedisKeyHelper.scanKeys(redisTemplate, "oauth2:auth:*");
         if (authKeys == null || authKeys.isEmpty()) {
             return 0;
         }

@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.common.utils.RedisKeyScanUtils;
+import com.cloud.auth.util.RedisKeyHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -91,15 +90,15 @@ public class TokenBlacklistService {
 
     public int cleanupExpiredEntries() {
         try {
-            Set<String> allKeys = RedisKeyScanUtils.scanKeys(redisTemplate, BLACKLIST_KEY_PREFIX + "*", 500);
+            Set<String> allKeys = RedisKeyHelper.scanKeys(redisTemplate, BLACKLIST_KEY_PREFIX + "*");
             if (allKeys == null || allKeys.isEmpty()) {
                 redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "active_blacklisted", 0);
                 redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "last_updated", Instant.now().toString());
                 return 0;
             }
 
-            Map<String, Long> ttlMap = RedisKeyScanUtils.batchTtlSeconds(redisTemplate, allKeys, 200);
-            java.util.List<String> keysWithoutTtl = new ArrayList<>();
+            Map<String, Long> ttlMap = RedisKeyHelper.batchTtlSeconds(redisTemplate, allKeys);
+            Set<String> keysWithoutTtl = new java.util.HashSet<>();
             for (Map.Entry<String, Long> entry : ttlMap.entrySet()) {
                 Long ttl = entry.getValue();
                 if (ttl != null && ttl == -1L) {
@@ -107,7 +106,7 @@ public class TokenBlacklistService {
                 }
             }
 
-            long cleanedCount = RedisKeyScanUtils.deleteKeysInPipeline(redisTemplate, keysWithoutTtl, 200);
+            long cleanedCount = RedisKeyHelper.deleteKeys(redisTemplate, keysWithoutTtl);
             int activeCount = allKeys.size() - (int) cleanedCount;
             if (activeCount < 0) {
                 activeCount = 0;

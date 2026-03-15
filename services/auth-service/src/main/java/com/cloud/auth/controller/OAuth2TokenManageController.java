@@ -2,7 +2,7 @@ package com.cloud.auth.controller;
 
 import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
 import com.cloud.auth.service.TokenBlacklistService;
-import com.cloud.common.utils.RedisKeyScanUtils;
+import com.cloud.auth.util.RedisKeyHelper;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,8 +49,8 @@ public class OAuth2TokenManageController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> getTokenStats() {
         Map<String, Object> stats = new HashMap<>();
-        long authCount = RedisKeyScanUtils.countKeysByPattern(redisTemplate, "oauth2:auth:*", 500);
-        long tokenCount = RedisKeyScanUtils.countKeysByPattern(redisTemplate, "oauth2:token:*", 500);
+        long authCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:auth:*");
+        long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
 
         stats.put("authorizationCount", authCount);
         stats.put("tokenIndexCount", tokenCount);

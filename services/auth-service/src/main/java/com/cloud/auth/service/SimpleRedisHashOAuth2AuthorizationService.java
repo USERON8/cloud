@@ -1,7 +1,7 @@
 package com.cloud.auth.service;
 
 import lombok.extern.slf4j.Slf4j;
-import com.cloud.common.utils.RedisKeyScanUtils;
+import com.cloud.auth.util.RedisKeyHelper;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2Token;
@@ -233,8 +233,8 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
     public TokenStorageStats getStorageStats() {
         TokenStorageStats stats = new TokenStorageStats();
         try {
-            stats.setAuthorizationCount(RedisKeyScanUtils.countKeysByPattern(redisTemplate, AUTHORIZATION_HASH_PREFIX + "*", 500));
-            stats.setTokenIndexCount(RedisKeyScanUtils.countKeysByPattern(redisTemplate, TOKEN_INDEX_PREFIX + "*", 500));
+            stats.setAuthorizationCount(RedisKeyHelper.countKeysByPattern(redisTemplate, AUTHORIZATION_HASH_PREFIX + "*"));
+            stats.setTokenIndexCount(RedisKeyHelper.countKeysByPattern(redisTemplate, TOKEN_INDEX_PREFIX + "*"));
         } catch (Exception e) {
             log.warn("Failed to collect token storage stats", e);
         }
@@ -257,11 +257,11 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
     }
 
     private int cleanupKeysWithoutTtl(String pattern) {
-        Set<String> keys = RedisKeyScanUtils.scanKeys(redisTemplate, pattern, 500);
+        Set<String> keys = RedisKeyHelper.scanKeys(redisTemplate, pattern);
         if (keys == null || keys.isEmpty()) {
             return 0;
         }
-        Map<String, Long> ttlMap = RedisKeyScanUtils.batchTtlSeconds(redisTemplate, keys, 200);
+        Map<String, Long> ttlMap = RedisKeyHelper.batchTtlSeconds(redisTemplate, keys);
         List<String> keysWithoutTtl = new ArrayList<>();
         for (Map.Entry<String, Long> entry : ttlMap.entrySet()) {
             Long ttl = entry.getValue();
@@ -272,7 +272,7 @@ public class SimpleRedisHashOAuth2AuthorizationService implements OAuth2Authoriz
         if (keysWithoutTtl.isEmpty()) {
             return 0;
         }
-        long deleted = RedisKeyScanUtils.deleteKeysInPipeline(redisTemplate, keysWithoutTtl, 200);
+        long deleted = RedisKeyHelper.deleteKeys(redisTemplate, new java.util.HashSet<>(keysWithoutTtl));
         return (int) deleted;
     }
 
