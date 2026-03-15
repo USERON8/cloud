@@ -3,6 +3,7 @@ package com.cloud.user.controller.merchant;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
+import com.cloud.common.domain.dto.user.MerchantAuthFileUploadDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -10,6 +11,7 @@ import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.MinioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +28,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +49,7 @@ public class MerchantAuthController {
     private final MerchantAuthService merchantAuthService;
     private final MerchantService merchantService;
     private final MerchantAuthConverter merchantAuthConverter;
+    private final MinioService minioService;
 
     @Value("${user.auth.list.max-size:200}")
     private Integer authListMaxSize;
@@ -99,6 +104,39 @@ public class MerchantAuthController {
         return Result.success("merchant auth application submitted", merchantAuthConverter.toDTO(merchantAuth));
     }
 
+    @PostMapping("/upload/license/{merchantId}")
+    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
+            + "or (hasAuthority('SCOPE_merchant:write') "
+            + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+    @Operation(summary = "Upload business license", description = "Upload business license for merchant auth")
+    public Result<MerchantAuthFileUploadDTO> uploadBusinessLicense(
+            @PathVariable("merchantId")
+            @Parameter(description = "Merchant ID")
+            @NotNull(message = "merchant id is required") Long merchantId,
+            @RequestPart("file") MultipartFile file) {
+        if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
+            return Result.forbidden("no permission to upload business license");
+        }
+        if (merchantService.getById(merchantId) == null) {
+            return Result.notFound("merchant not found");
+        }
+
+        try {
+            String objectName = minioService.uploadBusinessLicense(merchantId, file);
+            String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
+            MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
+            response.setFileKey(objectName);
+            response.setPreviewUrl(previewUrl);
+            return Result.success("business license uploaded", response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid business license upload, merchantId={}", merchantId, e);
+            return Result.badRequest("invalid business license upload request");
+        } catch (Exception e) {
+            log.error("Failed to upload business license, merchantId={}", merchantId, e);
+            return Result.error("failed to upload business license");
+        }
+    }
+
     @GetMapping("/get/{merchantId}")
     @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
             + "or (hasAuthority('SCOPE_merchant:read') "
@@ -118,7 +156,7 @@ public class MerchantAuthController {
         if (merchantAuth == null) {
             return Result.success("merchant auth not found", null);
         }
-        return Result.success(merchantAuthConverter.toDTO(merchantAuth));
+        return Result.success(enrichBusinessLicenseUrl(merchantAuthConverter.toDTO(merchantAuth)));
     }
 
     @DeleteMapping("/revoke/{merchantId}")
@@ -210,8 +248,32 @@ public class MerchantAuthController {
                 .last("LIMIT " + effectiveLimit);
         List<MerchantAuthDTO> result = merchantAuthService.list(queryWrapper).stream()
                 .map(merchantAuthConverter::toDTO)
+                .map(this::enrichBusinessLicenseUrl)
                 .toList();
         return Result.success(result);
+    }
+
+    private MerchantAuthDTO enrichBusinessLicenseUrl(MerchantAuthDTO merchantAuthDTO) {
+        if (merchantAuthDTO == null) {
+            return null;
+        }
+        String businessLicenseUrl = merchantAuthDTO.getBusinessLicenseUrl();
+        if (businessLicenseUrl == null || businessLicenseUrl.isBlank()) {
+            return merchantAuthDTO;
+        }
+        if (isHttpUrl(businessLicenseUrl)) {
+            return merchantAuthDTO;
+        }
+        try {
+            merchantAuthDTO.setBusinessLicenseUrl(minioService.getBusinessLicensePresignedUrl(businessLicenseUrl));
+        } catch (Exception e) {
+            log.warn("Failed to sign business license url, value={}", businessLicenseUrl, e);
+        }
+        return merchantAuthDTO;
+    }
+
+    private boolean isHttpUrl(String value) {
+        return value.startsWith("http://") || value.startsWith("https://");
     }
 
     @PostMapping("/review/batch")
