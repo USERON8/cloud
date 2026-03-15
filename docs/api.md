@@ -187,7 +187,6 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | --- | --- | --- | --- | --- | --- |
 | GET | /auth/oauth2/github/user-info | Get GitHub user info | 未标注 | 无 | Result<UserDTO> |
 | GET | /auth/oauth2/github/status | Check GitHub authorization status | 未标注 | 无 | Result<Boolean> |
-| GET | /auth/oauth2/github/callback | Handle GitHub OAuth2 callback | 未标注 | 无 | Result<String> |
 | GET | /auth/oauth2/github/login-url | Get GitHub OAuth2 login URL | 未标注 | query=AuthorizationRequestDTO | Result<String> |
 
 #### OAuth2TokenManageController（/auth/tokens）
@@ -203,14 +202,6 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | POST | /auth/tokens/blacklist/add | Add token to blacklist | hasRole('ADMIN') | query=tokenValue, reason | Result<Void> |
 | GET | /auth/tokens/blacklist/check | Check blacklist status | hasRole('ADMIN') | query=tokenValue | Result<Map<String,Object>> |
 | POST | /auth/tokens/blacklist/cleanup | Cleanup blacklist entries | hasRole('ADMIN') | 无 | Result<Map<String,Object>> |
-
-### gateway
-
-#### SearchFallbackController
-
-| 方法 | 路径 | 说明 | 权限 | 参数/Body | 返回 |
-| --- | --- | --- | --- | --- | --- |
-| GET | /gateway/fallback/search | Search fallback handler | 未标注 | query=route(可选)，其余 query 透传 | Mono<ResponseEntity<String>> |
 
 ### order-service
 
@@ -229,8 +220,6 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | POST | /api/orders/batch/cancel | Batch cancel orders | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=cancelReason? | Result<Integer> |
 | POST | /api/orders/batch/ship | Batch ship orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long>, query=shippingCompany?,trackingNumber? | Result<Integer> |
 | POST | /api/orders/batch/complete | Batch complete orders | @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | body=List<Long> | Result<Integer> |
-| POST | /api/orders/after-sales | Apply after-sale | @permissionManager.hasUserAccess(...) or @permissionManager.hasAdminAccess(...) | body=AfterSale | Result<AfterSale> |
-| POST | /api/orders/after-sales/{afterSaleId}/actions/{action} | Advance after-sale status | @permissionManager.hasUserAccess(...) or @permissionManager.hasMerchantAccess(...) or @permissionManager.hasAdminAccess(...) | path=afterSaleId, action?{AUDIT,APPROVE,REJECT,WAIT_RETURN,RETURN,RECEIVE,PROCESS,REFUND,CANCEL,CLOSE}, query=remark | Result<AfterSale> |
 
 ### payment-service
 
@@ -240,7 +229,6 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/res
 | --- | --- | --- | --- | --- | --- |
 | POST | /api/payments/orders | Create payment order | hasAuthority('SCOPE_internal_api') | body=PaymentOrderCommandDTO | Result<Long> |
 | GET | /api/payments/orders/{paymentNo} | Get payment order by number | isAuthenticated() | path=paymentNo | Result<PaymentOrderVO> |
-| GET | /api/payments/orders/{paymentNo}/status | Get payment order status | isAuthenticated() | path=paymentNo | Result<Map<String,Object>> |
 | POST | /api/payments/callbacks | Handle payment callback | hasAuthority('SCOPE_internal_api') | body=PaymentCallbackCommandDTO | Result<Boolean> |
 | POST | /api/payments/refunds | Create payment refund | hasAuthority('SCOPE_internal_api') | body=PaymentRefundCommandDTO | Result<Long> |
 | GET | /api/payments/refunds/{refundNo} | Get refund by number | hasAuthority('SCOPE_internal_api') | path=refundNo | Result<PaymentRefundVO> |
