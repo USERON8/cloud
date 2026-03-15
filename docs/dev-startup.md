@@ -64,6 +64,17 @@ Environment overrides:
 - `SKYWALKING_AGENT_DOWNLOAD_TIMEOUT_SECONDS=180`: override the download timeout
 - `SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800`: override the OAP gRPC endpoint
 
+## Frontend (UniApp H5)
+
+Build the H5 frontend:
+
+```bash
+pnpm --dir my-shop-uniapp install
+pnpm --dir my-shop-uniapp build:h5
+```
+
+`docker/docker-compose.yml` mounts `my-shop-uniapp/dist` to Nginx `/usr/share/nginx/html`.
+
 ## Examples
 
 Start everything with monitoring:
