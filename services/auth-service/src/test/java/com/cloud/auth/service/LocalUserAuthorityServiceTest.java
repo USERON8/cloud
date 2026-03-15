@@ -38,7 +38,7 @@ class LocalUserAuthorityServiceTest {
         assertThat(authorities)
                 .extracting(auth -> auth.getAuthority())
                 .contains("ROLE_ADMIN", "SCOPE_openid", "SCOPE_profile", "SCOPE_read",
-                        "SCOPE_order:read", "SCOPE_order:write");
+                        "order:read", "order:write", "SCOPE_order:read", "SCOPE_order:write");
     }
 
     @Test
@@ -47,19 +47,8 @@ class LocalUserAuthorityServiceTest {
 
         assertThat(authorities)
                 .extracting(auth -> auth.getAuthority())
-                .contains("ROLE_USER", "SCOPE_user:read", "SCOPE_openid", "SCOPE_profile", "SCOPE_read");
-    }
-
-    @Test
-    void buildAuthorities_superAdminIncludesAdminRole() {
-        var authorities = localUserAuthorityService.buildAuthorities(
-                List.of("SUPER_ADMIN"),
-                List.of("admin:read")
-        );
-
-        assertThat(authorities)
-                .extracting(auth -> auth.getAuthority())
-                .contains("ROLE_SUPER_ADMIN", "ROLE_ADMIN", "SCOPE_admin:read");
+                .contains("ROLE_USER", "user:read", "SCOPE_user:read",
+                        "SCOPE_openid", "SCOPE_profile", "SCOPE_read");
     }
 
     @Test
@@ -85,6 +74,6 @@ class LocalUserAuthorityServiceTest {
         assertThat(authentication.getName()).isEqualTo("alice");
         assertThat(authentication.getAuthorities())
                 .extracting(auth -> auth.getAuthority())
-                .contains("ROLE_USER", "SCOPE_user:read");
+                .contains("ROLE_USER", "user:read", "SCOPE_user:read");
     }
 }

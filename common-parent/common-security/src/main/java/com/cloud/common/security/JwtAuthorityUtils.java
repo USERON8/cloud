@@ -126,12 +126,6 @@ public final class JwtAuthorityUtils {
         }
         return roles.stream()
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase(Locale.ROOT))
-                .flatMap(role -> {
-                    if ("ROLE_SUPER_ADMIN".equals(role)) {
-                        return java.util.stream.Stream.of(role, "ROLE_ADMIN");
-                    }
-                    return java.util.stream.Stream.of(role);
-                })
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }

@@ -381,12 +381,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     private List<String> resolveAdminRoles(String role) {
-        String normalized = StrUtil.blankToDefault(role, "ADMIN").trim().toUpperCase();
-        return switch (normalized) {
-            case "SUPER_ADMIN", "ROLE_SUPER_ADMIN" -> List.of("ROLE_ADMIN", "ROLE_SUPER_ADMIN");
-            case "OPS_ADMIN", "ROLE_OPS_ADMIN" -> List.of("ROLE_ADMIN", "ROLE_OPS_ADMIN");
-            default -> List.of("ROLE_ADMIN");
-        };
+        return List.of("ROLE_ADMIN");
     }
 }
 

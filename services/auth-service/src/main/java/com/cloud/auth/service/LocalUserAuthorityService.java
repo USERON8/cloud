@@ -99,9 +99,6 @@ public class LocalUserAuthorityService {
     private Set<String> expandRoleAuthorities(String roleAuthority) {
         Set<String> roles = new LinkedHashSet<>();
         roles.add(roleAuthority);
-        if ("ROLE_SUPER_ADMIN".equals(roleAuthority)) {
-            roles.add("ROLE_ADMIN");
-        }
         return roles;
     }
 

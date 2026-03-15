@@ -37,9 +37,7 @@ VALUES (20001, 't_user_20001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yz
 INSERT INTO roles (id, code, name, description, deleted, version)
 VALUES (26001, 'ROLE_USER', '普通用户', '基础用户角色', 0, 0),
        (26002, 'ROLE_MERCHANT', '商家', '商家角色', 0, 0),
-       (26003, 'ROLE_ADMIN', '管理员', '管理员角色', 0, 0),
-       (26011, 'ROLE_SUPER_ADMIN', '超级管理员', '超级管理员角色', 0, 0),
-       (26012, 'ROLE_OPS_ADMIN', '运营管理员', '运营管理员角色', 0, 0);
+       (26003, 'ROLE_ADMIN', '管理员', '管理员角色', 0, 0);
 
 INSERT INTO permissions (id, code, name, module, deleted, version)
 VALUES (27001, 'order:create', '创建订单', 'order', 0, 0),
