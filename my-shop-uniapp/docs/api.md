@@ -117,32 +117,21 @@
 | POST | /api/user/notification/batch | sendBatchNotification | payload: { userIds: number[]; title: string; content: string } | body |
 | POST | /api/user/notification/system | sendSystemAnnouncement | payload: { title: string; content: string } | body |
 
-## order-legacy
-
-| 方法 | 路径 | 函数 | 参数 | 请求 |
-| --- | --- | --- | --- | --- |
-| POST | /api/orders | createMainOrder | payload: LegacyCreateMainOrderRequest, idempotencyKey: string | headers, body |
-| GET | /api/orders/main/:param | getMainOrder | mainOrderId: number | - |
-| GET | /api/orders/main/:param/sub-orders | listSubOrders | mainOrderId: number | - |
-| POST | /api/orders/sub/:param/actions/:param | advanceSubOrderStatus | subOrderId: number, action: string | - |
-| POST | /api/orders/after-sales | applyAfterSale | payload: LegacyAfterSale | body |
-| POST | /api/orders/after-sales/:param/actions/:param | advanceAfterSaleStatus | afterSaleId: number, action: string, remark?: string | query |
-
 ## order
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| æ¹æ³ | è·¯å¾ | å½æ° | åæ° | è¯·æ± |
 | --- | --- | --- | --- | --- |
-| POST | /api/v2/orders | createOrder | payload: CreateOrderPayload | body |
-| GET | /api/v2/orders | listOrders | params: OrderQuery = {} | query |
-| GET | /api/v2/orders/:param | getOrderById | id: number | - |
-| POST | /api/v2/orders/:param/pay | payOrder | id: number | - |
-| POST | /api/v2/orders/:param/cancel | cancelOrder | id: number, cancelReason?: string | query |
-| POST | /api/v2/orders/:param/ship | shipOrder | id: number | - |
-| POST | /api/v2/orders/:param/complete | completeOrder | id: number | - |
-| POST | /api/v2/orders/batch/pay | batchPayOrders | ids: number[] | body |
-| POST | /api/v2/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
-| POST | /api/v2/orders/batch/ship | batchShipOrders | ids: number[] | body |
-| POST | /api/v2/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
+| POST | /api/orders | createOrder | payload: CreateOrderPayloadï¼å¿é¡»åå« skuIdï¼, idempotencyKey: string | headers, body |
+| GET | /api/orders | listOrders | params: OrderQuery = {} | query |
+| GET | /api/orders/:param | getOrderById | id: number | - |
+| POST | /api/orders/:param/pay | payOrder | id: number | - |
+| POST | /api/orders/:param/cancel | cancelOrder | id: number, cancelReason?: string | query |
+| POST | /api/orders/:param/ship | shipOrder | id: number, shippingCompany?: string, trackingNumber?: string | query |
+| POST | /api/orders/:param/complete | completeOrder | id: number | - |
+| POST | /api/orders/batch/pay | batchPayOrders | ids: number[] | body |
+| POST | /api/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
+| POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany?: string, trackingNumber?: string | query, body |
+| POST | /api/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
 
 ## payment
 
