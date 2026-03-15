@@ -187,7 +187,7 @@ minio:
   endpoint: ${MINIO_ENDPOINT:}
   access-key: ${MINIO_ACCESS_KEY:}
   secret-key: ${MINIO_SECRET_KEY:}
-  bucket-name: ${MINIO_BUCKET_NAME:product-files}
+  bucket-name: ${MINIO_BUCKET_NAME:cloud-shop-products}
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
   temp:
     enabled: ${MINIO_TEMP_ENABLED:true}
