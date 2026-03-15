@@ -12,6 +12,7 @@ import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -130,18 +131,20 @@ public class UserInfoHashCacheService {
         String newNameKey = nameKey(newUsername);
         String oldNameKey = StrUtil.isNotBlank(oldUsername) ? nameKey(oldUsername) : null;
         try {
-            redisTemplate.execute(new SessionCallback<java.util.List<Object>>() {
+            redisTemplate.execute(new SessionCallback<List<Object>>() {
+                @SuppressWarnings("unchecked")
                 @Override
-                public java.util.List<Object> execute(RedisOperations<String, String> operations) {
-                    operations.multi();
+                public <K, V> List<Object> execute(RedisOperations<K, V> operations) {
+                    RedisOperations<String, String> stringOps = (RedisOperations<String, String>) operations;
+                    stringOps.multi();
                     if (StrUtil.isNotBlank(oldNameKey)) {
-                        operations.delete(oldNameKey);
+                        stringOps.delete(oldNameKey);
                     }
-                    operations.opsForHash().putAll(idKey, payload);
-                    operations.expire(idKey, ttl());
-                    operations.opsForHash().putAll(newNameKey, payload);
-                    operations.expire(newNameKey, ttl());
-                    return operations.exec();
+                    stringOps.opsForHash().putAll(idKey, payload);
+                    stringOps.expire(idKey, ttl());
+                    stringOps.opsForHash().putAll(newNameKey, payload);
+                    stringOps.expire(newNameKey, ttl());
+                    return stringOps.exec();
                 }
             });
         } catch (Exception ex) {
