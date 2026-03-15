@@ -74,7 +74,6 @@ application-local.properties
 # Local env
 .env
 # Frontend build output
-my-shop-web/dist/
 my-shop-uniapp/dist/
 
 # UniApp dependencies/cache
