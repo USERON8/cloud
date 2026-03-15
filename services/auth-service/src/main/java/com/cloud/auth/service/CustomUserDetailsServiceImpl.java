@@ -1,8 +1,8 @@
 package com.cloud.auth.service;
 
-import com.cloud.auth.module.entity.AuthUser;
 import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.auth.util.OAuth2ComplianceChecker;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
@@ -36,20 +36,20 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         }
 
         try {
-            AuthUser authUser = authIdentityService.findByUsername(username.trim());
-            if (authUser == null) {
+            AuthPrincipalDTO principal = authIdentityService.findByUsername(username.trim());
+            if (principal == null) {
                 throw new ResourceNotFoundException("User", username);
             }
-            if (authUser.getStatus() != null && authUser.getStatus() != 1) {
+            if (isDisabled(principal)) {
                 throw new BusinessException(ResultCode.USER_DISABLED);
             }
 
             List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
-                    localUserAuthorityService.buildAuthorities(authIdentityService.getRoleCodes(authUser.getId()));
+                    localUserAuthorityService.buildAuthorities(principal.getRoles(), principal.getPermissions());
 
             UserDetails userDetails = User.builder()
-                    .username(authUser.getUsername())
-                    .password(authUser.getPassword())
+                    .username(principal.getUsername())
+                    .password(principal.getPassword())
                     .authorities(authorities)
                     .accountExpired(false)
                     .accountLocked(false)
@@ -59,7 +59,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
 
             if (complianceChecker != null) {
                 try {
-                    complianceChecker.validateCompliance(userDetails, authIdentityService.getRoleCodes(authUser.getId()));
+                    complianceChecker.validateCompliance(userDetails, principal.getRoles());
                 } catch (Exception e) {
                     log.debug("OAuth2 compliance check skipped: {}", e.getMessage());
                 }
@@ -72,6 +72,13 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
             log.error("Failed to load user details for {}", username, ex);
             throw new UsernameNotFoundException("Failed to load user details for " + username, ex);
         }
+    }
+
+    private boolean isDisabled(AuthPrincipalDTO principal) {
+        if (principal.getEnabled() != null) {
+            return principal.getEnabled() != 1;
+        }
+        return principal.getStatus() != null && principal.getStatus() != 1;
     }
 }
 

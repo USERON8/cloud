@@ -73,7 +73,10 @@ public class OAuth2ComplianceChecker {
     private void validateRoleSpecificPermissions(OAuth2ComplianceResult result,
                                                  Set<String> authorities,
                                                  List<String> roles) {
-        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> normalizedRoles = roles.stream()
+                .map(String::toUpperCase)
+                .map(role -> role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role)
+                .collect(Collectors.toSet());
         if (normalizedRoles.contains("ADMIN")) {
                 if (!authorities.contains("ROLE_ADMIN")) {
                     result.addWarning("Admin user missing ROLE_ADMIN");
@@ -96,7 +99,10 @@ public class OAuth2ComplianceChecker {
     private void validatePermissionInheritance(OAuth2ComplianceResult result,
                                                Set<String> authorities,
                                                List<String> roles) {
-        Set<String> normalizedRoles = roles.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> normalizedRoles = roles.stream()
+                .map(String::toUpperCase)
+                .map(role -> role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role)
+                .collect(Collectors.toSet());
         if (normalizedRoles.contains("ADMIN")) {
             if (!authorities.contains("SCOPE_order:read")) {
                 result.addInfo("Admin should include SCOPE_order:read for support operations");

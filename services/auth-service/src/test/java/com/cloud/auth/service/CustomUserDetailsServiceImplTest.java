@@ -1,8 +1,8 @@
 package com.cloud.auth.service;
 
-import com.cloud.auth.module.entity.AuthUser;
 import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.auth.util.OAuth2ComplianceChecker;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,12 +53,12 @@ class CustomUserDetailsServiceImplTest {
 
     @Test
     void loadUserByUsername_userDisabled_wrapsUsernameNotFound() {
-        AuthUser authUser = new AuthUser();
-        authUser.setId(12L);
-        authUser.setUsername("disabled");
-        authUser.setPassword("pwd");
-        authUser.setStatus(0);
-        when(authIdentityService.findByUsername("disabled")).thenReturn(authUser);
+        AuthPrincipalDTO principal = new AuthPrincipalDTO();
+        principal.setId(12L);
+        principal.setUsername("disabled");
+        principal.setPassword("pwd");
+        principal.setStatus(0);
+        when(authIdentityService.findByUsername("disabled")).thenReturn(principal);
 
         assertThatThrownBy(() -> customUserDetailsService.loadUserByUsername("disabled"))
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -68,19 +67,19 @@ class CustomUserDetailsServiceImplTest {
 
     @Test
     void loadUserByUsername_success_executesComplianceCheck() {
-        AuthUser authUser = new AuthUser();
-        authUser.setId(1L);
-        authUser.setUsername("alice");
-        authUser.setPassword("secret");
-        authUser.setStatus(1);
-        when(authIdentityService.findByUsername("alice")).thenReturn(authUser);
-        when(authIdentityService.getRoleCodes(1L)).thenReturn(List.of("ADMIN"));
+        AuthPrincipalDTO principal = new AuthPrincipalDTO();
+        principal.setId(1L);
+        principal.setUsername("alice");
+        principal.setPassword("secret");
+        principal.setStatus(1);
+        principal.setRoles(List.of("ROLE_ADMIN"));
+        when(authIdentityService.findByUsername("alice")).thenReturn(principal);
 
         List<SimpleGrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("SCOPE_openid")
         );
-        when(localUserAuthorityService.buildAuthorities(List.of("ADMIN"))).thenReturn(authorities);
+        when(localUserAuthorityService.buildAuthorities(List.of("ROLE_ADMIN"), null)).thenReturn(authorities);
 
         OAuth2ComplianceChecker complianceChecker = mock(OAuth2ComplianceChecker.class);
         ReflectionTestUtils.setField(customUserDetailsService, "complianceChecker", complianceChecker);
@@ -91,7 +90,6 @@ class CustomUserDetailsServiceImplTest {
         assertThat(userDetails.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
                 .containsExactly("ROLE_ADMIN", "SCOPE_openid");
-        verify(complianceChecker).validateCompliance(eq(userDetails), eq(List.of("ADMIN")));
-        verify(authIdentityService, times(2)).getRoleCodes(1L);
+        verify(complianceChecker).validateCompliance(eq(userDetails), eq(List.of("ROLE_ADMIN")));
     }
 }

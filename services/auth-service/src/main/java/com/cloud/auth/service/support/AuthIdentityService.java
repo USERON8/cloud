@@ -2,19 +2,16 @@ package com.cloud.auth.service.support;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.auth.mapper.AuthOauthAccountMapper;
-import com.cloud.auth.mapper.AuthUserMapper;
-import com.cloud.auth.module.entity.AuthOauthAccount;
-import com.cloud.auth.module.entity.AuthUser;
+import com.cloud.api.auth.AuthDubboApi;
+import com.cloud.auth.module.model.OAuthAccountRecord;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
-import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,55 +24,66 @@ public class AuthIdentityService {
 
     private static final String GITHUB_PROVIDER = "github";
 
-    private final AuthUserMapper authUserMapper;
-    private final AuthOauthAccountMapper authOauthAccountMapper;
-    private final AuthRoleAssignmentService authRoleAssignmentService;
+    @DubboReference(check = false, timeout = 5000, retries = 0)
+    private AuthDubboApi authDubboApi;
+
     private final AuthProfileSyncService authProfileSyncService;
-    private final PasswordEncoder passwordEncoder;
+    private final OAuthAccountCacheService oauthAccountCacheService;
 
     @Transactional(readOnly = true)
-    public AuthUser findByUsername(String username) {
+    public AuthPrincipalDTO findByUsername(String username) {
         if (StrUtil.isBlank(username)) {
             return null;
         }
-        return authUserMapper.selectOne(new LambdaQueryWrapper<AuthUser>()
-                .eq(AuthUser::getUsername, username.trim())
-                .last("limit 1"));
+        return authDubboApi.findPrincipalByUsername(username.trim());
     }
 
     @Transactional(readOnly = true)
-    public AuthUser findById(Long userId) {
-        return userId == null ? null : authUserMapper.selectById(userId);
+    public AuthPrincipalDTO findById(Long userId) {
+        return userId == null ? null : authDubboApi.findPrincipalById(userId);
     }
 
     @Transactional(readOnly = true)
     public List<String> getRoleCodes(Long userId) {
-        return authRoleAssignmentService.getRoleCodesByUserId(userId);
+        if (userId == null) {
+            return List.of();
+        }
+        List<String> roles = authDubboApi.getRoleCodes(userId);
+        return roles == null ? List.of() : roles;
     }
 
     @Transactional(readOnly = true)
     public Map<Long, List<String>> getRoleCodesByUserIds(List<Long> userIds) {
-        return authRoleAssignmentService.getRoleCodesByUserIds(userIds);
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, List<String>> roles = authDubboApi.getRoleCodesByUserIds(userIds);
+        return roles == null ? Map.of() : roles;
     }
 
     @Transactional(readOnly = true)
     public List<Long> getUserIdsByRoleCode(String roleCode) {
-        return authRoleAssignmentService.getUserIdsByRoleCode(roleCode);
+        if (StrUtil.isBlank(roleCode)) {
+            return List.of();
+        }
+        List<Long> userIds = authDubboApi.getUserIdsByRoleCode(roleCode);
+        return userIds == null ? List.of() : userIds;
     }
 
     @Transactional(readOnly = true)
     public Map<String, Long> getRoleDistribution() {
-        return authRoleAssignmentService.getRoleDistribution();
+        Map<String, Long> distribution = authDubboApi.getRoleDistribution();
+        return distribution == null ? Map.of() : distribution;
     }
 
     @Transactional(readOnly = true)
     public AuthPrincipalDTO findPrincipalByUsername(String username) {
-        return toPrincipalDTO(findByUsername(username));
+        return findByUsername(username);
     }
 
     @Transactional(readOnly = true)
     public AuthPrincipalDTO findPrincipalById(Long userId) {
-        return toPrincipalDTO(findById(userId));
+        return findById(userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -83,18 +91,7 @@ public class AuthIdentityService {
         if (authPrincipalDTO == null || StrUtil.isBlank(authPrincipalDTO.getUsername())) {
             throw new BusinessException("username is required");
         }
-        if (findByUsername(authPrincipalDTO.getUsername()) != null) {
-            throw new BusinessException("username already exists");
-        }
-
-        AuthUser authUser = new AuthUser();
-        authUser.setId(authPrincipalDTO.getId());
-        authUser.setUsername(StrUtil.trim(authPrincipalDTO.getUsername()));
-        authUser.setPassword(normalizePassword(authPrincipalDTO.getPassword()));
-        authUser.setStatus(authPrincipalDTO.getStatus() == null ? 1 : authPrincipalDTO.getStatus());
-        authUserMapper.insert(authUser);
-        authRoleAssignmentService.replaceRoles(authUser.getId(), authPrincipalDTO.getRoles());
-        return authUser.getId();
+        return authDubboApi.createPrincipal(authPrincipalDTO);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -102,36 +99,7 @@ public class AuthIdentityService {
         if (authPrincipalDTO == null || authPrincipalDTO.getId() == null) {
             throw new BusinessException("principal id is required");
         }
-
-        AuthUser existing = authUserMapper.selectById(authPrincipalDTO.getId());
-        if (existing == null) {
-            throw new BusinessException("principal not found");
-        }
-
-        String newUsername = StrUtil.trim(authPrincipalDTO.getUsername());
-        if (StrUtil.isNotBlank(newUsername) && !StrUtil.equals(newUsername, existing.getUsername())) {
-            AuthUser duplicate = findByUsername(newUsername);
-            if (duplicate != null && !duplicate.getId().equals(authPrincipalDTO.getId())) {
-                throw new BusinessException("username already exists");
-            }
-        }
-
-        AuthUser update = new AuthUser();
-        update.setId(authPrincipalDTO.getId());
-        if (StrUtil.isNotBlank(newUsername)) {
-            update.setUsername(newUsername);
-        }
-        if (StrUtil.isNotBlank(authPrincipalDTO.getPassword())) {
-            update.setPassword(normalizePassword(authPrincipalDTO.getPassword()));
-        }
-        if (authPrincipalDTO.getStatus() != null) {
-            update.setStatus(authPrincipalDTO.getStatus());
-        }
-        boolean updated = authUserMapper.updateById(update) > 0;
-        if (updated && authPrincipalDTO.getRoles() != null) {
-            authRoleAssignmentService.replaceRoles(authPrincipalDTO.getId(), authPrincipalDTO.getRoles());
-        }
-        return updated;
+        return authDubboApi.updatePrincipal(authPrincipalDTO);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -139,10 +107,7 @@ public class AuthIdentityService {
         if (userId == null) {
             return false;
         }
-        authRoleAssignmentService.replaceRoles(userId, List.of());
-        authOauthAccountMapper.delete(new LambdaQueryWrapper<AuthOauthAccount>()
-                .eq(AuthOauthAccount::getUserId, userId));
-        return authUserMapper.deleteById(userId) > 0;
+        return authDubboApi.deletePrincipal(userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -153,19 +118,7 @@ public class AuthIdentityService {
         if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
             throw new BusinessException("old password and new password are required");
         }
-
-        AuthUser existing = authUserMapper.selectById(userId);
-        if (existing == null) {
-            throw new BusinessException("principal not found");
-        }
-        if (!passwordEncoder.matches(oldPassword, existing.getPassword())) {
-            return false;
-        }
-
-        AuthUser update = new AuthUser();
-        update.setId(userId);
-        update.setPassword(normalizePassword(newPassword));
-        return authUserMapper.updateById(update) > 0;
+        return authDubboApi.changePassword(userId, oldPassword, newPassword);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -175,74 +128,91 @@ public class AuthIdentityService {
             throw new BusinessException("username already exists");
         }
 
-        AuthUser authUser = new AuthUser();
-        authUser.setUsername(username);
-        authUser.setPassword(passwordEncoder.encode(StrUtil.trim(registerRequest.getPassword())));
-        authUser.setStatus(1);
-        authUserMapper.insert(authUser);
+        AuthPrincipalDTO principal = new AuthPrincipalDTO();
+        principal.setUsername(username);
+        principal.setPassword(StrUtil.trim(registerRequest.getPassword()));
+        principal.setPhone(registerRequest.getPhone());
+        principal.setNickname(registerRequest.getNickname());
+        principal.setStatus(1);
+        principal.setEnabled(1);
+        principal.setRoles(List.of("ROLE_USER"));
 
-        authRoleAssignmentService.replaceRoles(authUser.getId(), List.of("USER"));
-        List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserProfileDTO profile = authProfileSyncService.createRegisteredProfile(authUser, registerRequest);
-        return mergeProfile(profile, authUser, roles, registerRequest.getPhone(), registerRequest.getNickname(), null, null);
+        Long userId = authDubboApi.createPrincipal(principal);
+        if (userId == null) {
+            throw new BusinessException("failed to create user");
+        }
+        principal.setId(userId);
+
+        UserProfileDTO profile = authProfileSyncService.createRegisteredProfile(principal, registerRequest);
+        return mergeProfile(profile, principal, principal.getRoles(),
+                registerRequest.getPhone(), registerRequest.getNickname(), null, null);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public UserDTO getOrCreateGitHubUser(GitHubUserDTO githubUserDTO) {
         String providerUserId = String.valueOf(githubUserDTO.getGithubId());
-        AuthOauthAccount existingAccount = authOauthAccountMapper.selectOne(new LambdaQueryWrapper<AuthOauthAccount>()
-                .eq(AuthOauthAccount::getProvider, GITHUB_PROVIDER)
-                .eq(AuthOauthAccount::getProviderUserId, providerUserId)
-                .last("limit 1"));
+        OAuthAccountRecord account = oauthAccountCacheService.getByProviderUserId(GITHUB_PROVIDER, providerUserId);
 
-        AuthUser authUser;
-        if (existingAccount == null) {
-            authUser = new AuthUser();
-            authUser.setUsername(buildUniqueGithubUsername(githubUserDTO.getLogin()));
-            authUser.setPassword(passwordEncoder.encode("github_oauth2_" + githubUserDTO.getGithubId() + "_" + IdUtil.fastSimpleUUID()));
-            authUser.setStatus(1);
-            authUserMapper.insert(authUser);
-            authRoleAssignmentService.replaceRoles(authUser.getId(), List.of("USER"));
-
-            AuthOauthAccount account = new AuthOauthAccount();
-            account.setUserId(authUser.getId());
-            account.setProvider(GITHUB_PROVIDER);
-            account.setProviderUserId(providerUserId);
+        AuthPrincipalDTO principal;
+        if (account == null) {
+            principal = createGitHubPrincipal(githubUserDTO);
+            OAuthAccountRecord newAccount = OAuthAccountRecord.builder()
+                    .provider(GITHUB_PROVIDER)
+                    .providerUserId(providerUserId)
+                    .userId(principal.getId())
+                    .providerUsername(githubUserDTO.getLogin())
+                    .email(githubUserDTO.getEmail())
+                    .avatarUrl(githubUserDTO.getAvatarUrl())
+                    .lastSyncAt(System.currentTimeMillis())
+                    .build();
+            oauthAccountCacheService.save(newAccount);
+        } else {
+            principal = authDubboApi.findPrincipalById(account.getUserId());
+            if (principal == null) {
+                principal = createGitHubPrincipal(githubUserDTO);
+                account.setUserId(principal.getId());
+            }
             account.setProviderUsername(githubUserDTO.getLogin());
             account.setEmail(githubUserDTO.getEmail());
             account.setAvatarUrl(githubUserDTO.getAvatarUrl());
-            authOauthAccountMapper.insert(account);
-        } else {
-            authUser = authUserMapper.selectById(existingAccount.getUserId());
-            if (authUser == null) {
-                throw new IllegalStateException("OAuth account exists but auth user is missing");
-            }
-            AuthOauthAccount update = new AuthOauthAccount();
-            update.setId(existingAccount.getId());
-            update.setProviderUsername(githubUserDTO.getLogin());
-            update.setEmail(githubUserDTO.getEmail());
-            update.setAvatarUrl(githubUserDTO.getAvatarUrl());
-            authOauthAccountMapper.updateById(update);
+            account.setLastSyncAt(System.currentTimeMillis());
+            oauthAccountCacheService.save(account);
         }
 
-        List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(authUser.getId());
-        UserProfileDTO profile = authProfileSyncService.syncGitHubProfile(authUser, githubUserDTO);
-        return mergeProfile(profile, authUser, roles, null, githubUserDTO.getDisplayName(), githubUserDTO.getEmail(), githubUserDTO.getAvatarUrl());
+        UserProfileDTO profile = authProfileSyncService.syncGitHubProfile(principal, githubUserDTO);
+        return mergeProfile(profile, principal, principal.getRoles(),
+                null, githubUserDTO.getDisplayName(), githubUserDTO.getEmail(), githubUserDTO.getAvatarUrl());
     }
 
     @Transactional(readOnly = true)
     public UserDTO getDisplayUser(Long userId) {
-        AuthUser authUser = findById(userId);
-        if (authUser == null) {
+        AuthPrincipalDTO principal = findById(userId);
+        if (principal == null) {
             return null;
         }
-        List<String> roles = authRoleAssignmentService.getRoleCodesByUserId(userId);
         UserProfileDTO profile = authProfileSyncService.getProfile(userId);
-        return mergeProfile(profile, authUser, roles, null, null, null, null);
+        return mergeProfile(profile, principal, principal.getRoles(), null, null, null, null);
+    }
+
+    private AuthPrincipalDTO createGitHubPrincipal(GitHubUserDTO githubUserDTO) {
+        AuthPrincipalDTO principal = new AuthPrincipalDTO();
+        principal.setUsername(buildUniqueGithubUsername(githubUserDTO.getLogin()));
+        principal.setNickname(StrUtil.blankToDefault(githubUserDTO.getDisplayName(), githubUserDTO.getLogin()));
+        principal.setEmail(githubUserDTO.getEmail());
+        principal.setPassword("github_oauth2_" + githubUserDTO.getGithubId() + "_" + IdUtil.fastSimpleUUID());
+        principal.setStatus(1);
+        principal.setEnabled(1);
+        principal.setRoles(List.of("ROLE_USER"));
+        Long userId = authDubboApi.createPrincipal(principal);
+        if (userId == null) {
+            throw new IllegalStateException("Failed to create OAuth user principal");
+        }
+        principal.setId(userId);
+        return principal;
     }
 
     private UserDTO mergeProfile(UserProfileDTO profile,
-                                 AuthUser authUser,
+                                 AuthPrincipalDTO principal,
                                  List<String> roles,
                                  String phone,
                                  String nickname,
@@ -255,15 +225,15 @@ public class AuthIdentityService {
             result.setEmail(profile.getEmail());
             result.setAvatarUrl(profile.getAvatarUrl());
         }
-        result.setId(authUser.getId());
-        result.setUsername(authUser.getUsername());
-        result.setStatus(authUser.getStatus());
-        result.setRoles(roles);
+        result.setId(principal.getId());
+        result.setUsername(principal.getUsername());
+        result.setStatus(principal.getStatus());
+        result.setRoles(roles == null ? List.of() : roles);
         if (StrUtil.isBlank(result.getPhone())) {
             result.setPhone(phone);
         }
         if (StrUtil.isBlank(result.getNickname())) {
-            result.setNickname(StrUtil.blankToDefault(nickname, authUser.getUsername()));
+            result.setNickname(StrUtil.blankToDefault(nickname, principal.getUsername()));
         }
         if (StrUtil.isBlank(result.getEmail())) {
             result.setEmail(email);
@@ -284,32 +254,5 @@ public class AuthIdentityService {
             candidateUsername = StrUtil.format("github_{}_{}", baseLogin, suffix);
         }
         return "github_" + baseLogin + "_" + IdUtil.fastSimpleUUID();
-    }
-
-    private AuthPrincipalDTO toPrincipalDTO(AuthUser authUser) {
-        if (authUser == null) {
-            return null;
-        }
-        AuthPrincipalDTO dto = new AuthPrincipalDTO();
-        dto.setId(authUser.getId());
-        dto.setUsername(authUser.getUsername());
-        dto.setStatus(authUser.getStatus());
-        dto.setRoles(authRoleAssignmentService.getRoleCodesByUserId(authUser.getId()));
-        return dto;
-    }
-
-    private String normalizePassword(String password) {
-        String trimmed = password == null ? null : password.trim();
-        if (StrUtil.isBlank(trimmed)) {
-            throw new BusinessException("password is required");
-        }
-        if (isBCryptHash(trimmed)) {
-            return trimmed;
-        }
-        return passwordEncoder.encode(trimmed);
-    }
-
-    private boolean isBCryptHash(String value) {
-        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }

@@ -1,7 +1,7 @@
 package com.cloud.auth.service.support;
 
 import com.cloud.api.user.UserDubboApi;
-import com.cloud.auth.module.entity.AuthUser;
+import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
@@ -32,27 +32,33 @@ public class AuthProfileSyncService {
         }
     }
 
-    public UserProfileDTO createRegisteredProfile(AuthUser authUser, RegisterRequestDTO request) {
+    public UserProfileDTO createRegisteredProfile(AuthPrincipalDTO principal, RegisterRequestDTO request) {
+        if (principal == null) {
+            return null;
+        }
         UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
-        profile.setId(authUser.getId());
-        profile.setUsername(authUser.getUsername());
+        profile.setId(principal.getId());
+        profile.setUsername(principal.getUsername());
         profile.setPhone(request.getPhone());
         profile.setNickname(request.getNickname());
-        profile.setStatus(authUser.getStatus());
+        profile.setStatus(principal.getStatus());
         createProfile(profile);
-        return getProfile(authUser.getId());
+        return getProfile(principal.getId());
     }
 
-    public UserProfileDTO syncGitHubProfile(AuthUser authUser, GitHubUserDTO githubUserDTO) {
+    public UserProfileDTO syncGitHubProfile(AuthPrincipalDTO principal, GitHubUserDTO githubUserDTO) {
+        if (principal == null) {
+            return null;
+        }
         UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
-        profile.setId(authUser.getId());
-        profile.setUsername(authUser.getUsername());
+        profile.setId(principal.getId());
+        profile.setUsername(principal.getUsername());
         profile.setNickname(githubUserDTO.getDisplayName());
         profile.setEmail(githubUserDTO.getEmail());
         profile.setAvatarUrl(githubUserDTO.getAvatarUrl());
-        profile.setStatus(authUser.getStatus());
+        profile.setStatus(principal.getStatus());
 
-        UserProfileDTO existing = getProfile(authUser.getId());
+        UserProfileDTO existing = getProfile(principal.getId());
         try {
             if (existing == null) {
                 createProfile(profile);
@@ -62,7 +68,7 @@ public class AuthProfileSyncService {
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to sync OAuth profile to user-service", ex);
         }
-        return getProfile(authUser.getId());
+        return getProfile(principal.getId());
     }
 
     private void createProfile(UserProfileUpsertDTO profileUpsertDTO) {
