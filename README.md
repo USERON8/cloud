@@ -5,7 +5,7 @@ Version: 1.1.0
 
 A simplified e-commerce microservices project.  
 Backend: Spring Boot + Spring Cloud Alibaba.  
-Frontend: Vue 3 + TypeScript.
+Frontend: UniApp (Vue 3 + TypeScript).
 
 ## Current Consistency Model
 
@@ -27,7 +27,7 @@ Frontend: Vue 3 + TypeScript.
 | `stock-service` | `8085` | Inventory and stock movement |
 | `payment-service` | `8086` | Payment and Alipay integration |
 | `search-service` | `8087` | Elasticsearch search |
-| `my-shop-web` | `5173` (dev) | Web/Android/iOS frontend |
+| `my-shop-uniapp` | `5173` (dev) | Web/Android/iOS frontend (UniApp) |
 
 ## Quick Start
 
@@ -101,8 +101,8 @@ Rolling application and error logs are written to `services/<service>/logs/` by 
 5. Build frontend:
 
 ```bash
-pnpm --dir my-shop-web install
-pnpm --dir my-shop-web build
+pnpm --dir my-shop-uniapp install
+pnpm --dir my-shop-uniapp build:h5
 ```
 
 ## Common Entrances

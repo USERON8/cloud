@@ -25,7 +25,7 @@ Version: 1.1.0
 | `stock-service` | `8085` | 库存与库存变更 |
 | `payment-service` | `8086` | 支付与支付宝接口 |
 | `search-service` | `8087` | Elasticsearch 搜索 |
-| `my-shop-web` | `5173`(dev) | Web/Android/iOS 前端 |
+| `my-shop-uniapp` | `5173`(dev) | Web/Android/iOS 前端（UniApp） |
 
 ## 快速启动
 
@@ -89,11 +89,11 @@ bash scripts/dev/start-services.sh
 5. 构建前端并部署到 Nginx 静态目录：
 
 ```bash
-pnpm --dir my-shop-web install
-pnpm --dir my-shop-web build
+pnpm --dir my-shop-uniapp install
+pnpm --dir my-shop-uniapp build:h5
 ```
 
-将 `my-shop-web/dist` 内容拷贝到 `docker/docker-compose/nginx/html/` 后重启 `nginx` 容器。
+构建后，`docker/docker-compose.yml` 已将 `my-shop-uniapp/dist` 挂载到 Nginx 的 `/usr/share/nginx/html`，重启 `nginx` 容器即可。
 
 ## 常用入口
 
