@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("deprecation")
 public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> implements MerchantService {
 
     private static final String MERCHANT_CACHE = "merchant";
