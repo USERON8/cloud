@@ -56,7 +56,7 @@ public class OrderController {
     private final OrderSubMapper orderSubMapper;
 
     @PostMapping
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:create')")
     @Operation(summary = "Create main order")
     public Result<OrderAggregateResponse> createMainOrder(@RequestBody @Valid CreateMainOrderRequest request,
                                                            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -79,7 +79,7 @@ public class OrderController {
     }
 
     @GetMapping
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "List orders")
     public Result<PageResult<OrderSummaryDTO>> listOrders(@RequestParam(required = false) Integer page,
                                                           @RequestParam(required = false) Integer size,
@@ -112,7 +112,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Get order detail")
     public Result<OrderSummaryDTO> getOrder(@PathVariable Long orderId, Authentication authentication) {
         OrderMain main = requireAccessibleMainOrder(orderId, authentication);
@@ -121,7 +121,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/pay")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:create')")
     @Operation(summary = "Pay order")
     public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
         OrderMain main = requireAccessibleMainOrder(orderId, authentication);
@@ -131,7 +131,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:cancel')")
     @Operation(summary = "Cancel order")
     public Result<Boolean> cancelOrder(@PathVariable Long orderId,
                                        @RequestParam(required = false) String cancelReason,
@@ -147,7 +147,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/ship")
-    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Ship order")
     public Result<Boolean> shipOrderStandard(@PathVariable Long orderId,
                                              @RequestParam(required = false) String shippingCompany,
@@ -162,7 +162,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/complete")
-    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Complete order")
     public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
         OrderMain main = requireAccessibleMainOrder(orderId, authentication);
@@ -172,14 +172,14 @@ public class OrderController {
     }
 
     @PostMapping("/batch/pay")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:create')")
     @Operation(summary = "Batch pay orders")
     public Result<Integer> batchPay(@RequestBody List<Long> orderIds, Authentication authentication) {
         return Result.success(batchApply(orderIds, authentication, "PAY", null, null, null));
     }
 
     @PostMapping("/batch/cancel")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:cancel')")
     @Operation(summary = "Batch cancel orders")
     public Result<Integer> batchCancel(@RequestBody List<Long> orderIds,
                                        @RequestParam(required = false) String cancelReason,
@@ -188,7 +188,7 @@ public class OrderController {
     }
 
     @PostMapping("/batch/ship")
-    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Batch ship orders")
     public Result<Integer> batchShip(@RequestBody List<Long> orderIds,
                                      @RequestParam(required = false) String shippingCompany,
@@ -200,14 +200,14 @@ public class OrderController {
     }
 
     @PostMapping("/batch/complete")
-    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Batch complete orders")
     public Result<Integer> batchComplete(@RequestBody List<Long> orderIds, Authentication authentication) {
         return Result.success(batchApply(orderIds, authentication, "DONE", null, null, null));
     }
 
     @PostMapping("/after-sales")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Apply after-sale")
     public Result<AfterSale> applyAfterSale(@RequestBody AfterSale afterSale,
                                                Authentication authentication) {
@@ -223,7 +223,7 @@ public class OrderController {
     }
 
     @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
-    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Advance after-sale status")
     public Result<AfterSale> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
                                                        @PathVariable String action,
