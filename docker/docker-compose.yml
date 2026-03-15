@@ -248,7 +248,7 @@ services:
         source: ./docker-compose/nginx/logs
         target: /var/log/nginx
       - type: bind
-        source: ../my-shop-web/dist
+        source: ../my-shop-uniapp/dist
         target: /usr/share/nginx/html
     depends_on:
       - nacos
