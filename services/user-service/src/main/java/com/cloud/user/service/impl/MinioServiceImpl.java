@@ -36,7 +36,7 @@ public class MinioServiceImpl implements MinioService {
     private final MinioClient minioClient;
     private final CacheManager cacheManager;
 
-    @Value("${minio.bucket-name:user-avatars}")
+    @Value("${minio.bucket-name:cloud-shop-avatars}")
     private String bucketName;
 
     @Value("${minio.public-endpoint}")

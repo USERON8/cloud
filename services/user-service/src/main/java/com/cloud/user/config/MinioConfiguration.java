@@ -37,6 +37,9 @@ public class MinioConfiguration {
     private String bucketName;
 
     
+    private String certBucketName;
+
+    
 
 
     private String publicEndpoint;

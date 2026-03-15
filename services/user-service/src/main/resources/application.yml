@@ -165,6 +165,13 @@ user:
   cache:
     info:
       ttl-seconds: ${USER_INFO_CACHE_TTL_SECONDS:1800}
+minio:
+  endpoint: ${MINIO_ENDPOINT:}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET_NAME:cloud-shop-avatars}
+  cert-bucket-name: ${MINIO_CERT_BUCKET_NAME:cloud-shop-certs}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}
