@@ -1,6 +1,6 @@
 ﻿# UniApp 前端 API 清单
 
-生成时间：2026-03-15 15:52
+生成时间：2026-03-15 18:47
 来源：my-shop-uniapp/src/api/*.ts
 
 说明：
@@ -136,11 +136,11 @@
 | GET | /api/v2/orders | listOrders | params: OrderQuery = {} | query |
 | GET | /api/v2/orders/:param | getOrderById | id: number | - |
 | POST | /api/v2/orders/:param/pay | payOrder | id: number | - |
-| POST | /api/v2/orders/:param/cancel | cancelOrder | id: number, reason?: string | query |
+| POST | /api/v2/orders/:param/cancel | cancelOrder | id: number, cancelReason?: string | query |
 | POST | /api/v2/orders/:param/ship | shipOrder | id: number | - |
 | POST | /api/v2/orders/:param/complete | completeOrder | id: number | - |
 | POST | /api/v2/orders/batch/pay | batchPayOrders | ids: number[] | body |
-| POST | /api/v2/orders/batch/cancel | batchCancelOrders | ids: number[], reason?: string | query, body |
+| POST | /api/v2/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
 | POST | /api/v2/orders/batch/ship | batchShipOrders | ids: number[] | body |
 | POST | /api/v2/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
 
@@ -292,4 +292,3 @@
 | PUT | /api/user/profile/current | updateCurrentProfile | payload: Partial<UserInfo> | body |
 | PUT | /api/user/profile/current/password | changeCurrentPassword | payload: { oldPassword: string; newPassword: string } | body |
 | POST | /api/user/profile/current/avatar | uploadCurrentAvatar | file: File | headers, body |
-
