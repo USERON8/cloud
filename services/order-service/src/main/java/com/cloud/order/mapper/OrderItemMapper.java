@@ -3,11 +3,13 @@ package com.cloud.order.mapper;
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.order.entity.OrderItem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -37,4 +39,23 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
             </script>
             """)
     List<OrderItem> listActiveBySubOrderIds(@Param("subOrderIds") List<Long> subOrderIds);
+
+    @InterceptorIgnore(illegalSql = "1")
+    @Select("""
+            SELECT oi.spu_id AS productId,
+                   SUM(oi.quantity) AS sellCount
+            FROM order_item oi
+            JOIN order_sub os ON oi.sub_order_id = os.id
+            WHERE oi.deleted = 0
+              AND os.deleted = 0
+              AND os.order_status = 'DONE'
+              AND os.done_at &gt;= #{start}
+              AND os.done_at &lt; #{end}
+            GROUP BY oi.spu_id
+            ORDER BY sellCount DESC
+            LIMIT #{limit}
+            """)
+    List<ProductSellStatDTO> listDailySellStats(@Param("start") LocalDateTime start,
+                                                @Param("end") LocalDateTime end,
+                                                @Param("limit") Integer limit);
 }
