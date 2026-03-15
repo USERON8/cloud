@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -30,6 +31,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     private static final String TOKEN_PREFIX = "oauth2:token:";
     private static final String REFRESH_PREFIX = "oauth2:refresh:";
     private static final String CODE_PREFIX = "oauth2:code:";
+    private static final OAuth2TokenType AUTHORIZATION_CODE = new OAuth2TokenType(OAuth2ParameterNames.CODE);
     private final RedisTemplate<String, Object> redisTemplate;
     private final RegisteredClientRepository registeredClientRepository;
     private final AuthorizationServerSettings authorizationServerSettings;
@@ -122,7 +124,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         Assert.hasText(token, "token cannot be empty");
 
         if (tokenType != null) {
-            if (OAuth2TokenType.AUTHORIZATION_CODE.equals(tokenType)) {
+            if (AUTHORIZATION_CODE.equals(tokenType)) {
                 return findByAuthorizationId(CODE_PREFIX + token);
             }
             if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
@@ -174,7 +176,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             return refreshToken != null && refreshToken.getToken() != null
                     && token.equals(refreshToken.getToken().getTokenValue());
         }
-        if (OAuth2TokenType.AUTHORIZATION_CODE.equals(tokenType)) {
+        if (AUTHORIZATION_CODE.equals(tokenType)) {
             OAuth2Authorization.Token<OAuth2AuthorizationCode> code = authorization.getToken(OAuth2AuthorizationCode.class);
             return code != null && code.getToken() != null
                     && token.equals(code.getToken().getTokenValue());
