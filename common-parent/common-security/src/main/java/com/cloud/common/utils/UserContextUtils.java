@@ -41,7 +41,11 @@ public class UserContextUtils {
 
 
     public static String getCurrentUserId() {
-        return getClaimFromJwt("user_id");
+        String userId = getClaimFromJwt("user_id");
+        if (StrUtil.isBlank(userId)) {
+            userId = getClaimFromJwt("userId");
+        }
+        return userId;
     }
 
     

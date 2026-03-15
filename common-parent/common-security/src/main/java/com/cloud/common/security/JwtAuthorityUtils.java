@@ -45,6 +45,7 @@ public final class JwtAuthorityUtils {
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scope"), lowerCaseScope));
             authorities.addAll(extractScopeAuthorities(jwt.getClaim("scp"), lowerCaseScope));
             authorities.addAll(extractRoleAuthorities(jwt.getClaim("roles")));
+            authorities.addAll(extractPermissionAuthorities(jwt.getClaim("permissions"), lowerCaseScope));
 
             if (includeAuthoritiesClaim) {
                 authorities.addAll(extractRawAuthorities(jwt.getClaim("authorities")));
@@ -132,6 +133,33 @@ public final class JwtAuthorityUtils {
                     return java.util.stream.Stream.of(role);
                 })
                 .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<GrantedAuthority> extractPermissionAuthorities(Object permissionsClaim, boolean lowerCaseScope) {
+        Set<String> permissions = new LinkedHashSet<>();
+        if (permissionsClaim == null) {
+            return Set.of();
+        }
+        if (permissionsClaim instanceof String permissionString) {
+            permissions.addAll(Arrays.stream(permissionString.trim().split("\\s+|,"))
+                    .map(String::trim)
+                    .filter(permission -> !permission.isBlank())
+                    .collect(Collectors.toSet()));
+        } else if (permissionsClaim instanceof Collection<?> permissionCollection) {
+            permissions.addAll(permissionCollection.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(permission -> !permission.isBlank())
+                    .collect(Collectors.toSet()));
+        }
+
+        return permissions.stream()
+                .map(permission -> normalizeScope(permission, lowerCaseScope))
+                .map(permission -> permission.startsWith("SCOPE_") ? permission.substring("SCOPE_".length()) : permission)
+                .filter(permission -> !permission.isBlank())
+                .map(permission -> new SimpleGrantedAuthority("SCOPE_" + permission))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 

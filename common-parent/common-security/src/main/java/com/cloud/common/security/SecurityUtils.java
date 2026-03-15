@@ -42,7 +42,11 @@ public class SecurityUtils {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken) {
             Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
-            return jwt.getClaimAsString("user_id");
+            String userId = jwt.getClaimAsString("user_id");
+            if (userId == null || userId.isBlank()) {
+                userId = jwt.getClaimAsString("userId");
+            }
+            return userId;
         }
         return null;
     }

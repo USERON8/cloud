@@ -110,7 +110,7 @@ public class PermissionCheckService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
-            Long userId = jwt.getClaim("user_id");
+            Long userId = resolveUserId(jwt);
 
             if (isAdmin(authentication)) {
                 return true;
@@ -166,7 +166,7 @@ public class PermissionCheckService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
-            return jwt.getClaim("user_id");
+            return resolveUserId(jwt);
         }
 
         return null;
@@ -208,7 +208,7 @@ public class PermissionCheckService {
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
-            Long userId = jwt.getClaim("user_id");
+            Long userId = resolveUserId(jwt);
             try {
                 if (userId == null) {
                     return null;
@@ -221,6 +221,22 @@ public class PermissionCheckService {
         }
 
         return null;
+    }
+
+    private Long resolveUserId(Jwt jwt) {
+        Long userId = jwt.getClaim("user_id");
+        if (userId != null) {
+            return userId;
+        }
+        Object claim = jwt.getClaim("userId");
+        if (claim == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(claim.toString());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }
 

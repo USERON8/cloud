@@ -75,7 +75,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         try {
             
             addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
-            addHeaderIfPresent(requestBuilder, "X-User-Id", getClaimAsString(jwt, "user_id"));
+            addHeaderIfPresent(requestBuilder, "X-User-Id", getUserIdClaim(jwt));
             addHeaderIfPresent(requestBuilder, "X-User-Nickname", jwt.getClaimAsString("nickname"));
             addHeaderIfPresent(requestBuilder, "X-User-Status", getClaimAsString(jwt, "status"));
 
@@ -118,6 +118,14 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
     private String getClaimAsString(Jwt jwt, String claimName) {
         Object claim = jwt.getClaim(claimName);
         return claim != null ? claim.toString() : null;
+    }
+
+    private String getUserIdClaim(Jwt jwt) {
+        String userId = getClaimAsString(jwt, "user_id");
+        if (StrUtil.isBlank(userId)) {
+            userId = getClaimAsString(jwt, "userId");
+        }
+        return userId;
     }
 
     @Override
