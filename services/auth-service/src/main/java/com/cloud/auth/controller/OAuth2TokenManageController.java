@@ -45,7 +45,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Get token storage statistics", description = "Get token storage metrics from Redis")
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> getTokenStats() {
         Map<String, Object> stats = new HashMap<>();
         long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
@@ -63,7 +63,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Get authorization details", description = "Get authorization details by authorization ID")
     @GetMapping("/authorization/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> getAuthorizationDetails(
             @Parameter(description = "Authorization ID") @PathVariable String id) {
         OAuth2Authorization authorization = authorizationService.findById(id);
@@ -100,7 +100,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Revoke authorization", description = "Revoke OAuth2 authorization by ID")
     @DeleteMapping("/authorization/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Void> revokeAuthorization(
             @Parameter(description = "Authorization ID") @PathVariable String id) {
         OAuth2Authorization authorization = authorizationService.findById(id);
@@ -115,7 +115,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Cleanup expired tokens", description = "Trigger cleanup for expired token data")
     @PostMapping("/cleanup")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> cleanupExpiredTokens() {
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Cleanup job executed");
@@ -126,7 +126,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Get Redis hash storage structure", description = "Show Redis hash structure for OAuth2 data")
     @GetMapping("/storage-structure")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> getStorageStructure() {
         Map<String, Object> structure = new HashMap<>();
 
@@ -153,14 +153,14 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Get blacklist statistics", description = "Get current token blacklist statistics")
     @GetMapping("/blacklist/stats")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<TokenBlacklistService.BlacklistStats> getBlacklistStats() {
         return Result.success(tokenBlacklistService.getBlacklistStats());
     }
 
     @Operation(summary = "Add token to blacklist", description = "Manually add a token to blacklist")
     @PostMapping("/blacklist/add")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Void> addToBlacklist(
             @Parameter(description = "Token value") @RequestParam String tokenValue,
             @Parameter(description = "Revocation reason") @RequestParam(defaultValue = "admin_manual") String reason) {
@@ -173,7 +173,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Check blacklist status", description = "Check whether a token is blacklisted")
     @GetMapping("/blacklist/check")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> checkBlacklist(
             @Parameter(description = "Token value") @RequestParam String tokenValue) {
         boolean isBlacklisted = tokenBlacklistService.isBlacklisted(tokenValue);
@@ -186,7 +186,7 @@ public class OAuth2TokenManageController {
 
     @Operation(summary = "Cleanup blacklist entries", description = "Remove expired blacklist entries")
     @PostMapping("/blacklist/cleanup")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Map<String, Object>> cleanupBlacklist() {
         int cleanedCount = tokenBlacklistService.cleanupExpiredEntries();
         Map<String, Object> result = new HashMap<>();
