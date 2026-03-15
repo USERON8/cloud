@@ -75,6 +75,12 @@ application-local.properties
 .env
 # Frontend build output
 my-shop-web/dist/
+my-shop-uniapp/dist/
+
+# UniApp dependencies/cache
+my-shop-uniapp/node_modules/
+my-shop-uniapp/.vite/
+my-shop-uniapp/.hbuilderx/
 
 # Temporary files
 *.tmp
