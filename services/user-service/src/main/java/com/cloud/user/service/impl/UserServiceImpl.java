@@ -673,7 +673,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         authPrincipalDTO.setEmail(requestDTO.getEmail());
         authPrincipalDTO.setPhone(requestDTO.getPhone());
         authPrincipalDTO.setStatus(requestDTO.getStatus());
-        authPrincipalDTO.setRoles(roles);
+        List<String> safeRoles = roles == null || roles.isEmpty() ? List.of("ROLE_USER") : roles;
+        authPrincipalDTO.setRoles(safeRoles);
         return authPrincipalDTO;
     }
 
