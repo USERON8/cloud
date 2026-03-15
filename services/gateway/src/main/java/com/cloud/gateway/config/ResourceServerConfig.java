@@ -25,11 +25,7 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +36,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ResourceServerConfig {
 
-    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
+    private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
 
     private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
     private final Environment environment;
@@ -204,7 +200,7 @@ public class ResourceServerConfig {
         ));
 
         return token -> decoder.decode(token)
-                .flatMap(jwt -> reactiveStringRedisTemplate.hasKey(BLACKLIST_KEY_PREFIX + extractTokenId(jwt, token))
+                .flatMap(jwt -> reactiveStringRedisTemplate.hasKey(BLACKLIST_KEY_PREFIX + token)
                         .flatMap(blacklisted -> {
                             if (Boolean.TRUE.equals(blacklisted)) {
                                 return Mono.error(new BadJwtException("Token is blacklisted"));
@@ -217,22 +213,7 @@ public class ResourceServerConfig {
                         }));
     }
 
-    private String extractTokenId(Jwt jwt, String tokenValue) {
-        String jti = jwt.getClaimAsString("jti");
-        if (jti != null && !jti.isBlank()) {
-            return jti;
-        }
-        return sha256Hex(tokenValue);
-    }
-
-    private String sha256Hex(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
-        }
-    }
+    // Token value is used directly as blacklist key suffix to match auth:blacklist:{token} design.
 
     private boolean isProtectedProfile() {
         for (String profile : environment.getActiveProfiles()) {

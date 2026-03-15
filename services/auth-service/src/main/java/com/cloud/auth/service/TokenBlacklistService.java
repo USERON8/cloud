@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -21,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class TokenBlacklistService {
 
-    private static final String BLACKLIST_KEY_PREFIX = "token:blacklist:";
-    private static final String BLACKLIST_STATS_KEY = "token:blacklist:stats";
+    private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
+    private static final String BLACKLIST_STATS_KEY = "auth:blacklist:stats";
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -52,11 +50,11 @@ public class TokenBlacklistService {
         }
 
         long safeTtlSeconds = Math.max(ttlSeconds, 60);
-        String tokenId = generateTokenId(tokenValue);
-        String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
+        String normalizedToken = normalizeTokenValue(tokenValue);
+        String blacklistKey = BLACKLIST_KEY_PREFIX + normalizedToken;
 
         TokenBlacklistInfo info = new TokenBlacklistInfo(
-                tokenId,
+                normalizedToken,
                 subject,
                 "auth-service",
                 Instant.now(),
@@ -82,8 +80,8 @@ public class TokenBlacklistService {
             return false;
         }
 
-        String tokenId = generateTokenId(tokenValue);
-        String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
+        String normalizedToken = normalizeTokenValue(tokenValue);
+        String blacklistKey = BLACKLIST_KEY_PREFIX + normalizedToken;
         Boolean exists = redisTemplate.hasKey(blacklistKey);
         return Boolean.TRUE.equals(exists);
     }
@@ -153,18 +151,8 @@ public class TokenBlacklistService {
         }
     }
 
-    private String generateTokenId(String tokenValue) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(tokenValue.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(hash.length * 2);
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            throw new IllegalStateException("failed to generate token hash", e);
-        }
+    private String normalizeTokenValue(String tokenValue) {
+        return tokenValue == null ? "" : tokenValue.trim();
     }
 
     public static class TokenBlacklistInfo implements Serializable {

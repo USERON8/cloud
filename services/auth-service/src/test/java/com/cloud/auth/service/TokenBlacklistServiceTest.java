@@ -54,9 +54,9 @@ class TokenBlacklistServiceTest {
         tokenBlacklistService.addToBlacklist("token", "sub", 60, "reason");
 
         verify(valueOperations).set(anyString(), any(), anyLong(), eq(TimeUnit.SECONDS));
-        verify(hashOperations).increment("token:blacklist:stats", "total_blacklisted", 1);
-        verify(hashOperations).increment("token:blacklist:stats", "active_blacklisted", 1);
-        verify(hashOperations).put(eq("token:blacklist:stats"), eq("last_updated"), any());
+        verify(hashOperations).increment("auth:blacklist:stats", "total_blacklisted", 1);
+        verify(hashOperations).increment("auth:blacklist:stats", "active_blacklisted", 1);
+        verify(hashOperations).put(eq("auth:blacklist:stats"), eq("last_updated"), any());
     }
 
     @Test
