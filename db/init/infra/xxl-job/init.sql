@@ -766,3 +766,49 @@ WHERE g.app_name = 'stock-service'
       WHERE j.job_group = g.id
         AND j.executor_handler = 'seataUndoLogCleanJob'
   );
+
+INSERT INTO xxl_job_info (
+    job_group,
+    job_desc,
+    author,
+    schedule_type,
+    schedule_conf,
+    misfire_strategy,
+    executor_route_strategy,
+    executor_handler,
+    executor_param,
+    executor_block_strategy,
+    executor_timeout,
+    executor_fail_retry_count,
+    glue_type,
+    glue_remark,
+    trigger_status,
+    trigger_last_time,
+    trigger_next_time
+)
+SELECT
+    g.id,
+    'Stock alert notify',
+    'system',
+    'CRON',
+    '0 0 9 * * ?',
+    'DO_NOTHING',
+    'FIRST',
+    'stockAlertJob',
+    NULL,
+    'SERIAL_EXECUTION',
+    300,
+    0,
+    'BEAN',
+    'seeded by init.sql',
+    1,
+    0,
+    0
+FROM xxl_job_group g
+WHERE g.app_name = 'stock-service'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM xxl_job_info j
+      WHERE j.job_group = g.id
+        AND j.executor_handler = 'stockAlertJob'
+  );

@@ -109,6 +109,9 @@ stock:
     enabled: true
   statistics:
     enabled: true
+  alert:
+    enabled: ${STOCK_ALERT_ENABLED:true}
+    limit: ${STOCK_ALERT_LIMIT:200}
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}
