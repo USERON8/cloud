@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
 import {
@@ -122,6 +122,68 @@ function parseNumberList(raw: string): number[] {
     .split(',')
     .map((value) => Number(value.trim()))
     .filter((value) => Number.isFinite(value) && value > 0)
+}
+
+function requirePositiveId(raw: string, label: string): number | null {
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value <= 0) {
+    toast(`请输入${label}`)
+    return null
+  }
+  return value
+}
+
+function parseOptionalNumber(raw: string, label: string): number | undefined | null {
+  if (!raw.trim()) {
+    return undefined
+  }
+  const value = Number(raw)
+  if (!Number.isFinite(value)) {
+    toast(`${label}需要为数字`)
+    return null
+  }
+  return value
+}
+
+function resolveSearchPaging(): { page: number; size: number } | null {
+  const page = Number(searchPage.value)
+  const size = Number(searchSize.value)
+  if (!Number.isInteger(page) || page < 0) {
+    toast('页码需为非负整数')
+    return null
+  }
+  if (!Number.isInteger(size) || size <= 0) {
+    toast('分页大小需为正整数')
+    return null
+  }
+  searchPage.value = String(page)
+  searchSize.value = String(size)
+  return { page, size }
+}
+
+function resolvePriceRange(): { minPrice?: number; maxPrice?: number } | null {
+  const minPrice = parseOptionalNumber(searchMinPrice.value, '最低价')
+  if (minPrice === null) return null
+  const maxPrice = parseOptionalNumber(searchMaxPrice.value, '最高价')
+  if (maxPrice === null) return null
+  if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+    toast('最低价不能大于最高价')
+    return null
+  }
+  return { minPrice: minPrice ?? undefined, maxPrice: maxPrice ?? undefined }
+}
+
+function normalizeDateInput(value: string, label: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    toast(`请输入${label}`)
+    return null
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    toast(`${label}格式应为 YYYY-MM-DD`)
+    return null
+  }
+  return trimmed
 }
 
 // Token & 授权
@@ -625,12 +687,28 @@ const searchComplexJson = ref('')
 const searchFilterJson = ref('')
 const searchResult = ref<unknown>(null)
 
+watch(
+  () => [
+    searchKeyword.value,
+    searchCategoryId.value,
+    searchShopId.value,
+    searchBrandId.value,
+    searchMinPrice.value,
+    searchMaxPrice.value
+  ],
+  () => {
+    searchPage.value = '0'
+  }
+)
+
 async function runBasicSearch(): Promise<void> {
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await basicSearch({
       keyword: searchKeyword.value || undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('基础搜索完成', 'success')
   } catch (error) {
@@ -643,13 +721,17 @@ async function runAdvancedSearch(): Promise<void> {
     toast('请输入关键词')
     return
   }
+  const paging = resolveSearchPaging()
+  if (!paging) return
+  const priceRange = resolvePriceRange()
+  if (!priceRange) return
   try {
     searchResult.value = await advancedSearch({
       keyword: searchKeyword.value.trim(),
-      minPrice: searchMinPrice.value ? Number(searchMinPrice.value) : undefined,
-      maxPrice: searchMaxPrice.value ? Number(searchMaxPrice.value) : undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      minPrice: priceRange.minPrice,
+      maxPrice: priceRange.maxPrice,
+      page: paging.page,
+      size: paging.size
     })
     toast('高级搜索完成', 'success')
   } catch (error) {
@@ -658,16 +740,15 @@ async function runAdvancedSearch(): Promise<void> {
 }
 
 async function runSearchByCategory(): Promise<void> {
-  const id = Number(searchCategoryId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入分类 ID')
-    return
-  }
+  const id = requirePositiveId(searchCategoryId.value, '分类 ID')
+  if (!id) return
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await searchByCategory(id, {
       keyword: searchKeyword.value || undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('分类搜索完成', 'success')
   } catch (error) {
@@ -676,16 +757,15 @@ async function runSearchByCategory(): Promise<void> {
 }
 
 async function runSearchByShop(): Promise<void> {
-  const id = Number(searchShopId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入店铺 ID')
-    return
-  }
+  const id = requirePositiveId(searchShopId.value, '店铺 ID')
+  if (!id) return
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await searchByShop(id, {
       keyword: searchKeyword.value || undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('店铺搜索完成', 'success')
   } catch (error) {
@@ -694,15 +774,14 @@ async function runSearchByShop(): Promise<void> {
 }
 
 async function runFilterByCategory(): Promise<void> {
-  const id = Number(searchCategoryId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入分类 ID')
-    return
-  }
+  const id = requirePositiveId(searchCategoryId.value, '分类 ID')
+  if (!id) return
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await filterByCategory(id, {
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('分类筛选完成', 'success')
   } catch (error) {
@@ -711,15 +790,14 @@ async function runFilterByCategory(): Promise<void> {
 }
 
 async function runFilterByBrand(): Promise<void> {
-  const id = Number(searchBrandId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入品牌 ID')
-    return
-  }
+  const id = requirePositiveId(searchBrandId.value, '品牌 ID')
+  if (!id) return
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await filterByBrand(id, {
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('品牌筛选完成', 'success')
   } catch (error) {
@@ -728,12 +806,16 @@ async function runFilterByBrand(): Promise<void> {
 }
 
 async function runFilterByPrice(): Promise<void> {
+  const paging = resolveSearchPaging()
+  if (!paging) return
+  const priceRange = resolvePriceRange()
+  if (!priceRange) return
   try {
     searchResult.value = await filterByPrice({
-      minPrice: searchMinPrice.value ? Number(searchMinPrice.value) : undefined,
-      maxPrice: searchMaxPrice.value ? Number(searchMaxPrice.value) : undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      minPrice: priceRange.minPrice,
+      maxPrice: priceRange.maxPrice,
+      page: paging.page,
+      size: paging.size
     })
     toast('价格筛选完成', 'success')
   } catch (error) {
@@ -742,15 +824,14 @@ async function runFilterByPrice(): Promise<void> {
 }
 
 async function runFilterByShop(): Promise<void> {
-  const id = Number(searchShopId.value)
-  if (!Number.isFinite(id)) {
-    toast('请输入店铺 ID')
-    return
-  }
+  const id = requirePositiveId(searchShopId.value, '店铺 ID')
+  if (!id) return
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await filterByShop(id, {
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('店铺筛选完成', 'success')
   } catch (error) {
@@ -781,13 +862,15 @@ async function runFilterSearch(): Promise<void> {
 }
 
 async function runSearchRecommend(type: 'hot' | 'new' | 'recommended'): Promise<void> {
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     if (type === 'hot') {
-      searchResult.value = await listHotProducts(Number(searchPage.value), Number(searchSize.value))
+      searchResult.value = await listHotProducts(paging.page, paging.size)
     } else if (type === 'new') {
-      searchResult.value = await listNewProducts(Number(searchPage.value), Number(searchSize.value))
+      searchResult.value = await listNewProducts(paging.page, paging.size)
     } else {
-      searchResult.value = await listRecommendedProducts(Number(searchPage.value), Number(searchSize.value))
+      searchResult.value = await listRecommendedProducts(paging.page, paging.size)
     }
     toast('推荐列表获取完成', 'success')
   } catch (error) {
@@ -796,16 +879,26 @@ async function runSearchRecommend(type: 'hot' | 'new' | 'recommended'): Promise<
 }
 
 async function runCombinedSearch(): Promise<void> {
+  const paging = resolveSearchPaging()
+  if (!paging) return
+  const priceRange = resolvePriceRange()
+  if (!priceRange) return
+  const categoryId = parseOptionalNumber(searchCategoryId.value, '分类 ID')
+  if (categoryId === null) return
+  const brandId = parseOptionalNumber(searchBrandId.value, '品牌 ID')
+  if (brandId === null) return
+  const shopId = parseOptionalNumber(searchShopId.value, '店铺 ID')
+  if (shopId === null) return
   try {
     searchResult.value = await combinedSearchProducts({
       keyword: searchKeyword.value || undefined,
-      categoryId: searchCategoryId.value ? Number(searchCategoryId.value) : undefined,
-      brandId: searchBrandId.value ? Number(searchBrandId.value) : undefined,
-      shopId: searchShopId.value ? Number(searchShopId.value) : undefined,
-      minPrice: searchMinPrice.value ? Number(searchMinPrice.value) : undefined,
-      maxPrice: searchMaxPrice.value ? Number(searchMaxPrice.value) : undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      categoryId: categoryId ?? undefined,
+      brandId: brandId ?? undefined,
+      shopId: shopId ?? undefined,
+      minPrice: priceRange.minPrice,
+      maxPrice: priceRange.maxPrice,
+      page: paging.page,
+      size: paging.size
     })
     toast('组合搜索完成', 'success')
   } catch (error) {
@@ -814,11 +907,13 @@ async function runCombinedSearch(): Promise<void> {
 }
 
 async function runSmartSearch(): Promise<void> {
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await smartSearchProducts({
       keyword: searchKeyword.value || undefined,
-      page: Number(searchPage.value),
-      size: Number(searchSize.value),
+      page: paging.page,
+      size: paging.size,
       sortField: 'score',
       sortOrder: 'desc'
     })
@@ -844,11 +939,13 @@ async function runSearchProducts(): Promise<void> {
     toast('请输入关键词')
     return
   }
+  const paging = resolveSearchPaging()
+  if (!paging) return
   try {
     searchResult.value = await searchProducts({
       keyword: searchKeyword.value.trim(),
-      page: Number(searchPage.value),
-      size: Number(searchSize.value)
+      page: paging.page,
+      size: paging.size
     })
     toast('搜索完成', 'success')
   } catch (error) {
@@ -1095,12 +1192,16 @@ async function loadStatsOverviewAsync(): Promise<void> {
 }
 
 async function loadStatsTrendRange(): Promise<void> {
-  if (!statsStartDate.value || !statsEndDate.value) {
-    toast('请输入开始和结束日期')
+  const start = normalizeDateInput(statsStartDate.value, '开始日期')
+  if (!start) return
+  const end = normalizeDateInput(statsEndDate.value, '结束日期')
+  if (!end) return
+  if (new Date(start).getTime() > new Date(end).getTime()) {
+    toast('开始日期不能晚于结束日期')
     return
   }
   try {
-    statsTrendRange.value = await getRegistrationTrendRange(statsStartDate.value, statsEndDate.value)
+    statsTrendRange.value = await getRegistrationTrendRange(start, end)
     toast('已获取趋势', 'success')
   } catch (error) {
     toast(error instanceof Error ? error.message : '获取失败')
