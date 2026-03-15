@@ -89,6 +89,95 @@ CREATE TABLE IF NOT EXISTS order_item
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS order_main_archive
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    main_order_no    VARCHAR(64)     NOT NULL,
+    user_id          BIGINT UNSIGNED NOT NULL,
+    order_status     VARCHAR(32)     NOT NULL DEFAULT 'CREATED',
+    total_amount     DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    payable_amount   DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    pay_channel      VARCHAR(32)     NULL,
+    paid_at          DATETIME        NULL,
+    cancelled_at     DATETIME        NULL,
+    cancel_reason    VARCHAR(255)    NULL,
+    remark           VARCHAR(255)    NULL,
+    idempotency_key  VARCHAR(128)    NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    archived_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_order_main_archive_no (main_order_no),
+    UNIQUE KEY uk_order_main_archive_idempotency_key (idempotency_key),
+    INDEX idx_order_main_archive_user_status_deleted (user_id, order_status, deleted),
+    INDEX idx_order_main_archive_created_deleted (created_at, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS order_sub_archive
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    sub_order_no     VARCHAR(64)     NOT NULL,
+    main_order_id    BIGINT UNSIGNED NOT NULL,
+    merchant_id      BIGINT UNSIGNED NOT NULL,
+    order_status     VARCHAR(32)     NOT NULL DEFAULT 'CREATED',
+    shipping_status  VARCHAR(32)     NOT NULL DEFAULT 'PENDING',
+    after_sale_status VARCHAR(32)    NOT NULL DEFAULT 'NONE',
+    item_amount      DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    shipping_fee     DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    discount_amount  DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    payable_amount   DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+    receiver_name    VARCHAR(64)     NULL,
+    receiver_phone   VARCHAR(32)     NULL,
+    receiver_address VARCHAR(255)    NULL,
+    shipping_company VARCHAR(50)     NULL,
+    tracking_number  VARCHAR(100)    NULL,
+    shipped_at       DATETIME        NULL,
+    estimated_arrival DATE           NULL,
+    received_at      DATETIME        NULL,
+    done_at          DATETIME        NULL,
+    closed_at        DATETIME        NULL,
+    close_reason     VARCHAR(255)    NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    archived_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_order_sub_archive_no (sub_order_no),
+    INDEX idx_order_sub_archive_main_deleted (main_order_id, deleted),
+    INDEX idx_order_sub_archive_merchant_status_deleted (merchant_id, order_status, deleted),
+    INDEX idx_order_sub_archive_after_sale_deleted (after_sale_status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS order_item_archive
+(
+    id               BIGINT UNSIGNED PRIMARY KEY,
+    main_order_id    BIGINT UNSIGNED NOT NULL,
+    sub_order_id     BIGINT UNSIGNED NOT NULL,
+    spu_id           BIGINT UNSIGNED NOT NULL,
+    sku_id           BIGINT UNSIGNED NOT NULL,
+    sku_code         VARCHAR(64)     NOT NULL,
+    sku_name         VARCHAR(255)    NOT NULL,
+    sku_snapshot     JSON            NOT NULL,
+    quantity         INT             NOT NULL,
+    unit_price       DECIMAL(12, 2)  NOT NULL,
+    total_price      DECIMAL(12, 2)  NOT NULL,
+    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted          TINYINT         NOT NULL DEFAULT 0,
+    version          INT             NOT NULL DEFAULT 0,
+    archived_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_order_item_archive_main_deleted (main_order_id, deleted),
+    INDEX idx_order_item_archive_sub_deleted (sub_order_id, deleted),
+    INDEX idx_order_item_archive_sku_deleted (sku_id, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS cart
 (
     id               BIGINT UNSIGNED PRIMARY KEY,

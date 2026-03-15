@@ -161,6 +161,10 @@ order:
     after-sale:
       batch-size: ${ORDER_AFTER_SALE_BATCH_SIZE:100}
       audit-timeout-hours: ${ORDER_AFTER_SALE_AUDIT_TIMEOUT_HOURS:48}
+  archive:
+    enabled: ${ORDER_ARCHIVE_ENABLED:true}
+    after-days: ${ORDER_ARCHIVE_AFTER_DAYS:180}
+    batch-size: ${ORDER_ARCHIVE_BATCH_SIZE:200}
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}
