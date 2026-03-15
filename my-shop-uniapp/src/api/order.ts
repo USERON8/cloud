@@ -7,6 +7,9 @@ export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
   if (typeof userId !== 'number') {
     return Promise.reject(new Error('用户信息缺失'))
   }
+  if (typeof payload.skuId !== 'number') {
+    return Promise.reject(new Error('skuId 必填'))
+  }
   const totalAmount = Number((payload.price * payload.quantity).toFixed(2))
   const body = {
     userId,
