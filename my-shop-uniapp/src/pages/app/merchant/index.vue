@@ -13,8 +13,15 @@ const stats = ref<Record<string, unknown> | null>(null)
 const loading = ref(false)
 const saving = ref(false)
 const authSaving = ref(false)
+const uploadState = reactive({
+  businessLicenseUrl: false,
+  idCardFrontUrl: false,
+  idCardBackUrl: false
+})
 
 const merchantId = computed(() => sessionState.user?.id)
+const uploadUrl =
+  import.meta.env.VITE_MERCHANT_AUTH_UPLOAD_URL || import.meta.env.VITE_UPLOAD_URL || ''
 
 const profileForm = reactive<MerchantUpsertPayload>({
   merchantName: '',
@@ -35,11 +42,92 @@ const statsEntries = computed(() =>
   Object.entries(stats.value || {}).map(([key, value]) => ({ key, value }))
 )
 
+type UploadField = 'businessLicenseUrl' | 'idCardFrontUrl' | 'idCardBackUrl'
+
 function statusText(status?: number): string {
   if (status === 1) return '通过'
   if (status === 2) return '驳回'
   if (status === 0) return '待审核'
   return '未知'
+}
+
+function resolveUploadUrl(): string | null {
+  if (!uploadUrl) {
+    toast('未配置上传地址，请设置 VITE_MERCHANT_AUTH_UPLOAD_URL 或 VITE_UPLOAD_URL')
+    return null
+  }
+  return uploadUrl
+}
+
+function extractUploadUrl(raw: string): string | null {
+  if (!raw) return null
+  try {
+    const payload = JSON.parse(raw) as unknown
+    if (typeof payload === 'string') return payload
+    if (payload && typeof payload === 'object') {
+      const record = payload as Record<string, unknown>
+      if (typeof record.url === 'string') return record.url
+      if (typeof record.data === 'string') return record.data
+      if (record.data && typeof (record.data as Record<string, unknown>).url === 'string') {
+        return (record.data as Record<string, unknown>).url as string
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+async function uploadAuthImage(field: UploadField): Promise<void> {
+  const target = resolveUploadUrl()
+  if (!target) return
+  uploadState[field] = true
+  try {
+    const chooseResult = await uni.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera']
+    })
+    const filePath = chooseResult.tempFilePaths?.[0]
+    if (!filePath) {
+      toast('未选择图片')
+      return
+    }
+    const uploadResult = await new Promise<UniApp.UploadFileSuccessCallbackResult>((resolve, reject) => {
+      uni.uploadFile({
+        url: target,
+        filePath,
+        name: 'file',
+        success: resolve,
+        fail: reject
+      })
+    })
+    if (uploadResult.statusCode && uploadResult.statusCode >= 400) {
+      toast('上传失败')
+      return
+    }
+    const url = extractUploadUrl(uploadResult.data)
+    if (!url) {
+      toast('未获取到上传地址')
+      return
+    }
+    authForm[field] = url
+    toast('上传成功', 'success')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : '上传失败')
+  } finally {
+    uploadState[field] = false
+  }
+}
+
+function previewImage(url?: string): void {
+  if (!url) {
+    toast('暂无可预览图片')
+    return
+  }
+  uni.previewImage({
+    urls: [url]
+  })
 }
 
 async function loadMerchant(): Promise<void> {
@@ -174,15 +262,33 @@ onMounted(() => {
           </view>
           <view class="field">
             <text class="field-label">营业执照 URL</text>
-            <input v-model="authForm.businessLicenseUrl" class="input" placeholder="请输入营业执照图片地址" />
+            <view class="row-inline">
+              <input v-model="authForm.businessLicenseUrl" class="input" placeholder="请输入营业执照图片地址" />
+              <button class="btn-outline" :loading="uploadState.businessLicenseUrl" @click="uploadAuthImage('businessLicenseUrl')">
+                上传
+              </button>
+              <button class="btn-outline" @click="previewImage(authForm.businessLicenseUrl)">预览</button>
+            </view>
           </view>
           <view class="field">
             <text class="field-label">身份证正面 URL</text>
-            <input v-model="authForm.idCardFrontUrl" class="input" placeholder="请输入身份证正面地址" />
+            <view class="row-inline">
+              <input v-model="authForm.idCardFrontUrl" class="input" placeholder="请输入身份证正面地址" />
+              <button class="btn-outline" :loading="uploadState.idCardFrontUrl" @click="uploadAuthImage('idCardFrontUrl')">
+                上传
+              </button>
+              <button class="btn-outline" @click="previewImage(authForm.idCardFrontUrl)">预览</button>
+            </view>
           </view>
           <view class="field">
             <text class="field-label">身份证反面 URL</text>
-            <input v-model="authForm.idCardBackUrl" class="input" placeholder="请输入身份证反面地址" />
+            <view class="row-inline">
+              <input v-model="authForm.idCardBackUrl" class="input" placeholder="请输入身份证反面地址" />
+              <button class="btn-outline" :loading="uploadState.idCardBackUrl" @click="uploadAuthImage('idCardBackUrl')">
+                上传
+              </button>
+              <button class="btn-outline" @click="previewImage(authForm.idCardBackUrl)">预览</button>
+            </view>
           </view>
           <view class="field">
             <text class="field-label">联系人电话</text>
@@ -255,6 +361,18 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.row-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-inline .input {
+  flex: 1;
+  min-width: 200px;
 }
 
 .field-label {
