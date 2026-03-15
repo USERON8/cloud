@@ -1,6 +1,9 @@
-api.http.host: "0.0.0.0"
+api.http.host: 0.0.0.0
 path.config: /usr/share/logstash/pipeline
 path.data: /usr/share/logstash/data
+pipeline.batch.delay: ${PIPELINE_BATCH_DELAY}
+pipeline.batch.size: ${PIPELINE_BATCH_SIZE}
 pipeline.ordered: auto
-queue.type: persisted
+pipeline.workers: ${PIPELINE_WORKERS}
 queue.max_bytes: 512mb
+queue.type: persisted
