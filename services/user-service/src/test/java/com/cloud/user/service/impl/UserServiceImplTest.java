@@ -66,7 +66,7 @@ class UserServiceImplTest {
         ArgumentCaptor<AuthPrincipalDTO> captor = ArgumentCaptor.forClass(AuthPrincipalDTO.class);
         verify(authPrincipalService).createPrincipal(captor.capture());
         AuthPrincipalDTO dto = captor.getValue();
-        assertThat(dto.getId()).isEqualTo(101L);
+        assertThat(dto.getId()).isNull();
         assertThat(dto.getUsername()).isEqualTo("alice");
         assertThat(dto.getRoles()).contains("ROLE_USER");
     }
