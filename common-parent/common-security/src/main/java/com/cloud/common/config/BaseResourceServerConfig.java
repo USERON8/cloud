@@ -209,7 +209,7 @@ public abstract class BaseResourceServerConfig {
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("ROLE_MERCHANT"),
                 new SimpleGrantedAuthority("ROLE_USER"),
-                new SimpleGrantedAuthority("SCOPE_internal_api"),
+                new SimpleGrantedAuthority("SCOPE_internal"),
                 new SimpleGrantedAuthority("admin:all"),
                 new SimpleGrantedAuthority("merchant:manage"),
                 new SimpleGrantedAuthority("merchant:audit"),
@@ -235,7 +235,7 @@ public abstract class BaseResourceServerConfig {
                 .claim("username", "test-user")
                 .claim("roles", List.of("ADMIN", "MERCHANT", "USER"))
                 .claim("aud", List.of("gateway", "internal-api"))
-                .claim("scope", "internal_api user:read user:write merchant:read merchant:write admin:read admin:write")
+                .claim("scope", "internal")
                 .build();
 
         return new OncePerRequestFilter() {

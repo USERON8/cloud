@@ -18,7 +18,7 @@ class JwtPasswordConfigTest {
                 .header("alg", "none")
                 .subject("subject")
                 .claim("username", "admin-user")
-                .claim("scope", "order.write internal_api")
+                .claim("scope", "order.write internal")
                 .claim("roles", List.of("ADMIN"))
                 .build();
 
@@ -29,6 +29,6 @@ class JwtPasswordConfigTest {
         assertThat(authentication.getName()).isEqualTo("admin-user");
         assertThat(authentication.getAuthorities())
                 .extracting(grantedAuthority -> grantedAuthority.getAuthority())
-                .contains("ROLE_ADMIN", "SCOPE_order:write", "SCOPE_internal_api");
+                .contains("ROLE_ADMIN", "SCOPE_order:write", "SCOPE_internal");
     }
 }

@@ -21,18 +21,18 @@ public class InternalScopeClientValidator implements OAuth2TokenValidator<Jwt> {
     public OAuth2TokenValidatorResult validate(Jwt jwt) {
         Set<String> scopes = extractScopes(jwt.getClaim("scope"));
         scopes.addAll(extractScopes(jwt.getClaim("scp")));
-        if (!scopes.contains("internal_api")) {
+        if (!scopes.contains("internal")) {
             return OAuth2TokenValidatorResult.success();
         }
 
         String clientId = jwt.getClaimAsString("client_id");
         if (clientId == null || clientId.isBlank()) {
-            return failure("invalid_client", "JWT client_id is required for internal_api scope");
+            return failure("invalid_client", "JWT client_id is required for internal scope");
         }
         if (allowedClientIds == null || allowedClientIds.isEmpty() || allowedClientIds.contains(clientId)) {
             return OAuth2TokenValidatorResult.success();
         }
-        return failure("invalid_client", "JWT client_id is not allowed for internal_api scope");
+        return failure("invalid_client", "JWT client_id is not allowed for internal scope");
     }
 
     private Set<String> extractScopes(Object scopeClaim) {
