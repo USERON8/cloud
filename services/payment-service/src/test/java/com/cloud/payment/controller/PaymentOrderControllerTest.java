@@ -55,14 +55,14 @@ class PaymentOrderControllerTest {
     }
 
     @Test
-    void getPaymentOrderByNoShouldAllowInternalCaller() {
+    void getPaymentOrderByNoShouldAllowAdmin() {
         PaymentOrderVO order = new PaymentOrderVO();
         order.setPaymentNo("PAY-3");
         order.setUserId(18L);
         when(paymentOrderService.getPaymentOrderByNo("PAY-3")).thenReturn(order);
 
         PaymentOrderController controller = new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
-        var result = controller.getPaymentOrderByNo("PAY-3", authentication(null, "SCOPE_internal_api"));
+        var result = controller.getPaymentOrderByNo("PAY-3", authentication(null, "ROLE_ADMIN"));
 
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData()).isSameAs(order);

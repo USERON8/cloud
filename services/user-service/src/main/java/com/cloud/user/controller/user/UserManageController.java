@@ -35,7 +35,7 @@ public class UserManageController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update user", description = "Update user by user ID")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Boolean> update(
             @PathVariable
             @Parameter(description = "User ID") Long id,
@@ -54,7 +54,7 @@ public class UserManageController {
 
     @PostMapping("/delete")
     @Operation(summary = "Delete user", description = "Delete user by user ID")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Boolean> delete(
             @RequestBody
             @Parameter(description = "User ID")
@@ -71,7 +71,7 @@ public class UserManageController {
 
     @PostMapping("/deleteBatch")
     @Operation(summary = "Batch delete users", description = "Batch delete users by user IDs")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Boolean> deleteBatch(
             @RequestBody
             @Parameter(description = "User ID array")
@@ -90,7 +90,7 @@ public class UserManageController {
 
     @PostMapping("/updateBatch")
     @Operation(summary = "Batch update users", description = "Batch update users by payload list")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Boolean> updateBatch(
             @RequestBody
             @Parameter(description = "User payload list")
@@ -114,7 +114,7 @@ public class UserManageController {
 
     @PostMapping("/updateStatusBatch")
     @Operation(summary = "Batch update user status", description = "Batch update user status by IDs")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     public Result<Boolean> updateStatusBatch(
             @RequestParam
             @Parameter(description = "User IDs")

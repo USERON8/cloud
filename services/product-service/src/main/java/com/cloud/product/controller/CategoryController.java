@@ -94,7 +94,7 @@ public class CategoryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:create')")
     @Operation(summary = "Create category", description = "Create a category")
     public Result<CategoryDTO> createCategory(
             @Parameter(description = "Category payload") @RequestBody
@@ -105,7 +105,7 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update category", description = "Update category by id")
     public Result<Boolean> updateCategory(
             @Parameter(description = "Category id") @PathVariable Long id,
@@ -118,7 +118,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:delete')")
     @Operation(summary = "Delete category", description = "Delete category by id")
     public Result<Boolean> deleteCategory(
             @Parameter(description = "Category id") @PathVariable
@@ -130,7 +130,7 @@ public class CategoryController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update status", description = "Update category status")
     public Result<Boolean> updateCategoryStatus(
             @Parameter(description = "Category id") @PathVariable Long id,
@@ -141,7 +141,7 @@ public class CategoryController {
     }
 
     @PatchMapping("/{id}/sort")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update sort", description = "Update category sort order")
     public Result<Boolean> updateCategorySort(
             @Parameter(description = "Category id") @PathVariable Long id,
@@ -152,7 +152,7 @@ public class CategoryController {
     }
 
     @PatchMapping("/{id}/move")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Move category", description = "Move category to new parent")
     public Result<Boolean> moveCategory(
             @Parameter(description = "Category id") @PathVariable Long id,
@@ -163,7 +163,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/batch")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:delete')")
     @Operation(summary = "Batch delete", description = "Delete categories by ids")
     public Result<Boolean> deleteCategoriesBatch(
             @Parameter(description = "Category ids") @RequestBody
@@ -175,7 +175,7 @@ public class CategoryController {
     }
 
     @PatchMapping("/batch/status")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Batch update status", description = "Update status for categories")
     public Result<Integer> updateCategoryStatusBatch(
             @Parameter(description = "Category ids") @RequestParam
@@ -204,7 +204,7 @@ public class CategoryController {
     }
 
     @PostMapping("/batch")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('product:create')")
     @Operation(summary = "Batch create", description = "Create categories in batch")
     public Result<Integer> createCategoriesBatch(
             @Parameter(description = "Category payload list") @RequestBody

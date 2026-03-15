@@ -34,7 +34,7 @@ public class PaymentOrderController {
     private final PaymentSecurityCacheService paymentSecurityCacheService;
 
     @PostMapping("/orders")
-    @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @PreAuthorize("hasAuthority('order:create')")
     @Operation(summary = "Create payment order")
     public Result<Long> createPaymentOrder(@Valid @RequestBody PaymentOrderCommandDTO command) {
         return Result.success(paymentOrderService.createPaymentOrder(command));
@@ -88,29 +88,28 @@ public class PaymentOrderController {
     }
 
     @PostMapping("/callbacks")
-    @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Handle payment callback")
     public Result<Boolean> handleCallback(@Valid @RequestBody PaymentCallbackCommandDTO command) {
         return Result.success(paymentOrderService.handlePaymentCallback(command));
     }
 
     @PostMapping("/refunds")
-    @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Create payment refund")
     public Result<Long> createRefund(@Valid @RequestBody PaymentRefundCommandDTO command) {
         return Result.success(paymentOrderService.createRefund(command));
     }
 
     @GetMapping("/refunds/{refundNo}")
-    @PreAuthorize("hasAuthority('SCOPE_internal_api')")
+    @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Get refund by number")
     public Result<PaymentRefundVO> getRefundByNo(@PathVariable String refundNo) {
         return Result.success(paymentOrderService.getRefundByNo(refundNo));
     }
 
     private boolean canReadOrder(Authentication authentication, PaymentOrderVO order) {
-        if (SecurityPermissionUtils.hasAuthority(authentication, "SCOPE_internal_api")
-                || SecurityPermissionUtils.isAdmin(authentication)) {
+        if (SecurityPermissionUtils.isAdmin(authentication)) {
             return true;
         }
         String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
@@ -118,8 +117,7 @@ public class PaymentOrderController {
     }
 
     private boolean canReadStatus(Authentication authentication, Long userId) {
-        if (SecurityPermissionUtils.hasAuthority(authentication, "SCOPE_internal_api")
-                || SecurityPermissionUtils.isAdmin(authentication)) {
+        if (SecurityPermissionUtils.isAdmin(authentication)) {
             return true;
         }
         String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);

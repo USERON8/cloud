@@ -210,12 +210,19 @@ public abstract class BaseResourceServerConfig {
                 new SimpleGrantedAuthority("ROLE_MERCHANT"),
                 new SimpleGrantedAuthority("ROLE_USER"),
                 new SimpleGrantedAuthority("SCOPE_internal_api"),
-                new SimpleGrantedAuthority("SCOPE_user:read"),
-                new SimpleGrantedAuthority("SCOPE_user:write"),
-                new SimpleGrantedAuthority("SCOPE_merchant:read"),
-                new SimpleGrantedAuthority("SCOPE_merchant:write"),
-                new SimpleGrantedAuthority("SCOPE_admin:read"),
-                new SimpleGrantedAuthority("SCOPE_admin:write")
+                new SimpleGrantedAuthority("admin:all"),
+                new SimpleGrantedAuthority("merchant:manage"),
+                new SimpleGrantedAuthority("merchant:audit"),
+                new SimpleGrantedAuthority("user:profile"),
+                new SimpleGrantedAuthority("user:address"),
+                new SimpleGrantedAuthority("order:create"),
+                new SimpleGrantedAuthority("order:cancel"),
+                new SimpleGrantedAuthority("order:query"),
+                new SimpleGrantedAuthority("order:refund"),
+                new SimpleGrantedAuthority("product:view"),
+                new SimpleGrantedAuthority("product:create"),
+                new SimpleGrantedAuthority("product:edit"),
+                new SimpleGrantedAuthority("product:delete")
         );
 
         Jwt testJwt = Jwt.withTokenValue(securityTestTokenValue)

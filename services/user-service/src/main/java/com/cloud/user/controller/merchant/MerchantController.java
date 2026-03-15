@@ -44,8 +44,7 @@ public class MerchantController {
     private final MerchantService merchantService;
 
     @GetMapping
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:read'))")
+    @PreAuthorize("hasAuthority('merchant:manage')")
     @Operation(summary = "Get merchants", description = "Get merchants with pagination and status filter")
     public Result<PageResult<MerchantDTO>> getMerchants(
             @Parameter(description = "Page number")
@@ -97,9 +96,8 @@ public class MerchantController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or (hasAuthority('SCOPE_merchant:read') "
-            + "and @permissionManager.isMerchantOwner(#id, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#id, authentication)")
     @Operation(summary = "Get merchant by ID", description = "Get merchant details by merchant ID")
     public Result<MerchantDTO> getMerchantById(
             @Parameter(description = "Merchant ID")
@@ -120,7 +118,7 @@ public class MerchantController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Create merchant", description = "Create a merchant")
     public Result<MerchantDTO> createMerchant(
             @Parameter(description = "Merchant payload")
@@ -137,9 +135,8 @@ public class MerchantController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasAuthority('SCOPE_merchant:write') "
-            + "and @permissionManager.isMerchantOwner(#id, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#id, authentication)")
     @Operation(summary = "Update merchant", description = "Update merchant details")
     public Result<Boolean> updateMerchant(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -158,7 +155,7 @@ public class MerchantController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Delete merchant", description = "Delete merchant by ID")
     public Result<Boolean> deleteMerchant(
             @Parameter(description = "Merchant ID")
@@ -174,7 +171,7 @@ public class MerchantController {
     }
 
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "Approve merchant", description = "Approve merchant")
     public Result<Boolean> approveMerchant(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -189,7 +186,7 @@ public class MerchantController {
     }
 
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "Reject merchant", description = "Reject merchant")
     public Result<Boolean> rejectMerchant(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -204,7 +201,7 @@ public class MerchantController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Update merchant status", description = "Update merchant status")
     public Result<Boolean> updateMerchantStatus(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -219,9 +216,8 @@ public class MerchantController {
     }
 
     @GetMapping("/{id}/statistics")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or (hasAuthority('SCOPE_merchant:read') "
-            + "and @permissionManager.isMerchantOwner(#id, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#id, authentication)")
     @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
     public Result<Object> getMerchantStatistics(
             @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -236,7 +232,7 @@ public class MerchantController {
     }
 
     @DeleteMapping("/batch")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Batch delete merchants", description = "Batch delete merchants by IDs")
     public Result<Boolean> deleteMerchantsBatch(
             @Parameter(description = "Merchant IDs")
@@ -257,7 +253,7 @@ public class MerchantController {
     }
 
     @PatchMapping("/batch/status")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Batch update merchant status", description = "Batch update merchant status by IDs")
     public Result<Boolean> updateMerchantStatusBatch(
             @Parameter(description = "Merchant IDs")
@@ -289,7 +285,7 @@ public class MerchantController {
     }
 
     @PostMapping("/batch/approve")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "Batch approve merchants", description = "Batch approve merchants by IDs")
     public Result<Boolean> approveMerchantsBatch(
             @Parameter(description = "Merchant IDs")

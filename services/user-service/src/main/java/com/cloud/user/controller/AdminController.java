@@ -41,7 +41,7 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Get admins with pagination", description = "Get paged admin list")
     public Result<PageResult<AdminDTO>> getAdmins(
             @Parameter(description = "Page number")
@@ -68,7 +68,7 @@ public class AdminController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Get admin details", description = "Get admin details by ID")
     public Result<AdminDTO> getAdminById(
             @Parameter(description = "Admin ID")
@@ -89,7 +89,7 @@ public class AdminController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Create admin", description = "Create a new admin")
     public Result<AdminDTO> createAdmin(
             @Parameter(description = "Admin payload")
@@ -106,7 +106,7 @@ public class AdminController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Update admin", description = "Update admin details")
     public Result<Boolean> updateAdmin(
             @Parameter(description = "Admin ID") @PathVariable Long id,
@@ -125,7 +125,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Delete admin", description = "Delete admin by ID")
     public Result<Boolean> deleteAdmin(
             @Parameter(description = "Admin ID")
@@ -141,7 +141,7 @@ public class AdminController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Update admin status", description = "Enable or disable admin")
     public Result<Boolean> updateAdminStatus(
             @Parameter(description = "Admin ID") @PathVariable Long id,
@@ -156,7 +156,7 @@ public class AdminController {
     }
 
     @PostMapping("/{id}/reset-password")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('admin:all')")
     @Operation(summary = "Reset admin password", description = "Reset admin password to default")
     public Result<Boolean> resetPassword(
             @Parameter(description = "Admin ID") @PathVariable Long id) {

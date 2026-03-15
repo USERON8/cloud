@@ -106,8 +106,7 @@ public class ProductQueryController {
     }
 
     @PatchMapping("/{spuId}/status")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasRole('MERCHANT') and hasAuthority('SCOPE_merchant:write'))")
+    @PreAuthorize("hasAuthority('product:edit')")
     @Operation(summary = "Update product status")
     public Result<Boolean> updateProductStatus(@PathVariable Long spuId,
                                                @RequestParam Integer status,

@@ -58,9 +58,8 @@ public class MerchantAuthController {
     private String certBucketName;
 
     @PostMapping("/apply/{merchantId}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasAuthority('SCOPE_merchant:write') "
-            + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
     @Operation(summary = "Apply merchant auth", description = "Create or update merchant auth application")
     public Result<MerchantAuthDTO> applyForAuth(
             @PathVariable("merchantId")
@@ -116,9 +115,8 @@ public class MerchantAuthController {
     }
 
     @PostMapping("/upload/license/{merchantId}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasAuthority('SCOPE_merchant:write') "
-            + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
     @Operation(summary = "Upload business license", description = "Upload business license for merchant auth")
     public Result<MerchantAuthFileUploadDTO> uploadBusinessLicense(
             @PathVariable("merchantId")
@@ -150,9 +148,8 @@ public class MerchantAuthController {
     }
 
     @GetMapping("/get/{merchantId}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')) "
-            + "or (hasAuthority('SCOPE_merchant:read') "
-            + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
     @Operation(summary = "Get merchant auth", description = "Get merchant auth information by merchant ID")
     public Result<MerchantAuthDTO> getAuthInfo(
             @PathVariable("merchantId")
@@ -172,9 +169,8 @@ public class MerchantAuthController {
     }
 
     @DeleteMapping("/revoke/{merchantId}")
-    @PreAuthorize("(hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')) "
-            + "or (hasAuthority('SCOPE_merchant:write') "
-            + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+    @PreAuthorize("hasAuthority('merchant:manage') "
+            + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
     @Operation(summary = "Revoke merchant auth", description = "Delete merchant auth application by merchant ID")
     public Result<Boolean> revokeAuth(
             @PathVariable("merchantId")
@@ -199,7 +195,7 @@ public class MerchantAuthController {
     }
 
     @PostMapping("/review/{merchantId}")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "Review merchant auth", description = "Review merchant auth application by merchant ID")
     public Result<Boolean> reviewAuth(
             @PathVariable("merchantId")
@@ -244,7 +240,7 @@ public class MerchantAuthController {
     }
 
     @GetMapping("/list")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:read')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "List merchant auth by status", description = "List merchant auth records by auth status")
     public Result<List<MerchantAuthDTO>> listAuthByStatus(
             @RequestParam("authStatus")
@@ -336,7 +332,7 @@ public class MerchantAuthController {
     }
 
     @PostMapping("/review/batch")
-    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SCOPE_admin:write')")
+    @PreAuthorize("hasAuthority('merchant:audit')")
     @Operation(summary = "Batch review merchant auth", description = "Batch review merchant auth records")
     public Result<Boolean> reviewAuthBatch(
             @RequestBody
