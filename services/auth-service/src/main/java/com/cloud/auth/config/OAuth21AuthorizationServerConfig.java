@@ -14,11 +14,9 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import cn.hutool.core.util.StrUtil;
 
 import java.time.Duration;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Configuration
@@ -30,37 +28,8 @@ import java.util.Set;
 })
 public class OAuth21AuthorizationServerConfig {
 
-    private static final String WEB_CLIENT_ID = "9ef97d40-818a-47c8-bce7-5c0d0c80f851";
-    private static final String MOBILE_CLIENT_ID = "1111c7d3-cf12-4b2d-ad1f-f86713e52b9f";
-    private static final String SERVICE_CLIENT_ID = "53ee7f0b-3f93-4859-b5f3-b0ab816901a4";
-    private static final String INTERNAL_SERVICE_CLIENT_ID = "c4d3b385-90a5-4b8d-a664-29a6b2f8dd4a";
-
     @Value("${app.jwt.issuer:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
     private String issuer;
-
-    @Value("${app.oauth2.clients.web.id:web-client}")
-    private String webClientId;
-
-    @Value("${app.oauth2.clients.web.redirect-uris:http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback}")
-    private String webClientRedirectUris;
-
-    @Value("${app.oauth2.clients.mobile.id:mobile-client}")
-    private String mobileClientId;
-
-    @Value("${app.oauth2.clients.mobile.redirect-uris:com.example.app://callback}")
-    private String mobileClientRedirectUris;
-
-    @Value("${app.oauth2.clients.service.id:service-client}")
-    private String serviceClientId;
-
-    @Value("${app.oauth2.clients.service.secret:}")
-    private String serviceClientSecret;
-
-    @Value("${app.oauth2.clients.internal.id:client-service}")
-    private String internalClientId;
-
-    @Value("${app.oauth2.clients.internal.secret:}")
-    private String internalClientSecret;
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
@@ -79,153 +48,73 @@ public class OAuth21AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient webAppClient = RegisteredClient.withId(WEB_CLIENT_ID)
-                .clientId(webClientId)
-                .clientAuthenticationMethods(methods -> methods.add(ClientAuthenticationMethod.NONE))
-                .authorizationGrantTypes(grantTypes -> {
-                    grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE);
-                    grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN);
-                })
-                .redirectUris(uris -> uris.addAll(parseCsvValues(webClientRedirectUris)))
-                .scopes(scopes -> {
-                    scopes.add(OidcScopes.OPENID);
-                    scopes.add(OidcScopes.PROFILE);
-                    scopes.add(OidcScopes.EMAIL);
-                    scopes.add("read");
-                    scopes.add("write");
-                    scopes.add("admin");
-                    scopes.add("user:read");
-                    scopes.add("user:write");
-                    scopes.add("order:read");
-                    scopes.add("order:write");
-                })
+        RegisteredClient userClient = RegisteredClient
+                .withId(UUID.randomUUID().toString())
+                .clientId("cloud-shop-client")
+                .clientSecret("{noop}cloud-shop-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .redirectUri("http://127.0.0.1:18080/login/oauth2/code/cloud")
+                .scope(OidcScopes.OPENID)
+                .scope("user.read")
+                .scope("order.write")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)
                         .requireProofKey(true)
                         .build())
-                .tokenSettings(createSecureTokenSettings())
+                .tokenSettings(userTokenSettings())
                 .build();
 
-        RegisteredClient mobileAppClient = RegisteredClient.withId(MOBILE_CLIENT_ID)
-                .clientId(mobileClientId)
-                .clientAuthenticationMethods(methods -> methods.add(ClientAuthenticationMethod.NONE))
-                .authorizationGrantTypes(grantTypes -> {
-                    grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE);
-                    grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN);
-                })
-                .redirectUris(uris -> uris.addAll(parseCsvValues(mobileClientRedirectUris)))
-                .scopes(scopes -> {
-                    scopes.add(OidcScopes.OPENID);
-                    scopes.add(OidcScopes.PROFILE);
-                    scopes.add("read");
-                })
+        RegisteredClient serviceClient = RegisteredClient
+                .withId(UUID.randomUUID().toString())
+                .clientId("client-service")
+                .clientSecret("{noop}cloud-client-service-secret-dev")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope("internal")
+                .clientSettings(ClientSettings.builder()
+                        .requireAuthorizationConsent(false)
+                        .requireProofKey(false)
+                        .build())
+                .tokenSettings(serviceTokenSettings())
+                .build();
+
+        RegisteredClient miniClient = RegisteredClient
+                .withId(UUID.randomUUID().toString())
+                .clientId("cloud-mini-client")
+                .clientSecret("{noop}cloud-mini-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .redirectUri("weixin://oauth2/callback")
+                .scope(OidcScopes.OPENID)
+                .scope("user.read")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)
                         .requireProofKey(true)
                         .build())
-                .tokenSettings(createMobileTokenSettings())
+                .tokenSettings(userTokenSettings())
                 .build();
 
-        RegisteredClient serviceClient = RegisteredClient.withId(SERVICE_CLIENT_ID)
-                .clientId(serviceClientId)
-                .clientSecret(requiredAndNormalizedSecret(serviceClientSecret, serviceClientId))
-                .clientAuthenticationMethods(methods -> {
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-                })
-                .authorizationGrantTypes(grantTypes -> grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS))
-                .scopes(scopes -> {
-                    scopes.add("service:read");
-                    scopes.add("service:write");
-                    scopes.add("service:admin");
-                })
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(false)
-                        .requireProofKey(false)
-                        .build())
-                .tokenSettings(createServiceTokenSettings())
-                .build();
-
-        RegisteredClient internalServiceClient = RegisteredClient.withId(INTERNAL_SERVICE_CLIENT_ID)
-                .clientId(internalClientId)
-                .clientSecret(requiredAndNormalizedSecret(internalClientSecret, internalClientId))
-                .clientAuthenticationMethods(methods -> {
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-                    methods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-                })
-                .authorizationGrantTypes(grantTypes -> grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS))
-                .scopes(scopes -> scopes.add("internal_api"))
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(false)
-                        .requireProofKey(false)
-                        .build())
-                .tokenSettings(createServiceTokenSettings())
-                .build();
-
-        
-
-
-        return new InMemoryRegisteredClientRepository(
-                webAppClient,
-                mobileAppClient,
-                serviceClient,
-                internalServiceClient
-        );
+        return new InMemoryRegisteredClientRepository(userClient, serviceClient, miniClient);
     }
 
-    private String requiredAndNormalizedSecret(String secret, String clientId) {
-        if (StrUtil.isBlank(secret)) {
-            throw new IllegalStateException("Missing client secret for " + clientId);
-        }
-
-        if (secret.startsWith("{")) {
-            return secret;
-        }
-
-        log.warn("Client {} secret is plaintext, auto-prefixing with {noop}. Use encoded secret in production", clientId);
-        return "{noop}" + secret;
-    }
-
-    private TokenSettings createSecureTokenSettings() {
+    private TokenSettings userTokenSettings() {
         return TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofMinutes(30))
+                .accessTokenTimeToLive(Duration.ofHours(2))
                 .refreshTokenTimeToLive(Duration.ofDays(7))
-                .reuseRefreshTokens(false)
-                .authorizationCodeTimeToLive(Duration.ofMinutes(10))
-                .idTokenSignatureAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-                .build();
-    }
-
-    private TokenSettings createMobileTokenSettings() {
-        return TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofMinutes(15))
-                .refreshTokenTimeToLive(Duration.ofDays(30))
                 .reuseRefreshTokens(false)
                 .authorizationCodeTimeToLive(Duration.ofMinutes(5))
                 .idTokenSignatureAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
                 .build();
     }
 
-    private TokenSettings createServiceTokenSettings() {
+    private TokenSettings serviceTokenSettings() {
         return TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofHours(2))
-                .refreshTokenTimeToLive(Duration.ofDays(1))
+                .accessTokenTimeToLive(Duration.ofHours(1))
                 .reuseRefreshTokens(false)
                 .build();
-    }
-
-    private Set<String> parseCsvValues(String rawValue) {
-        if (StrUtil.isBlank(rawValue)) {
-            return Set.of();
-        }
-        Set<String> values = new LinkedHashSet<>();
-        for (String item : rawValue.split(",")) {
-            String candidate = item == null ? "" : item.trim();
-            if (!candidate.isEmpty()) {
-                values.add(candidate);
-            }
-        }
-        return values;
     }
 }
 
