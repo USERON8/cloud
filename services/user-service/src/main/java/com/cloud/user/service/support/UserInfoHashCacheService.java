@@ -130,9 +130,9 @@ public class UserInfoHashCacheService {
         String newNameKey = nameKey(newUsername);
         String oldNameKey = StrUtil.isNotBlank(oldUsername) ? nameKey(oldUsername) : null;
         try {
-            redisTemplate.execute(new SessionCallback<Object>() {
+            redisTemplate.execute(new SessionCallback<java.util.List<Object>>() {
                 @Override
-                public Object execute(RedisOperations operations) {
+                public java.util.List<Object> execute(RedisOperations<String, String> operations) {
                     operations.multi();
                     if (StrUtil.isNotBlank(oldNameKey)) {
                         operations.delete(oldNameKey);
