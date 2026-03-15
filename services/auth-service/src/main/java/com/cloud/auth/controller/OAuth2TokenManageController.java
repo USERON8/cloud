@@ -1,6 +1,5 @@
 package com.cloud.auth.controller;
 
-import com.cloud.auth.service.SimpleRedisHashOAuth2AuthorizationService;
 import com.cloud.auth.service.TokenBlacklistService;
 import com.cloud.auth.util.RedisKeyHelper;
 import com.cloud.common.exception.ResourceNotFoundException;
@@ -49,17 +48,15 @@ public class OAuth2TokenManageController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> getTokenStats() {
         Map<String, Object> stats = new HashMap<>();
-        long authCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:auth:*");
         long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
+        long refreshCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:refresh:*");
+        long codeCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:code:*");
 
-        stats.put("authorizationCount", authCount);
-        stats.put("tokenIndexCount", tokenCount);
-        stats.put("redisInfo", "Hash storage mode");
-        stats.put("storageType", "Redis Hash");
-
-        if (authorizationService instanceof SimpleRedisHashOAuth2AuthorizationService hashService) {
-            stats.put("serviceStats", hashService.getStorageStats());
-        }
+        stats.put("authorizationCount", tokenCount);
+        stats.put("refreshIndexCount", refreshCount);
+        stats.put("codeIndexCount", codeCount);
+        stats.put("redisInfo", "Key/value storage mode");
+        stats.put("storageType", "Redis Key");
 
         return Result.success(stats);
     }
@@ -120,10 +117,6 @@ public class OAuth2TokenManageController {
     @PostMapping("/cleanup")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> cleanupExpiredTokens() {
-        if (authorizationService instanceof SimpleRedisHashOAuth2AuthorizationService hashService) {
-            hashService.cleanupExpiredTokens();
-        }
-
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Cleanup job executed");
         result.put("note", "Redis TTL will automatically remove expired data");
@@ -138,26 +131,22 @@ public class OAuth2TokenManageController {
         Map<String, Object> structure = new HashMap<>();
 
         Map<String, String> hashExample = new HashMap<>();
-        hashExample.put("oauth2:auth:{authorizationId}", "Redis hash key for complete authorization data");
-
-        Map<String, String> hashFields = new HashMap<>();
-        hashFields.put("data", "Serialized OAuth2Authorization JSON payload");
-        hashFields.put("clientId", "Client ID for query optimization");
-        hashFields.put("principalName", "Principal name for query optimization");
-        hashFields.put("createTime", "Creation timestamp");
+        hashExample.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
+        hashExample.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
+        hashExample.put("oauth2:code:{code}", "Authorization code index to authorization ID");
 
         Map<String, String> tokenIndex = new HashMap<>();
-        tokenIndex.put("oauth2:token:{tokenValue}", "Token index to authorization ID");
+        tokenIndex.put("oauth2:token:{authorizationId}", "Authorization object storage");
+        tokenIndex.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
+        tokenIndex.put("oauth2:code:{code}", "Authorization code index");
 
-        structure.put("hashKeys", hashExample);
-        structure.put("hashFields", hashFields);
+        structure.put("keys", hashExample);
         structure.put("tokenIndexes", tokenIndex);
         structure.put("advantages", java.util.List.of(
-                "Fewer Redis keys",
-                "Better memory efficiency",
-                "Atomic hash operations",
-                "Better data organization",
-                "Easier bulk query"
+                "Simple key/value storage",
+                "Token TTL aligned with Redis TTL",
+                "Easy manual inspection",
+                "Direct index for refresh/code tokens"
         ));
         return Result.success(structure);
     }

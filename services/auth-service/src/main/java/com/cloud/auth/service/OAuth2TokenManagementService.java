@@ -172,49 +172,27 @@ public class OAuth2TokenManagementService {
             return 0;
         }
 
-        Set<String> authKeys = RedisKeyHelper.scanKeys(redisTemplate, "oauth2:auth:*");
+        Set<String> authKeys = RedisKeyHelper.scanKeys(redisTemplate, "oauth2:token:*");
         if (authKeys == null || authKeys.isEmpty()) {
             return 0;
         }
 
         List<String> authKeyList = authKeys.stream().toList();
-        String principalNameField = "principalName";
-        List<Object> principalNames = redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
-            byte[] field = principalNameField.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            var hashCommands = connection.hashCommands();
-            for (String key : authKeyList) {
-                hashCommands.hGet(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), field);
-            }
-            return null;
-        });
-
+        List<Object> authorizations = redisTemplate.opsForValue().multiGet(authKeyList);
         int revokedCount = 0;
-        for (int i = 0; i < authKeyList.size(); i++) {
-            String key = authKeyList.get(i);
-            Object principalNameObj = (principalNames != null && i < principalNames.size()) ? principalNames.get(i) : null;
-            String principalName = decodeRedisValue(principalNameObj);
-            if (!username.equals(principalName)) {
-                continue;
-            }
-
-            String authorizationId = key.substring("oauth2:auth:".length());
-            OAuth2Authorization authorization = authorizationService.findById(authorizationId);
-            if (authorization != null) {
+        if (authorizations != null) {
+            for (Object obj : authorizations) {
+                if (!(obj instanceof OAuth2Authorization authorization)) {
+                    continue;
+                }
+                if (!username.equals(authorization.getPrincipalName())) {
+                    continue;
+                }
                 revokeAuthorization(authorization, "logout_all_sessions");
                 revokedCount++;
             }
         }
         return revokedCount;
-    }
-
-    private String decodeRedisValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof byte[] bytes) {
-            return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-        }
-        return value.toString();
     }
 
     private void revokeAuthorization(OAuth2Authorization authorization, String reason) {

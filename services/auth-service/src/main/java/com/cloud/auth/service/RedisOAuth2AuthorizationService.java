@@ -5,7 +5,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -28,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationService {
 
     
-    private static final String AUTHORIZATION_PREFIX = "oauth2:authorization:";
-    
     private static final String TOKEN_PREFIX = "oauth2:token:";
+    private static final String REFRESH_PREFIX = "oauth2:refresh:";
+    private static final String CODE_PREFIX = "oauth2:code:";
     private final RedisTemplate<String, Object> redisTemplate;
     private final RegisteredClientRepository registeredClientRepository;
     private final AuthorizationServerSettings authorizationServerSettings;
@@ -51,46 +50,34 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         Assert.notNull(authorization, "authorization cannot be null");
 
         
-        String authorizationKey = AUTHORIZATION_PREFIX + authorization.getId();
-        redisTemplate.opsForValue().set(authorizationKey, authorization);
+        String authorizationKey = TOKEN_PREFIX + authorization.getId();
+        long authorizationTtl = resolveAuthorizationTtlSeconds(authorization);
+        if (authorizationTtl > 0) {
+            redisTemplate.opsForValue().set(authorizationKey, authorization, authorizationTtl, TimeUnit.SECONDS);
+        } else {
+            redisTemplate.opsForValue().set(authorizationKey, authorization);
+        }
 
         
         
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
-            String codeKey = TOKEN_PREFIX + authorizationCode.getToken().getTokenValue();
+            String codeKey = CODE_PREFIX + authorizationCode.getToken().getTokenValue();
             redisTemplate.opsForValue().set(codeKey, authorization.getId(),
                     getExpireSeconds(authorizationCode.getToken()), TimeUnit.SECONDS);
-        }
-
-        
-        OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
-                authorization.getAccessToken();
-        if (accessToken != null) {
-            String accessTokenKey = TOKEN_PREFIX + accessToken.getToken().getTokenValue();
-            redisTemplate.opsForValue().set(accessTokenKey, authorization.getId(),
-                    getExpireSeconds(accessToken.getToken()), TimeUnit.SECONDS);
         }
 
         
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
-            String refreshTokenKey = TOKEN_PREFIX + refreshToken.getToken().getTokenValue();
+            String refreshTokenKey = REFRESH_PREFIX + refreshToken.getToken().getTokenValue();
             redisTemplate.opsForValue().set(refreshTokenKey, authorization.getId(),
                     getExpireSeconds(refreshToken.getToken()), TimeUnit.SECONDS);
         }
 
         
-        OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
-                authorization.getToken(OidcIdToken.class);
-        if (oidcIdToken != null) {
-            String oidcIdTokenKey = TOKEN_PREFIX + oidcIdToken.getToken().getTokenValue();
-            redisTemplate.opsForValue().set(oidcIdTokenKey, authorization.getId(),
-                    getExpireSeconds(oidcIdToken.getToken()), TimeUnit.SECONDS);
-        }
-
         log.debug("Saved authorization with id: {}", authorization.getId());
     }
 
@@ -99,7 +86,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         Assert.notNull(authorization, "authorization cannot be null");
 
         
-        String authorizationKey = AUTHORIZATION_PREFIX + authorization.getId();
+        String authorizationKey = TOKEN_PREFIX + authorization.getId();
         redisTemplate.delete(authorizationKey);
 
         
@@ -107,32 +94,16 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
-            String codeKey = TOKEN_PREFIX + authorizationCode.getToken().getTokenValue();
+            String codeKey = CODE_PREFIX + authorizationCode.getToken().getTokenValue();
             redisTemplate.delete(codeKey);
-        }
-
-        
-        OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
-                authorization.getAccessToken();
-        if (accessToken != null) {
-            String accessTokenKey = TOKEN_PREFIX + accessToken.getToken().getTokenValue();
-            redisTemplate.delete(accessTokenKey);
         }
 
         
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
-            String refreshTokenKey = TOKEN_PREFIX + refreshToken.getToken().getTokenValue();
+            String refreshTokenKey = REFRESH_PREFIX + refreshToken.getToken().getTokenValue();
             redisTemplate.delete(refreshTokenKey);
-        }
-
-        
-        OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
-                authorization.getToken(OidcIdToken.class);
-        if (oidcIdToken != null) {
-            String oidcIdTokenKey = TOKEN_PREFIX + oidcIdToken.getToken().getTokenValue();
-            redisTemplate.delete(oidcIdTokenKey);
         }
 
         log.debug("Removed authorization with id: {}", authorization.getId());
@@ -141,7 +112,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     @Override
     public OAuth2Authorization findById(String id) {
         Assert.hasText(id, "id cannot be empty");
-        String key = AUTHORIZATION_PREFIX + id;
+        String key = TOKEN_PREFIX + id;
         Object obj = redisTemplate.opsForValue().get(key);
         return obj instanceof OAuth2Authorization ? (OAuth2Authorization) obj : null;
     }
@@ -150,18 +121,65 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public OAuth2Authorization findByToken(String token, OAuth2TokenType tokenType) {
         Assert.hasText(token, "token cannot be empty");
 
-        
-        String tokenKey = TOKEN_PREFIX + token;
+        if (tokenType != null) {
+            if (OAuth2TokenType.AUTHORIZATION_CODE.equals(tokenType)) {
+                return findByAuthorizationId(CODE_PREFIX + token);
+            }
+            if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
+                return findByAuthorizationId(REFRESH_PREFIX + token);
+            }
+        }
 
-        
+        return findByAccessTokenValue(token, tokenType);
+    }
+
+    private OAuth2Authorization findByAuthorizationId(String tokenKey) {
         Object obj = redisTemplate.opsForValue().get(tokenKey);
         String authorizationId = obj instanceof String ? (String) obj : null;
         if (authorizationId == null) {
             return null;
         }
-
-        
         return findById(authorizationId);
+    }
+
+    private OAuth2Authorization findByAccessTokenValue(String token, OAuth2TokenType tokenType) {
+        var keys = redisTemplate.keys(TOKEN_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) {
+            return null;
+        }
+        for (String key : keys) {
+            Object obj = redisTemplate.opsForValue().get(key);
+            if (!(obj instanceof OAuth2Authorization authorization)) {
+                continue;
+            }
+            if (matchToken(authorization, token, tokenType)) {
+                return authorization;
+            }
+        }
+        return null;
+    }
+
+    private boolean matchToken(OAuth2Authorization authorization, String token, OAuth2TokenType tokenType) {
+        if (authorization == null || token == null) {
+            return false;
+        }
+        if (tokenType == null || OAuth2TokenType.ACCESS_TOKEN.equals(tokenType)) {
+            OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
+            if (accessToken != null && accessToken.getToken() != null) {
+                return token.equals(accessToken.getToken().getTokenValue());
+            }
+        }
+        if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
+            OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getRefreshToken();
+            return refreshToken != null && refreshToken.getToken() != null
+                    && token.equals(refreshToken.getToken().getTokenValue());
+        }
+        if (OAuth2TokenType.AUTHORIZATION_CODE.equals(tokenType)) {
+            OAuth2Authorization.Token<OAuth2AuthorizationCode> code = authorization.getToken(OAuth2AuthorizationCode.class);
+            return code != null && code.getToken() != null
+                    && token.equals(code.getToken().getTokenValue());
+        }
+        return false;
     }
 
     
@@ -177,5 +195,19 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         }
         
         return 7200L;
+    }
+
+    private long resolveAuthorizationTtlSeconds(OAuth2Authorization authorization) {
+        long maxSeconds = 0L;
+        if (authorization == null) {
+            return maxSeconds;
+        }
+        maxSeconds = Math.max(maxSeconds, getExpireSeconds(authorization.getAccessToken() != null
+                ? authorization.getAccessToken().getToken() : null));
+        maxSeconds = Math.max(maxSeconds, getExpireSeconds(authorization.getRefreshToken() != null
+                ? authorization.getRefreshToken().getToken() : null));
+        maxSeconds = Math.max(maxSeconds, getExpireSeconds(authorization.getToken(OAuth2AuthorizationCode.class) != null
+                ? authorization.getToken(OAuth2AuthorizationCode.class).getToken() : null));
+        return maxSeconds;
     }
 }
