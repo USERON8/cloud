@@ -20,7 +20,7 @@ import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
-import com.cloud.user.service.support.AuthPrincipalRemoteService;
+import com.cloud.user.service.support.AuthPrincipalService;
 import com.cloud.user.service.support.UserInfoHashCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
@@ -42,7 +42,7 @@ import java.util.UUID;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final UserConverter userConverter;
-    private final AuthPrincipalRemoteService authPrincipalRemoteService;
+    private final AuthPrincipalService authPrincipalService;
     private final CacheManager cacheManager;
     private final UserInfoHashCacheService userInfoCacheService;
 
@@ -88,7 +88,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             queryWrapper.eq(User::getStatus, pageDTO.getStatus());
         }
         if (StrUtil.isNotBlank(pageDTO.getRoleCode())) {
-            Collection<Long> userIds = authPrincipalRemoteService.getUserIdsByRoleCode(pageDTO.getRoleCode());
+            Collection<Long> userIds = authPrincipalService.getUserIdsByRoleCode(pageDTO.getRoleCode());
             if (userIds.isEmpty()) {
                 return PageResult.of(page.getCurrent(), page.getSize(), 0L, List.of());
             }
@@ -124,7 +124,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         boolean deleted = removeById(id);
         if (deleted) {
-            authPrincipalRemoteService.deletePrincipal(id);
+            authPrincipalService.deletePrincipal(id);
             userInfoCacheService.evict(id, user.getUsername());
         }
         return deleted;
@@ -150,7 +150,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<User> users = listByIds(userIds);
         boolean deleted = removeByIds(userIds);
         if (deleted) {
-            userIds.forEach(authPrincipalRemoteService::deletePrincipal);
+            userIds.forEach(authPrincipalService::deletePrincipal);
             if (users != null) {
                 users.forEach(user -> {
                     if (user != null && user.getId() != null) {
@@ -243,17 +243,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StrUtil.isBlank(requestDTO.getPassword())) {
             throw new BusinessException("password is required");
         }
-        authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), null);
-        User user = toUserEntity(requestDTO);
-        if (!save(user)) {
-            throw new BusinessException("failed to create user");
-        }
+        authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), null);
         List<String> roles = requestDTO.getRoles() == null || requestDTO.getRoles().isEmpty()
-                ? List.of("USER")
+                ? List.of("ROLE_USER")
                 : requestDTO.getRoles();
-        authPrincipalRemoteService.createPrincipal(toCreatePrincipalDTO(requestDTO, user.getId(), roles));
-        userInfoCacheService.put(user);
-        return user.getId();
+        Long userId = authPrincipalService.createPrincipal(toCreatePrincipalDTO(requestDTO, null, roles));
+        User created = userId == null ? null : getById(userId);
+        if (created != null) {
+            userInfoCacheService.put(created);
+        }
+        return userId;
     }
 
     @Override
@@ -263,12 +262,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             @CacheEvict(cacheNames = "userList", allEntries = true)
     })
     public Long createProfile(UserProfileUpsertDTO profileUpsertDTO) {
-        User user = toUserEntity(profileUpsertDTO);
-        if (!save(user)) {
-            throw new BusinessException("failed to create user profile");
+        if (profileUpsertDTO == null || profileUpsertDTO.getId() == null) {
+            throw new BusinessException("user id is required");
         }
-        userInfoCacheService.put(user);
-        return user.getId();
+        User existing = getById(profileUpsertDTO.getId());
+        if (existing == null) {
+            AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+            authPrincipalDTO.setId(profileUpsertDTO.getId());
+            authPrincipalDTO.setUsername(profileUpsertDTO.getUsername());
+            authPrincipalDTO.setNickname(profileUpsertDTO.getNickname());
+            authPrincipalDTO.setEmail(profileUpsertDTO.getEmail());
+            authPrincipalDTO.setPhone(profileUpsertDTO.getPhone());
+            authPrincipalDTO.setStatus(profileUpsertDTO.getStatus());
+            authPrincipalDTO.setPassword("Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+            authPrincipalDTO.setRoles(List.of("ROLE_USER"));
+            Long userId = authPrincipalService.createPrincipal(authPrincipalDTO);
+            User created = userId == null ? null : getById(userId);
+            if (created != null) {
+                userInfoCacheService.put(created);
+            }
+            return userId;
+        }
+        User user = toUserEntity(profileUpsertDTO);
+        boolean updated = updateById(user);
+        if (updated) {
+            userInfoCacheService.put(getById(profileUpsertDTO.getId()));
+        }
+        return profileUpsertDTO.getId();
     }
 
     @Override
@@ -304,14 +324,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (count > 0) {
                 throw new BusinessException("username already exists");
             }
-            authPrincipalRemoteService.assertUsernameAvailable(requestDTO.getUsername(), id);
+            authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
         }
 
         User user = toUserEntity(requestDTO);
         user.setId(id);
         boolean updated = updateById(user);
         if (updated) {
-            authPrincipalRemoteService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
+            authPrincipalService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
             evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
             updateUserCache(existingUser, requestDTO);
         }
@@ -360,7 +380,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User existingUser = getById(id);
         boolean deleted = removeById(id);
         if (deleted) {
-            authPrincipalRemoteService.deletePrincipal(id);
+            authPrincipalService.deletePrincipal(id);
             if (existingUser != null) {
                 userInfoCacheService.evict(id, existingUser.getUsername());
             }
@@ -389,7 +409,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
             authPrincipalDTO.setId(id);
             authPrincipalDTO.setStatus(status);
-            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+            authPrincipalService.updatePrincipal(authPrincipalDTO);
             updateUserStatusCache(id, status);
         }
         return updated;
@@ -415,7 +435,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(id);
         authPrincipalDTO.setPassword(newPassword);
-        authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+        authPrincipalService.updatePrincipal(authPrincipalDTO);
         return newPassword;
     }
 
@@ -435,7 +455,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (getById(id) == null) {
             throw new EntityNotFoundException("user", id);
         }
-        if (!authPrincipalRemoteService.changePassword(id, oldPassword, newPassword)) {
+        if (!authPrincipalService.changePassword(id, oldPassword, newPassword)) {
             throw new BusinessException("old password mismatch");
         }
         return true;
@@ -472,7 +492,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
                 authPrincipalDTO.setId(userId);
                 authPrincipalDTO.setStatus(status);
-                authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                authPrincipalService.updatePrincipal(authPrincipalDTO);
             });
         }
         return updated ? userIds.size() : 0;
@@ -506,7 +526,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                             hasUpdate = true;
                         }
                         if (hasUpdate) {
-                            authPrincipalRemoteService.updatePrincipal(authPrincipalDTO);
+                            authPrincipalService.updatePrincipal(authPrincipalDTO);
                         }
                     });
             entityList.stream()
@@ -549,7 +569,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return null;
         }
         UserDTO dto = userConverter.toDTO(user);
-        dto.setRoles(roles == null ? authPrincipalRemoteService.getRoleCodesByUserId(user.getId()) : roles);
+        dto.setRoles(roles == null ? authPrincipalService.getRoleCodesByUserId(user.getId()) : roles);
         return dto;
     }
 
@@ -565,7 +585,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         dto.setAvatarUrl(cached.avatarUrl());
         dto.setEmail(cached.email());
         dto.setStatus(cached.status());
-        dto.setRoles(authPrincipalRemoteService.getRoleCodesByUserId(cached.id()));
+        dto.setRoles(authPrincipalService.getRoleCodesByUserId(cached.id()));
         return dto;
     }
 
@@ -574,7 +594,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return List.of();
         }
         List<UserDTO> dtos = userConverter.toDTOList(users);
-        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(
+        Map<Long, List<String>> roleMap = authPrincipalService.getRoleCodesByUserIds(
                 users.stream().map(User::getId).toList());
         dtos.forEach(dto -> dto.setRoles(roleMap.getOrDefault(dto.getId(), List.of())));
         return dtos;
@@ -585,7 +605,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return List.of();
         }
         List<UserVO> vos = userConverter.toVOList(users);
-        Map<Long, List<String>> roleMap = authPrincipalRemoteService.getRoleCodesByUserIds(
+        Map<Long, List<String>> roleMap = authPrincipalService.getRoleCodesByUserIds(
                 users.stream().map(User::getId).toList());
         vos.forEach(vo -> vo.setRoles(roleMap.getOrDefault(vo.getId(), List.of())));
         return vos;
