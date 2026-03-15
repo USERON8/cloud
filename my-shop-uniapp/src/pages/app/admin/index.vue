@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import QiunDataCharts from 'qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue'
+import ChartView from '../../../components/ChartView.vue'
 import type {
   AdminInfo,
   AdminUpsertPayload,
@@ -1155,12 +1155,12 @@ onMounted(() => {
       <view class="section">
         <text class="section-title">角色分布</text>
         <view v-if="!roleChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" :opts="chartOpts" />
+        <ChartView v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" :opts="chartOpts" />
       </view>
       <view class="section">
         <text class="section-title">状态分布</text>
         <view v-if="!statusChartData" class="muted">暂无数据</view>
-        <qiun-data-charts
+        <ChartView
           v-else
           class="chart"
           type="ring"
@@ -1172,12 +1172,12 @@ onMounted(() => {
       <view class="section">
         <text class="section-title">注册趋势(30天)</text>
         <view v-if="!trendChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" :opts="chartOpts" />
+        <ChartView v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" :opts="chartOpts" />
       </view>
       <view class="section">
         <text class="section-title">活跃排行</text>
         <view v-if="!rankingChartData" class="muted">暂无数据</view>
-        <qiun-data-charts
+        <ChartView
           v-else
           class="chart"
           type="column"
