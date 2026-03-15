@@ -621,6 +621,14 @@ INSERT INTO xxl_job_group (app_name, title, address_type, address_list)
 SELECT 'stock-service', 'stock-service', 0, NULL
 WHERE NOT EXISTS (SELECT 1 FROM xxl_job_group WHERE app_name = 'stock-service');
 
+INSERT INTO xxl_job_group (app_name, title, address_type, address_list)
+SELECT 'product-service', 'product-service', 0, NULL
+WHERE NOT EXISTS (SELECT 1 FROM xxl_job_group WHERE app_name = 'product-service');
+
+INSERT INTO xxl_job_group (app_name, title, address_type, address_list)
+SELECT 'user-service', 'user-service', 0, NULL
+WHERE NOT EXISTS (SELECT 1 FROM xxl_job_group WHERE app_name = 'user-service');
+
 INSERT INTO xxl_job_info (
     job_group,
     job_desc,
