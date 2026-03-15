@@ -1,13 +1,20 @@
 package com.cloud.order.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
+import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.mapper.OrderMainMapper;
+import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.impl.OrderShippingService;
@@ -20,7 +27,10 @@ import org.springframework.security.core.Authentication;
 import cn.hutool.core.util.StrUtil;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -48,6 +58,8 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderPlacementService orderPlacementService;
     private final OrderShippingService orderShippingService;
+    private final OrderMainMapper orderMainMapper;
+    private final OrderSubMapper orderSubMapper;
 
     @PostMapping
     @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
@@ -70,6 +82,134 @@ public class OrderController {
         }
         request.setIdempotencyKey(idempotencyKey.trim());
         return Result.success(orderPlacementService.createOrder(request));
+    }
+
+    @GetMapping
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "List orders")
+    public Result<PageResult<OrderSummaryDTO>> listOrders(@RequestParam(required = false) Integer page,
+                                                          @RequestParam(required = false) Integer size,
+                                                          @RequestParam(required = false) Long userId,
+                                                          @RequestParam(required = false) Long shopId,
+                                                          @RequestParam(required = false) Integer status,
+                                                          Authentication authentication) {
+        int safePage = page == null || page < 1 ? 1 : page;
+        int safeSize = size == null || size <= 0 ? 20 : size;
+        safeSize = Math.min(safeSize, 100);
+
+        List<String> statusFilters = resolveMainStatusFilters(status);
+        IPage<OrderMain> pageResult = queryMainOrders(authentication, safePage, safeSize, userId, shopId, statusFilters);
+        List<OrderMain> mains = pageResult == null ? Collections.emptyList() : pageResult.getRecords();
+        Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains);
+
+        List<OrderSummaryDTO> summaries = new ArrayList<>(mains.size());
+        for (OrderMain main : mains) {
+            List<OrderSub> subs = subOrdersByMainId.getOrDefault(main.getId(), List.of());
+            OrderSummaryDTO summary = toSummary(main, subs);
+            if (status != null && !status.equals(summary.getStatus())) {
+                continue;
+            }
+            summaries.add(summary);
+        }
+
+        long total = pageResult == null ? 0L : pageResult.getTotal();
+        PageResult<OrderSummaryDTO> response = PageResult.of((long) safePage, (long) safeSize, total, summaries);
+        return Result.success(response);
+    }
+
+    @GetMapping("/{orderId}")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Get order detail")
+    public Result<OrderSummaryDTO> getOrder(@PathVariable Long orderId, Authentication authentication) {
+        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        List<OrderSub> subs = orderService.listSubOrders(orderId);
+        return Result.success(toSummary(main, subs));
+    }
+
+    @PostMapping("/{orderId}/pay")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Pay order")
+    public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
+        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        List<OrderSub> subs = orderService.listSubOrders(main.getId());
+        applySubOrderAction(subs, "PAY", authentication, null, null);
+        return Result.success(true);
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Cancel order")
+    public Result<Boolean> cancelOrder(@PathVariable Long orderId,
+                                       @RequestParam(required = false) String cancelReason,
+                                       Authentication authentication) {
+        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        List<OrderSub> subs = orderService.listSubOrders(main.getId());
+        applySubOrderAction(subs, "CANCEL", authentication, null, null);
+        if (StrUtil.isNotBlank(cancelReason)) {
+            main.setCancelReason(cancelReason.trim());
+            orderMainMapper.updateById(main);
+        }
+        return Result.success(true);
+    }
+
+    @PostMapping("/{orderId}/ship")
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Ship order")
+    public Result<Boolean> shipOrderStandard(@PathVariable Long orderId,
+                                             @RequestParam(required = false) String shippingCompany,
+                                             @RequestParam(required = false) String trackingNumber,
+                                             Authentication authentication) {
+        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        List<OrderSub> subs = orderService.listSubOrders(main.getId());
+        String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
+        String tracking = StrUtil.isBlank(trackingNumber) ? "TEST-" + main.getMainOrderNo() : trackingNumber.trim();
+        applySubOrderAction(subs, "SHIP", authentication, company, tracking);
+        return Result.success(true);
+    }
+
+    @PostMapping("/{orderId}/complete")
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Complete order")
+    public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
+        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        List<OrderSub> subs = orderService.listSubOrders(main.getId());
+        applySubOrderAction(subs, "DONE", authentication, null, null);
+        return Result.success(true);
+    }
+
+    @PostMapping("/batch/pay")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Batch pay orders")
+    public Result<Integer> batchPay(@RequestBody List<Long> orderIds, Authentication authentication) {
+        return Result.success(batchApply(orderIds, authentication, "PAY", null, null, null));
+    }
+
+    @PostMapping("/batch/cancel")
+    @PreAuthorize("@permissionManager.hasUserAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Batch cancel orders")
+    public Result<Integer> batchCancel(@RequestBody List<Long> orderIds,
+                                       @RequestParam(required = false) String cancelReason,
+                                       Authentication authentication) {
+        return Result.success(batchApply(orderIds, authentication, "CANCEL", null, null, cancelReason));
+    }
+
+    @PostMapping("/batch/ship")
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Batch ship orders")
+    public Result<Integer> batchShip(@RequestBody List<Long> orderIds,
+                                     @RequestParam(required = false) String shippingCompany,
+                                     @RequestParam(required = false) String trackingNumber,
+                                     Authentication authentication) {
+        String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
+        String tracking = StrUtil.isBlank(trackingNumber) ? "TEST" : trackingNumber.trim();
+        return Result.success(batchApply(orderIds, authentication, "SHIP", company, tracking, null));
+    }
+
+    @PostMapping("/batch/complete")
+    @PreAuthorize("@permissionManager.hasMerchantAccess(authentication) or @permissionManager.hasAdminAccess(authentication)")
+    @Operation(summary = "Batch complete orders")
+    public Result<Integer> batchComplete(@RequestBody List<Long> orderIds, Authentication authentication) {
+        return Result.success(batchApply(orderIds, authentication, "DONE", null, null, null));
     }
 
     @GetMapping("/main/{mainOrderId}")
@@ -193,6 +333,196 @@ public class OrderController {
 
     private boolean isMerchant(Authentication authentication) {
         return SecurityPermissionUtils.isMerchant(authentication);
+    }
+
+    private IPage<OrderMain> queryMainOrders(Authentication authentication,
+                                             int page,
+                                             int size,
+                                             Long userId,
+                                             Long shopId,
+                                             List<String> statusFilters) {
+        Page<OrderMain> pageData = new Page<>(page, size);
+        if (isAdmin(authentication)) {
+            if (shopId != null) {
+                return orderMainMapper.selectPageByMerchant(pageData, shopId, statusFilters, userId);
+            }
+            LambdaQueryWrapper<OrderMain> wrapper = new LambdaQueryWrapper<OrderMain>()
+                    .eq(OrderMain::getDeleted, 0);
+            if (userId != null) {
+                wrapper.eq(OrderMain::getUserId, userId);
+            }
+            if (statusFilters != null && !statusFilters.isEmpty()) {
+                wrapper.in(OrderMain::getOrderStatus, statusFilters);
+            }
+            wrapper.orderByDesc(OrderMain::getId);
+            return orderMainMapper.selectPage(pageData, wrapper);
+        }
+
+        if (isMerchant(authentication)) {
+            Long merchantId = requireCurrentUserId(authentication);
+            return orderMainMapper.selectPageByMerchant(pageData, merchantId, statusFilters, null);
+        }
+
+        Long currentUserId = requireCurrentUserId(authentication);
+        LambdaQueryWrapper<OrderMain> wrapper = new LambdaQueryWrapper<OrderMain>()
+                .eq(OrderMain::getDeleted, 0)
+                .eq(OrderMain::getUserId, currentUserId);
+        if (statusFilters != null && !statusFilters.isEmpty()) {
+            wrapper.in(OrderMain::getOrderStatus, statusFilters);
+        }
+        wrapper.orderByDesc(OrderMain::getId);
+        return orderMainMapper.selectPage(pageData, wrapper);
+    }
+
+    private Map<Long, List<OrderSub>> loadSubOrdersByMainIds(List<OrderMain> mains) {
+        if (mains == null || mains.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> mainIds = mains.stream()
+                .map(OrderMain::getId)
+                .filter(id -> id != null)
+                .toList();
+        if (mainIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<OrderSub> subs = orderSubMapper.selectList(new LambdaQueryWrapper<OrderSub>()
+                .in(OrderSub::getMainOrderId, mainIds)
+                .eq(OrderSub::getDeleted, 0));
+        if (subs == null || subs.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<OrderSub>> grouped = new java.util.HashMap<>();
+        for (OrderSub sub : subs) {
+            if (sub == null || sub.getMainOrderId() == null) {
+                continue;
+            }
+            grouped.computeIfAbsent(sub.getMainOrderId(), ignored -> new ArrayList<>()).add(sub);
+        }
+        return grouped;
+    }
+
+    private OrderSummaryDTO toSummary(OrderMain main, List<OrderSub> subs) {
+        OrderSummaryDTO summary = new OrderSummaryDTO();
+        summary.setId(main.getId());
+        summary.setOrderNo(main.getMainOrderNo());
+        summary.setUserId(main.getUserId());
+        summary.setTotalAmount(main.getTotalAmount());
+        summary.setPayAmount(main.getPayableAmount());
+        summary.setCreatedAt(main.getCreatedAt());
+        summary.setStatus(resolveStatusCode(subs));
+        return summary;
+    }
+
+    private Integer resolveStatusCode(List<OrderSub> subs) {
+        if (subs == null || subs.isEmpty()) {
+            return 0;
+        }
+        boolean allDone = subs.stream().allMatch(sub -> "DONE".equals(sub.getOrderStatus()));
+        if (allDone) {
+            return 3;
+        }
+        boolean allClosed = subs.stream().allMatch(sub ->
+                "CANCELLED".equals(sub.getOrderStatus()) || "CLOSED".equals(sub.getOrderStatus()));
+        if (allClosed) {
+            return 4;
+        }
+        boolean anyShipped = subs.stream().anyMatch(sub -> "SHIPPED".equals(sub.getOrderStatus()));
+        if (anyShipped) {
+            return 2;
+        }
+        boolean anyPaid = subs.stream().anyMatch(sub -> "PAID".equals(sub.getOrderStatus()));
+        if (anyPaid) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private List<String> resolveMainStatusFilters(Integer statusCode) {
+        if (statusCode == null) {
+            return List.of();
+        }
+        return switch (statusCode) {
+            case 0 -> List.of("CREATED", "STOCK_RESERVED");
+            case 1 -> List.of("PAID");
+            case 2 -> List.of("PAID", "SHIPPED");
+            case 3 -> List.of("DONE");
+            case 4 -> List.of("CANCELLED", "CLOSED");
+            default -> List.of();
+        };
+    }
+
+    private void applySubOrderAction(List<OrderSub> subs,
+                                     String action,
+                                     Authentication authentication,
+                                     String shippingCompany,
+                                     String trackingNumber) {
+        if (subs == null || subs.isEmpty()) {
+            throw new BusinessException("sub orders not found");
+        }
+        for (OrderSub sub : subs) {
+            if (sub == null || sub.getId() == null) {
+                continue;
+            }
+            if (isMerchant(authentication) && !Objects.equals(sub.getMerchantId(), requireCurrentUserId(authentication))) {
+                continue;
+            }
+            if ("SHIP".equals(action)) {
+                orderShippingService.ship(sub.getId(), shippingCompany, trackingNumber);
+            } else {
+                orderService.advanceSubOrderStatus(sub.getId(), action);
+            }
+        }
+    }
+
+    private int batchApply(List<Long> orderIds,
+                           Authentication authentication,
+                           String action,
+                           String shippingCompany,
+                           String trackingNumber,
+                           String cancelReason) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return 0;
+        }
+        int success = 0;
+        for (Long orderId : orderIds) {
+            if (orderId == null) {
+                continue;
+            }
+            OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+            List<OrderSub> subs = orderService.listSubOrders(main.getId());
+            applySubOrderAction(subs, action, authentication, shippingCompany, trackingNumber);
+            if ("CANCEL".equals(action) && StrUtil.isNotBlank(cancelReason)) {
+                main.setCancelReason(cancelReason.trim());
+                orderMainMapper.updateById(main);
+            }
+            success += 1;
+        }
+        return success;
+    }
+
+    private OrderMain requireAccessibleMainOrder(Long orderId, Authentication authentication) {
+        OrderMain main = orderService.getMainOrder(orderId);
+        if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
+            throw new BusinessException("main order not found");
+        }
+        if (isAdmin(authentication)) {
+            return main;
+        }
+        Long currentUserId = requireCurrentUserId(authentication);
+        if (isMerchant(authentication)) {
+            boolean belongs = orderSubMapper.selectCount(new LambdaQueryWrapper<OrderSub>()
+                    .eq(OrderSub::getMainOrderId, main.getId())
+                    .eq(OrderSub::getMerchantId, currentUserId)
+                    .eq(OrderSub::getDeleted, 0)) > 0;
+            if (!belongs) {
+                throw new BusinessException("forbidden");
+            }
+            return main;
+        }
+        if (!Objects.equals(main.getUserId(), currentUserId)) {
+            throw new BusinessException("forbidden");
+        }
+        return main;
     }
 
     private boolean isAllowedSubOrderAction(String action, Authentication authentication) {
