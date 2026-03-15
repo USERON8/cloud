@@ -28,6 +28,7 @@ export interface RegisterRequest {
 
 export interface ProductItem {
   id: number
+  skuId?: number
   shopId?: number
   name: string
   price?: number
@@ -104,11 +105,10 @@ export interface OrderQuery {
 
 export interface CreateOrderPayload {
   shopId: number
-  items: Array<{
-    productId: number
-    quantity: number
-    price: number
-  }>
+  spuId: number
+  skuId: number
+  quantity: number
+  price: number
 }
 
 export interface UserAddress {

@@ -3,6 +3,7 @@ import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 export interface CartEntry {
   productId: number
+  skuId: number
   productName: string
   price: number
   quantity: number
@@ -26,6 +27,7 @@ export function hydrateCartFromStorage(): void {
     state.items = parsed.filter(
       (item) =>
         typeof item.productId === 'number' &&
+        typeof item.skuId === 'number' &&
         typeof item.shopId === 'number' &&
         item.shopId > 0 &&
         typeof item.productName === 'string' &&
@@ -40,7 +42,7 @@ export function hydrateCartFromStorage(): void {
 
 export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: number }): void {
   const qty = Math.max(1, entry.quantity ?? 1)
-  const existing = state.items.find((item) => item.productId === entry.productId)
+  const existing = state.items.find((item) => item.productId === entry.productId && item.skuId === entry.skuId)
   if (existing) {
     existing.quantity += qty
   } else {
@@ -55,19 +57,19 @@ export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: numb
   persist()
 }
 
-export function removeFromCart(productId: number): void {
-  const idx = state.items.findIndex((item) => item.productId === productId)
+export function removeFromCart(productId: number, skuId: number): void {
+  const idx = state.items.findIndex((item) => item.productId === productId && item.skuId === skuId)
   if (idx !== -1) {
     state.items.splice(idx, 1)
     persist()
   }
 }
 
-export function setCartItemQuantity(productId: number, quantity: number): void {
-  const item = state.items.find((i) => i.productId === productId)
+export function setCartItemQuantity(productId: number, skuId: number, quantity: number): void {
+  const item = state.items.find((i) => i.productId === productId && i.skuId === skuId)
   if (!item) return
   if (quantity <= 0) {
-    removeFromCart(productId)
+    removeFromCart(productId, skuId)
   } else {
     item.quantity = quantity
     persist()
