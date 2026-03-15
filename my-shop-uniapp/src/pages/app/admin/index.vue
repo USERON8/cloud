@@ -706,6 +706,11 @@ const rankingChartData = computed(() => {
   }
 })
 
+const chartOpts = {
+  legend: { position: 'bottom' },
+  padding: [12, 12, 0, 12]
+}
+
 async function loadStatistics(): Promise<void> {
   statsLoading.value = true
   try {
@@ -1150,22 +1155,36 @@ onMounted(() => {
       <view class="section">
         <text class="section-title">角色分布</text>
         <view v-if="!roleChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" />
+        <qiun-data-charts v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" :opts="chartOpts" />
       </view>
       <view class="section">
         <text class="section-title">状态分布</text>
         <view v-if="!statusChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="ring" canvasId="statusChart" :chartData="statusChartData" />
+        <qiun-data-charts
+          v-else
+          class="chart"
+          type="ring"
+          canvasId="statusChart"
+          :chartData="statusChartData"
+          :opts="chartOpts"
+        />
       </view>
       <view class="section">
         <text class="section-title">注册趋势(30天)</text>
         <view v-if="!trendChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" />
+        <qiun-data-charts v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" :opts="chartOpts" />
       </view>
       <view class="section">
         <text class="section-title">活跃排行</text>
         <view v-if="!rankingChartData" class="muted">暂无数据</view>
-        <qiun-data-charts v-else class="chart" type="column" canvasId="rankingChart" :chartData="rankingChartData" />
+        <qiun-data-charts
+          v-else
+          class="chart"
+          type="column"
+          canvasId="rankingChart"
+          :chartData="rankingChartData"
+          :opts="chartOpts"
+        />
       </view>
     </view>
 
