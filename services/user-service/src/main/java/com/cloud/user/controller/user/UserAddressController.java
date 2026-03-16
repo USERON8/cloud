@@ -1,8 +1,5 @@
 package com.cloud.user.controller.user;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.UserAddressDTO;
 import com.cloud.common.domain.dto.user.UserAddressPageDTO;
 import com.cloud.common.domain.dto.user.UserAddressRequestDTO;
@@ -10,9 +7,6 @@ import com.cloud.common.domain.vo.UserAddressVO;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
-import com.cloud.common.utils.PageUtils;
-import com.cloud.user.converter.UserAddressConverter;
-import com.cloud.user.module.entity.UserAddress;
 import com.cloud.user.service.UserAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -42,7 +35,6 @@ import java.util.List;
 public class UserAddressController {
 
     private final UserAddressService userAddressService;
-    private final UserAddressConverter userAddressConverter = UserAddressConverter.INSTANCE;
 
     @PostMapping("/add/{userId}")
     @Operation(summary = "Add user address", description = "Add a new address for user")
@@ -58,13 +50,8 @@ public class UserAddressController {
             return Result.forbidden("no permission to add address");
         }
 
-        UserAddress userAddress = userAddressConverter.toEntity(userAddressRequestDTO);
-        userAddress.setUserId(userId);
-        userAddress.setCreatedAt(LocalDateTime.now());
-        userAddress.setUpdatedAt(LocalDateTime.now());
-
-        userAddressService.save(userAddress);
-        return Result.success("address created", userAddressConverter.toDTO(userAddress));
+        UserAddressDTO created = userAddressService.createAddress(userId, userAddressRequestDTO);
+        return Result.success("address created", created);
     }
 
     @PutMapping("/update/{addressId}")
@@ -77,7 +64,7 @@ public class UserAddressController {
             @Parameter(description = "Address payload")
             @Valid @NotNull(message = "address payload is required") UserAddressRequestDTO userAddressRequestDTO,
             Authentication authentication) {
-        UserAddress existingAddress = userAddressService.getById(addressId);
+        UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
         if (existingAddress == null) {
             return Result.notFound("address not found");
         }
@@ -86,13 +73,8 @@ public class UserAddressController {
             return Result.forbidden("no permission to update address");
         }
 
-        UserAddress userAddress = userAddressConverter.toEntity(userAddressRequestDTO);
-        userAddress.setId(addressId);
-        userAddress.setUserId(existingAddress.getUserId());
-        userAddress.setUpdatedAt(LocalDateTime.now());
-
-        userAddressService.updateById(userAddress);
-        return Result.success("address updated", userAddressConverter.toDTO(userAddress));
+        UserAddressDTO updated = userAddressService.updateAddress(addressId, userAddressRequestDTO);
+        return Result.success("address updated", updated);
     }
 
     @DeleteMapping("/delete/{addressId}")
@@ -102,7 +84,7 @@ public class UserAddressController {
             @Parameter(description = "Address ID")
             @NotNull(message = "address id is required") Long addressId,
             Authentication authentication) {
-        UserAddress existingAddress = userAddressService.getById(addressId);
+        UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
         if (existingAddress == null) {
             return Result.notFound("address not found");
         }
@@ -126,12 +108,7 @@ public class UserAddressController {
             return Result.forbidden("no permission to query addresses");
         }
 
-        LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(UserAddress::getUserId, userId);
-        queryWrapper.orderByDesc(UserAddress::getIsDefault);
-        queryWrapper.orderByDesc(UserAddress::getUpdatedAt);
-
-        List<UserAddressVO> result = userAddressConverter.toVOList(userAddressService.list(queryWrapper));
+        List<UserAddressVO> result = userAddressService.listAddressesByUserId(userId);
         return Result.success(result);
     }
 
@@ -146,16 +123,12 @@ public class UserAddressController {
             return Result.forbidden("no permission to query default address");
         }
 
-        LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(UserAddress::getUserId, userId);
-        queryWrapper.eq(UserAddress::getIsDefault, 1);
-
-        UserAddress userAddress = userAddressService.getOne(queryWrapper);
+        UserAddressVO userAddress = userAddressService.getDefaultAddress(userId);
         if (userAddress == null) {
             return Result.success("default address not found", null);
         }
 
-        return Result.success(userAddressConverter.toVO(userAddress));
+        return Result.success(userAddress);
     }
 
     @PostMapping("/page")
@@ -173,26 +146,7 @@ public class UserAddressController {
                 return Result.forbidden("no permission to query all addresses");
             }
 
-            Page<UserAddress> page = PageUtils.buildPage(pageDTO);
-            LambdaQueryWrapper<UserAddress> queryWrapper = Wrappers.lambdaQuery();
-
-            if (pageDTO.getUserId() != null) {
-                queryWrapper.eq(UserAddress::getUserId, pageDTO.getUserId());
-            }
-            if (pageDTO.getConsignee() != null && !pageDTO.getConsignee().isEmpty()) {
-                queryWrapper.like(UserAddress::getConsignee, pageDTO.getConsignee());
-            }
-            queryWrapper.orderByDesc(UserAddress::getCreatedAt);
-
-            Page<UserAddress> resultPage = userAddressService.page(page, queryWrapper);
-            List<UserAddressVO> userAddressVOList = userAddressConverter.toVOList(resultPage.getRecords());
-
-            PageResult<UserAddressVO> pageResult = PageResult.of(
-                    resultPage.getCurrent(),
-                    resultPage.getSize(),
-                    resultPage.getTotal(),
-                    userAddressVOList
-            );
+            PageResult<UserAddressVO> pageResult = userAddressService.pageAddresses(pageDTO);
             return Result.success(pageResult);
         } catch (Exception e) {
             log.error("Failed to page user addresses", e);
@@ -217,7 +171,7 @@ public class UserAddressController {
         int successCount = 0;
         for (Long addressId : addressIds) {
             try {
-                UserAddress existingAddress = userAddressService.getById(addressId);
+                UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
                 if (existingAddress == null) {
                     continue;
                 }
@@ -255,7 +209,7 @@ public class UserAddressController {
                     continue;
                 }
 
-                UserAddress existingAddress = userAddressService.getById(addressDTO.getId());
+                UserAddressDTO existingAddress = userAddressService.getAddressById(addressDTO.getId());
                 if (existingAddress == null) {
                     continue;
                 }
@@ -263,12 +217,7 @@ public class UserAddressController {
                     continue;
                 }
 
-                UserAddress userAddress = userAddressConverter.toEntity(addressDTO);
-                userAddress.setId(addressDTO.getId());
-                userAddress.setUserId(existingAddress.getUserId());
-                userAddress.setUpdatedAt(LocalDateTime.now());
-
-                if (userAddressService.updateById(userAddress)) {
+                if (userAddressService.updateAddress(addressDTO.getId(), addressDTO) != null) {
                     successCount++;
                 }
             } catch (Exception e) {
