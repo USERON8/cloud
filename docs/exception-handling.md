@@ -50,6 +50,7 @@
   - `RATE_LIMITED`：429
   - `REMOTE_SERVICE_UNAVAILABLE`：18001
   - `REMOTE_SERVICE_TIMEOUT`：18002
+- 统一映射策略集中在 `ResultCodeHttpStatusMapper`，避免分散在业务代码。
 
 ## 全局异常处理
 
