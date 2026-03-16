@@ -83,20 +83,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AdminDTO> getMerchantsPage(Integer page, Integer size, Integer status) {
-        Page<Admin> pageParam = new Page<>(page, size);
-        Page<Admin> adminPage = lambdaQuery()
-                .eq(status != null, Admin::getStatus, status)
-                .orderByDesc(Admin::getId)
-                .page(pageParam);
-
-        Page<AdminDTO> dtoPage = new Page<>(adminPage.getCurrent(), adminPage.getSize(), adminPage.getTotal());
-        dtoPage.setRecords(adminPage.getRecords().stream().map(adminConverter::toDTO).collect(Collectors.toList()));
-        return dtoPage;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Page<AdminDTO> getAdminsPage(Integer page, Integer size) {
         Page<Admin> pageParam = new Page<>(page, size);
         Page<Admin> adminPage = lambdaQuery().orderByDesc(Admin::getId).page(pageParam);

@@ -54,7 +54,6 @@ public interface AdminService extends IService<Admin> {
 
 
 
-    Page<AdminDTO> getMerchantsPage(Integer page, Integer size, Integer status);
 
 
 
