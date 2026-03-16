@@ -102,9 +102,7 @@ public class UserManageController {
             if (missingIdCount > 0) {
                 return Result.badRequest("all user payloads must include id for batch update");
             }
-            boolean result = userService.updateBatchById(
-                    requestDTOList.stream().map(UserManageController::toUserEntity).toList()
-            );
+            boolean result = userService.updateUsersBatch(requestDTOList);
             return Result.success(String.format("batch update completed: %d", requestDTOList.size()), result);
         } catch (Exception e) {
             log.error("Failed to batch update users", e);
@@ -137,15 +135,4 @@ public class UserManageController {
         }
     }
 
-    private static com.cloud.user.module.entity.User toUserEntity(UserUpsertRequestDTO requestDTO) {
-        com.cloud.user.module.entity.User user = new com.cloud.user.module.entity.User();
-        user.setId(requestDTO.getId());
-        user.setUsername(requestDTO.getUsername());
-        user.setPhone(requestDTO.getPhone());
-        user.setNickname(requestDTO.getNickname());
-        user.setAvatarUrl(requestDTO.getAvatarUrl());
-        user.setEmail(requestDTO.getEmail());
-        user.setStatus(requestDTO.getStatus());
-        return user;
-    }
 }

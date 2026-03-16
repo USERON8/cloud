@@ -30,6 +30,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -365,6 +366,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             updateUserCache(existingUser, profileUpsertDTO);
         }
         return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateUsersBatch(List<UserUpsertRequestDTO> requestDTOList) {
+        if (requestDTOList == null || requestDTOList.isEmpty()) {
+            throw new BusinessException("user payload list is required");
+        }
+        List<User> entities = new ArrayList<>(requestDTOList.size());
+        for (UserUpsertRequestDTO requestDTO : requestDTOList) {
+            if (requestDTO == null || requestDTO.getId() == null) {
+                throw new BusinessException("user id is required");
+            }
+            User user = toUserEntity(requestDTO);
+            user.setId(requestDTO.getId());
+            entities.add(user);
+        }
+        return updateBatchById(entities);
     }
 
     @Override

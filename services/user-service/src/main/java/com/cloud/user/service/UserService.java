@@ -101,6 +101,8 @@ public interface UserService extends IService<User> {
 
     Boolean updateProfile(UserProfileUpsertDTO profileUpsertDTO);
 
+    boolean updateUsersBatch(List<UserUpsertRequestDTO> requestDTOList);
+
 
 
 
