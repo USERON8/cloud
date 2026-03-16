@@ -7,6 +7,9 @@ import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,178 +24,193 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/auth/tokens")
 @Tag(name = "OAuth2 Token Management", description = "OAuth2 token management and monitoring APIs")
 public class OAuth2TokenManageController {
 
-    private final OAuth2AuthorizationService authorizationService;
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final TokenBlacklistService tokenBlacklistService;
+  private final OAuth2AuthorizationService authorizationService;
+  private final RedisTemplate<String, Object> redisTemplate;
+  private final TokenBlacklistService tokenBlacklistService;
 
-    public OAuth2TokenManageController(
-            OAuth2AuthorizationService authorizationService,
-            @Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate,
-            TokenBlacklistService tokenBlacklistService) {
-        this.authorizationService = authorizationService;
-        this.redisTemplate = redisTemplate;
-        this.tokenBlacklistService = tokenBlacklistService;
+  public OAuth2TokenManageController(
+      OAuth2AuthorizationService authorizationService,
+      @Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate,
+      TokenBlacklistService tokenBlacklistService) {
+    this.authorizationService = authorizationService;
+    this.redisTemplate = redisTemplate;
+    this.tokenBlacklistService = tokenBlacklistService;
+  }
+
+  @Operation(
+      summary = "Get token storage statistics",
+      description = "Get token storage metrics from Redis")
+  @GetMapping("/stats")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> getTokenStats() {
+    Map<String, Object> stats = new HashMap<>();
+    long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
+    long refreshCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:refresh:*");
+    long codeCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:code:*");
+
+    stats.put("authorizationCount", tokenCount);
+    stats.put("refreshIndexCount", refreshCount);
+    stats.put("codeIndexCount", codeCount);
+    stats.put("redisInfo", "Key/value storage mode");
+    stats.put("storageType", "Redis Key");
+
+    return Result.success(stats);
+  }
+
+  @Operation(
+      summary = "Get authorization details",
+      description = "Get authorization details by authorization ID")
+  @GetMapping("/authorization/{id}")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> getAuthorizationDetails(
+      @Parameter(description = "Authorization ID") @PathVariable String id) {
+    OAuth2Authorization authorization = authorizationService.findById(id);
+    if (authorization == null) {
+      log.warn("Authorization not found: id={}", id);
+      throw new ResourceNotFoundException("Authorization", id);
     }
 
-    @Operation(summary = "Get token storage statistics", description = "Get token storage metrics from Redis")
-    @GetMapping("/stats")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> getTokenStats() {
-        Map<String, Object> stats = new HashMap<>();
-        long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
-        long refreshCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:refresh:*");
-        long codeCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:code:*");
+    Map<String, Object> details = new HashMap<>();
+    details.put("id", authorization.getId());
+    details.put("clientId", authorization.getRegisteredClientId());
+    details.put("principalName", authorization.getPrincipalName());
+    details.put("grantType", authorization.getAuthorizationGrantType().getValue());
+    details.put("scopes", authorization.getAuthorizedScopes());
 
-        stats.put("authorizationCount", tokenCount);
-        stats.put("refreshIndexCount", refreshCount);
-        stats.put("codeIndexCount", codeCount);
-        stats.put("redisInfo", "Key/value storage mode");
-        stats.put("storageType", "Redis Key");
+    Map<String, Object> tokens = new HashMap<>();
+    if (authorization.getAccessToken() != null) {
+      tokens.put(
+          "accessToken",
+          Map.of(
+              "issuedAt", authorization.getAccessToken().getToken().getIssuedAt(),
+              "expiresAt", authorization.getAccessToken().getToken().getExpiresAt(),
+              "scopes", authorization.getAccessToken().getToken().getScopes()));
+    }
+    if (authorization.getRefreshToken() != null) {
+      tokens.put(
+          "refreshToken",
+          Map.of(
+              "issuedAt", authorization.getRefreshToken().getToken().getIssuedAt(),
+              "expiresAt", authorization.getRefreshToken().getToken().getExpiresAt()));
+    }
+    details.put("tokens", tokens);
 
-        return Result.success(stats);
+    return Result.success(details);
+  }
+
+  @Operation(summary = "Revoke authorization", description = "Revoke OAuth2 authorization by ID")
+  @DeleteMapping("/authorization/{id}")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Void> revokeAuthorization(
+      @Parameter(description = "Authorization ID") @PathVariable String id) {
+    OAuth2Authorization authorization = authorizationService.findById(id);
+    if (authorization == null) {
+      log.warn("Authorization not found: id={}", id);
+      throw new ResourceNotFoundException("Authorization", id);
     }
 
-    @Operation(summary = "Get authorization details", description = "Get authorization details by authorization ID")
-    @GetMapping("/authorization/{id}")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> getAuthorizationDetails(
-            @Parameter(description = "Authorization ID") @PathVariable String id) {
-        OAuth2Authorization authorization = authorizationService.findById(id);
-        if (authorization == null) {
-            log.warn("Authorization not found: id={}", id);
-            throw new ResourceNotFoundException("Authorization", id);
-        }
+    authorizationService.remove(authorization);
+    return Result.success();
+  }
 
-        Map<String, Object> details = new HashMap<>();
-        details.put("id", authorization.getId());
-        details.put("clientId", authorization.getRegisteredClientId());
-        details.put("principalName", authorization.getPrincipalName());
-        details.put("grantType", authorization.getAuthorizationGrantType().getValue());
-        details.put("scopes", authorization.getAuthorizedScopes());
+  @Operation(
+      summary = "Cleanup expired tokens",
+      description = "Trigger cleanup for expired token data")
+  @PostMapping("/cleanup")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> cleanupExpiredTokens() {
+    Map<String, Object> result = new HashMap<>();
+    result.put("message", "Cleanup job executed");
+    result.put("note", "Redis TTL will automatically remove expired data");
+    result.put("time", Instant.now());
+    return Result.success(result);
+  }
 
-        Map<String, Object> tokens = new HashMap<>();
-        if (authorization.getAccessToken() != null) {
-            tokens.put("accessToken", Map.of(
-                    "issuedAt", authorization.getAccessToken().getToken().getIssuedAt(),
-                    "expiresAt", authorization.getAccessToken().getToken().getExpiresAt(),
-                    "scopes", authorization.getAccessToken().getToken().getScopes()
-            ));
-        }
-        if (authorization.getRefreshToken() != null) {
-            tokens.put("refreshToken", Map.of(
-                    "issuedAt", authorization.getRefreshToken().getToken().getIssuedAt(),
-                    "expiresAt", authorization.getRefreshToken().getToken().getExpiresAt()
-            ));
-        }
-        details.put("tokens", tokens);
+  @Operation(
+      summary = "Get Redis hash storage structure",
+      description = "Show Redis hash structure for OAuth2 data")
+  @GetMapping("/storage-structure")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> getStorageStructure() {
+    Map<String, Object> structure = new HashMap<>();
 
-        return Result.success(details);
-    }
+    Map<String, String> hashExample = new HashMap<>();
+    hashExample.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
+    hashExample.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
+    hashExample.put("oauth2:code:{code}", "Authorization code index to authorization ID");
 
-    @Operation(summary = "Revoke authorization", description = "Revoke OAuth2 authorization by ID")
-    @DeleteMapping("/authorization/{id}")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Void> revokeAuthorization(
-            @Parameter(description = "Authorization ID") @PathVariable String id) {
-        OAuth2Authorization authorization = authorizationService.findById(id);
-        if (authorization == null) {
-            log.warn("Authorization not found: id={}", id);
-            throw new ResourceNotFoundException("Authorization", id);
-        }
+    Map<String, String> tokenIndex = new HashMap<>();
+    tokenIndex.put("oauth2:token:{authorizationId}", "Authorization object storage");
+    tokenIndex.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
+    tokenIndex.put("oauth2:code:{code}", "Authorization code index");
 
-        authorizationService.remove(authorization);
-        return Result.success();
-    }
+    structure.put("keys", hashExample);
+    structure.put("tokenIndexes", tokenIndex);
+    structure.put(
+        "advantages",
+        java.util.List.of(
+            "Simple key/value storage",
+            "Token TTL aligned with Redis TTL",
+            "Easy manual inspection",
+            "Direct index for refresh/code tokens"));
+    return Result.success(structure);
+  }
 
-    @Operation(summary = "Cleanup expired tokens", description = "Trigger cleanup for expired token data")
-    @PostMapping("/cleanup")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> cleanupExpiredTokens() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("message", "Cleanup job executed");
-        result.put("note", "Redis TTL will automatically remove expired data");
-        result.put("time", Instant.now());
-        return Result.success(result);
-    }
+  @Operation(
+      summary = "Get blacklist statistics",
+      description = "Get current token blacklist statistics")
+  @GetMapping("/blacklist/stats")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<TokenBlacklistService.BlacklistStats> getBlacklistStats() {
+    return Result.success(tokenBlacklistService.getBlacklistStats());
+  }
 
-    @Operation(summary = "Get Redis hash storage structure", description = "Show Redis hash structure for OAuth2 data")
-    @GetMapping("/storage-structure")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> getStorageStructure() {
-        Map<String, Object> structure = new HashMap<>();
+  @Operation(summary = "Add token to blacklist", description = "Manually add a token to blacklist")
+  @PostMapping("/blacklist/add")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Void> addToBlacklist(
+      @Parameter(description = "Token value") @RequestParam String tokenValue,
+      @Parameter(description = "Revocation reason") @RequestParam(defaultValue = "admin_manual")
+          String reason) {
+    OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
+    String subject = authorization != null ? authorization.getPrincipalName() : "unknown";
+    long ttlSeconds = 3600;
+    tokenBlacklistService.addToBlacklist(tokenValue, subject, ttlSeconds, reason);
+    return Result.success();
+  }
 
-        Map<String, String> hashExample = new HashMap<>();
-        hashExample.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
-        hashExample.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
-        hashExample.put("oauth2:code:{code}", "Authorization code index to authorization ID");
+  @Operation(
+      summary = "Check blacklist status",
+      description = "Check whether a token is blacklisted")
+  @GetMapping("/blacklist/check")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> checkBlacklist(
+      @Parameter(description = "Token value") @RequestParam String tokenValue) {
+    boolean isBlacklisted = tokenBlacklistService.isBlacklisted(tokenValue);
+    Map<String, Object> result = new HashMap<>();
+    result.put("tokenValue", tokenValue.substring(0, Math.min(tokenValue.length(), 20)) + "...");
+    result.put("isBlacklisted", isBlacklisted);
+    result.put("checkTime", Instant.now());
+    return Result.success(result);
+  }
 
-        Map<String, String> tokenIndex = new HashMap<>();
-        tokenIndex.put("oauth2:token:{authorizationId}", "Authorization object storage");
-        tokenIndex.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
-        tokenIndex.put("oauth2:code:{code}", "Authorization code index");
-
-        structure.put("keys", hashExample);
-        structure.put("tokenIndexes", tokenIndex);
-        structure.put("advantages", java.util.List.of(
-                "Simple key/value storage",
-                "Token TTL aligned with Redis TTL",
-                "Easy manual inspection",
-                "Direct index for refresh/code tokens"
-        ));
-        return Result.success(structure);
-    }
-
-    @Operation(summary = "Get blacklist statistics", description = "Get current token blacklist statistics")
-    @GetMapping("/blacklist/stats")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<TokenBlacklistService.BlacklistStats> getBlacklistStats() {
-        return Result.success(tokenBlacklistService.getBlacklistStats());
-    }
-
-    @Operation(summary = "Add token to blacklist", description = "Manually add a token to blacklist")
-    @PostMapping("/blacklist/add")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Void> addToBlacklist(
-            @Parameter(description = "Token value") @RequestParam String tokenValue,
-            @Parameter(description = "Revocation reason") @RequestParam(defaultValue = "admin_manual") String reason) {
-        OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
-        String subject = authorization != null ? authorization.getPrincipalName() : "unknown";
-        long ttlSeconds = 3600;
-        tokenBlacklistService.addToBlacklist(tokenValue, subject, ttlSeconds, reason);
-        return Result.success();
-    }
-
-    @Operation(summary = "Check blacklist status", description = "Check whether a token is blacklisted")
-    @GetMapping("/blacklist/check")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> checkBlacklist(
-            @Parameter(description = "Token value") @RequestParam String tokenValue) {
-        boolean isBlacklisted = tokenBlacklistService.isBlacklisted(tokenValue);
-        Map<String, Object> result = new HashMap<>();
-        result.put("tokenValue", tokenValue.substring(0, Math.min(tokenValue.length(), 20)) + "...");
-        result.put("isBlacklisted", isBlacklisted);
-        result.put("checkTime", Instant.now());
-        return Result.success(result);
-    }
-
-    @Operation(summary = "Cleanup blacklist entries", description = "Remove expired blacklist entries")
-    @PostMapping("/blacklist/cleanup")
-    @PreAuthorize("hasAuthority('admin:all')")
-    public Result<Map<String, Object>> cleanupBlacklist() {
-        int cleanedCount = tokenBlacklistService.cleanupExpiredEntries();
-        Map<String, Object> result = new HashMap<>();
-        result.put("cleanedCount", cleanedCount);
-        result.put("message", "Blacklist cleanup completed");
-        result.put("cleanupTime", Instant.now());
-        return Result.success(result);
-    }
+  @Operation(
+      summary = "Cleanup blacklist entries",
+      description = "Remove expired blacklist entries")
+  @PostMapping("/blacklist/cleanup")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> cleanupBlacklist() {
+    int cleanedCount = tokenBlacklistService.cleanupExpiredEntries();
+    Map<String, Object> result = new HashMap<>();
+    result.put("cleanedCount", cleanedCount);
+    result.put("message", "Blacklist cleanup completed");
+    result.put("cleanupTime", Instant.now());
+    return Result.success(result);
+  }
 }

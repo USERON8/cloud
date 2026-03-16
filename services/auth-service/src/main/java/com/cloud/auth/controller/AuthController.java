@@ -1,7 +1,7 @@
 package com.cloud.auth.controller;
 
-import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.service.AuthUserAuthorityCacheService;
+import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
@@ -40,118 +40,120 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication API", description = "Authentication, login and token management APIs")
 public class AuthController {
 
-    private final OAuth2TokenManagementService tokenManagementService;
-    private final AuthIdentityService authIdentityService;
-    private final JwtDecoder jwtDecoder;
-    private final AuthUserAuthorityCacheService authorityCacheService;
+  private final OAuth2TokenManagementService tokenManagementService;
+  private final AuthIdentityService authIdentityService;
+  private final JwtDecoder jwtDecoder;
+  private final AuthUserAuthorityCacheService authorityCacheService;
 
-    @PostMapping("/users/register")
-    @Operation(summary = "Register user")
-    public Result<RegisterResponseDTO> register(
-            @RequestBody @Valid @NotNull(message = "Register request cannot be null")
-            RegisterRequestDTO registerRequestDTO) {
-        UserDTO registeredUser = authIdentityService.register(registerRequestDTO);
-        if (registeredUser == null) {
-            throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
-        }
-
-        RegisterResponseDTO registerResponse = new RegisterResponseDTO(
-                registeredUser.getId(),
-                registeredUser.getUsername(),
-                registeredUser.getPhone(),
-                registeredUser.getNickname(),
-                registeredUser.getRoles()
-        );
-        return Result.success("Registration successful. Continue with /oauth2/authorize to sign in.", registerResponse);
+  @PostMapping("/users/register")
+  @Operation(summary = "Register user")
+  public Result<RegisterResponseDTO> register(
+      @RequestBody @Valid @NotNull(message = "Register request cannot be null")
+          RegisterRequestDTO registerRequestDTO) {
+    UserDTO registeredUser = authIdentityService.register(registerRequestDTO);
+    if (registeredUser == null) {
+      throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
     }
 
-    @DeleteMapping("/sessions")
-    @Operation(summary = "Logout current session")
-    public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
-        String authorizationHeader = request.getHeader("Authorization");
-        boolean logoutSuccess = false;
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String accessToken = authorizationHeader.substring(7);
-            logoutSuccess = tokenManagementService.logout(accessToken, null);
-            evictAuthorityCache(accessToken);
-        }
+    RegisterResponseDTO registerResponse =
+        new RegisterResponseDTO(
+            registeredUser.getId(),
+            registeredUser.getUsername(),
+            registeredUser.getPhone(),
+            registeredUser.getNickname(),
+            registeredUser.getRoles());
+    return Result.success(
+        "Registration successful. Continue with /oauth2/authorize to sign in.", registerResponse);
+  }
 
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-            SecurityContextHolder.clearContext();
-            logoutSuccess = true;
-        }
-
-        if (!logoutSuccess) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-
-        return Result.success("Logout successful", null);
+  @DeleteMapping("/sessions")
+  @Operation(summary = "Logout current session")
+  public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
+    String authorizationHeader = request.getHeader("Authorization");
+    boolean logoutSuccess = false;
+    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+      String accessToken = authorizationHeader.substring(7);
+      logoutSuccess = tokenManagementService.logout(accessToken, null);
+      evictAuthorityCache(accessToken);
     }
 
-    @DeleteMapping("/users/{username}/sessions")
-    @PreAuthorize("hasAuthority('admin:all')")
-    @Operation(summary = "Logout all user sessions")
-    public Result<String> logoutAllSessions(
-            @PathVariable
-            @Parameter(description = "Username", required = true)
-            @NotBlank(message = "Username cannot be blank") String username) {
-        int revokedCount = tokenManagementService.logoutAllSessions(username);
-        AuthPrincipalDTO principal = authIdentityService.findByUsername(username);
-        if (principal != null && principal.getId() != null) {
-            authorityCacheService.evict(principal.getId());
-        }
-        String message = String.format("Revoked %d active sessions for user %s", revokedCount, username);
-        return Result.success(message);
+    HttpSession session = request.getSession(false);
+    if (session != null) {
+      session.invalidate();
+      SecurityContextHolder.clearContext();
+      logoutSuccess = true;
     }
 
-    @GetMapping("/tokens/validate")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Validate access token")
-    public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
-        String authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new ValidationException(
-                    "Authorization header",
-                    authorizationHeader,
-                    "Missing valid Bearer token in Authorization header");
-        }
-
-        String accessToken = authorizationHeader.substring(7);
-        if (!tokenManagementService.isTokenValid(accessToken)) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-
-        OAuth2Authorization authorization = tokenManagementService.findByToken(accessToken);
-        if (authorization == null) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-
-        String message = String.format(
-                "Token is valid, principal=%s, scopes=%s",
-                authorization.getPrincipalName(),
-                String.join(", ", authorization.getAuthorizedScopes())
-        );
-        return Result.success(message);
+    if (!logoutSuccess) {
+      throw new BusinessException(ResultCode.UNAUTHORIZED);
     }
 
-    private void evictAuthorityCache(String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
-            return;
-        }
-        try {
-            Jwt jwt = jwtDecoder.decode(accessToken);
-            String userId = jwt.getClaimAsString("userId");
-            if (userId == null || userId.isBlank()) {
-                userId = jwt.getClaimAsString("user_id");
-            }
-            if (userId != null && !userId.isBlank()) {
-                authorityCacheService.evict(Long.valueOf(userId));
-            }
-        } catch (Exception ignored) {
-            // Best-effort cache eviction; ignore decode failures.
-        }
+    return Result.success("Logout successful", null);
+  }
+
+  @DeleteMapping("/users/{username}/sessions")
+  @PreAuthorize("hasAuthority('admin:all')")
+  @Operation(summary = "Logout all user sessions")
+  public Result<String> logoutAllSessions(
+      @PathVariable
+          @Parameter(description = "Username", required = true)
+          @NotBlank(message = "Username cannot be blank")
+          String username) {
+    int revokedCount = tokenManagementService.logoutAllSessions(username);
+    AuthPrincipalDTO principal = authIdentityService.findByUsername(username);
+    if (principal != null && principal.getId() != null) {
+      authorityCacheService.evict(principal.getId());
     }
+    String message =
+        String.format("Revoked %d active sessions for user %s", revokedCount, username);
+    return Result.success(message);
+  }
+
+  @GetMapping("/tokens/validate")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "Validate access token")
+  public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
+    String authorizationHeader = request.getHeader("Authorization");
+    if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+      throw new ValidationException(
+          "Authorization header",
+          authorizationHeader,
+          "Missing valid Bearer token in Authorization header");
+    }
+
+    String accessToken = authorizationHeader.substring(7);
+    if (!tokenManagementService.isTokenValid(accessToken)) {
+      throw new BusinessException(ResultCode.UNAUTHORIZED);
+    }
+
+    OAuth2Authorization authorization = tokenManagementService.findByToken(accessToken);
+    if (authorization == null) {
+      throw new BusinessException(ResultCode.UNAUTHORIZED);
+    }
+
+    String message =
+        String.format(
+            "Token is valid, principal=%s, scopes=%s",
+            authorization.getPrincipalName(),
+            String.join(", ", authorization.getAuthorizedScopes()));
+    return Result.success(message);
+  }
+
+  private void evictAuthorityCache(String accessToken) {
+    if (accessToken == null || accessToken.isBlank()) {
+      return;
+    }
+    try {
+      Jwt jwt = jwtDecoder.decode(accessToken);
+      String userId = jwt.getClaimAsString("userId");
+      if (userId == null || userId.isBlank()) {
+        userId = jwt.getClaimAsString("user_id");
+      }
+      if (userId != null && !userId.isBlank()) {
+        authorityCacheService.evict(Long.valueOf(userId));
+      }
+    } catch (Exception ignored) {
+      // Best-effort cache eviction; ignore decode failures.
+    }
+  }
 }
-

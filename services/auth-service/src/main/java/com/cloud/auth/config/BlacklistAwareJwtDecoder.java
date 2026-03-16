@@ -12,39 +12,29 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.stereotype.Component;
 
-
-
-
-
-
-
 @Slf4j
 @Component
 @Primary
 @RequiredArgsConstructor
 public class BlacklistAwareJwtDecoder implements JwtDecoder {
 
-    private final JwtDecoder delegate;
-    private final TokenBlacklistService tokenBlacklistService;
+  private final JwtDecoder delegate;
+  private final TokenBlacklistService tokenBlacklistService;
 
-    @Override
-    public Jwt decode(String token) throws JwtException {
+  @Override
+  public Jwt decode(String token) throws JwtException {
 
-        Jwt jwt = delegate.decode(token);
+    Jwt jwt = delegate.decode(token);
 
-
-        if (tokenBlacklistService.isBlacklisted(jwt)) {
-            log.warn("WT: subject={}, jti={}",
-                    jwt.getSubject(), jwt.getClaimAsString("jti"));
-            throw new JwtValidationException("JWT token has been revoked",
-                    OAuth2TokenValidatorResult.failure(new OAuth2Error("blacklisted", "Token is blacklisted", null)).getErrors());
-        }
-
-        return jwt;
+    if (tokenBlacklistService.isBlacklisted(jwt)) {
+      log.warn("WT: subject={}, jti={}", jwt.getSubject(), jwt.getClaimAsString("jti"));
+      throw new JwtValidationException(
+          "JWT token has been revoked",
+          OAuth2TokenValidatorResult.failure(
+                  new OAuth2Error("blacklisted", "Token is blacklisted", null))
+              .getErrors());
     }
 
-
-
-
-
+    return jwt;
+  }
 }

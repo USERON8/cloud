@@ -13,24 +13,23 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AuthTokenCleanupXxlJob {
 
-    private final TokenBlacklistService tokenBlacklistService;
+  private final TokenBlacklistService tokenBlacklistService;
 
-    @XxlJob("authTokenCleanupJob")
-    @DistributedLock(
-            key = "'xxl:auth:token-cleanup'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void cleanup() {
-        try {
-            int cleaned = tokenBlacklistService.cleanupExpiredEntries();
-            String message = "authTokenCleanupJob finished, cleaned blacklist=" + cleaned;
-            XxlJobHelper.log(message);
-            log.info(message);
-        } catch (Exception ex) {
-            log.error("Auth token cleanup job failed", ex);
-            XxlJobHelper.handleFail(ex.getMessage());
-        }
+  @XxlJob("authTokenCleanupJob")
+  @DistributedLock(
+      key = "'xxl:auth:token-cleanup'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void cleanup() {
+    try {
+      int cleaned = tokenBlacklistService.cleanupExpiredEntries();
+      String message = "authTokenCleanupJob finished, cleaned blacklist=" + cleaned;
+      XxlJobHelper.log(message);
+      log.info(message);
+    } catch (Exception ex) {
+      log.error("Auth token cleanup job failed", ex);
+      XxlJobHelper.handleFail(ex.getMessage());
     }
+  }
 }

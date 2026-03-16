@@ -8,6 +8,7 @@ import com.cloud.common.exception.OAuth2Exception;
 import com.cloud.common.exception.SystemException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -18,138 +19,143 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.security.Principal;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GitHubUserInfoService {
 
-    private static final String OAUTH_PROVIDER_GITHUB = "github";
-    private static final String GITHUB_USER_API = "https://api.github.com/user";
-    private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
+  private static final String OAUTH_PROVIDER_GITHUB = "github";
+  private static final String GITHUB_USER_API = "https://api.github.com/user";
+  private static final String GITHUB_USER_EMAILS_API = "https://api.github.com/user/emails";
 
-    private final AuthIdentityService authIdentityService;
-    private final RestClient restClient = RestClient.builder().build();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+  private final AuthIdentityService authIdentityService;
+  private final RestClient restClient = RestClient.builder().build();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public UserDTO getOrCreateUser(OAuth2AuthorizedClient authorizedClient) {
-        try {
-            GitHubUserDTO githubUser = fetchGitHubUserInfo(authorizedClient);
-            return authIdentityService.getOrCreateGitHubUser(githubUser);
-        } catch (Exception e) {
-            log.error("Failed to process GitHub user info", e);
-            throw new SystemException(500, "Failed to process GitHub user info", e);
-        }
+  public UserDTO getOrCreateUser(OAuth2AuthorizedClient authorizedClient) {
+    try {
+      GitHubUserDTO githubUser = fetchGitHubUserInfo(authorizedClient);
+      return authIdentityService.getOrCreateGitHubUser(githubUser);
+    } catch (Exception e) {
+      log.error("Failed to process GitHub user info", e);
+      throw new SystemException(500, "Failed to process GitHub user info", e);
     }
+  }
 
-    private GitHubUserDTO fetchGitHubUserInfo(OAuth2AuthorizedClient authorizedClient) {
-        try {
-            String accessToken = authorizedClient.getAccessToken().getTokenValue();
-            String responseBody = getGitHubResponseBody(GITHUB_USER_API, accessToken, "Failed to fetch GitHub user info");
-            if (responseBody == null || responseBody.isBlank()) {
-                throw new SystemException("Failed to fetch GitHub user info: empty response");
-            }
-            JsonNode userNode = objectMapper.readTree(responseBody);
-            JsonNode idNode = userNode.get("id");
-            JsonNode loginNode = userNode.get("login");
+  private GitHubUserDTO fetchGitHubUserInfo(OAuth2AuthorizedClient authorizedClient) {
+    try {
+      String accessToken = authorizedClient.getAccessToken().getTokenValue();
+      String responseBody =
+          getGitHubResponseBody(GITHUB_USER_API, accessToken, "Failed to fetch GitHub user info");
+      if (responseBody == null || responseBody.isBlank()) {
+        throw new SystemException("Failed to fetch GitHub user info: empty response");
+      }
+      JsonNode userNode = objectMapper.readTree(responseBody);
+      JsonNode idNode = userNode.get("id");
+      JsonNode loginNode = userNode.get("login");
 
-            if (idNode == null || loginNode == null) {
-                throw new SystemException("GitHub user response missing required fields");
-            }
+      if (idNode == null || loginNode == null) {
+        throw new SystemException("GitHub user response missing required fields");
+      }
 
-            String email = userNode.has("email") && !userNode.get("email").isNull()
-                    ? userNode.get("email").asText()
-                    : null;
-            if (email == null) {
-                email = fetchPrimaryEmail(accessToken);
-            }
+      String email =
+          userNode.has("email") && !userNode.get("email").isNull()
+              ? userNode.get("email").asText()
+              : null;
+      if (email == null) {
+        email = fetchPrimaryEmail(accessToken);
+      }
 
-            return GitHubUserDTO.builder()
-                    .githubId(idNode.asLong())
-                    .login(loginNode.asText())
-                    .name(userNode.has("name") && !userNode.get("name").isNull() ? userNode.get("name").asText() : null)
-                    .email(email)
-                    .avatarUrl(userNode.has("avatar_url") ? userNode.get("avatar_url").asText() : null)
-                    .htmlUrl(userNode.has("html_url") ? userNode.get("html_url").asText() : null)
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to fetch GitHub user info", e);
-            throw new SystemException(500, "Failed to call GitHub API", e);
-        }
+      return GitHubUserDTO.builder()
+          .githubId(idNode.asLong())
+          .login(loginNode.asText())
+          .name(
+              userNode.has("name") && !userNode.get("name").isNull()
+                  ? userNode.get("name").asText()
+                  : null)
+          .email(email)
+          .avatarUrl(userNode.has("avatar_url") ? userNode.get("avatar_url").asText() : null)
+          .htmlUrl(userNode.has("html_url") ? userNode.get("html_url").asText() : null)
+          .build();
+    } catch (Exception e) {
+      log.error("Failed to fetch GitHub user info", e);
+      throw new SystemException(500, "Failed to call GitHub API", e);
     }
+  }
 
-    private String fetchPrimaryEmail(String accessToken) {
-        try {
-            String responseBody = getGitHubResponseBody(GITHUB_USER_EMAILS_API, accessToken, "Failed to fetch GitHub emails");
-            if (responseBody == null || responseBody.isBlank()) {
-                return null;
-            }
-            JsonNode emailsNode = objectMapper.readTree(responseBody);
-            for (JsonNode emailNode : emailsNode) {
-                if (emailNode.has("primary") && emailNode.get("primary").asBoolean()) {
-                    return emailNode.get("email").asText();
-                }
-            }
-            if (!emailsNode.isEmpty()) {
-                return emailsNode.get(0).get("email").asText();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch GitHub email: {}", e.getMessage());
-        }
+  private String fetchPrimaryEmail(String accessToken) {
+    try {
+      String responseBody =
+          getGitHubResponseBody(
+              GITHUB_USER_EMAILS_API, accessToken, "Failed to fetch GitHub emails");
+      if (responseBody == null || responseBody.isBlank()) {
         return null;
+      }
+      JsonNode emailsNode = objectMapper.readTree(responseBody);
+      for (JsonNode emailNode : emailsNode) {
+        if (emailNode.has("primary") && emailNode.get("primary").asBoolean()) {
+          return emailNode.get("email").asText();
+        }
+      }
+      if (!emailsNode.isEmpty()) {
+        return emailsNode.get(0).get("email").asText();
+      }
+    } catch (Exception e) {
+      log.warn("Failed to fetch GitHub email: {}", e.getMessage());
+    }
+    return null;
+  }
+
+  private String getGitHubResponseBody(String uri, String accessToken, String errorPrefix) {
+    try {
+      return restClient
+          .get()
+          .uri(uri)
+          .headers(headers -> applyGitHubHeaders(headers, accessToken))
+          .accept(MediaType.valueOf("application/vnd.github.v3+json"))
+          .retrieve()
+          .body(String.class);
+    } catch (RestClientResponseException ex) {
+      throw new SystemException(
+          500,
+          String.format(
+              "%s: %s, body=%s", errorPrefix, ex.getStatusCode(), ex.getResponseBodyAsString()),
+          ex);
+    }
+  }
+
+  private void applyGitHubHeaders(HttpHeaders headers, String accessToken) {
+    headers.setBearerAuth(accessToken);
+    headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
+  }
+
+  public UserDTO getAuthorizedUser(
+      Principal principal, OAuth2AuthorizedClientService authorizedClientService) {
+    if (principal == null) {
+      throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "Not authenticated");
     }
 
-    private String getGitHubResponseBody(String uri, String accessToken, String errorPrefix) {
-        try {
-            return restClient.get()
-                    .uri(uri)
-                    .headers(headers -> applyGitHubHeaders(headers, accessToken))
-                    .accept(MediaType.valueOf("application/vnd.github.v3+json"))
-                    .retrieve()
-                    .body(String.class);
-        } catch (RestClientResponseException ex) {
-            throw new SystemException(500,
-                    String.format("%s: %s, body=%s", errorPrefix, ex.getStatusCode(), ex.getResponseBodyAsString()),
-                    ex);
-        }
+    OAuth2AuthorizedClient authorizedClient =
+        authorizedClientService.loadAuthorizedClient(OAUTH_PROVIDER_GITHUB, principal.getName());
+    if (authorizedClient == null) {
+      throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "GitHub authorization not found");
     }
 
-    private void applyGitHubHeaders(HttpHeaders headers, String accessToken) {
-        headers.setBearerAuth(accessToken);
-        headers.setAccept(MediaType.parseMediaTypes("application/vnd.github.v3+json"));
+    UserDTO userDTO = getOrCreateUser(authorizedClient);
+    if (userDTO == null) {
+      throw new SystemException("Failed to get user info");
     }
 
-    public UserDTO getAuthorizedUser(
-            Principal principal,
-            OAuth2AuthorizedClientService authorizedClientService) {
-        if (principal == null) {
-            throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "Not authenticated");
-        }
+    return userDTO;
+  }
 
-        OAuth2AuthorizedClient authorizedClient =
-                authorizedClientService.loadAuthorizedClient(OAUTH_PROVIDER_GITHUB, principal.getName());
-        if (authorizedClient == null) {
-            throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "GitHub authorization not found");
-        }
-
-        UserDTO userDTO = getOrCreateUser(authorizedClient);
-        if (userDTO == null) {
-            throw new SystemException("Failed to get user info");
-        }
-
-        return userDTO;
+  public boolean checkAuthStatus(
+      Principal principal, OAuth2AuthorizedClientService authorizedClientService) {
+    if (principal == null) {
+      return false;
     }
-
-    public boolean checkAuthStatus(
-            Principal principal,
-            OAuth2AuthorizedClientService authorizedClientService) {
-        if (principal == null) {
-            return false;
-        }
-        OAuth2AuthorizedClient authorizedClient =
-                authorizedClientService.loadAuthorizedClient(OAUTH_PROVIDER_GITHUB, principal.getName());
-        return authorizedClient != null;
-    }
+    OAuth2AuthorizedClient authorizedClient =
+        authorizedClientService.loadAuthorizedClient(OAUTH_PROVIDER_GITHUB, principal.getName());
+    return authorizedClient != null;
+  }
 }
-
