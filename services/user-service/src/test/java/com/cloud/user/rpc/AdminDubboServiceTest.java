@@ -2,7 +2,6 @@ package com.cloud.user.rpc;
 
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
-import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,26 +21,22 @@ class AdminDubboServiceTest {
     @Mock
     private AdminService adminService;
 
-    @Mock
-    private AdminConverter adminConverter;
-
     private AdminDubboService adminDubboService;
 
     @BeforeEach
     void setUp() {
-        adminDubboService = new AdminDubboService(adminService, adminConverter);
+        adminDubboService = new AdminDubboService(adminService);
     }
 
     @Test
-    void findAll_usesConverter() {
+    void findAll_returnsAdmins() {
         AdminDTO dto = new AdminDTO();
-        when(adminService.list()).thenReturn(List.of());
-        when(adminConverter.toDTOList(List.of())).thenReturn(List.of(dto));
+        when(adminService.listAdmins()).thenReturn(List.of(dto));
 
         List<AdminDTO> result = adminDubboService.findAll();
 
         assertThat(result).containsExactly(dto);
-        verify(adminConverter).toDTOList(List.of());
+        verify(adminService).listAdmins();
     }
 
     @Test

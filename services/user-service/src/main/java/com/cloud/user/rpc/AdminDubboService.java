@@ -3,7 +3,6 @@ package com.cloud.user.rpc;
 import com.cloud.api.user.AdminDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
-import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -15,7 +14,6 @@ import java.util.List;
 public class AdminDubboService implements AdminDubboApi {
 
     private final AdminService adminService;
-    private final AdminConverter adminConverter;
 
     @Override
     public AdminDTO findById(Long id) {
@@ -24,7 +22,7 @@ public class AdminDubboService implements AdminDubboApi {
 
     @Override
     public List<AdminDTO> findAll() {
-        return adminConverter.toDTOList(adminService.list());
+        return adminService.listAdmins();
     }
 
     @Override
