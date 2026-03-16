@@ -1,6 +1,9 @@
 package com.cloud.user.messaging;
 
 import com.cloud.common.messaging.event.UserNotificationEvent;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.user.service.UserNotificationService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -134,13 +137,21 @@ public class UserNotificationConsumerConfig {
               event.getEventType());
         }
         markProcessed(eventId);
+      } catch (BizException e) {
+        log.warn(
+            "Notification event skipped due to biz exception: eventId={}, eventType={}, message={}",
+            event.getEventId(),
+            event.getEventType(),
+            e.getMessage());
+        markProcessed(eventId);
       } catch (Exception e) {
         log.error(
             "Failed to dispatch notification event: eventId={}, eventType={}",
             event.getEventId(),
             event.getEventType(),
             e);
-        throw e;
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Failed to dispatch notification event", e);
       } finally {
         clearProcessing(eventId);
       }

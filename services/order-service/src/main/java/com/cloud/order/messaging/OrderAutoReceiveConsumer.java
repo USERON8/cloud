@@ -2,6 +2,9 @@ package com.cloud.order.messaging;
 
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
@@ -54,13 +57,20 @@ public class OrderAutoReceiveConsumer {
 
         orderService.advanceSubOrderStatus(subOrder.getId(), "DONE");
         messageIdempotencyService.markSuccess(NS_ORDER_AUTO_RECEIVE, eventId);
+      } catch (BizException ex) {
+        log.warn(
+            "Order auto receive skipped due to biz exception: eventId={}, subOrderId={}, message={}",
+            eventId,
+            event == null ? null : event.getSubOrderId(),
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_ORDER_AUTO_RECEIVE, eventId);
       } catch (Exception ex) {
         log.error(
             "Handle order auto receive failed: eventId={}, subOrderId={}",
             eventId,
             event == null ? null : event.getSubOrderId(),
             ex);
-        throw new RuntimeException("Handle order auto receive failed", ex);
+        throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle order auto receive failed", ex);
       }
     };
   }

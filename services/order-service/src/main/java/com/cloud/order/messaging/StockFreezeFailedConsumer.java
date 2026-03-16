@@ -3,6 +3,9 @@ package com.cloud.order.messaging;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderMainMapper;
@@ -63,6 +66,14 @@ public class StockFreezeFailedConsumer {
         }
         tradeMetrics.incrementMessageConsume("stock_freeze_failed", "success");
         messageIdempotencyService.markSuccess(NS_STOCK_FREEZE_FAILED, eventId);
+      } catch (BizException ex) {
+        tradeMetrics.incrementMessageConsume("stock_freeze_failed", "biz");
+        log.warn(
+            "Stock-freeze-failed skipped due to biz exception: eventId={}, orderNo={}, message={}",
+            eventId,
+            event == null ? null : event.getOrderNo(),
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_STOCK_FREEZE_FAILED, eventId);
       } catch (Exception ex) {
         tradeMetrics.incrementMessageConsume("stock_freeze_failed", "retry");
         log.error(
@@ -70,7 +81,8 @@ public class StockFreezeFailedConsumer {
             eventId,
             event == null ? null : event.getOrderNo(),
             ex);
-        throw new RuntimeException("Handle stock-freeze-failed event failed", ex);
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Handle stock-freeze-failed event failed", ex);
       }
     };
   }

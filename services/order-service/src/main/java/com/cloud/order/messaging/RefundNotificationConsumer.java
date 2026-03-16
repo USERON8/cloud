@@ -1,6 +1,9 @@
 package com.cloud.order.messaging;
 
 import com.cloud.common.messaging.MessageIdempotencyService;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import java.util.Map;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -44,9 +47,16 @@ public class RefundNotificationConsumer {
         }
         messageIdempotencyService.markSuccess(NS_REFUND_CREATED, eventId);
 
+      } catch (BizException ex) {
+        log.warn(
+            "Refund-created notification skipped due to biz exception: eventId={}, message={}",
+            eventId,
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_REFUND_CREATED, eventId);
       } catch (Exception ex) {
         log.error("Handle refund-created notification failed: eventId={}", eventId, ex);
-        throw new RuntimeException("Handle refund-created notification failed", ex);
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Handle refund-created notification failed", ex);
       }
     };
   }
@@ -77,9 +87,16 @@ public class RefundNotificationConsumer {
         }
         messageIdempotencyService.markSuccess(NS_REFUND_AUDITED, eventId);
 
+      } catch (BizException ex) {
+        log.warn(
+            "Refund-audited notification skipped due to biz exception: eventId={}, message={}",
+            eventId,
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_REFUND_AUDITED, eventId);
       } catch (Exception ex) {
         log.error("Handle refund-audited notification failed: eventId={}", eventId, ex);
-        throw new RuntimeException("Handle refund-audited notification failed", ex);
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Handle refund-audited notification failed", ex);
       }
     };
   }
@@ -106,9 +123,16 @@ public class RefundNotificationConsumer {
         }
         messageIdempotencyService.markSuccess(NS_REFUND_CANCELLED, eventId);
 
+      } catch (BizException ex) {
+        log.warn(
+            "Refund-cancelled notification skipped due to biz exception: eventId={}, message={}",
+            eventId,
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_REFUND_CANCELLED, eventId);
       } catch (Exception ex) {
         log.error("Handle refund-cancelled notification failed: eventId={}", eventId, ex);
-        throw new RuntimeException("Handle refund-cancelled notification failed", ex);
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Handle refund-cancelled notification failed", ex);
       }
     };
   }

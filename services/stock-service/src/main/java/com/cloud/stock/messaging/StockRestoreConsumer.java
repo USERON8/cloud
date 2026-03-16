@@ -4,6 +4,9 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.stock.service.StockLedgerService;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +62,15 @@ public class StockRestoreConsumer {
             tradeMetrics.incrementMessageConsume("stock_restore", "success");
             messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
             inFlight.remove(eventId);
+          } catch (BizException ex) {
+            tradeMetrics.incrementMessageConsume("stock_restore", "biz");
+            log.warn(
+                "Stock restore skipped due to biz exception: eventId={}, refundNo={}, message={}",
+                eventId,
+                event == null ? null : event.getRefundNo(),
+                ex.getMessage());
+            messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
+            inFlight.remove(eventId);
           } catch (Exception ex) {
             tradeMetrics.incrementMessageConsume("stock_restore", "retry");
             log.error(
@@ -66,7 +78,7 @@ public class StockRestoreConsumer {
                 eventId,
                 event == null ? null : event.getRefundNo(),
                 ex);
-            throw new RuntimeException("Handle stock restore failed", ex);
+            throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle stock restore failed", ex);
           }
         }
       } catch (Exception ex) {

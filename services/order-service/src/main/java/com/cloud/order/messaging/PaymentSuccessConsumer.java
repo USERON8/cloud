@@ -4,6 +4,9 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
@@ -94,6 +97,14 @@ public class PaymentSuccessConsumer {
         pushPaymentSuccessMessage(event);
         tradeMetrics.incrementMessageConsume("payment_success", "success");
         messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
+      } catch (BizException ex) {
+        tradeMetrics.incrementMessageConsume("payment_success", "biz");
+        log.warn(
+            "Payment success skipped due to biz exception: eventId={}, orderNo={}, message={}",
+            eventId,
+            event == null ? null : event.getOrderNo(),
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_PAYMENT_SUCCESS, eventId);
       } catch (Exception ex) {
         tradeMetrics.incrementMessageConsume("payment_success", "retry");
         log.error(
@@ -101,7 +112,7 @@ public class PaymentSuccessConsumer {
             eventId,
             event == null ? null : event.getOrderNo(),
             ex);
-        throw new RuntimeException("Handle payment success failed", ex);
+        throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle payment success failed", ex);
       }
     };
   }

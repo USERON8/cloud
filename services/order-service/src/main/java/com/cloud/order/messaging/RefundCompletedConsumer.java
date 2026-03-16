@@ -5,6 +5,9 @@ import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderSub;
@@ -78,6 +81,14 @@ public class RefundCompletedConsumer {
 
         tradeMetrics.incrementMessageConsume("refund_completed", "success");
         messageIdempotencyService.markSuccess(NS_REFUND_COMPLETED, eventId);
+      } catch (BizException ex) {
+        tradeMetrics.incrementMessageConsume("refund_completed", "biz");
+        log.warn(
+            "Refund completed skipped due to biz exception: eventId={}, afterSaleNo={}, message={}",
+            eventId,
+            event == null ? null : event.getAfterSaleNo(),
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_REFUND_COMPLETED, eventId);
       } catch (Exception ex) {
         tradeMetrics.incrementMessageConsume("refund_completed", "retry");
         log.error(
@@ -85,7 +96,8 @@ public class RefundCompletedConsumer {
             eventId,
             event == null ? null : event.getAfterSaleNo(),
             ex);
-        throw new RuntimeException("Handle refund-completed event failed", ex);
+        throw new SystemException(
+            ResultCode.SYSTEM_ERROR, "Handle refund-completed event failed", ex);
       }
     };
   }

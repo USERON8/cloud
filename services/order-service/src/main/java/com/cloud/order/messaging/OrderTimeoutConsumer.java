@@ -2,6 +2,9 @@ package com.cloud.order.messaging;
 
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderTimeoutService;
@@ -54,13 +57,20 @@ public class OrderTimeoutConsumer {
 
         orderTimeoutService.cancelTimeoutOrder(subOrder.getId());
         messageIdempotencyService.markSuccess(NS_ORDER_TIMEOUT, eventId);
+      } catch (BizException ex) {
+        log.warn(
+            "Order timeout skipped due to biz exception: eventId={}, subOrderId={}, message={}",
+            eventId,
+            event == null ? null : event.getSubOrderId(),
+            ex.getMessage());
+        messageIdempotencyService.markSuccess(NS_ORDER_TIMEOUT, eventId);
       } catch (Exception ex) {
         log.error(
             "Handle order timeout failed: eventId={}, subOrderId={}",
             eventId,
             event == null ? null : event.getSubOrderId(),
             ex);
-        throw new RuntimeException("Handle order timeout failed", ex);
+        throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle order timeout failed", ex);
       }
     };
   }

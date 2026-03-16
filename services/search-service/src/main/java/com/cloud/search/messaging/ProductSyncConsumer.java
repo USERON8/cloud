@@ -5,6 +5,10 @@ import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.ProductSyncEvent;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.RemoteException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
 import java.math.BigDecimal;
@@ -18,9 +22,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
@@ -84,7 +90,9 @@ public class ProductSyncConsumer {
             continue;
           }
 
-          SpuDetailVO spu = productDubboApi.getSpuById(event.getSpuId());
+          SpuDetailVO spu =
+              invokeProductService(
+                  "get spu by id", () -> productDubboApi.getSpuById(event.getSpuId()));
           if (spu == null) {
             deletes.add(String.valueOf(event.getSpuId()));
             continue;
@@ -106,12 +114,17 @@ public class ProductSyncConsumer {
             inFlight.remove(eventId);
           }
         }
+      } catch (BizException ex) {
+        for (String eventId : inFlight) {
+          messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
+        }
+        log.warn("Handle product sync batch skipped due to biz exception", ex);
       } catch (Exception ex) {
         for (String eventId : inFlight) {
           messageIdempotencyService.release(NS_PRODUCT_SYNC, eventId);
         }
         log.error("Handle product sync batch failed", ex);
-        throw new RuntimeException("Handle product sync failed", ex);
+        throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle product sync failed", ex);
       }
     };
   }
@@ -155,5 +168,16 @@ public class ProductSyncConsumer {
       return "PRODUCT_SYNC:" + event.getSpuId();
     }
     return "PRODUCT_SYNC:" + System.currentTimeMillis();
+  }
+
+  private <T> T invokeProductService(String action, Supplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+          "product-service unavailable when " + action,
+          ex);
+    }
   }
 }
