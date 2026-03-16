@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev:h5": "vite",
-    "build:h5": "vite build",
+    "build:h5": "cross-env NODE_ENV=production VITE_CJS_IGNORE_WARNING=1 vite build",
     "dev:app": "cross-env UNI_PLATFORM=app vite",
-    "build:app": "cross-env UNI_PLATFORM=app vite build"
+    "build:app": "cross-env UNI_PLATFORM=app NODE_ENV=production VITE_CJS_IGNORE_WARNING=1 vite build"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-4070620250821001",
