@@ -19,8 +19,6 @@ spring:
   main:
     allow-bean-definition-overriding: true
   cloud:
-    function:
-      definition: userNotificationConsumer
     nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
@@ -67,13 +65,6 @@ spring:
           userNotificationProducer-out-0:
             producer:
               <<: *userProducerDefaults
-          userNotificationConsumer-in-0:
-            consumer:
-              orderly: false
-              maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
-              delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-              suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-              consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
           userLog-out-0:
             producer:
               <<: *userProducerDefaults
@@ -89,10 +80,6 @@ spring:
           destination: user-notification
           content-type: application/json
           group: user-notification-producer
-        userNotificationConsumer-in-0:
-          destination: user-notification
-          content-type: application/json
-          group: user-notification-consumer
         userLog-out-0:
           destination: LOG_USER_TOPIC
           content-type: application/json
@@ -121,6 +108,8 @@ spring:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
 app:
   jwt:
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
