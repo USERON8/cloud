@@ -12,20 +12,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class TraceHeaderFilter extends OncePerRequestFilter {
 
-    private static final String TRACE_HEADER = "X-Trace-Id";
+  private static final String TRACE_HEADER = "X-Trace-Id";
 
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
-            throws ServletException, IOException {
-        if (!response.containsHeader(TRACE_HEADER)) {
-            String traceId = TraceIdUtil.currentTraceId();
-            if (traceId != null && !traceId.isBlank()) {
-                response.setHeader(TRACE_HEADER, traceId);
-            }
-        }
-        filterChain.doFilter(request, response);
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws ServletException, IOException {
+    if (!response.containsHeader(TRACE_HEADER)) {
+      String traceId = TraceIdUtil.currentTraceId();
+      if (traceId != null && !traceId.isBlank()) {
+        response.setHeader(TRACE_HEADER, traceId);
+      }
     }
+    filterChain.doFilter(request, response);
+  }
 }

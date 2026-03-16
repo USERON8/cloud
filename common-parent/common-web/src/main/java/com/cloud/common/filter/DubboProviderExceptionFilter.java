@@ -1,4 +1,4 @@
-﻿package com.cloud.common.filter;
+package com.cloud.common.filter;
 
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
@@ -18,20 +18,22 @@ import org.apache.dubbo.rpc.RpcException;
 @Slf4j
 public class DubboProviderExceptionFilter implements Filter {
 
-    @Override
-    public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        Result result = invoker.invoke(invocation);
-        if (!result.hasException()) {
-            return result;
-        }
-        Throwable ex = result.getException();
-        if (ex instanceof BizException || ex instanceof SystemException || ex instanceof RemoteException) {
-            return result;
-        }
-        String target = invoker.getInterface().getName() + "." + invocation.getMethodName();
-        log.error("[DUBBO-PROVIDER] unhandled exception in {}", target, ex);
-        AppResponse appResponse = new AppResponse();
-        appResponse.setException(new SystemException(ResultCode.SYSTEM_ERROR, "服务内部错误", ex));
-        return appResponse;
+  @Override
+  public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+    Result result = invoker.invoke(invocation);
+    if (!result.hasException()) {
+      return result;
     }
+    Throwable ex = result.getException();
+    if (ex instanceof BizException
+        || ex instanceof SystemException
+        || ex instanceof RemoteException) {
+      return result;
+    }
+    String target = invoker.getInterface().getName() + "." + invocation.getMethodName();
+    log.error("[DUBBO-PROVIDER] unhandled exception in {}", target, ex);
+    AppResponse appResponse = new AppResponse();
+    appResponse.setException(new SystemException(ResultCode.SYSTEM_ERROR, "服务内部错误", ex));
+    return appResponse;
+  }
 }
