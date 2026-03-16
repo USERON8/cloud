@@ -10,6 +10,7 @@ import com.cloud.common.domain.vo.UserAddressVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.common.utils.PageUtils;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
@@ -24,6 +25,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -223,6 +225,61 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
 
     return PageResult.of(
         resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal(), userAddressVOList);
+  }
+
+  @Override
+  public int deleteAddressBatch(List<Long> addressIds, Authentication authentication) {
+    if (addressIds == null || addressIds.isEmpty()) {
+      return 0;
+    }
+    int successCount = 0;
+    for (Long addressId : addressIds) {
+      if (addressId == null) {
+        continue;
+      }
+      try {
+        UserAddressDTO existingAddress = getAddressById(addressId);
+        if (existingAddress == null) {
+          continue;
+        }
+        if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())
+            && removeById(addressId)) {
+          successCount++;
+        }
+      } catch (Exception e) {
+        log.error("Failed to delete address, addressId={}", addressId, e);
+      }
+    }
+    return successCount;
+  }
+
+  @Override
+  public int updateAddressBatch(
+      List<UserAddressRequestDTO> addressList, Authentication authentication) {
+    if (addressList == null || addressList.isEmpty()) {
+      return 0;
+    }
+    int successCount = 0;
+    for (UserAddressRequestDTO addressDTO : addressList) {
+      if (addressDTO == null || addressDTO.getId() == null) {
+        continue;
+      }
+      try {
+        UserAddressDTO existingAddress = getAddressById(addressDTO.getId());
+        if (existingAddress == null) {
+          continue;
+        }
+        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+          continue;
+        }
+        if (updateAddress(addressDTO.getId(), addressDTO) != null) {
+          successCount++;
+        }
+      } catch (Exception e) {
+        log.error("Failed to update address, addressId={}", addressDTO.getId(), e);
+      }
+    }
+    return successCount;
   }
 
   @Transactional(rollbackFor = Exception.class)

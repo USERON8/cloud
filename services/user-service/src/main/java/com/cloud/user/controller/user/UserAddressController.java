@@ -182,22 +182,7 @@ public class UserAddressController {
       return Result.badRequest("batch size cannot exceed 100");
     }
 
-    int successCount = 0;
-    for (Long addressId : addressIds) {
-      try {
-        UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
-        if (existingAddress == null) {
-          continue;
-        }
-        if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())
-            && userAddressService.removeById(addressId)) {
-          successCount++;
-        }
-      } catch (Exception e) {
-        log.error("Failed to delete address, addressId={}", addressId, e);
-      }
-    }
-
+    int successCount = userAddressService.deleteAddressBatch(addressIds, authentication);
     String message =
         String.format("batch delete completed: %d/%d", successCount, addressIds.size());
     return Result.success(message, true);
@@ -221,29 +206,7 @@ public class UserAddressController {
       return Result.badRequest("batch size cannot exceed 100");
     }
 
-    int successCount = 0;
-    for (UserAddressRequestDTO addressDTO : addressList) {
-      try {
-        if (addressDTO.getId() == null) {
-          continue;
-        }
-
-        UserAddressDTO existingAddress = userAddressService.getAddressById(addressDTO.getId());
-        if (existingAddress == null) {
-          continue;
-        }
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-          continue;
-        }
-
-        if (userAddressService.updateAddress(addressDTO.getId(), addressDTO) != null) {
-          successCount++;
-        }
-      } catch (Exception e) {
-        log.error("Failed to update address, addressId={}", addressDTO.getId(), e);
-      }
-    }
-
+    int successCount = userAddressService.updateAddressBatch(addressList, authentication);
     String message =
         String.format("batch update completed: %d/%d", successCount, addressList.size());
     return Result.success(message, true);
