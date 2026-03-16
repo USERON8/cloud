@@ -4,15 +4,49 @@ import com.cloud.common.enums.ResultCode;
 
 public class SystemException extends BaseException {
 
+    private final boolean retryable;
+
     public SystemException(ResultCode resultCode) {
-        this(resultCode, resultCode == null ? null : resultCode.getMessage(), null);
+        this(resultCode, resultCode == null ? null : resultCode.getMessage(), null, true);
     }
 
     public SystemException(ResultCode resultCode, String message) {
-        this(resultCode, message, null);
+        this(resultCode, message, null, true);
     }
 
     public SystemException(ResultCode resultCode, String message, Throwable cause) {
+        this(resultCode, message, cause, true);
+    }
+
+    public SystemException(String message) {
+        this(ResultCode.SYSTEM_ERROR, message, null, true);
+    }
+
+    public SystemException(String message, Throwable cause) {
+        this(ResultCode.SYSTEM_ERROR, message, cause, true);
+    }
+
+    public SystemException(int code, String message) {
+        this(code, message, null, true);
+    }
+
+    public SystemException(int code, String message, Throwable cause) {
+        this(code, message, cause, true);
+    }
+
+    public static SystemException retryable(ResultCode resultCode, String message, Throwable cause) {
+        return new SystemException(resultCode, message, cause, true);
+    }
+
+    public static SystemException nonRetryable(ResultCode resultCode, String message, Throwable cause) {
+        return new SystemException(resultCode, message, cause, false);
+    }
+
+    public boolean isRetryable() {
+        return retryable;
+    }
+
+    private SystemException(ResultCode resultCode, String message, Throwable cause, boolean retryable) {
         super(
                 resultCode,
                 resolveMessage(resultCode, message),
@@ -20,22 +54,12 @@ public class SystemException extends BaseException {
                 500,
                 ErrorCategory.SYSTEM,
                 true);
+        this.retryable = retryable;
     }
 
-    public SystemException(String message) {
-        this(ResultCode.SYSTEM_ERROR, message, null);
-    }
-
-    public SystemException(String message, Throwable cause) {
-        this(ResultCode.SYSTEM_ERROR, message, cause);
-    }
-
-    public SystemException(int code, String message) {
-        this(code, message, null);
-    }
-
-    public SystemException(int code, String message, Throwable cause) {
+    private SystemException(int code, String message, Throwable cause, boolean retryable) {
         super(code, message, cause, 500, ErrorCategory.SYSTEM, true);
+        this.retryable = retryable;
     }
 
     private static String resolveMessage(ResultCode resultCode, String message) {

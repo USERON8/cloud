@@ -19,8 +19,15 @@ public class DubboConsumerExceptionFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        long start = System.currentTimeMillis();
+        String service = invoker.getInterface().getSimpleName();
+        String method = invocation.getMethodName();
+        String target = service + "." + method;
+
         try {
             Result result = invoker.invoke(invocation);
+            long elapsed = System.currentTimeMillis() - start;
+            warnSlowIfNeeded(service, method, elapsed, invocation);
             if (!result.hasException()) {
                 return result;
             }
@@ -34,15 +41,57 @@ public class DubboConsumerExceptionFilter implements Filter {
             if (ex instanceof RemoteException) {
                 throw (RemoteException) ex;
             }
-            String target = invoker.getInterface().getSimpleName() + "." + invocation.getMethodName();
-            log.error("[DUBBO-CONSUMER] remote exception in {}", target, ex);
-            throw new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, target, ex);
+            log.error("[DUBBO][PROVIDER-ERR] {} remoteEx={}", target, ex.getClass().getSimpleName(), ex);
+            throw RemoteException.providerError(ResultCode.REMOTE_SERVICE_ERROR, target, ex);
         } catch (RpcException e) {
-            String target = invoker.getInterface().getSimpleName() + "." + invocation.getMethodName();
+            long elapsed = System.currentTimeMillis() - start;
             if (e.isTimeout()) {
-                throw new RemoteException(ResultCode.REMOTE_SERVICE_TIMEOUT, target + " timeout", e);
+                log.error(
+                        "[DUBBO][TIMEOUT] {} elapsed={}ms timeout={}ms",
+                        target,
+                        elapsed,
+                        resolveTimeoutMs(invocation),
+                        e);
+                throw RemoteException.timeout(
+                        ResultCode.REMOTE_SERVICE_TIMEOUT, target, elapsed, e);
             }
-            throw new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, target + " unavailable", e);
+            if (e.isLimitExceed()) {
+                log.warn("[DUBBO][REJECTED] {} rejected by provider", target, e);
+                throw RemoteException.rejected(ResultCode.REMOTE_SERVICE_REJECTED, target, e);
+            }
+            if (e.isNetwork() || e.isNoInvokerAvailableAfterFilter()) {
+                log.error("[DUBBO][NETWORK] {} unavailable", target, e);
+                throw RemoteException.unavailable(
+                        ResultCode.REMOTE_SERVICE_UNAVAILABLE, target, e);
+            }
+            log.error("[DUBBO][RPC-ERR] {} code={}", target, e.getCode(), e);
+            throw RemoteException.providerError(ResultCode.REMOTE_SERVICE_ERROR, target, e);
+        }
+    }
+
+    private void warnSlowIfNeeded(String service, String method, long elapsed, Invocation invocation) {
+        long threshold = resolveSlowThresholdMs(invocation);
+        if (elapsed > threshold) {
+            log.warn("[DUBBO][SLOW] {}.{} elapsed={}ms threshold={}ms", service, method, elapsed, threshold);
+        }
+    }
+
+    private long resolveSlowThresholdMs(Invocation invocation) {
+        return parseLong(invocation.getAttachment("slowThreshold"), 500L);
+    }
+
+    private long resolveTimeoutMs(Invocation invocation) {
+        return parseLong(invocation.getAttachment(CommonConstants.TIMEOUT_KEY), 1000L);
+    }
+
+    private long parseLong(String value, long fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            return fallback;
         }
     }
 }

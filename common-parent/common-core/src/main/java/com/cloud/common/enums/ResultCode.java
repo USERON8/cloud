@@ -26,6 +26,8 @@ public enum ResultCode {
   SYSTEM_NOT_IMPLEMENTED(1004, "Not implemented"),
   REMOTE_SERVICE_UNAVAILABLE(18001, "Remote service unavailable"),
   REMOTE_SERVICE_TIMEOUT(18002, "Remote service timeout"),
+  REMOTE_SERVICE_REJECTED(18003, "Remote service rejected"),
+  REMOTE_SERVICE_ERROR(18004, "Remote service error"),
 
   PERMISSION_DENIED(2001, "Permission denied"),
   ACCESS_DENIED(2002, "Access denied"),
