@@ -389,24 +389,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.3</version>
-                    <executions>
-                        <execution>
-                            <id>default-test</id>
-                            <configuration combine.self="override">
-                            <forkCount>1</forkCount>
-                            <reuseForks>true</reuseForks>
-                            <systemPropertyVariables>
-                                <!-- Encoding-safe comment -->
-                                <logDir>${project.build.directory}/logs</logDir>
-                                    <!-- Encoding-safe comment -->
-                                    <spring.profiles.active>test</spring.profiles.active>
-                                </systemPropertyVariables>
-                                <!-- Encoding-safe comment -->
-                                <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            </configuration>
-                        </execution>
-                    </executions>
+                    <version>3.5.4</version>
                     <configuration combine.self="override">
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
@@ -433,21 +416,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
-                <executions>
-                    <execution>
-                        <id>default-test</id>
-                        <configuration combine.self="override">
-                            <forkCount>1</forkCount>
-                            <reuseForks>true</reuseForks>
-                            <systemPropertyVariables>
-                                <logDir>${project.build.directory}/logs</logDir>
-                                <spring.profiles.active>test</spring.profiles.active>
-                            </systemPropertyVariables>
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                        </configuration>
-                    </execution>
-                </executions>
+                <version>3.5.4</version>
                 <configuration combine.self="override">
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
