@@ -3,133 +3,84 @@ package com.cloud.search.messaging;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.messaging.MessageIdempotencyService;
-import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
-import com.cloud.common.exception.SystemException;
+import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
-import org.springframework.context.annotation.Bean;
-import org.springframework.messaging.Message;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProductSyncConsumer {
+@RocketMQMessageListener(
+    topic = "product-sync",
+    consumerGroup = "search-product-sync-group",
+    selectorExpression = "PRODUCT_UPSERT||PRODUCT_DELETE")
+public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
 
   private static final String NS_PRODUCT_SYNC = "search:product:sync";
-  private static final AtomicBoolean LEGACY_STREAM_WARNED = new AtomicBoolean(false);
 
-  private final MessageIdempotencyService messageIdempotencyService;
   private final ProductDocumentRepository productDocumentRepository;
+  private final ObjectMapper objectMapper;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private ProductDubboApi productDubboApi;
 
-  @Bean
-  public Consumer<List<Message<ProductSyncEvent>>> productSyncConsumer() {
-    return messages -> {
-      warnLegacyStreamOnce();
-      if (messages == null || messages.isEmpty()) {
-        return;
-      }
+  @Override
+  protected void doConsume(ProductSyncEvent event, MessageExt msgExt) {
+    if (event == null || event.getSpuId() == null) {
+      return;
+    }
+    Long spuId = event.getSpuId();
+    if ("PRODUCT_DELETE".equalsIgnoreCase(event.getEventType())) {
+      productDocumentRepository.deleteById(String.valueOf(spuId));
+      return;
+    }
+    SpuDetailVO spu =
+        invokeProductService("get spu by id", () -> productDubboApi.getSpuById(spuId));
+    if (spu == null) {
+      productDocumentRepository.deleteById(String.valueOf(spuId));
+      return;
+    }
+    ProductDocument document = toDocument(spu);
+    if (document != null) {
+      productDocumentRepository.save(document);
+    }
+  }
 
-      List<ProductDocument> upserts = new ArrayList<>();
-      List<String> deletes = new ArrayList<>();
-      Set<String> inFlight = new HashSet<>();
-      Map<Long, ProductSyncEvent> latestBySpu = new LinkedHashMap<>();
-      Map<Long, List<String>> eventIdsBySpu = new HashMap<>();
+  @Override
+  protected ProductSyncEvent deserialize(byte[] body) {
+    try {
+      return body == null ? null : objectMapper.readValue(body, ProductSyncEvent.class);
+    } catch (Exception ex) {
+      throw new IllegalArgumentException("Failed to deserialize ProductSyncEvent", ex);
+    }
+  }
 
-      try {
-        for (Message<ProductSyncEvent> message : messages) {
-          if (message == null) {
-            continue;
-          }
-          ProductSyncEvent event = message.getPayload();
-          String eventId = resolveEventId(event);
-          if (!messageIdempotencyService.tryAcquire(NS_PRODUCT_SYNC, eventId)) {
-            log.warn("Duplicate product sync event, skip: eventId={}", eventId);
-            continue;
-          }
-          inFlight.add(eventId);
+  @Override
+  protected String resolveIdempotentNamespace(
+      String topic, MessageExt msgExt, ProductSyncEvent payload) {
+    return NS_PRODUCT_SYNC;
+  }
 
-          if (event == null || event.getSpuId() == null) {
-            messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-            inFlight.remove(eventId);
-            continue;
-          }
-
-          Long spuId = event.getSpuId();
-          eventIdsBySpu.computeIfAbsent(spuId, key -> new ArrayList<>()).add(eventId);
-          if (latestBySpu.containsKey(spuId)) {
-            latestBySpu.remove(spuId);
-          }
-          latestBySpu.put(spuId, event);
-        }
-
-        for (ProductSyncEvent event : latestBySpu.values()) {
-          if ("PRODUCT_DELETE".equalsIgnoreCase(event.getEventType())) {
-            deletes.add(String.valueOf(event.getSpuId()));
-            continue;
-          }
-
-          SpuDetailVO spu =
-              invokeProductService(
-                  "get spu by id", () -> productDubboApi.getSpuById(event.getSpuId()));
-          if (spu == null) {
-            deletes.add(String.valueOf(event.getSpuId()));
-            continue;
-          }
-
-          upserts.add(toDocument(spu));
-        }
-
-        if (!deletes.isEmpty()) {
-          productDocumentRepository.deleteAllById(deletes);
-        }
-        if (!upserts.isEmpty()) {
-          productDocumentRepository.saveAll(upserts);
-        }
-
-        for (List<String> eventIds : eventIdsBySpu.values()) {
-          for (String eventId : eventIds) {
-            messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-            inFlight.remove(eventId);
-          }
-        }
-      } catch (BizException ex) {
-        for (String eventId : inFlight) {
-          messageIdempotencyService.markSuccess(NS_PRODUCT_SYNC, eventId);
-        }
-        log.warn("Handle product sync batch skipped due to biz exception", ex);
-      } catch (Exception ex) {
-        for (String eventId : inFlight) {
-          messageIdempotencyService.release(NS_PRODUCT_SYNC, eventId);
-        }
-        log.error("Handle product sync batch failed", ex);
-        throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle product sync failed", ex);
-      }
-    };
+  @Override
+  protected String buildIdempotentKey(
+      String topic, String msgId, ProductSyncEvent payload, MessageExt msgExt) {
+    return resolveEventId(payload);
   }
 
   private ProductDocument toDocument(SpuDetailVO spu) {
@@ -181,14 +132,6 @@ public class ProductSyncConsumer {
           ResultCode.REMOTE_SERVICE_UNAVAILABLE,
           "product-service unavailable when " + action,
           ex);
-    }
-  }
-
-  private void warnLegacyStreamOnce() {
-    if (LEGACY_STREAM_WARNED.compareAndSet(false, true)) {
-      log.warn(
-          "ProductSyncConsumer is still using Spring Cloud Stream. "
-              + "Pending migration to RocketMQListener template.");
     }
   }
 }
