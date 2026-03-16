@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -67,7 +68,7 @@ class UserInfoHashCacheServiceTest {
 
         userInfoHashCacheService.put(user);
 
-        verify(hashOperations, times(2)).putAll(anyString(), any(Map.class));
+        verify(hashOperations, times(2)).putAll(anyString(), anyMap());
         verify(redisTemplate, times(2)).expire(anyString(), any(Duration.class));
     }
 }
