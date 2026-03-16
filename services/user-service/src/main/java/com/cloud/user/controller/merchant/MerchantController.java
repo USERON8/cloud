@@ -4,6 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -60,12 +62,12 @@ public class MerchantController {
           Integer auditStatus,
       Authentication authentication) {
     if (auditStatus != null && !isValidAuditStatus(auditStatus)) {
-      return Result.badRequest("invalid merchant audit status");
+      throw new BizException(ResultCode.BAD_REQUEST, "invalid merchant audit status");
     }
     if (!SecurityPermissionUtils.isAdmin(authentication)) {
       String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
       if (StrUtil.isBlank(currentUserId)) {
-        return Result.unauthorized("current user is not available");
+        throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
       }
 
       Long merchantId = Long.parseLong(currentUserId);
@@ -106,7 +108,7 @@ public class MerchantController {
       Authentication authentication) {
     MerchantDTO merchant = merchantService.getMerchantById(id);
     if (merchant == null) {
-      return Result.notFound("merchant not found");
+      throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
     return Result.success("query successful", merchant);
   }
@@ -205,7 +207,7 @@ public class MerchantController {
           @NotEmpty(message = "merchant ids cannot be empty")
           List<Long> ids) {
     if (ids.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
 
     boolean result = merchantService.batchDeleteMerchants(ids);
@@ -227,10 +229,10 @@ public class MerchantController {
           @NotNull(message = "status is required")
           Integer status) {
     if (ids.isEmpty()) {
-      return Result.badRequest("merchant ids cannot be empty");
+      throw new BizException(ResultCode.BAD_REQUEST, "merchant ids cannot be empty");
     }
     if (ids.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
 
     int successCount = merchantService.updateMerchantStatusBatch(ids, status);
@@ -250,7 +252,7 @@ public class MerchantController {
           List<Long> ids,
       @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
     if (ids.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
 
     int successCount = merchantService.approveMerchantsBatch(ids, remark);

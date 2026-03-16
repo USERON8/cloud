@@ -3,6 +3,8 @@ package com.cloud.user.controller.merchant;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthFileUploadDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantAuthService;
@@ -66,10 +68,10 @@ public class MerchantAuthController {
           @NotNull(message = "merchant auth request is required")
           MerchantAuthRequestDTO merchantAuthRequestDTO) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      return Result.forbidden("no permission to apply merchant auth");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to apply merchant auth");
     }
     if (merchantService.getById(merchantId) == null) {
-      return Result.notFound("merchant not found");
+      throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
 
     MerchantAuthDTO existingAuth =
@@ -80,14 +82,15 @@ public class MerchantAuthController {
             merchantAuthRequestDTO.getBusinessLicenseUrl(),
             existingAuth == null ? null : existingAuth.getBusinessLicenseUrl());
     if (normalizedLicenseUrl == null || normalizedLicenseUrl.isBlank()) {
-      return Result.badRequest("invalid business license url");
+      throw new BizException(ResultCode.BAD_REQUEST, "invalid business license url");
     }
 
     MerchantAuthDTO savedAuth =
         merchantAuthService.applyForAuth(
             merchantId, merchantAuthRequestDTO, STATUS_PENDING, normalizedLicenseUrl);
     if (savedAuth == null) {
-      return Result.error(
+      throw new BizException(
+          ResultCode.BUSINESS_ERROR,
           existingAuth != null
               ? "failed to update merchant auth application"
               : "failed to submit merchant auth application");
@@ -112,10 +115,10 @@ public class MerchantAuthController {
           Long merchantId,
       @RequestPart("file") MultipartFile file) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      return Result.forbidden("no permission to upload business license");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to upload business license");
     }
     if (merchantService.getById(merchantId) == null) {
-      return Result.notFound("merchant not found");
+      throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
 
     String objectName = minioService.uploadBusinessLicense(merchantId, file);
@@ -140,7 +143,7 @@ public class MerchantAuthController {
           @NotNull(message = "merchant id is required")
           Long merchantId) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      return Result.forbidden("no permission to query merchant auth");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to query merchant auth");
     }
 
     MerchantAuthDTO merchantAuth =
@@ -164,7 +167,7 @@ public class MerchantAuthController {
           @NotNull(message = "merchant id is required")
           Long merchantId) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      return Result.forbidden("no permission to revoke merchant auth");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to revoke merchant auth");
     }
     boolean removed = merchantAuthService.removeByMerchantId(merchantId);
     if (!removed) {
@@ -193,21 +196,22 @@ public class MerchantAuthController {
       @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
           String remark) {
     if (!isReviewStatus(authStatus)) {
-      return Result.badRequest("auth status must be 1(approved) or 2(rejected)");
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "auth status must be 1(approved) or 2(rejected)");
     }
     if (merchantService.getById(merchantId) == null) {
-      return Result.notFound("merchant not found");
+      throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
 
     MerchantAuthDTO merchantAuth =
         merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
     if (merchantAuth == null) {
-      return Result.error("merchant auth record not found");
+      throw new BizException(ResultCode.NOT_FOUND, "merchant auth record not found");
     }
 
     boolean updated = merchantAuthService.updateAuthStatus(merchantId, authStatus, remark);
     if (!updated) {
-      return Result.error("failed to update merchant auth status");
+      throw new BizException(ResultCode.BUSINESS_ERROR, "failed to update merchant auth status");
     }
 
     merchantService.updateMerchantAuditStatus(merchantId, authStatus);
@@ -227,7 +231,7 @@ public class MerchantAuthController {
           @NotNull(message = "auth status is required")
           Integer authStatus) {
     if (!isValidAuthStatus(authStatus)) {
-      return Result.badRequest("invalid auth status");
+      throw new BizException(ResultCode.BAD_REQUEST, "invalid auth status");
     }
 
     int effectiveLimit = (authListMaxSize == null || authListMaxSize <= 0) ? 200 : authListMaxSize;
@@ -309,13 +313,14 @@ public class MerchantAuthController {
       @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
           String remark) {
     if (merchantIds.isEmpty()) {
-      return Result.badRequest("merchant ids cannot be empty");
+      throw new BizException(ResultCode.BAD_REQUEST, "merchant ids cannot be empty");
     }
     if (merchantIds.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
     if (!isReviewStatus(authStatus)) {
-      return Result.badRequest("auth status must be 1(approved) or 2(rejected)");
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "auth status must be 1(approved) or 2(rejected)");
     }
 
     int successCount = merchantAuthService.reviewAuthBatch(merchantIds, authStatus, remark);
