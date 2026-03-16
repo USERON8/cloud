@@ -1,6 +1,11 @@
 package com.cloud.common.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -49,7 +54,7 @@ public abstract class BaseEntity<T extends BaseEntity<T>> implements Serializabl
 
 
 
-    @com.baomidou.mybatisplus.annotation.Version
+    @Version
     @TableField(value = "version", fill = FieldFill.INSERT)
     private Integer version;
 

@@ -1,7 +1,6 @@
 package com.cloud.order.mapper;
 
 import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
-import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.order.entity.OrderItem;

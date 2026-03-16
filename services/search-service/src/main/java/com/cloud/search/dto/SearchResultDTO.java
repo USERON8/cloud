@@ -14,7 +14,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Search result")
-public class SearchResult<T> {
+public class SearchResultDTO<T> {
 
     @Schema(description = "Current page records")
     private List<T> list;
@@ -49,7 +49,7 @@ public class SearchResult<T> {
     @Schema(description = "Search after values")
     private List<Object> searchAfter;
 
-    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took) {
+    public static <T> SearchResultDTO<T> of(List<T> list, Long total, Integer page, Integer size, Long took) {
         int safeSize = size == null || size <= 0 ? 20 : size;
         int safePage = page == null || page < 0 ? 0 : page;
         long safeTotal = total == null ? 0L : total;
@@ -57,7 +57,7 @@ public class SearchResult<T> {
         boolean hasNext = safePage < totalPages - 1;
         boolean hasPrevious = safePage > 0;
 
-        return SearchResult.<T>builder()
+        return SearchResultDTO.<T>builder()
                 .list(list)
                 .total(safeTotal)
                 .page(safePage)
@@ -69,24 +69,24 @@ public class SearchResult<T> {
                 .build();
     }
 
-    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
+    public static <T> SearchResultDTO<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
                                          Map<String, Object> aggregations) {
-        SearchResult<T> result = of(list, total, page, size, took);
+        SearchResultDTO<T> result = of(list, total, page, size, took);
         result.setAggregations(aggregations);
         return result;
     }
 
-    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
+    public static <T> SearchResultDTO<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
                                          Map<String, Object> aggregations, Map<String, List<String>> highlights) {
-        SearchResult<T> result = of(list, total, page, size, took, aggregations);
+        SearchResultDTO<T> result = of(list, total, page, size, took, aggregations);
         result.setHighlights(highlights);
         return result;
     }
 
-    public static <T> SearchResult<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
+    public static <T> SearchResultDTO<T> of(List<T> list, Long total, Integer page, Integer size, Long took,
                                          Map<String, Object> aggregations, Map<String, List<String>> highlights,
                                          List<Object> searchAfter) {
-        SearchResult<T> result = of(list, total, page, size, took, aggregations, highlights);
+        SearchResultDTO<T> result = of(list, total, page, size, took, aggregations, highlights);
         result.setSearchAfter(searchAfter);
         return result;
     }

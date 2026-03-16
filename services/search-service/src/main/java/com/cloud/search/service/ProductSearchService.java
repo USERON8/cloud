@@ -2,40 +2,40 @@ package com.cloud.search.service;
 
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
-import com.cloud.search.dto.SearchResult;
+import com.cloud.search.dto.SearchResultDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductSearchService {
 
-    SearchResult<ProductDocument> searchProducts(ProductSearchRequest request);
+    SearchResultDTO<ProductDocument> searchProducts(ProductSearchRequest request);
 
     List<String> getSearchSuggestions(String keyword, Integer size);
 
     List<String> getHotSearchKeywords(Integer size);
 
-    SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request);
+    SearchResultDTO<ProductDocument> getProductFilters(ProductSearchRequest request);
 
-    SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size);
+    SearchResultDTO<ProductDocument> basicSearch(String keyword, Integer page, Integer size);
 
-    SearchResult<ProductDocument> filterSearch(ProductSearchRequest request);
+    SearchResultDTO<ProductDocument> filterSearch(ProductSearchRequest request);
 
-    SearchResult<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size);
+    SearchResultDTO<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size);
 
-    SearchResult<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size);
+    SearchResultDTO<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size);
 
-    SearchResult<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size);
+    SearchResultDTO<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size);
 
-    SearchResult<ProductDocument> searchByShop(Long shopId, Integer page, Integer size);
+    SearchResultDTO<ProductDocument> searchByShop(Long shopId, Integer page, Integer size);
 
-    SearchResult<ProductDocument> getRecommendedProducts(Integer page, Integer size);
+    SearchResultDTO<ProductDocument> getRecommendedProducts(Integer page, Integer size);
 
-    SearchResult<ProductDocument> getNewProducts(Integer page, Integer size);
+    SearchResultDTO<ProductDocument> getNewProducts(Integer page, Integer size);
 
-    SearchResult<ProductDocument> getHotProducts(Integer page, Integer size);
+    SearchResultDTO<ProductDocument> getHotProducts(Integer page, Integer size);
 
-    SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
+    SearchResultDTO<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
                                                  BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
                                                  String sortBy, String sortOrder, Integer page, Integer size);
 }

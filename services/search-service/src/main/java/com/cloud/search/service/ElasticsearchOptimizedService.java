@@ -154,7 +154,7 @@ public class ElasticsearchOptimizedService {
     private final MeterRegistry meterRegistry;
     private final Executor cacheRefreshExecutor;
 
-    private LoadingCache<SmartSearchCacheKey, SearchResult> l1SmartSearchCache;
+    private LoadingCache<SmartSearchCacheKey, SearchResultDTO> l1SmartSearchCache;
     private LoadingCache<KeywordLimitCacheKey, List<String>> l1SuggestionsCache;
     private LoadingCache<LimitCacheKey, List<String>> l1HotKeywordsCache;
     private LoadingCache<KeywordLimitCacheKey, List<String>> l1RecommendationsCache;
@@ -236,7 +236,7 @@ public class ElasticsearchOptimizedService {
     }
 
     @Transactional(readOnly = true)
-    public SearchResult smartProductSearch(String keyword, Long categoryId,
+    public SearchResultDTO smartProductSearch(String keyword, Long categoryId,
                                            Double minPrice, Double maxPrice,
                                            String sortField, String sortOrder,
                                            int from, int size) {
@@ -246,21 +246,21 @@ public class ElasticsearchOptimizedService {
         if (safeFrom >= Math.max(1, maxSearchFrom)) {
             log.warn("Smart search deep pagination blocked, from={}, size={}, maxFrom={}", safeFrom, safeSize, maxSearchFrom);
             recordTimer(sample, "smart-search", "deep-page-blocked");
-            return SearchResult.empty(safeFrom, safeSize);
+            return SearchResultDTO.empty(safeFrom, safeSize);
         }
         String safeKeyword = normalizeKeyword(keyword);
         SmartSearchCacheKey cacheKey = new SmartSearchCacheKey(
                 safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize
         );
 
-        SearchResult l1Cached = l1SmartSearchCache.getIfPresent(cacheKey);
+        SearchResultDTO l1Cached = l1SmartSearchCache.getIfPresent(cacheKey);
         if (l1Cached != null) {
             recordTimer(sample, "smart-search", "l1-hit");
             return l1SmartSearchCache.get(cacheKey);
         }
 
         String redisKey = buildSmartSearchCacheKey(cacheKey);
-        SearchResult l2Cached = getSmartSearchFromRedis(redisKey);
+        SearchResultDTO l2Cached = getSmartSearchFromRedis(redisKey);
         if (l2Cached != null) {
             l1SmartSearchCache.put(cacheKey, l2Cached);
             recordTimer(sample, "smart-search", "l2-hit");
@@ -268,7 +268,7 @@ public class ElasticsearchOptimizedService {
         }
 
         try {
-            SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
+            SearchResultDTO result = querySmartSearchFromElasticsearch(cacheKey);
             putSmartSearchToRedis(redisKey, result);
             l1SmartSearchCache.put(cacheKey, result);
             recordHotSearch(safeKeyword);
@@ -280,12 +280,12 @@ public class ElasticsearchOptimizedService {
             log.error("Smart product search failed, keyword={}, categoryId={}, from={}, size={}",
                     safeKeyword, categoryId, safeFrom, safeSize, e);
             recordTimer(sample, "smart-search", "error");
-            return SearchResult.empty(safeFrom, safeSize);
+            return SearchResultDTO.empty(safeFrom, safeSize);
         }
     }
 
     @Transactional(readOnly = true)
-    public SearchResult smartProductSearchAfter(String keyword, Long categoryId,
+    public SearchResultDTO smartProductSearchAfter(String keyword, Long categoryId,
                                                 Double minPrice, Double maxPrice,
                                                 String sortField, String sortOrder,
                                                 List<Object> searchAfterValues, int size) {
@@ -298,7 +298,7 @@ public class ElasticsearchOptimizedService {
 
         try {
             List<FieldValue> searchAfter = toSearchAfterValues(searchAfterValues);
-            SearchResult result = querySmartSearchFromElasticsearch(cacheKey, searchAfter);
+            SearchResultDTO result = querySmartSearchFromElasticsearch(cacheKey, searchAfter);
             recordHotSearch(safeKeyword);
             recordTimer(sample, "smart-search", "search-after");
             return result;
@@ -308,12 +308,12 @@ public class ElasticsearchOptimizedService {
             log.error("Smart product search (search_after) failed, keyword={}, categoryId={}, size={}",
                     safeKeyword, categoryId, safeSize, e);
             recordTimer(sample, "smart-search", "error");
-            return SearchResult.empty(0, safeSize);
+            return SearchResultDTO.empty(0, safeSize);
         }
     }
 
     @Transactional(readOnly = true)
-    public SearchResult productSearchAfter(ProductSearchRequest request, List<Object> searchAfterValues) {
+    public SearchResultDTO productSearchAfter(ProductSearchRequest request, List<Object> searchAfterValues) {
         Timer.Sample sample = Timer.start(meterRegistry);
         ProductSearchRequest safeRequest = request == null ? new ProductSearchRequest() : request;
         int safeSize = safeRequest.getSize() == null || safeRequest.getSize() <= 0
@@ -327,7 +327,7 @@ public class ElasticsearchOptimizedService {
         if (!useSearchAfter && safeFrom >= Math.max(1, maxSearchFrom)) {
             log.warn("Product search deep pagination blocked, from={}, size={}, maxFrom={}", safeFrom, safeSize, maxSearchFrom);
             recordTimer(sample, "product-search", "deep-page-blocked");
-            return SearchResult.empty(safeFrom, safeSize);
+            return SearchResultDTO.empty(safeFrom, safeSize);
         }
 
         Query query = buildProductSearchQuery(safeRequest);
@@ -377,7 +377,7 @@ public class ElasticsearchOptimizedService {
                 recordHotSearch(safeRequest.getKeyword());
             }
             recordTimer(sample, "product-search", useSearchAfter ? "search-after" : "from");
-            return SearchResult.builder()
+            return SearchResultDTO.builder()
                     .documents(products)
                     .total(total)
                     .from(useSearchAfter ? 0 : safeFrom)
@@ -389,7 +389,7 @@ public class ElasticsearchOptimizedService {
             incrementEsError("product-search");
             log.error("Product search failed, request={}, size={}", safeRequest, safeSize, e);
             recordTimer(sample, "product-search", "error");
-            return SearchResult.empty(safeFrom, safeSize);
+            return SearchResultDTO.empty(safeFrom, safeSize);
         }
     }
 
@@ -499,17 +499,17 @@ public class ElasticsearchOptimizedService {
         return result;
     }
 
-    private SearchResult loadSmartSearchForCache(SmartSearchCacheKey cacheKey) {
+    private SearchResultDTO loadSmartSearchForCache(SmartSearchCacheKey cacheKey) {
         String redisKey = buildSmartSearchCacheKey(cacheKey);
         return withCacheRebuildMutex(
                 buildRebuildLockKey(redisKey),
                 () -> getSmartSearchFromRedis(redisKey),
                 () -> {
-                    SearchResult l2 = getSmartSearchFromRedis(redisKey);
+                    SearchResultDTO l2 = getSmartSearchFromRedis(redisKey);
                     if (l2 != null) {
                         return l2;
                     }
-                    SearchResult result = querySmartSearchFromElasticsearch(cacheKey);
+                    SearchResultDTO result = querySmartSearchFromElasticsearch(cacheKey);
                     putSmartSearchToRedis(redisKey, result);
                     return result;
                 }
@@ -567,11 +567,11 @@ public class ElasticsearchOptimizedService {
         );
     }
 
-    private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
+    private SearchResultDTO querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
         return querySmartSearchFromElasticsearch(key, List.of());
     }
 
-    private SearchResult querySmartSearchFromElasticsearch(SmartSearchCacheKey key, List<FieldValue> searchAfter) {
+    private SearchResultDTO querySmartSearchFromElasticsearch(SmartSearchCacheKey key, List<FieldValue> searchAfter) {
         Query query = buildProductSearchQuery(key.keyword(), key.categoryId(), key.minPrice(), key.maxPrice());
         boolean useSearchAfter = searchAfter != null && !searchAfter.isEmpty();
         SearchRequest searchRequest = SearchRequest.of(s -> {
@@ -610,7 +610,7 @@ public class ElasticsearchOptimizedService {
             long total = response.hits().total() != null ? response.hits().total().value() : 0L;
             Map<String, Object> aggregations = processAggregations(response.aggregations());
             List<Object> nextSearchAfter = resolveNextSearchAfter(response.hits().hits(), key.size());
-            return SearchResult.builder()
+            return SearchResultDTO.builder()
                     .documents(products)
                     .total(total)
                     .from(key.from())
@@ -1024,7 +1024,7 @@ public class ElasticsearchOptimizedService {
         return RECOMMEND_CACHE_KEY_PREFIX + key.keyword() + ':' + key.limit();
     }
 
-    private SearchResult getSmartSearchFromRedis(String key) {
+    private SearchResultDTO getSmartSearchFromRedis(String key) {
         try {
             String json = redisTemplate.opsForValue().get(key);
             if (StrUtil.isBlank(json)) {
@@ -1047,7 +1047,7 @@ public class ElasticsearchOptimizedService {
                     }
             );
 
-            return SearchResult.builder()
+            return SearchResultDTO.builder()
                     .documents(documents == null ? List.of() : documents)
                     .total(total)
                     .from(from)
@@ -1061,7 +1061,7 @@ public class ElasticsearchOptimizedService {
         }
     }
 
-    private void putSmartSearchToRedis(String key, SearchResult result) {
+    private void putSmartSearchToRedis(String key, SearchResultDTO result) {
         if (result == null) {
             return;
         }
@@ -1301,7 +1301,7 @@ public class ElasticsearchOptimizedService {
         }
     }
 
-    public static class SearchResult {
+    public static class SearchResultDTO {
         private final List<Map<String, Object>> documents;
         private final long total;
         private final int from;
@@ -1309,7 +1309,7 @@ public class ElasticsearchOptimizedService {
         private final Map<String, Object> aggregations;
         private final List<Object> searchAfter;
 
-        private SearchResult(List<Map<String, Object>> documents, long total, int from, int size,
+        private SearchResultDTO(List<Map<String, Object>> documents, long total, int from, int size,
                              Map<String, Object> aggregations, List<Object> searchAfter) {
             this.documents = documents;
             this.total = total;
@@ -1319,12 +1319,12 @@ public class ElasticsearchOptimizedService {
             this.searchAfter = searchAfter;
         }
 
-        public static SearchResultBuilder builder() {
-            return new SearchResultBuilder();
+        public static SearchResultDTOBuilder builder() {
+            return new SearchResultDTOBuilder();
         }
 
-        public static SearchResult empty(int from, int size) {
-            return new SearchResult(List.of(), 0, from, size, Map.of(), List.of());
+        public static SearchResultDTO empty(int from, int size) {
+            return new SearchResultDTO(List.of(), 0, from, size, Map.of(), List.of());
         }
 
         public List<Map<String, Object>> getDocuments() {
@@ -1358,7 +1358,7 @@ public class ElasticsearchOptimizedService {
             return from + size < total;
         }
 
-        public static class SearchResultBuilder {
+        public static class SearchResultDTOBuilder {
             private List<Map<String, Object>> documents;
             private long total;
             private int from;
@@ -1366,38 +1366,38 @@ public class ElasticsearchOptimizedService {
             private Map<String, Object> aggregations;
             private List<Object> searchAfter;
 
-            public SearchResultBuilder documents(List<Map<String, Object>> documents) {
+            public SearchResultDTOBuilder documents(List<Map<String, Object>> documents) {
                 this.documents = documents;
                 return this;
             }
 
-            public SearchResultBuilder total(long total) {
+            public SearchResultDTOBuilder total(long total) {
                 this.total = total;
                 return this;
             }
 
-            public SearchResultBuilder from(int from) {
+            public SearchResultDTOBuilder from(int from) {
                 this.from = from;
                 return this;
             }
 
-            public SearchResultBuilder size(int size) {
+            public SearchResultDTOBuilder size(int size) {
                 this.size = size;
                 return this;
             }
 
-            public SearchResultBuilder aggregations(Map<String, Object> aggregations) {
+            public SearchResultDTOBuilder aggregations(Map<String, Object> aggregations) {
                 this.aggregations = aggregations;
                 return this;
             }
 
-            public SearchResultBuilder searchAfter(List<Object> searchAfter) {
+            public SearchResultDTOBuilder searchAfter(List<Object> searchAfter) {
                 this.searchAfter = searchAfter;
                 return this;
             }
 
-            public SearchResult build() {
-                return new SearchResult(documents, total, from, size, aggregations, searchAfter);
+            public SearchResultDTO build() {
+                return new SearchResultDTO(documents, total, from, size, aggregations, searchAfter);
             }
         }
     }

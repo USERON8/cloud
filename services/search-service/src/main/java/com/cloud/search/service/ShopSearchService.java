@@ -2,7 +2,7 @@ package com.cloud.search.service;
 
 
 import com.cloud.search.document.ShopDocument;
-import com.cloud.search.dto.SearchResult;
+import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
 
 import java.util.List;
@@ -89,7 +89,7 @@ public interface ShopSearchService {
 
 
 
-    SearchResult<ShopDocument> searchShops(ShopSearchRequest request);
+    SearchResultDTO<ShopDocument> searchShops(ShopSearchRequest request);
 
 
 
@@ -114,5 +114,5 @@ public interface ShopSearchService {
 
 
 
-    SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request);
+    SearchResultDTO<ShopDocument> getShopFilters(ShopSearchRequest request);
 }

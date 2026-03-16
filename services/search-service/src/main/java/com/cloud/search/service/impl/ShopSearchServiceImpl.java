@@ -1,7 +1,7 @@
 package com.cloud.search.service.impl;
 
 import com.cloud.search.document.ShopDocument;
-import com.cloud.search.dto.SearchResult;
+import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.ShopSearchService;
@@ -163,7 +163,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ShopDocument> searchShops(ShopSearchRequest request) {
+    public SearchResultDTO<ShopDocument> searchShops(ShopSearchRequest request) {
         ShopSearchRequest safeRequest = request == null ? new ShopSearchRequest() : request;
         long start = System.currentTimeMillis();
 
@@ -176,7 +176,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
         Page<ShopDocument> page = selectPage(safeRequest, pageable);
         long took = System.currentTimeMillis() - start;
 
-        return SearchResult.of(page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
+        return SearchResultDTO.of(page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
     }
 
     @Override
@@ -218,8 +218,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ShopDocument> getShopFilters(ShopSearchRequest request) {
-        SearchResult<ShopDocument> base = searchShops(request);
+    public SearchResultDTO<ShopDocument> getShopFilters(ShopSearchRequest request) {
+        SearchResultDTO<ShopDocument> base = searchShops(request);
         List<ShopDocument> list = base.getList() == null ? Collections.emptyList() : base.getList();
 
         Map<String, Object> aggregations = new LinkedHashMap<>();

@@ -20,7 +20,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderStatusChangeResult {
+public class OrderStatusChangeResultDTO {
 
 
 
@@ -108,10 +108,10 @@ public class OrderStatusChangeResult {
 
 
 
-    public static OrderStatusChangeResult success(String operationType, Long orderId,
+    public static OrderStatusChangeResultDTO success(String operationType, Long orderId,
                                                   Integer beforeStatus, Integer afterStatus,
                                                   Long operatorId, String remark) {
-        return OrderStatusChangeResult.builder()
+        return OrderStatusChangeResultDTO.builder()
                 .success(true)
                 .operationType(operationType)
                 .orderId(orderId)
@@ -137,10 +137,10 @@ public class OrderStatusChangeResult {
 
 
 
-    public static OrderStatusChangeResult batchSuccess(String operationType, List<Long> orderIds,
+    public static OrderStatusChangeResultDTO batchSuccess(String operationType, List<Long> orderIds,
                                                        Integer beforeStatus, Integer afterStatus,
                                                        Integer affectedCount, Long operatorId, String remark) {
-        return OrderStatusChangeResult.builder()
+        return OrderStatusChangeResultDTO.builder()
                 .success(true)
                 .operationType(operationType)
                 .orderIds(orderIds)
@@ -164,9 +164,9 @@ public class OrderStatusChangeResult {
 
 
 
-    public static OrderStatusChangeResult failure(String operationType, Long orderId,
+    public static OrderStatusChangeResultDTO failure(String operationType, Long orderId,
                                                   String errorCode, String errorMessage, Long operatorId) {
-        return OrderStatusChangeResult.builder()
+        return OrderStatusChangeResultDTO.builder()
                 .success(false)
                 .operationType(operationType)
                 .orderId(orderId)
@@ -188,9 +188,9 @@ public class OrderStatusChangeResult {
 
 
 
-    public static OrderStatusChangeResult batchFailure(String operationType, List<Long> orderIds,
+    public static OrderStatusChangeResultDTO batchFailure(String operationType, List<Long> orderIds,
                                                        String errorCode, String errorMessage, Long operatorId) {
-        return OrderStatusChangeResult.builder()
+        return OrderStatusChangeResultDTO.builder()
                 .success(false)
                 .operationType(operationType)
                 .orderIds(orderIds)
@@ -209,7 +209,7 @@ public class OrderStatusChangeResult {
 
 
 
-    public OrderStatusChangeResult withTiming(Long executionTime, Long lockWaitTime) {
+    public OrderStatusChangeResultDTO withTiming(Long executionTime, Long lockWaitTime) {
         this.executionTime = executionTime;
         this.lockWaitTime = lockWaitTime;
         return this;

@@ -2,7 +2,7 @@ package com.cloud.search.service.impl;
 
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
-import com.cloud.search.dto.SearchResult;
+import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ProductSearchService;
 import com.cloud.search.service.support.HotKeywordKeys;
@@ -40,7 +40,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> searchProducts(ProductSearchRequest request) {
+    public SearchResultDTO<ProductDocument> searchProducts(ProductSearchRequest request) {
         ProductSearchRequest safeRequest = request == null ? new ProductSearchRequest() : request;
         long start = System.currentTimeMillis();
 
@@ -66,7 +66,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         }
 
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
+        return SearchResultDTO.of(page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
     }
 
     @Override
@@ -114,8 +114,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> getProductFilters(ProductSearchRequest request) {
-        SearchResult<ProductDocument> base = searchProducts(request);
+    public SearchResultDTO<ProductDocument> getProductFilters(ProductSearchRequest request) {
+        SearchResultDTO<ProductDocument> base = searchProducts(request);
         List<ProductDocument> list = base.getList() == null ? new ArrayList<>() : base.getList();
 
         Map<String, Object> aggregations = new LinkedHashMap<>();
@@ -132,7 +132,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> basicSearch(String keyword, Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> basicSearch(String keyword, Integer page, Integer size) {
         long start = System.currentTimeMillis();
         int pageNum = normalizePage(page);
         int pageSize = normalizeSize(size);
@@ -147,90 +147,90 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         }
 
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> filterSearch(ProductSearchRequest request) {
+    public SearchResultDTO<ProductDocument> filterSearch(ProductSearchRequest request) {
         return searchProducts(request);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> searchByCategory(Long categoryId, Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByCategoryIdAndStatus(categoryId, 1, pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> searchByBrand(Long brandId, Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByBrandIdAndStatus(brandId, 1, pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
         BigDecimal min = minPrice == null ? BigDecimal.ZERO : minPrice;
         BigDecimal max = maxPrice == null ? new BigDecimal("99999999") : maxPrice;
         Page<ProductDocument> resultPage = productDocumentRepository.findByPriceBetweenAndStatus(min, max, 1, pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> searchByShop(Long shopId, Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> searchByShop(Long shopId, Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByShopIdAndStatus(shopId, 1, pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> getRecommendedProducts(Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> getRecommendedProducts(Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByRecommendedTrue(pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> getNewProducts(Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> getNewProducts(Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByIsNewTrue(pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> getHotProducts(Integer page, Integer size) {
+    public SearchResultDTO<ProductDocument> getHotProducts(Integer page, Integer size) {
         long start = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "salesCount"));
         Page<ProductDocument> resultPage = productDocumentRepository.findByIsHotTrue(pageable);
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
+    public SearchResultDTO<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId,
                                                         BigDecimal minPrice, BigDecimal maxPrice, Long shopId,
                                                         String sortBy, String sortOrder, Integer page, Integer size) {
         long start = System.currentTimeMillis();
@@ -249,7 +249,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             recordHotSearch(keyword);
         }
         long took = System.currentTimeMillis() - start;
-        return SearchResult.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
+        return SearchResultDTO.of(resultPage.getContent(), resultPage.getTotalElements(), resultPage.getNumber(), resultPage.getSize(), took);
     }
 
     private void recordHotSearch(String keyword) {
