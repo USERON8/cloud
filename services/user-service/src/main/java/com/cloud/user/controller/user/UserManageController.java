@@ -1,6 +1,8 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.validation.BatchValidationUtils;
 import com.cloud.user.service.UserService;
@@ -84,7 +86,8 @@ public class UserManageController {
     BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");
     long missingIdCount = requestDTOList.stream().filter(dto -> dto.getId() == null).count();
     if (missingIdCount > 0) {
-      return Result.badRequest("all user payloads must include id for batch update");
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "all user payloads must include id for batch update");
     }
     boolean result = userService.updateUsersBatch(requestDTOList);
     return Result.success(

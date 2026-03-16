@@ -4,6 +4,8 @@ import com.cloud.common.domain.dto.user.UserAddressDTO;
 import com.cloud.common.domain.dto.user.UserAddressPageDTO;
 import com.cloud.common.domain.dto.user.UserAddressRequestDTO;
 import com.cloud.common.domain.vo.UserAddressVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -47,7 +49,7 @@ public class UserAddressController {
           UserAddressRequestDTO userAddressRequestDTO,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-      return Result.forbidden("no permission to add address");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to add address");
     }
 
     UserAddressDTO created = userAddressService.createAddress(userId, userAddressRequestDTO);
@@ -69,11 +71,11 @@ public class UserAddressController {
       Authentication authentication) {
     UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
     if (existingAddress == null) {
-      return Result.notFound("address not found");
+      throw new BizException(ResultCode.NOT_FOUND, "address not found");
     }
 
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-      return Result.forbidden("no permission to update address");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to update address");
     }
 
     UserAddressDTO updated = userAddressService.updateAddress(addressId, userAddressRequestDTO);
@@ -90,11 +92,11 @@ public class UserAddressController {
       Authentication authentication) {
     UserAddressDTO existingAddress = userAddressService.getAddressById(addressId);
     if (existingAddress == null) {
-      return Result.notFound("address not found");
+      throw new BizException(ResultCode.NOT_FOUND, "address not found");
     }
 
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-      return Result.forbidden("no permission to delete address");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to delete address");
     }
 
     boolean result = userAddressService.removeById(addressId);
@@ -110,7 +112,7 @@ public class UserAddressController {
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-      return Result.forbidden("no permission to query addresses");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to query addresses");
     }
 
     List<UserAddressVO> result = userAddressService.listAddressesByUserId(userId);
@@ -126,7 +128,7 @@ public class UserAddressController {
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
-      return Result.forbidden("no permission to query default address");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to query default address");
     }
 
     UserAddressVO userAddress = userAddressService.getDefaultAddress(userId);
@@ -148,10 +150,11 @@ public class UserAddressController {
       Authentication authentication) {
     if (pageDTO.getUserId() != null
         && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
-      return Result.forbidden("no permission to query this user's addresses");
+      throw new BizException(
+          ResultCode.FORBIDDEN, "no permission to query this user's addresses");
     }
     if (pageDTO.getUserId() == null && !SecurityPermissionUtils.isAdmin(authentication)) {
-      return Result.forbidden("no permission to query all addresses");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to query all addresses");
     }
 
     PageResult<UserAddressVO> pageResult = userAddressService.pageAddresses(pageDTO);
@@ -169,10 +172,10 @@ public class UserAddressController {
           List<Long> addressIds,
       Authentication authentication) {
     if (addressIds.isEmpty()) {
-      return Result.badRequest("address ids cannot be empty");
+      throw new BizException(ResultCode.BAD_REQUEST, "address ids cannot be empty");
     }
     if (addressIds.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
 
     int successCount = userAddressService.deleteAddressBatch(addressIds, authentication);
@@ -193,10 +196,10 @@ public class UserAddressController {
           List<UserAddressRequestDTO> addressList,
       Authentication authentication) {
     if (addressList.isEmpty()) {
-      return Result.badRequest("address payload list cannot be empty");
+      throw new BizException(ResultCode.BAD_REQUEST, "address payload list cannot be empty");
     }
     if (addressList.size() > 100) {
-      return Result.badRequest("batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
 
     int successCount = userAddressService.updateAddressBatch(addressList, authentication);

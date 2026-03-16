@@ -3,6 +3,8 @@ package com.cloud.user.controller.user;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.module.dto.UserProfilePasswordChangeDTO;
@@ -40,7 +42,7 @@ public class UserProfileController {
   public Result<UserDTO> getCurrentProfile(Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
     if (currentUserId == null) {
-      return Result.unauthorized("current user is not available");
+      throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
     }
 
     return Result.success(userService.getUserById(currentUserId));
@@ -53,14 +55,14 @@ public class UserProfileController {
       @RequestBody @Valid UserProfileUpdateDTO updateDTO, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
     if (currentUserId == null) {
-      return Result.unauthorized("current user is not available");
+      throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
     }
 
     if (StrUtil.isBlank(updateDTO.getNickname())
         && StrUtil.isBlank(updateDTO.getAvatarUrl())
         && StrUtil.isBlank(updateDTO.getEmail())
         && StrUtil.isBlank(updateDTO.getPhone())) {
-      return Result.badRequest("at least one profile field is required");
+      throw new BizException(ResultCode.BAD_REQUEST, "at least one profile field is required");
     }
 
     UserProfileUpsertDTO profileUpsertDTO = new UserProfileUpsertDTO();
@@ -91,7 +93,7 @@ public class UserProfileController {
       @RequestBody @Valid UserProfilePasswordChangeDTO requestDTO, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
     if (currentUserId == null) {
-      return Result.unauthorized("current user is not available");
+      throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
     }
 
     Boolean changed =
@@ -109,7 +111,7 @@ public class UserProfileController {
       @RequestPart("file") MultipartFile file, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
     if (currentUserId == null) {
-      return Result.unauthorized("current user is not available");
+      throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
     }
 
     String avatarUrl = minioService.uploadAvatar(file);

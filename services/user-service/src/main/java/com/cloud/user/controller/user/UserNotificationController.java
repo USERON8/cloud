@@ -1,6 +1,8 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.common.messaging.event.UserNotificationEvent;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.user.messaging.UserNotificationProducer;
 import com.cloud.user.module.dto.UserNotificationBatchRequestDTO;
@@ -35,7 +37,7 @@ public class UserNotificationController {
   public Result<Boolean> sendWelcomeNotification(
       @PathVariable @Parameter(description = "User ID") Long userId) {
     if (userId == null || userId <= 0) {
-      return Result.badRequest("user id is invalid");
+      throw new BizException(ResultCode.BAD_REQUEST, "user id is invalid");
     }
 
     UserNotificationEvent event =
@@ -58,7 +60,7 @@ public class UserNotificationController {
       @PathVariable @Parameter(description = "User ID") Long userId,
       @RequestBody @Valid UserNotificationStatusChangeRequestDTO requestDTO) {
     if (userId == null || userId <= 0) {
-      return Result.badRequest("user id is invalid");
+      throw new BizException(ResultCode.BAD_REQUEST, "user id is invalid");
     }
 
     UserNotificationEvent event =
