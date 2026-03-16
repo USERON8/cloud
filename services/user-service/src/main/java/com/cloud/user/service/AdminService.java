@@ -46,6 +46,8 @@ public interface AdminService extends IService<Admin> {
 
     List<AdminDTO> getAdminsByIds(List<Long> ids);
 
+    List<AdminDTO> listAdmins();
+
 
 
 

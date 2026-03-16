@@ -83,6 +83,16 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     @Override
     @Transactional(readOnly = true)
+    public List<AdminDTO> listAdmins() {
+        List<Admin> admins = list();
+        if (admins == null || admins.isEmpty()) {
+            return List.of();
+        }
+        return adminConverter.toDTOList(admins);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<AdminDTO> getAdminsPage(Integer page, Integer size) {
         Page<Admin> pageParam = new Page<>(page, size);
         Page<Admin> adminPage = lambdaQuery().orderByDesc(Admin::getId).page(pageParam);
