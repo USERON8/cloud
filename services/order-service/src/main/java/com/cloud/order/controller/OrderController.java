@@ -336,10 +336,9 @@ public class OrderController {
     if (userId == null || userId.isBlank()) {
       throw new BusinessException("current user not found in token");
     }
-    try {
-      return Long.parseLong(userId);
-    } catch (NumberFormatException ex) {
+    if (!StrUtil.isNumeric(userId)) {
       throw new BusinessException("invalid user_id in token");
     }
+    return Long.parseLong(userId);
   }
 }

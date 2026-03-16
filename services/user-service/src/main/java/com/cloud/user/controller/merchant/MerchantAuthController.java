@@ -15,7 +15,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/merchant/auth")
 @RequiredArgsConstructor
@@ -95,12 +93,7 @@ public class MerchantAuthController {
               : "failed to submit merchant auth application");
     }
 
-    try {
-      merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
-    } catch (Exception e) {
-      log.error("Failed to set merchant status pending, merchantId={}", merchantId, e);
-      return Result.error("merchant auth submitted but failed to update merchant status");
-    }
+    merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
 
     return Result.success("merchant auth application submitted", savedAuth);
   }
@@ -125,21 +118,13 @@ public class MerchantAuthController {
       return Result.notFound("merchant not found");
     }
 
-    try {
-      String objectName = minioService.uploadBusinessLicense(merchantId, file);
-      merchantAuthService.updateBusinessLicenseUrlIfExists(merchantId, objectName);
-      String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
-      MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
-      response.setFileKey(objectName);
-      response.setPreviewUrl(previewUrl);
-      return Result.success("business license uploaded", response);
-    } catch (IllegalArgumentException e) {
-      log.warn("Invalid business license upload, merchantId={}", merchantId, e);
-      return Result.badRequest("invalid business license upload request");
-    } catch (Exception e) {
-      log.error("Failed to upload business license, merchantId={}", merchantId, e);
-      return Result.error("failed to upload business license");
-    }
+    String objectName = minioService.uploadBusinessLicense(merchantId, file);
+    merchantAuthService.updateBusinessLicenseUrlIfExists(merchantId, objectName);
+    String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
+    MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
+    response.setFileKey(objectName);
+    response.setPreviewUrl(previewUrl);
+    return Result.success("business license uploaded", response);
   }
 
   @GetMapping("/get/{merchantId}")
@@ -186,12 +171,7 @@ public class MerchantAuthController {
       return Result.success("merchant auth not found", false);
     }
 
-    try {
-      merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
-    } catch (Exception e) {
-      log.error("Failed to reset merchant status after revoke, merchantId={}", merchantId, e);
-      return Result.error("merchant auth revoked but failed to update merchant status");
-    }
+    merchantService.updateMerchantAuditStatus(merchantId, STATUS_PENDING);
 
     return Result.success("merchant auth revoked", true);
   }
@@ -230,16 +210,7 @@ public class MerchantAuthController {
       return Result.error("failed to update merchant auth status");
     }
 
-    try {
-      merchantService.updateMerchantAuditStatus(merchantId, authStatus);
-    } catch (Exception e) {
-      log.error(
-          "Failed to update merchant status after auth review, merchantId={}, authStatus={}",
-          merchantId,
-          authStatus,
-          e);
-      return Result.error("merchant auth reviewed but failed to update merchant status");
-    }
+    merchantService.updateMerchantAuditStatus(merchantId, authStatus);
 
     String action = authStatus == STATUS_APPROVED ? "approved" : "rejected";
     return Result.success("merchant auth " + action, true);
@@ -278,12 +249,8 @@ public class MerchantAuthController {
     if (isHttpUrl(businessLicenseUrl)) {
       return merchantAuthDTO;
     }
-    try {
-      merchantAuthDTO.setBusinessLicenseUrl(
-          minioService.getBusinessLicensePresignedUrl(businessLicenseUrl));
-    } catch (Exception e) {
-      log.warn("Failed to sign business license url, value={}", businessLicenseUrl, e);
-    }
+    merchantAuthDTO.setBusinessLicenseUrl(
+        minioService.getBusinessLicensePresignedUrl(businessLicenseUrl));
     return merchantAuthDTO;
   }
 

@@ -3,6 +3,8 @@ package com.cloud.user.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.user.service.AdminService;
@@ -16,7 +18,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -50,22 +50,17 @@ public class AdminController {
       @Parameter(description = "Page size")
           @RequestParam(defaultValue = "10")
           @Min(value = 1, message = "size must be greater than 0")
-          @Max(value = 100, message = "size must be less than or equal to 100")
+      @Max(value = 100, message = "size must be less than or equal to 100")
           Integer size,
       Authentication authentication) {
-    try {
-      Page<AdminDTO> pageResult = adminService.getAdminsPage(page, size);
-      PageResult<AdminDTO> result =
-          PageResult.of(
-              pageResult.getCurrent(),
-              pageResult.getSize(),
-              pageResult.getTotal(),
-              pageResult.getRecords());
-      return Result.success(result);
-    } catch (Exception e) {
-      log.error("Failed to query admin page", e);
-      return Result.error("Failed to query admin page");
-    }
+    Page<AdminDTO> pageResult = adminService.getAdminsPage(page, size);
+    PageResult<AdminDTO> result =
+        PageResult.of(
+            pageResult.getCurrent(),
+            pageResult.getSize(),
+            pageResult.getTotal(),
+            pageResult.getRecords());
+    return Result.success(result);
   }
 
   @GetMapping("/{id}")
@@ -74,20 +69,15 @@ public class AdminController {
   public Result<AdminDTO> getAdminById(
       @Parameter(description = "Admin ID")
           @PathVariable
-          @NotNull(message = "admin id cannot be null")
+      @NotNull(message = "admin id cannot be null")
           @Positive(message = "admin id must be positive")
           Long id,
       Authentication authentication) {
-    try {
-      AdminDTO admin = adminService.getAdminById(id);
-      if (admin == null) {
-        return Result.error("Admin not found");
-      }
-      return Result.success("Query successful", admin);
-    } catch (Exception e) {
-      log.error("Failed to get admin details: {}", id, e);
-      return Result.error("Failed to get admin details");
+    AdminDTO admin = adminService.getAdminById(id);
+    if (admin == null) {
+      throw new BizException(ResultCode.ADMIN_NOT_FOUND);
     }
+    return Result.success("Query successful", admin);
   }
 
   @PostMapping
@@ -96,16 +86,11 @@ public class AdminController {
   public Result<AdminDTO> createAdmin(
       @Parameter(description = "Admin payload")
           @RequestBody
-          @Valid
-          @NotNull(message = "admin payload cannot be null")
+      @Valid
+      @NotNull(message = "admin payload cannot be null")
           AdminUpsertRequestDTO requestDTO) {
-    try {
-      AdminDTO created = adminService.createAdmin(requestDTO);
-      return Result.success("Admin created", created);
-    } catch (Exception e) {
-      log.error("Failed to create admin", e);
-      return Result.error("Failed to create admin");
-    }
+    AdminDTO created = adminService.createAdmin(requestDTO);
+    return Result.success("Admin created", created);
   }
 
   @PutMapping("/{id}")
@@ -114,18 +99,13 @@ public class AdminController {
   public Result<Boolean> updateAdmin(
       @Parameter(description = "Admin ID") @PathVariable Long id,
       @Parameter(description = "Admin payload")
-          @RequestBody
-          @Valid
-          @NotNull(message = "admin payload cannot be null")
+      @RequestBody
+      @Valid
+      @NotNull(message = "admin payload cannot be null")
           AdminUpsertRequestDTO requestDTO,
       Authentication authentication) {
-    try {
-      boolean result = adminService.updateAdmin(id, requestDTO);
-      return Result.success("Admin updated", result);
-    } catch (Exception e) {
-      log.error("Failed to update admin: {}", id, e);
-      return Result.error("Failed to update admin");
-    }
+    boolean result = adminService.updateAdmin(id, requestDTO);
+    return Result.success("Admin updated", result);
   }
 
   @DeleteMapping("/{id}")
@@ -136,13 +116,8 @@ public class AdminController {
           @PathVariable
           @NotNull(message = "admin id cannot be null")
           Long id) {
-    try {
-      boolean result = adminService.deleteAdmin(id);
-      return Result.success("Deleted successfully", result);
-    } catch (Exception e) {
-      log.error("Failed to delete admin: {}", id, e);
-      return Result.error("Failed to delete admin");
-    }
+    boolean result = adminService.deleteAdmin(id);
+    return Result.success("Deleted successfully", result);
   }
 
   @PatchMapping("/{id}/status")
@@ -151,27 +126,17 @@ public class AdminController {
   public Result<Boolean> updateAdminStatus(
       @Parameter(description = "Admin ID") @PathVariable Long id,
       @Parameter(description = "Admin status") @RequestParam Integer status) {
-    try {
-      boolean result = adminService.updateAdminStatus(id, status);
-      return Result.success("Status updated", result);
-    } catch (Exception e) {
-      log.error("Failed to update admin status: {}, status={}", id, status, e);
-      return Result.error("Failed to update admin status");
-    }
+    boolean result = adminService.updateAdminStatus(id, status);
+    return Result.success("Status updated", result);
   }
 
   @PostMapping("/{id}/reset-password")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Reset admin password", description = "Reset admin password to default")
   public Result<Boolean> resetPassword(@Parameter(description = "Admin ID") @PathVariable Long id) {
-    try {
-      String temporaryPassword =
-          "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-      boolean result = adminService.resetPassword(id, temporaryPassword);
-      return Result.success("Password reset successful", result);
-    } catch (Exception e) {
-      log.error("Failed to reset admin password: {}", id, e);
-      return Result.error("Failed to reset password");
-    }
+    String temporaryPassword =
+        "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    boolean result = adminService.resetPassword(id, temporaryPassword);
+    return Result.success("Password reset successful", result);
   }
 }

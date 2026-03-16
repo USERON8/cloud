@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -241,15 +242,14 @@ public class SearchFallbackController {
     if (StrUtil.isBlank(rawSize)) {
       return 10;
     }
-    try {
-      int parsed = Integer.parseInt(rawSize);
-      if (parsed <= 0) {
-        return 10;
-      }
-      return Math.min(parsed, 50);
-    } catch (NumberFormatException ignored) {
+    if (!StrUtil.isNumeric(rawSize)) {
       return 10;
     }
+    int parsed = Integer.parseInt(rawSize);
+    if (parsed <= 0) {
+      return 10;
+    }
+    return Math.min(parsed, 50);
   }
 
   private String normalizeKeyword(String keyword) {
@@ -274,20 +274,13 @@ public class SearchFallbackController {
     if (StrUtil.isBlank(body)) {
       return false;
     }
-    try {
-      return objectMapper.readTree(body).path("code").asInt(-1) == 200;
-    } catch (Exception ex) {
-      return false;
-    }
+    String normalized = body.replaceAll("\\s+", "");
+    return normalized.contains("\"code\":200");
   }
 
+  @SneakyThrows
   private String toJson(Object payload) {
-    try {
-      return objectMapper.writeValueAsString(payload);
-    } catch (Exception e) {
-      log.error("Serialize fallback payload failed", e);
-      return "{\"code\":500,\"message\":\"Serialize fallback payload failed\",\"data\":null}";
-    }
+    return objectMapper.writeValueAsString(payload);
   }
 
   private String buildCacheKey(String routeType, MultiValueMap<String, String> queryParams) {

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
@@ -45,12 +43,7 @@ public class UserProfileController {
       return Result.unauthorized("current user is not available");
     }
 
-    try {
-      return Result.success(userService.getUserById(currentUserId));
-    } catch (Exception e) {
-      log.error("Failed to query current user profile, userId={}", currentUserId, e);
-      return Result.error("failed to query current profile");
-    }
+    return Result.success(userService.getUserById(currentUserId));
   }
 
   @PutMapping("/current")
@@ -85,13 +78,8 @@ public class UserProfileController {
       profileUpsertDTO.setPhone(updateDTO.getPhone());
     }
 
-    try {
-      boolean updated = userService.updateProfile(profileUpsertDTO);
-      return Result.success("profile updated", updated);
-    } catch (Exception e) {
-      log.error("Failed to update current user profile, userId={}", currentUserId, e);
-      return Result.error("failed to update current profile");
-    }
+    boolean updated = userService.updateProfile(profileUpsertDTO);
+    return Result.success("profile updated", updated);
   }
 
   @PutMapping("/current/password")
@@ -106,15 +94,10 @@ public class UserProfileController {
       return Result.unauthorized("current user is not available");
     }
 
-    try {
-      Boolean changed =
-          userService.changePassword(
-              currentUserId, requestDTO.getOldPassword(), requestDTO.getNewPassword());
-      return Result.success("password changed", Boolean.TRUE.equals(changed));
-    } catch (Exception e) {
-      log.error("Failed to change current user password, userId={}", currentUserId, e);
-      return Result.error("failed to change password");
-    }
+    Boolean changed =
+        userService.changePassword(
+            currentUserId, requestDTO.getOldPassword(), requestDTO.getNewPassword());
+    return Result.success("password changed", Boolean.TRUE.equals(changed));
   }
 
   @PostMapping(value = "/current/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -129,16 +112,8 @@ public class UserProfileController {
       return Result.unauthorized("current user is not available");
     }
 
-    try {
-      String avatarUrl = minioService.uploadAvatar(file);
-      return Result.success("avatar uploaded", avatarUrl);
-    } catch (IllegalArgumentException e) {
-      log.warn("Invalid avatar upload request, userId={}", currentUserId, e);
-      return Result.badRequest("invalid avatar upload request");
-    } catch (Exception e) {
-      log.error("Failed to upload avatar, userId={}", currentUserId, e);
-      return Result.error("failed to upload avatar");
-    }
+    String avatarUrl = minioService.uploadAvatar(file);
+    return Result.success("avatar uploaded", avatarUrl);
   }
 
   private Long parseCurrentUserId(Authentication authentication) {
@@ -146,11 +121,9 @@ public class UserProfileController {
     if (StrUtil.isBlank(currentUserId)) {
       return null;
     }
-    try {
-      return Long.parseLong(currentUserId);
-    } catch (NumberFormatException e) {
-      log.warn("Invalid user_id claim value: {}", currentUserId);
+    if (!StrUtil.isNumeric(currentUserId)) {
       return null;
     }
+    return Long.parseLong(currentUserId);
   }
 }

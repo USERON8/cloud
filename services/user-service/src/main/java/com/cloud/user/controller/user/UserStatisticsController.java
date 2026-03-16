@@ -10,7 +10,6 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/statistics")
 @RequiredArgsConstructor
@@ -31,13 +29,8 @@ public class UserStatisticsController {
   @Operation(summary = "Get overview", description = "Get user statistics overview")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<UserStatisticsVO> getStatisticsOverview() {
-    try {
-      UserStatisticsVO statistics = userStatisticsService.getUserStatisticsOverview();
-      return Result.success("query successful", statistics);
-    } catch (Exception e) {
-      log.error("Failed to get statistics overview", e);
-      return Result.fail("failed to get statistics overview");
-    }
+    UserStatisticsVO statistics = userStatisticsService.getUserStatisticsOverview();
+    return Result.success("query successful", statistics);
   }
 
   @GetMapping("/overview/async")
@@ -48,12 +41,7 @@ public class UserStatisticsController {
   public CompletableFuture<Result<UserStatisticsVO>> getStatisticsOverviewAsync() {
     return userStatisticsService
         .getUserStatisticsOverviewAsync()
-        .thenApply(statistics -> Result.success("query successful", statistics))
-        .exceptionally(
-            e -> {
-              log.error("Failed to get statistics overview async", e);
-              return Result.fail("failed to get statistics overview");
-            });
+        .thenApply(statistics -> Result.success("query successful", statistics));
   }
 
   @GetMapping("/registration-trend")
@@ -64,14 +52,9 @@ public class UserStatisticsController {
   public Result<Map<LocalDate, Long>> getRegistrationTrend(
       @RequestParam @Parameter(description = "Start date") LocalDate startDate,
       @RequestParam @Parameter(description = "End date") LocalDate endDate) {
-    try {
-      Map<LocalDate, Long> trend =
-          userStatisticsService.getUserRegistrationTrend(startDate, endDate);
-      return Result.success("query successful", trend);
-    } catch (Exception e) {
-      log.error("Failed to get registration trend", e);
-      return Result.fail("failed to get registration trend");
-    }
+    Map<LocalDate, Long> trend =
+        userStatisticsService.getUserRegistrationTrend(startDate, endDate);
+    return Result.success("query successful", trend);
   }
 
   @GetMapping("/registration-trend/async")
@@ -83,38 +66,23 @@ public class UserStatisticsController {
       @RequestParam(defaultValue = "30") @Parameter(description = "Recent days") Integer days) {
     return userStatisticsService
         .getUserRegistrationTrendAsync(days)
-        .thenApply(trend -> Result.success("query successful", trend))
-        .exceptionally(
-            e -> {
-              log.error("Failed to get registration trend async", e);
-              return Result.fail("failed to get registration trend");
-            });
+        .thenApply(trend -> Result.success("query successful", trend));
   }
 
   @GetMapping("/role-distribution")
   @Operation(summary = "Get role distribution", description = "Get user role distribution")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Long>> getRoleDistribution() {
-    try {
-      Map<String, Long> distribution = userStatisticsService.getRoleDistribution();
-      return Result.success("query successful", distribution);
-    } catch (Exception e) {
-      log.error("Failed to get user role distribution", e);
-      return Result.fail("failed to get user role distribution");
-    }
+    Map<String, Long> distribution = userStatisticsService.getRoleDistribution();
+    return Result.success("query successful", distribution);
   }
 
   @GetMapping("/status-distribution")
   @Operation(summary = "Get status distribution", description = "Get user status distribution")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Long>> getStatusDistribution() {
-    try {
-      Map<String, Long> distribution = userStatisticsService.getUserStatusDistribution();
-      return Result.success("query successful", distribution);
-    } catch (Exception e) {
-      log.error("Failed to get user status distribution", e);
-      return Result.fail("failed to get user status distribution");
-    }
+    Map<String, Long> distribution = userStatisticsService.getUserStatusDistribution();
+    return Result.success("query successful", distribution);
   }
 
   @GetMapping("/active-users")
@@ -122,13 +90,8 @@ public class UserStatisticsController {
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Long> countActiveUsers(
       @RequestParam(defaultValue = "7") @Parameter(description = "Recent days") Integer days) {
-    try {
-      Long count = userStatisticsService.countActiveUsers(days);
-      return Result.success("query successful", count);
-    } catch (Exception e) {
-      log.error("Failed to count active users", e);
-      return Result.fail("failed to count active users");
-    }
+    Long count = userStatisticsService.countActiveUsers(days);
+    return Result.success("query successful", count);
   }
 
   @GetMapping("/growth-rate")
@@ -138,13 +101,8 @@ public class UserStatisticsController {
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Double> calculateGrowthRate(
       @RequestParam(defaultValue = "7") @Parameter(description = "Recent days") Integer days) {
-    try {
-      Double growthRate = userStatisticsService.calculateUserGrowthRate(days);
-      return Result.success("query successful", growthRate);
-    } catch (Exception e) {
-      log.error("Failed to calculate user growth rate", e);
-      return Result.fail("failed to calculate user growth rate");
-    }
+    Double growthRate = userStatisticsService.calculateUserGrowthRate(days);
+    return Result.success("query successful", growthRate);
   }
 
   @GetMapping("/activity-ranking")
@@ -155,12 +113,7 @@ public class UserStatisticsController {
       @RequestParam(defaultValue = "30") @Parameter(description = "Recent days") Integer days) {
     return userStatisticsService
         .getUserActivityRankingAsync(limit, days)
-        .thenApply(ranking -> Result.success("query successful", ranking))
-        .exceptionally(
-            e -> {
-              log.error("Failed to get activity ranking", e);
-              return Result.fail("failed to get activity ranking");
-            });
+        .thenApply(ranking -> Result.success("query successful", ranking));
   }
 
   @PostMapping("/refresh-cache")
@@ -171,11 +124,6 @@ public class UserStatisticsController {
   public CompletableFuture<Result<Boolean>> refreshStatisticsCache() {
     return userStatisticsService
         .refreshStatisticsCacheAsync()
-        .thenApply(result -> Result.success("cache refresh completed", result))
-        .exceptionally(
-            e -> {
-              log.error("Failed to refresh statistics cache", e);
-              return Result.fail("failed to refresh statistics cache");
-            });
+        .thenApply(result -> Result.success("cache refresh completed", result));
   }
 }

@@ -8,12 +8,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthUserAuthorityCacheService {
@@ -68,5 +72,24 @@ public class AuthUserAuthorityCacheService {
       return;
     }
     redisTemplate.delete(AUTH_USER_PREFIX + userId);
+  }
+
+  public void evictByAccessToken(String accessToken, JwtDecoder jwtDecoder) {
+    if (accessToken == null || accessToken.isBlank() || jwtDecoder == null) {
+      return;
+    }
+    try {
+      Jwt jwt = jwtDecoder.decode(accessToken);
+      String userId = jwt.getClaimAsString("userId");
+      if (userId == null || userId.isBlank()) {
+        userId = jwt.getClaimAsString("user_id");
+      }
+      if (userId == null || userId.isBlank()) {
+        return;
+      }
+      evict(Long.valueOf(userId));
+    } catch (Exception ex) {
+      log.warn("Failed to evict authority cache by token", ex);
+    }
   }
 }

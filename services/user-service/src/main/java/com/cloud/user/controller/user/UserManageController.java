@@ -12,7 +12,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/manage/users")
 @RequiredArgsConstructor
@@ -39,17 +37,12 @@ public class UserManageController {
       @PathVariable @Parameter(description = "User ID") Long id,
       @RequestBody
           @Parameter(description = "User payload")
-          @Valid
-          @NotNull(message = "user payload is required")
+      @Valid
+      @NotNull(message = "user payload is required")
           UserUpsertRequestDTO requestDTO,
       Authentication authentication) {
-    try {
-      Boolean result = userService.updateUser(id, requestDTO);
-      return Result.success("user updated", Boolean.TRUE.equals(result));
-    } catch (Exception e) {
-      log.error("Failed to update user, id={}", id, e);
-      return Result.error("failed to update user");
-    }
+    Boolean result = userService.updateUser(id, requestDTO);
+    return Result.success("user updated", Boolean.TRUE.equals(result));
   }
 
   @PostMapping("/delete")
@@ -59,13 +52,8 @@ public class UserManageController {
       @RequestBody @Parameter(description = "User ID") @NotNull(message = "user id is required")
           Long id,
       Authentication authentication) {
-    try {
-      boolean result = userService.deleteUserById(id);
-      return Result.success("user deleted", result);
-    } catch (Exception e) {
-      log.error("Failed to delete user, id={}", id, e);
-      return Result.error("failed to delete user");
-    }
+    boolean result = userService.deleteUserById(id);
+    return Result.success("user deleted", result);
   }
 
   @PostMapping("/deleteBatch")
@@ -74,18 +62,13 @@ public class UserManageController {
   public Result<Boolean> deleteBatch(
       @RequestBody
           @Parameter(description = "User ID array")
-          @NotNull(message = "user ids are required")
+      @NotNull(message = "user ids are required")
           Long[] ids,
       Authentication authentication) {
-    try {
-      BatchValidationUtils.validateIdArray(ids, "Batch delete users");
-      List<Long> userIds = Arrays.asList(ids);
-      boolean result = userService.deleteUsersByIds(userIds);
-      return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
-    } catch (Exception e) {
-      log.error("Failed to batch delete users", e);
-      return Result.error("failed to batch delete users");
-    }
+    BatchValidationUtils.validateIdArray(ids, "Batch delete users");
+    List<Long> userIds = Arrays.asList(ids);
+    boolean result = userService.deleteUsersByIds(userIds);
+    return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
   }
 
   @PostMapping("/updateBatch")
@@ -94,23 +77,18 @@ public class UserManageController {
   public Result<Boolean> updateBatch(
       @RequestBody
           @Parameter(description = "User payload list")
-          @Valid
-          @NotNull(message = "user payload list is required")
+      @Valid
+      @NotNull(message = "user payload list is required")
           List<UserUpsertRequestDTO> requestDTOList,
       Authentication authentication) {
-    try {
-      BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");
-      long missingIdCount = requestDTOList.stream().filter(dto -> dto.getId() == null).count();
-      if (missingIdCount > 0) {
-        return Result.badRequest("all user payloads must include id for batch update");
-      }
-      boolean result = userService.updateUsersBatch(requestDTOList);
-      return Result.success(
-          String.format("batch update completed: %d", requestDTOList.size()), result);
-    } catch (Exception e) {
-      log.error("Failed to batch update users", e);
-      return Result.error("failed to batch update users");
+    BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");
+    long missingIdCount = requestDTOList.stream().filter(dto -> dto.getId() == null).count();
+    if (missingIdCount > 0) {
+      return Result.badRequest("all user payloads must include id for batch update");
     }
+    boolean result = userService.updateUsersBatch(requestDTOList);
+    return Result.success(
+        String.format("batch update completed: %d", requestDTOList.size()), result);
   }
 
   @PostMapping("/updateStatusBatch")
@@ -122,18 +100,13 @@ public class UserManageController {
       @RequestParam @Parameter(description = "User status") @NotNull(message = "status is required")
           Integer status,
       Authentication authentication) {
-    try {
-      BatchValidationUtils.validateIdList(ids, "Batch update user status");
-      Integer successCount = userService.batchUpdateUserStatus(ids, status);
-      if (successCount == null) {
-        successCount = 0;
-      }
-      String message =
-          String.format("batch status update completed: %d/%d", successCount, ids.size());
-      return Result.success(message, true);
-    } catch (Exception e) {
-      log.error("Failed to batch update user status, status={}", status, e);
-      return Result.error("failed to batch update user status");
+    BatchValidationUtils.validateIdList(ids, "Batch update user status");
+    Integer successCount = userService.batchUpdateUserStatus(ids, status);
+    if (successCount == null) {
+      successCount = 0;
     }
+    String message =
+        String.format("batch status update completed: %d/%d", successCount, ids.size());
+    return Result.success(message, true);
   }
 }

@@ -21,7 +21,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.validation.annotation.Validated;
@@ -74,7 +73,7 @@ public class AuthController {
     if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
       String accessToken = authorizationHeader.substring(7);
       logoutSuccess = tokenManagementService.logout(accessToken, null);
-      evictAuthorityCache(accessToken);
+      authorityCacheService.evictByAccessToken(accessToken, jwtDecoder);
     }
 
     HttpSession session = request.getSession(false);
@@ -139,21 +138,4 @@ public class AuthController {
     return Result.success(message);
   }
 
-  private void evictAuthorityCache(String accessToken) {
-    if (accessToken == null || accessToken.isBlank()) {
-      return;
-    }
-    try {
-      Jwt jwt = jwtDecoder.decode(accessToken);
-      String userId = jwt.getClaimAsString("userId");
-      if (userId == null || userId.isBlank()) {
-        userId = jwt.getClaimAsString("user_id");
-      }
-      if (userId != null && !userId.isBlank()) {
-        authorityCacheService.evict(Long.valueOf(userId));
-      }
-    } catch (Exception ignored) {
-      // Best-effort cache eviction; ignore decode failures.
-    }
-  }
 }

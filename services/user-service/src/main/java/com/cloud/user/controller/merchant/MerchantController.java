@@ -19,7 +19,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/merchant")
 @RequiredArgsConstructor
@@ -61,42 +59,37 @@ public class MerchantController {
       @Parameter(description = "Merchant audit status") @RequestParam(required = false)
           Integer auditStatus,
       Authentication authentication) {
-    try {
-      if (auditStatus != null && !isValidAuditStatus(auditStatus)) {
-        return Result.badRequest("invalid merchant audit status");
-      }
-      if (!SecurityPermissionUtils.isAdmin(authentication)) {
-        String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
-        if (StrUtil.isBlank(currentUserId)) {
-          return Result.unauthorized("current user is not available");
-        }
-
-        Long merchantId = Long.parseLong(currentUserId);
-        MerchantDTO merchant = merchantService.getMerchantById(merchantId);
-        List<MerchantDTO> records = List.of();
-        if (merchant != null
-            && (status == null || status.equals(merchant.getStatus()))
-            && (auditStatus == null || auditStatus.equals(merchant.getAuditStatus()))) {
-          records = List.of(merchant);
-        }
-        PageResult<MerchantDTO> result =
-            PageResult.of(1L, size.longValue(), Long.valueOf(records.size()), records);
-        return Result.success(result);
-      }
-
-      Page<MerchantDTO> pageResult =
-          merchantService.getMerchantsPage(page, size, status, auditStatus);
-      PageResult<MerchantDTO> result =
-          PageResult.of(
-              pageResult.getCurrent(),
-              pageResult.getSize(),
-              pageResult.getTotal(),
-              pageResult.getRecords());
-      return Result.success(result);
-    } catch (Exception e) {
-      log.error("Failed to query merchants", e);
-      return Result.error("failed to query merchants");
+    if (auditStatus != null && !isValidAuditStatus(auditStatus)) {
+      return Result.badRequest("invalid merchant audit status");
     }
+    if (!SecurityPermissionUtils.isAdmin(authentication)) {
+      String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
+      if (StrUtil.isBlank(currentUserId)) {
+        return Result.unauthorized("current user is not available");
+      }
+
+      Long merchantId = Long.parseLong(currentUserId);
+      MerchantDTO merchant = merchantService.getMerchantById(merchantId);
+      List<MerchantDTO> records = List.of();
+      if (merchant != null
+          && (status == null || status.equals(merchant.getStatus()))
+          && (auditStatus == null || auditStatus.equals(merchant.getAuditStatus()))) {
+        records = List.of(merchant);
+      }
+      PageResult<MerchantDTO> result =
+          PageResult.of(1L, size.longValue(), Long.valueOf(records.size()), records);
+      return Result.success(result);
+    }
+
+    Page<MerchantDTO> pageResult =
+        merchantService.getMerchantsPage(page, size, status, auditStatus);
+    PageResult<MerchantDTO> result =
+        PageResult.of(
+            pageResult.getCurrent(),
+            pageResult.getSize(),
+            pageResult.getTotal(),
+            pageResult.getRecords());
+    return Result.success(result);
   }
 
   @GetMapping("/{id}")
@@ -107,20 +100,15 @@ public class MerchantController {
   public Result<MerchantDTO> getMerchantById(
       @Parameter(description = "Merchant ID")
           @PathVariable
-          @NotNull(message = "merchant id is required")
+      @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
       Authentication authentication) {
-    try {
-      MerchantDTO merchant = merchantService.getMerchantById(id);
-      if (merchant == null) {
-        return Result.notFound("merchant not found");
-      }
-      return Result.success("query successful", merchant);
-    } catch (Exception e) {
-      log.error("Failed to query merchant, id={}", id, e);
-      return Result.error("failed to query merchant");
+    MerchantDTO merchant = merchantService.getMerchantById(id);
+    if (merchant == null) {
+      return Result.notFound("merchant not found");
     }
+    return Result.success("query successful", merchant);
   }
 
   @PostMapping
@@ -128,17 +116,12 @@ public class MerchantController {
   @Operation(summary = "Create merchant", description = "Create a merchant")
   public Result<MerchantDTO> createMerchant(
       @Parameter(description = "Merchant payload")
-          @RequestBody
-          @Valid
-          @NotNull(message = "merchant payload is required")
+      @RequestBody
+      @Valid
+      @NotNull(message = "merchant payload is required")
           MerchantUpsertRequestDTO requestDTO) {
-    try {
-      MerchantDTO created = merchantService.createMerchant(requestDTO);
-      return Result.success("merchant created", created);
-    } catch (Exception e) {
-      log.error("Failed to create merchant", e);
-      return Result.error("failed to create merchant");
-    }
+    MerchantDTO created = merchantService.createMerchant(requestDTO);
+    return Result.success("merchant created", created);
   }
 
   @PutMapping("/{id}")
@@ -149,18 +132,13 @@ public class MerchantController {
   public Result<Boolean> updateMerchant(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       @Parameter(description = "Merchant payload")
-          @RequestBody
-          @Valid
-          @NotNull(message = "merchant payload is required")
+      @RequestBody
+      @Valid
+      @NotNull(message = "merchant payload is required")
           MerchantUpsertRequestDTO requestDTO,
       Authentication authentication) {
-    try {
-      boolean result = merchantService.updateMerchant(id, requestDTO);
-      return Result.success("merchant updated", result);
-    } catch (Exception e) {
-      log.error("Failed to update merchant, id={}", id, e);
-      return Result.error("failed to update merchant");
-    }
+    boolean result = merchantService.updateMerchant(id, requestDTO);
+    return Result.success("merchant updated", result);
   }
 
   @DeleteMapping("/{id}")
@@ -171,13 +149,8 @@ public class MerchantController {
           @PathVariable
           @NotNull(message = "merchant id is required")
           Long id) {
-    try {
-      boolean result = merchantService.deleteMerchant(id);
-      return Result.success("merchant deleted", result);
-    } catch (Exception e) {
-      log.error("Failed to delete merchant, id={}", id, e);
-      return Result.error("failed to delete merchant");
-    }
+    boolean result = merchantService.deleteMerchant(id);
+    return Result.success("merchant deleted", result);
   }
 
   @PostMapping("/{id}/approve")
@@ -186,13 +159,8 @@ public class MerchantController {
   public Result<Boolean> approveMerchant(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
-    try {
-      boolean result = merchantService.approveMerchant(id, remark);
-      return Result.success("merchant approved", result);
-    } catch (Exception e) {
-      log.error("Failed to approve merchant, id={}", id, e);
-      return Result.error("failed to approve merchant");
-    }
+    boolean result = merchantService.approveMerchant(id, remark);
+    return Result.success("merchant approved", result);
   }
 
   @PostMapping("/{id}/reject")
@@ -201,13 +169,8 @@ public class MerchantController {
   public Result<Boolean> rejectMerchant(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       @Parameter(description = "Reject reason") @RequestParam String reason) {
-    try {
-      boolean result = merchantService.rejectMerchant(id, reason);
-      return Result.success("merchant rejected", result);
-    } catch (Exception e) {
-      log.error("Failed to reject merchant, id={}", id, e);
-      return Result.error("failed to reject merchant");
-    }
+    boolean result = merchantService.rejectMerchant(id, reason);
+    return Result.success("merchant rejected", result);
   }
 
   @PatchMapping("/{id}/status")
@@ -216,13 +179,8 @@ public class MerchantController {
   public Result<Boolean> updateMerchantStatus(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       @Parameter(description = "Merchant status") @RequestParam Integer status) {
-    try {
-      boolean result = merchantService.updateMerchantStatus(id, status);
-      return Result.success("merchant status updated", result);
-    } catch (Exception e) {
-      log.error("Failed to update merchant status, id={}, status={}", id, status, e);
-      return Result.error("failed to update merchant status");
-    }
+    boolean result = merchantService.updateMerchantStatus(id, status);
+    return Result.success("merchant status updated", result);
   }
 
   @GetMapping("/{id}/statistics")
@@ -233,13 +191,8 @@ public class MerchantController {
   public Result<Object> getMerchantStatistics(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       Authentication authentication) {
-    try {
-      Object statistics = merchantService.getMerchantStatistics(id);
-      return Result.success("query successful", statistics);
-    } catch (Exception e) {
-      log.error("Failed to get merchant statistics, id={}", id, e);
-      return Result.error("failed to get merchant statistics");
-    }
+    Object statistics = merchantService.getMerchantStatistics(id);
+    return Result.success("query successful", statistics);
   }
 
   @DeleteMapping("/batch")
@@ -255,13 +208,8 @@ public class MerchantController {
       return Result.badRequest("batch size cannot exceed 100");
     }
 
-    try {
-      boolean result = merchantService.batchDeleteMerchants(ids);
-      return Result.success("batch delete completed", result);
-    } catch (Exception e) {
-      log.error("Failed to batch delete merchants, ids={}", ids, e);
-      return Result.error("failed to batch delete merchants");
-    }
+    boolean result = merchantService.batchDeleteMerchants(ids);
+    return Result.success("batch delete completed", result);
   }
 
   @PatchMapping("/batch/status")
@@ -285,15 +233,10 @@ public class MerchantController {
       return Result.badRequest("batch size cannot exceed 100");
     }
 
-    try {
-      int successCount = merchantService.updateMerchantStatusBatch(ids, status);
-      String message =
-          String.format("batch status update completed: %d/%d", successCount, ids.size());
-      return Result.success(message, true);
-    } catch (Exception e) {
-      log.error("Failed to batch update merchant status, ids={}, status={}", ids, status, e);
-      return Result.error("failed to batch update merchant status");
-    }
+    int successCount = merchantService.updateMerchantStatusBatch(ids, status);
+    String message =
+        String.format("batch status update completed: %d/%d", successCount, ids.size());
+    return Result.success(message, true);
   }
 
   @PostMapping("/batch/approve")
@@ -310,14 +253,9 @@ public class MerchantController {
       return Result.badRequest("batch size cannot exceed 100");
     }
 
-    try {
-      int successCount = merchantService.approveMerchantsBatch(ids, remark);
-      String message = String.format("batch approve completed: %d/%d", successCount, ids.size());
-      return Result.success(message, true);
-    } catch (Exception e) {
-      log.error("Failed to batch approve merchants, ids={}", ids, e);
-      return Result.error("failed to batch approve merchants");
-    }
+    int successCount = merchantService.approveMerchantsBatch(ids, remark);
+    String message = String.format("batch approve completed: %d/%d", successCount, ids.size());
+    return Result.success(message, true);
   }
 
   private static boolean isValidAuditStatus(Integer auditStatus) {

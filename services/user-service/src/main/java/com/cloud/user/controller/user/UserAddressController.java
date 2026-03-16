@@ -15,7 +15,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/user/address")
 @RequiredArgsConstructor
@@ -148,21 +146,16 @@ public class UserAddressController {
           @NotNull(message = "page query payload is required")
           UserAddressPageDTO pageDTO,
       Authentication authentication) {
-    try {
-      if (pageDTO.getUserId() != null
-          && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
-        return Result.forbidden("no permission to query this user's addresses");
-      }
-      if (pageDTO.getUserId() == null && !SecurityPermissionUtils.isAdmin(authentication)) {
-        return Result.forbidden("no permission to query all addresses");
-      }
-
-      PageResult<UserAddressVO> pageResult = userAddressService.pageAddresses(pageDTO);
-      return Result.success(pageResult);
-    } catch (Exception e) {
-      log.error("Failed to page user addresses", e);
-      return Result.error("failed to page user addresses");
+    if (pageDTO.getUserId() != null
+        && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
+      return Result.forbidden("no permission to query this user's addresses");
     }
+    if (pageDTO.getUserId() == null && !SecurityPermissionUtils.isAdmin(authentication)) {
+      return Result.forbidden("no permission to query all addresses");
+    }
+
+    PageResult<UserAddressVO> pageResult = userAddressService.pageAddresses(pageDTO);
+    return Result.success(pageResult);
   }
 
   @DeleteMapping("/deleteBatch")
