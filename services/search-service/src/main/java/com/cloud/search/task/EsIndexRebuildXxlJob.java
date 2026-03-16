@@ -4,6 +4,8 @@ import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.RemoteException;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
@@ -14,9 +16,11 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
@@ -66,7 +70,9 @@ public class EsIndexRebuildXxlJob {
     int page = 1;
     int size = DEFAULT_PAGE_SIZE;
     while (true) {
-      List<SpuDetailVO> spus = productDubboApi.listSpuByPage(page, size, 1);
+      List<SpuDetailVO> spus =
+          invokeProductService(
+              "list spu by page", () -> productDubboApi.listSpuByPage(page, size, 1));
       if (spus == null || spus.isEmpty()) {
         break;
       }
@@ -116,5 +122,16 @@ public class EsIndexRebuildXxlJob {
         .createdAt(spu.getCreatedAt())
         .updatedAt(spu.getUpdatedAt())
         .build();
+  }
+
+  private <T> T invokeProductService(String action, Supplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+          "product-service unavailable when " + action,
+          ex);
+    }
   }
 }

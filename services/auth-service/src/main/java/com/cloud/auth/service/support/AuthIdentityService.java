@@ -10,10 +10,14 @@ import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.RemoteException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +38,15 @@ public class AuthIdentityService {
     if (StrUtil.isBlank(username)) {
       return null;
     }
-    return authDubboApi.findPrincipalByUsername(username.trim());
+    return invokeAuthService(
+        "find principal by username", () -> authDubboApi.findPrincipalByUsername(username.trim()));
   }
 
   @Transactional(readOnly = true)
   public AuthPrincipalDTO findById(Long userId) {
-    return userId == null ? null : authDubboApi.findPrincipalById(userId);
+    return userId == null
+        ? null
+        : invokeAuthService("find principal by id", () -> authDubboApi.findPrincipalById(userId));
   }
 
   @Transactional(readOnly = true)
@@ -47,7 +54,8 @@ public class AuthIdentityService {
     if (userId == null) {
       return List.of();
     }
-    List<String> roles = authDubboApi.getRoleCodes(userId);
+    List<String> roles =
+        invokeAuthService("get role codes", () -> authDubboApi.getRoleCodes(userId));
     return roles == null ? List.of() : roles;
   }
 
@@ -56,7 +64,9 @@ public class AuthIdentityService {
     if (userIds == null || userIds.isEmpty()) {
       return Map.of();
     }
-    Map<Long, List<String>> roles = authDubboApi.getRoleCodesByUserIds(userIds);
+    Map<Long, List<String>> roles =
+        invokeAuthService(
+            "get role codes by user ids", () -> authDubboApi.getRoleCodesByUserIds(userIds));
     return roles == null ? Map.of() : roles;
   }
 
@@ -65,13 +75,15 @@ public class AuthIdentityService {
     if (StrUtil.isBlank(roleCode)) {
       return List.of();
     }
-    List<Long> userIds = authDubboApi.getUserIdsByRoleCode(roleCode);
+    List<Long> userIds =
+        invokeAuthService("get user ids by role code", () -> authDubboApi.getUserIdsByRoleCode(roleCode));
     return userIds == null ? List.of() : userIds;
   }
 
   @Transactional(readOnly = true)
   public Map<String, Long> getRoleDistribution() {
-    Map<String, Long> distribution = authDubboApi.getRoleDistribution();
+    Map<String, Long> distribution =
+        invokeAuthService("get role distribution", () -> authDubboApi.getRoleDistribution());
     return distribution == null ? Map.of() : distribution;
   }
 
@@ -90,7 +102,8 @@ public class AuthIdentityService {
     if (authPrincipalDTO == null || StrUtil.isBlank(authPrincipalDTO.getUsername())) {
       throw new BusinessException("username is required");
     }
-    return authDubboApi.createPrincipal(authPrincipalDTO);
+    return invokeAuthService(
+        "create principal", () -> authDubboApi.createPrincipal(authPrincipalDTO));
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -98,7 +111,8 @@ public class AuthIdentityService {
     if (authPrincipalDTO == null || authPrincipalDTO.getId() == null) {
       throw new BusinessException("principal id is required");
     }
-    return authDubboApi.updatePrincipal(authPrincipalDTO);
+    return invokeAuthService(
+        "update principal", () -> authDubboApi.updatePrincipal(authPrincipalDTO));
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -106,7 +120,7 @@ public class AuthIdentityService {
     if (userId == null) {
       return false;
     }
-    return authDubboApi.deletePrincipal(userId);
+    return invokeAuthService("delete principal", () -> authDubboApi.deletePrincipal(userId));
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -117,7 +131,8 @@ public class AuthIdentityService {
     if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
       throw new BusinessException("old password and new password are required");
     }
-    return authDubboApi.changePassword(userId, oldPassword, newPassword);
+    return invokeAuthService(
+        "change password", () -> authDubboApi.changePassword(userId, oldPassword, newPassword));
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -136,7 +151,7 @@ public class AuthIdentityService {
     principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
 
-    Long userId = authDubboApi.createPrincipal(principal);
+    Long userId = invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
     if (userId == null) {
       throw new BusinessException("failed to create user");
     }
@@ -175,7 +190,9 @@ public class AuthIdentityService {
               .build();
       oauthAccountCacheService.save(newAccount);
     } else {
-      principal = authDubboApi.findPrincipalById(account.getUserId());
+      principal =
+          invokeAuthService(
+              "find principal by id", () -> authDubboApi.findPrincipalById(account.getUserId()));
       if (principal == null) {
         principal = createGitHubPrincipal(githubUserDTO);
         account.setUserId(principal.getId());
@@ -219,7 +236,7 @@ public class AuthIdentityService {
     principal.setStatus(1);
     principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
-    Long userId = authDubboApi.createPrincipal(principal);
+    Long userId = invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
     if (userId == null) {
       throw new IllegalStateException("Failed to create OAuth user principal");
     }
@@ -271,5 +288,16 @@ public class AuthIdentityService {
       candidateUsername = StrUtil.format("github_{}_{}", baseLogin, suffix);
     }
     return "github_" + baseLogin + "_" + IdUtil.fastSimpleUUID();
+  }
+
+  private <T> T invokeAuthService(String action, Supplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+          "auth-service unavailable when " + action,
+          ex);
+    }
   }
 }

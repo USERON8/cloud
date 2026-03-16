@@ -2,10 +2,13 @@ package com.cloud.auth.service;
 
 import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.RemoteException;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -132,9 +135,12 @@ public class PermissionCheckService {
           return null;
         }
         return userDubboApi.findById(userId);
-      } catch (Exception e) {
-        log.error("Failed to load current user profile, userId={}", userId, e);
-        return null;
+      } catch (RpcException ex) {
+        log.error("Failed to load current user profile, userId={}", userId, ex);
+        throw new RemoteException(
+            ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+            "user-service unavailable when loading current user profile",
+            ex);
       }
     }
 

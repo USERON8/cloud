@@ -6,9 +6,13 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.RemoteException;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -23,12 +27,8 @@ public class AuthProfileSyncService {
     if (userId == null) {
       return null;
     }
-    try {
-      return userDubboApi.findById(userId);
-    } catch (Exception ex) {
-      log.warn("Failed to load user profile from user-service, userId={}", userId, ex);
-      return null;
-    }
+    return invokeUserService(
+        "loading user profile", () -> userDubboApi.findById(userId));
   }
 
   public UserProfileDTO createRegisteredProfile(
@@ -59,23 +59,36 @@ public class AuthProfileSyncService {
     profile.setStatus(principal.getStatus());
 
     UserProfileDTO existing = getProfile(principal.getId());
-    try {
-      if (existing == null) {
-        createProfile(profile);
-      } else {
-        userDubboApi.update(profile);
-      }
-    } catch (Exception ex) {
-      throw new IllegalStateException("Failed to sync OAuth profile to user-service", ex);
+    if (existing == null) {
+      createProfile(profile);
+    } else {
+      runUserService("updating user profile", () -> userDubboApi.update(profile));
     }
     return getProfile(principal.getId());
   }
 
   private void createProfile(UserProfileUpsertDTO profileUpsertDTO) {
+    runUserService("creating user profile", () -> userDubboApi.create(profileUpsertDTO));
+  }
+
+  private <T> T invokeUserService(String action, Supplier<T> supplier) {
     try {
-      userDubboApi.create(profileUpsertDTO);
-    } catch (Exception ex) {
-      throw new IllegalStateException("Failed to create user profile in user-service", ex);
+      return supplier.get();
+    } catch (RpcException ex) {
+      log.error("User-service call failed: action={}", action, ex);
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+          "user-service unavailable when " + action,
+          ex);
     }
+  }
+
+  private void runUserService(String action, Runnable runnable) {
+    invokeUserService(
+        action,
+        () -> {
+          runnable.run();
+          return null;
+        });
   }
 }

@@ -7,6 +7,8 @@ import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.entity.Cart;
@@ -31,9 +33,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.apache.seata.rm.tcc.api.BusinessActionContext;
 import org.apache.seata.rm.tcc.api.BusinessActionContextParameter;
 import org.apache.seata.rm.tcc.api.LocalTCC;
@@ -397,11 +401,15 @@ public class OrderCreateTccAction {
       throw new BusinessException("quantity is required for direct item checkout");
     }
 
-    SpuDetailVO spuDetail = productDubboApi.getSpuById(request.getSpuId());
+    SpuDetailVO spuDetail =
+        invokeProductService(
+            "get spu by id", () -> productDubboApi.getSpuById(request.getSpuId()));
     if (spuDetail == null || spuDetail.getMerchantId() == null) {
       throw new BusinessException("spu not found for direct checkout");
     }
-    List<SkuDetailVO> skuDetails = productDubboApi.listSkuByIds(List.of(request.getSkuId()));
+    List<SkuDetailVO> skuDetails =
+        invokeProductService(
+            "list sku by ids", () -> productDubboApi.listSkuByIds(List.of(request.getSkuId())));
     SkuDetailVO skuDetail = skuDetails == null || skuDetails.isEmpty() ? null : skuDetails.get(0);
     if (skuDetail == null) {
       throw new BusinessException("sku not found for direct checkout");
@@ -448,7 +456,9 @@ public class OrderCreateTccAction {
       if (item.getSpuId() == null || result.containsKey(item.getSpuId())) {
         continue;
       }
-      SpuDetailVO detail = productDubboApi.getSpuById(item.getSpuId());
+      SpuDetailVO detail =
+          invokeProductService(
+              "get spu by id", () -> productDubboApi.getSpuById(item.getSpuId()));
       if (detail != null) {
         result.put(item.getSpuId(), detail);
       }
@@ -462,7 +472,8 @@ public class OrderCreateTccAction {
     if (skuIds.isEmpty()) {
       return Map.of();
     }
-    List<SkuDetailVO> skuDetails = productDubboApi.listSkuByIds(skuIds);
+    List<SkuDetailVO> skuDetails =
+        invokeProductService("list sku by ids", () -> productDubboApi.listSkuByIds(skuIds));
     if (skuDetails == null || skuDetails.isEmpty()) {
       return Map.of();
     }
@@ -564,5 +575,16 @@ public class OrderCreateTccAction {
 
   private BigDecimal defaultAmount(BigDecimal amount) {
     return amount == null ? BigDecimal.ZERO : amount;
+  }
+
+  private <T> T invokeProductService(String action, Supplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+          "product-service unavailable when " + action,
+          ex);
+    }
   }
 }

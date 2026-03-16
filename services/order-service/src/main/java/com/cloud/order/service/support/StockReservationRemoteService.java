@@ -4,8 +4,10 @@ import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.RemoteException;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,6 +20,9 @@ public class StockReservationRemoteService {
   public Boolean reserve(StockOperateCommandDTO command) {
     try {
       return stockDubboApi.reserve(command);
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when reserving", ex);
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -26,6 +31,9 @@ public class StockReservationRemoteService {
   public Boolean confirm(StockOperateCommandDTO command) {
     try {
       return stockDubboApi.confirm(command);
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when confirming", ex);
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -34,6 +42,9 @@ public class StockReservationRemoteService {
   public Boolean release(StockOperateCommandDTO command) {
     try {
       return stockDubboApi.release(command);
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when releasing", ex);
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -42,6 +53,9 @@ public class StockReservationRemoteService {
   public Boolean rollback(StockOperateCommandDTO command) {
     try {
       return stockDubboApi.rollback(command);
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when rolling back", ex);
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -64,7 +78,7 @@ public class StockReservationRemoteService {
     if (isInsufficientStock(message)) {
       return new BusinessException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
     }
-    return ex;
+    return new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, message, ex);
   }
 
   private BusinessException findBusinessException(Throwable throwable) {
