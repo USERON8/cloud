@@ -1,6 +1,8 @@
 package com.cloud.order.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
@@ -75,10 +77,10 @@ public class OrderController {
       if (request.getUserId() == null) {
         request.setUserId(currentUserId);
       } else if (!Objects.equals(request.getUserId(), currentUserId)) {
-        return Result.forbidden("forbidden to create order for another user");
+        throw new BizException(ResultCode.FORBIDDEN, "forbidden to create order for another user");
       }
     } else if (request.getUserId() == null) {
-      return Result.badRequest("userId is required for admin order creation");
+      throw new BizException(ResultCode.BAD_REQUEST, "userId is required for admin order creation");
     }
     request.setIdempotencyKey(idempotencyKey.trim());
     return Result.success(orderPlacementService.createOrder(request));
@@ -197,7 +199,7 @@ public class OrderController {
   public Result<AfterSaleDTO> applyAfterSale(
       @RequestBody AfterSaleDTO afterSaleDTO, Authentication authentication) {
     if (afterSaleDTO == null) {
-      return Result.badRequest("after sale payload is required");
+      throw new BizException(ResultCode.BAD_REQUEST, "after sale payload is required");
     }
     AfterSale afterSale = toAfterSaleEntity(afterSaleDTO);
     Long currentUserId = requireCurrentUserId(authentication);
@@ -205,7 +207,8 @@ public class OrderController {
       if (afterSale.getUserId() == null) {
         afterSale.setUserId(currentUserId);
       } else if (!Objects.equals(afterSale.getUserId(), currentUserId)) {
-        return Result.forbidden("forbidden to create after-sale for another user");
+        throw new BizException(
+            ResultCode.FORBIDDEN, "forbidden to create after-sale for another user");
       }
     }
     AfterSale created = orderService.applyAfterSale(afterSale);
@@ -222,21 +225,24 @@ public class OrderController {
       Authentication authentication) {
     AfterSale afterSale = orderService.getAfterSale(afterSaleId);
     if (afterSale == null || Integer.valueOf(1).equals(afterSale.getDeleted())) {
-      return Result.notFound("after sale not found");
+      throw new BizException(ResultCode.NOT_FOUND, "after sale not found");
     }
     if (!isAdmin(authentication)) {
       Long currentUserId = requireCurrentUserId(authentication);
       if (isMerchant(authentication)) {
         if (!Objects.equals(currentUserId, afterSale.getMerchantId())) {
-          return Result.forbidden("forbidden to operate another merchant's after-sale");
+          throw new BizException(
+              ResultCode.FORBIDDEN, "forbidden to operate another merchant's after-sale");
         }
       } else if (!Objects.equals(currentUserId, afterSale.getUserId())) {
-        return Result.forbidden("forbidden to operate another user's after-sale");
+        throw new BizException(
+            ResultCode.FORBIDDEN, "forbidden to operate another user's after-sale");
       }
     }
     String normalizedAction = normalizeAction(action, AFTER_SALE_ACTIONS, "after-sale");
     if (!isAllowedAfterSaleAction(normalizedAction, authentication)) {
-      return Result.forbidden("forbidden to perform action: " + normalizedAction);
+      throw new BizException(
+          ResultCode.FORBIDDEN, "forbidden to perform action: " + normalizedAction);
     }
     AfterSale updated = orderService.advanceAfterSaleStatus(afterSaleId, normalizedAction, remark);
     return Result.success(toAfterSaleDTO(updated));

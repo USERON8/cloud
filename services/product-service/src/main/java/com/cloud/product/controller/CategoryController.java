@@ -2,6 +2,8 @@ package com.cloud.product.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.product.CategoryDTO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.product.service.CategoryService;
@@ -72,7 +74,7 @@ public class CategoryController {
 
     CategoryDTO category = categoryService.getCategoryById(id);
     if (category == null) {
-      return Result.error("Category not found");
+      throw new BizException(ResultCode.CATEGORY_NOT_FOUND, "Category not found");
     }
     return Result.success("Query success", category);
   }
@@ -202,10 +204,10 @@ public class CategoryController {
           Integer status) {
 
     if (ids.isEmpty()) {
-      return Result.badRequest("Category ids cannot be empty");
+      throw new BizException(ResultCode.BAD_REQUEST, "Category ids cannot be empty");
     }
     if (ids.size() > 100) {
-      return Result.badRequest("Batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "Batch size cannot exceed 100");
     }
 
     int successCount = categoryService.updateCategoryStatusBatch(ids, status);
@@ -224,7 +226,7 @@ public class CategoryController {
           List<CategoryDTO> categoryList) {
 
     if (categoryList.size() > 100) {
-      return Result.badRequest("Batch size cannot exceed 100");
+      throw new BizException(ResultCode.BAD_REQUEST, "Batch size cannot exceed 100");
     }
 
     int successCount = categoryService.createCategoriesBatch(categoryList);

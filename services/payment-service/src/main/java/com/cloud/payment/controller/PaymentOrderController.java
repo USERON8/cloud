@@ -5,6 +5,8 @@ import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.payment.service.PaymentOrderService;
@@ -46,10 +48,11 @@ public class PaymentOrderController {
       @PathVariable String paymentNo, Authentication authentication) {
     PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
     if (order == null) {
-      return Result.notFound("payment order not found");
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
     if (!canReadOrder(authentication, order)) {
-      return Result.forbidden("forbidden to query other user's payment order");
+      throw new BizException(
+          ResultCode.FORBIDDEN, "forbidden to query other user's payment order");
     }
     return Result.success(order);
   }
@@ -63,17 +66,19 @@ public class PaymentOrderController {
         paymentSecurityCacheService.getCachedStatus(paymentNo);
     if (cached != null) {
       if (!canReadStatus(authentication, cached.userId())) {
-        return Result.forbidden("forbidden to query other user's payment status");
+        throw new BizException(
+            ResultCode.FORBIDDEN, "forbidden to query other user's payment status");
       }
       return Result.success(Map.of("paymentNo", paymentNo, "status", cached.status()));
     }
 
     PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
     if (order == null) {
-      return Result.notFound("payment order not found");
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
     if (!canReadOrder(authentication, order)) {
-      return Result.forbidden("forbidden to query other user's payment status");
+      throw new BizException(
+          ResultCode.FORBIDDEN, "forbidden to query other user's payment status");
     }
     if (!paymentSecurityCacheService.isFinalStatus(order.getStatus())) {
       paymentSecurityCacheService.cacheStatus(paymentNo, order.getUserId(), order.getStatus());

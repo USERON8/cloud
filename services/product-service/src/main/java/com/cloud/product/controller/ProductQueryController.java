@@ -1,6 +1,8 @@
 package com.cloud.product.controller;
 
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -56,10 +58,11 @@ public class ProductQueryController {
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
     SpuDetailVO existing = productCatalogService.getSpuById(spuId);
     if (existing == null) {
-      return Result.notFound("spu not found");
+      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
     }
     if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
-      return Result.forbidden("forbidden to update another merchant's product");
+      throw new BizException(
+          ResultCode.FORBIDDEN, "forbidden to update another merchant's product");
     }
     return Result.success(productCatalogService.updateSpuStatus(spuId, status));
   }
