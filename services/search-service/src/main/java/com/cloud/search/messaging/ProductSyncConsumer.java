@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component;
 public class ProductSyncConsumer {
 
   private static final String NS_PRODUCT_SYNC = "search:product:sync";
+  private static final AtomicBoolean LEGACY_STREAM_WARNED = new AtomicBoolean(false);
 
   private final MessageIdempotencyService messageIdempotencyService;
   private final ProductDocumentRepository productDocumentRepository;
@@ -47,6 +49,7 @@ public class ProductSyncConsumer {
   @Bean
   public Consumer<List<Message<ProductSyncEvent>>> productSyncConsumer() {
     return messages -> {
+      warnLegacyStreamOnce();
       if (messages == null || messages.isEmpty()) {
         return;
       }
@@ -178,6 +181,14 @@ public class ProductSyncConsumer {
           ResultCode.REMOTE_SERVICE_UNAVAILABLE,
           "product-service unavailable when " + action,
           ex);
+    }
+  }
+
+  private void warnLegacyStreamOnce() {
+    if (LEGACY_STREAM_WARNED.compareAndSet(false, true)) {
+      log.warn(
+          "ProductSyncConsumer is still using Spring Cloud Stream. "
+              + "Pending migration to RocketMQListener template.");
     }
   }
 }

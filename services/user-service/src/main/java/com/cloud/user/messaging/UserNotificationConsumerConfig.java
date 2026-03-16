@@ -8,6 +8,7 @@ import com.cloud.user.service.UserNotificationService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class UserNotificationConsumerConfig {
   private static final long INVALID_TTL_DAYS = 7;
   private static final int DONE_LOOKBACK_DAYS = 7;
   private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+  private static final AtomicBoolean LEGACY_STREAM_WARNED = new AtomicBoolean(false);
 
   private final UserNotificationService userNotificationService;
   private final RedisTemplate<String, Object> redisTemplate;
@@ -42,6 +44,7 @@ public class UserNotificationConsumerConfig {
   @Bean
   public Consumer<UserNotificationEvent> userNotificationConsumer() {
     return event -> {
+      warnLegacyStreamOnce();
       if (event == null || event.getEventType() == null) {
         return;
       }
@@ -205,5 +208,13 @@ public class UserNotificationConsumerConfig {
   private String buildBucketKey(String prefix, int offsetDays) {
     LocalDate date = LocalDate.now().minusDays(offsetDays);
     return prefix + date.format(DATE_FORMATTER);
+  }
+
+  private void warnLegacyStreamOnce() {
+    if (LEGACY_STREAM_WARNED.compareAndSet(false, true)) {
+      log.warn(
+          "UserNotificationConsumer is still using Spring Cloud Stream. "
+              + "Pending migration to RocketMQListener template.");
+    }
   }
 }

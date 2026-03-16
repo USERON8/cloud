@@ -26,10 +26,12 @@ public class ServiceExceptionAspect {
     @Pointcut(
             "within(com.cloud..infrastructure..*)"
                     + " || within(com.cloud..cache..*)"
+                    + " || within(com.cloud.user.cache.warmup..*)"
                     + " || within(com.cloud..tcc..*)"
                     + " || within(com.cloud..task..*)"
                     + " || within(com.cloud..outbox..*)"
                     + " || within(com.cloud.search.messaging..*)"
+                    + " || within(com.cloud.search.task..*)"
                     + " || within(com.cloud.common.messaging..*)"
                     + " || within(com.cloud.payment.service.support..*)"
                     + " || within(com.cloud.gateway.config..*)"

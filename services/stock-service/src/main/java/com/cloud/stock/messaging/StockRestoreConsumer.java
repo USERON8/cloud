@@ -1,93 +1,81 @@
 package com.cloud.stock.messaging;
 
-import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.messaging.MessageIdempotencyService;
+import com.cloud.common.messaging.consumer.AbstractMqConsumer;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.SystemException;
 import com.cloud.stock.service.StockLedgerService;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.messaging.Message;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class StockRestoreConsumer {
+@RocketMQMessageListener(
+    topic = "stock-restore",
+    consumerGroup = "stock-restore-consumer-group",
+    selectorExpression = "STOCK_RESTORE")
+public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> {
 
   private static final String NS_STOCK_RESTORE = "stock:restore";
 
-  private final MessageIdempotencyService messageIdempotencyService;
   private final StockLedgerService stockLedgerService;
   private final TradeMetrics tradeMetrics;
+  private final ObjectMapper objectMapper;
 
-  @Bean
-  public Consumer<List<Message<StockRestoreEvent>>> stockRestoreConsumer() {
-    return messages -> {
-      if (messages == null || messages.isEmpty()) {
-        return;
-      }
-      Set<String> inFlight = new HashSet<>();
+  @Override
+  protected void doConsume(StockRestoreEvent event, MessageExt msgExt) {
+    if (event == null || event.getItems() == null) {
+      tradeMetrics.incrementMessageConsume("stock_restore", "failed");
+      return;
+    }
+    stockLedgerService.rollbackBatch(event.getItems());
+    tradeMetrics.incrementMessageConsume("stock_restore", "success");
+  }
 
-      try {
-        for (Message<StockRestoreEvent> message : messages) {
-          if (message == null) {
-            continue;
-          }
-          StockRestoreEvent event = message.getPayload();
-          String eventId = resolveEventId(event);
-          if (!messageIdempotencyService.tryAcquire(NS_STOCK_RESTORE, eventId)) {
-            log.warn("Duplicate stock restore event, skip: eventId={}", eventId);
-            continue;
-          }
-          inFlight.add(eventId);
+  @Override
+  protected StockRestoreEvent deserialize(byte[] body) {
+    try {
+      return body == null ? null : objectMapper.readValue(body, StockRestoreEvent.class);
+    } catch (Exception ex) {
+      throw new IllegalArgumentException("Failed to deserialize StockRestoreEvent", ex);
+    }
+  }
 
-          try {
-            if (event == null || event.getItems() == null) {
-              tradeMetrics.incrementMessageConsume("stock_restore", "failed");
-              messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
-              inFlight.remove(eventId);
-              continue;
-            }
-            List<StockOperateCommandDTO> items = event.getItems();
-            stockLedgerService.rollbackBatch(items);
-            tradeMetrics.incrementMessageConsume("stock_restore", "success");
-            messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
-            inFlight.remove(eventId);
-          } catch (BizException ex) {
-            tradeMetrics.incrementMessageConsume("stock_restore", "biz");
-            log.warn(
-                "Stock restore skipped due to biz exception: eventId={}, refundNo={}, message={}",
-                eventId,
-                event == null ? null : event.getRefundNo(),
-                ex.getMessage());
-            messageIdempotencyService.markSuccess(NS_STOCK_RESTORE, eventId);
-            inFlight.remove(eventId);
-          } catch (Exception ex) {
-            tradeMetrics.incrementMessageConsume("stock_restore", "retry");
-            log.error(
-                "Handle stock restore failed: eventId={}, refundNo={}",
-                eventId,
-                event == null ? null : event.getRefundNo(),
-                ex);
-            throw new SystemException(ResultCode.SYSTEM_ERROR, "Handle stock restore failed", ex);
-          }
-        }
-      } catch (Exception ex) {
-        for (String eventId : inFlight) {
-          messageIdempotencyService.release(NS_STOCK_RESTORE, eventId);
-        }
-        throw ex;
-      }
-    };
+  @Override
+  protected String resolveIdempotentNamespace(
+      String topic, MessageExt msgExt, StockRestoreEvent payload) {
+    return NS_STOCK_RESTORE;
+  }
+
+  @Override
+  protected String buildIdempotentKey(
+      String topic, String msgId, StockRestoreEvent payload, MessageExt msgExt) {
+    return resolveEventId(payload);
+  }
+
+  @Override
+  protected void onBizException(
+      MessageExt msgExt, StockRestoreEvent payload, com.cloud.common.exception.BizException ex) {
+    tradeMetrics.incrementMessageConsume("stock_restore", "biz");
+  }
+
+  @Override
+  protected void onSystemException(
+      MessageExt msgExt,
+      StockRestoreEvent payload,
+      com.cloud.common.exception.SystemException ex,
+      boolean retryable) {
+    tradeMetrics.incrementMessageConsume("stock_restore", retryable ? "retry" : "failed");
+  }
+
+  @Override
+  protected void onUnknownException(
+      MessageExt msgExt, StockRestoreEvent payload, Exception ex) {
+    tradeMetrics.incrementMessageConsume("stock_restore", "retry");
   }
 
   private String resolveEventId(StockRestoreEvent event) {

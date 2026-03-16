@@ -1,7 +1,5 @@
 spring:
   cloud:
-    function:
-      definition: stockRestoreConsumer
     stream:
       default:
         producer:
@@ -33,12 +31,6 @@ spring:
           stockAlertProducer-out-0:
             producer:
               <<: *stockProducerDefaults
-          stockRestoreConsumer-in-0:
-            consumer:
-              subscription: 'STOCK_RESTORE'
-              <<: *stockConsumerDefaults
-              orderly: true
-              consumeMessageBatchMaxSize: ${ROCKETMQ_CONSUMER_BATCH_MAX_SIZE:20}
       bindings:
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
@@ -46,13 +38,6 @@ spring:
         stockAlertProducer-out-0:
           destination: stock-alert
           content-type: application/json
-        stockRestoreConsumer-in-0:
-          destination: stock-restore
-          content-type: application/json
-          group: stock-restore-consumer-group
-          consumer:
-            batch-mode: true
 
-
-
-
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
