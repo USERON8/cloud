@@ -64,6 +64,7 @@ class MerchantAuthServiceImplTest {
         MerchantAuth auth = new MerchantAuth();
         auth.setId(2L);
         auth.setMerchantId(9L);
+        @SuppressWarnings("unchecked")
         LambdaQueryChainWrapper<MerchantAuth> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
         doReturn(queryWrapper).when(merchantAuthService).lambdaQuery();
         doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
