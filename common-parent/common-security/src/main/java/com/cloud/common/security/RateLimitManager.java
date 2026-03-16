@@ -1,11 +1,5 @@
 package com.cloud.common.security;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -14,12 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
-
-
-
-
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -27,66 +20,58 @@ import java.util.concurrent.atomic.AtomicLong;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class RateLimitManager {
 
+  private static final String RULE_PREFIX = "rate_limit:rules:";
+  private static final String STATS_PREFIX = "rate_limit:stats:";
+  private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String RULE_PREFIX = "rate_limit:rules:";
-    private static final String STATS_PREFIX = "rate_limit:stats:";
-    private final RedisTemplate<String, Object> redisTemplate;
+  private final Map<String, RateLimitRule> rateLimitRules = new ConcurrentHashMap<>();
 
-    private final Map<String, RateLimitRule> rateLimitRules = new ConcurrentHashMap<>();
+  private final Map<String, RateLimitStats> limitStats = new ConcurrentHashMap<>();
 
+  public RateLimitResult checkLimit(String key, String identifier) {
+    RateLimitRule rule = rateLimitRules.get(key);
+    if (rule == null) {
 
-    private final Map<String, RateLimitStats> limitStats = new ConcurrentHashMap<>();
-
-
-
-
-
-
-
-
-    public RateLimitResult checkLimit(String key, String identifier) {
-        RateLimitRule rule = rateLimitRules.get(key);
-        if (rule == null) {
-
-            return RateLimitResult.allow(Long.MAX_VALUE, 0);
-        }
-
-        RateLimitStats stats = limitStats.computeIfAbsent(key + ":" + identifier, k -> new RateLimitStats());
-
-        try {
-            RateLimitResult result = switch (rule.getType()) {
-                case FIXED_WINDOW -> checkFixedWindow(rule, identifier);
-                case SLIDING_WINDOW -> checkSlidingWindow(rule, identifier);
-                case TOKEN_BUCKET -> checkTokenBucket(rule, identifier);
-                case LEAKY_BUCKET -> checkLeakyBucket(rule, identifier);
-            };
-
-
-            if (result.isAllowed()) {
-                stats.recordAllow();
-            } else {
-                stats.recordReject();
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            log.error("Rate limit check failed: key={}, identifier={}", key, identifier, e);
-
-            return RateLimitResult.allow(Long.MAX_VALUE, 0);
-        }
+      return RateLimitResult.allow(Long.MAX_VALUE, 0);
     }
 
+    RateLimitStats stats =
+        limitStats.computeIfAbsent(key + ":" + identifier, k -> new RateLimitStats());
 
+    try {
+      RateLimitResult result =
+          switch (rule.getType()) {
+            case FIXED_WINDOW -> checkFixedWindow(rule, identifier);
+            case SLIDING_WINDOW -> checkSlidingWindow(rule, identifier);
+            case TOKEN_BUCKET -> checkTokenBucket(rule, identifier);
+            case LEAKY_BUCKET -> checkLeakyBucket(rule, identifier);
+          };
 
+      if (result.isAllowed()) {
+        stats.recordAllow();
+      } else {
+        stats.recordReject();
+      }
 
-    private RateLimitResult checkFixedWindow(RateLimitRule rule, String identifier) {
-        String redisKey = "rate_limit:fixed:" + rule.getKey() + ":" + identifier;
-        long windowStart = Instant.now().getEpochSecond() / rule.getWindow().getSeconds() * rule.getWindow().getSeconds();
-        String windowKey = redisKey + ":" + windowStart;
+      return result;
 
+    } catch (Exception e) {
+      log.error("Rate limit check failed: key={}, identifier={}", key, identifier, e);
 
-        String luaScript = """
+      return RateLimitResult.allow(Long.MAX_VALUE, 0);
+    }
+  }
+
+  private RateLimitResult checkFixedWindow(RateLimitRule rule, String identifier) {
+    String redisKey = "rate_limit:fixed:" + rule.getKey() + ":" + identifier;
+    long windowStart =
+        Instant.now().getEpochSecond()
+            / rule.getWindow().getSeconds()
+            * rule.getWindow().getSeconds();
+    String windowKey = redisKey + ":" + windowStart;
+
+    String luaScript =
+        """
                 local key = KEYS[1]
                 local limit = tonumber(ARGV[1])
                 local window = tonumber(ARGV[2])
@@ -107,37 +92,39 @@ public class RateLimitManager {
                 end
                 """;
 
-        RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List result = redisTemplate.execute(script,
-                Collections.singletonList(windowKey),
-                rule.getPermits(),
-                rule.getWindow().getSeconds());
+    RedisScript<List> script = RedisScript.of(luaScript, List.class);
+    List result =
+        redisTemplate.execute(
+            script,
+            Collections.singletonList(windowKey),
+            rule.getPermits(),
+            rule.getWindow().getSeconds());
 
+    boolean allowed =
+        result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+    long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+    long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
-        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
-        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
-        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
-
-        if (allowed) {
-            return RateLimitResult.allow(remaining, resetTime);
-        } else {
-            return RateLimitResult.reject(
-                    resetTime,
-                    "Fixed window limit exceeded: " + rule.getPermits() + " requests/" + rule.getWindow().getSeconds() + "s"
-            );
-        }
+    if (allowed) {
+      return RateLimitResult.allow(remaining, resetTime);
+    } else {
+      return RateLimitResult.reject(
+          resetTime,
+          "Fixed window limit exceeded: "
+              + rule.getPermits()
+              + " requests/"
+              + rule.getWindow().getSeconds()
+              + "s");
     }
+  }
 
+  private RateLimitResult checkSlidingWindow(RateLimitRule rule, String identifier) {
+    String redisKey = "rate_limit:sliding:" + rule.getKey() + ":" + identifier;
+    long now = Instant.now().getEpochSecond();
+    long windowStart = now - rule.getWindow().getSeconds();
 
-
-
-    private RateLimitResult checkSlidingWindow(RateLimitRule rule, String identifier) {
-        String redisKey = "rate_limit:sliding:" + rule.getKey() + ":" + identifier;
-        long now = Instant.now().getEpochSecond();
-        long windowStart = now - rule.getWindow().getSeconds();
-
-
-        String luaScript = """
+    String luaScript =
+        """
                 local key = KEYS[1]
                 local now = tonumber(ARGV[1])
                 local window_start = tonumber(ARGV[2])
@@ -160,41 +147,43 @@ public class RateLimitManager {
                 end
                 """;
 
-        RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List result = redisTemplate.execute(script,
-                Collections.singletonList(redisKey),
-                now,
-                windowStart,
-                rule.getPermits(),
-                rule.getWindow().getSeconds());
+    RedisScript<List> script = RedisScript.of(luaScript, List.class);
+    List result =
+        redisTemplate.execute(
+            script,
+            Collections.singletonList(redisKey),
+            now,
+            windowStart,
+            rule.getPermits(),
+            rule.getWindow().getSeconds());
 
+    boolean allowed =
+        result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+    long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+    long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
-        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
-        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
-        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
-
-        if (allowed) {
-            return RateLimitResult.allow(remaining, resetTime);
-        } else {
-            return RateLimitResult.reject(
-                    resetTime,
-                    "Sliding window limit exceeded: " + rule.getPermits() + " requests/" + rule.getWindow().getSeconds() + "s"
-            );
-        }
+    if (allowed) {
+      return RateLimitResult.allow(remaining, resetTime);
+    } else {
+      return RateLimitResult.reject(
+          resetTime,
+          "Sliding window limit exceeded: "
+              + rule.getPermits()
+              + " requests/"
+              + rule.getWindow().getSeconds()
+              + "s");
     }
+  }
 
+  private RateLimitResult checkTokenBucket(RateLimitRule rule, String identifier) {
+    String redisKey = "rate_limit:token:" + rule.getKey() + ":" + identifier;
+    long now = Instant.now().getEpochSecond();
 
+    int capacity = rule.getPermits();
+    double refillRate = (double) rule.getPermits() / rule.getWindow().getSeconds();
 
-
-    private RateLimitResult checkTokenBucket(RateLimitRule rule, String identifier) {
-        String redisKey = "rate_limit:token:" + rule.getKey() + ":" + identifier;
-        long now = Instant.now().getEpochSecond();
-
-
-        int capacity = rule.getPermits();
-        double refillRate = (double) rule.getPermits() / rule.getWindow().getSeconds();
-
-        String luaScript = """
+    String luaScript =
+        """
                 local key = KEYS[1]
                 local capacity = tonumber(ARGV[1])
                 local refill_rate = tonumber(ARGV[2])
@@ -221,37 +210,33 @@ public class RateLimitManager {
                 end
                 """;
 
-        RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List result = redisTemplate.execute(script,
-                Collections.singletonList(redisKey),
-                capacity,
-                refillRate,
-                now);
+    RedisScript<List> script = RedisScript.of(luaScript, List.class);
+    List result =
+        redisTemplate.execute(
+            script, Collections.singletonList(redisKey), capacity, refillRate, now);
 
+    boolean allowed =
+        result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+    long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+    long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
-        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
-        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
-        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
-
-        if (allowed) {
-            return RateLimitResult.allow(remaining, resetTime);
-        } else {
-            return RateLimitResult.reject(resetTime, "Token bucket is empty, please retry in " + resetTime + " seconds");
-        }
+    if (allowed) {
+      return RateLimitResult.allow(remaining, resetTime);
+    } else {
+      return RateLimitResult.reject(
+          resetTime, "Token bucket is empty, please retry in " + resetTime + " seconds");
     }
+  }
 
+  private RateLimitResult checkLeakyBucket(RateLimitRule rule, String identifier) {
+    String redisKey = "rate_limit:leaky:" + rule.getKey() + ":" + identifier;
+    long now = Instant.now().getEpochSecond();
 
+    int capacity = rule.getPermits();
+    double leakRate = (double) rule.getPermits() / rule.getWindow().getSeconds();
 
-
-    private RateLimitResult checkLeakyBucket(RateLimitRule rule, String identifier) {
-        String redisKey = "rate_limit:leaky:" + rule.getKey() + ":" + identifier;
-        long now = Instant.now().getEpochSecond();
-
-
-        int capacity = rule.getPermits();
-        double leakRate = (double) rule.getPermits() / rule.getWindow().getSeconds();
-
-        String luaScript = """
+    String luaScript =
+        """
                 local key = KEYS[1]
                 local capacity = tonumber(ARGV[1])
                 local leak_rate = tonumber(ARGV[2])
@@ -278,241 +263,193 @@ public class RateLimitManager {
                 end
                 """;
 
-        RedisScript<List> script = RedisScript.of(luaScript, List.class);
-        List result = redisTemplate.execute(script,
-                Collections.singletonList(redisKey),
-                capacity,
-                leakRate,
-                now);
+    RedisScript<List> script = RedisScript.of(luaScript, List.class);
+    List result =
+        redisTemplate.execute(script, Collections.singletonList(redisKey), capacity, leakRate, now);
 
+    boolean allowed =
+        result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
+    long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
+    long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
 
-        boolean allowed = result != null && result.size() > 0 && ((Number) result.get(0)).longValue() == 1;
-        long remaining = result != null && result.size() > 1 ? ((Number) result.get(1)).longValue() : 0;
-        long resetTime = result != null && result.size() > 2 ? ((Number) result.get(2)).longValue() : 0;
+    if (allowed) {
+      return RateLimitResult.allow(remaining, resetTime);
+    } else {
+      return RateLimitResult.reject(
+          resetTime, "Leaky bucket is full, please retry in " + resetTime + " seconds");
+    }
+  }
 
-        if (allowed) {
-            return RateLimitResult.allow(remaining, resetTime);
-        } else {
-            return RateLimitResult.reject(resetTime, "Leaky bucket is full, please retry in " + resetTime + " seconds");
-        }
+  public void registerRule(
+      String key, int permits, Duration window, RateLimitType type, String description) {
+    RateLimitRule rule = new RateLimitRule(key, permits, window, type, description);
+    rateLimitRules.put(key, rule);
+  }
+
+  public void removeRule(String key) {
+    rateLimitRules.remove(key);
+  }
+
+  public Map<String, RateLimitStats> getRateLimitStats() {
+    return new HashMap<>(limitStats);
+  }
+
+  public Map<String, RateLimitRule> getRateLimitRules() {
+    return new HashMap<>(rateLimitRules);
+  }
+
+  public void cleanupExpiredStats() {
+    Instant cutoffTime = Instant.now().minus(Duration.ofHours(24));
+
+    limitStats
+        .entrySet()
+        .removeIf(
+            entry -> {
+              Instant lastRequest = entry.getValue().getLastRequestTime();
+              return lastRequest != null && lastRequest.isBefore(cutoffTime);
+            });
+  }
+
+  public void initDefaultRules() {
+
+    registerRule(
+        "api:access", 100, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API access limit");
+
+    registerRule(
+        "api:test", 200, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API test limit");
+
+    registerRule(
+        "auth:login", 5, Duration.ofMinutes(1), RateLimitType.FIXED_WINDOW, "Login attempt limit");
+
+    registerRule(
+        "auth:register", 3, Duration.ofHours(1), RateLimitType.FIXED_WINDOW, "Registration limit");
+
+    registerRule(
+        "sms:send", 1, Duration.ofMinutes(1), RateLimitType.LEAKY_BUCKET, "SMS send rate limit");
+
+    registerRule(
+        "file:upload", 10, Duration.ofHours(1), RateLimitType.TOKEN_BUCKET, "File upload limit");
+  }
+
+  public enum RateLimitType {
+    FIXED_WINDOW,
+    SLIDING_WINDOW,
+    TOKEN_BUCKET,
+    LEAKY_BUCKET
+  }
+
+  public static class RateLimitRule {
+    private final String key;
+    private final int permits;
+    private final Duration window;
+    private final RateLimitType type;
+    private final String description;
+
+    public RateLimitRule(
+        String key, int permits, Duration window, RateLimitType type, String description) {
+      this.key = key;
+      this.permits = permits;
+      this.window = window;
+      this.type = type;
+      this.description = description;
     }
 
-
-
-
-
-
-
-
-
-
-    public void registerRule(String key, int permits, Duration window, RateLimitType type, String description) {
-        RateLimitRule rule = new RateLimitRule(key, permits, window, type, description);
-        rateLimitRules.put(key, rule);
-
-
+    public String getKey() {
+      return key;
     }
 
-
-
-
-
-
-    public void removeRule(String key) {
-        rateLimitRules.remove(key);
-
+    public int getPermits() {
+      return permits;
     }
 
-
-
-
-
-
-    public Map<String, RateLimitStats> getRateLimitStats() {
-        return new HashMap<>(limitStats);
+    public Duration getWindow() {
+      return window;
     }
 
-
-
-
-
-
-    public Map<String, RateLimitRule> getRateLimitRules() {
-        return new HashMap<>(rateLimitRules);
+    public RateLimitType getType() {
+      return type;
     }
 
+    public String getDescription() {
+      return description;
+    }
+  }
 
+  public static class RateLimitStats {
+    private final AtomicLong totalRequests = new AtomicLong(0);
+    private final AtomicLong allowedRequests = new AtomicLong(0);
+    private final AtomicLong rejectedRequests = new AtomicLong(0);
+    private volatile Instant lastRequestTime;
 
-
-    public void cleanupExpiredStats() {
-        Instant cutoffTime = Instant.now().minus(Duration.ofHours(24));
-
-        limitStats.entrySet().removeIf(entry -> {
-            Instant lastRequest = entry.getValue().getLastRequestTime();
-            return lastRequest != null && lastRequest.isBefore(cutoffTime);
-        });
-
-
+    public void recordAllow() {
+      totalRequests.incrementAndGet();
+      allowedRequests.incrementAndGet();
+      lastRequestTime = Instant.now();
     }
 
-
-
-
-    public void initDefaultRules() {
-
-        registerRule("api:access", 100, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API access limit");
-
-
-        registerRule("api:test", 200, Duration.ofMinutes(1), RateLimitType.SLIDING_WINDOW, "API test limit");
-
-
-        registerRule("auth:login", 5, Duration.ofMinutes(1), RateLimitType.FIXED_WINDOW, "Login attempt limit");
-
-
-        registerRule("auth:register", 3, Duration.ofHours(1), RateLimitType.FIXED_WINDOW, "Registration limit");
-
-
-        registerRule("sms:send", 1, Duration.ofMinutes(1), RateLimitType.LEAKY_BUCKET, "SMS send rate limit");
-
-
-        registerRule("file:upload", 10, Duration.ofHours(1), RateLimitType.TOKEN_BUCKET, "File upload limit");
-
+    public void recordReject() {
+      totalRequests.incrementAndGet();
+      rejectedRequests.incrementAndGet();
+      lastRequestTime = Instant.now();
     }
 
-
-
-
-    public enum RateLimitType {
-        FIXED_WINDOW,
-        SLIDING_WINDOW,
-        TOKEN_BUCKET,
-        LEAKY_BUCKET
+    public double getRejectRate() {
+      long total = totalRequests.get();
+      return total > 0 ? (double) rejectedRequests.get() / total : 0.0;
     }
 
-
-
-
-    public static class RateLimitRule {
-        private final String key;
-        private final int permits;
-        private final Duration window;
-        private final RateLimitType type;
-        private final String description;
-
-        public RateLimitRule(String key, int permits, Duration window, RateLimitType type, String description) {
-            this.key = key;
-            this.permits = permits;
-            this.window = window;
-            this.type = type;
-            this.description = description;
-        }
-
-
-        public String getKey() {
-            return key;
-        }
-
-        public int getPermits() {
-            return permits;
-        }
-
-        public Duration getWindow() {
-            return window;
-        }
-
-        public RateLimitType getType() {
-            return type;
-        }
-
-        public String getDescription() {
-            return description;
-        }
+    public long getTotalRequests() {
+      return totalRequests.get();
     }
 
-
-
-
-    public static class RateLimitStats {
-        private final AtomicLong totalRequests = new AtomicLong(0);
-        private final AtomicLong allowedRequests = new AtomicLong(0);
-        private final AtomicLong rejectedRequests = new AtomicLong(0);
-        private volatile Instant lastRequestTime;
-
-        public void recordAllow() {
-            totalRequests.incrementAndGet();
-            allowedRequests.incrementAndGet();
-            lastRequestTime = Instant.now();
-        }
-
-        public void recordReject() {
-            totalRequests.incrementAndGet();
-            rejectedRequests.incrementAndGet();
-            lastRequestTime = Instant.now();
-        }
-
-        public double getRejectRate() {
-            long total = totalRequests.get();
-            return total > 0 ? (double) rejectedRequests.get() / total : 0.0;
-        }
-
-
-        public long getTotalRequests() {
-            return totalRequests.get();
-        }
-
-        public long getAllowedRequests() {
-            return allowedRequests.get();
-        }
-
-        public long getRejectedRequests() {
-            return rejectedRequests.get();
-        }
-
-        public Instant getLastRequestTime() {
-            return lastRequestTime;
-        }
+    public long getAllowedRequests() {
+      return allowedRequests.get();
     }
 
-
-
-
-    public static class RateLimitResult {
-        private final boolean allowed;
-        private final long remaining;
-        private final long resetTime;
-        private final String reason;
-
-        public RateLimitResult(boolean allowed, long remaining, long resetTime, String reason) {
-            this.allowed = allowed;
-            this.remaining = remaining;
-            this.resetTime = resetTime;
-            this.reason = reason;
-        }
-
-        public static RateLimitResult allow(long remaining, long resetTime) {
-            return new RateLimitResult(true, remaining, resetTime, "閸忎浇顔忕拋鍧楁６");
-        }
-
-        public static RateLimitResult reject(long resetTime, String reason) {
-            return new RateLimitResult(false, 0, resetTime, reason);
-        }
-
-
-        public boolean isAllowed() {
-            return allowed;
-        }
-
-        public long getRemaining() {
-            return remaining;
-        }
-
-        public long getResetTime() {
-            return resetTime;
-        }
-
-        public String getReason() {
-            return reason;
-        }
+    public long getRejectedRequests() {
+      return rejectedRequests.get();
     }
+
+    public Instant getLastRequestTime() {
+      return lastRequestTime;
+    }
+  }
+
+  public static class RateLimitResult {
+    private final boolean allowed;
+    private final long remaining;
+    private final long resetTime;
+    private final String reason;
+
+    public RateLimitResult(boolean allowed, long remaining, long resetTime, String reason) {
+      this.allowed = allowed;
+      this.remaining = remaining;
+      this.resetTime = resetTime;
+      this.reason = reason;
+    }
+
+    public static RateLimitResult allow(long remaining, long resetTime) {
+      return new RateLimitResult(true, remaining, resetTime, "閸忎浇顔忕拋鍧楁６");
+    }
+
+    public static RateLimitResult reject(long resetTime, String reason) {
+      return new RateLimitResult(false, 0, resetTime, reason);
+    }
+
+    public boolean isAllowed() {
+      return allowed;
+    }
+
+    public long getRemaining() {
+      return remaining;
+    }
+
+    public long getResetTime() {
+      return resetTime;
+    }
+
+    public String getReason() {
+      return reason;
+    }
+  }
 }
-

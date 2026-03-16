@@ -1,16 +1,10 @@
 package com.cloud.common.messaging.event;
 
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-
-
-
-
-
 
 @Data
 @Builder
@@ -18,37 +12,21 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class OrderTimeoutEvent implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
+  private Long subOrderId;
 
+  private String mainOrderNo;
 
-    private Long subOrderId;
+  private String subOrderNo;
 
+  private Long userId;
 
+  private Integer timeoutMinutes;
 
-    private String mainOrderNo;
+  private String eventId;
 
+  private String eventType;
 
-
-    private String subOrderNo;
-
-
-
-    private Long userId;
-
-
-
-    private Integer timeoutMinutes;
-
-
-
-    private String eventId;
-
-
-
-    private String eventType;
-
-
-
-    private Long timestamp;
+  private Long timestamp;
 }

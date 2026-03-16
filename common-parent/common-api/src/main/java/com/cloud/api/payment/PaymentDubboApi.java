@@ -8,18 +8,17 @@ import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 
 public interface PaymentDubboApi {
 
-    Long createPaymentOrder(PaymentOrderCommandDTO command);
+  Long createPaymentOrder(PaymentOrderCommandDTO command);
 
-    PaymentOrderVO getPaymentOrderByNo(String paymentNo);
+  PaymentOrderVO getPaymentOrderByNo(String paymentNo);
 
-    PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo);
+  PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo);
 
-    Boolean handlePaymentCallback(PaymentCallbackCommandDTO command);
+  Boolean handlePaymentCallback(PaymentCallbackCommandDTO command);
 
-    Long createRefund(PaymentRefundCommandDTO command);
+  Long createRefund(PaymentRefundCommandDTO command);
 
-    PaymentRefundVO getRefundByNo(String refundNo);
+  PaymentRefundVO getRefundByNo(String refundNo);
 
-    Boolean cancelRefund(String refundNo, String reason);
+  Boolean cancelRefund(String refundNo, String reason);
 }
-

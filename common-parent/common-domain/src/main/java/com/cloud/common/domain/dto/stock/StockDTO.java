@@ -1,29 +1,28 @@
 package com.cloud.common.domain.dto.stock;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class StockDTO {
 
-    private Long id;
+  private Long id;
 
-    private Long productId;
+  private Long productId;
 
-    private String productName;
+  private String productName;
 
-    private Integer stockQuantity;
+  private Integer stockQuantity;
 
-    private Integer frozenQuantity;
+  private Integer frozenQuantity;
 
-    private Integer availableQuantity;
+  private Integer availableQuantity;
 
-    private Integer stockStatus;
+  private Integer stockStatus;
 
-    private Integer lowStockThreshold;
+  private Integer lowStockThreshold;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

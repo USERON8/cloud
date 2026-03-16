@@ -5,10 +5,9 @@ import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 
 public interface UserDubboApi {
 
-    UserProfileDTO findById(Long id);
+  UserProfileDTO findById(Long id);
 
-    Long create(UserProfileUpsertDTO profileUpsertDTO);
+  Long create(UserProfileUpsertDTO profileUpsertDTO);
 
-    Boolean update(UserProfileUpsertDTO profileUpsertDTO);
+  Boolean update(UserProfileUpsertDTO profileUpsertDTO);
 }
-

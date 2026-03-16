@@ -1,73 +1,32 @@
 package com.cloud.common.domain.vo.user;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
-
-
-
-
-
+import lombok.Data;
 
 @Data
 public class MerchantAuthVO {
 
+  private Long id;
 
+  private Long merchantId;
 
-    private Long id;
+  private String businessLicenseNumber;
 
+  private String businessLicenseUrl;
 
+  private String idCardFrontUrl;
 
+  private String idCardBackUrl;
 
-    private Long merchantId;
+  private String contactPhone;
 
+  private String contactAddress;
 
+  private Integer authStatus;
 
+  private String authRemark;
 
-    private String businessLicenseNumber;
+  private LocalDateTime createdAt;
 
-
-
-
-    private String businessLicenseUrl;
-
-
-
-
-    private String idCardFrontUrl;
-
-
-
-
-    private String idCardBackUrl;
-
-
-
-
-    private String contactPhone;
-
-
-
-
-    private String contactAddress;
-
-
-
-
-    private Integer authStatus;
-
-
-
-
-    private String authRemark;
-
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

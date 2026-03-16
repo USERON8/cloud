@@ -11,32 +11,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-
-
-
-
-
-
-
-
 @Slf4j
 @AutoConfiguration
 @ConditionalOnClass({RedissonClient.class})
-@ConditionalOnProperty(name = "cloud.distributed-lock.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    name = "cloud.distributed-lock.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 @EnableAspectJAutoProxy
 public class DistributedLockAutoConfiguration {
 
+  @Bean
+  @ConditionalOnBean(RedissonClient.class)
+  @ConditionalOnMissingBean(DistributedLockAspect.class)
+  public DistributedLockAspect distributedLockAspect(RedissonClient redissonClient) {
 
-
-
-
-
-
-    @Bean
-    @ConditionalOnBean(RedissonClient.class)
-    @ConditionalOnMissingBean(DistributedLockAspect.class)
-    public DistributedLockAspect distributedLockAspect(RedissonClient redissonClient) {
-
-        return new DistributedLockAspect(redissonClient);
-    }
+    return new DistributedLockAspect(redissonClient);
+  }
 }

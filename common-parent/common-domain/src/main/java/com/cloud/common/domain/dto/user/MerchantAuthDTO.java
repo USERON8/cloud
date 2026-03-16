@@ -1,62 +1,34 @@
 package com.cloud.common.domain.dto.user;
 
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
-
-
+import lombok.Data;
 
 @Data
 public class MerchantAuthDTO implements Serializable {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
+  private Long id;
 
+  private Long merchantId;
 
-    private Long id;
+  private String businessLicenseNumber;
 
+  private String businessLicenseUrl;
 
+  private String idCardFrontUrl;
 
-    private Long merchantId;
+  private String idCardBackUrl;
 
+  private String contactPhone;
 
+  private String contactAddress;
 
-    private String businessLicenseNumber;
+  private Integer authStatus;
 
+  private String authRemark;
 
+  private LocalDateTime createdAt;
 
-    private String businessLicenseUrl;
-
-
-
-    private String idCardFrontUrl;
-
-
-
-    private String idCardBackUrl;
-
-
-
-    private String contactPhone;
-
-
-
-    private String contactAddress;
-
-
-
-    private Integer authStatus;
-
-
-
-    private String authRemark;
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

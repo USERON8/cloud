@@ -9,17 +9,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthorizationSessionResponseDTO {
 
-    private String authorizationUri;
+  private String authorizationUri;
 
-    private String clientId;
+  private String clientId;
 
-    private String redirectUri;
+  private String redirectUri;
 
-    private String scope;
+  private String scope;
 
-    private String state;
+  private String state;
 
-    private String codeChallengeMethod;
+  private String codeChallengeMethod;
 
-    private boolean sessionEstablished;
+  private boolean sessionEstablished;
 }

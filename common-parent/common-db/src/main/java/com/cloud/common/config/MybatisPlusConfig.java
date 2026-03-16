@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerIntercep
 import com.baomidou.mybatisplus.extension.plugins.inner.IllegalSQLInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import java.time.LocalDateTime;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.context.annotation.Bean;
@@ -17,259 +19,191 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @Slf4j
 @Configuration
 public class MybatisPlusConfig {
 
+  @Bean
+  @Primary
+  public MybatisPlusInterceptor mybatisPlusInterceptor() {
+    MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
+    PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+    paginationInterceptor.setMaxLimit(1000L);
+    paginationInterceptor.setOverflow(false);
+    interceptor.addInnerInterceptor(paginationInterceptor);
 
+    interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
+    interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+    interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
 
+    return interceptor;
+  }
 
+  @Bean
+  @Primary
+  public MetaObjectHandler metaObjectHandler() {
 
+    return new UnifiedMetaObjectHandler();
+  }
 
+  @Bean
+  @Primary
+  public IdentifierGenerator identifierGenerator() {
+    return new ResilientIdentifierGenerator();
+  }
 
+  @Bean
+  @Primary
+  public GlobalConfig globalConfig(
+      IdentifierGenerator identifierGenerator, MetaObjectHandler metaObjectHandler) {
+    GlobalConfig globalConfig = new GlobalConfig();
+    globalConfig.setIdentifierGenerator(identifierGenerator);
+    globalConfig.setMetaObjectHandler(metaObjectHandler);
+    return globalConfig;
+  }
 
+  @SuppressWarnings("deprecation")
+  private IllegalSQLInnerInterceptor createIllegalSqlInterceptor() {
+    return new IllegalSQLInnerInterceptor();
+  }
 
-    @Bean
-    @Primary
-    public MybatisPlusInterceptor mybatisPlusInterceptor() {
-        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+  public static class UnifiedMetaObjectHandler implements MetaObjectHandler {
 
+    @Override
+    public void insertFill(MetaObject metaObject) {
+      log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
 
-        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
-        paginationInterceptor.setMaxLimit(1000L);
-        paginationInterceptor.setOverflow(false);
-        interceptor.addInnerInterceptor(paginationInterceptor);
+      LocalDateTime now = LocalDateTime.now();
+      Long currentUserId = getCurrentUserId();
 
+      fillDateTimeField(
+          metaObject, new String[] {"createdAt", "created_at", "createTime", "create_time"}, now);
 
-        interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+      fillDateTimeField(
+          metaObject, new String[] {"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
+      fillField(metaObject, new String[] {"version"}, Integer.class, 1);
 
-        interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
-        interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
+      fillField(
+          metaObject,
+          new String[] {"createBy", "create_by", "createdBy", "created_by"},
+          Long.class,
+          currentUserId);
 
-        return interceptor;
+      fillField(
+          metaObject,
+          new String[] {"updateBy", "update_by", "updatedBy", "updated_by"},
+          Long.class,
+          currentUserId);
+
+      fillField(metaObject, new String[] {"deleted", "is_deleted"}, Integer.class, 0);
+
+      log.debug("- createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
     }
 
+    @Override
+    public void updateFill(MetaObject metaObject) {
+      log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
 
+      LocalDateTime now = LocalDateTime.now();
+      Long currentUserId = getCurrentUserId();
 
+      updateDateTimeField(
+          metaObject, new String[] {"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
+      updateField(
+          metaObject,
+          new String[] {"updateBy", "update_by", "updatedBy", "updated_by"},
+          Long.class,
+          currentUserId);
 
-
-
-
-
-
-
-
-    @Bean
-    @Primary
-    public MetaObjectHandler metaObjectHandler() {
-
-        return new UnifiedMetaObjectHandler();
+      log.debug("- updatedAt: {}, userId: {}", now, currentUserId);
     }
 
-    @Bean
-    @Primary
-    public IdentifierGenerator identifierGenerator() {
-        return new ResilientIdentifierGenerator();
+    private <T> void fillField(
+        MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
+      for (String fieldName : fieldNames) {
+        if (metaObject.hasGetter(fieldName)) {
+          this.strictInsertFill(metaObject, fieldName, fieldType, value);
+          log.debug("D messageebug", fieldName, value);
+          break;
+        }
+      }
     }
 
-    @Bean
-    @Primary
-    public GlobalConfig globalConfig(IdentifierGenerator identifierGenerator, MetaObjectHandler metaObjectHandler) {
-        GlobalConfig globalConfig = new GlobalConfig();
-        globalConfig.setIdentifierGenerator(identifierGenerator);
-        globalConfig.setMetaObjectHandler(metaObjectHandler);
-        return globalConfig;
+    private void fillDateTimeField(
+        MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
+      fillField(metaObject, fieldNames, LocalDateTime.class, value);
     }
 
-
-
-
-
-
-
-
-
-
-    @SuppressWarnings("deprecation")
-    private IllegalSQLInnerInterceptor createIllegalSqlInterceptor() {
-        return new IllegalSQLInnerInterceptor();
+    private <T> void updateField(
+        MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
+      for (String fieldName : fieldNames) {
+        if (metaObject.hasGetter(fieldName)) {
+          this.strictUpdateFill(metaObject, fieldName, fieldType, value);
+          log.debug("D messageebug", fieldName, value);
+          break;
+        }
+      }
     }
 
-    public static class UnifiedMetaObjectHandler implements MetaObjectHandler {
-
-
-
-
-
-
-
-
-        @Override
-        public void insertFill(MetaObject metaObject) {
-            log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
-
-            LocalDateTime now = LocalDateTime.now();
-            Long currentUserId = getCurrentUserId();
-
-
-            fillDateTimeField(metaObject, new String[]{"createdAt", "created_at", "createTime", "create_time"}, now);
-
-
-            fillDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
-
-
-            fillField(metaObject, new String[]{"version"}, Integer.class, 1);
-
-
-            fillField(metaObject, new String[]{"createBy", "create_by", "createdBy", "created_by"}, Long.class, currentUserId);
-
-
-            fillField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
-
-
-            fillField(metaObject, new String[]{"deleted", "is_deleted"}, Integer.class, 0);
-
-            log.debug("- createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
-        }
-
-
-
-
-
-
-        @Override
-        public void updateFill(MetaObject metaObject) {
-            log.debug("D messageebug", metaObject.getOriginalObject().getClass().getSimpleName());
-
-            LocalDateTime now = LocalDateTime.now();
-            Long currentUserId = getCurrentUserId();
-
-
-            updateDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
-
-
-            updateField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
-
-            log.debug("- updatedAt: {}, userId: {}", now, currentUserId);
-        }
-
-
-
-
-        private <T> void fillField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
-            for (String fieldName : fieldNames) {
-                if (metaObject.hasGetter(fieldName)) {
-                    this.strictInsertFill(metaObject, fieldName, fieldType, value);
-                    log.debug("D messageebug", fieldName, value);
-                    break;
-                }
-            }
-        }
-
-
-
-
-        private void fillDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
-            fillField(metaObject, fieldNames, LocalDateTime.class, value);
-        }
-
-
-
-
-        private <T> void updateField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
-            for (String fieldName : fieldNames) {
-                if (metaObject.hasGetter(fieldName)) {
-                    this.strictUpdateFill(metaObject, fieldName, fieldType, value);
-                    log.debug("D messageebug", fieldName, value);
-                    break;
-                }
-            }
-        }
-
-
-
-
-        private void updateDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
-            updateField(metaObject, fieldNames, LocalDateTime.class, value);
-        }
-
-
-
-
-
-
-
-        private Long getCurrentUserId() {
-            try {
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if (authentication == null) {
-                    return 0L;
-                }
-
-                Object principal = authentication.getPrincipal();
-                Long userId = extractUserId(principal);
-                if (userId != null) {
-                    return userId;
-                }
-
-                Object details = authentication.getDetails();
-                userId = extractUserId(details);
-                return userId != null ? userId : 0L;
-            } catch (Exception e) {
-                log.debug("IDD: {}", e.getMessage());
-                return 0L;
-            }
-        }
-
-        private Long extractUserId(Object source) {
-            if (source == null) {
-                return null;
-            }
-            if (source instanceof Map<?, ?> map) {
-                return parseUserId(map.get("user_id"));
-            }
-            try {
-                Object claim = source.getClass()
-                        .getMethod("getClaimAsString", String.class)
-                        .invoke(source, "user_id");
-                return parseUserId(claim);
-            } catch (ReflectiveOperationException ignored) {
-                return null;
-            }
-        }
-
-        private Long parseUserId(Object rawValue) {
-            if (rawValue == null) {
-                return null;
-            }
-            if (rawValue instanceof Number number) {
-                return number.longValue();
-            }
-            String userId = String.valueOf(rawValue).trim();
-            if (userId.isEmpty()) {
-                return null;
-            }
-            return Long.parseLong(userId);
-        }
+    private void updateDateTimeField(
+        MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
+      updateField(metaObject, fieldNames, LocalDateTime.class, value);
     }
+
+    private Long getCurrentUserId() {
+      try {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+          return 0L;
+        }
+
+        Object principal = authentication.getPrincipal();
+        Long userId = extractUserId(principal);
+        if (userId != null) {
+          return userId;
+        }
+
+        Object details = authentication.getDetails();
+        userId = extractUserId(details);
+        return userId != null ? userId : 0L;
+      } catch (Exception e) {
+        log.debug("IDD: {}", e.getMessage());
+        return 0L;
+      }
+    }
+
+    private Long extractUserId(Object source) {
+      if (source == null) {
+        return null;
+      }
+      if (source instanceof Map<?, ?> map) {
+        return parseUserId(map.get("user_id"));
+      }
+      try {
+        Object claim =
+            source.getClass().getMethod("getClaimAsString", String.class).invoke(source, "user_id");
+        return parseUserId(claim);
+      } catch (ReflectiveOperationException ignored) {
+        return null;
+      }
+    }
+
+    private Long parseUserId(Object rawValue) {
+      if (rawValue == null) {
+        return null;
+      }
+      if (rawValue instanceof Number number) {
+        return number.longValue();
+      }
+      String userId = String.valueOf(rawValue).trim();
+      if (userId.isEmpty()) {
+        return null;
+      }
+      return Long.parseLong(userId);
+    }
+  }
 }

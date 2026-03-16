@@ -1,56 +1,30 @@
 package com.cloud.common.domain.dto.user;
 
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
-
-
-
-
+import lombok.Data;
 
 @Data
 public class MerchantSettlementAccountDTO implements Serializable {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
+  private Long id;
 
+  private Long merchantId;
 
-    private Long id;
+  private String accountName;
 
+  private String accountNumber;
 
+  private Integer accountType;
 
-    private Long merchantId;
+  private String bankName;
 
+  private Integer isDefault;
 
+  private Integer status;
 
-    private String accountName;
+  private LocalDateTime createdAt;
 
-
-
-    private String accountNumber;
-
-
-
-    private Integer accountType;
-
-
-
-    private String bankName;
-
-
-
-    private Integer isDefault;
-
-
-
-    private Integer status;
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

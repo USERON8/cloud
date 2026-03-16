@@ -1,63 +1,28 @@
 package com.cloud.common.domain.vo.user;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
-
-
-
-
-
+import lombok.Data;
 
 @Data
 public class MerchantSettlementAccountVO {
 
+  private Long id;
 
+  private Long merchantId;
 
-    private Long id;
+  private String accountName;
 
+  private String accountNumber;
 
+  private Integer accountType;
 
+  private String bankName;
 
-    private Long merchantId;
+  private Integer isDefault;
 
+  private Integer status;
 
+  private LocalDateTime createdAt;
 
-
-    private String accountName;
-
-
-
-
-    private String accountNumber;
-
-
-
-
-    private Integer accountType;
-
-
-
-
-    private String bankName;
-
-
-
-
-    private Integer isDefault;
-
-
-
-
-    private Integer status;
-
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

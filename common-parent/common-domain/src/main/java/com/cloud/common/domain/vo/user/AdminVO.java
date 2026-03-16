@@ -1,53 +1,24 @@
 package com.cloud.common.domain.vo.user;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
-
-
-
-
-
+import lombok.Data;
 
 @Data
 public class AdminVO {
 
+  private Long id;
 
+  private String username;
 
-    private Long id;
+  private String realName;
 
+  private String phone;
 
+  private String role;
 
+  private Integer status;
 
-    private String username;
+  private LocalDateTime createdAt;
 
-
-
-
-    private String realName;
-
-
-
-
-    private String phone;
-
-
-
-
-    private String role;
-
-
-
-
-    private Integer status;
-
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

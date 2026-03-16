@@ -5,14 +5,13 @@ import com.cloud.common.domain.vo.stock.StockLedgerVO;
 
 public interface StockDubboApi {
 
-    StockLedgerVO getLedgerBySkuId(Long skuId);
+  StockLedgerVO getLedgerBySkuId(Long skuId);
 
-    Boolean reserve(StockOperateCommandDTO command);
+  Boolean reserve(StockOperateCommandDTO command);
 
-    Boolean confirm(StockOperateCommandDTO command);
+  Boolean confirm(StockOperateCommandDTO command);
 
-    Boolean release(StockOperateCommandDTO command);
+  Boolean release(StockOperateCommandDTO command);
 
-    Boolean rollback(StockOperateCommandDTO command);
+  Boolean rollback(StockOperateCommandDTO command);
 }
-

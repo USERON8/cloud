@@ -18,36 +18,37 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 @RequiredArgsConstructor
 public class ResponseAdvice implements ResponseBodyAdvice<Object> {
 
-    private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-    @Override
-    public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return !Result.class.equals(returnType.getParameterType());
+  @Override
+  public boolean supports(
+      MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+    return !Result.class.equals(returnType.getParameterType());
+  }
+
+  @Override
+  public Object beforeBodyWrite(
+      Object body,
+      MethodParameter returnType,
+      MediaType selectedContentType,
+      Class<? extends HttpMessageConverter<?>> selectedConverterType,
+      ServerHttpRequest request,
+      ServerHttpResponse response) {
+    if (body instanceof Result) {
+      return body;
     }
 
-    @Override
-    public Object beforeBodyWrite(Object body,
-                                  MethodParameter returnType,
-                                  MediaType selectedContentType,
-                                  Class<? extends HttpMessageConverter<?>> selectedConverterType,
-                                  ServerHttpRequest request,
-                                  ServerHttpResponse response) {
-        if (body instanceof Result) {
-            return body;
-        }
+    Result<Object> result = Result.success(body);
 
-        Result<Object> result = Result.success(body);
-
-        if (String.class.equals(returnType.getParameterType())) {
-            try {
-                return objectMapper.writeValueAsString(result);
-            } catch (JsonProcessingException e) {
-                log.error("Failed to serialize Result response", e);
-                return Result.error("Failed to serialize response body");
-            }
-        }
-
-        return result;
+    if (String.class.equals(returnType.getParameterType())) {
+      try {
+        return objectMapper.writeValueAsString(result);
+      } catch (JsonProcessingException e) {
+        log.error("Failed to serialize Result response", e);
+        return Result.error("Failed to serialize response body");
+      }
     }
+
+    return result;
+  }
 }
-

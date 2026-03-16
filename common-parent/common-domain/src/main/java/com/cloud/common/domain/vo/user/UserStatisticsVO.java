@@ -1,13 +1,12 @@
 package com.cloud.common.domain.vo.user;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.io.Serializable;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.util.Map;
 
 @Data
 @Builder
@@ -16,29 +15,29 @@ import java.util.Map;
 @Schema(description = "User statistics overview")
 public class UserStatisticsVO implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    @Schema(description = "Total number of users")
-    private Long totalUsers;
+  @Schema(description = "Total number of users")
+  private Long totalUsers;
 
-    @Schema(description = "New users today")
-    private Long todayNewUsers;
+  @Schema(description = "New users today")
+  private Long todayNewUsers;
 
-    @Schema(description = "New users this month")
-    private Long monthNewUsers;
+  @Schema(description = "New users this month")
+  private Long monthNewUsers;
 
-    @Schema(description = "Active users in recent 7 days")
-    private Long activeUsers;
+  @Schema(description = "Active users in recent 7 days")
+  private Long activeUsers;
 
-    @Schema(description = "Role distribution Map<role, count>")
-    private Map<String, Long> roleDistribution;
+  @Schema(description = "Role distribution Map<role, count>")
+  private Map<String, Long> roleDistribution;
 
-    @Schema(description = "User status distribution Map<status, count>")
-    private Map<String, Long> userStatusDistribution;
+  @Schema(description = "User status distribution Map<status, count>")
+  private Map<String, Long> userStatusDistribution;
 
-    @Schema(description = "User growth rate in percent")
-    private Double growthRate;
+  @Schema(description = "User growth rate in percent")
+  private Double growthRate;
 
-    @Schema(description = "Average activity score")
-    private Double averageActivity;
+  @Schema(description = "Average activity score")
+  private Double averageActivity;
 }

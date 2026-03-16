@@ -1,29 +1,28 @@
 package com.cloud.common.domain.vo.stock;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class StockVO {
 
-    private Long id;
+  private Long id;
 
-    private String productName;
+  private String productName;
 
-    private Long productId;
+  private Long productId;
 
-    private Integer stockQuantity;
+  private Integer stockQuantity;
 
-    private Integer frozenQuantity;
+  private Integer frozenQuantity;
 
-    private Integer availableQuantity;
+  private Integer availableQuantity;
 
-    private Integer stockStatus;
+  private Integer stockStatus;
 
-    private Integer lowStockThreshold;
+  private Integer lowStockThreshold;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }

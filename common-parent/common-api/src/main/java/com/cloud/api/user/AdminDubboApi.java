@@ -2,19 +2,17 @@ package com.cloud.api.user;
 
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
-
 import java.util.List;
 
 public interface AdminDubboApi {
 
-    AdminDTO findById(Long id);
+  AdminDTO findById(Long id);
 
-    List<AdminDTO> findAll();
+  List<AdminDTO> findAll();
 
-    Long create(AdminUpsertRequestDTO requestDTO);
+  Long create(AdminUpsertRequestDTO requestDTO);
 
-    Boolean update(Long id, AdminUpsertRequestDTO requestDTO);
+  Boolean update(Long id, AdminUpsertRequestDTO requestDTO);
 
-    Boolean delete(Long id);
+  Boolean delete(Long id);
 }
-

@@ -10,9 +10,9 @@ import lombok.Setter;
 @EqualsAndHashCode(callSuper = true)
 public class AdminUpsertRequestDTO extends BaseAccountUpsertRequestDTO {
 
-    @Size(max = 50, message = "realName length must be less than or equal to 50")
-    private String realName;
+  @Size(max = 50, message = "realName length must be less than or equal to 50")
+  private String realName;
 
-    @Size(max = 32, message = "role length must be less than or equal to 32")
-    private String role;
+  @Size(max = 32, message = "role length must be less than or equal to 32")
+  private String role;
 }

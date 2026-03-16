@@ -1,13 +1,12 @@
 package com.cloud.common.messaging.event;
 
+import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
+import java.io.Serializable;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.util.List;
-import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 
 @Data
 @Builder
@@ -15,25 +14,25 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 @AllArgsConstructor
 public class RefundCompletedEvent implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    private Long refundId;
+  private Long refundId;
 
-    private String refundNo;
+  private String refundNo;
 
-    private String paymentNo;
+  private String paymentNo;
 
-    private String afterSaleNo;
+  private String afterSaleNo;
 
-    private String mainOrderNo;
+  private String mainOrderNo;
 
-    private String subOrderNo;
+  private String subOrderNo;
 
-    private List<StockOperateCommandDTO> items;
+  private List<StockOperateCommandDTO> items;
 
-    private Long timestamp;
+  private Long timestamp;
 
-    private String eventId;
+  private String eventId;
 
-    private String eventType;
+  private String eventType;
 }

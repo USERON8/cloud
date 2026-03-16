@@ -1,57 +1,27 @@
 package com.cloud.common.domain.vo.product;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
-
-
-
+import lombok.Data;
 
 @Data
 public class CategoryVO {
 
+  private Long id;
 
+  private Long parentId;
 
-    private Long id;
+  private String name;
 
+  private Integer level;
 
+  private Integer sortOrder;
 
+  private Integer status;
 
-    private Long parentId;
+  private LocalDateTime createdAt;
 
+  private LocalDateTime updatedAt;
 
-
-
-    private String name;
-
-
-
-
-    private Integer level;
-
-
-
-
-    private Integer sortOrder;
-
-
-
-
-    private Integer status;
-
-
-
-
-    private LocalDateTime createdAt;
-
-
-
-
-    private LocalDateTime updatedAt;
-
-
-
-
-    private List<CategoryVO> children;
+  private List<CategoryVO> children;
 }

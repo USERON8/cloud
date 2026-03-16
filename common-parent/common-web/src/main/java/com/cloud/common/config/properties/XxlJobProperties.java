@@ -7,21 +7,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "xxl.job")
 public class XxlJobProperties {
 
-    private boolean enabled;
+  private boolean enabled;
 
-    private String adminAddresses;
+  private String adminAddresses;
 
-    private String accessToken;
+  private String accessToken;
 
-    private final Executor executor = new Executor();
+  private final Executor executor = new Executor();
 
-    @Data
-    public static class Executor {
-        private String appname;
-        private String address;
-        private String ip;
-        private int port;
-        private String logPath = "logs/xxl-job";
-        private int logRetentionDays = 30;
-    }
+  @Data
+  public static class Executor {
+    private String appname;
+    private String address;
+    private String ip;
+    private int port;
+    private String logPath = "logs/xxl-job";
+    private int logRetentionDays = 30;
+  }
 }

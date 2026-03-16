@@ -3,23 +3,21 @@ package com.cloud.api.product;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-
 import java.util.List;
 
 public interface ProductDubboApi {
 
-    Long createSpu(SpuCreateRequestDTO request);
+  Long createSpu(SpuCreateRequestDTO request);
 
-    Boolean updateSpu(Long spuId, SpuCreateRequestDTO request);
+  Boolean updateSpu(Long spuId, SpuCreateRequestDTO request);
 
-    SpuDetailVO getSpuById(Long spuId);
+  SpuDetailVO getSpuById(Long spuId);
 
-    List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status);
+  List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status);
 
-    List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status);
+  List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status);
 
-    List<SkuDetailVO> listSkuByIds(List<Long> skuIds);
+  List<SkuDetailVO> listSkuByIds(List<Long> skuIds);
 
-    Boolean updateSpuStatus(Long spuId, Integer status);
+  Boolean updateSpuStatus(Long spuId, Integer status);
 }
-

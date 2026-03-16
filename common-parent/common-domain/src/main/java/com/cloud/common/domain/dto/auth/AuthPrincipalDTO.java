@@ -1,34 +1,32 @@
 package com.cloud.common.domain.dto.auth;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class AuthPrincipalDTO implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
-    private Long id;
+  private Long id;
 
-    private String username;
+  private String username;
 
-    private String password;
+  private String password;
 
-    private String nickname;
+  private String nickname;
 
-    private String email;
+  private String email;
 
-    private String phone;
+  private String phone;
 
-    private Integer status;
+  private Integer status;
 
-    private List<String> roles;
+  private List<String> roles;
 
-    private Integer enabled;
+  private Integer enabled;
 
-    private List<String> permissions;
+  private List<String> permissions;
 }

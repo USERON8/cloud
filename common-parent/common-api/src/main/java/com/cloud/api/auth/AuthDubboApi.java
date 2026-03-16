@@ -1,31 +1,29 @@
 package com.cloud.api.auth;
 
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public interface AuthDubboApi {
 
-    AuthPrincipalDTO findPrincipalByUsername(String username);
+  AuthPrincipalDTO findPrincipalByUsername(String username);
 
-    AuthPrincipalDTO findPrincipalById(Long userId);
+  AuthPrincipalDTO findPrincipalById(Long userId);
 
-    Long createPrincipal(AuthPrincipalDTO authPrincipalDTO);
+  Long createPrincipal(AuthPrincipalDTO authPrincipalDTO);
 
-    Boolean updatePrincipal(AuthPrincipalDTO authPrincipalDTO);
+  Boolean updatePrincipal(AuthPrincipalDTO authPrincipalDTO);
 
-    Boolean deletePrincipal(Long userId);
+  Boolean deletePrincipal(Long userId);
 
-    Boolean changePassword(Long userId, String oldPassword, String newPassword);
+  Boolean changePassword(Long userId, String oldPassword, String newPassword);
 
-    List<String> getRoleCodes(Long userId);
+  List<String> getRoleCodes(Long userId);
 
-    Map<Long, List<String>> getRoleCodesByUserIds(Collection<Long> userIds);
+  Map<Long, List<String>> getRoleCodesByUserIds(Collection<Long> userIds);
 
-    List<Long> getUserIdsByRoleCode(String roleCode);
+  List<Long> getUserIdsByRoleCode(String roleCode);
 
-    Map<String, Long> getRoleDistribution();
+  Map<String, Long> getRoleDistribution();
 }
-

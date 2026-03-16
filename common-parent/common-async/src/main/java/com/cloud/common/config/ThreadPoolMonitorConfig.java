@@ -7,25 +7,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-
-
-
-
-
-
-
 @Slf4j
 @Configuration
 @EnableScheduling
-@ConditionalOnProperty(name = "app.async.common.monitoring-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    name = "app.async.common.monitoring-enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class ThreadPoolMonitorConfig {
 
+  @Bean
+  public EnhancedThreadPoolMonitor enhancedThreadPoolMonitor() {
 
-
-
-    @Bean
-    public EnhancedThreadPoolMonitor enhancedThreadPoolMonitor() {
-
-        return new EnhancedThreadPoolMonitor();
-    }
+    return new EnhancedThreadPoolMonitor();
+  }
 }

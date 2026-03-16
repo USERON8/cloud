@@ -11,10 +11,10 @@ import lombok.Setter;
 @EqualsAndHashCode(callSuper = true)
 public class MerchantUpsertRequestDTO extends BaseAccountUpsertRequestDTO {
 
-    @Size(max = 100, message = "merchantName length must be less than or equal to 100")
-    private String merchantName;
+  @Size(max = 100, message = "merchantName length must be less than or equal to 100")
+  private String merchantName;
 
-    @Email(message = "invalid email format")
-    @Size(max = 100, message = "email length must be less than or equal to 100")
-    private String email;
+  @Email(message = "invalid email format")
+  @Size(max = 100, message = "email length must be less than or equal to 100")
+  private String email;
 }

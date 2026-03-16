@@ -1,29 +1,28 @@
 package com.cloud.common.domain.vo.order;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class OrderVO {
-    private Long id;
+  private Long id;
 
-    private String orderNo;
+  private String orderNo;
 
-    private Long userId;
+  private Long userId;
 
-    private Long shopId;
+  private Long shopId;
 
-    private BigDecimal totalAmount;
+  private BigDecimal totalAmount;
 
-    private BigDecimal payAmount;
+  private BigDecimal payAmount;
 
-    private Integer status;
+  private Integer status;
 
-    private Long addressId;
+  private Long addressId;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 }
