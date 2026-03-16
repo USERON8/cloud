@@ -1,9 +1,16 @@
 package com.cloud.user.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.UserAddressDTO;
+import com.cloud.common.domain.dto.user.UserAddressPageDTO;
+import com.cloud.common.domain.dto.user.UserAddressRequestDTO;
+import com.cloud.common.domain.vo.UserAddressVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.ResourceNotFoundException;
+import com.cloud.common.result.PageResult;
+import com.cloud.common.utils.PageUtils;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
 import com.cloud.user.module.entity.UserAddress;
@@ -113,6 +120,15 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         return userAddress != null ? userAddressConverter.toDTO(userAddress) : null;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UserAddressDTO getAddressById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return getUserAddressByIdWithCache(id);
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = USER_ADDRESS_CACHE_NAME,
@@ -122,6 +138,97 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     public List<UserAddressDTO> getUserAddressListByUserIdWithCache(Long userId) {
         List<UserAddress> userAddresses = lambdaQuery().eq(UserAddress::getUserId, userId).list();
         return userAddressConverter.toDTOList(userAddresses);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserAddressDTO createAddress(Long userId, UserAddressRequestDTO requestDTO) {
+        if (userId == null) {
+            throw new BusinessException("user id is required");
+        }
+        if (requestDTO == null) {
+            throw new BusinessException("address payload is required");
+        }
+        UserAddress entity = userAddressConverter.toEntity(requestDTO);
+        if (entity == null) {
+            throw new BusinessException("invalid address payload");
+        }
+        entity.setUserId(userId);
+        save(entity);
+        return userAddressConverter.toDTO(entity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserAddressDTO updateAddress(Long addressId, UserAddressRequestDTO requestDTO) {
+        if (addressId == null) {
+            throw new BusinessException("address id is required");
+        }
+        if (requestDTO == null) {
+            throw new BusinessException("address payload is required");
+        }
+        UserAddress entity = userAddressConverter.toEntity(requestDTO);
+        if (entity == null) {
+            throw new BusinessException("invalid address payload");
+        }
+        entity.setId(addressId);
+        updateById(entity);
+        return userAddressConverter.toDTO(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserAddressVO> listAddressesByUserId(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        List<UserAddress> userAddresses = lambdaQuery()
+                .eq(UserAddress::getUserId, userId)
+                .orderByDesc(UserAddress::getIsDefault)
+                .orderByDesc(UserAddress::getUpdatedAt)
+                .list();
+        return userAddressConverter.toVOList(userAddresses);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserAddressVO getDefaultAddress(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        UserAddress userAddress = lambdaQuery()
+                .eq(UserAddress::getUserId, userId)
+                .eq(UserAddress::getIsDefault, 1)
+                .one();
+        return userAddress == null ? null : userAddressConverter.toVO(userAddress);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResult<UserAddressVO> pageAddresses(UserAddressPageDTO pageDTO) {
+        if (pageDTO == null) {
+            throw new BusinessException("page query payload is required");
+        }
+        Page<UserAddress> page = PageUtils.buildPage(pageDTO);
+        LambdaQueryWrapper<UserAddress> queryWrapper = new LambdaQueryWrapper<>();
+
+        if (pageDTO.getUserId() != null) {
+            queryWrapper.eq(UserAddress::getUserId, pageDTO.getUserId());
+        }
+        if (pageDTO.getConsignee() != null && !pageDTO.getConsignee().isEmpty()) {
+            queryWrapper.like(UserAddress::getConsignee, pageDTO.getConsignee());
+        }
+        queryWrapper.orderByDesc(UserAddress::getCreatedAt);
+
+        Page<UserAddress> resultPage = page(page, queryWrapper);
+        List<UserAddressVO> userAddressVOList = userAddressConverter.toVOList(resultPage.getRecords());
+
+        return PageResult.of(
+                resultPage.getCurrent(),
+                resultPage.getSize(),
+                resultPage.getTotal(),
+                userAddressVOList
+        );
     }
 
     @Transactional(rollbackFor = Exception.class)
