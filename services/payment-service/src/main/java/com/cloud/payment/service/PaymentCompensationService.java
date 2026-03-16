@@ -5,11 +5,11 @@ import com.cloud.payment.module.entity.PaymentRefundEntity;
 
 public interface PaymentCompensationService {
 
-    void initializePaymentOrderCompensation(PaymentOrderEntity order);
+  void initializePaymentOrderCompensation(PaymentOrderEntity order);
 
-    void submitRefund(PaymentOrderEntity order, PaymentRefundEntity refund);
+  void submitRefund(PaymentOrderEntity order, PaymentRefundEntity refund);
 
-    int reconcilePendingOrders();
+  int reconcilePendingOrders();
 
-    int retryPendingRefunds();
+  int retryPendingRefunds();
 }

@@ -11,21 +11,20 @@ import org.apache.dubbo.config.annotation.DubboService;
 @RequiredArgsConstructor
 public class UserDubboService implements UserDubboApi {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    @Override
-    public UserProfileDTO findById(Long id) {
-        return userService.getProfileById(id);
-    }
+  @Override
+  public UserProfileDTO findById(Long id) {
+    return userService.getProfileById(id);
+  }
 
-    @Override
-    public Long create(UserProfileUpsertDTO profileUpsertDTO) {
-        return userService.createProfile(profileUpsertDTO);
-    }
+  @Override
+  public Long create(UserProfileUpsertDTO profileUpsertDTO) {
+    return userService.createProfile(profileUpsertDTO);
+  }
 
-    @Override
-    public Boolean update(UserProfileUpsertDTO profileUpsertDTO) {
-        return userService.updateProfile(profileUpsertDTO);
-    }
+  @Override
+  public Boolean update(UserProfileUpsertDTO profileUpsertDTO) {
+    return userService.updateProfile(profileUpsertDTO);
+  }
 }
-

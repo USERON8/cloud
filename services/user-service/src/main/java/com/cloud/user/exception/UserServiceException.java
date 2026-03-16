@@ -5,129 +5,135 @@ import com.cloud.common.exception.BusinessException;
 
 public class UserServiceException extends BusinessException {
 
-    public UserServiceException(int code, String message) {
-        super(code, message);
+  public UserServiceException(int code, String message) {
+    super(code, message);
+  }
+
+  public UserServiceException(String message) {
+    super(message);
+  }
+
+  public UserServiceException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public UserServiceException(ResultCode resultCode) {
+    super(resultCode);
+  }
+
+  public UserServiceException(ResultCode resultCode, String message) {
+    super(resultCode, message);
+  }
+
+  public UserServiceException(ResultCode resultCode, Throwable cause) {
+    super(resultCode, cause);
+  }
+
+  public UserServiceException(int code, String message, Throwable cause) {
+    super(code, message, cause);
+  }
+
+  public static class UserNotFoundException extends UserServiceException {
+    public UserNotFoundException(String message) {
+      super(ResultCode.USER_NOT_FOUND, message);
     }
 
-    public UserServiceException(String message) {
-        super(message);
+    public UserNotFoundException(Long userId) {
+      super(ResultCode.USER_NOT_FOUND, String.format("User not found, userId=%d", userId));
     }
 
-    public UserServiceException(String message, Throwable cause) {
-        super(message, cause);
+    public UserNotFoundException(String value, boolean isEmail) {
+      super(
+          ResultCode.USER_NOT_FOUND,
+          String.format("User not found by %s: %s", isEmail ? "email" : "username", value));
+    }
+  }
+
+  public static class UserAlreadyExistsException extends UserServiceException {
+    public UserAlreadyExistsException(String message) {
+      super(ResultCode.USER_ALREADY_EXISTS, message);
     }
 
-    public UserServiceException(ResultCode resultCode) {
-        super(resultCode);
+    public UserAlreadyExistsException(String username, String email) {
+      super(
+          ResultCode.USER_ALREADY_EXISTS,
+          String.format("User already exists, username=%s, email=%s", username, email));
+    }
+  }
+
+  public static class AddressPermissionException extends UserServiceException {
+    public AddressPermissionException(String message) {
+      super(ResultCode.FORBIDDEN.getCode(), message);
     }
 
-    public UserServiceException(ResultCode resultCode, String message) {
-        super(resultCode, message);
+    public AddressPermissionException(Long userId, Long addressId) {
+      super(
+          ResultCode.FORBIDDEN.getCode(),
+          String.format("User %d has no permission for address %d", userId, addressId));
+    }
+  }
+
+  public static class FileUploadException extends UserServiceException {
+    public FileUploadException(String message) {
+      super(ResultCode.UPLOAD_FAILED, message);
     }
 
-    public UserServiceException(ResultCode resultCode, Throwable cause) {
-        super(resultCode, cause);
+    public FileUploadException(String message, Throwable cause) {
+      super(ResultCode.UPLOAD_FAILED.getCode(), message, cause);
     }
+  }
 
-    public UserServiceException(int code, String message, Throwable cause) {
-        super(code, message, cause);
+  public static class FileSizeExceededException extends UserServiceException {
+    public FileSizeExceededException(String message) {
+      super(ResultCode.FILE_SIZE_EXCEEDED, message);
     }
+  }
 
-    public static class UserNotFoundException extends UserServiceException {
-        public UserNotFoundException(String message) {
-            super(ResultCode.USER_NOT_FOUND, message);
-        }
-
-        public UserNotFoundException(Long userId) {
-            super(ResultCode.USER_NOT_FOUND, String.format("User not found, userId=%d", userId));
-        }
-
-        public UserNotFoundException(String value, boolean isEmail) {
-            super(ResultCode.USER_NOT_FOUND, String.format("User not found by %s: %s", isEmail ? "email" : "username", value));
-        }
+  public static class UserCreateFailedException extends UserServiceException {
+    public UserCreateFailedException(String message) {
+      super(ResultCode.USER_CREATE_FAILED, message);
     }
+  }
 
-    public static class UserAlreadyExistsException extends UserServiceException {
-        public UserAlreadyExistsException(String message) {
-            super(ResultCode.USER_ALREADY_EXISTS, message);
-        }
-
-        public UserAlreadyExistsException(String username, String email) {
-            super(ResultCode.USER_ALREADY_EXISTS, String.format("User already exists, username=%s, email=%s", username, email));
-        }
+  public static class UserUpdateFailedException extends UserServiceException {
+    public UserUpdateFailedException(String message) {
+      super(ResultCode.USER_UPDATE_FAILED, message);
     }
+  }
 
-    public static class AddressPermissionException extends UserServiceException {
-        public AddressPermissionException(String message) {
-            super(ResultCode.FORBIDDEN.getCode(), message);
-        }
-
-        public AddressPermissionException(Long userId, Long addressId) {
-            super(ResultCode.FORBIDDEN.getCode(), String.format("User %d has no permission for address %d", userId, addressId));
-        }
+  public static class UserDeleteFailedException extends UserServiceException {
+    public UserDeleteFailedException(String message) {
+      super(ResultCode.USER_DELETE_FAILED, message);
     }
+  }
 
-    public static class FileUploadException extends UserServiceException {
-        public FileUploadException(String message) {
-            super(ResultCode.UPLOAD_FAILED, message);
-        }
-
-        public FileUploadException(String message, Throwable cause) {
-            super(ResultCode.UPLOAD_FAILED.getCode(), message, cause);
-        }
+  public static class UserQueryFailedException extends UserServiceException {
+    public UserQueryFailedException(String message) {
+      super(ResultCode.USER_QUERY_FAILED, message);
     }
+  }
 
-    public static class FileSizeExceededException extends UserServiceException {
-        public FileSizeExceededException(String message) {
-            super(ResultCode.FILE_SIZE_EXCEEDED, message);
-        }
+  public static class RoleMismatchException extends UserServiceException {
+    public RoleMismatchException(String message) {
+      super(ResultCode.ROLE_MISMATCH, message);
     }
+  }
 
-    public static class UserCreateFailedException extends UserServiceException {
-        public UserCreateFailedException(String message) {
-            super(ResultCode.USER_CREATE_FAILED, message);
-        }
+  public static class UserDisabledException extends UserServiceException {
+    public UserDisabledException(String message) {
+      super(ResultCode.USER_DISABLED, message);
     }
+  }
 
-    public static class UserUpdateFailedException extends UserServiceException {
-        public UserUpdateFailedException(String message) {
-            super(ResultCode.USER_UPDATE_FAILED, message);
-        }
+  public static class PasswordErrorException extends UserServiceException {
+    public PasswordErrorException(String message) {
+      super(ResultCode.PASSWORD_ERROR, message);
     }
+  }
 
-    public static class UserDeleteFailedException extends UserServiceException {
-        public UserDeleteFailedException(String message) {
-            super(ResultCode.USER_DELETE_FAILED, message);
-        }
+  public static class ParamValidationFailedException extends UserServiceException {
+    public ParamValidationFailedException(String message) {
+      super(ResultCode.PARAM_VALIDATION_FAILED, message);
     }
-
-    public static class UserQueryFailedException extends UserServiceException {
-        public UserQueryFailedException(String message) {
-            super(ResultCode.USER_QUERY_FAILED, message);
-        }
-    }
-
-    public static class RoleMismatchException extends UserServiceException {
-        public RoleMismatchException(String message) {
-            super(ResultCode.ROLE_MISMATCH, message);
-        }
-    }
-
-    public static class UserDisabledException extends UserServiceException {
-        public UserDisabledException(String message) {
-            super(ResultCode.USER_DISABLED, message);
-        }
-    }
-
-    public static class PasswordErrorException extends UserServiceException {
-        public PasswordErrorException(String message) {
-            super(ResultCode.PASSWORD_ERROR, message);
-        }
-    }
-
-    public static class ParamValidationFailedException extends UserServiceException {
-        public ParamValidationFailedException(String message) {
-            super(ResultCode.PARAM_VALIDATION_FAILED, message);
-        }
-    }
+  }
 }

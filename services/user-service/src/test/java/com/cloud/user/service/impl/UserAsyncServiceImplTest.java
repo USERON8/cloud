@@ -1,10 +1,20 @@
 package com.cloud.user.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.service.UserService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,82 +23,64 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class UserAsyncServiceImplTest {
 
-    @Mock
-    private UserService userService;
+  @Mock private UserService userService;
 
-    @Mock
-    private UserMapper userMapper;
+  @Mock private UserMapper userMapper;
 
-    @Mock
-    private UserConverter userConverter;
+  @Mock private UserConverter userConverter;
 
-    @Mock
-    private CacheManager cacheManager;
+  @Mock private CacheManager cacheManager;
 
-    @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+  @Mock private RedisTemplate<String, Object> redisTemplate;
 
-    private UserAsyncServiceImpl userAsyncService;
+  private UserAsyncServiceImpl userAsyncService;
 
-    @BeforeEach
-    void setUp() {
-        userAsyncService = new UserAsyncServiceImpl(
-                userService,
-                userMapper,
-                userConverter,
-                cacheManager,
-                redisTemplate
-        );
+  @BeforeEach
+  void setUp() {
+    userAsyncService =
+        new UserAsyncServiceImpl(
+            userService, userMapper, userConverter, cacheManager, redisTemplate);
+  }
+
+  @Test
+  void getUsersByIdsAsync_batchesLargeRequests() {
+    List<Long> ids = new ArrayList<>();
+    for (long i = 1; i <= 60; i++) {
+      ids.add(i);
     }
 
-    @Test
-    void getUsersByIdsAsync_batchesLargeRequests() {
-        List<Long> ids = new ArrayList<>();
-        for (long i = 1; i <= 60; i++) {
-            ids.add(i);
-        }
-
-        when(userService.getUsersByIds(anyCollection())).thenAnswer(invocation -> {
-            List<Long> batch = new ArrayList<>(invocation.getArgument(0));
-            List<UserDTO> result = new ArrayList<>();
-            for (Long id : batch) {
+    when(userService.getUsersByIds(anyCollection()))
+        .thenAnswer(
+            invocation -> {
+              List<Long> batch = new ArrayList<>(invocation.getArgument(0));
+              List<UserDTO> result = new ArrayList<>();
+              for (Long id : batch) {
                 UserDTO dto = new UserDTO();
                 dto.setId(id);
                 result.add(dto);
-            }
-            return result;
-        });
+              }
+              return result;
+            });
 
-        CompletableFuture<List<UserDTO>> future = userAsyncService.getUsersByIdsAsync(ids);
+    CompletableFuture<List<UserDTO>> future = userAsyncService.getUsersByIdsAsync(ids);
 
-        List<UserDTO> result = future.join();
-        assertThat(result).hasSize(60);
-        verify(userService, times(2)).getUsersByIds(anyCollection());
-    }
+    List<UserDTO> result = future.join();
+    assertThat(result).hasSize(60);
+    verify(userService, times(2)).getUsersByIds(anyCollection());
+  }
 
-    @Test
-    void checkUsernamesExistAsync_handlesErrors() {
-        when(userService.findByUsername("ok")).thenReturn(new UserDTO());
-        when(userService.findByUsername("bad")).thenThrow(new BusinessException("fail"));
+  @Test
+  void checkUsernamesExistAsync_handlesErrors() {
+    when(userService.findByUsername("ok")).thenReturn(new UserDTO());
+    when(userService.findByUsername("bad")).thenThrow(new BusinessException("fail"));
 
-        Map<String, Boolean> result = userAsyncService.checkUsernamesExistAsync(List.of("ok", " ", "bad")).join();
+    Map<String, Boolean> result =
+        userAsyncService.checkUsernamesExistAsync(List.of("ok", " ", "bad")).join();
 
-        assertThat(result).containsEntry("ok", true).containsEntry("bad", false);
-        assertThat(result).doesNotContainKey(" ");
-    }
+    assertThat(result).containsEntry("ok", true).containsEntry("bad", false);
+    assertThat(result).doesNotContainKey(" ");
+  }
 }

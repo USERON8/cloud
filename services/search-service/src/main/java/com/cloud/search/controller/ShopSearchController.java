@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/search/shops")
 @RequiredArgsConstructor
@@ -29,85 +28,88 @@ import java.util.List;
 @Validated
 public class ShopSearchController {
 
-    private final ShopSearchService shopSearchService;
+  private final ShopSearchService shopSearchService;
 
-    @Operation(summary = "Complex shop search", description = "Search shops with rich conditions")
-    @PostMapping("/complex-search")
-    public Result<SearchResultDTO<ShopDocument>> complexSearch(@Valid @RequestBody ShopSearchRequest request) {
-        SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
-        return Result.success("Search success", result);
+  @Operation(summary = "Complex shop search", description = "Search shops with rich conditions")
+  @PostMapping("/complex-search")
+  public Result<SearchResultDTO<ShopDocument>> complexSearch(
+      @Valid @RequestBody ShopSearchRequest request) {
+    SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
+    return Result.success("Search success", result);
+  }
+
+  @Operation(summary = "Shop filter data", description = "Get shop filters by request")
+  @PostMapping("/filters")
+  public Result<SearchResultDTO<ShopDocument>> getShopFilters(
+      @Valid @RequestBody ShopSearchRequest request) {
+    SearchResultDTO<ShopDocument> result = shopSearchService.getShopFilters(request);
+    return Result.success("Get filters success", result);
+  }
+
+  @Operation(summary = "Shop suggestions", description = "Get shop suggestions by keyword")
+  @GetMapping("/suggestions")
+  public Result<List<String>> getSearchSuggestions(
+      @Parameter(description = "Keyword") @RequestParam String keyword,
+      @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+
+    List<String> suggestions = shopSearchService.getSearchSuggestions(keyword, size);
+    return Result.success("Get suggestions success", suggestions);
+  }
+
+  @Operation(summary = "Hot shops", description = "Get hot shops")
+  @GetMapping("/hot-shops")
+  public Result<List<ShopDocument>> getHotShops(
+      @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+
+    List<ShopDocument> hotShops = shopSearchService.getHotShops(size);
+    return Result.success("Get hot shops success", hotShops);
+  }
+
+  @Operation(summary = "Get shop by id", description = "Get shop detail by id")
+  @GetMapping("/{shopId}")
+  public Result<ShopDocument> getShopById(
+      @Parameter(description = "Shop id") @PathVariable Long shopId) {
+    ShopDocument shop = shopSearchService.findByShopId(shopId);
+    if (shop == null) {
+      throw new ResourceNotFoundException("Shop", String.valueOf(shopId));
     }
+    return Result.success("Query success", shop);
+  }
 
-    @Operation(summary = "Shop filter data", description = "Get shop filters by request")
-    @PostMapping("/filters")
-    public Result<SearchResultDTO<ShopDocument>> getShopFilters(@Valid @RequestBody ShopSearchRequest request) {
-        SearchResultDTO<ShopDocument> result = shopSearchService.getShopFilters(request);
-        return Result.success("Get filters success", result);
-    }
+  @Operation(summary = "Recommended shops", description = "Get recommended shops")
+  @GetMapping("/recommended")
+  public Result<SearchResultDTO<ShopDocument>> getRecommendedShops(
+      @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
+      @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
 
-    @Operation(summary = "Shop suggestions", description = "Get shop suggestions by keyword")
-    @GetMapping("/suggestions")
-    public Result<List<String>> getSearchSuggestions(
-            @Parameter(description = "Keyword") @RequestParam String keyword,
-            @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setRecommended(true);
+    request.setStatus(1);
+    request.setPage(page);
+    request.setSize(size);
+    request.setSortBy("hotScore");
+    request.setSortOrder("desc");
 
-        List<String> suggestions = shopSearchService.getSearchSuggestions(keyword, size);
-        return Result.success("Get suggestions success", suggestions);
-    }
+    SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
+    return Result.success("Query recommended shops success", result);
+  }
 
-    @Operation(summary = "Hot shops", description = "Get hot shops")
-    @GetMapping("/hot-shops")
-    public Result<List<ShopDocument>> getHotShops(
-            @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+  @Operation(summary = "Search shops by location", description = "Search shops by address keyword")
+  @GetMapping("/by-location")
+  public Result<SearchResultDTO<ShopDocument>> searchShopsByLocation(
+      @Parameter(description = "Location keyword") @RequestParam String location,
+      @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
+      @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
 
-        List<ShopDocument> hotShops = shopSearchService.getHotShops(size);
-        return Result.success("Get hot shops success", hotShops);
-    }
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setAddressKeyword(location);
+    request.setStatus(1);
+    request.setPage(page);
+    request.setSize(size);
+    request.setSortBy("rating");
+    request.setSortOrder("desc");
 
-    @Operation(summary = "Get shop by id", description = "Get shop detail by id")
-    @GetMapping("/{shopId}")
-    public Result<ShopDocument> getShopById(@Parameter(description = "Shop id") @PathVariable Long shopId) {
-        ShopDocument shop = shopSearchService.findByShopId(shopId);
-        if (shop == null) {
-            throw new ResourceNotFoundException("Shop", String.valueOf(shopId));
-        }
-        return Result.success("Query success", shop);
-    }
-
-    @Operation(summary = "Recommended shops", description = "Get recommended shops")
-    @GetMapping("/recommended")
-    public Result<SearchResultDTO<ShopDocument>> getRecommendedShops(
-            @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
-
-        ShopSearchRequest request = new ShopSearchRequest();
-        request.setRecommended(true);
-        request.setStatus(1);
-        request.setPage(page);
-        request.setSize(size);
-        request.setSortBy("hotScore");
-        request.setSortOrder("desc");
-
-        SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
-        return Result.success("Query recommended shops success", result);
-    }
-
-    @Operation(summary = "Search shops by location", description = "Search shops by address keyword")
-    @GetMapping("/by-location")
-    public Result<SearchResultDTO<ShopDocument>> searchShopsByLocation(
-            @Parameter(description = "Location keyword") @RequestParam String location,
-            @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
-            @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
-
-        ShopSearchRequest request = new ShopSearchRequest();
-        request.setAddressKeyword(location);
-        request.setStatus(1);
-        request.setPage(page);
-        request.setSize(size);
-        request.setSortBy("rating");
-        request.setSortOrder("desc");
-
-        SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
-        return Result.success("Search success", result);
-    }
+    SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
+    return Result.success("Search success", result);
+  }
 }

@@ -1,10 +1,19 @@
 package com.cloud.search.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.ShopSearchService;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,271 +24,269 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import cn.hutool.core.util.StrUtil;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShopSearchServiceImpl implements ShopSearchService {
 
-    private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
-    private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
-    private static final int PROCESSED_LOOKBACK_DAYS = 1;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+  private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
+  private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
+  private static final int PROCESSED_LOOKBACK_DAYS = 1;
+  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
-    private final ShopDocumentRepository shopDocumentRepository;
-    private final ElasticsearchOperations elasticsearchOperations;
-    private final StringRedisTemplate redisTemplate;
+  private final ShopDocumentRepository shopDocumentRepository;
+  private final ElasticsearchOperations elasticsearchOperations;
+  private final StringRedisTemplate redisTemplate;
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteShop(Long shopId) {
-        try {
-            shopDocumentRepository.deleteById(String.valueOf(shopId));
-        } catch (Exception e) {
-            throw new RuntimeException("Delete shop from index failed", e);
-        }
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void deleteShop(Long shopId) {
+    try {
+      shopDocumentRepository.deleteById(String.valueOf(shopId));
+    } catch (Exception e) {
+      throw new RuntimeException("Delete shop from index failed", e);
     }
+  }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void updateShopStatus(Long shopId, Integer status) {
-        try {
-            ShopDocument document = findByShopId(shopId);
-            if (document == null) {
-                return;
-            }
-            document.setStatus(status);
-            shopDocumentRepository.save(document);
-        } catch (Exception e) {
-            throw new RuntimeException("Update shop status in index failed", e);
-        }
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void updateShopStatus(Long shopId, Integer status) {
+    try {
+      ShopDocument document = findByShopId(shopId);
+      if (document == null) {
+        return;
+      }
+      document.setStatus(status);
+      shopDocumentRepository.save(document);
+    } catch (Exception e) {
+      throw new RuntimeException("Update shop status in index failed", e);
     }
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ShopDocument findByShopId(Long shopId) {
-        return shopDocumentRepository.findById(String.valueOf(shopId)).orElse(null);
+  @Override
+  @Transactional(readOnly = true)
+  public ShopDocument findByShopId(Long shopId) {
+    return shopDocumentRepository.findById(String.valueOf(shopId)).orElse(null);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void batchDeleteShops(List<Long> shopIds) {
+    try {
+      List<String> ids =
+          shopIds == null
+              ? Collections.emptyList()
+              : shopIds.stream().map(String::valueOf).toList();
+      if (!ids.isEmpty()) {
+        shopDocumentRepository.deleteAllById(ids);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Batch delete shops from index failed", e);
     }
+  }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void batchDeleteShops(List<Long> shopIds) {
-        try {
-            List<String> ids = shopIds == null ? Collections.emptyList() : shopIds.stream().map(String::valueOf).toList();
-            if (!ids.isEmpty()) {
-                shopDocumentRepository.deleteAllById(ids);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Batch delete shops from index failed", e);
-        }
+  @Override
+  public boolean isEventProcessed(String traceId) {
+    if (StrUtil.isBlank(traceId)) {
+      return false;
     }
-
-    @Override
-    public boolean isEventProcessed(String traceId) {
-        if (StrUtil.isBlank(traceId)) {
-            return false;
+    try {
+      for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
+        String bucketKey = buildProcessedBucketKey(i);
+        Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
+        if (Boolean.TRUE.equals(exists)) {
+          return true;
         }
-        try {
-            for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
-                String bucketKey = buildProcessedBucketKey(i);
-                Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            log.warn("Check shop processed event failed: traceId={}", traceId, e);
-            return false;
-        }
+      }
+      return false;
+    } catch (Exception e) {
+      log.warn("Check shop processed event failed: traceId={}", traceId, e);
+      return false;
     }
+  }
 
-    @Override
-    public void markEventProcessed(String traceId) {
-        if (StrUtil.isBlank(traceId)) {
-            return;
-        }
-        try {
-            String bucketKey = buildProcessedBucketKey(0);
-            redisTemplate.opsForHash().put(bucketKey, traceId, "1");
-            redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            log.warn("Mark shop event processed failed: traceId={}", traceId, e);
-        }
+  @Override
+  public void markEventProcessed(String traceId) {
+    if (StrUtil.isBlank(traceId)) {
+      return;
     }
-
-    private String buildProcessedBucketKey(int offsetDays) {
-        LocalDate date = LocalDate.now().minusDays(offsetDays);
-        return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
+    try {
+      String bucketKey = buildProcessedBucketKey(0);
+      redisTemplate.opsForHash().put(bucketKey, traceId, "1");
+      redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      log.warn("Mark shop event processed failed: traceId={}", traceId, e);
     }
+  }
 
-    @Override
-    public void rebuildShopIndex() {
-        if (indexExists()) {
-            deleteShopIndex();
-        }
-        createShopIndex();
+  private String buildProcessedBucketKey(int offsetDays) {
+    LocalDate date = LocalDate.now().minusDays(offsetDays);
+    return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
+  }
+
+  @Override
+  public void rebuildShopIndex() {
+    if (indexExists()) {
+      deleteShopIndex();
     }
+    createShopIndex();
+  }
 
-    @Override
-    public boolean indexExists() {
-        try {
-            return elasticsearchOperations.indexOps(ShopDocument.class).exists();
-        } catch (Exception e) {
-            log.error("Check shop index existence failed", e);
-            return false;
-        }
+  @Override
+  public boolean indexExists() {
+    try {
+      return elasticsearchOperations.indexOps(ShopDocument.class).exists();
+    } catch (Exception e) {
+      log.error("Check shop index existence failed", e);
+      return false;
     }
+  }
 
-    @Override
-    public void createShopIndex() {
-        try {
-            elasticsearchOperations.indexOps(ShopDocument.class).create();
-            elasticsearchOperations.indexOps(ShopDocument.class).putMapping();
-        } catch (Exception e) {
-            throw new RuntimeException("Create shop index failed", e);
-        }
+  @Override
+  public void createShopIndex() {
+    try {
+      elasticsearchOperations.indexOps(ShopDocument.class).create();
+      elasticsearchOperations.indexOps(ShopDocument.class).putMapping();
+    } catch (Exception e) {
+      throw new RuntimeException("Create shop index failed", e);
     }
+  }
 
-    @Override
-    public void deleteShopIndex() {
-        try {
-            elasticsearchOperations.indexOps(ShopDocument.class).delete();
-        } catch (Exception e) {
-            throw new RuntimeException("Delete shop index failed", e);
-        }
+  @Override
+  public void deleteShopIndex() {
+    try {
+      elasticsearchOperations.indexOps(ShopDocument.class).delete();
+    } catch (Exception e) {
+      throw new RuntimeException("Delete shop index failed", e);
     }
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public SearchResultDTO<ShopDocument> searchShops(ShopSearchRequest request) {
-        ShopSearchRequest safeRequest = request == null ? new ShopSearchRequest() : request;
-        long start = System.currentTimeMillis();
+  @Override
+  @Transactional(readOnly = true)
+  public SearchResultDTO<ShopDocument> searchShops(ShopSearchRequest request) {
+    ShopSearchRequest safeRequest = request == null ? new ShopSearchRequest() : request;
+    long start = System.currentTimeMillis();
 
-        Pageable pageable = PageRequest.of(
-                normalizePage(safeRequest.getPage()),
-                normalizeSize(safeRequest.getSize()),
-                buildSort(safeRequest.getSortBy(), safeRequest.getSortOrder())
-        );
+    Pageable pageable =
+        PageRequest.of(
+            normalizePage(safeRequest.getPage()),
+            normalizeSize(safeRequest.getSize()),
+            buildSort(safeRequest.getSortBy(), safeRequest.getSortOrder()));
 
-        Page<ShopDocument> page = selectPage(safeRequest, pageable);
-        long took = System.currentTimeMillis() - start;
+    Page<ShopDocument> page = selectPage(safeRequest, pageable);
+    long took = System.currentTimeMillis() - start;
 
-        return SearchResultDTO.of(page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
+    return SearchResultDTO.of(
+        page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<String> getSearchSuggestions(String keyword, Integer size) {
+    if (StrUtil.isBlank(keyword)) {
+      return Collections.emptyList();
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<String> getSearchSuggestions(String keyword, Integer size) {
-        if (StrUtil.isBlank(keyword)) {
-            return Collections.emptyList();
-        }
-        int limit = size == null || size <= 0 ? 10 : Math.min(size, 50);
-        try {
-            Page<ShopDocument> page = shopDocumentRepository.findByShopNameContaining(keyword, PageRequest.of(0, limit));
-            return page.getContent().stream()
-                    .map(ShopDocument::getShopName)
-                    .filter(StrUtil::isNotBlank)
-                    .distinct()
-                    .limit(limit)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("Get shop suggestions failed", e);
-            return Collections.emptyList();
-        }
+    int limit = size == null || size <= 0 ? 10 : Math.min(size, 50);
+    try {
+      Page<ShopDocument> page =
+          shopDocumentRepository.findByShopNameContaining(keyword, PageRequest.of(0, limit));
+      return page.getContent().stream()
+          .map(ShopDocument::getShopName)
+          .filter(StrUtil::isNotBlank)
+          .distinct()
+          .limit(limit)
+          .collect(Collectors.toList());
+    } catch (Exception e) {
+      log.error("Get shop suggestions failed", e);
+      return Collections.emptyList();
     }
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<ShopDocument> getHotShops(Integer size) {
-        int limit = size == null || size <= 0 ? 10 : Math.min(size, 100);
-        try {
-            Page<ShopDocument> page = shopDocumentRepository.findByStatus(
-                    1,
-                    PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "hotScore"))
-            );
-            return page.getContent();
-        } catch (Exception e) {
-            log.error("Get hot shops failed", e);
-            return Collections.emptyList();
-        }
+  @Override
+  @Transactional(readOnly = true)
+  public List<ShopDocument> getHotShops(Integer size) {
+    int limit = size == null || size <= 0 ? 10 : Math.min(size, 100);
+    try {
+      Page<ShopDocument> page =
+          shopDocumentRepository.findByStatus(
+              1, PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "hotScore")));
+      return page.getContent();
+    } catch (Exception e) {
+      log.error("Get hot shops failed", e);
+      return Collections.emptyList();
     }
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public SearchResultDTO<ShopDocument> getShopFilters(ShopSearchRequest request) {
-        SearchResultDTO<ShopDocument> base = searchShops(request);
-        List<ShopDocument> list = base.getList() == null ? Collections.emptyList() : base.getList();
+  @Override
+  @Transactional(readOnly = true)
+  public SearchResultDTO<ShopDocument> getShopFilters(ShopSearchRequest request) {
+    SearchResultDTO<ShopDocument> base = searchShops(request);
+    List<ShopDocument> list = base.getList() == null ? Collections.emptyList() : base.getList();
 
-        Map<String, Object> aggregations = new LinkedHashMap<>();
-        aggregations.put("statusCount", list.stream().collect(Collectors.groupingBy(ShopDocument::getStatus, Collectors.counting())));
-        aggregations.put("recommendCount", list.stream().collect(Collectors.groupingBy(ShopDocument::getRecommended, Collectors.counting())));
-        base.setAggregations(aggregations);
-        return base;
+    Map<String, Object> aggregations = new LinkedHashMap<>();
+    aggregations.put(
+        "statusCount",
+        list.stream()
+            .collect(Collectors.groupingBy(ShopDocument::getStatus, Collectors.counting())));
+    aggregations.put(
+        "recommendCount",
+        list.stream()
+            .collect(Collectors.groupingBy(ShopDocument::getRecommended, Collectors.counting())));
+    base.setAggregations(aggregations);
+    return base;
+  }
+
+  private Page<ShopDocument> selectPage(ShopSearchRequest request, Pageable pageable) {
+    Integer status = request.getStatus();
+    if (StrUtil.isNotBlank(request.getKeyword()) && status != null) {
+      return shopDocumentRepository.searchByKeywordAndStatus(
+          request.getKeyword(), status, pageable);
     }
-
-    private Page<ShopDocument> selectPage(ShopSearchRequest request, Pageable pageable) {
-        Integer status = request.getStatus();
-        if (StrUtil.isNotBlank(request.getKeyword()) && status != null) {
-            return shopDocumentRepository.searchByKeywordAndStatus(request.getKeyword(), status, pageable);
-        }
-        if (StrUtil.isNotBlank(request.getKeyword())) {
-            return shopDocumentRepository.findByShopNameContaining(request.getKeyword(), pageable);
-        }
-        if (request.getMerchantId() != null && status != null) {
-            return shopDocumentRepository.findByMerchantIdAndStatus(request.getMerchantId(), status, pageable);
-        }
-        if (request.getMerchantId() != null) {
-            return shopDocumentRepository.findByMerchantId(request.getMerchantId(), pageable);
-        }
-        if (request.getRecommended() != null) {
-            return shopDocumentRepository.findByRecommended(request.getRecommended(), pageable);
-        }
-        if (StrUtil.isNotBlank(request.getAddressKeyword())) {
-            return shopDocumentRepository.findByAddressContaining(request.getAddressKeyword(), pageable);
-        }
-        if (request.getMinRating() != null) {
-            return shopDocumentRepository.advancedSearch(
-                    StrUtil.isNotBlank(request.getKeyword()) ? request.getKeyword() : "",
-                    request.getMinRating(),
-                    status != null ? status : 1,
-                    pageable
-            );
-        }
-        if (status != null) {
-            return shopDocumentRepository.findByStatus(status, pageable);
-        }
-        return shopDocumentRepository.findAll(pageable);
+    if (StrUtil.isNotBlank(request.getKeyword())) {
+      return shopDocumentRepository.findByShopNameContaining(request.getKeyword(), pageable);
     }
-
-    private int normalizePage(Integer page) {
-        return page == null || page < 0 ? 0 : page;
+    if (request.getMerchantId() != null && status != null) {
+      return shopDocumentRepository.findByMerchantIdAndStatus(
+          request.getMerchantId(), status, pageable);
     }
-
-    private int normalizeSize(Integer size) {
-        if (size == null || size <= 0) {
-            return 20;
-        }
-        return Math.min(size, 100);
+    if (request.getMerchantId() != null) {
+      return shopDocumentRepository.findByMerchantId(request.getMerchantId(), pageable);
     }
-
-    private Sort buildSort(String sortBy, String sortOrder) {
-        String field = StrUtil.isNotBlank(sortBy) ? sortBy : "createdAt";
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(direction, field);
+    if (request.getRecommended() != null) {
+      return shopDocumentRepository.findByRecommended(request.getRecommended(), pageable);
     }
+    if (StrUtil.isNotBlank(request.getAddressKeyword())) {
+      return shopDocumentRepository.findByAddressContaining(request.getAddressKeyword(), pageable);
+    }
+    if (request.getMinRating() != null) {
+      return shopDocumentRepository.advancedSearch(
+          StrUtil.isNotBlank(request.getKeyword()) ? request.getKeyword() : "",
+          request.getMinRating(),
+          status != null ? status : 1,
+          pageable);
+    }
+    if (status != null) {
+      return shopDocumentRepository.findByStatus(status, pageable);
+    }
+    return shopDocumentRepository.findAll(pageable);
+  }
+
+  private int normalizePage(Integer page) {
+    return page == null || page < 0 ? 0 : page;
+  }
+
+  private int normalizeSize(Integer size) {
+    if (size == null || size <= 0) {
+      return 20;
+    }
+    return Math.min(size, 100);
+  }
+
+  private Sort buildSort(String sortBy, String sortOrder) {
+    String field = StrUtil.isNotBlank(sortBy) ? sortBy : "createdAt";
+    Sort.Direction direction =
+        "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    return Sort.by(direction, field);
+  }
 }
-
-
-

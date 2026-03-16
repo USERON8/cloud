@@ -11,12 +11,12 @@ import lombok.EqualsAndHashCode;
 @Data
 public class Permission extends BaseEntity<Permission> {
 
-    @TableField("code")
-    private String code;
+  @TableField("code")
+  private String code;
 
-    @TableField("name")
-    private String name;
+  @TableField("name")
+  private String name;
 
-    @TableField("module")
-    private String module;
+  @TableField("module")
+  private String module;
 }

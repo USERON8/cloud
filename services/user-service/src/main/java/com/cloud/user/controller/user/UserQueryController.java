@@ -25,33 +25,32 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "User Query", description = "User query APIs")
 public class UserQueryController {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    @GetMapping
-    @PreAuthorize("hasAuthority('admin:all')")
-    @Operation(summary = "Find user by username", description = "Get one user by username")
-    public Result<UserDTO> findByUsername(
-            @RequestParam
-            @Parameter(description = "Username")
-            @NotBlank(message = "username is required") String username) {
-        return Result.success("query successful", userService.findByUsername(username));
-    }
+  @GetMapping
+  @PreAuthorize("hasAuthority('admin:all')")
+  @Operation(summary = "Find user by username", description = "Get one user by username")
+  public Result<UserDTO> findByUsername(
+      @RequestParam @Parameter(description = "Username") @NotBlank(message = "username is required")
+          String username) {
+    return Result.success("query successful", userService.findByUsername(username));
+  }
 
-    @GetMapping("/search")
-    @PreAuthorize("hasAuthority('admin:all')")
-    @Operation(summary = "Search users", description = "Search users with paging")
-    public Result<PageResult<UserVO>> search(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "20") Integer size,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String roleCode) {
-        UserPageDTO userPageDTO = new UserPageDTO();
-        userPageDTO.setCurrent(page.longValue());
-        userPageDTO.setSize(size.longValue());
-        userPageDTO.setUsername(username);
-        userPageDTO.setEmail(email);
-        userPageDTO.setRoleCode(roleCode);
-        return Result.success(userService.pageQuery(userPageDTO));
-    }
+  @GetMapping("/search")
+  @PreAuthorize("hasAuthority('admin:all')")
+  @Operation(summary = "Search users", description = "Search users with paging")
+  public Result<PageResult<UserVO>> search(
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "20") Integer size,
+      @RequestParam(required = false) String username,
+      @RequestParam(required = false) String email,
+      @RequestParam(required = false) String roleCode) {
+    UserPageDTO userPageDTO = new UserPageDTO();
+    userPageDTO.setCurrent(page.longValue());
+    userPageDTO.setSize(size.longValue());
+    userPageDTO.setUsername(username);
+    userPageDTO.setEmail(email);
+    userPageDTO.setRoleCode(roleCode);
+    return Result.success(userService.pageQuery(userPageDTO));
+  }
 }

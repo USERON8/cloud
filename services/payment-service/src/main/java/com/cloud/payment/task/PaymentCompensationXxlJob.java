@@ -13,33 +13,31 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentCompensationXxlJob {
 
-    private final PaymentCompensationService paymentCompensationService;
+  private final PaymentCompensationService paymentCompensationService;
 
-    @XxlJob("paymentOrderReconcileJob")
-    @DistributedLock(
-            key = "'xxl:payment:order-reconcile'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void reconcilePendingOrders() {
-        runJob("paymentOrderReconcileJob", paymentCompensationService.reconcilePendingOrders());
-    }
+  @XxlJob("paymentOrderReconcileJob")
+  @DistributedLock(
+      key = "'xxl:payment:order-reconcile'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void reconcilePendingOrders() {
+    runJob("paymentOrderReconcileJob", paymentCompensationService.reconcilePendingOrders());
+  }
 
-    @XxlJob("paymentRefundRetryJob")
-    @DistributedLock(
-            key = "'xxl:payment:refund-retry'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void retryPendingRefunds() {
-        runJob("paymentRefundRetryJob", paymentCompensationService.retryPendingRefunds());
-    }
+  @XxlJob("paymentRefundRetryJob")
+  @DistributedLock(
+      key = "'xxl:payment:refund-retry'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void retryPendingRefunds() {
+    runJob("paymentRefundRetryJob", paymentCompensationService.retryPendingRefunds());
+  }
 
-    private void runJob(String jobName, int handledCount) {
-        String message = jobName + " finished, handled records: " + handledCount;
-        XxlJobHelper.log(message);
-        log.info(message);
-    }
+  private void runJob(String jobName, int handledCount) {
+    String message = jobName + " finished, handled records: " + handledCount;
+    XxlJobHelper.log(message);
+    log.info(message);
+  }
 }

@@ -11,23 +11,27 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 public class ResourceServerConfig extends BaseResourceServerConfig {
-    public ResourceServerConfig(Environment environment) {
-        super(environment);
-    }
+  public ResourceServerConfig(Environment environment) {
+    super(environment);
+  }
 
-    @Override
-    protected boolean isStatelessSession() {
-        return true;
-    }
+  @Override
+  protected boolean isStatelessSession() {
+    return true;
+  }
 
-    @Override
-    protected boolean useBearerTokenHandlers() {
-        return true;
-    }
+  @Override
+  protected boolean useBearerTokenHandlers() {
+    return true;
+  }
 
-    @Override
-    protected void configureServiceEndpoints(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers("/api/search/**", "/api/search/shops/**").permitAll();
-    }
+  @Override
+  protected void configureServiceEndpoints(
+      org.springframework.security.config.annotation.web.configurers
+                      .AuthorizeHttpRequestsConfigurer<
+                  HttpSecurity>
+              .AuthorizationManagerRequestMatcherRegistry
+          authz) {
+    authz.requestMatchers("/api/search/**", "/api/search/shops/**").permitAll();
+  }
 }

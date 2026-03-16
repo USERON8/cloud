@@ -1,67 +1,69 @@
 package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
+import com.cloud.common.messaging.event.RefundCompletedEvent;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
-import com.cloud.payment.module.entity.PaymentOrderEntity;
-import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.messaging.PaymentSuccessTxProducer;
+import com.cloud.payment.module.entity.PaymentOrderEntity;
+import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
-import com.cloud.common.messaging.event.RefundCompletedEvent;
-import com.cloud.common.metrics.TradeMetrics;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentCompensationServiceImpl implements PaymentCompensationService {
 
-    private static final String ORDER_STATUS_CREATED = "CREATED";
-    private static final String ORDER_STATUS_PAID = "PAID";
-    private static final String ORDER_STATUS_FAILED = "FAILED";
-    private static final String REFUND_STATUS_REFUNDING = "REFUNDING";
-    private static final String REFUND_STATUS_REFUNDED = "REFUNDED";
-    private static final String REFUND_STATUS_REFUND_FAILED = "REFUND_FAILED";
+  private static final String ORDER_STATUS_CREATED = "CREATED";
+  private static final String ORDER_STATUS_PAID = "PAID";
+  private static final String ORDER_STATUS_FAILED = "FAILED";
+  private static final String REFUND_STATUS_REFUNDING = "REFUNDING";
+  private static final String REFUND_STATUS_REFUNDED = "REFUNDED";
+  private static final String REFUND_STATUS_REFUND_FAILED = "REFUND_FAILED";
 
-    private final PaymentOrderMapper paymentOrderMapper;
-    private final PaymentRefundMapper paymentRefundMapper;
-    private final PaymentCompensationProperties properties;
-    private final List<PaymentProviderGateway> providerGateways;
-    private final PaymentMessageProducer paymentMessageProducer;
-    private final PaymentSuccessTxProducer paymentSuccessTxProducer;
-    private final TradeMetrics tradeMetrics;
-    private final PaymentSecurityCacheService paymentSecurityCacheService;
+  private final PaymentOrderMapper paymentOrderMapper;
+  private final PaymentRefundMapper paymentRefundMapper;
+  private final PaymentCompensationProperties properties;
+  private final List<PaymentProviderGateway> providerGateways;
+  private final PaymentMessageProducer paymentMessageProducer;
+  private final PaymentSuccessTxProducer paymentSuccessTxProducer;
+  private final TradeMetrics tradeMetrics;
+  private final PaymentSecurityCacheService paymentSecurityCacheService;
 
-    @Override
-    public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
-        order.setPollCount(0);
-        order.setLastPolledAt(null);
-        order.setLastPollError(null);
-        order.setNextPollAt(LocalDateTime.now().plusSeconds(properties.getOrderQuery().getInitialDelaySeconds()));
-    }
+  @Override
+  public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
+    order.setPollCount(0);
+    order.setLastPolledAt(null);
+    order.setLastPollError(null);
+    order.setNextPollAt(
+        LocalDateTime.now().plusSeconds(properties.getOrderQuery().getInitialDelaySeconds()));
+  }
 
-    @Override
-    public void submitRefund(PaymentOrderEntity order, PaymentRefundEntity refund) {
-        applyRefundAttempt(order, refund, 1, true);
-    }
+  @Override
+  public void submitRefund(PaymentOrderEntity order, PaymentRefundEntity refund) {
+    applyRefundAttempt(order, refund, 1, true);
+  }
 
-    @Override
-    public int reconcilePendingOrders() {
-        LocalDateTime now = LocalDateTime.now();
-        List<PaymentOrderEntity> orders = paymentOrderMapper.selectList(new LambdaQueryWrapper<PaymentOrderEntity>()
+  @Override
+  public int reconcilePendingOrders() {
+    LocalDateTime now = LocalDateTime.now();
+    List<PaymentOrderEntity> orders =
+        paymentOrderMapper.selectList(
+            new LambdaQueryWrapper<PaymentOrderEntity>()
                 .eq(PaymentOrderEntity::getStatus, ORDER_STATUS_CREATED)
                 .eq(PaymentOrderEntity::getDeleted, 0)
                 .isNotNull(PaymentOrderEntity::getNextPollAt)
@@ -69,185 +71,211 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
                 .orderByAsc(PaymentOrderEntity::getNextPollAt)
                 .last("LIMIT " + properties.getOrderQuery().getBatchSize()));
 
-        int handledCount = 0;
-        for (PaymentOrderEntity order : orders) {
-            handledCount++;
-            applyOrderQueryResult(order, queryOrder(order), now);
-        }
-        return handledCount;
+    int handledCount = 0;
+    for (PaymentOrderEntity order : orders) {
+      handledCount++;
+      applyOrderQueryResult(order, queryOrder(order), now);
     }
+    return handledCount;
+  }
 
-    @Override
-    public int retryPendingRefunds() {
-        LocalDateTime now = LocalDateTime.now();
-        List<PaymentRefundEntity> refunds = paymentRefundMapper.selectList(new LambdaQueryWrapper<PaymentRefundEntity>()
+  @Override
+  public int retryPendingRefunds() {
+    LocalDateTime now = LocalDateTime.now();
+    List<PaymentRefundEntity> refunds =
+        paymentRefundMapper.selectList(
+            new LambdaQueryWrapper<PaymentRefundEntity>()
                 .eq(PaymentRefundEntity::getStatus, REFUND_STATUS_REFUNDING)
                 .eq(PaymentRefundEntity::getDeleted, 0)
-                .and(wrapper -> wrapper.le(PaymentRefundEntity::getNextRetryAt, now)
-                        .or()
-                        .isNull(PaymentRefundEntity::getNextRetryAt))
+                .and(
+                    wrapper ->
+                        wrapper
+                            .le(PaymentRefundEntity::getNextRetryAt, now)
+                            .or()
+                            .isNull(PaymentRefundEntity::getNextRetryAt))
                 .orderByAsc(PaymentRefundEntity::getNextRetryAt)
                 .last("LIMIT " + properties.getRefundRetry().getBatchSize()));
 
-        int handledCount = 0;
-        for (PaymentRefundEntity refund : refunds) {
-            PaymentOrderEntity order = paymentOrderMapper.selectOne(new LambdaQueryWrapper<PaymentOrderEntity>()
-                    .eq(PaymentOrderEntity::getPaymentNo, refund.getPaymentNo())
-                    .eq(PaymentOrderEntity::getDeleted, 0)
-                    .last("LIMIT 1"));
-            if (order == null) {
-                log.warn("Skip refund retry because payment order is missing, refundNo={}, paymentNo={}", refund.getRefundNo(), refund.getPaymentNo());
-                continue;
-            }
-            handledCount++;
-            int nextAttempt = defaultNumber(refund.getRetryCount()) + 1;
-            applyRefundAttempt(order, refund, nextAttempt, false);
-        }
-        return handledCount;
+    int handledCount = 0;
+    for (PaymentRefundEntity refund : refunds) {
+      PaymentOrderEntity order =
+          paymentOrderMapper.selectOne(
+              new LambdaQueryWrapper<PaymentOrderEntity>()
+                  .eq(PaymentOrderEntity::getPaymentNo, refund.getPaymentNo())
+                  .eq(PaymentOrderEntity::getDeleted, 0)
+                  .last("LIMIT 1"));
+      if (order == null) {
+        log.warn(
+            "Skip refund retry because payment order is missing, refundNo={}, paymentNo={}",
+            refund.getRefundNo(),
+            refund.getPaymentNo());
+        continue;
+      }
+      handledCount++;
+      int nextAttempt = defaultNumber(refund.getRetryCount()) + 1;
+      applyRefundAttempt(order, refund, nextAttempt, false);
+    }
+    return handledCount;
+  }
+
+  private void applyOrderQueryResult(
+      PaymentOrderEntity order, PaymentOrderQueryResult result, LocalDateTime now) {
+    String previousStatus = order.getStatus();
+    int nextAttempt = defaultNumber(order.getPollCount()) + 1;
+    order.setPollCount(nextAttempt);
+    order.setLastPolledAt(now);
+    if (StringUtils.hasText(result.providerTxnNo())) {
+      order.setProviderTxnNo(result.providerTxnNo());
     }
 
-    private void applyOrderQueryResult(PaymentOrderEntity order, PaymentOrderQueryResult result, LocalDateTime now) {
-        String previousStatus = order.getStatus();
-        int nextAttempt = defaultNumber(order.getPollCount()) + 1;
-        order.setPollCount(nextAttempt);
-        order.setLastPolledAt(now);
-        if (StringUtils.hasText(result.providerTxnNo())) {
-            order.setProviderTxnNo(result.providerTxnNo());
-        }
-
-        switch (result.status()) {
-            case PAID -> {
-                order.setStatus(ORDER_STATUS_PAID);
-                order.setPaidAt(result.paidAt() != null ? result.paidAt() : now);
-                order.setNextPollAt(null);
-                order.setLastPollError(null);
-                publishPaymentSuccessIfNeeded(order, previousStatus);
-            }
-            case FAILED -> {
-                order.setStatus(ORDER_STATUS_FAILED);
-                order.setNextPollAt(null);
-                order.setLastPollError(truncate(result.message()));
-            }
-            case PENDING, ERROR -> {
-                boolean exhausted = nextAttempt >= properties.getOrderQuery().getMaxAttempts();
-                order.setNextPollAt(exhausted ? null : now.plusSeconds(properties.getOrderQuery().getIntervalSeconds()));
-                order.setLastPollError(exhausted
-                        ? truncate("poll attempts exhausted: " + defaultString(result.message(), "PENDING"))
-                        : truncate(result.message()));
-            }
-        }
-        paymentOrderMapper.updateById(order);
-        if (ORDER_STATUS_PAID.equals(order.getStatus()) || ORDER_STATUS_FAILED.equals(order.getStatus())) {
-            paymentSecurityCacheService.evictStatus(order.getPaymentNo());
-        }
-        if (!ORDER_STATUS_PAID.equals(previousStatus) && ORDER_STATUS_PAID.equals(order.getStatus())) {
-            tradeMetrics.incrementPayment("success");
-        } else if (!ORDER_STATUS_FAILED.equals(previousStatus) && ORDER_STATUS_FAILED.equals(order.getStatus())) {
-            tradeMetrics.incrementPayment("failed");
-        }
+    switch (result.status()) {
+      case PAID -> {
+        order.setStatus(ORDER_STATUS_PAID);
+        order.setPaidAt(result.paidAt() != null ? result.paidAt() : now);
+        order.setNextPollAt(null);
+        order.setLastPollError(null);
+        publishPaymentSuccessIfNeeded(order, previousStatus);
+      }
+      case FAILED -> {
+        order.setStatus(ORDER_STATUS_FAILED);
+        order.setNextPollAt(null);
+        order.setLastPollError(truncate(result.message()));
+      }
+      case PENDING, ERROR -> {
+        boolean exhausted = nextAttempt >= properties.getOrderQuery().getMaxAttempts();
+        order.setNextPollAt(
+            exhausted ? null : now.plusSeconds(properties.getOrderQuery().getIntervalSeconds()));
+        order.setLastPollError(
+            exhausted
+                ? truncate("poll attempts exhausted: " + defaultString(result.message(), "PENDING"))
+                : truncate(result.message()));
+      }
     }
-
-    private void applyRefundAttempt(PaymentOrderEntity order, PaymentRefundEntity refund, int attemptNumber, boolean firstAttempt) {
-        LocalDateTime now = LocalDateTime.now();
-        String previousStatus = refund.getStatus();
-        PaymentRefundResult result = executeRefund(order, refund);
-
-        refund.setRetryCount(attemptNumber);
-        refund.setLastRetryAt(now);
-
-        switch (result.status()) {
-            case REFUNDED -> {
-                refund.setStatus(REFUND_STATUS_REFUNDED);
-                refund.setRefundedAt(result.refundedAt() != null ? result.refundedAt() : now);
-                refund.setNextRetryAt(null);
-                refund.setLastError(null);
-                publishRefundCompletedIfNeeded(order, refund, previousStatus);
-            }
-            case PENDING, ERROR, FAILED -> {
-                boolean exhausted = attemptNumber >= properties.getRefundRetry().getMaxAttempts();
-                refund.setStatus(exhausted ? REFUND_STATUS_REFUND_FAILED : REFUND_STATUS_REFUNDING);
-                refund.setNextRetryAt(exhausted ? null : now.plusSeconds(properties.getRefundRetry().getIntervalSeconds()));
-                refund.setLastError(truncate(result.message()));
-            }
-        }
-        paymentRefundMapper.updateById(refund);
-
-        if (log.isInfoEnabled()) {
-            log.info(
-                    "Processed refund compensation, refundNo={}, paymentNo={}, status={}, attempt={}, firstAttempt={}",
-                    refund.getRefundNo(), refund.getPaymentNo(), refund.getStatus(), attemptNumber, firstAttempt
-            );
-        }
+    paymentOrderMapper.updateById(order);
+    if (ORDER_STATUS_PAID.equals(order.getStatus())
+        || ORDER_STATUS_FAILED.equals(order.getStatus())) {
+      paymentSecurityCacheService.evictStatus(order.getPaymentNo());
     }
-
-    private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
-        if (ORDER_STATUS_PAID.equals(previousStatus)) {
-            return;
-        }
-        PaymentSuccessEvent event = PaymentSuccessEvent.builder()
-                .paymentId(order.getId())
-                .orderNo(order.getMainOrderNo())
-                .subOrderNo(order.getSubOrderNo())
-                .userId(order.getUserId())
-                .amount(order.getAmount())
-                .paymentMethod(order.getChannel())
-                .transactionNo(order.getProviderTxnNo())
-                .build();
-        paymentSuccessTxProducer.send(event);
+    if (!ORDER_STATUS_PAID.equals(previousStatus) && ORDER_STATUS_PAID.equals(order.getStatus())) {
+      tradeMetrics.incrementPayment("success");
+    } else if (!ORDER_STATUS_FAILED.equals(previousStatus)
+        && ORDER_STATUS_FAILED.equals(order.getStatus())) {
+      tradeMetrics.incrementPayment("failed");
     }
+  }
 
-    private void publishRefundCompletedIfNeeded(PaymentOrderEntity order, PaymentRefundEntity refund, String previousStatus) {
-        if (REFUND_STATUS_REFUNDED.equals(previousStatus)) {
-            return;
-        }
-        RefundCompletedEvent event = RefundCompletedEvent.builder()
-                .refundId(refund.getId())
-                .refundNo(refund.getRefundNo())
-                .paymentNo(refund.getPaymentNo())
-                .afterSaleNo(refund.getAfterSaleNo())
-                .mainOrderNo(order.getMainOrderNo())
-                .subOrderNo(order.getSubOrderNo())
-                .build();
-        paymentMessageProducer.sendRefundCompletedEvent(event);
-    }
+  private void applyRefundAttempt(
+      PaymentOrderEntity order,
+      PaymentRefundEntity refund,
+      int attemptNumber,
+      boolean firstAttempt) {
+    LocalDateTime now = LocalDateTime.now();
+    String previousStatus = refund.getStatus();
+    PaymentRefundResult result = executeRefund(order, refund);
 
-    private PaymentOrderQueryResult queryOrder(PaymentOrderEntity order) {
-        PaymentProviderGateway gateway = resolveGateway(order.getChannel());
-        if (gateway == null) {
-            return PaymentOrderQueryResult.error("unsupported payment channel: " + order.getChannel());
-        }
-        return gateway.queryPaymentOrder(order);
-    }
+    refund.setRetryCount(attemptNumber);
+    refund.setLastRetryAt(now);
 
-    private PaymentRefundResult executeRefund(PaymentOrderEntity order, PaymentRefundEntity refund) {
-        PaymentProviderGateway gateway = resolveGateway(order.getChannel());
-        if (gateway == null) {
-            return PaymentRefundResult.failed("unsupported payment channel: " + order.getChannel());
-        }
-        return gateway.executeRefund(order, refund);
+    switch (result.status()) {
+      case REFUNDED -> {
+        refund.setStatus(REFUND_STATUS_REFUNDED);
+        refund.setRefundedAt(result.refundedAt() != null ? result.refundedAt() : now);
+        refund.setNextRetryAt(null);
+        refund.setLastError(null);
+        publishRefundCompletedIfNeeded(order, refund, previousStatus);
+      }
+      case PENDING, ERROR, FAILED -> {
+        boolean exhausted = attemptNumber >= properties.getRefundRetry().getMaxAttempts();
+        refund.setStatus(exhausted ? REFUND_STATUS_REFUND_FAILED : REFUND_STATUS_REFUNDING);
+        refund.setNextRetryAt(
+            exhausted ? null : now.plusSeconds(properties.getRefundRetry().getIntervalSeconds()));
+        refund.setLastError(truncate(result.message()));
+      }
     }
+    paymentRefundMapper.updateById(refund);
 
-    private PaymentProviderGateway resolveGateway(String channel) {
-        for (PaymentProviderGateway gateway : providerGateways) {
-            if (gateway.supports(channel)) {
-                return gateway;
-            }
-        }
-        return null;
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Processed refund compensation, refundNo={}, paymentNo={}, status={}, attempt={}, firstAttempt={}",
+          refund.getRefundNo(),
+          refund.getPaymentNo(),
+          refund.getStatus(),
+          attemptNumber,
+          firstAttempt);
     }
+  }
 
-    private int defaultNumber(Integer value) {
-        return value == null ? 0 : value;
+  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
+    if (ORDER_STATUS_PAID.equals(previousStatus)) {
+      return;
     }
+    PaymentSuccessEvent event =
+        PaymentSuccessEvent.builder()
+            .paymentId(order.getId())
+            .orderNo(order.getMainOrderNo())
+            .subOrderNo(order.getSubOrderNo())
+            .userId(order.getUserId())
+            .amount(order.getAmount())
+            .paymentMethod(order.getChannel())
+            .transactionNo(order.getProviderTxnNo())
+            .build();
+    paymentSuccessTxProducer.send(event);
+  }
 
-    private String defaultString(String value, String fallback) {
-        return StringUtils.hasText(value) ? value : fallback;
+  private void publishRefundCompletedIfNeeded(
+      PaymentOrderEntity order, PaymentRefundEntity refund, String previousStatus) {
+    if (REFUND_STATUS_REFUNDED.equals(previousStatus)) {
+      return;
     }
+    RefundCompletedEvent event =
+        RefundCompletedEvent.builder()
+            .refundId(refund.getId())
+            .refundNo(refund.getRefundNo())
+            .paymentNo(refund.getPaymentNo())
+            .afterSaleNo(refund.getAfterSaleNo())
+            .mainOrderNo(order.getMainOrderNo())
+            .subOrderNo(order.getSubOrderNo())
+            .build();
+    paymentMessageProducer.sendRefundCompletedEvent(event);
+  }
 
-    private String truncate(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        return value.length() <= 255 ? value : value.substring(0, 255);
+  private PaymentOrderQueryResult queryOrder(PaymentOrderEntity order) {
+    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    if (gateway == null) {
+      return PaymentOrderQueryResult.error("unsupported payment channel: " + order.getChannel());
     }
+    return gateway.queryPaymentOrder(order);
+  }
+
+  private PaymentRefundResult executeRefund(PaymentOrderEntity order, PaymentRefundEntity refund) {
+    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    if (gateway == null) {
+      return PaymentRefundResult.failed("unsupported payment channel: " + order.getChannel());
+    }
+    return gateway.executeRefund(order, refund);
+  }
+
+  private PaymentProviderGateway resolveGateway(String channel) {
+    for (PaymentProviderGateway gateway : providerGateways) {
+      if (gateway.supports(channel)) {
+        return gateway;
+      }
+    }
+    return null;
+  }
+
+  private int defaultNumber(Integer value) {
+    return value == null ? 0 : value;
+  }
+
+  private String defaultString(String value, String fallback) {
+    return StringUtils.hasText(value) ? value : fallback;
+  }
+
+  private String truncate(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    return value.length() <= 255 ? value : value.substring(0, 255);
+  }
 }

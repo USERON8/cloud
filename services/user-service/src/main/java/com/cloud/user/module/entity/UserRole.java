@@ -11,9 +11,9 @@ import lombok.EqualsAndHashCode;
 @Data
 public class UserRole extends BaseEntity<UserRole> {
 
-    @TableField("user_id")
-    private Long userId;
+  @TableField("user_id")
+  private Long userId;
 
-    @TableField("role_id")
-    private Long roleId;
+  @TableField("role_id")
+  private Long roleId;
 }

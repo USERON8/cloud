@@ -12,23 +12,30 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 @Configuration
 @EnableWebSecurity
 public class ResourceServerConfig extends BaseResourceServerConfig {
-    public ResourceServerConfig(Environment environment) {
-        super(environment);
-    }
+  public ResourceServerConfig(Environment environment) {
+    super(environment);
+  }
 
-    @Override
-    protected void configureServiceEndpoints(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers("/api/v1/payment/alipay/notify").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/payments/orders/*").authenticated()
-                .requestMatchers("/api/payments/**")
-                .hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/v1/payment/alipay/**")
-                .hasAnyRole("USER", "ADMIN");
-    }
+  @Override
+  protected void configureServiceEndpoints(
+      org.springframework.security.config.annotation.web.configurers
+                      .AuthorizeHttpRequestsConfigurer<
+                  HttpSecurity>
+              .AuthorizationManagerRequestMatcherRegistry
+          authz) {
+    authz
+        .requestMatchers("/api/v1/payment/alipay/notify")
+        .permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/payments/orders/*")
+        .authenticated()
+        .requestMatchers("/api/payments/**")
+        .hasAnyRole("USER", "ADMIN")
+        .requestMatchers("/api/v1/payment/alipay/**")
+        .hasAnyRole("USER", "ADMIN");
+  }
 
-    @Override
-    protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
-        return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, false, null);
-    }
+  @Override
+  protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
+    return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, false, null);
+  }
 }

@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 public class UserSystemAnnouncementRequestDTO {
 
-    @NotBlank(message = "title is required")
-    private String title;
+  @NotBlank(message = "title is required")
+  private String title;
 
-    @NotBlank(message = "content is required")
-    private String content;
+  @NotBlank(message = "content is required")
+  private String content;
 }

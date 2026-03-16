@@ -16,9 +16,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @Import({PermissionConfig.class, PermissionChecker.class})
 public class SecurityConfig {
 
-    @Bean("securityExpressions")
-    @ConditionalOnProperty(name = "app.security.expressions.enabled", havingValue = "true", matchIfMissing = true)
-    public UnifiedSecurityExpressions securityExpressions() {
-        return new UnifiedSecurityExpressions();
-    }
+  @Bean("securityExpressions")
+  @ConditionalOnProperty(
+      name = "app.security.expressions.enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public UnifiedSecurityExpressions securityExpressions() {
+    return new UnifiedSecurityExpressions();
+  }
 }

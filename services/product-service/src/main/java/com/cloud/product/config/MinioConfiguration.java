@@ -11,21 +11,18 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "minio")
 public class MinioConfiguration {
 
-    private String endpoint;
+  private String endpoint;
 
-    private String accessKey;
+  private String accessKey;
 
-    private String secretKey;
+  private String secretKey;
 
-    private String bucketName;
+  private String bucketName;
 
-    private String publicEndpoint;
+  private String publicEndpoint;
 
-    @Bean
-    public MinioClient minioClient() {
-        return MinioClient.builder()
-                .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
-                .build();
-    }
+  @Bean
+  public MinioClient minioClient() {
+    return MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
+  }
 }

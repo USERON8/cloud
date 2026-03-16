@@ -5,5 +5,4 @@ import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface PaymentCallbackLogMapper extends BaseMapper<PaymentCallbackLogEntity> {
-}
+public interface PaymentCallbackLogMapper extends BaseMapper<PaymentCallbackLogEntity> {}

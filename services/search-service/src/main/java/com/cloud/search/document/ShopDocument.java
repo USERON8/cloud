@@ -1,5 +1,6 @@
 package com.cloud.search.document;
 
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,16 +13,6 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.elasticsearch.annotations.Mapping;
 import org.springframework.data.elasticsearch.annotations.Setting;
 
-import java.time.LocalDateTime;
-
-
-
-
-
-
-
-
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -31,117 +22,59 @@ import java.time.LocalDateTime;
 @Mapping(mappingPath = "elasticsearch/shop-mapping.json")
 public class ShopDocument {
 
+  @Id private String id;
 
+  @Field(type = FieldType.Long)
+  private Long shopId;
 
+  @Field(type = FieldType.Long)
+  private Long merchantId;
 
-    @Id
-    private String id;
+  @Field(type = FieldType.Text, analyzer = "standard")
+  private String shopName;
 
+  @Field(type = FieldType.Keyword)
+  private String shopNameKeyword;
 
+  @Field(type = FieldType.Keyword)
+  private String avatarUrl;
 
+  @Field(type = FieldType.Text, analyzer = "standard")
+  private String description;
 
-    @Field(type = FieldType.Long)
-    private Long shopId;
+  @Field(type = FieldType.Keyword)
+  private String contactPhone;
 
+  @Field(type = FieldType.Text, analyzer = "standard")
+  private String address;
 
+  @Field(type = FieldType.Integer)
+  private Integer status;
 
+  @Field(type = FieldType.Integer)
+  private Integer productCount;
 
-    @Field(type = FieldType.Long)
-    private Long merchantId;
+  @Field(type = FieldType.Double)
+  private Double rating;
 
+  @Field(type = FieldType.Integer)
+  private Integer reviewCount;
 
+  @Field(type = FieldType.Integer)
+  private Integer followCount;
 
+  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+  private LocalDateTime createdAt;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
-    private String shopName;
+  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+  private LocalDateTime updatedAt;
 
+  @Field(type = FieldType.Double)
+  private Double searchWeight;
 
+  @Field(type = FieldType.Double)
+  private Double hotScore;
 
-
-    @Field(type = FieldType.Keyword)
-    private String shopNameKeyword;
-
-
-
-
-    @Field(type = FieldType.Keyword)
-    private String avatarUrl;
-
-
-
-
-    @Field(type = FieldType.Text, analyzer = "standard")
-    private String description;
-
-
-
-
-    @Field(type = FieldType.Keyword)
-    private String contactPhone;
-
-
-
-
-    @Field(type = FieldType.Text, analyzer = "standard")
-    private String address;
-
-
-
-
-    @Field(type = FieldType.Integer)
-    private Integer status;
-
-
-
-
-    @Field(type = FieldType.Integer)
-    private Integer productCount;
-
-
-
-
-    @Field(type = FieldType.Double)
-    private Double rating;
-
-
-
-
-    @Field(type = FieldType.Integer)
-    private Integer reviewCount;
-
-
-
-
-    @Field(type = FieldType.Integer)
-    private Integer followCount;
-
-
-
-
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
-    private LocalDateTime createdAt;
-
-
-
-
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
-    private LocalDateTime updatedAt;
-
-
-
-
-    @Field(type = FieldType.Double)
-    private Double searchWeight;
-
-
-
-
-    @Field(type = FieldType.Double)
-    private Double hotScore;
-
-
-
-
-    @Field(type = FieldType.Boolean)
-    private Boolean recommended;
+  @Field(type = FieldType.Boolean)
+  private Boolean recommended;
 }

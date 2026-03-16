@@ -6,8 +6,8 @@ import lombok.Data;
 @Data
 public class UserNotificationStatusChangeRequestDTO {
 
-    @NotNull(message = "new status is required")
-    private Integer newStatus;
+  @NotNull(message = "new status is required")
+  private Integer newStatus;
 
-    private String reason;
+  private String reason;
 }

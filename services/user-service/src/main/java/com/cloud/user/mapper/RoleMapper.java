@@ -5,5 +5,4 @@ import com.cloud.user.module.entity.Role;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface RoleMapper extends BaseMapper<Role> {
-}
+public interface RoleMapper extends BaseMapper<Role> {}

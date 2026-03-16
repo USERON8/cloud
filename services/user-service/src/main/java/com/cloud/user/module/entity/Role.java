@@ -11,12 +11,12 @@ import lombok.EqualsAndHashCode;
 @Data
 public class Role extends BaseEntity<Role> {
 
-    @TableField("code")
-    private String code;
+  @TableField("code")
+  private String code;
 
-    @TableField("name")
-    private String name;
+  @TableField("name")
+  private String name;
 
-    @TableField("description")
-    private String description;
+  @TableField("description")
+  private String description;
 }

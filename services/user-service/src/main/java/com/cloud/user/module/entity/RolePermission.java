@@ -11,9 +11,9 @@ import lombok.EqualsAndHashCode;
 @Data
 public class RolePermission extends BaseEntity<RolePermission> {
 
-    @TableField("role_id")
-    private Long roleId;
+  @TableField("role_id")
+  private Long roleId;
 
-    @TableField("permission_id")
-    private Long permissionId;
+  @TableField("permission_id")
+  private Long permissionId;
 }

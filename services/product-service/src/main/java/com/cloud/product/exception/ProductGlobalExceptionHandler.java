@@ -13,60 +13,67 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice(basePackages = "com.cloud")
-public class ProductGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
+public class ProductGlobalExceptionHandler
+    extends com.cloud.common.exception.GlobalExceptionHandler {
 
-    @ExceptionHandler(AccessDeniedException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Result<Object> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("Access denied: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.forbidden("Access denied");
-    }
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public Result<Object> handleAccessDeniedException(
+      AccessDeniedException e, HttpServletRequest request) {
+    log.warn("Access denied: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.forbidden("Access denied");
+  }
 
-    @ExceptionHandler(DuplicateKeyException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public Result<Object> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
-        log.warn("Duplicate key: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.businessError("Duplicate data exists");
-    }
+  @ExceptionHandler(DuplicateKeyException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public Result<Object> handleDuplicateKeyException(
+      DuplicateKeyException e, HttpServletRequest request) {
+    log.warn("Duplicate key: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.businessError("Duplicate data exists");
+  }
 
-    @ExceptionHandler(ProductServiceException.ProductPermissionException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Result<Object> handleProductPermissionException(
-            ProductServiceException.ProductPermissionException e,
-            HttpServletRequest request
-    ) {
-        log.warn("Product permission exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.forbidden("Access denied");
-    }
+  @ExceptionHandler(ProductServiceException.ProductPermissionException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public Result<Object> handleProductPermissionException(
+      ProductServiceException.ProductPermissionException e, HttpServletRequest request) {
+    log.warn(
+        "Product permission exception: uri={}, message={}",
+        request.getRequestURI(),
+        e.getMessage());
+    return Result.forbidden("Access denied");
+  }
 
-    @ExceptionHandler(ProductServiceException.ProductNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Result<Object> handleProductNotFoundException(
-            ProductServiceException.ProductNotFoundException e,
-            HttpServletRequest request
-    ) {
-        log.warn("Product not found exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.notFound("Product not found");
-    }
+  @ExceptionHandler(ProductServiceException.ProductNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public Result<Object> handleProductNotFoundException(
+      ProductServiceException.ProductNotFoundException e, HttpServletRequest request) {
+    log.warn(
+        "Product not found exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.notFound("Product not found");
+  }
 
-    @ExceptionHandler(ProductServiceException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleProductServiceException(ProductServiceException e, HttpServletRequest request) {
-        log.warn("Product service exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.badRequest("Product request failed");
-    }
+  @ExceptionHandler(ProductServiceException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Result<Object> handleProductServiceException(
+      ProductServiceException e, HttpServletRequest request) {
+    log.warn(
+        "Product service exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.badRequest("Product request failed");
+  }
 
-    @ExceptionHandler(CategoryException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleCategoryException(CategoryException e, HttpServletRequest request) {
-        log.warn("Category exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.badRequest("Category request failed");
-    }
+  @ExceptionHandler(CategoryException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Result<Object> handleCategoryException(CategoryException e, HttpServletRequest request) {
+    log.warn("Category exception: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.badRequest("Category request failed");
+  }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e, HttpServletRequest request) {
-        log.warn("Data integrity violation: uri={}, message={}", request.getRequestURI(), e.getMessage());
-        return Result.badRequest("Data integrity violation");
-    }
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Result<Object> handleDataIntegrityViolationException(
+      DataIntegrityViolationException e, HttpServletRequest request) {
+    log.warn(
+        "Data integrity violation: uri={}, message={}", request.getRequestURI(), e.getMessage());
+    return Result.badRequest("Data integrity violation");
+  }
 }

@@ -5,5 +5,4 @@ import com.cloud.payment.module.entity.PaymentOrderEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface PaymentOrderMapper extends BaseMapper<PaymentOrderEntity> {
-}
+public interface PaymentOrderMapper extends BaseMapper<PaymentOrderEntity> {}

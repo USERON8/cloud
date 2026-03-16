@@ -15,315 +15,309 @@ import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.support.ProductDetailCacheService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class ProductCatalogServiceImpl implements ProductCatalogService {
 
-    private final SpuMapper spuMapper;
-    private final SkuMapper skuMapper;
-    private final ProductDetailCacheService productDetailCacheService;
-    private final ProductSyncMessageProducer productSyncMessageProducer;
+  private final SpuMapper spuMapper;
+  private final SkuMapper skuMapper;
+  private final ProductDetailCacheService productDetailCacheService;
+  private final ProductSyncMessageProducer productSyncMessageProducer;
 
-    @Value("${product.config.page.max-size:100}")
-    private Integer maxListSize;
+  @Value("${product.config.page.max-size:100}")
+  private Integer maxListSize;
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Long createSpu(SpuCreateRequestDTO request) {
-        SpuDTO spuDTO = request.getSpu();
-        Spu spu = toSpuEntity(spuDTO);
-        try {
-            spuMapper.insert(spu);
-        } catch (DuplicateKeyException ex) {
-            throw new BusinessException("spu already exists");
-        }
-
-        for (SkuDTO skuDTO : request.getSkus()) {
-            Sku sku = toSkuEntity(spu.getId(), skuDTO);
-            skuMapper.insert(sku);
-        }
-        productSyncMessageProducer.sendUpsert(spu.getId());
-        return spu.getId();
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Long createSpu(SpuCreateRequestDTO request) {
+    SpuDTO spuDTO = request.getSpu();
+    Spu spu = toSpuEntity(spuDTO);
+    try {
+      spuMapper.insert(spu);
+    } catch (DuplicateKeyException ex) {
+      throw new BusinessException("spu already exists");
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Boolean updateSpu(Long spuId, SpuCreateRequestDTO request) {
-        Spu existing = spuMapper.selectById(spuId);
-        if (existing == null || existing.getDeleted() == 1) {
-            throw new BusinessException("spu not found");
-        }
+    for (SkuDTO skuDTO : request.getSkus()) {
+      Sku sku = toSkuEntity(spu.getId(), skuDTO);
+      skuMapper.insert(sku);
+    }
+    productSyncMessageProducer.sendUpsert(spu.getId());
+    return spu.getId();
+  }
 
-        SpuDTO spuDTO = request.getSpu();
-        existing.setSpuName(spuDTO.getSpuName());
-        existing.setSubtitle(spuDTO.getSubtitle());
-        existing.setCategoryId(spuDTO.getCategoryId());
-        existing.setBrandId(spuDTO.getBrandId());
-        existing.setMerchantId(spuDTO.getMerchantId());
-        existing.setStatus(spuDTO.getStatus());
-        existing.setDescription(spuDTO.getDescription());
-        existing.setMainImage(spuDTO.getMainImage());
-        existing.setMainImageFile(spuDTO.getMainImageFile());
-        spuMapper.updateById(existing);
-
-        List<Sku> oldSkus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                .eq(Sku::getSpuId, spuId)
-                .eq(Sku::getDeleted, 0));
-        Map<Long, Sku> existingById = new LinkedHashMap<>();
-        Map<String, Sku> existingByCode = new LinkedHashMap<>();
-        for (Sku oldSku : oldSkus) {
-            if (oldSku.getId() != null) {
-                existingById.put(oldSku.getId(), oldSku);
-            }
-            if (oldSku.getSkuCode() != null && !oldSku.getSkuCode().isBlank()) {
-                existingByCode.put(oldSku.getSkuCode(), oldSku);
-            }
-        }
-
-        Set<Long> retainedIds = new java.util.HashSet<>();
-        for (SkuDTO skuDTO : request.getSkus()) {
-            Sku existingSku = null;
-            if (skuDTO.getSkuId() != null) {
-                existingSku = existingById.get(skuDTO.getSkuId());
-            }
-            if (existingSku == null && skuDTO.getSkuCode() != null && !skuDTO.getSkuCode().isBlank()) {
-                existingSku = existingByCode.get(skuDTO.getSkuCode());
-            }
-
-            if (existingSku != null) {
-                existingSku.setSkuCode(skuDTO.getSkuCode());
-                existingSku.setSkuName(skuDTO.getSkuName());
-                existingSku.setSpecJson(skuDTO.getSpecJson());
-                existingSku.setSalePrice(skuDTO.getSalePrice());
-                existingSku.setMarketPrice(skuDTO.getMarketPrice());
-                existingSku.setCostPrice(skuDTO.getCostPrice());
-                existingSku.setStatus(skuDTO.getStatus());
-                existingSku.setImageUrl(skuDTO.getImageUrl());
-                existingSku.setImageFile(skuDTO.getImageFile());
-                existingSku.setDeleted(0);
-                skuMapper.updateById(existingSku);
-                if (existingSku.getId() != null) {
-                    retainedIds.add(existingSku.getId());
-                }
-            } else {
-                Sku sku = toSkuEntity(spuId, skuDTO);
-                skuMapper.insert(sku);
-            }
-        }
-
-        for (Sku oldSku : oldSkus) {
-            if (oldSku.getId() == null) {
-                continue;
-            }
-            if (retainedIds.contains(oldSku.getId())) {
-                continue;
-            }
-            oldSku.setDeleted(1);
-            skuMapper.updateById(oldSku);
-        }
-        productDetailCacheService.evict(spuId);
-        productSyncMessageProducer.sendUpsert(spuId);
-        return true;
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Boolean updateSpu(Long spuId, SpuCreateRequestDTO request) {
+    Spu existing = spuMapper.selectById(spuId);
+    if (existing == null || existing.getDeleted() == 1) {
+      throw new BusinessException("spu not found");
     }
 
-    @Override
-    public SpuDetailVO getSpuById(Long spuId) {
-        return productDetailCacheService.getOrLoad(spuId, () -> loadSpuDetail(spuId));
+    SpuDTO spuDTO = request.getSpu();
+    existing.setSpuName(spuDTO.getSpuName());
+    existing.setSubtitle(spuDTO.getSubtitle());
+    existing.setCategoryId(spuDTO.getCategoryId());
+    existing.setBrandId(spuDTO.getBrandId());
+    existing.setMerchantId(spuDTO.getMerchantId());
+    existing.setStatus(spuDTO.getStatus());
+    existing.setDescription(spuDTO.getDescription());
+    existing.setMainImage(spuDTO.getMainImage());
+    existing.setMainImageFile(spuDTO.getMainImageFile());
+    spuMapper.updateById(existing);
+
+    List<Sku> oldSkus =
+        skuMapper.selectList(
+            new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
+    Map<Long, Sku> existingById = new LinkedHashMap<>();
+    Map<String, Sku> existingByCode = new LinkedHashMap<>();
+    for (Sku oldSku : oldSkus) {
+      if (oldSku.getId() != null) {
+        existingById.put(oldSku.getId(), oldSku);
+      }
+      if (oldSku.getSkuCode() != null && !oldSku.getSkuCode().isBlank()) {
+        existingByCode.put(oldSku.getSkuCode(), oldSku);
+      }
     }
 
-    @Override
-    public List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status) {
-        int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
-        LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
-                .eq(Spu::getCategoryId, categoryId)
-                .eq(Spu::getDeleted, 0);
-        if (status != null) {
-            wrapper.eq(Spu::getStatus, status);
+    Set<Long> retainedIds = new java.util.HashSet<>();
+    for (SkuDTO skuDTO : request.getSkus()) {
+      Sku existingSku = null;
+      if (skuDTO.getSkuId() != null) {
+        existingSku = existingById.get(skuDTO.getSkuId());
+      }
+      if (existingSku == null && skuDTO.getSkuCode() != null && !skuDTO.getSkuCode().isBlank()) {
+        existingSku = existingByCode.get(skuDTO.getSkuCode());
+      }
+
+      if (existingSku != null) {
+        existingSku.setSkuCode(skuDTO.getSkuCode());
+        existingSku.setSkuName(skuDTO.getSkuName());
+        existingSku.setSpecJson(skuDTO.getSpecJson());
+        existingSku.setSalePrice(skuDTO.getSalePrice());
+        existingSku.setMarketPrice(skuDTO.getMarketPrice());
+        existingSku.setCostPrice(skuDTO.getCostPrice());
+        existingSku.setStatus(skuDTO.getStatus());
+        existingSku.setImageUrl(skuDTO.getImageUrl());
+        existingSku.setImageFile(skuDTO.getImageFile());
+        existingSku.setDeleted(0);
+        skuMapper.updateById(existingSku);
+        if (existingSku.getId() != null) {
+          retainedIds.add(existingSku.getId());
         }
-        wrapper.last("LIMIT " + effectiveMax);
-        List<Spu> spus = spuMapper.selectList(wrapper);
-        return buildSpuDetails(spus);
+      } else {
+        Sku sku = toSkuEntity(spuId, skuDTO);
+        skuMapper.insert(sku);
+      }
     }
 
-    @Override
-    public List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status) {
-        int safePage = page == null || page < 1 ? 1 : page;
-        int safeSize = size == null || size <= 0 ? 100 : size;
-        int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
-        safeSize = Math.min(safeSize, effectiveMax);
+    for (Sku oldSku : oldSkus) {
+      if (oldSku.getId() == null) {
+        continue;
+      }
+      if (retainedIds.contains(oldSku.getId())) {
+        continue;
+      }
+      oldSku.setDeleted(1);
+      skuMapper.updateById(oldSku);
+    }
+    productDetailCacheService.evict(spuId);
+    productSyncMessageProducer.sendUpsert(spuId);
+    return true;
+  }
 
-        LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>()
-                .eq(Spu::getDeleted, 0);
-        if (status != null) {
-            wrapper.eq(Spu::getStatus, status);
-        }
-        wrapper.orderByAsc(Spu::getId);
+  @Override
+  public SpuDetailVO getSpuById(Long spuId) {
+    return productDetailCacheService.getOrLoad(spuId, () -> loadSpuDetail(spuId));
+  }
 
-        Page<Spu> pageData = new Page<>(safePage, safeSize);
-        Page<Spu> result = spuMapper.selectPage(pageData, wrapper);
-        return buildSpuDetails(result == null ? Collections.emptyList() : result.getRecords());
+  @Override
+  public List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status) {
+    int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
+    LambdaQueryWrapper<Spu> wrapper =
+        new LambdaQueryWrapper<Spu>().eq(Spu::getCategoryId, categoryId).eq(Spu::getDeleted, 0);
+    if (status != null) {
+      wrapper.eq(Spu::getStatus, status);
+    }
+    wrapper.last("LIMIT " + effectiveMax);
+    List<Spu> spus = spuMapper.selectList(wrapper);
+    return buildSpuDetails(spus);
+  }
+
+  @Override
+  public List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status) {
+    int safePage = page == null || page < 1 ? 1 : page;
+    int safeSize = size == null || size <= 0 ? 100 : size;
+    int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
+    safeSize = Math.min(safeSize, effectiveMax);
+
+    LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>().eq(Spu::getDeleted, 0);
+    if (status != null) {
+      wrapper.eq(Spu::getStatus, status);
+    }
+    wrapper.orderByAsc(Spu::getId);
+
+    Page<Spu> pageData = new Page<>(safePage, safeSize);
+    Page<Spu> result = spuMapper.selectPage(pageData, wrapper);
+    return buildSpuDetails(result == null ? Collections.emptyList() : result.getRecords());
+  }
+
+  @Override
+  public List<SkuDetailVO> listSkuByIds(List<Long> skuIds) {
+    if (skuIds == null || skuIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<Sku> skus =
+        skuMapper.selectList(
+            new LambdaQueryWrapper<Sku>().in(Sku::getId, skuIds).eq(Sku::getDeleted, 0));
+    if (skus == null || skus.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<SkuDetailVO> result = new ArrayList<>(skus.size());
+    for (Sku sku : skus) {
+      result.add(toSkuDetail(sku));
+    }
+    return result;
+  }
+
+  @Override
+  public Boolean updateSpuStatus(Long spuId, Integer status) {
+    Spu spu = spuMapper.selectById(spuId);
+    if (spu == null || spu.getDeleted() == 1) {
+      throw new BusinessException("spu not found");
+    }
+    spu.setStatus(status);
+    boolean updated = spuMapper.updateById(spu) > 0;
+    if (updated) {
+      productDetailCacheService.evict(spuId);
+      productSyncMessageProducer.sendUpsert(spuId);
+    }
+    return updated;
+  }
+
+  private Spu toSpuEntity(SpuDTO dto) {
+    Spu spu = new Spu();
+    if (dto.getSpuId() != null) {
+      spu.setId(dto.getSpuId());
+    }
+    spu.setSpuName(dto.getSpuName());
+    spu.setSubtitle(dto.getSubtitle());
+    spu.setCategoryId(dto.getCategoryId());
+    spu.setBrandId(dto.getBrandId());
+    spu.setMerchantId(dto.getMerchantId());
+    spu.setStatus(dto.getStatus());
+    spu.setDescription(dto.getDescription());
+    spu.setMainImage(dto.getMainImage());
+    spu.setMainImageFile(dto.getMainImageFile());
+    return spu;
+  }
+
+  private Sku toSkuEntity(Long spuId, SkuDTO dto) {
+    Sku sku = new Sku();
+    if (dto.getSkuId() != null) {
+      sku.setId(dto.getSkuId());
+    }
+    sku.setSpuId(spuId);
+    sku.setSkuCode(dto.getSkuCode());
+    sku.setSkuName(dto.getSkuName());
+    sku.setSpecJson(dto.getSpecJson());
+    sku.setSalePrice(dto.getSalePrice());
+    sku.setMarketPrice(dto.getMarketPrice());
+    sku.setCostPrice(dto.getCostPrice());
+    sku.setStatus(dto.getStatus());
+    sku.setImageUrl(dto.getImageUrl());
+    sku.setImageFile(dto.getImageFile());
+    return sku;
+  }
+
+  private SpuDetailVO toSpuDetail(Spu spu, List<Sku> skus) {
+    SpuDetailVO vo = new SpuDetailVO();
+    vo.setSpuId(spu.getId());
+    vo.setSpuName(spu.getSpuName());
+    vo.setSubtitle(spu.getSubtitle());
+    vo.setCategoryId(spu.getCategoryId());
+    vo.setBrandId(spu.getBrandId());
+    vo.setMerchantId(spu.getMerchantId());
+    vo.setStatus(spu.getStatus());
+    vo.setDescription(spu.getDescription());
+    vo.setMainImage(spu.getMainImage());
+    vo.setMainImageFile(spu.getMainImageFile());
+    vo.setCreatedAt(spu.getCreatedAt());
+    vo.setUpdatedAt(spu.getUpdatedAt());
+
+    List<SkuDetailVO> skuDetails = new ArrayList<>();
+    for (Sku sku : skus) {
+      skuDetails.add(toSkuDetail(sku));
+    }
+    vo.setSkus(skuDetails);
+    return vo;
+  }
+
+  private SpuDetailVO loadSpuDetail(Long spuId) {
+    Spu spu = spuMapper.selectById(spuId);
+    if (spu == null || spu.getDeleted() == 1) {
+      return null;
+    }
+    List<Sku> skus =
+        skuMapper.selectList(
+            new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
+    return toSpuDetail(spu, skus);
+  }
+
+  private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
+    if (spus == null || spus.isEmpty()) {
+      return Collections.emptyList();
     }
 
-    @Override
-    public List<SkuDetailVO> listSkuByIds(List<Long> skuIds) {
-        if (skuIds == null || skuIds.isEmpty()) {
-            return Collections.emptyList();
+    List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
+    Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
+    if (!spuIds.isEmpty()) {
+      List<Sku> skus =
+          skuMapper.selectList(
+              new LambdaQueryWrapper<Sku>().in(Sku::getSpuId, spuIds).eq(Sku::getDeleted, 0));
+      for (Sku sku : skus) {
+        if (sku.getSpuId() == null) {
+          continue;
         }
-        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                .in(Sku::getId, skuIds)
-                .eq(Sku::getDeleted, 0));
-        if (skus == null || skus.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<SkuDetailVO> result = new ArrayList<>(skus.size());
-        for (Sku sku : skus) {
-            result.add(toSkuDetail(sku));
-        }
-        return result;
+        skusBySpuId.computeIfAbsent(sku.getSpuId(), ignored -> new ArrayList<>()).add(sku);
+      }
     }
 
-    @Override
-    public Boolean updateSpuStatus(Long spuId, Integer status) {
-        Spu spu = spuMapper.selectById(spuId);
-        if (spu == null || spu.getDeleted() == 1) {
-            throw new BusinessException("spu not found");
-        }
-        spu.setStatus(status);
-        boolean updated = spuMapper.updateById(spu) > 0;
-        if (updated) {
-            productDetailCacheService.evict(spuId);
-            productSyncMessageProducer.sendUpsert(spuId);
-        }
-        return updated;
+    List<SpuDetailVO> result = new ArrayList<>(spus.size());
+    for (Spu spu : spus) {
+      List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
+      result.add(toSpuDetail(spu, skus));
     }
+    return result;
+  }
 
-    private Spu toSpuEntity(SpuDTO dto) {
-        Spu spu = new Spu();
-        if (dto.getSpuId() != null) {
-            spu.setId(dto.getSpuId());
-        }
-        spu.setSpuName(dto.getSpuName());
-        spu.setSubtitle(dto.getSubtitle());
-        spu.setCategoryId(dto.getCategoryId());
-        spu.setBrandId(dto.getBrandId());
-        spu.setMerchantId(dto.getMerchantId());
-        spu.setStatus(dto.getStatus());
-        spu.setDescription(dto.getDescription());
-        spu.setMainImage(dto.getMainImage());
-        spu.setMainImageFile(dto.getMainImageFile());
-        return spu;
-    }
-
-    private Sku toSkuEntity(Long spuId, SkuDTO dto) {
-        Sku sku = new Sku();
-        if (dto.getSkuId() != null) {
-            sku.setId(dto.getSkuId());
-        }
-        sku.setSpuId(spuId);
-        sku.setSkuCode(dto.getSkuCode());
-        sku.setSkuName(dto.getSkuName());
-        sku.setSpecJson(dto.getSpecJson());
-        sku.setSalePrice(dto.getSalePrice());
-        sku.setMarketPrice(dto.getMarketPrice());
-        sku.setCostPrice(dto.getCostPrice());
-        sku.setStatus(dto.getStatus());
-        sku.setImageUrl(dto.getImageUrl());
-        sku.setImageFile(dto.getImageFile());
-        return sku;
-    }
-
-    private SpuDetailVO toSpuDetail(Spu spu, List<Sku> skus) {
-        SpuDetailVO vo = new SpuDetailVO();
-        vo.setSpuId(spu.getId());
-        vo.setSpuName(spu.getSpuName());
-        vo.setSubtitle(spu.getSubtitle());
-        vo.setCategoryId(spu.getCategoryId());
-        vo.setBrandId(spu.getBrandId());
-        vo.setMerchantId(spu.getMerchantId());
-        vo.setStatus(spu.getStatus());
-        vo.setDescription(spu.getDescription());
-        vo.setMainImage(spu.getMainImage());
-        vo.setMainImageFile(spu.getMainImageFile());
-        vo.setCreatedAt(spu.getCreatedAt());
-        vo.setUpdatedAt(spu.getUpdatedAt());
-
-        List<SkuDetailVO> skuDetails = new ArrayList<>();
-        for (Sku sku : skus) {
-            skuDetails.add(toSkuDetail(sku));
-        }
-        vo.setSkus(skuDetails);
-        return vo;
-    }
-
-    private SpuDetailVO loadSpuDetail(Long spuId) {
-        Spu spu = spuMapper.selectById(spuId);
-        if (spu == null || spu.getDeleted() == 1) {
-            return null;
-        }
-        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                .eq(Sku::getSpuId, spuId)
-                .eq(Sku::getDeleted, 0));
-        return toSpuDetail(spu, skus);
-    }
-
-    private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
-        if (spus == null || spus.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Long> spuIds = spus.stream()
-                .map(Spu::getId)
-                .filter(id -> id != null)
-                .toList();
-        Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
-        if (!spuIds.isEmpty()) {
-            List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                    .in(Sku::getSpuId, spuIds)
-                    .eq(Sku::getDeleted, 0));
-            for (Sku sku : skus) {
-                if (sku.getSpuId() == null) {
-                    continue;
-                }
-                skusBySpuId.computeIfAbsent(sku.getSpuId(), ignored -> new ArrayList<>()).add(sku);
-            }
-        }
-
-        List<SpuDetailVO> result = new ArrayList<>(spus.size());
-        for (Spu spu : spus) {
-            List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
-            result.add(toSpuDetail(spu, skus));
-        }
-        return result;
-    }
-
-    private SkuDetailVO toSkuDetail(Sku sku) {
-        SkuDetailVO vo = new SkuDetailVO();
-        vo.setSkuId(sku.getId());
-        vo.setSpuId(sku.getSpuId());
-        vo.setSkuCode(sku.getSkuCode());
-        vo.setSkuName(sku.getSkuName());
-        vo.setSpecJson(sku.getSpecJson());
-        vo.setSalePrice(sku.getSalePrice());
-        vo.setMarketPrice(sku.getMarketPrice());
-        vo.setCostPrice(sku.getCostPrice());
-        vo.setStatus(sku.getStatus());
-        vo.setImageUrl(sku.getImageUrl());
-        vo.setImageFile(sku.getImageFile());
-        vo.setCreatedAt(sku.getCreatedAt());
-        vo.setUpdatedAt(sku.getUpdatedAt());
-        return vo;
-    }
+  private SkuDetailVO toSkuDetail(Sku sku) {
+    SkuDetailVO vo = new SkuDetailVO();
+    vo.setSkuId(sku.getId());
+    vo.setSpuId(sku.getSpuId());
+    vo.setSkuCode(sku.getSkuCode());
+    vo.setSkuName(sku.getSkuName());
+    vo.setSpecJson(sku.getSpecJson());
+    vo.setSalePrice(sku.getSalePrice());
+    vo.setMarketPrice(sku.getMarketPrice());
+    vo.setCostPrice(sku.getCostPrice());
+    vo.setStatus(sku.getStatus());
+    vo.setImageUrl(sku.getImageUrl());
+    vo.setImageFile(sku.getImageFile());
+    vo.setCreatedAt(sku.getCreatedAt());
+    vo.setUpdatedAt(sku.getUpdatedAt());
+    return vo;
+  }
 }

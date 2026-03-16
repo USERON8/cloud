@@ -1,5 +1,14 @@
 package com.cloud.search.service.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -12,73 +21,57 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class HotKeywordSyncServiceTest {
 
-    @Mock
-    private StringRedisTemplate redisTemplate;
+  @Mock private StringRedisTemplate redisTemplate;
 
-    @Mock
-    private ZSetOperations<String, String> zSetOperations;
+  @Mock private ZSetOperations<String, String> zSetOperations;
 
-    @Mock
-    private ObjectProvider<HotKeywordJdbcRepository> repositoryProvider;
+  @Mock private ObjectProvider<HotKeywordJdbcRepository> repositoryProvider;
 
-    @Mock
-    private HotKeywordJdbcRepository hotKeywordJdbcRepository;
+  @Mock private HotKeywordJdbcRepository hotKeywordJdbcRepository;
 
-    @InjectMocks
-    private HotKeywordSyncService hotKeywordSyncService;
+  @InjectMocks private HotKeywordSyncService hotKeywordSyncService;
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void restoreFromDbOnStartup_loadsWhenCacheEmpty() {
-        when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
-        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
-        when(zSetOperations.size(HotKeywordKeys.TOTAL_KEY)).thenReturn(0L);
-        when(hotKeywordJdbcRepository.loadTop(2))
-                .thenReturn(List.of(
-                        new HotKeywordJdbcRepository.HotKeywordRecord("phone", 10L),
-                        new HotKeywordJdbcRepository.HotKeywordRecord("tablet", 5L)
-                ));
-        ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
-        ReflectionTestUtils.setField(hotKeywordSyncService, "restoreSize", 2);
+  @Test
+  @SuppressWarnings("unchecked")
+  void restoreFromDbOnStartup_loadsWhenCacheEmpty() {
+    when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
+    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+    when(zSetOperations.size(HotKeywordKeys.TOTAL_KEY)).thenReturn(0L);
+    when(hotKeywordJdbcRepository.loadTop(2))
+        .thenReturn(
+            List.of(
+                new HotKeywordJdbcRepository.HotKeywordRecord("phone", 10L),
+                new HotKeywordJdbcRepository.HotKeywordRecord("tablet", 5L)));
+    ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
+    ReflectionTestUtils.setField(hotKeywordSyncService, "restoreSize", 2);
 
-        hotKeywordSyncService.restoreFromDbOnStartup();
+    hotKeywordSyncService.restoreFromDbOnStartup();
 
-        ArgumentCaptor<Set<ZSetOperations.TypedTuple<String>>> captor =
-                ArgumentCaptor.forClass((Class) Set.class);
-        verify(zSetOperations).add(eq(HotKeywordKeys.TOTAL_KEY), captor.capture());
-        assertThat(captor.getValue()).hasSize(2);
-    }
+    ArgumentCaptor<Set<ZSetOperations.TypedTuple<String>>> captor =
+        ArgumentCaptor.forClass((Class) Set.class);
+    verify(zSetOperations).add(eq(HotKeywordKeys.TOTAL_KEY), captor.capture());
+    assertThat(captor.getValue()).hasSize(2);
+  }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void syncToDb_pushesTopKeywords() {
-        when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
-        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
-        when(zSetOperations.reverseRangeWithScores(eq(HotKeywordKeys.TOTAL_KEY), eq(0L), anyLong()))
-                .thenReturn(Set.of(
-                        new DefaultTypedTuple<>("phone", 12.0D),
-                        new DefaultTypedTuple<>("tablet", 6.0D)
-                ));
-        ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
-        ReflectionTestUtils.setField(hotKeywordSyncService, "maxSyncSize", 5);
+  @Test
+  @SuppressWarnings("unchecked")
+  void syncToDb_pushesTopKeywords() {
+    when(repositoryProvider.getIfAvailable()).thenReturn(hotKeywordJdbcRepository);
+    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+    when(zSetOperations.reverseRangeWithScores(eq(HotKeywordKeys.TOTAL_KEY), eq(0L), anyLong()))
+        .thenReturn(
+            Set.of(
+                new DefaultTypedTuple<>("phone", 12.0D), new DefaultTypedTuple<>("tablet", 6.0D)));
+    ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
+    ReflectionTestUtils.setField(hotKeywordSyncService, "maxSyncSize", 5);
 
-        hotKeywordSyncService.syncToDb();
+    hotKeywordSyncService.syncToDb();
 
-        ArgumentCaptor<Map<String, Long>> captor = ArgumentCaptor.forClass((Class) Map.class);
-        verify(hotKeywordJdbcRepository).upsertBatch(captor.capture());
-        assertThat(captor.getValue()).containsEntry("phone", 12L).containsEntry("tablet", 6L);
-    }
+    ArgumentCaptor<Map<String, Long>> captor = ArgumentCaptor.forClass((Class) Map.class);
+    verify(hotKeywordJdbcRepository).upsertBatch(captor.capture());
+    assertThat(captor.getValue()).containsEntry("phone", 12L).containsEntry("tablet", 6L);
+  }
 }

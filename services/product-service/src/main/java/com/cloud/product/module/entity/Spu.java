@@ -11,30 +11,30 @@ import lombok.EqualsAndHashCode;
 @TableName("spu")
 public class Spu extends BaseEntity<Spu> {
 
-    @TableField("spu_name")
-    private String spuName;
+  @TableField("spu_name")
+  private String spuName;
 
-    @TableField("subtitle")
-    private String subtitle;
+  @TableField("subtitle")
+  private String subtitle;
 
-    @TableField("category_id")
-    private Long categoryId;
+  @TableField("category_id")
+  private Long categoryId;
 
-    @TableField("brand_id")
-    private Long brandId;
+  @TableField("brand_id")
+  private Long brandId;
 
-    @TableField("merchant_id")
-    private Long merchantId;
+  @TableField("merchant_id")
+  private Long merchantId;
 
-    @TableField("status")
-    private Integer status;
+  @TableField("status")
+  private Integer status;
 
-    @TableField("description")
-    private String description;
+  @TableField("description")
+  private String description;
 
-    @TableField("main_image")
-    private String mainImage;
+  @TableField("main_image")
+  private String mainImage;
 
-    @TableField("main_image_file")
-    private String mainImageFile;
+  @TableField("main_image_file")
+  private String mainImageFile;
 }

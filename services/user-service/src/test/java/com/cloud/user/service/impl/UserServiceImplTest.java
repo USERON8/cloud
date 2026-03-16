@@ -1,5 +1,12 @@
 package com.cloud.user.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.exception.EntityNotFoundException;
@@ -15,80 +22,67 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
-    @Mock
-    private UserConverter userConverter;
+  @Mock private UserConverter userConverter;
 
-    @Mock
-    private AuthPrincipalService authPrincipalService;
+  @Mock private AuthPrincipalService authPrincipalService;
 
-    @Mock
-    private CacheManager cacheManager;
+  @Mock private CacheManager cacheManager;
 
-    @Mock
-    private UserInfoHashCacheService userInfoHashCacheService;
+  @Mock private UserInfoHashCacheService userInfoHashCacheService;
 
-    private UserServiceImpl service;
+  private UserServiceImpl service;
 
-    @BeforeEach
-    void setUp() {
-        service = spy(new UserServiceImpl(
-                userConverter,
-                authPrincipalService,
-                cacheManager,
-                userInfoHashCacheService
-        ));
-    }
+  @BeforeEach
+  void setUp() {
+    service =
+        spy(
+            new UserServiceImpl(
+                userConverter, authPrincipalService, cacheManager, userInfoHashCacheService));
+  }
 
-    @Test
-    void createUserShouldCreatePrincipalWithDefaultRole() {
-        UserUpsertRequestDTO request = new UserUpsertRequestDTO();
-        request.setUsername("alice");
-        request.setPassword("pwd-1");
+  @Test
+  void createUserShouldCreatePrincipalWithDefaultRole() {
+    UserUpsertRequestDTO request = new UserUpsertRequestDTO();
+    request.setUsername("alice");
+    request.setPassword("pwd-1");
 
-        doReturn(101L).when(authPrincipalService).createPrincipal(any(AuthPrincipalDTO.class));
-        User created = new User();
-        created.setId(101L);
-        doReturn(created).when(service).getById(101L);
+    doReturn(101L).when(authPrincipalService).createPrincipal(any(AuthPrincipalDTO.class));
+    User created = new User();
+    created.setId(101L);
+    doReturn(created).when(service).getById(101L);
 
-        Long userId = service.createUser(request);
+    Long userId = service.createUser(request);
 
-        assertThat(userId).isEqualTo(101L);
-        ArgumentCaptor<AuthPrincipalDTO> captor = ArgumentCaptor.forClass(AuthPrincipalDTO.class);
-        verify(authPrincipalService).createPrincipal(captor.capture());
-        AuthPrincipalDTO dto = captor.getValue();
-        assertThat(dto.getId()).isNull();
-        assertThat(dto.getUsername()).isEqualTo("alice");
-        assertThat(dto.getRoles()).contains("ROLE_USER");
-    }
+    assertThat(userId).isEqualTo(101L);
+    ArgumentCaptor<AuthPrincipalDTO> captor = ArgumentCaptor.forClass(AuthPrincipalDTO.class);
+    verify(authPrincipalService).createPrincipal(captor.capture());
+    AuthPrincipalDTO dto = captor.getValue();
+    assertThat(dto.getId()).isNull();
+    assertThat(dto.getUsername()).isEqualTo("alice");
+    assertThat(dto.getRoles()).contains("ROLE_USER");
+  }
 
-    @Test
-    void deleteUserByIdShouldThrowWhenUserMissing() {
-        doReturn(null).when(service).getById(9L);
+  @Test
+  void deleteUserByIdShouldThrowWhenUserMissing() {
+    doReturn(null).when(service).getById(9L);
 
-        assertThatThrownBy(() -> service.deleteUserById(9L))
-                .isInstanceOf(EntityNotFoundException.class);
-    }
+    assertThatThrownBy(() -> service.deleteUserById(9L))
+        .isInstanceOf(EntityNotFoundException.class);
+  }
 
-    @Test
-    void deleteUserByIdShouldRemoveAndDeletePrincipal() {
-        User user = new User();
-        user.setId(11L);
-        doReturn(user).when(service).getById(11L);
-        doReturn(true).when(service).removeById(11L);
+  @Test
+  void deleteUserByIdShouldRemoveAndDeletePrincipal() {
+    User user = new User();
+    user.setId(11L);
+    doReturn(user).when(service).getById(11L);
+    doReturn(true).when(service).removeById(11L);
 
-        boolean result = service.deleteUserById(11L);
+    boolean result = service.deleteUserById(11L);
 
-        assertThat(result).isTrue();
-        verify(authPrincipalService).deletePrincipal(11L);
-    }
+    assertThat(result).isTrue();
+    verify(authPrincipalService).deletePrincipal(11L);
+  }
 }

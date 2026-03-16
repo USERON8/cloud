@@ -1,5 +1,6 @@
 package com.cloud.payment.config;
 
+import cn.hutool.core.util.StrUtil;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
 import jakarta.validation.constraints.NotBlank;
@@ -7,7 +8,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import cn.hutool.core.util.StrUtil;
 import org.springframework.validation.annotation.Validated;
 
 @Configuration
@@ -16,51 +16,50 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class AlipayConfig {
 
-    @NotBlank(message = "Alipay appId cannot be blank")
-    private String appId;
+  @NotBlank(message = "Alipay appId cannot be blank")
+  private String appId;
 
-    @NotBlank(message = "Alipay merchant private key cannot be blank")
-    private String merchantPrivateKey;
+  @NotBlank(message = "Alipay merchant private key cannot be blank")
+  private String merchantPrivateKey;
 
-    @NotBlank(message = "Alipay public key cannot be blank")
-    private String alipayPublicKey;
+  @NotBlank(message = "Alipay public key cannot be blank")
+  private String alipayPublicKey;
 
-    @NotBlank(message = "Alipay gateway url cannot be blank")
-    private String gatewayUrl;
+  @NotBlank(message = "Alipay gateway url cannot be blank")
+  private String gatewayUrl;
 
-    @NotBlank(message = "Alipay notify url cannot be blank")
-    private String notifyUrl;
+  @NotBlank(message = "Alipay notify url cannot be blank")
+  private String notifyUrl;
 
-    private String returnUrl;
+  private String returnUrl;
 
-    private String appEncryptKey;
+  private String appEncryptKey;
 
-    private String signType = "RSA2";
+  private String signType = "RSA2";
 
-    private String charset = "UTF-8";
+  private String charset = "UTF-8";
 
-    private String format = "json";
+  private String format = "json";
 
-    private String timeout = "30m";
+  private String timeout = "30m";
 
-    @Bean
-    public AlipayClient alipayClient() {
-        try {
-            com.alipay.api.AlipayConfig sdkConfig = new com.alipay.api.AlipayConfig();
-            sdkConfig.setServerUrl(gatewayUrl);
-            sdkConfig.setAppId(appId);
-            sdkConfig.setPrivateKey(merchantPrivateKey);
-            sdkConfig.setFormat(format);
-            sdkConfig.setCharset(charset);
-            sdkConfig.setAlipayPublicKey(alipayPublicKey);
-            sdkConfig.setSignType(signType);
-            if (StrUtil.isNotBlank(appEncryptKey)) {
-                sdkConfig.setEncryptKey(appEncryptKey);
-            }
-            return new DefaultAlipayClient(sdkConfig);
-        } catch (com.alipay.api.AlipayApiException ex) {
-            throw new IllegalStateException("Failed to initialize AlipayClient", ex);
-        }
+  @Bean
+  public AlipayClient alipayClient() {
+    try {
+      com.alipay.api.AlipayConfig sdkConfig = new com.alipay.api.AlipayConfig();
+      sdkConfig.setServerUrl(gatewayUrl);
+      sdkConfig.setAppId(appId);
+      sdkConfig.setPrivateKey(merchantPrivateKey);
+      sdkConfig.setFormat(format);
+      sdkConfig.setCharset(charset);
+      sdkConfig.setAlipayPublicKey(alipayPublicKey);
+      sdkConfig.setSignType(signType);
+      if (StrUtil.isNotBlank(appEncryptKey)) {
+        sdkConfig.setEncryptKey(appEncryptKey);
+      }
+      return new DefaultAlipayClient(sdkConfig);
+    } catch (com.alipay.api.AlipayApiException ex) {
+      throw new IllegalStateException("Failed to initialize AlipayClient", ex);
     }
+  }
 }
-

@@ -5,5 +5,4 @@ import com.cloud.product.module.entity.Spu;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface SpuMapper extends BaseMapper<Spu> {
-}
+public interface SpuMapper extends BaseMapper<Spu> {}

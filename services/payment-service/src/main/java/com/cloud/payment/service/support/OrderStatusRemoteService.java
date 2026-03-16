@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderStatusRemoteService {
 
-    @DubboReference(check = false, timeout = 5000, retries = 0)
-    private OrderDubboApi orderDubboApi;
+  @DubboReference(check = false, timeout = 5000, retries = 0)
+  private OrderDubboApi orderDubboApi;
 
-    public OrderSubStatusVO getSubOrderStatus(String mainOrderNo, String subOrderNo) {
-        return orderDubboApi.getSubOrderStatus(mainOrderNo, subOrderNo);
-    }
+  public OrderSubStatusVO getSubOrderStatus(String mainOrderNo, String subOrderNo) {
+    return orderDubboApi.getSubOrderStatus(mainOrderNo, subOrderNo);
+  }
 }

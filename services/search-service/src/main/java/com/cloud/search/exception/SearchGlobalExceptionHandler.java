@@ -7,26 +7,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-
-
-
-
-
-
-
-
 @Slf4j
 @RestControllerAdvice(basePackages = "com.cloud")
-public class SearchGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
+public class SearchGlobalExceptionHandler
+    extends com.cloud.common.exception.GlobalExceptionHandler {
 
-
-
-
-
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<String> handleSearchRuntimeException(RuntimeException ex) {
-        log.error("E messagerror", ex.getMessage(), ex);
-        return Result.error("鎼滅储鏈嶅姟寮傚父锛岃绋嶅悗閲嶈瘯");
-    }
+  @ExceptionHandler(RuntimeException.class)
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  public Result<String> handleSearchRuntimeException(RuntimeException ex) {
+    log.error("E messagerror", ex.getMessage(), ex);
+    return Result.error("鎼滅储鏈嶅姟寮傚父锛岃绋嶅悗閲嶈瘯");
+  }
 }

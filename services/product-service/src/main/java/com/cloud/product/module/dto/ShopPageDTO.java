@@ -10,29 +10,29 @@ import lombok.EqualsAndHashCode;
 @Schema(description = "Shop page query DTO")
 public class ShopPageDTO extends PageQuery {
 
-    @Schema(description = "Merchant id")
-    private Long merchantId;
+  @Schema(description = "Merchant id")
+  private Long merchantId;
 
-    @Schema(description = "Shop name keyword")
-    private String shopNameKeyword;
+  @Schema(description = "Shop name keyword")
+  private String shopNameKeyword;
 
-    @Schema(description = "Status")
-    private Integer status;
+  @Schema(description = "Status")
+  private Integer status;
 
-    @Schema(description = "Address keyword")
-    private String addressKeyword;
+  @Schema(description = "Address keyword")
+  private String addressKeyword;
 
-    @Schema(description = "Create time sort")
-    private String createTimeSort;
+  @Schema(description = "Create time sort")
+  private String createTimeSort;
 
-    @Schema(description = "Update time sort")
-    private String updateTimeSort;
+  @Schema(description = "Update time sort")
+  private String updateTimeSort;
 
-    public String getName() {
-        return this.shopNameKeyword;
-    }
+  public String getName() {
+    return this.shopNameKeyword;
+  }
 
-    public void setName(String name) {
-        this.shopNameKeyword = name;
-    }
+  public void setName(String name) {
+    this.shopNameKeyword = name;
+  }
 }

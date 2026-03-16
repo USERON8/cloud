@@ -7,9 +7,9 @@ import com.cloud.payment.service.provider.model.PaymentRefundResult;
 
 public interface PaymentProviderGateway {
 
-    boolean supports(String channel);
+  boolean supports(String channel);
 
-    PaymentOrderQueryResult queryPaymentOrder(PaymentOrderEntity order);
+  PaymentOrderQueryResult queryPaymentOrder(PaymentOrderEntity order);
 
-    PaymentRefundResult executeRefund(PaymentOrderEntity order, PaymentRefundEntity refund);
+  PaymentRefundResult executeRefund(PaymentOrderEntity order, PaymentRefundEntity refund);
 }

@@ -1,69 +1,37 @@
 package com.cloud.search.repository;
 
 import com.cloud.search.document.ProductDocument;
+import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.util.List;
-
-
-
-
-
-
-
-
 @Repository
-public interface ProductDocumentRepository extends ElasticsearchRepository<ProductDocument, String> {
+public interface ProductDocumentRepository
+    extends ElasticsearchRepository<ProductDocument, String> {
 
+  Page<ProductDocument> findByProductNameContaining(String productName, Pageable pageable);
 
+  Page<ProductDocument> findByCategoryId(Long categoryId, Pageable pageable);
 
+  Page<ProductDocument> findByShopId(Long shopId, Pageable pageable);
 
-    Page<ProductDocument> findByProductNameContaining(String productName, Pageable pageable);
+  Page<ProductDocument> findByStatus(Integer status, Pageable pageable);
 
+  Page<ProductDocument> findByPriceBetween(
+      BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
 
+  Page<ProductDocument> findByRecommendedTrue(Pageable pageable);
 
+  Page<ProductDocument> findByIsNewTrue(Pageable pageable);
 
-    Page<ProductDocument> findByCategoryId(Long categoryId, Pageable pageable);
+  Page<ProductDocument> findByIsHotTrue(Pageable pageable);
 
-
-
-
-    Page<ProductDocument> findByShopId(Long shopId, Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByStatus(Integer status, Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByRecommendedTrue(Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByIsNewTrue(Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByIsHotTrue(Pageable pageable);
-
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "should": [
@@ -91,12 +59,10 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> searchByKeyword(String keyword, Pageable pageable);
+  Page<ProductDocument> searchByKeyword(String keyword, Pageable pageable);
 
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "must": [
@@ -123,12 +89,11 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> searchByKeywordAndCategory(String keyword, Long categoryId, Pageable pageable);
+  Page<ProductDocument> searchByKeywordAndCategory(
+      String keyword, Long categoryId, Pageable pageable);
 
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "must": [
@@ -155,12 +120,10 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> searchByKeywordAndShop(String keyword, Long shopId, Pageable pageable);
+  Page<ProductDocument> searchByKeywordAndShop(String keyword, Long shopId, Pageable pageable);
 
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "must": [
@@ -190,12 +153,11 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> advancedSearch(String keyword, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
+  Page<ProductDocument> advancedSearch(
+      String keyword, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
 
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "should": [
@@ -220,32 +182,20 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    List<ProductDocument> findSuggestions(String prefix);
+  List<ProductDocument> findSuggestions(String prefix);
 
+  Page<ProductDocument> findByCategoryIdAndStatus(
+      Long categoryId, Integer status, Pageable pageable);
 
+  Page<ProductDocument> findByBrandIdAndStatus(Long brandId, Integer status, Pageable pageable);
 
+  Page<ProductDocument> findByShopIdAndStatus(Long shopId, Integer status, Pageable pageable);
 
-    Page<ProductDocument> findByCategoryIdAndStatus(Long categoryId, Integer status, Pageable pageable);
+  Page<ProductDocument> findByPriceBetweenAndStatus(
+      BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
 
-
-
-
-    Page<ProductDocument> findByBrandIdAndStatus(Long brandId, Integer status, Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByShopIdAndStatus(Long shopId, Integer status, Pageable pageable);
-
-
-
-
-    Page<ProductDocument> findByPriceBetweenAndStatus(BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
-
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "must": [
@@ -263,14 +213,19 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> filterSearch(String keyword, Long categoryId, Long brandId, Long shopId,
-                                       BigDecimal minPrice, BigDecimal maxPrice, Integer minSalesCount,
-                                       Integer status, Pageable pageable);
+  Page<ProductDocument> filterSearch(
+      String keyword,
+      Long categoryId,
+      Long brandId,
+      Long shopId,
+      BigDecimal minPrice,
+      BigDecimal maxPrice,
+      Integer minSalesCount,
+      Integer status,
+      Pageable pageable);
 
-
-
-
-    @Query("""
+  @Query(
+      """
             {
               "bool": {
                 "must": [
@@ -287,6 +242,13 @@ public interface ProductDocumentRepository extends ElasticsearchRepository<Produ
               }
             }
             """)
-    Page<ProductDocument> combinedSearch(String keyword, Long categoryId, Long brandId, Long shopId,
-                                         BigDecimal minPrice, BigDecimal maxPrice, Integer status, Pageable pageable);
+  Page<ProductDocument> combinedSearch(
+      String keyword,
+      Long categoryId,
+      Long brandId,
+      Long shopId,
+      BigDecimal minPrice,
+      BigDecimal maxPrice,
+      Integer status,
+      Pageable pageable);
 }
