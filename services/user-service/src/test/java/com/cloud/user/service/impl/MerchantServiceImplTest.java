@@ -65,6 +65,7 @@ class MerchantServiceImplTest {
 
     @Test
     void createMerchant_success_callsRemoteSync() {
+        @SuppressWarnings("unchecked")
         LambdaQueryChainWrapper<Merchant> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
         doReturn(queryWrapper).when(merchantService).lambdaQuery();
         doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
