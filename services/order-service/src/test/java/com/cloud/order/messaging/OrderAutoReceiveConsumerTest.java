@@ -12,13 +12,14 @@ import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class OrderAutoReceiveConsumerTest {
@@ -30,18 +31,21 @@ class OrderAutoReceiveConsumerTest {
   @Mock private OrderSubMapper orderSubMapper;
 
   private OrderAutoReceiveConsumer consumer;
+  private ObjectMapper objectMapper;
 
   @BeforeEach
   void setUp() {
-    consumer =
-        new OrderAutoReceiveConsumer(messageIdempotencyService, orderService, orderSubMapper);
+    objectMapper = new ObjectMapper();
+    consumer = new OrderAutoReceiveConsumer(orderService, orderSubMapper, objectMapper);
+    ReflectionTestUtils.setField(
+        consumer, "messageIdempotencyService", messageIdempotencyService);
   }
 
   @Test
   void shouldAdvanceWhenShipped() {
     OrderAutoReceiveEvent event =
         OrderAutoReceiveEvent.builder().subOrderId(11L).subOrderNo("S2026000001").build();
-    Message<OrderAutoReceiveEvent> message = MessageBuilder.withPayload(event).build();
+    MessageExt message = buildMessage(event, "msg-1");
     when(messageIdempotencyService.tryAcquire(
             eq("order:auto-receive"), eq("ORDER_AUTO_RECEIVE:S2026000001")))
         .thenReturn(true);
@@ -52,7 +56,7 @@ class OrderAutoReceiveConsumerTest {
     subOrder.setDeleted(0);
     when(orderSubMapper.selectById(11L)).thenReturn(subOrder);
 
-    consumer.orderAutoReceiveConsumer().accept(message);
+    consumer.onMessage(message);
 
     verify(orderService).advanceSubOrderStatus(11L, "DONE");
     verify(messageIdempotencyService)
@@ -63,10 +67,10 @@ class OrderAutoReceiveConsumerTest {
   void shouldSkipWhenDuplicate() {
     OrderAutoReceiveEvent event =
         OrderAutoReceiveEvent.builder().subOrderId(12L).subOrderNo("S2026000002").build();
-    Message<OrderAutoReceiveEvent> message = MessageBuilder.withPayload(event).build();
+    MessageExt message = buildMessage(event, "msg-2");
     when(messageIdempotencyService.tryAcquire(any(), any())).thenReturn(false);
 
-    consumer.orderAutoReceiveConsumer().accept(message);
+    consumer.onMessage(message);
 
     verifyNoInteractions(orderSubMapper);
     verifyNoInteractions(orderService);
@@ -76,7 +80,7 @@ class OrderAutoReceiveConsumerTest {
   void shouldSkipWhenStatusNotShipped() {
     OrderAutoReceiveEvent event =
         OrderAutoReceiveEvent.builder().subOrderId(13L).subOrderNo("S2026000003").build();
-    Message<OrderAutoReceiveEvent> message = MessageBuilder.withPayload(event).build();
+    MessageExt message = buildMessage(event, "msg-3");
     when(messageIdempotencyService.tryAcquire(
             eq("order:auto-receive"), eq("ORDER_AUTO_RECEIVE:S2026000003")))
         .thenReturn(true);
@@ -87,10 +91,22 @@ class OrderAutoReceiveConsumerTest {
     subOrder.setDeleted(0);
     when(orderSubMapper.selectById(13L)).thenReturn(subOrder);
 
-    consumer.orderAutoReceiveConsumer().accept(message);
+    consumer.onMessage(message);
 
     verify(orderService, never()).advanceSubOrderStatus(13L, "DONE");
     verify(messageIdempotencyService)
         .markSuccess(eq("order:auto-receive"), eq("ORDER_AUTO_RECEIVE:S2026000003"));
+  }
+
+  private MessageExt buildMessage(OrderAutoReceiveEvent event, String msgId) {
+    MessageExt message = new MessageExt();
+    message.setTopic("order-auto-receive");
+    message.setMsgId(msgId);
+    try {
+      message.setBody(objectMapper.writeValueAsBytes(event));
+    } catch (Exception ex) {
+      throw new IllegalStateException(ex);
+    }
+    return message;
   }
 }

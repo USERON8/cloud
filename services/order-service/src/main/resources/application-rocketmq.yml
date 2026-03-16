@@ -1,7 +1,5 @@
 spring:
   cloud:
-    function:
-      definition: paymentSuccessConsumer;stockFreezeFailedConsumer;refundCompletedConsumer;refundCreatedNotificationConsumer;refundAuditedNotificationConsumer;refundCancelledNotificationConsumer;orderTimeoutConsumer;orderAutoReceiveConsumer
     stream:
       default:
         producer:
@@ -45,53 +43,15 @@ spring:
           refundCreatedProducer-out-0:
             producer:
               <<: *orderProducerDefaults
-
           refundAuditedProducer-out-0:
             producer:
               <<: *orderProducerDefaults
-
-
           refundCancelledProducer-out-0:
             producer:
               <<: *orderProducerDefaults
           stockRestoreProducer-out-0:
             producer:
               <<: *orderProducerDefaults
-          orderTimeoutConsumer-in-0:
-            consumer:
-              subscription: 'ORDER_TIMEOUT'
-              <<: *orderConsumerDefaults
-          orderAutoReceiveConsumer-in-0:
-            consumer:
-              subscription: 'ORDER_AUTO_RECEIVE'
-              <<: *orderConsumerDefaults
-          paymentSuccessConsumer-in-0:
-            consumer:
-              subscription: 'PAYMENT_SUCCESS'
-              <<: *orderConsumerDefaults
-          stockFreezeFailedConsumer-in-0:
-            consumer:
-              subscription: 'STOCK_FREEZE_FAILED'
-              <<: *orderConsumerDefaults
-          refundCompletedConsumer-in-0:
-            consumer:
-              subscription: 'REFUND_COMPLETED'
-              <<: *orderConsumerDefaults
-          refundCreatedNotificationConsumer-in-0:
-            consumer:
-              subscription: 'REFUND_CREATED'
-              <<: *orderConsumerDefaults
-
-          refundAuditedNotificationConsumer-in-0:
-            consumer:
-              subscription: 'REFUND_AUDITED'
-              <<: *orderConsumerDefaults
-
-
-          refundCancelledNotificationConsumer-in-0:
-            consumer:
-              subscription: 'REFUND_CANCELLED'
-              <<: *orderConsumerDefaults
       bindings:
         orderCreatedProducer-out-0:
           destination: order-created
@@ -120,41 +80,6 @@ spring:
         stockRestoreProducer-out-0:
           destination: stock-restore
           content-type: application/json
-        orderTimeoutConsumer-in-0:
-          destination: order-timeout
-          content-type: application/json
-          group: order-timeout-consumer-group
-        orderAutoReceiveConsumer-in-0:
-          destination: order-auto-receive
-          content-type: application/json
-          group: order-auto-receive-consumer-group
-        paymentSuccessConsumer-in-0:
-          destination: payment-success
-          content-type: application/json
-          group: order-payment-success-consumer-group
-        stockFreezeFailedConsumer-in-0:
-          destination: stock-freeze-failed
-          content-type: application/json
-          group: order-stock-freeze-failed-consumer-group
-        refundCompletedConsumer-in-0:
-          destination: refund-completed
-          content-type: application/json
-          group: order-refund-completed-consumer-group
-        refundCreatedNotificationConsumer-in-0:
-          destination: refund-created
-          content-type: application/json
-          group: order-refund-created-notification-group
 
-        refundAuditedNotificationConsumer-in-0:
-          destination: refund-audited
-          content-type: application/json
-          group: order-refund-audited-notification-group
-
-        refundCancelledNotificationConsumer-in-0:
-          destination: refund-cancelled
-          content-type: application/json
-          group: order-refund-cancelled-notification-group
-
-
-
-
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
