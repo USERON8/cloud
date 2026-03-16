@@ -1,0 +1,2 @@
+﻿dubboProviderExceptionFilter=com.cloud.common.filter.DubboProviderExceptionFilter
+dubboConsumerExceptionFilter=com.cloud.common.filter.DubboConsumerExceptionFilter
