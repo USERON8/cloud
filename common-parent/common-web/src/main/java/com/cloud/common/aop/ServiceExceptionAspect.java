@@ -28,7 +28,13 @@ public class ServiceExceptionAspect {
                     + " || within(com.cloud..cache..*)"
                     + " || within(com.cloud..tcc..*)"
                     + " || within(com.cloud..task..*)"
-                    + " || within(com.cloud..outbox..*)")
+                    + " || within(com.cloud..outbox..*)"
+                    + " || within(com.cloud.search.messaging..*)"
+                    + " || within(com.cloud.common.messaging..*)"
+                    + " || within(com.cloud.payment.service.support..*)"
+                    + " || within(com.cloud.gateway.config..*)"
+                    + " || within(com.cloud.gateway.controller..*)"
+                    + " || within(com.cloud.gateway.cache..*)")
     public void excludedPackages() {}
 
     @Around("serviceLayer() && !excludedPackages()")
