@@ -65,22 +65,6 @@ spring:
           content-type: application/json
           producer:
             partition-count: 4
-        orderCreate-in-0:
-          destination: ORDER_CREATE_TOPIC
-          content-type: application/json
-          group: order-create-group
-        orderCancel-in-0:
-          destination: ORDER_CANCEL_TOPIC
-          content-type: application/json
-          group: order-cancel-group
-        orderPay-in-0:
-          destination: ORDER_PAY_TOPIC
-          content-type: application/json
-          group: order-pay-group
-        stockUpdate-in-0:
-          destination: STOCK_UPDATE_TOPIC
-          content-type: application/json
-          group: order-stock-update-group
         orderToPayment-out-0:
           destination: ORDER_TO_PAYMENT_TOPIC
           content-type: application/json
