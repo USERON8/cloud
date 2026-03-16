@@ -98,6 +98,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
                     topic,
                     "code",
                     String.valueOf(ex.getCode()));
+            messageIdempotencyService.markSuccess(namespace, idempotentKey);
             onBizException(msgExt, payload, ex);
         } catch (SystemException ex) {
             boolean retryable = ex.isRetryable();
@@ -115,6 +116,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
                         "retryable",
                         String.valueOf(true));
                 onSystemException(msgExt, payload, ex, true);
+                messageIdempotencyService.release(namespace, idempotentKey);
                 throw ex;
             }
             log.error(
@@ -130,6 +132,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
                     topic,
                     "retryable",
                     String.valueOf(false));
+            messageIdempotencyService.markSuccess(namespace, idempotentKey);
             onSystemException(msgExt, payload, ex, false);
         } catch (RemoteException ex) {
             log.error(
@@ -145,6 +148,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
                     "retryable",
                     String.valueOf(true));
             onRemoteException(msgExt, payload, ex);
+            messageIdempotencyService.release(namespace, idempotentKey);
             throw ex;
         } catch (Exception ex) {
             log.error(
@@ -155,6 +159,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
                     ex);
             increment("mq.consume.unknown_fail", "topic", topic);
             onUnknownException(msgExt, payload, ex);
+            messageIdempotencyService.release(namespace, idempotentKey);
             throw ex;
         }
     }
