@@ -1,23 +1,20 @@
 package com.cloud.order.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.order.dto.AfterSaleDTO;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
-import com.cloud.order.mapper.OrderMainMapper;
-import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderPlacementService;
+import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
-import com.cloud.order.service.impl.OrderShippingService;
+import com.cloud.order.service.OrderShippingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,10 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -59,8 +53,7 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderPlacementService orderPlacementService;
     private final OrderShippingService orderShippingService;
-    private final OrderMainMapper orderMainMapper;
-    private final OrderSubMapper orderSubMapper;
+    private final OrderQueryService orderQueryService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('order:create')")
@@ -94,44 +87,21 @@ public class OrderController {
                                                           @RequestParam(required = false) Long shopId,
                                                           @RequestParam(required = false) Integer status,
                                                           Authentication authentication) {
-        int safePage = page == null || page < 1 ? 1 : page;
-        int safeSize = size == null || size <= 0 ? 20 : size;
-        safeSize = Math.min(safeSize, 100);
-
-        List<String> statusFilters = resolveMainStatusFilters(status);
-        IPage<OrderMain> pageResult = queryMainOrders(authentication, safePage, safeSize, userId, shopId, statusFilters);
-        List<OrderMain> mains = pageResult == null ? Collections.emptyList() : pageResult.getRecords();
-        Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains);
-
-        List<OrderSummaryDTO> summaries = new ArrayList<>(mains.size());
-        for (OrderMain main : mains) {
-            List<OrderSub> subs = subOrdersByMainId.getOrDefault(main.getId(), List.of());
-            OrderSummaryDTO summary = toSummary(main, subs);
-            if (status != null && !status.equals(summary.getStatus())) {
-                continue;
-            }
-            summaries.add(summary);
-        }
-
-        long total = pageResult == null ? 0L : pageResult.getTotal();
-        PageResult<OrderSummaryDTO> response = PageResult.of((long) safePage, (long) safeSize, total, summaries);
-        return Result.success(response);
+        return Result.success(orderQueryService.listOrders(authentication, page, size, userId, shopId, status));
     }
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Get order detail")
     public Result<OrderSummaryDTO> getOrder(@PathVariable Long orderId, Authentication authentication) {
-        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
-        List<OrderSub> subs = orderService.listSubOrders(orderId);
-        return Result.success(toSummary(main, subs));
+        return Result.success(orderQueryService.getOrderSummary(orderId, authentication));
     }
 
     @PostMapping("/{orderId}/pay")
     @PreAuthorize("hasAuthority('order:create')")
     @Operation(summary = "Pay order")
     public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
-        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
         List<OrderSub> subs = orderService.listSubOrders(main.getId());
         applySubOrderAction(subs, "PAY", authentication, null, null);
         return Result.success(true);
@@ -143,13 +113,10 @@ public class OrderController {
     public Result<Boolean> cancelOrder(@PathVariable Long orderId,
                                        @RequestParam(required = false) String cancelReason,
                                        Authentication authentication) {
-        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
         List<OrderSub> subs = orderService.listSubOrders(main.getId());
         applySubOrderAction(subs, "CANCEL", authentication, null, null);
-        if (StrUtil.isNotBlank(cancelReason)) {
-            main.setCancelReason(cancelReason.trim());
-            orderMainMapper.updateById(main);
-        }
+        orderQueryService.updateCancelReason(main.getId(), cancelReason);
         return Result.success(true);
     }
 
@@ -160,7 +127,7 @@ public class OrderController {
                                              @RequestParam(required = false) String shippingCompany,
                                              @RequestParam(required = false) String trackingNumber,
                                              Authentication authentication) {
-        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
         List<OrderSub> subs = orderService.listSubOrders(main.getId());
         String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
         String tracking = StrUtil.isBlank(trackingNumber) ? "TEST-" + main.getMainOrderNo() : trackingNumber.trim();
@@ -172,7 +139,7 @@ public class OrderController {
     @PreAuthorize("hasAuthority('order:query')")
     @Operation(summary = "Complete order")
     public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
-        OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+        OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
         List<OrderSub> subs = orderService.listSubOrders(main.getId());
         applySubOrderAction(subs, "DONE", authentication, null, null);
         return Result.success(true);
@@ -216,8 +183,12 @@ public class OrderController {
     @PostMapping("/after-sales")
     @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Apply after-sale")
-    public Result<AfterSale> applyAfterSale(@RequestBody AfterSale afterSale,
+    public Result<AfterSaleDTO> applyAfterSale(@RequestBody AfterSaleDTO afterSaleDTO,
                                                Authentication authentication) {
+        if (afterSaleDTO == null) {
+            return Result.badRequest("after sale payload is required");
+        }
+        AfterSale afterSale = toAfterSaleEntity(afterSaleDTO);
         Long currentUserId = requireCurrentUserId(authentication);
         if (!isAdmin(authentication)) {
             if (afterSale.getUserId() == null) {
@@ -226,13 +197,14 @@ public class OrderController {
                 return Result.forbidden("forbidden to create after-sale for another user");
             }
         }
-        return Result.success(orderService.applyAfterSale(afterSale));
+        AfterSale created = orderService.applyAfterSale(afterSale);
+        return Result.success(toAfterSaleDTO(created));
     }
 
     @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
     @PreAuthorize("hasAuthority('order:refund')")
     @Operation(summary = "Advance after-sale status")
-    public Result<AfterSale> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
+    public Result<AfterSaleDTO> advanceAfterSaleStatus(@PathVariable Long afterSaleId,
                                                        @PathVariable String action,
                                                        @RequestParam(required = false) String remark,
                                                        Authentication authentication) {
@@ -254,7 +226,8 @@ public class OrderController {
         if (!isAllowedAfterSaleAction(normalizedAction, authentication)) {
             return Result.forbidden("forbidden to perform action: " + normalizedAction);
         }
-        return Result.success(orderService.advanceAfterSaleStatus(afterSaleId, normalizedAction, remark));
+        AfterSale updated = orderService.advanceAfterSaleStatus(afterSaleId, normalizedAction, remark);
+        return Result.success(toAfterSaleDTO(updated));
     }
 
     private boolean isAdmin(Authentication authentication) {
@@ -263,122 +236,6 @@ public class OrderController {
 
     private boolean isMerchant(Authentication authentication) {
         return SecurityPermissionUtils.isMerchant(authentication);
-    }
-
-    private IPage<OrderMain> queryMainOrders(Authentication authentication,
-                                             int page,
-                                             int size,
-                                             Long userId,
-                                             Long shopId,
-                                             List<String> statusFilters) {
-        Page<OrderMain> pageData = new Page<>(page, size);
-        if (isAdmin(authentication)) {
-            if (shopId != null) {
-                return orderMainMapper.selectPageByMerchant(pageData, shopId, statusFilters, userId);
-            }
-            LambdaQueryWrapper<OrderMain> wrapper = new LambdaQueryWrapper<OrderMain>()
-                    .eq(OrderMain::getDeleted, 0);
-            if (userId != null) {
-                wrapper.eq(OrderMain::getUserId, userId);
-            }
-            if (statusFilters != null && !statusFilters.isEmpty()) {
-                wrapper.in(OrderMain::getOrderStatus, statusFilters);
-            }
-            wrapper.orderByDesc(OrderMain::getId);
-            return orderMainMapper.selectPage(pageData, wrapper);
-        }
-
-        if (isMerchant(authentication)) {
-            Long merchantId = requireCurrentUserId(authentication);
-            return orderMainMapper.selectPageByMerchant(pageData, merchantId, statusFilters, null);
-        }
-
-        Long currentUserId = requireCurrentUserId(authentication);
-        LambdaQueryWrapper<OrderMain> wrapper = new LambdaQueryWrapper<OrderMain>()
-                .eq(OrderMain::getDeleted, 0)
-                .eq(OrderMain::getUserId, currentUserId);
-        if (statusFilters != null && !statusFilters.isEmpty()) {
-            wrapper.in(OrderMain::getOrderStatus, statusFilters);
-        }
-        wrapper.orderByDesc(OrderMain::getId);
-        return orderMainMapper.selectPage(pageData, wrapper);
-    }
-
-    private Map<Long, List<OrderSub>> loadSubOrdersByMainIds(List<OrderMain> mains) {
-        if (mains == null || mains.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        List<Long> mainIds = mains.stream()
-                .map(OrderMain::getId)
-                .filter(id -> id != null)
-                .toList();
-        if (mainIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        List<OrderSub> subs = orderSubMapper.selectList(new LambdaQueryWrapper<OrderSub>()
-                .in(OrderSub::getMainOrderId, mainIds)
-                .eq(OrderSub::getDeleted, 0));
-        if (subs == null || subs.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Long, List<OrderSub>> grouped = new java.util.HashMap<>();
-        for (OrderSub sub : subs) {
-            if (sub == null || sub.getMainOrderId() == null) {
-                continue;
-            }
-            grouped.computeIfAbsent(sub.getMainOrderId(), ignored -> new ArrayList<>()).add(sub);
-        }
-        return grouped;
-    }
-
-    private OrderSummaryDTO toSummary(OrderMain main, List<OrderSub> subs) {
-        OrderSummaryDTO summary = new OrderSummaryDTO();
-        summary.setId(main.getId());
-        summary.setOrderNo(main.getMainOrderNo());
-        summary.setUserId(main.getUserId());
-        summary.setTotalAmount(main.getTotalAmount());
-        summary.setPayAmount(main.getPayableAmount());
-        summary.setCreatedAt(main.getCreatedAt());
-        summary.setStatus(resolveStatusCode(subs));
-        return summary;
-    }
-
-    private Integer resolveStatusCode(List<OrderSub> subs) {
-        if (subs == null || subs.isEmpty()) {
-            return 0;
-        }
-        boolean allDone = subs.stream().allMatch(sub -> "DONE".equals(sub.getOrderStatus()));
-        if (allDone) {
-            return 3;
-        }
-        boolean allClosed = subs.stream().allMatch(sub ->
-                "CANCELLED".equals(sub.getOrderStatus()) || "CLOSED".equals(sub.getOrderStatus()));
-        if (allClosed) {
-            return 4;
-        }
-        boolean anyShipped = subs.stream().anyMatch(sub -> "SHIPPED".equals(sub.getOrderStatus()));
-        if (anyShipped) {
-            return 2;
-        }
-        boolean anyPaid = subs.stream().anyMatch(sub -> "PAID".equals(sub.getOrderStatus()));
-        if (anyPaid) {
-            return 1;
-        }
-        return 0;
-    }
-
-    private List<String> resolveMainStatusFilters(Integer statusCode) {
-        if (statusCode == null) {
-            return List.of();
-        }
-        return switch (statusCode) {
-            case 0 -> List.of("CREATED", "STOCK_RESERVED");
-            case 1 -> List.of("PAID");
-            case 2 -> List.of("PAID", "SHIPPED");
-            case 3 -> List.of("DONE");
-            case 4 -> List.of("CANCELLED", "CLOSED");
-            default -> List.of();
-        };
     }
 
     private void applySubOrderAction(List<OrderSub> subs,
@@ -418,41 +275,75 @@ public class OrderController {
             if (orderId == null) {
                 continue;
             }
-            OrderMain main = requireAccessibleMainOrder(orderId, authentication);
+            OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
             List<OrderSub> subs = orderService.listSubOrders(main.getId());
             applySubOrderAction(subs, action, authentication, shippingCompany, trackingNumber);
-            if ("CANCEL".equals(action) && StrUtil.isNotBlank(cancelReason)) {
-                main.setCancelReason(cancelReason.trim());
-                orderMainMapper.updateById(main);
+            if ("CANCEL".equals(action)) {
+                orderQueryService.updateCancelReason(main.getId(), cancelReason);
             }
             success += 1;
         }
         return success;
     }
 
-    private OrderMain requireAccessibleMainOrder(Long orderId, Authentication authentication) {
-        OrderMain main = orderService.getMainOrder(orderId);
-        if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
-            throw new BusinessException("main order not found");
+    private AfterSale toAfterSaleEntity(AfterSaleDTO afterSaleDTO) {
+        if (afterSaleDTO == null) {
+            return null;
         }
-        if (isAdmin(authentication)) {
-            return main;
+        AfterSale afterSale = new AfterSale();
+        afterSale.setId(afterSaleDTO.getId());
+        afterSale.setAfterSaleNo(afterSaleDTO.getAfterSaleNo());
+        afterSale.setMainOrderId(afterSaleDTO.getMainOrderId());
+        afterSale.setSubOrderId(afterSaleDTO.getSubOrderId());
+        afterSale.setUserId(afterSaleDTO.getUserId());
+        afterSale.setMerchantId(afterSaleDTO.getMerchantId());
+        afterSale.setAfterSaleType(afterSaleDTO.getAfterSaleType());
+        afterSale.setStatus(afterSaleDTO.getStatus());
+        afterSale.setReason(afterSaleDTO.getReason());
+        afterSale.setDescription(afterSaleDTO.getDescription());
+        afterSale.setApplyAmount(afterSaleDTO.getApplyAmount());
+        afterSale.setApprovedAmount(afterSaleDTO.getApprovedAmount());
+        afterSale.setReturnLogisticsCompany(afterSaleDTO.getReturnLogisticsCompany());
+        afterSale.setReturnLogisticsNo(afterSaleDTO.getReturnLogisticsNo());
+        afterSale.setRefundChannel(afterSaleDTO.getRefundChannel());
+        afterSale.setRefundedAt(afterSaleDTO.getRefundedAt());
+        afterSale.setClosedAt(afterSaleDTO.getClosedAt());
+        afterSale.setCloseReason(afterSaleDTO.getCloseReason());
+        afterSale.setCreatedAt(afterSaleDTO.getCreatedAt());
+        afterSale.setUpdatedAt(afterSaleDTO.getUpdatedAt());
+        afterSale.setDeleted(afterSaleDTO.getDeleted());
+        afterSale.setVersion(afterSaleDTO.getVersion());
+        return afterSale;
+    }
+
+    private AfterSaleDTO toAfterSaleDTO(AfterSale afterSale) {
+        if (afterSale == null) {
+            return null;
         }
-        Long currentUserId = requireCurrentUserId(authentication);
-        if (isMerchant(authentication)) {
-            boolean belongs = orderSubMapper.selectCount(new LambdaQueryWrapper<OrderSub>()
-                    .eq(OrderSub::getMainOrderId, main.getId())
-                    .eq(OrderSub::getMerchantId, currentUserId)
-                    .eq(OrderSub::getDeleted, 0)) > 0;
-            if (!belongs) {
-                throw new BusinessException("forbidden");
-            }
-            return main;
-        }
-        if (!Objects.equals(main.getUserId(), currentUserId)) {
-            throw new BusinessException("forbidden");
-        }
-        return main;
+        AfterSaleDTO dto = new AfterSaleDTO();
+        dto.setId(afterSale.getId());
+        dto.setAfterSaleNo(afterSale.getAfterSaleNo());
+        dto.setMainOrderId(afterSale.getMainOrderId());
+        dto.setSubOrderId(afterSale.getSubOrderId());
+        dto.setUserId(afterSale.getUserId());
+        dto.setMerchantId(afterSale.getMerchantId());
+        dto.setAfterSaleType(afterSale.getAfterSaleType());
+        dto.setStatus(afterSale.getStatus());
+        dto.setReason(afterSale.getReason());
+        dto.setDescription(afterSale.getDescription());
+        dto.setApplyAmount(afterSale.getApplyAmount());
+        dto.setApprovedAmount(afterSale.getApprovedAmount());
+        dto.setReturnLogisticsCompany(afterSale.getReturnLogisticsCompany());
+        dto.setReturnLogisticsNo(afterSale.getReturnLogisticsNo());
+        dto.setRefundChannel(afterSale.getRefundChannel());
+        dto.setRefundedAt(afterSale.getRefundedAt());
+        dto.setClosedAt(afterSale.getClosedAt());
+        dto.setCloseReason(afterSale.getCloseReason());
+        dto.setCreatedAt(afterSale.getCreatedAt());
+        dto.setUpdatedAt(afterSale.getUpdatedAt());
+        dto.setDeleted(afterSale.getDeleted());
+        dto.setVersion(afterSale.getVersion());
+        return dto;
     }
 
     private boolean isAllowedAfterSaleAction(String action, Authentication authentication) {

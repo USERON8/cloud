@@ -4,8 +4,9 @@ import cn.hutool.core.util.StrUtil;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
-import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.OrderShippingService;
+import com.cloud.order.service.support.OrderAggregateCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +16,12 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class OrderShippingService {
+public class OrderShippingServiceImpl implements OrderShippingService {
 
     private final OrderSubMapper orderSubMapper;
     private final OrderService orderService;
     private final OrderAggregateCacheService orderAggregateCacheService;
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderSub ship(Long subOrderId, String shippingCompany, String trackingNumber) {
         if (subOrderId == null) {
