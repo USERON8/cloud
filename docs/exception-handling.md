@@ -95,6 +95,7 @@
 ### RPC 边界
 
 - 捕获 `RpcException`，统一转换为 `RemoteException` 或对应 `BizException`。
+- Dubbo 通过 Provider/Consumer Filter 统一收敛，放在 `common-web` 的 SPI 注册，避免各服务重复配置。
 
 ## 典型场景处理
 
