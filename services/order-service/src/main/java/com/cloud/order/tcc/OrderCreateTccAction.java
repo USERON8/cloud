@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.seata.rm.tcc.api.BusinessActionContext;
@@ -46,6 +47,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @LocalTCC
 @Component
 @RequiredArgsConstructor
@@ -202,48 +204,53 @@ public class OrderCreateTccAction {
     if (StrUtil.isBlank(idempotencyKey)) {
       return true;
     }
-    OrderTccLog logEntity = findLog(idempotencyKey);
-    if (logEntity == null) {
-      OrderTccLog cancelLog = new OrderTccLog();
-      cancelLog.setBusinessKey(idempotencyKey);
-      cancelLog.setStatus(STATUS_CANCEL);
-      orderTccLogMapper.insert(cancelLog);
-      return true;
-    }
-    if (STATUS_CANCEL.equals(logEntity.getStatus())) {
-      return true;
-    }
-    if (STATUS_CONFIRM.equals(logEntity.getStatus())) {
-      return true;
-    }
-
-    logEntity.setStatus(STATUS_CANCEL);
-    orderTccLogMapper.updateById(logEntity);
-
-    OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
-    if (mainOrder == null) {
-      return true;
-    }
-    List<OrderSub> subOrders = orderSubMapper.listActiveByMainOrderId(mainOrder.getId());
-    for (OrderSub subOrder : subOrders) {
-      if (!CANCELLABLE_STATUSES.contains(subOrder.getOrderStatus())) {
-        continue;
+    try {
+      OrderTccLog logEntity = findLog(idempotencyKey);
+      if (logEntity == null) {
+        OrderTccLog cancelLog = new OrderTccLog();
+        cancelLog.setBusinessKey(idempotencyKey);
+        cancelLog.setStatus(STATUS_CANCEL);
+        orderTccLogMapper.insert(cancelLog);
+        return true;
       }
-      subOrder.setOrderStatus("CANCELLED");
-      subOrder.setClosedAt(LocalDateTime.now());
-      subOrder.setCloseReason("tcc rollback");
-      orderSubMapper.updateById(subOrder);
+      if (STATUS_CANCEL.equals(logEntity.getStatus())) {
+        return true;
+      }
+      if (STATUS_CONFIRM.equals(logEntity.getStatus())) {
+        return true;
+      }
+
+      logEntity.setStatus(STATUS_CANCEL);
+      orderTccLogMapper.updateById(logEntity);
+
+      OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
+      if (mainOrder == null) {
+        return true;
+      }
+      List<OrderSub> subOrders = orderSubMapper.listActiveByMainOrderId(mainOrder.getId());
+      for (OrderSub subOrder : subOrders) {
+        if (!CANCELLABLE_STATUSES.contains(subOrder.getOrderStatus())) {
+          continue;
+        }
+        subOrder.setOrderStatus("CANCELLED");
+        subOrder.setClosedAt(LocalDateTime.now());
+        subOrder.setCloseReason("tcc rollback");
+        orderSubMapper.updateById(subOrder);
+      }
+      mainOrder.setOrderStatus("CANCELLED");
+      mainOrder.setCancelledAt(LocalDateTime.now());
+      mainOrder.setCancelReason("tcc rollback");
+      orderMainMapper.updateById(mainOrder);
+      orderAggregateCacheService.evict(mainOrder.getId());
+      Long cartId = resolveCartId(actionContext);
+      if (cartId != null) {
+        resetCartCheckedOut(cartId);
+      }
+      return true;
+    } catch (Exception ex) {
+      log.error("TCC rollback failed: idempotencyKey={}", idempotencyKey, ex);
+      return true;
     }
-    mainOrder.setOrderStatus("CANCELLED");
-    mainOrder.setCancelledAt(LocalDateTime.now());
-    mainOrder.setCancelReason("tcc rollback");
-    orderMainMapper.updateById(mainOrder);
-    orderAggregateCacheService.evict(mainOrder.getId());
-    Long cartId = resolveCartId(actionContext);
-    if (cartId != null) {
-      resetCartCheckedOut(cartId);
-    }
-    return true;
   }
 
   private OrderTccLog findLog(String idempotencyKey) {
