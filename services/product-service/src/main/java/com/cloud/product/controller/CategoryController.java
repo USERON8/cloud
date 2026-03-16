@@ -15,7 +15,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/category")
 @RequiredArgsConstructor
@@ -190,16 +188,7 @@ public class CategoryController {
             return Result.badRequest("Batch size cannot exceed 100");
         }
 
-        int successCount = 0;
-        for (Long id : ids) {
-            try {
-                if (Boolean.TRUE.equals(categoryService.updateCategoryStatus(id, status))) {
-                    successCount++;
-                }
-            } catch (Exception e) {
-                log.warn("Batch update category status failed: id={}", id, e);
-            }
-        }
+        int successCount = categoryService.updateCategoryStatusBatch(ids, status);
         return Result.success(String.format("Batch update status done: %d/%d", successCount, ids.size()), successCount);
     }
 
@@ -214,16 +203,7 @@ public class CategoryController {
             return Result.badRequest("Batch size cannot exceed 100");
         }
 
-        int successCount = 0;
-        for (CategoryDTO categoryDTO : categoryList) {
-            try {
-                categoryService.createCategory(categoryDTO);
-                successCount++;
-            } catch (Exception e) {
-                log.warn("Batch create category failed: name={}", categoryDTO.getName(), e);
-            }
-        }
-
+        int successCount = categoryService.createCategoriesBatch(categoryList);
         return Result.success(String.format("Batch create done: %d/%d", successCount, categoryList.size()), successCount);
     }
 }
