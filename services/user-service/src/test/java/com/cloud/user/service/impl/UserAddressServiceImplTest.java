@@ -52,6 +52,7 @@ class UserAddressServiceImplTest {
 
     @Test
     void save_defaultAddress_resetsOldDefaults() {
+        @SuppressWarnings("unchecked")
         LambdaQueryChainWrapper<UserAddress> queryWrapper = Mockito.mock(LambdaQueryChainWrapper.class, Mockito.RETURNS_SELF);
         doReturn(queryWrapper).when(userAddressService).lambdaQuery();
         doReturn(queryWrapper).when(queryWrapper).eq(Mockito.any(), Mockito.any());
