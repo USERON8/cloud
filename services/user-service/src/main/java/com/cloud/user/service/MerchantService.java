@@ -39,12 +39,16 @@ public interface MerchantService extends IService<Merchant> {
   boolean updateMerchantAuditStatus(Long id, Integer auditStatus)
       throws MerchantException.MerchantNotFoundException;
 
+  int updateMerchantStatusBatch(List<Long> ids, Integer status);
+
   boolean enableMerchant(Long id) throws MerchantException.MerchantNotFoundException;
 
   boolean disableMerchant(Long id) throws MerchantException.MerchantNotFoundException;
 
   boolean approveMerchant(Long id, String remark)
       throws MerchantException.MerchantNotFoundException, MerchantException.MerchantAuditException;
+
+  int approveMerchantsBatch(List<Long> ids, String remark);
 
   boolean rejectMerchant(Long id, String reason)
       throws MerchantException.MerchantNotFoundException, MerchantException.MerchantAuditException;

@@ -310,6 +310,27 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  public int updateMerchantStatusBatch(List<Long> ids, Integer status) {
+    if (CollectionUtils.isEmpty(ids) || status == null) {
+      return 0;
+    }
+    int successCount = 0;
+    for (Long id : ids) {
+      if (id == null) {
+        continue;
+      }
+      try {
+        if (updateMerchantStatus(id, status)) {
+          successCount++;
+        }
+      } catch (Exception e) {
+        log.warn("Failed to update merchant status in batch, id={}, status={}", id, status, e);
+      }
+    }
+    return successCount;
+  }
+  @Override
+  @Transactional(rollbackFor = Exception.class)
   @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   @DistributedLock(
       key = "'audit:' + #id",
@@ -363,6 +384,28 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       throw new MerchantException.MerchantAuditException("merchant status is not pending");
     }
     return updateMerchantAuditStatus(id, STATUS_APPROVED);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public int approveMerchantsBatch(List<Long> ids, String remark) {
+    if (CollectionUtils.isEmpty(ids)) {
+      return 0;
+    }
+    int successCount = 0;
+    for (Long id : ids) {
+      if (id == null) {
+        continue;
+      }
+      try {
+        if (approveMerchant(id, remark)) {
+          successCount++;
+        }
+      } catch (Exception e) {
+        log.warn("Failed to approve merchant in batch, id={}", id, e);
+      }
+    }
+    return successCount;
   }
 
   @Override

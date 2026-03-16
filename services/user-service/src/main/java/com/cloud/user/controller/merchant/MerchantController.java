@@ -286,12 +286,7 @@ public class MerchantController {
     }
 
     try {
-      int successCount = 0;
-      for (Long id : ids) {
-        if (merchantService.updateMerchantStatus(id, status)) {
-          successCount++;
-        }
-      }
+      int successCount = merchantService.updateMerchantStatusBatch(ids, status);
       String message =
           String.format("batch status update completed: %d/%d", successCount, ids.size());
       return Result.success(message, true);
@@ -316,12 +311,7 @@ public class MerchantController {
     }
 
     try {
-      int successCount = 0;
-      for (Long id : ids) {
-        if (merchantService.approveMerchant(id, remark)) {
-          successCount++;
-        }
-      }
+      int successCount = merchantService.approveMerchantsBatch(ids, remark);
       String message = String.format("batch approve completed: %d/%d", successCount, ids.size());
       return Result.success(message, true);
     } catch (Exception e) {
