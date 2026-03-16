@@ -23,7 +23,12 @@ public class ServiceExceptionAspect {
     @Pointcut("within(@org.springframework.stereotype.Service *)")
     public void serviceLayer() {}
 
-    @Pointcut("within(com.cloud..infrastructure..*) || within(com.cloud..cache..*)")
+    @Pointcut(
+            "within(com.cloud..infrastructure..*)"
+                    + " || within(com.cloud..cache..*)"
+                    + " || within(com.cloud..tcc..*)"
+                    + " || within(com.cloud..task..*)"
+                    + " || within(com.cloud..outbox..*)")
     public void excludedPackages() {}
 
     @Around("serviceLayer() && !excludedPackages()")
