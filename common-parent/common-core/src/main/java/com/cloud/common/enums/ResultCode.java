@@ -14,6 +14,7 @@ public enum ResultCode {
   NOT_FOUND(404, "Not found"),
   METHOD_NOT_ALLOWED(405, "Method not allowed"),
   CONFLICT(409, "Conflict"),
+  RATE_LIMITED(429, "Too many requests"),
 
   ERROR(500, "Internal error"),
   PARAM_ERROR(501, "Parameter error"),
@@ -23,6 +24,8 @@ public enum ResultCode {
   SYSTEM_BUSY(1002, "System busy"),
   SYSTEM_TIMEOUT(1003, "System timeout"),
   SYSTEM_NOT_IMPLEMENTED(1004, "Not implemented"),
+  REMOTE_SERVICE_UNAVAILABLE(18001, "Remote service unavailable"),
+  REMOTE_SERVICE_TIMEOUT(18002, "Remote service timeout"),
 
   PERMISSION_DENIED(2001, "Permission denied"),
   ACCESS_DENIED(2002, "Access denied"),

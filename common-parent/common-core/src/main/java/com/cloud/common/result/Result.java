@@ -18,6 +18,8 @@ public class Result<T> implements Serializable {
 
   private Long timestamp;
 
+  private String traceId;
+
   public Result() {
     this.timestamp = System.currentTimeMillis();
   }
@@ -54,7 +56,8 @@ public class Result<T> implements Serializable {
   }
 
   public static <T> Result<T> error(String code, String message) {
-    return new Result<>(ResultCode.ERROR.getCode(), message, null);
+    Integer parsed = tryParseCode(code);
+    return new Result<>(parsed == null ? ResultCode.ERROR.getCode() : parsed, message, null);
   }
 
   public static <T> Result<T> error(ResultCode resultCode) {
@@ -148,5 +151,21 @@ public class Result<T> implements Serializable {
 
   public boolean isSuccess() {
     return ResultCode.SUCCESS.getCode().equals(this.code);
+  }
+
+  public Result<T> withTraceId(String traceId) {
+    this.traceId = traceId;
+    return this;
+  }
+
+  private static Integer tryParseCode(String code) {
+    if (code == null || code.isBlank()) {
+      return null;
+    }
+    try {
+      return Integer.valueOf(code);
+    } catch (NumberFormatException ex) {
+      return null;
+    }
   }
 }
