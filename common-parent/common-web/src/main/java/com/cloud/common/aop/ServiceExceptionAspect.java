@@ -1,0 +1,51 @@
+﻿package com.cloud.common.aop;
+
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.RemoteException;
+import com.cloud.common.exception.SystemException;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+@Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class ServiceExceptionAspect {
+
+    @Pointcut("within(@org.springframework.stereotype.Service *)")
+    public void serviceLayer() {}
+
+    @Pointcut("within(com.cloud..infrastructure..*) || within(com.cloud..cache..*)")
+    public void excludedPackages() {}
+
+    @Around("serviceLayer() && !excludedPackages()")
+    public Object intercept(ProceedingJoinPoint pjp) throws Throwable {
+        try {
+            return pjp.proceed();
+        } catch (BizException | SystemException | RemoteException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            log.error(
+                    "[SERVICE-DB] {}.{}",
+                    pjp.getSignature().getDeclaringTypeName(),
+                    pjp.getSignature().getName(),
+                    e);
+            throw new SystemException(ResultCode.DB_ERROR, "数据库操作失败", e);
+        } catch (Exception e) {
+            log.error(
+                    "[SERVICE-UNKNOWN] {}.{}",
+                    pjp.getSignature().getDeclaringTypeName(),
+                    pjp.getSignature().getName(),
+                    e);
+            throw new SystemException(ResultCode.SYSTEM_ERROR, "服务内部错误", e);
+        }
+    }
+}
