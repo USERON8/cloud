@@ -24,7 +24,7 @@ public class ThreadPoolMonitor {
     @Autowired
     private ApplicationContext applicationContext;
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public class ThreadPoolMonitor {
         return threadPoolInfoMap;
     }
 
-    
+
 
 
 
@@ -65,7 +65,7 @@ public class ThreadPoolMonitor {
         }
     }
 
-    
+
 
 
 
@@ -103,7 +103,7 @@ public class ThreadPoolMonitor {
         healthStatus.setWarningPools(warningPools);
         healthStatus.setCriticalPools(criticalPools);
 
-        
+
         if (criticalPools > 0) {
             healthStatus.setOverallStatus("CRITICAL");
         } else if (warningPools > 0) {
@@ -115,7 +115,7 @@ public class ThreadPoolMonitor {
         return healthStatus;
     }
 
-    
+
 
 
 
@@ -138,7 +138,7 @@ public class ThreadPoolMonitor {
         info.setKeepAliveTime(threadPoolExecutor.getKeepAliveTime(java.util.concurrent.TimeUnit.SECONDS));
         info.setRejectedExecutionHandler(threadPoolExecutor.getRejectedExecutionHandler().getClass().getSimpleName());
 
-        
+
         double poolUsageRate = (double) threadPoolExecutor.getActiveCount() / threadPoolExecutor.getMaximumPoolSize() * 100;
         double queueUsageRate = executor.getQueueCapacity() > 0 ?
                 (double) threadPoolExecutor.getQueue().size() / executor.getQueueCapacity() * 100 : 0;
@@ -146,48 +146,48 @@ public class ThreadPoolMonitor {
         info.setPoolUsageRate(poolUsageRate);
         info.setQueueUsageRate(queueUsageRate);
 
-        
+
         info.setStatus(evaluateThreadPoolStatus(info));
 
-        
+
         info.setTimestamp(System.currentTimeMillis());
 
         return info;
     }
 
-    
+
 
 
 
 
 
     private String evaluateThreadPoolStatus(ThreadPoolInfo info) {
-        
+
         if (info.getPoolUsageRate() > 90 || info.getQueueUsageRate() > 90) {
             return "CRITICAL";
         }
-        
+
         else if (info.getPoolUsageRate() > 70 || info.getQueueUsageRate() > 70) {
             return "WARNING";
         }
-        
+
         else {
             return "HEALTHY";
         }
     }
 
-    
+
 
 
     public void logThreadPoolStatus() {
         Map<String, ThreadPoolInfo> allThreadPools = getAllThreadPoolInfo();
 
-        
+
         for (Map.Entry<String, ThreadPoolInfo> entry : allThreadPools.entrySet()) {
             ThreadPoolInfo info = entry.getValue();
-            
+
 
         }
-        
+
     }
 }

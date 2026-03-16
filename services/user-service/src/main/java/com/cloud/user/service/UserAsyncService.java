@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface UserAsyncService {
 
-    
+
 
 
 
@@ -25,7 +25,7 @@ public interface UserAsyncService {
 
     CompletableFuture<List<UserDTO>> getUsersByIdsAsync(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -33,7 +33,7 @@ public interface UserAsyncService {
 
     CompletableFuture<List<UserVO>> getUserVOsByIdsAsync(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public interface UserAsyncService {
 
     CompletableFuture<UserDTO> getUserByIdAsync(Long userId);
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Map<String, Boolean>> checkUsernamesExistAsync(List<String> usernames);
 
-    
+
 
 
 
@@ -57,7 +57,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Map<Long, Boolean>> checkUsersActiveAsync(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -65,7 +65,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Boolean> updateLastLoginTimeAsync(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -73,7 +73,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Void> refreshUserCacheAsync(Long userId);
 
-    
+
 
 
 
@@ -81,7 +81,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Void> refreshUserCacheAsync(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -89,14 +89,14 @@ public interface UserAsyncService {
 
     CompletableFuture<Integer> preloadPopularUsersAsync(Integer limit);
 
-    
+
 
 
 
 
     CompletableFuture<Long> countUsersAsync();
 
-    
+
 
 
 
@@ -104,7 +104,7 @@ public interface UserAsyncService {
 
     CompletableFuture<Long> countActiveUsersAsync(Integer days);
 
-    
+
 
 
 

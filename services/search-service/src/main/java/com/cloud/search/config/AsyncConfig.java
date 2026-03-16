@@ -39,7 +39,7 @@ public class AsyncConfig extends BaseAsyncConfig {
     @Value("${search.optimized.cache.refresh.executor.queue-capacity:200}")
     private int cacheRefreshQueueCapacity;
 
-    
+
 
 
 
@@ -57,11 +57,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -78,11 +78,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -99,11 +99,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -120,11 +120,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -143,11 +143,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -164,11 +164,11 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
-    
+
 
 
 
@@ -185,7 +185,7 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 
@@ -203,7 +203,7 @@ public class AsyncConfig extends BaseAsyncConfig {
         return executor;
     }
 
-    
+
 
 
 
@@ -220,7 +220,7 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
         return executor;
     }
 }

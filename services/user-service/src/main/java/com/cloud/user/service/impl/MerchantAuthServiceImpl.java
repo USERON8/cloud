@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, MerchantAuth>
         implements MerchantAuthService {
 
-    
+
     private static final String MERCHANT_AUTH_CACHE_NAME = "merchantAuthCache";
     private final MerchantAuthMapper merchantAuthMapper;
     private final MerchantAuthConverter merchantAuthConverter;
@@ -39,7 +39,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
         return getMerchantAuthByIdWithCache(id);
     }
 
-    
+
 
 
 
@@ -56,7 +56,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
         return merchantAuth != null ? merchantAuthConverter.toDTO(merchantAuth) : null;
     }
 
-    
+
 
 
 
@@ -94,7 +94,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
         return removed;
     }
 
-    
+
 
 
 
@@ -113,7 +113,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
         return super.updateById(merchantAuth);
     }
 
-    
+
 
 
 

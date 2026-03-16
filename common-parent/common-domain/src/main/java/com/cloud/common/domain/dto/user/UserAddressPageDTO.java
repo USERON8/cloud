@@ -10,12 +10,12 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class UserAddressPageDTO extends PageQuery {
-    
+
 
 
     private Long userId;
 
-    
+
 
 
     private String consignee;

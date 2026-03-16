@@ -54,8 +54,8 @@ public class SearchApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        
+
         SpringApplication.run(SearchApplication.class, args);
-        
+
     }
 }

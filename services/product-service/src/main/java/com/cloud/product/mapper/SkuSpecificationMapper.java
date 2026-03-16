@@ -14,7 +14,7 @@ import java.util.List;
 
 @Mapper
 public interface SkuSpecificationMapper extends BaseMapper<SkuSpecification> {
-    
+
 
 
 
@@ -22,7 +22,7 @@ public interface SkuSpecificationMapper extends BaseMapper<SkuSpecification> {
 
     List<SkuSpecification> selectByCategoryId(@Param("categoryId") Long categoryId);
 
-    
+
 
 
 

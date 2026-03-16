@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationService {
 
-    
+
     private static final String TOKEN_PREFIX = "oauth2:token:";
     private static final String REFRESH_PREFIX = "oauth2:refresh:";
     private static final String CODE_PREFIX = "oauth2:code:";
@@ -51,7 +51,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public void save(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
 
-        
+
         String authorizationKey = TOKEN_PREFIX + authorization.getId();
         long authorizationTtl = resolveAuthorizationTtlSeconds(authorization);
         if (authorizationTtl > 0) {
@@ -60,8 +60,8 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             redisTemplate.opsForValue().set(authorizationKey, authorization);
         }
 
-        
-        
+
+
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
@@ -70,7 +70,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
                     getExpireSeconds(authorizationCode.getToken()), TimeUnit.SECONDS);
         }
 
-        
+
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
@@ -79,7 +79,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
                     getExpireSeconds(refreshToken.getToken()), TimeUnit.SECONDS);
         }
 
-        
+
         log.debug("Saved authorization with id: {}", authorization.getId());
     }
 
@@ -87,12 +87,12 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     public void remove(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
 
-        
+
         String authorizationKey = TOKEN_PREFIX + authorization.getId();
         redisTemplate.delete(authorizationKey);
 
-        
-        
+
+
         OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
                 authorization.getToken(OAuth2AuthorizationCode.class);
         if (authorizationCode != null) {
@@ -100,7 +100,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
             redisTemplate.delete(codeKey);
         }
 
-        
+
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
                 authorization.getRefreshToken();
         if (refreshToken != null) {
@@ -184,7 +184,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         return false;
     }
 
-    
+
 
 
 
@@ -195,7 +195,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
         if (expiresAt != null) {
             return ChronoUnit.SECONDS.between(Instant.now(), expiresAt);
         }
-        
+
         return 7200L;
     }
 

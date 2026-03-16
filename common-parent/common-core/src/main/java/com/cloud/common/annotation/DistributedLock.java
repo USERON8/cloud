@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @Documented
 public @interface DistributedLock {
 
-    
+
 
 
 
@@ -25,7 +25,7 @@ public @interface DistributedLock {
 
     String key();
 
-    
+
 
 
 
@@ -33,7 +33,7 @@ public @interface DistributedLock {
 
     String prefix() default "";
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public @interface DistributedLock {
 
     long waitTime() default 3;
 
-    
+
 
 
 
@@ -49,28 +49,28 @@ public @interface DistributedLock {
 
     long leaseTime() default 10;
 
-    
+
 
 
 
 
     TimeUnit timeUnit() default TimeUnit.SECONDS;
 
-    
+
 
 
 
 
     LockType lockType() default LockType.REENTRANT;
 
-    
+
 
 
 
 
     LockFailStrategy failStrategy() default LockFailStrategy.THROW_EXCEPTION;
 
-    
+
 
 
 
@@ -78,63 +78,63 @@ public @interface DistributedLock {
 
     String failMessage() default "鑾峰彇鍒嗗竷寮忛攣澶辫触";
 
-    
+
 
 
 
 
     boolean autoRelease() default true;
 
-    
+
 
 
     enum LockType {
-        
+
 
 
         REENTRANT,
 
-        
+
 
 
         FAIR,
 
-        
+
 
 
         READ,
 
-        
+
 
 
         WRITE,
 
-        
+
 
 
         RED_LOCK
     }
 
-    
+
 
 
     enum LockFailStrategy {
-        
+
 
 
         THROW_EXCEPTION,
 
-        
+
 
 
         RETURN_NULL,
 
-        
+
 
 
         RETURN_DEFAULT,
 
-        
+
 
 
         FAIL_FAST

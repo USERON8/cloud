@@ -15,7 +15,7 @@ import java.util.List;
 
 @Mapper
 public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
-    
+
 
 
 
@@ -23,7 +23,7 @@ public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
 
     List<ProductAudit> selectByProductId(@Param("productId") Long productId);
 
-    
+
 
 
 
@@ -35,7 +35,7 @@ public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
                                           @Param("startTime") LocalDateTime startTime,
                                           @Param("endTime") LocalDateTime endTime);
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
                                            @Param("startTime") LocalDateTime startTime,
                                            @Param("endTime") LocalDateTime endTime);
 
-    
+
 
 
 

@@ -23,58 +23,58 @@ public class PaymentSuccessEvent implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    
+
 
 
     private Long paymentId;
 
-    
+
 
 
     private Long orderId;
 
-    
+
 
 
     private String orderNo;
 
     private String subOrderNo;
 
-    
+
 
 
     private Long userId;
 
-    
+
 
 
     private BigDecimal amount;
 
-    
+
 
 
     private String paymentMethod;
 
-    
+
 
     private String transactionNo;
 
-    
+
 
 
     private Map<Long, Integer> productQuantityMap;
 
-    
+
 
 
     private Long timestamp;
 
-    
+
 
 
     private String eventId;
 
-    
+
 
     private String eventType;
 }

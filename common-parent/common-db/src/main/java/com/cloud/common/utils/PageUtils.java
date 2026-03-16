@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 public class PageUtils {
 
-    
+
 
 
 
@@ -18,9 +18,9 @@ public class PageUtils {
 
 
     public static <T> Page<T> buildPage(Object pageDTO) {
-        
+
         try {
-            
+
             java.lang.reflect.Method getCurrentMethod = pageDTO.getClass().getMethod("getCurrent");
             java.lang.reflect.Method getSizeMethod = pageDTO.getClass().getMethod("getSize");
 
@@ -32,12 +32,12 @@ public class PageUtils {
 
             return new Page<>(current, size);
         } catch (Exception e) {
-            
+
             return new Page<>(1, 10);
         }
     }
 
-    
+
 
 
 

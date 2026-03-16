@@ -9,12 +9,12 @@ package com.cloud.order.exception;
 
 public class OrderBusinessException extends RuntimeException {
 
-    
+
 
 
     private final Long orderId;
 
-    
+
 
 
     private final String errorCode;
@@ -58,7 +58,7 @@ public class OrderBusinessException extends RuntimeException {
     }
 
     public int getCode() {
-        
+
         if (errorCode != null) {
             try {
                 return Integer.parseInt(errorCode);

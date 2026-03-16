@@ -10,7 +10,7 @@ package com.cloud.common.exception;
 
 public class MessageSendException extends BusinessException {
 
-    
+
 
 
 
@@ -19,7 +19,7 @@ public class MessageSendException extends BusinessException {
         super(message);
     }
 
-    
+
 
 
 
@@ -29,7 +29,7 @@ public class MessageSendException extends BusinessException {
         super(message, cause);
     }
 
-    
+
 
 
 

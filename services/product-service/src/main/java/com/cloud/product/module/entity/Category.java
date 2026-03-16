@@ -18,19 +18,19 @@ import java.util.List;
 @Data
 public class Category extends BaseEntity<Category> {
 
-    
+
 
 
     @TableField("parent_id")
     private Long parentId;
 
-    
+
 
 
     @TableField("name")
     private String name;
 
-    
+
 
 
     @TableField("level")
@@ -39,31 +39,31 @@ public class Category extends BaseEntity<Category> {
     @TableField("path")
     private String path;
 
-    
+
 
 
     @TableField("sort_order")
     private Integer sortOrder;
 
-    
+
 
 
     @TableField("status")
     private Integer status;
 
-    
+
 
 
     @TableField("create_by")
     private Long createBy;
 
-    
+
 
 
     @TableField("update_by")
     private Long updateBy;
 
-    
+
 
 
     @TableField(exist = false)

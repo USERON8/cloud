@@ -14,8 +14,8 @@ import java.util.List;
 
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE, 
-        unmappedSourcePolicy = ReportingPolicy.IGNORE  
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface UserAddressConverter {
 
@@ -25,7 +25,7 @@ public interface UserAddressConverter {
 
     UserAddressDTO toDTO(UserAddress userAddress);
 
-    
+
 
 
 
@@ -33,7 +33,7 @@ public interface UserAddressConverter {
 
     UserAddress toEntity(UserAddressRequestDTO userAddressRequestDTO);
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public interface UserAddressConverter {
 
     UserAddressVO toVO(UserAddress userAddress);
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public interface UserAddressConverter {
 
     List<UserAddressVO> toVOList(List<UserAddress> userAddresses);
 
-    
+
 
 
 

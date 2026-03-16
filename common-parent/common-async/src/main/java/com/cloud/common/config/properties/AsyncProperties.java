@@ -19,32 +19,32 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "app.async")
 public class AsyncProperties {
 
-    
+
 
 
     private boolean enabled = true;
 
-    
+
 
 
     private ThreadPoolConfig defaultExecutor = new ThreadPoolConfig(4, 12, 300, 60);
 
-    
+
 
 
     private ThreadPoolConfig messageExecutor = new ThreadPoolConfig(3, 8, 100, 60);
 
-    
+
 
 
     private ThreadPoolConfig batchExecutor = new ThreadPoolConfig(2, 6, 200, 60);
 
-    
+
 
 
     private ThreadPoolConfig ioExecutor = new ThreadPoolConfig(8, 16, 300, 60);
 
-    
+
 
 
     private ThreadPoolConfig cpuExecutor = new ThreadPoolConfig(4, 5, 100, 60);
@@ -55,55 +55,55 @@ public class AsyncProperties {
      */
     private Map<String, ThreadPoolConfig> executors = new HashMap<>();
 
-    
+
 
 
     private CommonConfig common = new CommonConfig();
 
     @Data
     public static class ThreadPoolConfig {
-        
+
 
 
         private int corePoolSize;
 
-        
+
 
 
         private int maxPoolSize;
 
-        
+
 
 
         private int queueCapacity;
 
-        
+
 
 
         private int keepAliveSeconds;
 
-        
+
 
 
         private String threadNamePrefix = "async-";
 
-        
+
 
 
         private boolean allowCoreThreadTimeOut = false;
 
-        
+
 
 
 
         private String rejectedExecutionHandler = "FAST_FAIL";
 
-        
+
 
 
         private boolean waitForTasksToCompleteOnShutdown = true;
 
-        
+
 
 
         private int awaitTerminationSeconds = 60;
@@ -121,32 +121,32 @@ public class AsyncProperties {
 
     @Data
     public static class CommonConfig {
-        
+
 
 
         private boolean monitoringEnabled = false;
 
-        
+
 
 
         private int monitoringIntervalSeconds = 60;
 
-        
+
 
 
         private boolean preStartCoreThreads = false;
 
-        
+
 
 
         private boolean taskDecorator = false;
 
-        
+
 
 
         private boolean logSlowTasks = true;
 
-        
+
 
 
         private long slowTaskThresholdMs = 5000;

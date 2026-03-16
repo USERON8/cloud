@@ -12,7 +12,7 @@ import com.cloud.common.exception.BusinessException;
 
 public class OrderServiceException extends BusinessException {
 
-    
+
 
 
 
@@ -22,7 +22,7 @@ public class OrderServiceException extends BusinessException {
         super(code, message);
     }
 
-    
+
 
 
 
@@ -31,7 +31,7 @@ public class OrderServiceException extends BusinessException {
         this(ResultCode.ORDER_CREATE_FAILED, message);
     }
 
-    
+
 
 
 
@@ -40,7 +40,7 @@ public class OrderServiceException extends BusinessException {
         this(resultCode, null);
     }
 
-    
+
 
 
 
@@ -50,7 +50,7 @@ public class OrderServiceException extends BusinessException {
         super(resultCode, message);
     }
 
-    
+
 
 
 
@@ -60,7 +60,7 @@ public class OrderServiceException extends BusinessException {
         super(message, cause);
     }
 
-    
+
 
     public static class OrderNotFoundException extends OrderServiceException {
         public OrderNotFoundException(String message) {

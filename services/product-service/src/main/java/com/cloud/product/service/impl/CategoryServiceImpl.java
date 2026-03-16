@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         implements CategoryService {
 
-    
+
 
 
 
@@ -42,7 +42,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "categoryTreeCache", key = "'tree'")
     public List<Category> getCategoryTree() {
-        
+
 
         return this.list(new LambdaQueryWrapper<Category>()
                 .eq(Category::getLevel, 1)
@@ -66,9 +66,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
                 .orderByAsc(Category::getSortOrder));
     }
 
-    
 
-    
+
+
 
 
 
@@ -78,11 +78,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean save(Category entity) {
-        
+
         return super.save(entity);
     }
 
-    
+
 
 
 
@@ -92,11 +92,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean updateById(Category entity) {
-        
+
         return super.updateById(entity);
     }
 
-    
+
 
 
 
@@ -106,11 +106,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean removeById(java.io.Serializable id) {
-        
+
         return super.removeById(id);
     }
 
-    
+
 
 
 
@@ -120,36 +120,36 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public boolean removeByIds(java.util.Collection<?> idList) {
-        
+
         return super.removeByIds(idList);
     }
 
-    
 
-    
+
+
 
 
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public void clearCategoryCache() {
     }
 
-    
+
 
 
 
 
     @CacheEvict(cacheNames = "categoryCache", key = "'children:' + #categoryId")
     public void evictCategoryCache(Long categoryId) {
-        
+
     }
 
-    
+
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "categoryTreeCache", key = "'tree-dto:' + (#onlyEnabled == null ? 'all' : #onlyEnabled)")
     public List<CategoryDTO> getCategoryTree(Boolean onlyEnabled) {
-        
+
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         if (Boolean.TRUE.equals(onlyEnabled)) {
             wrapper.eq(Category::getStatus, 1);
@@ -161,7 +161,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
             return List.of();
         }
 
-        
+
         List<Category> firstLevel = allCategories.stream()
                 .filter(category -> category.getLevel() == 1)
                 .collect(Collectors.toList());
@@ -187,7 +187,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Override
     @Transactional(readOnly = true)
     public Page<CategoryDTO> getCategoriesPage(Integer page, Integer size, Long parentId, Integer level) {
-        
+
         Page<Category> entityPage = new Page<>(page, size);
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         if (parentId != null) {
@@ -210,7 +210,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Override
     @Transactional(readOnly = true)
     public CategoryDTO getCategoryById(Long categoryId) {
-        
+
         Category category = this.getById(categoryId);
         return category != null ? convertToDTO(category) : null;
     }
@@ -218,7 +218,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Override
     @Transactional(readOnly = true)
     public List<CategoryDTO> getChildrenCategories(Long parentId, Boolean onlyEnabled) {
-        
+
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Category::getParentId, parentId);
         if (Boolean.TRUE.equals(onlyEnabled)) {
@@ -233,7 +233,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
-        
+
         Category category = new Category();
         BeanUtils.copyProperties(categoryDTO, category);
         this.save(category);
@@ -245,7 +245,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean updateCategory(CategoryDTO categoryDTO) {
-        
+
         Category category = new Category();
         BeanUtils.copyProperties(categoryDTO, category);
         return this.updateById(category);
@@ -255,9 +255,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean deleteCategory(Long categoryId, Boolean force) {
-        
+
         if (Boolean.TRUE.equals(force)) {
-            
+
             List<Category> children = this.list(new LambdaQueryWrapper<Category>()
                     .eq(Category::getParentId, categoryId));
             if (!CollectionUtils.isEmpty(children)) {
@@ -272,7 +272,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean updateCategoryStatus(Long categoryId, Integer status) {
-        
+
         Category category = new Category();
         category.setId(categoryId);
         category.setStatus(status);
@@ -283,7 +283,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean updateCategorySort(Long categoryId, Integer sort) {
-        
+
         Category category = new Category();
         category.setId(categoryId);
         category.setSortOrder(sort);
@@ -294,7 +294,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean moveCategory(Long categoryId, Long targetParentId) {
-        
+
         Category category = new Category();
         category.setId(categoryId);
         category.setParentId(targetParentId);
@@ -305,13 +305,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
     public Boolean deleteCategoriesBatch(List<Long> categoryIds) {
-        
+
         return this.removeByIds(categoryIds);
     }
 
-    
 
-    
+
+
 
 
     private CategoryDTO convertToDTO(Category category) {
@@ -326,7 +326,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         return dto;
     }
 
-    
+
 
 
     private List<CategoryDTO> convertToDTO(List<Category> categories) {

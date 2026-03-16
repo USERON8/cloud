@@ -17,32 +17,32 @@ import java.util.List;
 @AllArgsConstructor
 public class TokenInfoDTO {
 
-    
+
 
 
     private String accessToken;
 
-    
+
 
 
     private String refreshToken;
 
-    
+
 
 
     private String tokenType;
 
-    
+
 
 
     private LocalDateTime expiresAt;
 
-    
+
 
 
     private List<String> permissions;
 
-    
+
 
 
     private List<String> roles;

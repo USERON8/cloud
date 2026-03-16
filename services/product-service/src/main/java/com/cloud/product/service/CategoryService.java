@@ -17,16 +17,16 @@ import java.util.List;
 
 public interface CategoryService extends IService<Category> {
 
-    
 
-    
+
+
 
 
 
 
     List<Category> getCategoryTree();
 
-    
+
 
 
 
@@ -34,7 +34,7 @@ public interface CategoryService extends IService<Category> {
 
     List<CategoryDTO> getCategoryTree(Boolean onlyEnabled);
 
-    
+
 
 
 
@@ -42,7 +42,7 @@ public interface CategoryService extends IService<Category> {
 
     List<Category> getChildrenByParentId(Long parentId);
 
-    
+
 
 
 
@@ -50,7 +50,7 @@ public interface CategoryService extends IService<Category> {
 
     List<Category> getCategoriesByLevel(Integer level);
 
-    
+
 
 
 
@@ -62,7 +62,7 @@ public interface CategoryService extends IService<Category> {
     Page<CategoryDTO> getCategoriesPage(
             Integer page, Integer size, Long parentId, Integer level);
 
-    
+
 
 
 
@@ -70,7 +70,7 @@ public interface CategoryService extends IService<Category> {
 
     CategoryDTO getCategoryById(Long categoryId);
 
-    
+
 
 
 
@@ -79,7 +79,7 @@ public interface CategoryService extends IService<Category> {
 
     List<CategoryDTO> getChildrenCategories(Long parentId, Boolean onlyEnabled);
 
-    
+
 
 
 
@@ -87,7 +87,7 @@ public interface CategoryService extends IService<Category> {
 
     CategoryDTO createCategory(CategoryDTO categoryDTO);
 
-    
+
 
 
 
@@ -95,7 +95,7 @@ public interface CategoryService extends IService<Category> {
 
     Boolean updateCategory(CategoryDTO categoryDTO);
 
-    
+
 
 
 
@@ -104,7 +104,7 @@ public interface CategoryService extends IService<Category> {
 
     Boolean deleteCategory(Long categoryId, Boolean force);
 
-    
+
 
 
 
@@ -113,7 +113,7 @@ public interface CategoryService extends IService<Category> {
 
     Boolean updateCategoryStatus(Long categoryId, Integer status);
 
-    
+
 
 
 
@@ -122,7 +122,7 @@ public interface CategoryService extends IService<Category> {
 
     Boolean updateCategorySort(Long categoryId, Integer sort);
 
-    
+
 
 
 
@@ -131,7 +131,7 @@ public interface CategoryService extends IService<Category> {
 
     Boolean moveCategory(Long categoryId, Long targetParentId);
 
-    
+
 
 
 
@@ -139,14 +139,14 @@ public interface CategoryService extends IService<Category> {
 
     Boolean deleteCategoriesBatch(List<Long> categoryIds);
 
-    
 
-    
+
+
 
 
     void clearCategoryCache();
 
-    
+
 
 
 

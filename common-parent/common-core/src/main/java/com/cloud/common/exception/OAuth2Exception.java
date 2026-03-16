@@ -24,10 +24,10 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class OAuth2Exception extends BusinessException {
 
-    private String error;        
-    private String errorDescription; 
-    private String errorUri;     
-    private String state;        
+    private String error;
+    private String errorDescription;
+    private String errorUri;
+    private String state;
 
     public OAuth2Exception(String error, String errorDescription) {
         super(errorDescription);
@@ -62,63 +62,63 @@ public class OAuth2Exception extends BusinessException {
         this.state = state;
     }
 
-    
+
 
 
     public static OAuth2Exception invalidRequest(String description) {
         return new OAuth2Exception("invalid_request", description);
     }
 
-    
+
 
 
     public static OAuth2Exception invalidClient(String description) {
         return new OAuth2Exception("invalid_client", description);
     }
 
-    
+
 
 
     public static OAuth2Exception invalidGrant(String description) {
         return new OAuth2Exception("invalid_grant", description);
     }
 
-    
+
 
 
     public static OAuth2Exception unauthorizedClient(String description) {
         return new OAuth2Exception("unauthorized_client", description);
     }
 
-    
+
 
 
     public static OAuth2Exception unsupportedGrantType(String description) {
         return new OAuth2Exception("unsupported_grant_type", description);
     }
 
-    
+
 
 
     public static OAuth2Exception invalidScope(String description) {
         return new OAuth2Exception("invalid_scope", description);
     }
 
-    
+
 
 
     public static OAuth2Exception accessDenied(String description) {
         return new OAuth2Exception("access_denied", description);
     }
 
-    
+
 
 
     public static OAuth2Exception serverError(String description) {
         return new OAuth2Exception("server_error", description);
     }
 
-    
+
 
 
     private String mapResultCodeToOAuth2Error(ResultCode resultCode) {

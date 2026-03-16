@@ -15,7 +15,7 @@ import java.util.List;
 
 @Mapper
 public interface BrandAuthorizationMapper extends BaseMapper<BrandAuthorization> {
-    
+
 
 
 
@@ -23,7 +23,7 @@ public interface BrandAuthorizationMapper extends BaseMapper<BrandAuthorization>
 
     List<BrandAuthorization> selectByBrandId(@Param("brandId") Long brandId);
 
-    
+
 
 
 
@@ -31,7 +31,7 @@ public interface BrandAuthorizationMapper extends BaseMapper<BrandAuthorization>
 
     List<BrandAuthorization> selectByMerchantId(@Param("merchantId") Long merchantId);
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public interface BrandAuthorizationMapper extends BaseMapper<BrandAuthorization>
     BrandAuthorization selectByBrandIdAndMerchantId(@Param("brandId") Long brandId,
                                                     @Param("merchantId") Long merchantId);
 
-    
+
 
 
 

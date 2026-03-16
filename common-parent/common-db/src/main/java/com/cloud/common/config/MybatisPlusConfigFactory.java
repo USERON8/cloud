@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("deprecation")
 public class MybatisPlusConfigFactory {
 
-    
+
 
 
 
@@ -26,16 +26,16 @@ public class MybatisPlusConfigFactory {
 
 
     public static MybatisPlusInterceptor createBasicInterceptor(DbType dbType) {
-        
+
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(dbType));
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -43,23 +43,23 @@ public class MybatisPlusConfigFactory {
 
 
     public static MybatisPlusInterceptor createStandardInterceptor(DbType dbType) {
-        
+
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(dbType));
 
-        
+
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
-        
+
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
         interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -68,25 +68,25 @@ public class MybatisPlusConfigFactory {
 
 
     public static MybatisPlusInterceptor createHighConcurrencyInterceptor(DbType dbType) {
-        
+
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(dbType);
-        paginationInterceptor.setMaxLimit(1000L); 
+        paginationInterceptor.setMaxLimit(1000L);
         interceptor.addInnerInterceptor(paginationInterceptor);
 
-        
+
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
-        
+
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
         interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -97,28 +97,28 @@ public class MybatisPlusConfigFactory {
 
     public static MybatisPlusInterceptor createMultiTenantInterceptor(DbType dbType,
                                                                       TenantLineHandler tenantLineHandler) {
-        
+
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         TenantLineInnerInterceptor tenantInterceptor = new TenantLineInnerInterceptor();
         tenantInterceptor.setTenantLineHandler(tenantLineHandler);
         interceptor.addInnerInterceptor(tenantInterceptor);
 
-        
+
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(dbType));
 
-        
+
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
-        
+
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
         interceptor.addInnerInterceptor(new IllegalSQLInnerInterceptor());
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -127,18 +127,18 @@ public class MybatisPlusConfigFactory {
 
 
     public static MybatisPlusInterceptor createReadOnlyInterceptor(DbType dbType) {
-        
+
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(dbType);
-        paginationInterceptor.setMaxLimit(5000L); 
+        paginationInterceptor.setMaxLimit(5000L);
         interceptor.addInnerInterceptor(paginationInterceptor);
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -148,7 +148,7 @@ public class MybatisPlusConfigFactory {
         return builder.build();
     }
 
-    
+
 
 
     public static class InterceptorBuilder {

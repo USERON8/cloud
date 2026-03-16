@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface UserStatisticsService {
 
-    
+
 
 
 
@@ -22,14 +22,14 @@ public interface UserStatisticsService {
 
     UserStatisticsVO getUserStatisticsOverview();
 
-    
+
 
 
 
 
     CompletableFuture<UserStatisticsVO> getUserStatisticsOverviewAsync();
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface UserStatisticsService {
 
     Map<LocalDate, Long> getUserRegistrationTrend(LocalDate startDate, LocalDate endDate);
 
-    
+
 
 
 
@@ -46,35 +46,35 @@ public interface UserStatisticsService {
 
     CompletableFuture<Map<LocalDate, Long>> getUserRegistrationTrendAsync(Integer days);
 
-    
+
 
 
 
 
     Map<String, Long> getRoleDistribution();
 
-    
+
 
 
 
 
     CompletableFuture<Map<String, Long>> getRoleDistributionAsync();
 
-    
+
 
 
 
 
     Map<String, Long> getUserStatusDistribution();
 
-    
+
 
 
 
 
     CompletableFuture<Map<String, Long>> getUserStatusDistributionAsync();
 
-    
+
 
 
 
@@ -82,7 +82,7 @@ public interface UserStatisticsService {
 
     Long countActiveUsers(Integer days);
 
-    
+
 
 
 
@@ -90,21 +90,21 @@ public interface UserStatisticsService {
 
     CompletableFuture<Long> countActiveUsersAsync(Integer days);
 
-    
+
 
 
 
 
     Long countTodayNewUsers();
 
-    
+
 
 
 
 
     Long countMonthNewUsers();
 
-    
+
 
 
 
@@ -112,7 +112,7 @@ public interface UserStatisticsService {
 
     Double calculateUserGrowthRate(Integer days);
 
-    
+
 
 
 
@@ -120,7 +120,7 @@ public interface UserStatisticsService {
 
     CompletableFuture<Double> calculateUserGrowthRateAsync(Integer days);
 
-    
+
 
 
 
@@ -129,7 +129,7 @@ public interface UserStatisticsService {
 
     CompletableFuture<Map<Long, Long>> getUserActivityRankingAsync(Integer limit, Integer days);
 
-    
+
 
 
 

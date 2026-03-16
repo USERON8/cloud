@@ -14,7 +14,7 @@ import java.util.List;
 
 @Mapper
 public interface ProductAttributeMapper extends BaseMapper<ProductAttribute> {
-    
+
 
 
 
@@ -22,7 +22,7 @@ public interface ProductAttributeMapper extends BaseMapper<ProductAttribute> {
 
     List<ProductAttribute> selectByProductId(@Param("productId") Long productId);
 
-    
+
 
 
 
@@ -32,7 +32,7 @@ public interface ProductAttributeMapper extends BaseMapper<ProductAttribute> {
     List<ProductAttribute> selectByProductIdAndGroup(@Param("productId") Long productId,
                                                      @Param("attrGroup") String attrGroup);
 
-    
+
 
 
 
@@ -40,7 +40,7 @@ public interface ProductAttributeMapper extends BaseMapper<ProductAttribute> {
 
     int batchInsert(@Param("attributes") List<ProductAttribute> attributes);
 
-    
+
 
 
 

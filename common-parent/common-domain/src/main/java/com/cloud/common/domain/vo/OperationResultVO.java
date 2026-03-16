@@ -15,23 +15,23 @@ public class OperationResultVO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    
+
 
 
     private Boolean success;
 
-    
+
 
 
     private String message;
 
-    
+
 
 
     public OperationResultVO() {
     }
 
-    
+
 
 
 
@@ -42,7 +42,7 @@ public class OperationResultVO implements Serializable {
         this.message = message;
     }
 
-    
+
 
 
 
@@ -51,7 +51,7 @@ public class OperationResultVO implements Serializable {
         return new OperationResultVO(true, "鎿嶄綔鎴愬姛");
     }
 
-    
+
 
 
 
@@ -61,7 +61,7 @@ public class OperationResultVO implements Serializable {
         return new OperationResultVO(true, message);
     }
 
-    
+
 
 
 
@@ -70,7 +70,7 @@ public class OperationResultVO implements Serializable {
         return new OperationResultVO(false, "鎿嶄綔澶辫触");
     }
 
-    
+
 
 
 

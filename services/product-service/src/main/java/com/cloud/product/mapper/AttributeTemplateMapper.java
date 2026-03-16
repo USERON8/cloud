@@ -14,7 +14,7 @@ import java.util.List;
 
 @Mapper
 public interface AttributeTemplateMapper extends BaseMapper<AttributeTemplate> {
-    
+
 
 
 
@@ -22,7 +22,7 @@ public interface AttributeTemplateMapper extends BaseMapper<AttributeTemplate> {
 
     List<AttributeTemplate> selectByCategoryId(@Param("categoryId") Long categoryId);
 
-    
+
 
 
 

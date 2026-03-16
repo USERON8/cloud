@@ -45,12 +45,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan({"com.cloud.stock.mapper", "com.cloud.common.messaging.outbox"})
 public class StockApplication {
     public static void main(String[] args) {
-        
+
         System.setProperty("nacos.logging.default.config.enabled", "false");
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        
+
         SpringApplication.run(StockApplication.class, args);
     }
 }

@@ -18,9 +18,9 @@ import java.util.List;
 
 public interface AdminService extends IService<Admin> {
 
-    
 
-    
+
+
 
 
 
@@ -29,7 +29,7 @@ public interface AdminService extends IService<Admin> {
 
     AdminDTO getAdminById(Long id) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface AdminService extends IService<Admin> {
 
     AdminDTO getAdminByUsername(String username) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -46,7 +46,7 @@ public interface AdminService extends IService<Admin> {
 
     List<AdminDTO> getAdminsByIds(List<Long> ids);
 
-    
+
 
 
 
@@ -56,7 +56,7 @@ public interface AdminService extends IService<Admin> {
 
     Page<AdminDTO> getMerchantsPage(Integer page, Integer size, Integer status);
 
-    
+
 
 
 
@@ -65,9 +65,9 @@ public interface AdminService extends IService<Admin> {
 
     Page<AdminDTO> getAdminsPage(Integer page, Integer size);
 
-    
 
-    
+
+
 
 
 
@@ -76,7 +76,7 @@ public interface AdminService extends IService<Admin> {
 
     AdminDTO createAdmin(AdminUpsertRequestDTO requestDTO) throws AdminException.AdminAlreadyExistsException;
 
-    
+
 
 
 
@@ -85,7 +85,7 @@ public interface AdminService extends IService<Admin> {
 
     boolean updateAdmin(Long id, AdminUpsertRequestDTO requestDTO) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -94,7 +94,7 @@ public interface AdminService extends IService<Admin> {
 
     boolean deleteAdmin(Long id) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -102,9 +102,9 @@ public interface AdminService extends IService<Admin> {
 
     boolean batchDeleteAdmins(List<Long> ids);
 
-    
 
-    
+
+
 
 
 
@@ -114,7 +114,7 @@ public interface AdminService extends IService<Admin> {
 
     boolean updateAdminStatus(Long id, Integer status) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -123,7 +123,7 @@ public interface AdminService extends IService<Admin> {
 
     boolean enableAdmin(Long id) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -132,9 +132,9 @@ public interface AdminService extends IService<Admin> {
 
     boolean disableAdmin(Long id) throws AdminException.AdminNotFoundException;
 
-    
 
-    
+
+
 
 
 
@@ -144,7 +144,7 @@ public interface AdminService extends IService<Admin> {
 
     boolean resetPassword(Long id, String newPassword) throws AdminException.AdminNotFoundException;
 
-    
+
 
 
 
@@ -157,16 +157,16 @@ public interface AdminService extends IService<Admin> {
     boolean changePassword(Long id, String oldPassword, String newPassword)
             throws AdminException.AdminNotFoundException, AdminException.AdminPasswordException;
 
-    
 
-    
+
+
 
 
 
 
     void evictAdminCache(Long id);
 
-    
+
 
 
     void evictAllAdminCache();

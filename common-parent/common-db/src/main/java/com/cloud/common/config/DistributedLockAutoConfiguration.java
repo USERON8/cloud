@@ -26,7 +26,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableAspectJAutoProxy
 public class DistributedLockAutoConfiguration {
 
-    
+
 
 
 
@@ -36,7 +36,7 @@ public class DistributedLockAutoConfiguration {
     @ConditionalOnBean(RedissonClient.class)
     @ConditionalOnMissingBean(DistributedLockAspect.class)
     public DistributedLockAspect distributedLockAspect(RedissonClient redissonClient) {
-        
+
         return new DistributedLockAspect(redissonClient);
     }
 }

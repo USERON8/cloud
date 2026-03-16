@@ -160,7 +160,7 @@ public class JwtPasswordConfig {
                     ? parsePublicKey(configuredPublicKey)
                     : derivePublicKey(privateKey);
 
-            
+
             return new KeyPair(publicKey, privateKey);
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to parse configured JWT key pair", ex);

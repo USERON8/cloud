@@ -29,10 +29,10 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
 
     @Override
     public Jwt decode(String token) throws JwtException {
-        
+
         Jwt jwt = delegate.decode(token);
 
-        
+
         if (tokenBlacklistService.isBlacklisted(jwt)) {
             log.warn("WT: subject={}, jti={}",
                     jwt.getSubject(), jwt.getClaimAsString("jti"));
@@ -43,7 +43,7 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
         return jwt;
     }
 
-    
+
 
 
 

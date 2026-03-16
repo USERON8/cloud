@@ -14,8 +14,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class JwtException extends BusinessException {
 
-    private String tokenValue;  
-    private String tokenType;   
+    private String tokenValue;
+    private String tokenType;
 
     public JwtException(String message) {
         super(message);
@@ -48,56 +48,56 @@ public class JwtException extends BusinessException {
         super(resultCode, cause);
     }
 
-    
+
 
 
     public static JwtException invalidToken(String message) {
         return new JwtException(ResultCode.JWT_TOKEN_INVALID, message);
     }
 
-    
+
 
 
     public static JwtException expiredToken(String message) {
         return new JwtException(ResultCode.JWT_TOKEN_EXPIRED, message);
     }
 
-    
+
 
 
     public static JwtException malformedToken(String message) {
         return new JwtException(ResultCode.JWT_TOKEN_MALFORMED, message);
     }
 
-    
+
 
 
     public static JwtException invalidSignature(String message) {
         return new JwtException(ResultCode.JWT_SIGNATURE_INVALID, message);
     }
 
-    
+
 
 
     public static JwtException tokenNotFound(String message) {
         return new JwtException(ResultCode.JWT_TOKEN_NOT_FOUND, message);
     }
 
-    
+
 
 
     public static JwtException generationFailed(String message) {
         return new JwtException(ResultCode.JWT_GENERATION_FAILED, message);
     }
 
-    
+
 
 
     public static JwtException generationFailed(String message, Throwable cause) {
         return new JwtException(message, cause);
     }
 
-    
+
 
 
     private String maskSensitiveToken(String token) {

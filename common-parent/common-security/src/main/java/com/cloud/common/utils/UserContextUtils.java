@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class UserContextUtils {
 
-    
+
     public static final String HEADER_USER_ID = "X-User-Id";
     public static final String HEADER_USER_NAME = "X-User-Name";
     public static final String HEADER_USER_NICKNAME = "X-User-Nickname";
@@ -34,7 +34,7 @@ public class UserContextUtils {
     public static final String HEADER_TOKEN_VERSION = "X-Token-Version";
     public static final String HEADER_USER_SCOPES = "X-User-Scopes";
 
-    
+
 
 
 
@@ -48,19 +48,19 @@ public class UserContextUtils {
         return userId;
     }
 
-    
+
 
 
 
 
     public static String getCurrentUsername() {
-        
+
         String usernameFromJwt = getClaimFromJwt("username");
         if (StrUtil.isNotBlank(usernameFromJwt)) {
             return usernameFromJwt;
         }
 
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && StrUtil.isNotBlank(authentication.getName())) {
             return authentication.getName();
@@ -69,7 +69,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -87,7 +87,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -96,7 +96,7 @@ public class UserContextUtils {
         return getClaimFromJwt("nickname");
     }
 
-    
+
 
 
 
@@ -105,18 +105,18 @@ public class UserContextUtils {
         return getClaimFromJwt("status");
     }
 
-    
+
 
 
 
 
 
     public static String getCurrentUserPhone() {
-        
+
         return getClaimFromJwt("phone");
     }
 
-    
+
 
 
 
@@ -125,7 +125,7 @@ public class UserContextUtils {
         return getClaimFromJwt("client_id");
     }
 
-    
+
 
 
 
@@ -142,7 +142,7 @@ public class UserContextUtils {
         return Collections.emptySet();
     }
 
-    
+
 
 
 
@@ -156,7 +156,7 @@ public class UserContextUtils {
         return userScopes.contains(normalizeScope(scope));
     }
 
-    
+
 
 
 
@@ -176,7 +176,7 @@ public class UserContextUtils {
         return scope.replace('.', ':');
     }
 
-    
+
 
 
 
@@ -189,7 +189,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -202,7 +202,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -217,7 +217,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -238,7 +238,7 @@ public class UserContextUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -253,7 +253,7 @@ public class UserContextUtils {
                 getCurrentUserScopes());
     }
 
-    
+
 
 
 
@@ -263,7 +263,7 @@ public class UserContextUtils {
         return hasRole("USER");
     }
 
-    
+
 
 
 
@@ -272,7 +272,7 @@ public class UserContextUtils {
         return hasRole("MERCHANT");
     }
 
-    
+
 
 
 
@@ -281,7 +281,7 @@ public class UserContextUtils {
         return hasRole("ADMIN");
     }
 
-    
+
 
 
 
@@ -293,7 +293,7 @@ public class UserContextUtils {
                 authentication instanceof JwtAuthenticationToken;
     }
 
-    
+
 
 
 

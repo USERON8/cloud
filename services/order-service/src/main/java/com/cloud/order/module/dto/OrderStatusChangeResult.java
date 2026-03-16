@@ -22,82 +22,82 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderStatusChangeResult {
 
-    
+
 
 
     private Boolean success;
 
-    
+
 
 
     private String operationType;
 
-    
+
 
 
     private Long orderId;
 
-    
+
 
 
     private List<Long> orderIds;
 
-    
+
 
 
     private Integer beforeStatus;
 
-    
+
 
 
     private Integer afterStatus;
 
-    
+
 
 
     private Integer affectedCount;
 
-    
+
 
 
     private String errorCode;
 
-    
+
 
 
     private String errorMessage;
 
-    
+
 
 
     private LocalDateTime operationTime;
 
-    
+
 
 
     private Long operatorId;
 
-    
+
 
 
     private String remark;
 
-    
+
 
 
     private Long executionTime;
 
-    
+
 
 
     private Boolean usedDistributedLock;
 
-    
+
 
 
     private Long lockWaitTime;
 
-    
+
 
 
 
@@ -125,7 +125,7 @@ public class OrderStatusChangeResult {
                 .build();
     }
 
-    
+
 
 
 
@@ -154,7 +154,7 @@ public class OrderStatusChangeResult {
                 .build();
     }
 
-    
+
 
 
 
@@ -178,7 +178,7 @@ public class OrderStatusChangeResult {
                 .build();
     }
 
-    
+
 
 
 
@@ -202,7 +202,7 @@ public class OrderStatusChangeResult {
                 .build();
     }
 
-    
+
 
 
 
@@ -215,7 +215,7 @@ public class OrderStatusChangeResult {
         return this;
     }
 
-    
+
 
 
     public static class OperationType {
@@ -227,7 +227,7 @@ public class OrderStatusChangeResult {
         public static final String BATCH_STATUS_CHANGE = "BATCH_STATUS_CHANGE";
     }
 
-    
+
 
 
     public static class ErrorCode {
@@ -239,14 +239,14 @@ public class OrderStatusChangeResult {
         public static final String SYSTEM_ERROR = "SYSTEM_ERROR";
     }
 
-    
+
 
 
     public static class OrderStatus {
-        public static final Integer PENDING = 0;    
-        public static final Integer PAID = 1;       
-        public static final Integer SHIPPED = 2;    
-        public static final Integer COMPLETED = 3;  
-        public static final Integer CANCELLED = 4;  
+        public static final Integer PENDING = 0;
+        public static final Integer PAID = 1;
+        public static final Integer SHIPPED = 2;
+        public static final Integer COMPLETED = 3;
+        public static final Integer CANCELLED = 4;
     }
 }

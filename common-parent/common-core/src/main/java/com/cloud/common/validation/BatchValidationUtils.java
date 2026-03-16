@@ -14,12 +14,12 @@ import java.util.List;
 
 public class BatchValidationUtils {
 
-    
+
 
 
     public static final int DEFAULT_BATCH_SIZE_LIMIT = 100;
 
-    
+
 
 
 
@@ -30,7 +30,7 @@ public class BatchValidationUtils {
         validateBatchSize(collection, operationName, DEFAULT_BATCH_SIZE_LIMIT);
     }
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public class BatchValidationUtils {
         }
     }
 
-    
+
 
 
 
@@ -60,7 +60,7 @@ public class BatchValidationUtils {
         return validateBatchSizeWithError(collection, operationName, DEFAULT_BATCH_SIZE_LIMIT);
     }
 
-    
+
 
 
 
@@ -77,10 +77,10 @@ public class BatchValidationUtils {
             return Result.error(String.format("%s鏁伴噺涓嶈兘瓒呰繃%d涓紝褰撳墠鏁伴噺: %d", operationName, limit, collection.size()));
         }
 
-        return null; 
+        return null;
     }
 
-    
+
 
 
 
@@ -91,7 +91,7 @@ public class BatchValidationUtils {
         validateBatchSize(array, operationName, DEFAULT_BATCH_SIZE_LIMIT);
     }
 
-    
+
 
 
 
@@ -110,7 +110,7 @@ public class BatchValidationUtils {
         }
     }
 
-    
+
 
 
 
@@ -119,7 +119,7 @@ public class BatchValidationUtils {
     public static void validateIdList(List<Long> ids, String operationName) {
         validateBatchSize(ids, operationName);
 
-        
+
         for (Long id : ids) {
             if (id == null || id <= 0) {
                 throw new ValidationException("id", id, String.format("%s鍖呭惈鏃犳晥鐨処D: %s", operationName, id));
@@ -127,7 +127,7 @@ public class BatchValidationUtils {
         }
     }
 
-    
+
 
 
 
@@ -136,7 +136,7 @@ public class BatchValidationUtils {
     public static void validateIdArray(Long[] ids, String operationName) {
         validateBatchSize(ids, operationName);
 
-        
+
         for (Long id : ids) {
             if (id == null || id <= 0) {
                 throw new ValidationException("id", id, String.format("%s鍖呭惈鏃犳晥鐨処D: %s", operationName, id));
@@ -144,7 +144,7 @@ public class BatchValidationUtils {
         }
     }
 
-    
+
 
 
 
@@ -157,7 +157,7 @@ public class BatchValidationUtils {
         return collection;
     }
 
-    
+
 
 
 

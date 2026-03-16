@@ -16,25 +16,25 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "merchant")
 @Data
 public class Merchant extends BaseEntity<Merchant> {
-    
+
 
 
     @TableField(value = "username")
     private String username;
 
-    
+
 
 
     @TableField(value = "merchant_name")
     private String merchantName;
 
-    
+
 
 
     @TableField(value = "phone")
     private String phone;
 
-    
+
 
 
     @TableField(value = "status")

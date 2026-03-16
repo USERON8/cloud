@@ -60,8 +60,8 @@ public class ProductApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        
+
         SpringApplication.run(ProductApplication.class, args);
-        
+
     }
 }

@@ -37,7 +37,7 @@ import java.util.Map;
 @Configuration
 public class MybatisPlusConfig {
 
-    
+
 
 
 
@@ -52,23 +52,23 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        
+
         PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
-        paginationInterceptor.setMaxLimit(1000L); 
-        paginationInterceptor.setOverflow(false); 
+        paginationInterceptor.setMaxLimit(1000L);
+        paginationInterceptor.setOverflow(false);
         interceptor.addInnerInterceptor(paginationInterceptor);
 
-        
+
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
-        
+
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
         interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
 
         return interceptor;
     }
 
-    
+
 
 
 
@@ -82,7 +82,7 @@ public class MybatisPlusConfig {
     @Bean
     @Primary
     public MetaObjectHandler metaObjectHandler() {
-        
+
         return new UnifiedMetaObjectHandler();
     }
 
@@ -101,7 +101,7 @@ public class MybatisPlusConfig {
         return globalConfig;
     }
 
-    
+
 
 
 
@@ -117,7 +117,7 @@ public class MybatisPlusConfig {
 
     public static class UnifiedMetaObjectHandler implements MetaObjectHandler {
 
-        
+
 
 
 
@@ -131,28 +131,28 @@ public class MybatisPlusConfig {
             LocalDateTime now = LocalDateTime.now();
             Long currentUserId = getCurrentUserId();
 
-            
+
             fillDateTimeField(metaObject, new String[]{"createdAt", "created_at", "createTime", "create_time"}, now);
 
-            
+
             fillDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
-            
+
             fillField(metaObject, new String[]{"version"}, Integer.class, 1);
 
-            
+
             fillField(metaObject, new String[]{"createBy", "create_by", "createdBy", "created_by"}, Long.class, currentUserId);
 
-            
+
             fillField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
 
-            
+
             fillField(metaObject, new String[]{"deleted", "is_deleted"}, Integer.class, 0);
 
             log.debug("- createdAt: {}, updatedAt: {}, userId: {}", now, now, currentUserId);
         }
 
-        
+
 
 
 
@@ -164,16 +164,16 @@ public class MybatisPlusConfig {
             LocalDateTime now = LocalDateTime.now();
             Long currentUserId = getCurrentUserId();
 
-            
+
             updateDateTimeField(metaObject, new String[]{"updatedAt", "updated_at", "updateTime", "update_time"}, now);
 
-            
+
             updateField(metaObject, new String[]{"updateBy", "update_by", "updatedBy", "updated_by"}, Long.class, currentUserId);
 
             log.debug("- updatedAt: {}, userId: {}", now, currentUserId);
         }
 
-        
+
 
 
         private <T> void fillField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
@@ -181,19 +181,19 @@ public class MybatisPlusConfig {
                 if (metaObject.hasGetter(fieldName)) {
                     this.strictInsertFill(metaObject, fieldName, fieldType, value);
                     log.debug("D messageebug", fieldName, value);
-                    break; 
+                    break;
                 }
             }
         }
 
-        
+
 
 
         private void fillDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
             fillField(metaObject, fieldNames, LocalDateTime.class, value);
         }
 
-        
+
 
 
         private <T> void updateField(MetaObject metaObject, String[] fieldNames, Class<T> fieldType, T value) {
@@ -201,19 +201,19 @@ public class MybatisPlusConfig {
                 if (metaObject.hasGetter(fieldName)) {
                     this.strictUpdateFill(metaObject, fieldName, fieldType, value);
                     log.debug("D messageebug", fieldName, value);
-                    break; 
+                    break;
                 }
             }
         }
 
-        
+
 
 
         private void updateDateTimeField(MetaObject metaObject, String[] fieldNames, LocalDateTime value) {
             updateField(metaObject, fieldNames, LocalDateTime.class, value);
         }
 
-        
+
 
 
 
@@ -237,7 +237,7 @@ public class MybatisPlusConfig {
                 return userId != null ? userId : 0L;
             } catch (Exception e) {
                 log.debug("IDD: {}", e.getMessage());
-                return 0L; 
+                return 0L;
             }
         }
 

@@ -23,47 +23,47 @@ public class OrderCreatedEvent implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    
+
 
 
     private Long orderId;
 
-    
+
 
 
     private String orderNo;
 
-    
+
 
 
     private Long userId;
 
-    
+
 
 
     private BigDecimal totalAmount;
 
-    
+
 
 
     private Map<Long, Integer> productQuantityMap;
 
-    
+
 
 
     private String remark;
 
-    
+
 
 
     private Long timestamp;
 
-    
+
 
 
     private String eventId;
 
-    
+
 
     private String eventType;
 }

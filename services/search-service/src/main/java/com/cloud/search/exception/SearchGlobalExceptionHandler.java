@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice(basePackages = "com.cloud")
 public class SearchGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
-    
+
 
 
 

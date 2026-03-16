@@ -83,7 +83,7 @@ public class RedissonClientConfiguration {
     @Value("${cloud.redisson.codec:json}")
     private String codec;
 
-    
+
 
 
 
@@ -94,7 +94,7 @@ public class RedissonClientConfiguration {
     public RedissonClient redissonClient() {
         Config config = new Config();
 
-        
+
         if (StrUtil.isNotBlank(clusterNodes)) {
             configureCluster(config);
         } else if (StrUtil.isNotBlank(sentinelNodes) && StrUtil.isNotBlank(sentinelMaster)) {
@@ -103,25 +103,25 @@ public class RedissonClientConfiguration {
             configureSingle(config);
         }
 
-        
+
         config.setThreads(threads);
         config.setNettyThreads(nettyThreads);
 
-        
+
         if ("json".equalsIgnoreCase(codec)) {
             config.setCodec(new JsonJacksonCodec());
         }
-        
+
 
         RedissonClient redissonClient = Redisson.create(config);
 
-        
+
 
 
         return redissonClient;
     }
 
-    
+
 
 
     private void configureSingle(Config config) {
@@ -137,17 +137,17 @@ public class RedissonClientConfiguration {
                 .setConnectTimeout(parseTimeout())
                 .setRetryAttempts(3)
                 .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)))
-                .setPingConnectionInterval(1000)  
-                .setKeepAlive(true);              
+                .setPingConnectionInterval(1000)
+                .setKeepAlive(true);
 
         if (StrUtil.isNotBlank(password)) {
             config.useSingleServer().setPassword(password);
         }
 
-        
+
     }
 
-    
+
 
 
     private void configureCluster(Config config) {
@@ -172,16 +172,16 @@ public class RedissonClientConfiguration {
                 .setRetryDelay(new ConstantDelay(Duration.ofMillis(1500)))
                 .setPingConnectionInterval(1000)
                 .setKeepAlive(true)
-                .setScanInterval(2000);  
+                .setScanInterval(2000);
 
         if (StrUtil.isNotBlank(password)) {
             config.useClusterServers().setPassword(password);
         }
 
-        
+
     }
 
-    
+
 
 
     private void configureSentinel(Config config) {
@@ -214,10 +214,10 @@ public class RedissonClientConfiguration {
             config.useSentinelServers().setPassword(password);
         }
 
-        
+
     }
 
-    
+
 
 
     private int parseTimeout() {
@@ -229,7 +229,7 @@ public class RedissonClientConfiguration {
 
         try {
             int value = Integer.parseInt(cleanValue);
-            
+
             if (timeoutStr.contains("s") && !timeoutStr.contains("ms")) {
                 value *= 1000;
             }
@@ -240,7 +240,7 @@ public class RedissonClientConfiguration {
         }
     }
 
-    
+
 
 
     private String getMode() {

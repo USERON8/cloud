@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @Repository
 public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocument, String> {
 
-    
+
 
 
 
@@ -29,7 +29,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
     @Query("{\"bool\": {\"must\": [{\"match\": {\"shopName\": \"?0\"}}]}}")
     Page<ShopDocument> findByShopNameContaining(String shopName, Pageable pageable);
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
 
     Page<ShopDocument> findByMerchantId(Long merchantId, Pageable pageable);
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
 
     Page<ShopDocument> findByStatus(Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -56,7 +56,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
 
     Page<ShopDocument> findByRecommended(Boolean recommended, Pageable pageable);
 
-    
+
 
 
 
@@ -67,7 +67,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
     @Query("{\"bool\": {\"must\": [{\"range\": {\"rating\": {\"gte\": ?0, \"lte\": ?1}}}]}}")
     Page<ShopDocument> findByRatingBetween(BigDecimal minRating, BigDecimal maxRating, Pageable pageable);
 
-    
+
 
 
 
@@ -77,7 +77,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
     @Query("{\"bool\": {\"must\": [{\"match\": {\"address\": \"?0\"}}]}}")
     Page<ShopDocument> findByAddressContaining(String address, Pageable pageable);
 
-    
+
 
 
 
@@ -88,7 +88,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
     @Query("{\"bool\": {\"must\": [{\"multi_match\": {\"query\": \"?0\", \"fields\": [\"shopName\", \"description\", \"address\"]}}, {\"term\": {\"status\": ?1}}]}}")
     Page<ShopDocument> searchByKeywordAndStatus(String keyword, Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -99,7 +99,7 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
     @Query("{\"bool\": {\"must\": [{\"term\": {\"merchantId\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
     Page<ShopDocument> findByMerchantIdAndStatus(Long merchantId, Integer status, Pageable pageable);
 
-    
+
 
 
 

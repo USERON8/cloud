@@ -9,7 +9,7 @@ package com.cloud.common.constant;
 
 public final class MessageTopicConstants {
 
-    
+
 
 
 
@@ -17,8 +17,8 @@ public final class MessageTopicConstants {
 
     public static final String LOG_COLLECTION_TOPIC = "log-collection-topic";
 
-    
-    
+
+
 
 
 
@@ -26,15 +26,15 @@ public final class MessageTopicConstants {
 
     public static final String ORDER_CREATED_TOPIC = "order-created-topic";
 
-    
-    
+
+
 
 
 
 
 
     public static final String PAYMENT_SUCCESS_TOPIC = "payment-success-topic";
-    
+
 
 
 
@@ -43,12 +43,12 @@ public final class MessageTopicConstants {
     public static final String ORDER_COMPLETED_TOPIC = "order-completed-topic";
 
     private MessageTopicConstants() {
-        
+
     }
 
-    
 
-    
+
+
 
 
     public static final class LogTags {
@@ -60,7 +60,7 @@ public final class MessageTopicConstants {
         public static final String SEARCH_LOG = "search-log";
     }
 
-    
+
 
 
     public static final class OrderTags {
@@ -72,7 +72,7 @@ public final class MessageTopicConstants {
         public static final String ORDER_REFUNDED = "order-refunded";
     }
 
-    
+
 
 
     public static final class PaymentTags {
@@ -86,7 +86,7 @@ public final class MessageTopicConstants {
         public static final String REFUND_FAILED = "refund-failed";
     }
 
-    
+
 
 
     public static final class StockTags {
@@ -98,30 +98,30 @@ public final class MessageTopicConstants {
         public static final String STOCK_RELEASED = "stock-released";
     }
 
-    
 
-    
+
+
 
 
     public static final class LogConsumerGroups {
         public static final String LOG_COLLECTION_GROUP = "log-collection-consumer-group";
     }
 
-    
+
 
 
     public static final class OrderConsumerGroups {
         public static final String PAYMENT_SUCCESS_GROUP = "order-payment-success-group";
     }
 
-    
+
 
 
     public static final class PaymentConsumerGroups {
         public static final String ORDER_CREATED_GROUP = "payment-order-created-group";
     }
 
-    
+
 
 
     public static final class StockConsumerGroups {
@@ -129,39 +129,39 @@ public final class MessageTopicConstants {
         public static final String ORDER_COMPLETED_GROUP = "stock-order-completed-group";
     }
 
-    
 
-    
+
+
 
 
     public static final class ProducerBindings {
-        
+
         public static final String LOG_PRODUCER = "logProducer-out-0";
 
-        
+
         public static final String ORDER_CREATED_PRODUCER = "orderCreatedProducer-out-0";
         public static final String ORDER_COMPLETED_PRODUCER = "orderCompletedProducer-out-0";
 
-        
+
         public static final String PAYMENT_SUCCESS_PRODUCER = "paymentSuccessProducer-out-0";
     }
 
-    
+
 
 
     public static final class ConsumerBindings {
-        
+
         public static final String LOG_CONSUMER = "logConsumer-in-0";
 
-        
+
         public static final String ORDER_CREATED_CONSUMER = "orderCreatedConsumer-in-0";
         public static final String ORDER_COMPLETED_CONSUMER = "orderCompletedConsumer-in-0";
         public static final String PAYMENT_SUCCESS_CONSUMER = "paymentSuccessConsumer-in-0";
     }
 
-    
 
-    
+
+
 
 
     public static final class DefaultConfig {
@@ -175,8 +175,8 @@ public final class MessageTopicConstants {
         public static final int DEFAULT_BACK_OFF_MAX_INTERVAL = 10000;
         public static final double DEFAULT_BACK_OFF_MULTIPLIER = 2.0;
         public static final int DEFAULT_SEND_MESSAGE_TIMEOUT = 3000;
-        public static final int DEFAULT_MAX_MESSAGE_SIZE = 4194304; 
-        public static final int DEFAULT_COMPRESS_THRESHOLD = 4096; 
+        public static final int DEFAULT_MAX_MESSAGE_SIZE = 4194304;
+        public static final int DEFAULT_COMPRESS_THRESHOLD = 4096;
         public static final int DEFAULT_RETRY_TIMES = 2;
     }
 }

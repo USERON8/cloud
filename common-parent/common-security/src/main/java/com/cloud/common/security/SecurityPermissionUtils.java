@@ -24,26 +24,26 @@ import java.util.stream.Collectors;
 public final class SecurityPermissionUtils {
 
     private SecurityPermissionUtils() {
-        
+
     }
 
-    
 
-    
+
+
 
 
     public static Authentication getCurrentAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
-    
+
 
 
     public static String getCurrentUserId() {
         return getCurrentUserId(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static String getCurrentUserId(Authentication authentication) {
@@ -58,14 +58,14 @@ public final class SecurityPermissionUtils {
         return null;
     }
 
-    
+
 
 
     public static String getCurrentUsername() {
         return getCurrentUsername(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static String getCurrentUsername(Authentication authentication) {
@@ -80,14 +80,14 @@ public final class SecurityPermissionUtils {
         return authentication != null ? authentication.getName() : null;
     }
 
-    
+
 
 
     public static String getCurrentPrimaryRole() {
         return getCurrentPrimaryRole(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static String getCurrentPrimaryRole(Authentication authentication) {
@@ -103,14 +103,14 @@ public final class SecurityPermissionUtils {
         return null;
     }
 
-    
+
 
 
     public static Set<String> getCurrentUserAuthorities() {
         return getCurrentUserAuthorities(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static Set<String> getCurrentUserAuthorities(Authentication authentication) {
@@ -123,16 +123,16 @@ public final class SecurityPermissionUtils {
                 .collect(Collectors.toSet());
     }
 
-    
 
-    
+
+
 
 
     public static boolean isAuthenticated() {
         return isAuthenticated(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static boolean isAuthenticated(Authentication authentication) {
@@ -141,16 +141,16 @@ public final class SecurityPermissionUtils {
                 && !"anonymousUser".equals(authentication.getName());
     }
 
-    
 
-    
+
+
 
 
     public static boolean hasAuthority(String authority) {
         return hasAuthority(getCurrentAuthentication(), authority);
     }
 
-    
+
 
 
     public static boolean hasAuthority(Authentication authentication, String authority) {
@@ -162,14 +162,14 @@ public final class SecurityPermissionUtils {
                 .anyMatch(auth -> auth.equals(authority));
     }
 
-    
+
 
 
     public static boolean hasAnyAuthority(String... authorities) {
         return hasAnyAuthority(getCurrentAuthentication(), authorities);
     }
 
-    
+
 
 
     public static boolean hasAnyAuthority(Authentication authentication, String... authorities) {
@@ -185,14 +185,14 @@ public final class SecurityPermissionUtils {
         return false;
     }
 
-    
+
 
 
     public static boolean hasRole(String role) {
         return hasRole(getCurrentAuthentication(), role);
     }
 
-    
+
 
 
     public static boolean hasRole(Authentication authentication, String role) {
@@ -200,14 +200,14 @@ public final class SecurityPermissionUtils {
         return hasAuthority(authentication, roleAuthority);
     }
 
-    
+
 
 
     public static boolean hasAnyRole(String... roles) {
         return hasAnyRole(getCurrentAuthentication(), roles);
     }
 
-    
+
 
 
     public static boolean hasAnyRole(Authentication authentication, String... roles) {
@@ -218,60 +218,60 @@ public final class SecurityPermissionUtils {
         return hasAnyAuthority(authentication, roleAuthorities);
     }
 
-    
 
-    
+
+
 
 
     public static boolean isAdmin() {
         return isAdmin(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static boolean isAdmin(Authentication authentication) {
         return hasRole(authentication, "ADMIN");
     }
 
-    
+
 
 
     public static boolean isMerchant() {
         return isMerchant(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static boolean isMerchant(Authentication authentication) {
         return hasRole(authentication, "MERCHANT");
     }
 
-    
+
 
 
     public static boolean isUser() {
         return isUser(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static boolean isUser(Authentication authentication) {
         return hasRole(authentication, "USER");
     }
 
-    
 
-    
+
+
 
 
     public static boolean isSameUser(String userId) {
         return isSameUser(getCurrentAuthentication(), userId);
     }
 
-    
+
 
 
     public static boolean isSameUser(Authentication authentication, String userId) {
@@ -279,14 +279,14 @@ public final class SecurityPermissionUtils {
         return currentUserId != null && currentUserId.equals(userId);
     }
 
-    
+
 
 
     public static boolean isOwner(Long resourceUserId) {
         return isOwner(getCurrentAuthentication(), resourceUserId);
     }
 
-    
+
 
 
     public static boolean isOwner(Authentication authentication, Long resourceUserId) {
@@ -298,14 +298,14 @@ public final class SecurityPermissionUtils {
         return Objects.equals(currentUserId, resourceUserId.toString());
     }
 
-    
+
 
 
     public static boolean isMerchantOwner(Long merchantId) {
         return isMerchantOwner(getCurrentAuthentication(), merchantId);
     }
 
-    
+
 
 
     public static boolean isMerchantOwner(Authentication authentication, Long merchantId) {
@@ -313,26 +313,26 @@ public final class SecurityPermissionUtils {
             return false;
         }
 
-        
+
         if (!isMerchant(authentication)) {
             return false;
         }
 
-        
+
         String currentUserId = getCurrentUserId(authentication);
         return Objects.equals(currentUserId, merchantId.toString());
     }
 
-    
 
-    
+
+
 
 
     public static Jwt getCurrentJwt() {
         return getCurrentJwt(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static Jwt getCurrentJwt(Authentication authentication) {
@@ -342,14 +342,14 @@ public final class SecurityPermissionUtils {
         return null;
     }
 
-    
+
 
 
     public static Object getClaim(String claimName) {
         return getClaim(getCurrentAuthentication(), claimName);
     }
 
-    
+
 
 
     public static Object getClaim(Authentication authentication, String claimName) {
@@ -357,14 +357,14 @@ public final class SecurityPermissionUtils {
         return jwt != null ? jwt.getClaim(claimName) : null;
     }
 
-    
+
 
 
     public static String getClaimAsString(String claimName) {
         return getClaimAsString(getCurrentAuthentication(), claimName);
     }
 
-    
+
 
 
     public static String getClaimAsString(Authentication authentication, String claimName) {
@@ -372,67 +372,67 @@ public final class SecurityPermissionUtils {
         return jwt != null ? jwt.getClaimAsString(claimName) : null;
     }
 
-    
 
-    
+
+
 
 
     public static boolean isAdminOrOwner(Long resourceUserId) {
         return isAdminOrOwner(getCurrentAuthentication(), resourceUserId);
     }
 
-    
+
 
 
     public static boolean isAdminOrOwner(Authentication authentication, Long resourceUserId) {
         return isAdmin(authentication) || isOwner(authentication, resourceUserId);
     }
 
-    
+
 
 
     public static boolean isAdminOrMerchantOwner(Long merchantId) {
         return isAdminOrMerchantOwner(getCurrentAuthentication(), merchantId);
     }
 
-    
+
 
 
     public static boolean isAdminOrMerchantOwner(Authentication authentication, Long merchantId) {
         return isAdmin(authentication) || isMerchantOwner(authentication, merchantId);
     }
 
-    
 
-    
+
+
 
 
     public static boolean canAccessResource(Long resourceUserId) {
         return canAccessResource(getCurrentAuthentication(), resourceUserId);
     }
 
-    
+
 
 
     public static boolean canAccessResource(Authentication authentication, Long resourceUserId) {
-        
+
         if (isAdmin(authentication)) {
             return true;
         }
 
-        
+
         String currentUserId = getCurrentUserId(authentication);
         return currentUserId != null && currentUserId.equals(resourceUserId.toString());
     }
 
-    
+
 
 
     public static String getUserSummary() {
         return getUserSummary(getCurrentAuthentication());
     }
 
-    
+
 
 
     public static String getUserSummary(Authentication authentication) {

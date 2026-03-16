@@ -36,17 +36,17 @@ public abstract class BaseMessageConfig {
     protected MessageProperties messageProperties;
 
     public BaseMessageConfig() {
-        
+
     }
 
-    
+
 
 
 
 
     protected abstract String getServiceName();
 
-    
+
 
 
 
@@ -60,7 +60,7 @@ public abstract class BaseMessageConfig {
         headers.put(MessageConst.PROPERTY_KEYS, key);
         headers.put("eventType", eventType);
 
-        
+
         if (messageProperties != null) {
             MessageProperties.HeaderConfig headerConfig = messageProperties.getHeader();
             if (headerConfig.isAutoTraceId()) {
@@ -73,7 +73,7 @@ public abstract class BaseMessageConfig {
                 headers.put("serviceName", getServiceName());
             }
         } else {
-            
+
             headers.put("traceId", generateTraceId());
             headers.put("timestamp", System.currentTimeMillis());
             headers.put("serviceName", getServiceName());
@@ -82,7 +82,7 @@ public abstract class BaseMessageConfig {
         return headers;
     }
 
-    
+
 
 
 
@@ -97,7 +97,7 @@ public abstract class BaseMessageConfig {
             String traceId = (String) headers.get("traceId");
             String eventType = (String) headers.get("eventType");
 
-            
+
             boolean verbose = messageProperties == null || messageProperties.getLog().isVerbose();
             boolean logPayload = messageProperties != null && messageProperties.getLog().isLogPayload();
             boolean logHeaders = messageProperties == null || messageProperties.getLog().isLogHeaders();
@@ -105,10 +105,10 @@ public abstract class BaseMessageConfig {
             if (verbose) {
                 if (logPayload) {
                     String payloadStr = truncatePayload(String.valueOf(payload));
-                    
+
 
                 } else {
-                    
+
 
                 }
                 if (logHeaders) {
@@ -120,7 +120,7 @@ public abstract class BaseMessageConfig {
 
             if (sent) {
                 if (verbose) {
-                    
+
 
                 }
             } else {
@@ -135,7 +135,7 @@ public abstract class BaseMessageConfig {
         }
     }
 
-    
+
 
 
     private String truncatePayload(String payload) {
@@ -146,7 +146,7 @@ public abstract class BaseMessageConfig {
         return payload.length() > maxLength ? payload.substring(0, maxLength) + "..." : payload;
     }
 
-    
+
 
 
 
@@ -157,29 +157,29 @@ public abstract class BaseMessageConfig {
         return IdUtil.fastSimpleUUID();
     }
 
-    
+
 
 
 
 
 
     protected void logMessageProcessStart(String eventType, String traceId) {
-        
+
 
     }
 
-    
+
 
 
 
 
 
     protected void logMessageProcessSuccess(String eventType, String traceId) {
-        
+
 
     }
 
-    
+
 
 
 
@@ -191,7 +191,7 @@ public abstract class BaseMessageConfig {
                 eventType, traceId, getServiceName(), error);
     }
 
-    
+
 
 
 
@@ -199,18 +199,18 @@ public abstract class BaseMessageConfig {
 
 
     protected boolean isMessageProcessed(String traceId) {
-        
+
         return false;
     }
 
-    
+
 
 
 
 
 
     protected void markMessageProcessed(String traceId) {
-        
+
         log.debug("?- ID: {}", traceId);
     }
 }

@@ -13,27 +13,27 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ReviewType {
 
-    
+
 
 
     PRODUCT(1, "鍟嗗搧璇勪环"),
 
-    
+
 
 
     SHOP(2, "搴楅摵璇勪环");
 
-    
+
 
 
     private final Integer code;
 
-    
+
 
 
     private final String description;
 
-    
+
 
 
 

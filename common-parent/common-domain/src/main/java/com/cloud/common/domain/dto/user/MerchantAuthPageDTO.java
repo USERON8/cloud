@@ -10,12 +10,12 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MerchantAuthPageDTO extends PageQuery {
-    
+
 
 
     private Integer authStatus;
 
-    
+
 
 
     private String merchantName;

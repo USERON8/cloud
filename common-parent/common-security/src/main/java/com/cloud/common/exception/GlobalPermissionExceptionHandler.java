@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice(basePackages = "com.cloud")
-@Order(1) 
+@Order(1)
 public class GlobalPermissionExceptionHandler {
 
-    
+
 
 
 
@@ -35,7 +35,7 @@ public class GlobalPermissionExceptionHandler {
         return Result.error(translateErrorCode(ex.getCode()), ex.getMessage());
     }
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public class GlobalPermissionExceptionHandler {
         return Result.error(401, "Authentication failed: " + ex.getMessage());
     }
 
-    
+
 
 
 
@@ -63,7 +63,7 @@ public class GlobalPermissionExceptionHandler {
         return Result.error(403, "璁块棶琚嫆缁濓細" + ex.getMessage());
     }
 
-    
+
 
 
 
@@ -77,7 +77,7 @@ public class GlobalPermissionExceptionHandler {
         return Result.error(403, "瀹夊叏妫€鏌ュけ璐ワ細" + ex.getMessage());
     }
 
-    
+
 
 
 
@@ -91,7 +91,7 @@ public class GlobalPermissionExceptionHandler {
         return Result.error(401, "Invalid JWT token: " + ex.getMessage());
     }
 
-    
+
 
 
 

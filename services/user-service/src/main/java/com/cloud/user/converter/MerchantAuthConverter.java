@@ -14,14 +14,14 @@ import java.util.List;
 
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE, 
-        unmappedSourcePolicy = ReportingPolicy.IGNORE  
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface MerchantAuthConverter {
 
     MerchantAuthConverter INSTANCE = org.mapstruct.factory.Mappers.getMapper(MerchantAuthConverter.class);
 
-    
+
 
 
 
@@ -29,7 +29,7 @@ public interface MerchantAuthConverter {
 
     MerchantAuthDTO toDTO(MerchantAuth merchantAuth);
 
-    
+
 
 
 
@@ -37,7 +37,7 @@ public interface MerchantAuthConverter {
 
     MerchantAuth toEntity(MerchantAuthDTO merchantAuthDTO);
 
-    
+
 
 
 
@@ -45,7 +45,7 @@ public interface MerchantAuthConverter {
 
     MerchantAuth toEntity(MerchantAuthRequestDTO merchantAuthRequestDTO);
 
-    
+
 
 
 
@@ -53,7 +53,7 @@ public interface MerchantAuthConverter {
 
     MerchantAuthVO toVO(MerchantAuth merchantAuth);
 
-    
+
 
 
 
@@ -61,7 +61,7 @@ public interface MerchantAuthConverter {
 
     List<MerchantAuthVO> toVOList(List<MerchantAuth> merchantAuths);
 
-    
+
 
 
 

@@ -11,7 +11,7 @@ import com.cloud.user.module.entity.MerchantAuth;
 
 public interface MerchantAuthService extends IService<MerchantAuth> {
 
-    
+
 
 
 
@@ -19,7 +19,7 @@ public interface MerchantAuthService extends IService<MerchantAuth> {
 
     MerchantAuthDTO getMerchantAuthByIdWithCache(Long id);
 
-    
+
 
 
 

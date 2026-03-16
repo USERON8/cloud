@@ -46,7 +46,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
                     log.debug("Forward JWT token and user claims to downstream services");
 
-                    
+
                     ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
                             .headers(headers -> {
                                 for (String header : FORWARDED_IDENTITY_HEADERS) {
@@ -57,7 +57,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                             });
 
 
-                    
+
                     addUserInfoHeaders(requestBuilder, jwt);
 
                     ServerHttpRequest request = requestBuilder.build();
@@ -69,21 +69,21 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                 .flatMap(chain::filter);
     }
 
-    
+
 
 
     private void addUserInfoHeaders(ServerHttpRequest.Builder requestBuilder, Jwt jwt) {
         try {
-            
+
             addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
             addHeaderIfPresent(requestBuilder, "X-User-Id", getUserIdClaim(jwt));
             addHeaderIfPresent(requestBuilder, "X-User-Nickname", jwt.getClaimAsString("nickname"));
             addHeaderIfPresent(requestBuilder, "X-User-Status", getClaimAsString(jwt, "status"));
 
-            
+
             addHeaderIfPresent(requestBuilder, "X-Client-Id", jwt.getClaimAsString("client_id"));
 
-            
+
             if (jwt.getClaimAsString("scope") != null) {
                 addHeaderIfPresent(requestBuilder, "X-User-Scopes", jwt.getClaimAsString("scope"));
             }
@@ -101,7 +101,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         }
     }
 
-    
+
 
 
     private void addHeaderIfPresent(ServerHttpRequest.Builder requestBuilder, String headerName, String value) {
@@ -110,7 +110,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         }
     }
 
-    
+
 
 
     private String getClaimAsString(Jwt jwt, String claimName) {
@@ -128,7 +128,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100; 
+        return -100;
     }
 }
 

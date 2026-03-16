@@ -19,9 +19,9 @@ import java.util.List;
 
 public interface ShopService extends IService<Shop> {
 
-    
 
-    
+
+
 
 
 
@@ -29,7 +29,7 @@ public interface ShopService extends IService<Shop> {
 
     Long createShop(ShopRequestDTO requestDTO);
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface ShopService extends IService<Shop> {
 
     Boolean updateShop(Long id, ShopRequestDTO requestDTO);
 
-    
+
 
 
 
@@ -46,7 +46,7 @@ public interface ShopService extends IService<Shop> {
 
     Boolean deleteShop(Long id);
 
-    
+
 
 
 
@@ -54,9 +54,9 @@ public interface ShopService extends IService<Shop> {
 
     Boolean batchDeleteShops(List<Long> ids);
 
-    
 
-    
+
+
 
 
 
@@ -64,7 +64,7 @@ public interface ShopService extends IService<Shop> {
 
     ShopVO getShopById(Long id);
 
-    
+
 
 
 
@@ -72,7 +72,7 @@ public interface ShopService extends IService<Shop> {
 
     List<ShopVO> getShopsByIds(List<Long> ids);
 
-    
+
 
 
 
@@ -80,7 +80,7 @@ public interface ShopService extends IService<Shop> {
 
     PageResult<ShopVO> getShopsPage(ShopPageDTO pageDTO);
 
-    
+
 
 
 
@@ -89,7 +89,7 @@ public interface ShopService extends IService<Shop> {
 
     List<ShopVO> getShopsByMerchantId(Long merchantId, Integer status);
 
-    
+
 
 
 
@@ -98,9 +98,9 @@ public interface ShopService extends IService<Shop> {
 
     List<ShopVO> searchShopsByName(String shopName, Integer status);
 
-    
 
-    
+
+
 
 
 
@@ -108,7 +108,7 @@ public interface ShopService extends IService<Shop> {
 
     Boolean enableShop(Long id);
 
-    
+
 
 
 
@@ -116,7 +116,7 @@ public interface ShopService extends IService<Shop> {
 
     Boolean disableShop(Long id);
 
-    
+
 
 
 
@@ -124,7 +124,7 @@ public interface ShopService extends IService<Shop> {
 
     Boolean batchEnableShops(List<Long> ids);
 
-    
+
 
 
 
@@ -132,30 +132,30 @@ public interface ShopService extends IService<Shop> {
 
     Boolean batchDisableShops(List<Long> ids);
 
-    
 
-    
+
+
 
 
 
 
     Long getTotalShopCount();
 
-    
+
 
 
 
 
     Long getEnabledShopCount();
 
-    
+
 
 
 
 
     Long getDisabledShopCount();
 
-    
+
 
 
 
@@ -163,9 +163,9 @@ public interface ShopService extends IService<Shop> {
 
     Long getShopCountByMerchantId(Long merchantId);
 
-    
 
-    
+
+
 
 
 
@@ -174,21 +174,21 @@ public interface ShopService extends IService<Shop> {
 
     Boolean hasPermission(Long merchantId, Long shopId);
 
-    
 
-    
+
+
 
 
 
 
     void evictShopCache(Long id);
 
-    
+
 
 
     void evictAllShopCache();
 
-    
+
 
 
 

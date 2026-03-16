@@ -26,7 +26,7 @@ public class BaseHealthCheckController {
 
     private final MeterRegistry meterRegistry;
 
-    
+
 
 
 
@@ -49,7 +49,7 @@ public class BaseHealthCheckController {
             healthInfo.put("ip", "unknown");
         }
 
-        
+
         if (meterRegistry != null) {
             healthInfo.put("metrics", "enabled");
         } else {
@@ -59,7 +59,7 @@ public class BaseHealthCheckController {
         return Result.success(healthInfo.toString(), "Service is healthy");
     }
 
-    
+
 
 
 

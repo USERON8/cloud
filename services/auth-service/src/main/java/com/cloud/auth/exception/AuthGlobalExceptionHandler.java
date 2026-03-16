@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice(basePackages = "com.cloud")
 public class AuthGlobalExceptionHandler extends com.cloud.common.exception.GlobalExceptionHandler {
 
-    
+
 
 
     @ExceptionHandler(AuthenticationException.class)
@@ -38,7 +38,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.AUTHENTICATION_FAILED);
     }
 
-    
+
 
 
     @ExceptionHandler(OAuth2AuthenticationException.class)
@@ -49,7 +49,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
 
         log.warn("OAuth2 - uri: {}, errorCode: {}, errorMessage: {}", request.getRequestURI(), errorCode, errorMessage);
 
-        
+
         return switch (errorCode) {
             case "invalid_request" -> Result.error(ResultCode.OAUTH2_INVALID_REQUEST);
             case "invalid_client" -> Result.error(ResultCode.OAUTH2_INVALID_CLIENT);
@@ -62,7 +62,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         };
     }
 
-    
+
 
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -71,7 +71,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.ACCESS_DENIED);
     }
 
-    
+
 
 
     @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtEncodingException.class)
@@ -80,7 +80,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.JWT_GENERATION_FAILED);
     }
 
-    
+
 
 
     @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtValidationException.class)
@@ -89,16 +89,16 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.JWT_TOKEN_INVALID);
     }
 
-    
 
 
-    
-    
-    
-    
-    
 
-    
+
+
+
+
+
+
+
 
 
     @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
@@ -107,7 +107,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.USER_DISABLED);
     }
 
-    
+
 
 
     @ExceptionHandler(org.springframework.security.authentication.LockedException.class)
@@ -116,7 +116,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.ACCOUNT_LOCKED);
     }
 
-    
+
 
 
     @ExceptionHandler(org.springframework.security.authentication.CredentialsExpiredException.class)
@@ -125,7 +125,7 @@ public class AuthGlobalExceptionHandler extends com.cloud.common.exception.Globa
         return Result.error(ResultCode.CREDENTIALS_EXPIRED);
     }
 
-    
+
 
 
     @ExceptionHandler(org.springframework.security.authentication.AccountExpiredException.class)

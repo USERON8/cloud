@@ -14,7 +14,7 @@ import java.util.List;
 
 public interface UserAddressService extends IService<UserAddress> {
 
-    
+
 
 
 
@@ -22,7 +22,7 @@ public interface UserAddressService extends IService<UserAddress> {
 
     UserAddressDTO getUserAddressByIdWithCache(Long id);
 
-    
+
 
 
 

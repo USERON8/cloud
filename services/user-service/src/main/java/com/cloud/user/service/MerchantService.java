@@ -18,9 +18,9 @@ import java.util.List;
 
 public interface MerchantService extends IService<Merchant> {
 
-    
 
-    
+
+
 
 
 
@@ -29,7 +29,7 @@ public interface MerchantService extends IService<Merchant> {
 
     MerchantDTO getMerchantById(Long id) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface MerchantService extends IService<Merchant> {
 
     MerchantDTO getMerchantByUsername(String username) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public interface MerchantService extends IService<Merchant> {
 
     MerchantDTO getMerchantByName(String merchantName) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -55,7 +55,7 @@ public interface MerchantService extends IService<Merchant> {
 
     List<MerchantDTO> getMerchantsByIds(List<Long> ids);
 
-    
+
 
 
 
@@ -65,9 +65,9 @@ public interface MerchantService extends IService<Merchant> {
 
     Page<MerchantDTO> getMerchantsPage(Integer page, Integer size, Integer status, Integer auditStatus);
 
-    
 
-    
+
+
 
 
 
@@ -76,7 +76,7 @@ public interface MerchantService extends IService<Merchant> {
 
     MerchantDTO createMerchant(MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantAlreadyExistsException;
 
-    
+
 
 
 
@@ -85,7 +85,7 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean updateMerchant(Long id, MerchantUpsertRequestDTO requestDTO) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -94,7 +94,7 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean deleteMerchant(Long id) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -102,9 +102,9 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean batchDeleteMerchants(List<Long> ids);
 
-    
 
-    
+
+
 
 
 
@@ -116,7 +116,7 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean updateMerchantAuditStatus(Long id, Integer auditStatus) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -125,7 +125,7 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean enableMerchant(Long id) throws MerchantException.MerchantNotFoundException;
 
-    
+
 
 
 
@@ -134,9 +134,9 @@ public interface MerchantService extends IService<Merchant> {
 
     boolean disableMerchant(Long id) throws MerchantException.MerchantNotFoundException;
 
-    
 
-    
+
+
 
 
 
@@ -148,7 +148,7 @@ public interface MerchantService extends IService<Merchant> {
     boolean approveMerchant(Long id, String remark)
             throws MerchantException.MerchantNotFoundException, MerchantException.MerchantAuditException;
 
-    
+
 
 
 
@@ -160,9 +160,9 @@ public interface MerchantService extends IService<Merchant> {
     boolean rejectMerchant(Long id, String reason)
             throws MerchantException.MerchantNotFoundException, MerchantException.MerchantAuditException;
 
-    
 
-    
+
+
 
 
 
@@ -171,16 +171,16 @@ public interface MerchantService extends IService<Merchant> {
 
     Object getMerchantStatistics(Long id) throws MerchantException.MerchantNotFoundException;
 
-    
 
-    
+
+
 
 
 
 
     void evictMerchantCache(Long id);
 
-    
+
 
 
     void evictAllMerchantCache();

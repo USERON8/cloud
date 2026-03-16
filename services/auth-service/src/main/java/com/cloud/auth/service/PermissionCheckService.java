@@ -24,7 +24,7 @@ public class PermissionCheckService {
     @DubboReference(check = false, timeout = 5000, retries = 0)
     private UserDubboApi userDubboApi;
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public class PermissionCheckService {
                 .anyMatch(authority -> authority.getAuthority().equals(role));
     }
 
-    
+
 
 
 
@@ -58,7 +58,7 @@ public class PermissionCheckService {
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(authority));
     }
 
-    
+
 
 
 
@@ -68,7 +68,7 @@ public class PermissionCheckService {
         return hasRole(authentication, "ROLE_ADMIN");
     }
 
-    
+
 
 
 
@@ -78,7 +78,7 @@ public class PermissionCheckService {
         return hasRole(authentication, "ROLE_MERCHANT");
     }
 
-    
+
 
 
 
@@ -88,7 +88,7 @@ public class PermissionCheckService {
         return hasRole(authentication, "ROLE_USER");
     }
 
-    
+
 
 
 
@@ -101,12 +101,12 @@ public class PermissionCheckService {
             return false;
         }
 
-        
+
         if (isAdmin(authentication)) {
             return true;
         }
 
-        
+
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt) {
             Jwt jwt = (Jwt) principal;
@@ -126,7 +126,7 @@ public class PermissionCheckService {
         return false;
     }
 
-    
+
 
 
 
@@ -134,12 +134,12 @@ public class PermissionCheckService {
 
 
     private boolean isMerchantResource(String resource, Long merchantId) {
-        
-        
+
+
         return true;
     }
 
-    
+
 
 
 
@@ -147,12 +147,12 @@ public class PermissionCheckService {
 
 
     private boolean isUserResource(String resource, Long userId) {
-        
-        
+
+
         return true;
     }
 
-    
+
 
 
 
@@ -172,7 +172,7 @@ public class PermissionCheckService {
         return null;
     }
 
-    
+
 
 
 
@@ -194,7 +194,7 @@ public class PermissionCheckService {
         return null;
     }
 
-    
+
 
 
 

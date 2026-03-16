@@ -18,7 +18,7 @@ public class BusinessException extends RuntimeException {
     private int code;
     private String message;
 
-    
+
 
 
 
@@ -30,7 +30,7 @@ public class BusinessException extends RuntimeException {
         this.message = message;
     }
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public class BusinessException extends RuntimeException {
         this.code = ResultCode.BUSINESS_ERROR.getCode();
     }
 
-    
+
 
 
 
@@ -52,7 +52,7 @@ public class BusinessException extends RuntimeException {
         this.message = resultCode.getMessage();
     }
 
-    
+
 
 
 

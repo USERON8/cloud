@@ -23,30 +23,30 @@ public abstract class BaseEntity<T extends BaseEntity<T>> implements Serializabl
     @Serial
     private static final long serialVersionUID = 1L;
 
-    
+
 
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    
+
 
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    
+
 
 
     @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-    
+
 
 
     @TableLogic
     private Integer deleted = 0;
 
-    
+
 
 
     @com.baomidou.mybatisplus.annotation.Version

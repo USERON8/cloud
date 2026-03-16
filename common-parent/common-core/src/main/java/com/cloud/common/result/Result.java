@@ -17,22 +17,22 @@ public class Result<T> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    
+
 
 
     private Integer code;
 
-    
+
 
 
     private String message;
 
-    
+
 
 
     private T data;
 
-    
+
 
 
     private Long timestamp;
@@ -48,7 +48,7 @@ public class Result<T> implements Serializable {
         this.timestamp = System.currentTimeMillis();
     }
 
-    
+
 
 
     public static <T> Result<T> success() {
@@ -63,7 +63,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.SUCCESS.getCode(), message, data);
     }
 
-    
+
 
 
     public static <T> Result<T> error() {
@@ -90,7 +90,7 @@ public class Result<T> implements Serializable {
         return new Result<>(resultCode.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> fail() {
@@ -113,7 +113,7 @@ public class Result<T> implements Serializable {
         return error(resultCode, message);
     }
 
-    
+
 
 
     public static <T> Result<T> forbidden() {
@@ -124,7 +124,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.FORBIDDEN.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> notFound() {
@@ -135,7 +135,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.NOT_FOUND.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> badRequest() {
@@ -146,7 +146,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.BAD_REQUEST.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> systemError() {
@@ -157,7 +157,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.SYSTEM_ERROR.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> businessError() {
@@ -168,7 +168,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.BUSINESS_ERROR.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> paramError() {
@@ -179,7 +179,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.PARAM_ERROR.getCode(), message, null);
     }
 
-    
+
 
 
     public static <T> Result<T> unauthorized() {
@@ -190,7 +190,7 @@ public class Result<T> implements Serializable {
         return new Result<>(ResultCode.UNAUTHORIZED.getCode(), message, null);
     }
 
-    
+
 
 
     public boolean isSuccess() {

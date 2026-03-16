@@ -412,7 +412,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         try {
             stockReservationMapper.insert(marker);
         } catch (DuplicateKeyException ignored) {
-            
+
         }
     }
 

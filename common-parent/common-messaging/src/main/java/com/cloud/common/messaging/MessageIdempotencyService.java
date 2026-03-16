@@ -31,7 +31,7 @@ public class MessageIdempotencyService {
 
     @Value("${app.message.idempotent-processing-expire-seconds:1800}")
     private long processingExpireSeconds;
-    
+
 
 
 
@@ -69,13 +69,13 @@ public class MessageIdempotencyService {
             );
             return Boolean.TRUE.equals(reacquired);
         } catch (Exception e) {
-            
+
             log.warn("Idempotent key acquire failed, skip check: namespace={}, eventId={}", namespace, eventId, e);
             return true;
         }
     }
 
-    
+
 
 
     public void release(String namespace, String eventId) {

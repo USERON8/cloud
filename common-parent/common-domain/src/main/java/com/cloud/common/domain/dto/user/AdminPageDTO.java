@@ -10,22 +10,22 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AdminPageDTO extends PageQuery {
-    
+
 
 
     private String username;
 
-    
+
 
 
     private String phone;
 
-    
+
 
 
     private Integer status;
 
-    
+
 
 
     private String role;

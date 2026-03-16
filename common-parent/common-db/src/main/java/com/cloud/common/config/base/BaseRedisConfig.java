@@ -21,7 +21,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Slf4j
 public abstract class BaseRedisConfig {
 
-    
+
 
 
 
@@ -29,11 +29,11 @@ public abstract class BaseRedisConfig {
 
 
     protected RedisTemplate<String, Object> createRedisTemplateBean(RedisConnectionFactory redisConnectionFactory) {
-        
+
         return createRedisTemplate(redisConnectionFactory);
     }
 
-    
+
 
 
 
@@ -41,7 +41,7 @@ public abstract class BaseRedisConfig {
 
 
     protected StringRedisTemplate createStringRedisTemplateBean(RedisConnectionFactory redisConnectionFactory) {
-        
+
         StringRedisTemplate template = new StringRedisTemplate();
         template.setConnectionFactory(redisConnectionFactory);
         template.setEnableTransactionSupport(shouldEnableTransactionSupport());
@@ -49,7 +49,7 @@ public abstract class BaseRedisConfig {
         return template;
     }
 
-    
+
 
 
 
@@ -60,27 +60,27 @@ public abstract class BaseRedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        
+
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        
+
         template.setValueSerializer(RedisSerializer.json());
         template.setHashValueSerializer(RedisSerializer.json());
 
-        
+
         template.setDefaultSerializer(RedisSerializer.json());
 
-        
+
         template.setEnableTransactionSupport(shouldEnableTransactionSupport());
 
-        
+
         template.afterPropertiesSet();
 
         return template;
     }
 
-    
+
 
 
 
@@ -90,7 +90,7 @@ public abstract class BaseRedisConfig {
         return false;
     }
 
-    
+
 
 
 
@@ -100,7 +100,7 @@ public abstract class BaseRedisConfig {
         return "default";
     }
 
-    
+
 
 
 
@@ -112,7 +112,7 @@ public abstract class BaseRedisConfig {
         return String.format("%s:%s:%s", getServicePrefix(), type, key);
     }
 
-    
+
 
 
 
@@ -120,7 +120,7 @@ public abstract class BaseRedisConfig {
 
 
     protected long getCacheExpireTime(String type) {
-        
+
         return 3600L;
     }
 }

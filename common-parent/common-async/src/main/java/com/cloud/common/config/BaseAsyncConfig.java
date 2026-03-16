@@ -30,7 +30,7 @@ public class BaseAsyncConfig {
     @Autowired(required = false)
     protected ContextAwareTaskDecorator taskDecorator;
 
-    
+
 
 
 
@@ -53,7 +53,7 @@ public class BaseAsyncConfig {
         return initializeExecutor(executor);
     }
 
-    
+
 
 
 
@@ -70,7 +70,7 @@ public class BaseAsyncConfig {
         return initializeExecutor(executor);
     }
 
-    
+
 
 
 
@@ -87,7 +87,7 @@ public class BaseAsyncConfig {
         return initializeExecutor(executor);
     }
 
-    
+
 
 
 
@@ -101,24 +101,24 @@ public class BaseAsyncConfig {
                                                                   int queueCapacity, String threadNamePrefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        
+
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(queueCapacity);
         executor.setThreadNamePrefix(threadNamePrefix);
 
-        
+
         executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(false);
 
-        
+
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-        
+
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
 
-        
+
         if (taskDecorator != null && shouldUseTaskDecorator()) {
             executor.setTaskDecorator(taskDecorator);
         }
@@ -126,35 +126,35 @@ public class BaseAsyncConfig {
         return executor;
     }
 
-    
+
 
 
     protected ThreadPoolTaskExecutor createThreadPoolTaskExecutorFromConfig(
             AsyncProperties.ThreadPoolConfig config, String defaultThreadNamePrefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-        
+
         executor.setCorePoolSize(config.getCorePoolSize());
         executor.setMaxPoolSize(config.getMaxPoolSize());
         executor.setQueueCapacity(config.getQueueCapacity());
         String prefix = config.getThreadNamePrefix();
         executor.setThreadNamePrefix(prefix != null && !prefix.isEmpty() ? prefix : defaultThreadNamePrefix);
 
-        
+
         executor.setKeepAliveSeconds(config.getKeepAliveSeconds());
         executor.setAllowCoreThreadTimeOut(config.isAllowCoreThreadTimeOut());
 
-        
+
         executor.setRejectedExecutionHandler(getRejectedExecutionHandler(config.getRejectedExecutionHandler()));
 
-        
+
         executor.setWaitForTasksToCompleteOnShutdown(config.isWaitForTasksToCompleteOnShutdown());
         executor.setAwaitTerminationSeconds(config.getAwaitTerminationSeconds());
 
         return executor;
     }
 
-    
+
 
 
     private RejectedExecutionHandler getRejectedExecutionHandler(String handlerType) {
@@ -167,7 +167,7 @@ public class BaseAsyncConfig {
         };
     }
 
-    
+
 
 
 
@@ -183,7 +183,7 @@ public class BaseAsyncConfig {
         );
     }
 
-    
+
 
 
 
@@ -200,7 +200,7 @@ public class BaseAsyncConfig {
         );
     }
 
-    
+
 
 
 
@@ -216,7 +216,7 @@ public class BaseAsyncConfig {
         );
     }
 
-    
+
 
 
 
@@ -233,7 +233,7 @@ public class BaseAsyncConfig {
         );
     }
 
-    
+
 
 
 
@@ -250,14 +250,14 @@ public class BaseAsyncConfig {
         );
     }
 
-    
+
 
 
     protected boolean shouldUseTaskDecorator() {
         if (asyncProperties != null && asyncProperties.getCommon() != null) {
             return asyncProperties.getCommon().isTaskDecorator();
         }
-        return true; 
+        return true;
     }
 
     protected ThreadPoolTaskExecutor initializeExecutor(ThreadPoolTaskExecutor executor) {

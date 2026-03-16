@@ -19,7 +19,7 @@ import java.util.List;
 @Repository
 public interface CategoryDocumentRepository extends ElasticsearchRepository<CategoryDocument, String> {
 
-    
+
 
 
 
@@ -29,7 +29,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"match\": {\"name\": \"?0\"}}]}}")
     Page<CategoryDocument> findByNameContaining(String name, Pageable pageable);
 
-    
+
 
 
 
@@ -38,7 +38,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
 
     Page<CategoryDocument> findByParentId(Long parentId, Pageable pageable);
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
 
     Page<CategoryDocument> findByLevel(Integer level, Pageable pageable);
 
-    
+
 
 
 
@@ -56,7 +56,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
 
     Page<CategoryDocument> findByStatus(Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -65,7 +65,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"term\": {\"level\": 1}}, {\"term\": {\"status\": 1}}]}}")
     Page<CategoryDocument> findRootCategories(Pageable pageable);
 
-    
+
 
 
 
@@ -76,7 +76,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"term\": {\"parentId\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
     Page<CategoryDocument> findByParentIdAndStatus(Long parentId, Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -87,7 +87,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"term\": {\"level\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
     Page<CategoryDocument> findByLevelAndStatus(Integer level, Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -98,7 +98,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"match\": {\"name\": \"?0\"}}, {\"term\": {\"status\": ?1}}]}}")
     Page<CategoryDocument> searchByNameAndStatus(String name, Integer status, Pageable pageable);
 
-    
+
 
 
 
@@ -108,7 +108,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"term\": {\"parentId\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
     List<CategoryDocument> findCategoryTree(Long parentId, Integer status);
 
-    
+
 
 
 
@@ -119,7 +119,7 @@ public interface CategoryDocumentRepository extends ElasticsearchRepository<Cate
     @Query("{\"bool\": {\"must\": [{\"term\": {\"parentId\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
     Page<CategoryDocument> findByParentIdAndStatusOrderBySortOrder(Long parentId, Integer status, Pageable pageable);
 
-    
+
 
 
 

@@ -14,7 +14,7 @@ import java.util.List;
 
 @Mapper
 public interface BrandMapper extends BaseMapper<Brand> {
-    
+
 
 
 
@@ -22,7 +22,7 @@ public interface BrandMapper extends BaseMapper<Brand> {
 
     List<Brand> selectHotBrands(@Param("limit") Integer limit);
 
-    
+
 
 
 
@@ -30,7 +30,7 @@ public interface BrandMapper extends BaseMapper<Brand> {
 
     List<Brand> selectRecommendedBrands(@Param("limit") Integer limit);
 
-    
+
 
 
 
@@ -39,7 +39,7 @@ public interface BrandMapper extends BaseMapper<Brand> {
 
     int incrementProductCount(@Param("brandId") Long brandId, @Param("count") Integer count);
 
-    
+
 
 
 

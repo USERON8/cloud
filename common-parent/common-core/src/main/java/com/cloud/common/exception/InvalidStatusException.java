@@ -17,7 +17,7 @@ package com.cloud.common.exception;
 
 public class InvalidStatusException extends BusinessException {
 
-    
+
 
 
 
@@ -28,7 +28,7 @@ public class InvalidStatusException extends BusinessException {
         super(String.format("%s褰撳墠鐘舵€佷负[%s]锛屾棤娉曟墽琛孾%s]鎿嶄綔", entityName, currentStatus, operation));
     }
 
-    
+
 
 
 
@@ -37,7 +37,7 @@ public class InvalidStatusException extends BusinessException {
         super(message);
     }
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public class InvalidStatusException extends BusinessException {
         super(code, message);
     }
 
-    
+
 
 
 
@@ -57,7 +57,7 @@ public class InvalidStatusException extends BusinessException {
         super(message, cause);
     }
 
-    
+
     public static InvalidStatusException order(String currentStatus, String operation) {
         return new InvalidStatusException("璁㈠崟", currentStatus, operation);
     }

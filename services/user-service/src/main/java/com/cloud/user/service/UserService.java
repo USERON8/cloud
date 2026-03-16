@@ -20,7 +20,7 @@ import java.util.List;
 
 public interface UserService extends IService<User> {
 
-    
+
 
 
 
@@ -28,7 +28,7 @@ public interface UserService extends IService<User> {
 
     UserDTO findByUsername(String username);
 
-    
+
 
 
 
@@ -36,7 +36,7 @@ public interface UserService extends IService<User> {
 
     PageResult<UserVO> pageQuery(UserPageDTO pageDTO);
 
-    
+
 
 
 
@@ -44,7 +44,7 @@ public interface UserService extends IService<User> {
 
     boolean deleteUserById(Long id);
 
-    
+
 
 
 
@@ -52,7 +52,7 @@ public interface UserService extends IService<User> {
 
     boolean deleteUsersByIds(Collection<Long> userIds);
 
-    
+
 
 
 
@@ -62,7 +62,7 @@ public interface UserService extends IService<User> {
 
     UserProfileDTO getProfileById(Long id);
 
-    
+
 
 
 
@@ -70,7 +70,7 @@ public interface UserService extends IService<User> {
 
     UserDTO getUserByUsername(String username);
 
-    
+
 
 
 
@@ -78,10 +78,10 @@ public interface UserService extends IService<User> {
 
     List<UserDTO> getUsersByIds(Collection<Long> userIds);
 
-    
+
     com.baomidou.mybatisplus.extension.plugins.pagination.Page<UserDTO> getUsersPage(Integer page, Integer size);
 
-    
+
 
 
 
@@ -91,7 +91,7 @@ public interface UserService extends IService<User> {
 
     Long createProfile(UserProfileUpsertDTO profileUpsertDTO);
 
-    
+
 
 
 
@@ -101,7 +101,7 @@ public interface UserService extends IService<User> {
 
     Boolean updateProfile(UserProfileUpsertDTO profileUpsertDTO);
 
-    
+
 
 
 
@@ -109,7 +109,7 @@ public interface UserService extends IService<User> {
 
     Boolean deleteUser(Long id);
 
-    
+
 
 
 
@@ -118,7 +118,7 @@ public interface UserService extends IService<User> {
 
     Boolean updateUserStatus(Long id, Integer status);
 
-    
+
 
 
 
@@ -126,7 +126,7 @@ public interface UserService extends IService<User> {
 
     String resetPassword(Long id);
 
-    
+
 
 
 
@@ -136,7 +136,7 @@ public interface UserService extends IService<User> {
 
     Boolean changePassword(Long id, String oldPassword, String newPassword);
 
-    
+
 
 
 

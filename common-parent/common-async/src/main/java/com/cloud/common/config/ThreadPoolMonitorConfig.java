@@ -20,12 +20,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConditionalOnProperty(name = "app.async.common.monitoring-enabled", havingValue = "true", matchIfMissing = true)
 public class ThreadPoolMonitorConfig {
 
-    
+
 
 
     @Bean
     public EnhancedThreadPoolMonitor enhancedThreadPoolMonitor() {
-        
+
         return new EnhancedThreadPoolMonitor();
     }
 }

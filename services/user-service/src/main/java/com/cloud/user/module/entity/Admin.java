@@ -16,31 +16,31 @@ import lombok.EqualsAndHashCode;
 @TableName(value = "admin")
 @Data
 public class Admin extends BaseEntity<Admin> {
-    
+
 
 
     @TableField(value = "username")
     private String username;
 
-    
+
 
 
     @TableField(value = "real_name")
     private String realName;
 
-    
+
 
 
     @TableField(value = "phone")
     private String phone;
 
-    
+
 
 
     @TableField(value = "role")
     private String role;
 
-    
+
 
 
     @TableField(value = "status")

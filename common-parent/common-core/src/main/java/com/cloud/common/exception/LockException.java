@@ -18,27 +18,27 @@ package com.cloud.common.exception;
 
 public class LockException extends BusinessException {
 
-    
+
 
 
     public static final String LOCK_ACQUIRE_TIMEOUT = "LOCK_ACQUIRE_TIMEOUT";
 
-    
+
 
 
     public static final String LOCK_RELEASE_FAILED = "LOCK_RELEASE_FAILED";
 
-    
+
 
 
     public static final String LOCK_RENEW_FAILED = "LOCK_RENEW_FAILED";
 
-    
+
 
 
     public static final String LOCK_OPERATION_ERROR = "LOCK_OPERATION_ERROR";
 
-    
+
 
 
 
@@ -47,7 +47,7 @@ public class LockException extends BusinessException {
         super(message);
     }
 
-    
+
 
 
 
@@ -55,11 +55,11 @@ public class LockException extends BusinessException {
 
     public LockException(String code, String message) {
         super(message);
-        
-        
+
+
     }
 
-    
+
 
 
 
@@ -69,7 +69,7 @@ public class LockException extends BusinessException {
         super(message, cause);
     }
 
-    
+
 
 
 
@@ -78,11 +78,11 @@ public class LockException extends BusinessException {
 
     public LockException(String code, String message, Throwable cause) {
         super(message, cause);
-        
-        
+
+
     }
 
-    
+
 
 
 
@@ -94,7 +94,7 @@ public class LockException extends BusinessException {
                 String.format("鑾峰彇鍒嗗竷寮忛攣瓒呮椂锛岄攣閿? %s, 绛夊緟鏃堕棿: %dms", lockKey, waitTime));
     }
 
-    
+
 
 
 
@@ -105,7 +105,7 @@ public class LockException extends BusinessException {
                 String.format("閲婃斁鍒嗗竷寮忛攣澶辫触锛岄攣閿? %s", lockKey));
     }
 
-    
+
 
 
 
@@ -116,7 +116,7 @@ public class LockException extends BusinessException {
                 String.format("缁湡鍒嗗竷寮忛攣澶辫触锛岄攣閿? %s", lockKey));
     }
 
-    
+
 
 
 

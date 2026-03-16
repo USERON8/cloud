@@ -33,10 +33,10 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     @Autowired(required = false)
     private DynamicAsyncProperties asyncProperties;
 
-    
+
     private Map<String, ThreadPoolInfo> lastSnapshot = new HashMap<>();
 
-    
+
 
 
 
@@ -48,9 +48,6 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
 
         Map<String, ThreadPoolInfo> currentPools = getAllThreadPoolInfo();
 
-        
-        
-        
 
 
 
@@ -74,35 +71,38 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
 
 
 
-        
+
+
+
+
         checkStatusChanges(currentPools);
         lastSnapshot = new HashMap<>(currentPools);
     }
 
-    
+
 
 
     @Scheduled(fixedRateString = "${app.async.common.monitoring-interval-seconds:60}000")
     public void logThreadPoolStatus() {
         Map<String, ThreadPoolInfo> allThreadPools = getAllThreadPoolInfo();
 
-        
+
         allThreadPools.forEach((name, info) -> {
             String statusIcon = getStatusIcon(info.getStatus());
-            
+
 
         });
-        
+
     }
 
-    
+
 
 
     @Override
     public ThreadPoolHealthStatus checkThreadPoolHealth() {
         ThreadPoolHealthStatus healthStatus = super.checkThreadPoolHealth();
 
-        
+
         if (asyncProperties != null) {
             DynamicAsyncProperties.CommonConfig common = asyncProperties.getCommon();
             double usageThreshold = common.getAlertThresholdUsageRate();
@@ -126,7 +126,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         return healthStatus;
     }
 
-    
+
 
 
     public Map<String, ThreadPoolPerformanceStats> getPerformanceStats() {
@@ -142,21 +142,21 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         return statsMap;
     }
 
-    
+
 
 
     private void checkStatusChanges(Map<String, ThreadPoolInfo> currentPools) {
         currentPools.forEach((name, currentInfo) -> {
             ThreadPoolInfo lastInfo = lastSnapshot.get(name);
             if (lastInfo != null) {
-                
+
                 if (!currentInfo.getStatus().equals(lastInfo.getStatus())) {
                     logStatusChange(name, lastInfo.getStatus(), currentInfo.getStatus());
                 }
 
-                
+
                 double usageDiff = Math.abs(currentInfo.getPoolUsageRate() - lastInfo.getPoolUsageRate());
-                if (usageDiff > 20) { 
+                if (usageDiff > 20) {
                     log.warn("?{} ? {:.1f}% -> {:.1f}%",
                             name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
                 }
@@ -164,7 +164,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         });
     }
 
-    
+
 
 
     private void logStatusChange(String poolName, String oldStatus, String newStatus) {
@@ -178,12 +178,12 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
             log.warn("W messagearn",
                     poolName, oldIcon, oldStatus, newIcon, newStatus);
         } else if ("HEALTHY".equals(newStatus) && !"HEALTHY".equals(oldStatus)) {
-            
+
 
         }
     }
 
-    
+
 
 
     private String getStatusIcon(String status) {
@@ -195,7 +195,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         };
     }
 
-    
+
 
 
     private String getServiceName(String poolName) {
@@ -209,7 +209,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         return "unknown";
     }
 
-    
+
 
 
     private ThreadPoolPerformanceStats calculatePerformanceStats(ThreadPoolInfo current, ThreadPoolInfo last) {
@@ -235,7 +235,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         return stats;
     }
 
-    
+
 
 
     public static class ThreadPoolPerformanceStats {
@@ -248,7 +248,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         private double tasksPerSecond;
         private long timestamp;
 
-        
+
         public String getPoolName() {
             return poolName;
         }

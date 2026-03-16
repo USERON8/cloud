@@ -48,7 +48,7 @@ public class RefundNotificationConsumer {
                     );
                 }
                 messageIdempotencyService.markSuccess(NS_REFUND_CREATED, eventId);
-                
+
             } catch (Exception ex) {
                 log.error("Handle refund-created notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-created notification failed", ex);
@@ -79,7 +79,7 @@ public class RefundNotificationConsumer {
                     sendNotification("USER", userId, title, content);
                 }
                 messageIdempotencyService.markSuccess(NS_REFUND_AUDITED, eventId);
-                
+
 
             } catch (Exception ex) {
                 log.error("Handle refund-audited notification failed: eventId={}", eventId, ex);
@@ -110,7 +110,7 @@ public class RefundNotificationConsumer {
                     );
                 }
                 messageIdempotencyService.markSuccess(NS_REFUND_CANCELLED, eventId);
-                
+
             } catch (Exception ex) {
                 log.error("Handle refund-cancelled notification failed: eventId={}", eventId, ex);
                 throw new RuntimeException("Handle refund-cancelled notification failed", ex);

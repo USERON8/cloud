@@ -13,42 +13,42 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum RatingLevel {
 
-    
+
 
 
     BAD(1, "宸瘎", 1, 2),
 
-    
+
 
 
     MEDIUM(2, "涓瘎", 3, 3),
 
-    
+
 
 
     GOOD(3, "濂借瘎", 4, 5);
 
-    
+
 
 
     private final Integer code;
 
-    
+
 
 
     private final String description;
 
-    
+
 
 
     private final Integer minRating;
 
-    
+
 
 
     private final Integer maxRating;
 
-    
+
 
 
 
@@ -66,7 +66,7 @@ public enum RatingLevel {
         throw new IllegalArgumentException("鏃犳晥鐨勮瘎鍒? " + rating);
     }
 
-    
+
 
 
 
@@ -76,7 +76,7 @@ public enum RatingLevel {
         return rating != null && rating >= 4;
     }
 
-    
+
 
 
 
@@ -86,7 +86,7 @@ public enum RatingLevel {
         return rating != null && rating == 3;
     }
 
-    
+
 
 
 

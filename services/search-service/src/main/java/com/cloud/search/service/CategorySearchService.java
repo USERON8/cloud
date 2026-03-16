@@ -13,14 +13,14 @@ import java.util.List;
 
 public interface CategorySearchService {
 
-    
+
 
 
 
 
     void deleteCategory(Long categoryId);
 
-    
+
 
 
 
@@ -28,7 +28,7 @@ public interface CategorySearchService {
 
     void updateCategoryStatus(Long categoryId, Integer status);
 
-    
+
 
 
 
@@ -37,14 +37,14 @@ public interface CategorySearchService {
     CategoryDocument findByCategoryId(Long categoryId);
 
 
-    
+
 
 
 
 
     void batchDeleteCategories(List<Long> categoryIds);
 
-    
+
 
 
 
@@ -52,31 +52,31 @@ public interface CategorySearchService {
 
     boolean isEventProcessed(String traceId);
 
-    
+
 
 
 
 
     void markEventProcessed(String traceId);
 
-    
+
 
 
     void rebuildCategoryIndex();
 
-    
+
 
 
 
 
     boolean indexExists();
 
-    
+
 
 
     void createCategoryIndex();
 
-    
+
 
 
     void deleteCategoryIndex();

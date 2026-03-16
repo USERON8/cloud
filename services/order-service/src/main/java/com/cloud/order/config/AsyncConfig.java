@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 @ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncConfig extends BaseAsyncConfig {
 
-    
+
 
 
 
@@ -40,12 +40,12 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
 
         return executor;
     }
 
-    
+
 
 
 
@@ -61,12 +61,12 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
 
         return executor;
     }
 
-    
+
 
 
 
@@ -82,12 +82,12 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
 
         return executor;
     }
 
-    
+
 
 
 
@@ -104,12 +104,12 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
 
         return executor;
     }
 
-    
+
 
 
 
@@ -125,7 +125,7 @@ public class AsyncConfig extends BaseAsyncConfig {
         );
         executor.initialize();
 
-        
+
 
         return executor;
     }

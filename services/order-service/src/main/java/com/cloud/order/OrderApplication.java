@@ -43,8 +43,8 @@ public class OrderApplication {
         System.setProperty("nacos.logging.config", "");
         System.setProperty("nacos.logging.path", "");
 
-        
+
         SpringApplication.run(OrderApplication.class, args);
-        
+
     }
 }

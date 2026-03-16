@@ -26,7 +26,7 @@ public class OrderMessageProducer {
     private final OutboxEventService outboxEventService;
     private final ObjectMapper objectMapper;
 
-    
+
 
 
 
@@ -35,7 +35,7 @@ public class OrderMessageProducer {
 
     public boolean sendOrderCreatedEvent(OrderCreatedEvent event) {
         try {
-            
+
             if (event.getEventId() == null) {
                 event.setEventId(UUID.randomUUID().toString());
             }
@@ -63,7 +63,7 @@ public class OrderMessageProducer {
         }
     }
 
-    
+
 
 
 
@@ -99,7 +99,7 @@ public class OrderMessageProducer {
         }
     }
 
-    
+
 
 
 

@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "spring.cloud.stream.rocketmq.binder.name-server")
 public class RocketMQConfig {
 
-    
+
 
 
     @Bean
@@ -24,7 +24,7 @@ public class RocketMQConfig {
         return new RocketMQHealthIndicator();
     }
 
-    
+
 
 
     public static class RocketMQHealthIndicator {
@@ -33,7 +33,7 @@ public class RocketMQConfig {
         }
 
         public boolean isHealthy() {
-            
+
             return true;
         }
     }

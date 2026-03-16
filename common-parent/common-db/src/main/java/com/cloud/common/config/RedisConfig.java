@@ -50,7 +50,7 @@ import java.util.Map;
 @ConditionalOnClass({RedisConnectionFactory.class, RedisTemplate.class})
 public class RedisConfig {
 
-    
+
     @Value("${cache.ttl.user:600}") // user-service: 10分钟
     private long userTtl;
 
@@ -72,7 +72,7 @@ public class RedisConfig {
     @Value("${cache.ttl.auth:3600}")
     private long authTtl;
 
-    
+
 
 
 
@@ -81,14 +81,14 @@ public class RedisConfig {
     public GenericJackson2JsonRedisSerializer jsonRedisSerializer() {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        
+
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL
         );
 
-        
+
         objectMapper.findAndRegisterModules();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -96,7 +96,7 @@ public class RedisConfig {
         return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 
-    
+
 
 
 
@@ -107,56 +107,56 @@ public class RedisConfig {
             RedisConnectionFactory connectionFactory,
             GenericJackson2JsonRedisSerializer jsonSerializer) {
 
-        
+
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        
+
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        
+
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
 
-        
+
         template.setValueSerializer(jsonSerializer);
         template.setHashValueSerializer(jsonSerializer);
         template.setDefaultSerializer(jsonSerializer);
 
-        
+
         template.setEnableTransactionSupport(false);
 
         template.afterPropertiesSet();
 
-        
+
         return template;
     }
 
-    
+
 
 
 
     @Bean
     @ConditionalOnMissingBean
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
-        
+
 
         StringRedisTemplate template = new StringRedisTemplate();
         template.setConnectionFactory(connectionFactory);
         template.afterPropertiesSet();
 
-        
+
         return template;
     }
 
-    
+
 
 
 
 
     @Bean("redisCacheManager")
-    @ConditionalOnMissingBean(CacheManager.class) 
+    @ConditionalOnMissingBean(CacheManager.class)
     public CacheManager redisCacheManager(
             RedisConnectionFactory connectionFactory,
             GenericJackson2JsonRedisSerializer jsonSerializer) {
@@ -178,7 +178,7 @@ public class RedisConfig {
                 .build();
     }
 
-    
+
 
 
     private RedisCacheConfiguration createCacheConfig(GenericJackson2JsonRedisSerializer jsonSerializer, Duration ttl) {

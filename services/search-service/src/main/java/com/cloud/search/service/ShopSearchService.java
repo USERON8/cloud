@@ -16,14 +16,14 @@ import java.util.List;
 
 public interface ShopSearchService {
 
-    
+
 
 
 
 
     void deleteShop(Long shopId);
 
-    
+
 
 
 
@@ -31,7 +31,7 @@ public interface ShopSearchService {
 
     void updateShopStatus(Long shopId, Integer status);
 
-    
+
 
 
 
@@ -39,14 +39,14 @@ public interface ShopSearchService {
 
     ShopDocument findByShopId(Long shopId);
 
-    
+
 
 
 
 
     void batchDeleteShops(List<Long> shopIds);
 
-    
+
 
 
 
@@ -54,36 +54,36 @@ public interface ShopSearchService {
 
     boolean isEventProcessed(String traceId);
 
-    
+
 
 
 
 
     void markEventProcessed(String traceId);
 
-    
+
 
 
     void rebuildShopIndex();
 
-    
+
 
 
 
 
     boolean indexExists();
 
-    
+
 
 
     void createShopIndex();
 
-    
+
 
 
     void deleteShopIndex();
 
-    
+
 
 
 
@@ -91,7 +91,7 @@ public interface ShopSearchService {
 
     SearchResult<ShopDocument> searchShops(ShopSearchRequest request);
 
-    
+
 
 
 
@@ -100,7 +100,7 @@ public interface ShopSearchService {
 
     List<String> getSearchSuggestions(String keyword, Integer size);
 
-    
+
 
 
 
@@ -108,7 +108,7 @@ public interface ShopSearchService {
 
     List<ShopDocument> getHotShops(Integer size);
 
-    
+
 
 
 

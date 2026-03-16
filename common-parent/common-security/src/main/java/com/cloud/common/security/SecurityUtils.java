@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 public class SecurityUtils {
 
-    
+
 
 
 
@@ -28,12 +28,12 @@ public class SecurityUtils {
                 return Long.parseLong(userIdStr);
             }
         } catch (Exception e) {
-            
+
         }
-        return 0L; 
+        return 0L;
     }
 
-    
+
 
 
 
@@ -51,7 +51,7 @@ public class SecurityUtils {
         return null;
     }
 
-    
+
 
 
 
@@ -61,7 +61,7 @@ public class SecurityUtils {
         return authentication != null ? authentication.getName() : null;
     }
 
-    
+
 
 
 
@@ -72,7 +72,7 @@ public class SecurityUtils {
                 && !"anonymousUser".equals(authentication.getName());
     }
 
-    
+
 
 
 

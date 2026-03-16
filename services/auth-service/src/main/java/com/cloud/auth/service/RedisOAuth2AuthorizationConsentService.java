@@ -32,11 +32,11 @@ import java.time.Duration;
 public class RedisOAuth2AuthorizationConsentService implements OAuth2AuthorizationConsentService {
 
     private static final String CONSENT_KEY_PREFIX = "oauth2:consent:";
-    private static final Duration DEFAULT_TTL = Duration.ofDays(30); 
+    private static final Duration DEFAULT_TTL = Duration.ofDays(30);
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    
+
 
 
 
@@ -53,7 +53,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         );
 
         try {
-            
+
             redisTemplate.opsForValue().set(key, authorizationConsent, DEFAULT_TTL);
 
             log.debug("OAuth2 authorization consent saved: clientId={}, principalName={}, authorities={}",
@@ -69,7 +69,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         }
     }
 
-    
+
 
 
 
@@ -106,7 +106,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         }
     }
 
-    
+
 
 
 
@@ -141,7 +141,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         }
     }
 
-    
+
 
 
 
@@ -152,7 +152,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         return CONSENT_KEY_PREFIX + registeredClientId + ":" + principalName;
     }
 
-    
+
 
 
 
@@ -160,8 +160,8 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
 
     public int cleanupExpiredConsents() {
         try {
-            
-            
+
+
             return 0;
         } catch (Exception e) {
             log.error("Failed to cleanup expired OAuth2 authorization consents", e);
@@ -169,14 +169,14 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         }
     }
 
-    
+
 
 
 
 
     public boolean isHealthy() {
         try {
-            
+
             redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
                 connection.ping();
                 return null;
@@ -188,7 +188,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
         }
     }
 
-    
+
 
 
 

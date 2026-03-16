@@ -23,7 +23,7 @@ import java.util.List;
 public interface CategoryConverter {
     CategoryConverter INSTANCE = Mappers.getMapper(CategoryConverter.class);
 
-    
+
 
 
 
@@ -32,7 +32,7 @@ public interface CategoryConverter {
     @Mapping(target = "deleted", ignore = true)
     CategoryDTO toDTO(Category category);
 
-    
+
 
 
 
@@ -45,7 +45,7 @@ public interface CategoryConverter {
     @Mapping(target = "deleted", ignore = true)
     Category toEntity(CategoryDTO categoryDTO);
 
-    
+
 
 
 

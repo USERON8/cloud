@@ -10,7 +10,7 @@ package com.cloud.common.exception;
 
 public class MessageConsumeException extends BusinessException {
 
-    
+
 
 
 
@@ -19,7 +19,7 @@ public class MessageConsumeException extends BusinessException {
         super(message);
     }
 
-    
+
 
 
 
@@ -29,7 +29,7 @@ public class MessageConsumeException extends BusinessException {
         super(message, cause);
     }
 
-    
+
 
 
 
