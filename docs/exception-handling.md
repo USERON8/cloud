@@ -7,7 +7,7 @@
 - 统一异常类型与错误码，避免魔法字符串与分散处理。
 - Controller 无 `try-catch`，交由全局 `@RestControllerAdvice` 兜底。
 - RPC/MQ/TCC/Outbox 等边界场景显式转换异常语义。
-- 响应统一包含 `traceId`，便于链路追踪与告警。
+- 响应头统一包含 `X-Trace-Id`，仅错误响应体包含 `traceId`，避免污染成功响应。
 
 ## 异常类体系
 
@@ -59,9 +59,8 @@
 职责：
 
 - 统一处理 `BizException` / `SystemException` / `RemoteException`
-- 写入响应头 `X-Trace-Id`
-- `Result` 体内写入 `traceId`
 - 系统异常触发指标计数 `exception.system`
+- `traceId` 的响应头与错误响应体写入交由统一响应增强处理
 
 ### GlobalPermissionExceptionHandler（common-security）
 
@@ -120,7 +119,8 @@
 ## traceId 规范
 
 - `BaseException` 在创建时读取 MDC 中的 `traceId`。
-- 所有异常响应体包含 `traceId` 字段，响应头包含 `X-Trace-Id`。
+- 所有响应头包含 `X-Trace-Id`。
+- 仅错误响应体包含 `traceId` 字段，成功响应体不包含。
 
 ## 开发指引
 
