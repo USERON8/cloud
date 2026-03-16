@@ -1,10 +1,9 @@
 package com.cloud.stock.task;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.annotation.DistributedLock;
-import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.module.entity.StockLedger;
+import com.cloud.stock.service.StockLedgerQueryService;
 import com.cloud.stock.service.support.StockRedisCacheService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -21,7 +20,7 @@ public class StockCacheXxlJob {
 
     private static final int DEFAULT_PAGE_SIZE = 500;
 
-    private final StockLedgerMapper stockLedgerMapper;
+    private final StockLedgerQueryService stockLedgerQueryService;
     private final StockRedisCacheService stockRedisCacheService;
 
     @XxlJob("stockCacheWarmUpJob")
@@ -36,10 +35,7 @@ public class StockCacheXxlJob {
         long pageIndex = 1;
         int pageSize = DEFAULT_PAGE_SIZE;
         while (true) {
-            Page<StockLedger> page = stockLedgerMapper.selectPage(
-                    new Page<>(pageIndex, pageSize),
-                    new LambdaQueryWrapper<StockLedger>().eq(StockLedger::getDeleted, 0)
-            );
+            Page<StockLedger> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
             List<StockLedger> records = page.getRecords();
             if (records == null || records.isEmpty()) {
                 break;
@@ -70,10 +66,7 @@ public class StockCacheXxlJob {
         long pageIndex = 1;
         int pageSize = DEFAULT_PAGE_SIZE;
         while (true) {
-            Page<StockLedger> page = stockLedgerMapper.selectPage(
-                    new Page<>(pageIndex, pageSize),
-                    new LambdaQueryWrapper<StockLedger>().eq(StockLedger::getDeleted, 0)
-            );
+            Page<StockLedger> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
             List<StockLedger> records = page.getRecords();
             if (records == null || records.isEmpty()) {
                 break;
