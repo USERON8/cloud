@@ -3,6 +3,7 @@ package com.cloud.gateway.config;
 import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayFlowRule;
 import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayRuleManager;
 import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.GatewayCallbackManager;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.result.Result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -61,7 +64,7 @@ public class SentinelGatewayConfig {
             .map(routeId -> buildRule(routeId, searchRouteSet))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     GatewayRuleManager.loadRules(rules);
-    GatewayCallbackManager.setBlockHandler((exchange, t) -> buildBlockedResponse(t));
+    GatewayCallbackManager.setBlockHandler((exchange, t) -> buildBlockedResponse(exchange, t));
     log.info(
         "Sentinel gateway rules loaded: routeCount={}, defaultQps={}, intervalSec={}",
         rules.size(),
@@ -83,16 +86,39 @@ public class SentinelGatewayConfig {
     return new GatewayFlowRule(routeId).setCount(defaultQps).setIntervalSec(intervalSec);
   }
 
-  private Mono<ServerResponse> buildBlockedResponse(Throwable throwable) {
+  private Mono<ServerResponse> buildBlockedResponse(
+      ServerWebExchange exchange, Throwable throwable) {
+    String traceId = resolveTraceId(exchange);
     String payload;
     try {
-      payload = objectMapper.writeValueAsString(Result.error("Sentinel blocked by gateway rule"));
+      payload =
+          objectMapper.writeValueAsString(
+              Result.error(ResultCode.RATE_LIMITED, "请求过于频繁").withTraceId(traceId));
     } catch (JsonProcessingException e) {
       log.error("Serialize sentinel block response failed", e);
       payload = "{\"code\":429,\"message\":\"sentinel blocked\",\"data\":null}";
     }
     return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
         .contentType(MediaType.APPLICATION_JSON)
+        .header("X-Trace-Id", traceId == null ? "" : traceId)
         .bodyValue(payload);
+  }
+
+  private String resolveTraceId(ServerWebExchange exchange) {
+    if (exchange == null) {
+      return "";
+    }
+    ServerHttpRequest request = exchange.getRequest();
+    if (request == null || request.getHeaders() == null) {
+      return "";
+    }
+    String traceId = request.getHeaders().getFirst("X-Trace-Id");
+    if (traceId == null || traceId.isBlank()) {
+      traceId = request.getHeaders().getFirst("X-B3-TraceId");
+    }
+    if (traceId == null || traceId.isBlank()) {
+      traceId = request.getHeaders().getFirst("traceId");
+    }
+    return traceId == null ? "" : traceId;
   }
 }
