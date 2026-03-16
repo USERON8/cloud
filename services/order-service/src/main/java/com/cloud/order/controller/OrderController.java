@@ -11,11 +11,10 @@ import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
-import com.cloud.order.entity.OrderSub;
+import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
-import com.cloud.order.service.OrderShippingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -58,7 +57,7 @@ public class OrderController {
 
   private final OrderService orderService;
   private final OrderPlacementService orderPlacementService;
-  private final OrderShippingService orderShippingService;
+  private final OrderBatchService orderBatchService;
   private final OrderQueryService orderQueryService;
 
   @PostMapping
@@ -111,9 +110,7 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:create')")
   @Operation(summary = "Pay order")
   public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
-    OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-    List<OrderSub> subs = orderService.listSubOrders(main.getId());
-    applySubOrderAction(subs, "PAY", authentication, null, null);
+    orderBatchService.applyOrderAction(orderId, authentication, "PAY", null, null, null);
     return Result.success(true);
   }
 
@@ -124,10 +121,7 @@ public class OrderController {
       @PathVariable Long orderId,
       @RequestParam(required = false) String cancelReason,
       Authentication authentication) {
-    OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-    List<OrderSub> subs = orderService.listSubOrders(main.getId());
-    applySubOrderAction(subs, "CANCEL", authentication, null, null);
-    orderQueryService.updateCancelReason(main.getId(), cancelReason);
+    orderBatchService.applyOrderAction(orderId, authentication, "CANCEL", null, null, cancelReason);
     return Result.success(true);
   }
 
@@ -140,11 +134,10 @@ public class OrderController {
       @RequestParam(required = false) String trackingNumber,
       Authentication authentication) {
     OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-    List<OrderSub> subs = orderService.listSubOrders(main.getId());
     String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
     String tracking =
         StrUtil.isBlank(trackingNumber) ? "TEST-" + main.getMainOrderNo() : trackingNumber.trim();
-    applySubOrderAction(subs, "SHIP", authentication, company, tracking);
+    orderBatchService.applyOrderAction(orderId, authentication, "SHIP", company, tracking, null);
     return Result.success(true);
   }
 
@@ -152,9 +145,7 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "Complete order")
   public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
-    OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-    List<OrderSub> subs = orderService.listSubOrders(main.getId());
-    applySubOrderAction(subs, "DONE", authentication, null, null);
+    orderBatchService.applyOrderAction(orderId, authentication, "DONE", null, null, null);
     return Result.success(true);
   }
 
@@ -162,7 +153,8 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:create')")
   @Operation(summary = "Batch pay orders")
   public Result<Integer> batchPay(@RequestBody List<Long> orderIds, Authentication authentication) {
-    return Result.success(batchApply(orderIds, authentication, "PAY", null, null, null));
+    return Result.success(
+        orderBatchService.batchApply(orderIds, authentication, "PAY", null, null, null));
   }
 
   @PostMapping("/batch/cancel")
@@ -172,7 +164,8 @@ public class OrderController {
       @RequestBody List<Long> orderIds,
       @RequestParam(required = false) String cancelReason,
       Authentication authentication) {
-    return Result.success(batchApply(orderIds, authentication, "CANCEL", null, null, cancelReason));
+    return Result.success(
+        orderBatchService.batchApply(orderIds, authentication, "CANCEL", null, null, cancelReason));
   }
 
   @PostMapping("/batch/ship")
@@ -185,7 +178,8 @@ public class OrderController {
       Authentication authentication) {
     String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
     String tracking = StrUtil.isBlank(trackingNumber) ? "TEST" : trackingNumber.trim();
-    return Result.success(batchApply(orderIds, authentication, "SHIP", company, tracking, null));
+    return Result.success(
+        orderBatchService.batchApply(orderIds, authentication, "SHIP", company, tracking, null));
   }
 
   @PostMapping("/batch/complete")
@@ -193,7 +187,8 @@ public class OrderController {
   @Operation(summary = "Batch complete orders")
   public Result<Integer> batchComplete(
       @RequestBody List<Long> orderIds, Authentication authentication) {
-    return Result.success(batchApply(orderIds, authentication, "DONE", null, null, null));
+    return Result.success(
+        orderBatchService.batchApply(orderIds, authentication, "DONE", null, null, null));
   }
 
   @PostMapping("/after-sales")
@@ -253,57 +248,6 @@ public class OrderController {
 
   private boolean isMerchant(Authentication authentication) {
     return SecurityPermissionUtils.isMerchant(authentication);
-  }
-
-  private void applySubOrderAction(
-      List<OrderSub> subs,
-      String action,
-      Authentication authentication,
-      String shippingCompany,
-      String trackingNumber) {
-    if (subs == null || subs.isEmpty()) {
-      throw new BusinessException("sub orders not found");
-    }
-    for (OrderSub sub : subs) {
-      if (sub == null || sub.getId() == null) {
-        continue;
-      }
-      if (isMerchant(authentication)
-          && !Objects.equals(sub.getMerchantId(), requireCurrentUserId(authentication))) {
-        continue;
-      }
-      if ("SHIP".equals(action)) {
-        orderShippingService.ship(sub.getId(), shippingCompany, trackingNumber);
-      } else {
-        orderService.advanceSubOrderStatus(sub.getId(), action);
-      }
-    }
-  }
-
-  private int batchApply(
-      List<Long> orderIds,
-      Authentication authentication,
-      String action,
-      String shippingCompany,
-      String trackingNumber,
-      String cancelReason) {
-    if (orderIds == null || orderIds.isEmpty()) {
-      return 0;
-    }
-    int success = 0;
-    for (Long orderId : orderIds) {
-      if (orderId == null) {
-        continue;
-      }
-      OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-      List<OrderSub> subs = orderService.listSubOrders(main.getId());
-      applySubOrderAction(subs, action, authentication, shippingCompany, trackingNumber);
-      if ("CANCEL".equals(action)) {
-        orderQueryService.updateCancelReason(main.getId(), cancelReason);
-      }
-      success += 1;
-    }
-    return success;
   }
 
   private AfterSale toAfterSaleEntity(AfterSaleDTO afterSaleDTO) {
