@@ -8,6 +8,7 @@
 - Controller 无 `try-catch`，交由全局 `@RestControllerAdvice` 兜底。
 - RPC/MQ/TCC/Outbox 等边界场景显式转换异常语义。
 - 响应头统一包含 `X-Trace-Id`，仅错误响应体包含 `traceId`，避免污染成功响应。
+- Service 层通过 AOP 兜底收敛异常，排除 `infrastructure`/`cache` 包。
 
 ## 异常类体系
 
@@ -61,6 +62,7 @@
 - 统一处理 `BizException` / `SystemException` / `RemoteException`
 - 系统异常触发指标计数 `exception.system`
 - `traceId` 的响应头与错误响应体写入交由统一响应增强处理
+- 异常日志与指标统一交由 `ExceptionReporter` 上报
 
 ### GlobalPermissionExceptionHandler（common-security）
 
@@ -83,6 +85,7 @@
   - RPC 调用异常 → `RemoteException`
   - 业务异常 → `BizException`
   - 其他系统异常 → `SystemException`
+- AOP 兜底切面拦截 `@Service`（排除 `..infrastructure..`/`..cache..`），统一处理未知异常与 `DataAccessException`
 
 ### DAO / Infrastructure
 
@@ -127,3 +130,4 @@
 - 新增异常优先继承 `BizException`/`SystemException`。
 - RPC 调用必须在边界层捕获 `RpcException` 并转换。
 - Controller 内不要写 `try-catch`，确保统一由全局异常处理。
+- Service 层不写兜底 `try-catch`，由 `ServiceExceptionAspect` 统一拦截。
