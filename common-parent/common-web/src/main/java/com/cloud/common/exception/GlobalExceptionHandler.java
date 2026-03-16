@@ -2,7 +2,6 @@ package com.cloud.common.exception;
 
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.result.Result;
-import com.cloud.common.trace.TraceIdUtil;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -13,7 +12,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -348,15 +346,7 @@ public class GlobalExceptionHandler {
     }
 
     private <T> ResponseEntity<Result<T>> buildResponse(int httpStatus, Result<T> body) {
-        String traceId = TraceIdUtil.currentTraceId();
-        if (body != null) {
-            body.withTraceId(traceId);
-        }
-        HttpHeaders headers = new HttpHeaders();
-        if (traceId != null && !traceId.isBlank()) {
-            headers.add("X-Trace-Id", traceId);
-        }
-        return ResponseEntity.status(httpStatus).headers(headers).body(body);
+        return ResponseEntity.status(httpStatus).body(body);
     }
 
     private void recordSystemException() {
