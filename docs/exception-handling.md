@@ -8,7 +8,7 @@
 - Controller 无 `try-catch`，交由全局 `@RestControllerAdvice` 兜底。
 - RPC/MQ/TCC/Outbox 等边界场景显式转换异常语义。
 - 响应头统一包含 `X-Trace-Id`，仅错误响应体包含 `traceId`，避免污染成功响应。
-- Service 层通过 AOP 兜底收敛异常，排除 `infrastructure`/`cache`/`tcc`/`task`/`outbox` 包。
+- Service 层通过 AOP 兜底收敛异常，排除 `infrastructure`/`cache`/`tcc`/`task`/`outbox`/`search.messaging`/`common.messaging`/`payment.service.support`/`gateway.config`/`gateway.controller`/`gateway.cache` 包。
 
 ## 异常类体系
 
