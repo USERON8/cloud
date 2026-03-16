@@ -5,6 +5,4 @@ import com.cloud.order.entity.AfterSale;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface AfterSaleMapper extends BaseMapper<AfterSale> {
-}
-
+public interface AfterSaleMapper extends BaseMapper<AfterSale> {}

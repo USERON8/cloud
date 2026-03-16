@@ -11,36 +11,36 @@ import lombok.EqualsAndHashCode;
 @TableName("stock_txn")
 public class StockTxn extends BaseEntity<StockTxn> {
 
-    @TableField("sku_id")
-    private Long skuId;
+  @TableField("sku_id")
+  private Long skuId;
 
-    @TableField("sub_order_no")
-    private String subOrderNo;
+  @TableField("sub_order_no")
+  private String subOrderNo;
 
-    @TableField("txn_type")
-    private String txnType;
+  @TableField("txn_type")
+  private String txnType;
 
-    @TableField("quantity")
-    private Integer quantity;
+  @TableField("quantity")
+  private Integer quantity;
 
-    @TableField("before_on_hand")
-    private Integer beforeOnHand;
+  @TableField("before_on_hand")
+  private Integer beforeOnHand;
 
-    @TableField("after_on_hand")
-    private Integer afterOnHand;
+  @TableField("after_on_hand")
+  private Integer afterOnHand;
 
-    @TableField("before_reserved")
-    private Integer beforeReserved;
+  @TableField("before_reserved")
+  private Integer beforeReserved;
 
-    @TableField("after_reserved")
-    private Integer afterReserved;
+  @TableField("after_reserved")
+  private Integer afterReserved;
 
-    @TableField("before_salable")
-    private Integer beforeSalable;
+  @TableField("before_salable")
+  private Integer beforeSalable;
 
-    @TableField("after_salable")
-    private Integer afterSalable;
+  @TableField("after_salable")
+  private Integer afterSalable;
 
-    @TableField("remark")
-    private String remark;
+  @TableField("remark")
+  private String remark;
 }

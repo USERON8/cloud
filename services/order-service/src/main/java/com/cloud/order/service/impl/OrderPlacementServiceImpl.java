@@ -13,157 +13,159 @@ import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReserveTccRemoteService;
 import com.cloud.order.tcc.OrderCreateTccAction;
-import org.apache.seata.spring.annotation.GlobalTransactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-
+import lombok.RequiredArgsConstructor;
+import org.apache.seata.spring.annotation.GlobalTransactional;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class OrderPlacementServiceImpl implements OrderPlacementService {
 
-    private static final Set<String> RESERVE_REQUIRED_STATUSES = Set.of("CREATED");
+  private static final Set<String> RESERVE_REQUIRED_STATUSES = Set.of("CREATED");
 
-    private final OrderMainMapper orderMainMapper;
-    private final OrderService orderService;
-    private final OrderCreateTccAction orderCreateTccAction;
-    private final StockReserveTccRemoteService stockReserveTccRemoteService;
+  private final OrderMainMapper orderMainMapper;
+  private final OrderService orderService;
+  private final OrderCreateTccAction orderCreateTccAction;
+  private final StockReserveTccRemoteService stockReserveTccRemoteService;
 
-    @Override
-    @GlobalTransactional(rollbackFor = Exception.class)
-    public OrderAggregateResponse createOrder(CreateMainOrderRequest request) {
-        String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
-        boolean prepared = orderCreateTccAction.prepare(null, idempotencyKey, request.getCartId(), request);
-        if (!prepared) {
-            throw new BusinessException("failed to create order aggregate");
-        }
-
-        OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
-        if (mainOrder == null) {
-            throw new BusinessException("order aggregate not found");
-        }
-
-        OrderAggregateResponse aggregate = requireAggregate(orderService.getOrderAggregate(mainOrder.getId()));
-        reserveStockWithTcc(aggregate);
-        return aggregate;
+  @Override
+  @GlobalTransactional(rollbackFor = Exception.class)
+  public OrderAggregateResponse createOrder(CreateMainOrderRequest request) {
+    String idempotencyKey =
+        normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
+    boolean prepared =
+        orderCreateTccAction.prepare(null, idempotencyKey, request.getCartId(), request);
+    if (!prepared) {
+      throw new BusinessException("failed to create order aggregate");
     }
 
-    private void reserveStockWithTcc(OrderAggregateResponse aggregate) {
-        List<StockReservationTask> tasks = collectReservationTasks(aggregate);
-        if (tasks.isEmpty()) {
-            return;
-        }
-        for (StockReservationTask task : tasks) {
-            StockOperateCommandDTO command = new StockOperateCommandDTO();
-            command.setSubOrderNo(task.getSubOrderNo());
-            command.setOrderNo(task.getMainOrderNo());
-            command.setSkuId(task.getSkuId());
-            command.setQuantity(task.getQuantity());
-            command.setReason("reserve stock for " + task.getMainOrderNo());
-
-            Boolean reserved = stockReserveTccRemoteService.tryReserve(command);
-            if (!Boolean.TRUE.equals(reserved)) {
-                throw new BusinessException("reserve stock failed for skuId=" + task.getSkuId());
-            }
-        }
+    OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
+    if (mainOrder == null) {
+      throw new BusinessException("order aggregate not found");
     }
 
-    private List<StockReservationTask> collectReservationTasks(OrderAggregateResponse aggregate) {
-        List<StockReservationTask> tasks = new ArrayList<>();
-        for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
-            OrderSub subOrder = wrapped.getSubOrder();
-            if (subOrder == null || !RESERVE_REQUIRED_STATUSES.contains(subOrder.getOrderStatus())) {
-                continue;
-            }
-            tasks.addAll(buildReservationTasks(aggregate.getMainOrder(), subOrder, wrapped.getItems()));
-        }
-        return tasks;
+    OrderAggregateResponse aggregate =
+        requireAggregate(orderService.getOrderAggregate(mainOrder.getId()));
+    reserveStockWithTcc(aggregate);
+    return aggregate;
+  }
+
+  private void reserveStockWithTcc(OrderAggregateResponse aggregate) {
+    List<StockReservationTask> tasks = collectReservationTasks(aggregate);
+    if (tasks.isEmpty()) {
+      return;
+    }
+    for (StockReservationTask task : tasks) {
+      StockOperateCommandDTO command = new StockOperateCommandDTO();
+      command.setSubOrderNo(task.getSubOrderNo());
+      command.setOrderNo(task.getMainOrderNo());
+      command.setSkuId(task.getSkuId());
+      command.setQuantity(task.getQuantity());
+      command.setReason("reserve stock for " + task.getMainOrderNo());
+
+      Boolean reserved = stockReserveTccRemoteService.tryReserve(command);
+      if (!Boolean.TRUE.equals(reserved)) {
+        throw new BusinessException("reserve stock failed for skuId=" + task.getSkuId());
+      }
+    }
+  }
+
+  private List<StockReservationTask> collectReservationTasks(OrderAggregateResponse aggregate) {
+    List<StockReservationTask> tasks = new ArrayList<>();
+    for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
+      OrderSub subOrder = wrapped.getSubOrder();
+      if (subOrder == null || !RESERVE_REQUIRED_STATUSES.contains(subOrder.getOrderStatus())) {
+        continue;
+      }
+      tasks.addAll(buildReservationTasks(aggregate.getMainOrder(), subOrder, wrapped.getItems()));
+    }
+    return tasks;
+  }
+
+  private List<StockReservationTask> buildReservationTasks(
+      OrderMain mainOrder, OrderSub subOrder, List<OrderItem> items) {
+    if (items == null || items.isEmpty()) {
+      throw new BusinessException("order items are required for stock reservation");
     }
 
-    private List<StockReservationTask> buildReservationTasks(OrderMain mainOrder, OrderSub subOrder, List<OrderItem> items) {
-        if (items == null || items.isEmpty()) {
-            throw new BusinessException("order items are required for stock reservation");
-        }
-
-        Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
-        for (OrderItem item : items) {
-            if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
-                throw new BusinessException("invalid order item for stock reservation");
-            }
-            skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
-        }
-
-        List<StockReservationTask> tasks = new ArrayList<>(skuQuantities.size());
-        for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
-            tasks.add(new StockReservationTask(
-                    mainOrder.getMainOrderNo(),
-                    subOrder.getSubOrderNo(),
-                    entry.getKey(),
-                    entry.getValue()
-            ));
-        }
-        return tasks;
+    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+    for (OrderItem item : items) {
+      if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
+        throw new BusinessException("invalid order item for stock reservation");
+      }
+      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
     }
 
-    private OrderAggregateResponse requireAggregate(OrderAggregateResponse aggregate) {
-        if (aggregate == null || aggregate.getMainOrder() == null) {
-            throw new BusinessException("order aggregate not found");
-        }
-        if (aggregate.getSubOrders() == null || aggregate.getSubOrders().isEmpty()) {
-            throw new BusinessException("order aggregate has no sub orders");
-        }
-        return aggregate;
+    List<StockReservationTask> tasks = new ArrayList<>(skuQuantities.size());
+    for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
+      tasks.add(
+          new StockReservationTask(
+              mainOrder.getMainOrderNo(),
+              subOrder.getSubOrderNo(),
+              entry.getKey(),
+              entry.getValue()));
+    }
+    return tasks;
+  }
+
+  private OrderAggregateResponse requireAggregate(OrderAggregateResponse aggregate) {
+    if (aggregate == null || aggregate.getMainOrder() == null) {
+      throw new BusinessException("order aggregate not found");
+    }
+    if (aggregate.getSubOrders() == null || aggregate.getSubOrders().isEmpty()) {
+      throw new BusinessException("order aggregate has no sub orders");
+    }
+    return aggregate;
+  }
+
+  private String normalizeIdempotencyKey(String idempotencyKey, Long userId) {
+    if (StrUtil.isBlank(idempotencyKey)) {
+      throw new BusinessException("idempotency key is required");
+    }
+    if (userId == null) {
+      throw new BusinessException("user id is required for idempotency");
+    }
+    String trimmed = idempotencyKey.trim();
+    String prefix = userId + ":";
+    if (trimmed.startsWith(prefix)) {
+      return trimmed;
+    }
+    return prefix + trimmed;
+  }
+
+  private static final class StockReservationTask {
+    private final String mainOrderNo;
+    private final String subOrderNo;
+    private final Long skuId;
+    private final Integer quantity;
+
+    private StockReservationTask(
+        String mainOrderNo, String subOrderNo, Long skuId, Integer quantity) {
+      this.mainOrderNo = mainOrderNo;
+      this.subOrderNo = subOrderNo;
+      this.skuId = skuId;
+      this.quantity = quantity;
     }
 
-    private String normalizeIdempotencyKey(String idempotencyKey, Long userId) {
-        if (StrUtil.isBlank(idempotencyKey)) {
-            throw new BusinessException("idempotency key is required");
-        }
-        if (userId == null) {
-            throw new BusinessException("user id is required for idempotency");
-        }
-        String trimmed = idempotencyKey.trim();
-        String prefix = userId + ":";
-        if (trimmed.startsWith(prefix)) {
-            return trimmed;
-        }
-        return prefix + trimmed;
+    private String getMainOrderNo() {
+      return mainOrderNo;
     }
 
-    private static final class StockReservationTask {
-        private final String mainOrderNo;
-        private final String subOrderNo;
-        private final Long skuId;
-        private final Integer quantity;
-
-        private StockReservationTask(String mainOrderNo, String subOrderNo, Long skuId, Integer quantity) {
-            this.mainOrderNo = mainOrderNo;
-            this.subOrderNo = subOrderNo;
-            this.skuId = skuId;
-            this.quantity = quantity;
-        }
-
-        private String getMainOrderNo() {
-            return mainOrderNo;
-        }
-
-        private String getSubOrderNo() {
-            return subOrderNo;
-        }
-
-        private Long getSkuId() {
-            return skuId;
-        }
-
-        private Integer getQuantity() {
-            return quantity;
-        }
+    private String getSubOrderNo() {
+      return subOrderNo;
     }
+
+    private Long getSkuId() {
+      return skuId;
+    }
+
+    private Integer getQuantity() {
+      return quantity;
+    }
+  }
 }

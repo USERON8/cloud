@@ -13,33 +13,33 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderAutomationXxlJob {
 
-    private final OrderAutomationService orderAutomationService;
+  private final OrderAutomationService orderAutomationService;
 
-    @XxlJob("orderAutoConfirmReceiptJob")
-    @DistributedLock(
-            key = "'xxl:order:auto-confirm-receipt'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void autoConfirmReceipt() {
-        logHandledCount("orderAutoConfirmReceiptJob", orderAutomationService.autoConfirmShippedOrders());
-    }
+  @XxlJob("orderAutoConfirmReceiptJob")
+  @DistributedLock(
+      key = "'xxl:order:auto-confirm-receipt'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void autoConfirmReceipt() {
+    logHandledCount(
+        "orderAutoConfirmReceiptJob", orderAutomationService.autoConfirmShippedOrders());
+  }
 
-    @XxlJob("afterSaleAutoApproveJob")
-    @DistributedLock(
-            key = "'xxl:order:after-sale-auto-approve'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void autoApproveAfterSales() {
-        logHandledCount("afterSaleAutoApproveJob", orderAutomationService.autoApproveTimedOutAfterSales());
-    }
+  @XxlJob("afterSaleAutoApproveJob")
+  @DistributedLock(
+      key = "'xxl:order:after-sale-auto-approve'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void autoApproveAfterSales() {
+    logHandledCount(
+        "afterSaleAutoApproveJob", orderAutomationService.autoApproveTimedOutAfterSales());
+  }
 
-    private void logHandledCount(String jobName, int handledCount) {
-        String message = jobName + " finished, handled records: " + handledCount;
-        XxlJobHelper.log(message);
-        log.info(message);
-    }
+  private void logHandledCount(String jobName, int handledCount) {
+    String message = jobName + " finished, handled records: " + handledCount;
+    XxlJobHelper.log(message);
+    log.info(message);
+  }
 }

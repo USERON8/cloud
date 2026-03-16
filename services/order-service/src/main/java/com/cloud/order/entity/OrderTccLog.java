@@ -6,22 +6,20 @@ import com.cloud.common.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("order_tcc_log")
 public class OrderTccLog extends BaseEntity<OrderTccLog> {
 
-    @TableField("business_key")
-    private String businessKey;
+  @TableField("business_key")
+  private String businessKey;
 
-    @TableField("main_order_id")
-    private Long mainOrderId;
+  @TableField("main_order_id")
+  private Long mainOrderId;
 
-    @TableField("main_order_no")
-    private String mainOrderNo;
+  @TableField("main_order_no")
+  private String mainOrderNo;
 
-    @TableField("status")
-    private String status;
+  @TableField("status")
+  private String status;
 }

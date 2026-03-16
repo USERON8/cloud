@@ -11,18 +11,18 @@ import lombok.EqualsAndHashCode;
 @TableName("stock_reservation")
 public class StockReservation extends BaseEntity<StockReservation> {
 
-    @TableField("sub_order_no")
-    private String subOrderNo;
+  @TableField("sub_order_no")
+  private String subOrderNo;
 
-    @TableField("sku_id")
-    private Long skuId;
+  @TableField("sku_id")
+  private Long skuId;
 
-    @TableField("reserved_qty")
-    private Integer reservedQty;
+  @TableField("reserved_qty")
+  private Integer reservedQty;
 
-    @TableField("status")
-    private String status;
+  @TableField("status")
+  private String status;
 
-    @TableField("idempotency_key")
-    private String idempotencyKey;
+  @TableField("idempotency_key")
+  private String idempotencyKey;
 }

@@ -14,16 +14,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StockTxnAsyncWriter {
 
-    private final StockTxnMapper stockTxnMapper;
+  private final StockTxnMapper stockTxnMapper;
 
-    @Async("stockOperationExecutor")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void write(StockTxn txn) {
-        try {
-            stockTxnMapper.insert(txn);
-        } catch (RuntimeException ex) {
-            log.warn("write stock txn failed, subOrderNo={}, txnType={}",
-                    txn.getSubOrderNo(), txn.getTxnType(), ex);
-        }
+  @Async("stockOperationExecutor")
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void write(StockTxn txn) {
+    try {
+      stockTxnMapper.insert(txn);
+    } catch (RuntimeException ex) {
+      log.warn(
+          "write stock txn failed, subOrderNo={}, txnType={}",
+          txn.getSubOrderNo(),
+          txn.getTxnType(),
+          ex);
     }
+  }
 }

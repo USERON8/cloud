@@ -1,54 +1,53 @@
 package com.cloud.order.dto;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class AfterSaleDTO {
 
-    private Long id;
+  private Long id;
 
-    private String afterSaleNo;
+  private String afterSaleNo;
 
-    private Long mainOrderId;
+  private Long mainOrderId;
 
-    private Long subOrderId;
+  private Long subOrderId;
 
-    private Long userId;
+  private Long userId;
 
-    private Long merchantId;
+  private Long merchantId;
 
-    private String afterSaleType;
+  private String afterSaleType;
 
-    private String status;
+  private String status;
 
-    private String reason;
+  private String reason;
 
-    private String description;
+  private String description;
 
-    private BigDecimal applyAmount;
+  private BigDecimal applyAmount;
 
-    private BigDecimal approvedAmount;
+  private BigDecimal approvedAmount;
 
-    private String returnLogisticsCompany;
+  private String returnLogisticsCompany;
 
-    private String returnLogisticsNo;
+  private String returnLogisticsNo;
 
-    private String refundChannel;
+  private String refundChannel;
 
-    private LocalDateTime refundedAt;
+  private LocalDateTime refundedAt;
 
-    private LocalDateTime closedAt;
+  private LocalDateTime closedAt;
 
-    private String closeReason;
+  private String closeReason;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 
-    private Integer deleted;
+  private Integer deleted;
 
-    private Integer version;
+  private Integer version;
 }

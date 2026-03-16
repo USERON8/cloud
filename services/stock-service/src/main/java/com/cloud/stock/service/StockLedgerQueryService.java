@@ -5,7 +5,7 @@ import com.cloud.stock.module.entity.StockLedger;
 
 public interface StockLedgerQueryService {
 
-    Page<StockLedger> pageLowStockLedgers(long pageIndex, int pageSize);
+  Page<StockLedger> pageLowStockLedgers(long pageIndex, int pageSize);
 
-    Page<StockLedger> pageActiveLedgers(long pageIndex, int pageSize);
+  Page<StockLedger> pageActiveLedgers(long pageIndex, int pageSize);
 }

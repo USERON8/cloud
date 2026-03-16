@@ -13,23 +13,22 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderTimeoutXxlJob {
 
-    private final OrderTimeoutService orderTimeoutService;
+  private final OrderTimeoutService orderTimeoutService;
 
-    @XxlJob("orderTimeoutCheckJob")
-    @DistributedLock(
-            key = "'xxl:order:timeout-check'",
-            waitTime = 1,
-            leaseTime = 300,
-            failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL
-    )
-    public void cancelTimeoutOrders() {
-        int handledCount = orderTimeoutService.checkAndHandleTimeoutOrders();
-        logHandledCount("orderTimeoutCheckJob", handledCount);
-    }
+  @XxlJob("orderTimeoutCheckJob")
+  @DistributedLock(
+      key = "'xxl:order:timeout-check'",
+      waitTime = 1,
+      leaseTime = 300,
+      failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
+  public void cancelTimeoutOrders() {
+    int handledCount = orderTimeoutService.checkAndHandleTimeoutOrders();
+    logHandledCount("orderTimeoutCheckJob", handledCount);
+  }
 
-    private void logHandledCount(String jobName, int handledCount) {
-        String message = jobName + " finished, handled records: " + handledCount;
-        XxlJobHelper.log(message);
-        log.info(message);
-    }
+  private void logHandledCount(String jobName, int handledCount) {
+    String message = jobName + " finished, handled records: " + handledCount;
+    XxlJobHelper.log(message);
+    log.info(message);
+  }
 }

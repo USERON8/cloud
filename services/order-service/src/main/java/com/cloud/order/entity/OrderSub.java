@@ -3,78 +3,77 @@ package com.cloud.order.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cloud.common.domain.BaseEntity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("order_sub")
 public class OrderSub extends BaseEntity<OrderSub> {
 
-    @TableField("sub_order_no")
-    private String subOrderNo;
+  @TableField("sub_order_no")
+  private String subOrderNo;
 
-    @TableField("main_order_id")
-    private Long mainOrderId;
+  @TableField("main_order_id")
+  private Long mainOrderId;
 
-    @TableField("merchant_id")
-    private Long merchantId;
+  @TableField("merchant_id")
+  private Long merchantId;
 
-    @TableField("order_status")
-    private String orderStatus;
+  @TableField("order_status")
+  private String orderStatus;
 
-    @TableField("shipping_status")
-    private String shippingStatus;
+  @TableField("shipping_status")
+  private String shippingStatus;
 
-    @TableField("after_sale_status")
-    private String afterSaleStatus;
+  @TableField("after_sale_status")
+  private String afterSaleStatus;
 
-    @TableField("item_amount")
-    private BigDecimal itemAmount;
+  @TableField("item_amount")
+  private BigDecimal itemAmount;
 
-    @TableField("shipping_fee")
-    private BigDecimal shippingFee;
+  @TableField("shipping_fee")
+  private BigDecimal shippingFee;
 
-    @TableField("discount_amount")
-    private BigDecimal discountAmount;
+  @TableField("discount_amount")
+  private BigDecimal discountAmount;
 
-    @TableField("payable_amount")
-    private BigDecimal payableAmount;
+  @TableField("payable_amount")
+  private BigDecimal payableAmount;
 
-    @TableField("receiver_name")
-    private String receiverName;
+  @TableField("receiver_name")
+  private String receiverName;
 
-    @TableField("receiver_phone")
-    private String receiverPhone;
+  @TableField("receiver_phone")
+  private String receiverPhone;
 
-    @TableField("receiver_address")
-    private String receiverAddress;
+  @TableField("receiver_address")
+  private String receiverAddress;
 
-    @TableField("shipping_company")
-    private String shippingCompany;
+  @TableField("shipping_company")
+  private String shippingCompany;
 
-    @TableField("tracking_number")
-    private String trackingNumber;
+  @TableField("tracking_number")
+  private String trackingNumber;
 
-    @TableField("shipped_at")
-    private LocalDateTime shippedAt;
+  @TableField("shipped_at")
+  private LocalDateTime shippedAt;
 
-    @TableField("estimated_arrival")
-    private LocalDate estimatedArrival;
+  @TableField("estimated_arrival")
+  private LocalDate estimatedArrival;
 
-    @TableField("received_at")
-    private LocalDateTime receivedAt;
+  @TableField("received_at")
+  private LocalDateTime receivedAt;
 
-    @TableField("done_at")
-    private LocalDateTime doneAt;
+  @TableField("done_at")
+  private LocalDateTime doneAt;
 
-    @TableField("closed_at")
-    private LocalDateTime closedAt;
+  @TableField("closed_at")
+  private LocalDateTime closedAt;
 
-    @TableField("close_reason")
-    private String closeReason;
+  @TableField("close_reason")
+  private String closeReason;
 }

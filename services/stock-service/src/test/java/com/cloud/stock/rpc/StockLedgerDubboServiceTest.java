@@ -1,5 +1,9 @@
 package com.cloud.stock.rpc;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.stock.service.StockLedgerService;
@@ -9,41 +13,36 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class StockLedgerDubboServiceTest {
 
-    @Mock
-    private StockLedgerService stockLedgerService;
+  @Mock private StockLedgerService stockLedgerService;
 
-    private StockLedgerDubboService stockLedgerDubboService;
+  private StockLedgerDubboService stockLedgerDubboService;
 
-    @BeforeEach
-    void setUp() {
-        stockLedgerDubboService = new StockLedgerDubboService(stockLedgerService);
-    }
+  @BeforeEach
+  void setUp() {
+    stockLedgerDubboService = new StockLedgerDubboService(stockLedgerService);
+  }
 
-    @Test
-    void getLedgerBySkuId_delegates() {
-        StockLedgerVO vo = new StockLedgerVO();
-        when(stockLedgerService.getLedgerBySkuId(1L)).thenReturn(vo);
+  @Test
+  void getLedgerBySkuId_delegates() {
+    StockLedgerVO vo = new StockLedgerVO();
+    when(stockLedgerService.getLedgerBySkuId(1L)).thenReturn(vo);
 
-        StockLedgerVO result = stockLedgerDubboService.getLedgerBySkuId(1L);
+    StockLedgerVO result = stockLedgerDubboService.getLedgerBySkuId(1L);
 
-        assertThat(result).isSameAs(vo);
-    }
+    assertThat(result).isSameAs(vo);
+  }
 
-    @Test
-    void reserve_delegates() {
-        StockOperateCommandDTO command = new StockOperateCommandDTO();
-        when(stockLedgerService.reserve(command)).thenReturn(true);
+  @Test
+  void reserve_delegates() {
+    StockOperateCommandDTO command = new StockOperateCommandDTO();
+    when(stockLedgerService.reserve(command)).thenReturn(true);
 
-        Boolean result = stockLedgerDubboService.reserve(command);
+    Boolean result = stockLedgerDubboService.reserve(command);
 
-        assertThat(result).isTrue();
-        verify(stockLedgerService).reserve(command);
-    }
+    assertThat(result).isTrue();
+    verify(stockLedgerService).reserve(command);
+  }
 }

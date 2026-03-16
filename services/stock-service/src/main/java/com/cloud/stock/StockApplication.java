@@ -1,10 +1,10 @@
 package com.cloud.stock;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.mybatis.spring.annotation.MapperScan;
@@ -19,24 +19,20 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
 @SecurityScheme(
-        name = "Authorization",
-        type = SecuritySchemeType.HTTP,
-        scheme = "bearer",
-        bearerFormat = "JWT"
-)
+    name = "Authorization",
+    type = SecuritySchemeType.HTTP,
+    scheme = "bearer",
+    bearerFormat = "JWT")
 @OpenAPIDefinition(
-        info = @Info(
-                title = "Stock Service API",
-                description = "Stock service endpoints",
-                version = "1.0.0"
-        ),
-        security = @SecurityRequirement(name = "Authorization")
-)
+    info =
+        @Info(
+            title = "Stock Service API",
+            description = "Stock service endpoints",
+            version = "1.0.0"),
+    security = @SecurityRequirement(name = "Authorization"))
 @SpringBootApplication(scanBasePackages = {"com.cloud.stock", "com.cloud.common"})
 @EnableDubbo
-@ComponentScan(
-        basePackages = {"com.cloud.stock", "com.cloud.common"}
-)
+@ComponentScan(basePackages = {"com.cloud.stock", "com.cloud.common"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient
 @EnableAsync
@@ -44,13 +40,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @MapperScan({"com.cloud.stock.mapper", "com.cloud.common.messaging.outbox"})
 public class StockApplication {
-    public static void main(String[] args) {
+  public static void main(String[] args) {
 
-        System.setProperty("nacos.logging.default.config.enabled", "false");
-        System.setProperty("nacos.logging.config", "");
-        System.setProperty("nacos.logging.path", "");
+    System.setProperty("nacos.logging.default.config.enabled", "false");
+    System.setProperty("nacos.logging.config", "");
+    System.setProperty("nacos.logging.path", "");
 
-
-        SpringApplication.run(StockApplication.class, args);
-    }
+    SpringApplication.run(StockApplication.class, args);
+  }
 }

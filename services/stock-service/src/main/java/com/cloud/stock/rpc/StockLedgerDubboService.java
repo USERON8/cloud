@@ -11,31 +11,30 @@ import org.apache.dubbo.config.annotation.DubboService;
 @RequiredArgsConstructor
 public class StockLedgerDubboService implements StockDubboApi {
 
-    private final StockLedgerService stockLedgerService;
+  private final StockLedgerService stockLedgerService;
 
-    @Override
-    public StockLedgerVO getLedgerBySkuId(Long skuId) {
-        return stockLedgerService.getLedgerBySkuId(skuId);
-    }
+  @Override
+  public StockLedgerVO getLedgerBySkuId(Long skuId) {
+    return stockLedgerService.getLedgerBySkuId(skuId);
+  }
 
-    @Override
-    public Boolean reserve(StockOperateCommandDTO command) {
-        return stockLedgerService.reserve(command);
-    }
+  @Override
+  public Boolean reserve(StockOperateCommandDTO command) {
+    return stockLedgerService.reserve(command);
+  }
 
-    @Override
-    public Boolean confirm(StockOperateCommandDTO command) {
-        return stockLedgerService.confirm(command);
-    }
+  @Override
+  public Boolean confirm(StockOperateCommandDTO command) {
+    return stockLedgerService.confirm(command);
+  }
 
-    @Override
-    public Boolean release(StockOperateCommandDTO command) {
-        return stockLedgerService.release(command);
-    }
+  @Override
+  public Boolean release(StockOperateCommandDTO command) {
+    return stockLedgerService.release(command);
+  }
 
-    @Override
-    public Boolean rollback(StockOperateCommandDTO command) {
-        return stockLedgerService.rollback(command);
-    }
+  @Override
+  public Boolean rollback(StockOperateCommandDTO command) {
+    return stockLedgerService.rollback(command);
+  }
 }
-

@@ -5,6 +5,4 @@ import com.cloud.order.entity.Cart;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface CartMapper extends BaseMapper<Cart> {
-}
-
+public interface CartMapper extends BaseMapper<Cart> {}

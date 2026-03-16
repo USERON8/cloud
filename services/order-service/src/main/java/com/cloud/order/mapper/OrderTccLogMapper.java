@@ -5,5 +5,4 @@ import com.cloud.order.entity.OrderTccLog;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface OrderTccLogMapper extends BaseMapper<OrderTccLog> {
-}
+public interface OrderTccLogMapper extends BaseMapper<OrderTccLog> {}

@@ -5,5 +5,4 @@ import com.cloud.stock.module.entity.StockTxn;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface StockTxnMapper extends BaseMapper<StockTxn> {
-}
+public interface StockTxnMapper extends BaseMapper<StockTxn> {}

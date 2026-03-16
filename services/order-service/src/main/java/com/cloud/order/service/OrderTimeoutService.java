@@ -4,15 +4,15 @@ import java.util.List;
 
 public interface OrderTimeoutService {
 
-    int checkAndHandleTimeoutOrders();
+  int checkAndHandleTimeoutOrders();
 
-    List<Long> getTimeoutSubOrderIds(Integer timeoutMinutes);
+  List<Long> getTimeoutSubOrderIds(Integer timeoutMinutes);
 
-    boolean cancelTimeoutOrder(Long subOrderId);
+  boolean cancelTimeoutOrder(Long subOrderId);
 
-    int batchCancelTimeoutOrders(List<Long> subOrderIds);
+  int batchCancelTimeoutOrders(List<Long> subOrderIds);
 
-    Integer getTimeoutConfig();
+  Integer getTimeoutConfig();
 
-    boolean updateTimeoutConfig(Integer timeoutMinutes);
+  boolean updateTimeoutConfig(Integer timeoutMinutes);
 }

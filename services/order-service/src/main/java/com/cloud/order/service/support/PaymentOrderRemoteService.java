@@ -11,18 +11,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentOrderRemoteService {
 
-    @DubboReference(check = false, timeout = 5000, retries = 0)
-    private PaymentDubboApi paymentDubboApi;
+  @DubboReference(check = false, timeout = 5000, retries = 0)
+  private PaymentDubboApi paymentDubboApi;
 
-    public PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo) {
-        return paymentDubboApi.getPaymentOrderByOrderNo(mainOrderNo, subOrderNo);
-    }
+  public PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo) {
+    return paymentDubboApi.getPaymentOrderByOrderNo(mainOrderNo, subOrderNo);
+  }
 
-    public Long createRefund(PaymentRefundCommandDTO command) {
-        return paymentDubboApi.createRefund(command);
-    }
+  public Long createRefund(PaymentRefundCommandDTO command) {
+    return paymentDubboApi.createRefund(command);
+  }
 
-    public Boolean cancelRefund(String refundNo, String reason) {
-        return paymentDubboApi.cancelRefund(refundNo, reason);
-    }
+  public Boolean cancelRefund(String refundNo, String reason) {
+    return paymentDubboApi.cancelRefund(refundNo, reason);
+  }
 }

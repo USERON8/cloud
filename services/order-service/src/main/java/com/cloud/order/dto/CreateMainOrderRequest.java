@@ -6,98 +6,89 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class CreateMainOrderRequest {
-    @NotNull
-    private Long userId;
+  @NotNull private Long userId;
 
-    private Long cartId;
+  private Long cartId;
 
-    private Long spuId;
+  private Long spuId;
 
-    private Long skuId;
+  private Long skuId;
 
-    private Integer quantity;
+  private Integer quantity;
+
+  @DecimalMin("0.00")
+  private BigDecimal totalAmount;
+
+  @DecimalMin("0.00")
+  private BigDecimal payableAmount;
+
+  private String remark;
+
+  private String idempotencyKey;
+
+  private String receiverName;
+
+  private String receiverPhone;
+
+  private String receiverAddress;
+
+  @Valid @JsonIgnore private List<CreateSubOrderRequest> subOrders;
+
+  @AssertTrue(message = "cartId or single item (spuId, skuId, quantity) is required")
+  public boolean isOrderSourceValid() {
+    boolean cartOrder = cartId != null && spuId == null && skuId == null;
+    boolean singleItemOrder =
+        cartId == null && spuId != null && skuId != null && quantity != null && quantity > 0;
+    return cartOrder || singleItemOrder;
+  }
+
+  @Data
+  public static class CreateSubOrderRequest {
+    @NotNull private Long merchantId;
 
     @DecimalMin("0.00")
-    private BigDecimal totalAmount;
+    private BigDecimal itemAmount;
+
+    @DecimalMin("0.00")
+    private BigDecimal shippingFee;
+
+    @DecimalMin("0.00")
+    private BigDecimal discountAmount;
 
     @DecimalMin("0.00")
     private BigDecimal payableAmount;
 
-    private String remark;
-
-    private String idempotencyKey;
-
     private String receiverName;
-
     private String receiverPhone;
-
     private String receiverAddress;
 
-    @Valid
-    @JsonIgnore
-    private List<CreateSubOrderRequest> subOrders;
+    @Valid @NotEmpty private List<CreateOrderItemRequest> items;
+  }
 
-    @AssertTrue(message = "cartId or single item (spuId, skuId, quantity) is required")
-    public boolean isOrderSourceValid() {
-        boolean cartOrder = cartId != null && spuId == null && skuId == null;
-        boolean singleItemOrder = cartId == null && spuId != null && skuId != null && quantity != null && quantity > 0;
-        return cartOrder || singleItemOrder;
-    }
+  @Data
+  public static class CreateOrderItemRequest {
+    @NotNull private Long spuId;
 
-    @Data
-    public static class CreateSubOrderRequest {
-        @NotNull
-        private Long merchantId;
+    @NotNull private Long skuId;
 
-        @DecimalMin("0.00")
-        private BigDecimal itemAmount;
+    private String skuCode;
+    private String skuName;
+    private String skuSnapshot;
 
-        @DecimalMin("0.00")
-        private BigDecimal shippingFee;
+    @NotNull private Integer quantity;
 
-        @DecimalMin("0.00")
-        private BigDecimal discountAmount;
+    @NotNull
+    @DecimalMin("0.00")
+    private BigDecimal unitPrice;
 
-        @DecimalMin("0.00")
-        private BigDecimal payableAmount;
-
-        private String receiverName;
-        private String receiverPhone;
-        private String receiverAddress;
-
-        @Valid
-        @NotEmpty
-        private List<CreateOrderItemRequest> items;
-    }
-
-    @Data
-    public static class CreateOrderItemRequest {
-        @NotNull
-        private Long spuId;
-
-        @NotNull
-        private Long skuId;
-
-        private String skuCode;
-        private String skuName;
-        private String skuSnapshot;
-
-        @NotNull
-        private Integer quantity;
-
-        @NotNull
-        @DecimalMin("0.00")
-        private BigDecimal unitPrice;
-
-        @NotNull
-        @DecimalMin("0.00")
-        private BigDecimal totalPrice;
-    }
+    @NotNull
+    @DecimalMin("0.00")
+    private BigDecimal totalPrice;
+  }
 }

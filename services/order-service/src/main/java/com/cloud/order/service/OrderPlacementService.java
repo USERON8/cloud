@@ -5,5 +5,5 @@ import com.cloud.order.dto.OrderAggregateResponse;
 
 public interface OrderPlacementService {
 
-    OrderAggregateResponse createOrder(CreateMainOrderRequest request);
+  OrderAggregateResponse createOrder(CreateMainOrderRequest request);
 }

@@ -3,29 +3,27 @@ package com.cloud.order.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cloud.common.domain.BaseEntity;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.math.BigDecimal;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("cart")
 public class Cart extends BaseEntity<Cart> {
 
-    @TableField("cart_no")
-    private String cartNo;
+  @TableField("cart_no")
+  private String cartNo;
 
-    @TableField("user_id")
-    private Long userId;
+  @TableField("user_id")
+  private Long userId;
 
-    @TableField("cart_status")
-    private String cartStatus;
+  @TableField("cart_status")
+  private String cartStatus;
 
-    @TableField("selected_count")
-    private Integer selectedCount;
+  @TableField("selected_count")
+  private Integer selectedCount;
 
-    @TableField("total_amount")
-    private BigDecimal totalAmount;
+  @TableField("total_amount")
+  private BigDecimal totalAmount;
 }
-

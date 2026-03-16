@@ -4,5 +4,5 @@ import com.cloud.order.entity.OrderSub;
 
 public interface OrderShippingService {
 
-    OrderSub ship(Long subOrderId, String shippingCompany, String trackingNumber);
+  OrderSub ship(Long subOrderId, String shippingCompany, String trackingNumber);
 }

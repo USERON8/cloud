@@ -11,13 +11,17 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 @EnableMethodSecurity
 public class ResourceServerConfig extends BaseResourceServerConfig {
-    public ResourceServerConfig(Environment environment) {
-        super(environment);
-    }
+  public ResourceServerConfig(Environment environment) {
+    super(environment);
+  }
 
-    @Override
-    protected void configureServiceEndpoints(
-            org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
-        authz.requestMatchers("/api/stocks/**").authenticated();
-    }
+  @Override
+  protected void configureServiceEndpoints(
+      org.springframework.security.config.annotation.web.configurers
+                      .AuthorizeHttpRequestsConfigurer<
+                  HttpSecurity>
+              .AuthorizationManagerRequestMatcherRegistry
+          authz) {
+    authz.requestMatchers("/api/stocks/**").authenticated();
+  }
 }
