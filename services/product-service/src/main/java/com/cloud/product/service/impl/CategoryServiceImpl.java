@@ -309,6 +309,57 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         return this.removeByIds(categoryIds);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public int updateCategoryStatusBatch(List<Long> categoryIds, Integer status) {
+        if (CollectionUtils.isEmpty(categoryIds) || status == null) {
+            return 0;
+        }
+        int successCount = 0;
+        for (Long categoryId : categoryIds) {
+            if (categoryId == null) {
+                continue;
+            }
+            try {
+                Category category = new Category();
+                category.setId(categoryId);
+                category.setStatus(status);
+                if (super.updateById(category)) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.warn("Batch update category status failed: id={}", categoryId, e);
+            }
+        }
+        return successCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(cacheNames = {"categoryCache", "categoryTreeCache"}, allEntries = true)
+    public int createCategoriesBatch(List<CategoryDTO> categoryList) {
+        if (CollectionUtils.isEmpty(categoryList)) {
+            return 0;
+        }
+        int successCount = 0;
+        for (CategoryDTO categoryDTO : categoryList) {
+            if (categoryDTO == null) {
+                continue;
+            }
+            try {
+                Category category = new Category();
+                BeanUtils.copyProperties(categoryDTO, category);
+                if (super.save(category)) {
+                    successCount++;
+                }
+            } catch (Exception e) {
+                log.warn("Batch create category failed: name={}", categoryDTO.getName(), e);
+            }
+        }
+        return successCount;
+    }
+
 
 
 

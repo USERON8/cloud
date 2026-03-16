@@ -139,6 +139,10 @@ public interface CategoryService extends IService<Category> {
 
     Boolean deleteCategoriesBatch(List<Long> categoryIds);
 
+    int updateCategoryStatusBatch(List<Long> categoryIds, Integer status);
+
+    int createCategoriesBatch(List<CategoryDTO> categoryList);
+
 
 
 
