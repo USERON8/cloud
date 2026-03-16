@@ -118,3 +118,18 @@ CREATE TABLE undo_log (
   INDEX idx_undo_log_xid (xid),
   INDEX idx_undo_log_branch (branch_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS dead_letter
+(
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    topic       VARCHAR(128)    NOT NULL,
+    msg_id      VARCHAR(64)     NOT NULL,
+    payload     TEXT            NOT NULL,
+    fail_reason VARCHAR(32)     NOT NULL,
+    error_msg   VARCHAR(512)    NULL,
+    status      TINYINT         NOT NULL DEFAULT 0,
+    service     VARCHAR(64)     NOT NULL,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    handled_at  DATETIME        NULL,
+    UNIQUE KEY uk_dead_letter_msg (topic, msg_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
