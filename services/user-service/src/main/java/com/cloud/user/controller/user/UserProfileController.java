@@ -1,11 +1,11 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.module.dto.UserProfilePasswordChangeDTO;
 import com.cloud.user.module.dto.UserProfileUpdateDTO;
-import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MinioService;
 import com.cloud.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -71,23 +71,23 @@ public class UserProfileController {
             return Result.badRequest("at least one profile field is required");
         }
 
-        User updateEntity = new User();
-        updateEntity.setId(currentUserId);
+        UserProfileUpsertDTO profileUpsertDTO = new UserProfileUpsertDTO();
+        profileUpsertDTO.setId(currentUserId);
         if (StrUtil.isNotBlank(updateDTO.getNickname())) {
-            updateEntity.setNickname(updateDTO.getNickname());
+            profileUpsertDTO.setNickname(updateDTO.getNickname());
         }
         if (StrUtil.isNotBlank(updateDTO.getAvatarUrl())) {
-            updateEntity.setAvatarUrl(updateDTO.getAvatarUrl());
+            profileUpsertDTO.setAvatarUrl(updateDTO.getAvatarUrl());
         }
         if (StrUtil.isNotBlank(updateDTO.getEmail())) {
-            updateEntity.setEmail(updateDTO.getEmail());
+            profileUpsertDTO.setEmail(updateDTO.getEmail());
         }
         if (StrUtil.isNotBlank(updateDTO.getPhone())) {
-            updateEntity.setPhone(updateDTO.getPhone());
+            profileUpsertDTO.setPhone(updateDTO.getPhone());
         }
 
         try {
-            boolean updated = userService.updateById(updateEntity);
+            boolean updated = userService.updateProfile(profileUpsertDTO);
             return Result.success("profile updated", updated);
         } catch (Exception e) {
             log.error("Failed to update current user profile, userId={}", currentUserId, e);
