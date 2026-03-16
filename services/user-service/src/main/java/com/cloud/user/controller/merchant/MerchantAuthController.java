@@ -1,14 +1,10 @@
 package com.cloud.user.controller.merchant;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthFileUploadDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
-import com.cloud.user.converter.MerchantAuthConverter;
-import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.MinioService;
@@ -32,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -48,7 +43,6 @@ public class MerchantAuthController {
 
     private final MerchantAuthService merchantAuthService;
     private final MerchantService merchantService;
-    private final MerchantAuthConverter merchantAuthConverter;
     private final MinioService minioService;
 
     @Value("${user.auth.list.max-size:200}")
@@ -75,33 +69,26 @@ public class MerchantAuthController {
             return Result.notFound("merchant not found");
         }
 
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        MerchantAuth existingAuth = merchantAuthService.getOne(queryWrapper);
+        MerchantAuthDTO existingAuth = merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
 
-        MerchantAuth merchantAuth = merchantAuthConverter.toEntity(merchantAuthRequestDTO);
-        merchantAuth.setMerchantId(merchantId);
-        merchantAuth.setAuthStatus(STATUS_PENDING);
         String normalizedLicenseUrl = normalizeBusinessLicenseUrl(
-                merchantAuth.getBusinessLicenseUrl(),
+                merchantAuthRequestDTO.getBusinessLicenseUrl(),
                 existingAuth == null ? null : existingAuth.getBusinessLicenseUrl()
         );
         if (normalizedLicenseUrl == null || normalizedLicenseUrl.isBlank()) {
             return Result.badRequest("invalid business license url");
         }
-        merchantAuth.setBusinessLicenseUrl(normalizedLicenseUrl);
 
-        if (existingAuth != null) {
-            merchantAuth.setId(existingAuth.getId());
-            merchantAuth.setCreatedAt(existingAuth.getCreatedAt());
-            merchantAuth.setUpdatedAt(LocalDateTime.now());
-            if (!merchantAuthService.updateById(merchantAuth)) {
-                return Result.error("failed to update merchant auth application");
-            }
-        } else {
-            if (!merchantAuthService.save(merchantAuth)) {
-                return Result.error("failed to submit merchant auth application");
-            }
+        MerchantAuthDTO savedAuth = merchantAuthService.applyForAuth(
+                merchantId,
+                merchantAuthRequestDTO,
+                STATUS_PENDING,
+                normalizedLicenseUrl
+        );
+        if (savedAuth == null) {
+            return Result.error(existingAuth != null
+                    ? "failed to update merchant auth application"
+                    : "failed to submit merchant auth application");
         }
 
         try {
@@ -111,7 +98,7 @@ public class MerchantAuthController {
             return Result.error("merchant auth submitted but failed to update merchant status");
         }
 
-        return Result.success("merchant auth application submitted", merchantAuthConverter.toDTO(merchantAuth));
+        return Result.success("merchant auth application submitted", savedAuth);
     }
 
     @PostMapping("/upload/license/{merchantId}")
@@ -132,7 +119,7 @@ public class MerchantAuthController {
 
         try {
             String objectName = minioService.uploadBusinessLicense(merchantId, file);
-            updateBusinessLicenseUrlIfExists(merchantId, objectName);
+            merchantAuthService.updateBusinessLicenseUrlIfExists(merchantId, objectName);
             String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
             MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
             response.setFileKey(objectName);
@@ -159,13 +146,11 @@ public class MerchantAuthController {
             return Result.forbidden("no permission to query merchant auth");
         }
 
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
+        MerchantAuthDTO merchantAuth = merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
         if (merchantAuth == null) {
             return Result.success("merchant auth not found", null);
         }
-        return Result.success(enrichBusinessLicenseUrl(merchantAuthConverter.toDTO(merchantAuth)));
+        return Result.success(enrichBusinessLicenseUrl(merchantAuth));
     }
 
     @DeleteMapping("/revoke/{merchantId}")
@@ -213,17 +198,12 @@ public class MerchantAuthController {
             return Result.notFound("merchant not found");
         }
 
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
+        MerchantAuthDTO merchantAuth = merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
         if (merchantAuth == null) {
             return Result.error("merchant auth record not found");
         }
 
-        merchantAuth.setAuthStatus(authStatus);
-        merchantAuth.setAuthRemark(remark);
-        merchantAuth.setUpdatedAt(LocalDateTime.now());
-        boolean updated = merchantAuthService.updateById(merchantAuth);
+        boolean updated = merchantAuthService.updateAuthStatus(merchantId, authStatus, remark);
         if (!updated) {
             return Result.error("failed to update merchant auth status");
         }
@@ -251,11 +231,7 @@ public class MerchantAuthController {
         }
 
         int effectiveLimit = (authListMaxSize == null || authListMaxSize <= 0) ? 200 : authListMaxSize;
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getAuthStatus, authStatus)
-                .last("LIMIT " + effectiveLimit);
-        List<MerchantAuthDTO> result = merchantAuthService.list(queryWrapper).stream()
-                .map(merchantAuthConverter::toDTO)
+        List<MerchantAuthDTO> result = merchantAuthService.listByAuthStatus(authStatus, effectiveLimit).stream()
                 .map(this::enrichBusinessLicenseUrl)
                 .toList();
         return Result.success(result);
@@ -278,21 +254,6 @@ public class MerchantAuthController {
             log.warn("Failed to sign business license url, value={}", businessLicenseUrl, e);
         }
         return merchantAuthDTO;
-    }
-
-    private void updateBusinessLicenseUrlIfExists(Long merchantId, String objectName) {
-        if (merchantId == null || objectName == null || objectName.isBlank()) {
-            return;
-        }
-        LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-        MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
-        if (merchantAuth == null) {
-            return;
-        }
-        merchantAuth.setBusinessLicenseUrl(objectName);
-        merchantAuth.setUpdatedAt(LocalDateTime.now());
-        merchantAuthService.updateById(merchantAuth);
     }
 
     private String normalizeBusinessLicenseUrl(String businessLicenseUrl, String existingBusinessLicenseUrl) {
@@ -360,17 +321,12 @@ public class MerchantAuthController {
                     continue;
                 }
 
-                LambdaQueryWrapper<MerchantAuth> queryWrapper = Wrappers.lambdaQuery();
-                queryWrapper.eq(MerchantAuth::getMerchantId, merchantId);
-                MerchantAuth merchantAuth = merchantAuthService.getOne(queryWrapper);
+                MerchantAuthDTO merchantAuth = merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
                 if (merchantAuth == null) {
                     continue;
                 }
 
-                merchantAuth.setAuthStatus(authStatus);
-                merchantAuth.setAuthRemark(remark);
-                merchantAuth.setUpdatedAt(LocalDateTime.now());
-                if (merchantAuthService.updateById(merchantAuth)
+                if (merchantAuthService.updateAuthStatus(merchantId, authStatus, remark)
                         && merchantService.updateMerchantAuditStatus(merchantId, authStatus)) {
                     successCount++;
                 }
