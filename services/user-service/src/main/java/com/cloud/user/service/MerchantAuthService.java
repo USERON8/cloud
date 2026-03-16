@@ -25,4 +25,6 @@ public interface MerchantAuthService extends IService<MerchantAuth> {
   List<MerchantAuthDTO> listByAuthStatus(Integer authStatus, int limit);
 
   boolean updateBusinessLicenseUrlIfExists(Long merchantId, String objectName);
+
+  int reviewAuthBatch(List<Long> merchantIds, Integer authStatus, String remark);
 }

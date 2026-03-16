@@ -351,28 +351,7 @@ public class MerchantAuthController {
       return Result.badRequest("auth status must be 1(approved) or 2(rejected)");
     }
 
-    int successCount = 0;
-    for (Long merchantId : merchantIds) {
-      try {
-        if (merchantService.getById(merchantId) == null) {
-          continue;
-        }
-
-        MerchantAuthDTO merchantAuth =
-            merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
-        if (merchantAuth == null) {
-          continue;
-        }
-
-        if (merchantAuthService.updateAuthStatus(merchantId, authStatus, remark)
-            && merchantService.updateMerchantAuditStatus(merchantId, authStatus)) {
-          successCount++;
-        }
-      } catch (Exception e) {
-        log.error("Failed to review merchant auth, merchantId={}", merchantId, e);
-      }
-    }
-
+    int successCount = merchantAuthService.reviewAuthBatch(merchantIds, authStatus, remark);
     String message =
         String.format("batch review completed: %d/%d", successCount, merchantIds.size());
     return Result.success(message, true);

@@ -7,6 +7,7 @@ import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
+import com.cloud.user.service.MerchantService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
   private final MerchantAuthMapper merchantAuthMapper;
   private final MerchantAuthConverter merchantAuthConverter;
   private final CacheManager cacheManager;
+  private final MerchantService merchantService;
 
   public MerchantAuthDTO getMerchantAuthById(Long id) {
     return getMerchantAuthByIdWithCache(id);
@@ -186,5 +188,31 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     }
     merchantAuth.setBusinessLicenseUrl(objectName);
     return updateById(merchantAuth);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public int reviewAuthBatch(List<Long> merchantIds, Integer authStatus, String remark) {
+    if (merchantIds == null || merchantIds.isEmpty() || authStatus == null) {
+      return 0;
+    }
+    int successCount = 0;
+    for (Long merchantId : merchantIds) {
+      if (merchantId == null) {
+        continue;
+      }
+      try {
+        if (merchantService.getById(merchantId) == null) {
+          continue;
+        }
+        if (updateAuthStatus(merchantId, authStatus, remark)
+            && merchantService.updateMerchantAuditStatus(merchantId, authStatus)) {
+          successCount++;
+        }
+      } catch (Exception e) {
+        log.error("Failed to review merchant auth, merchantId={}", merchantId, e);
+      }
+    }
+    return successCount;
   }
 }
