@@ -1,5 +1,6 @@
 package com.cloud.common.messaging.outbox;
 
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,7 @@ public interface OutboxEventMapper extends BaseMapper<OutboxEvent> {
           + "AND (next_retry_at IS NULL OR next_retry_at <= NOW()) "
           + "ORDER BY created_at ASC "
           + "LIMIT #{limit}")
+  @InterceptorIgnore(illegalSql = "1")
   List<OutboxEvent> selectDueEvents(@Param("limit") int limit);
 
   @Update(

@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -22,6 +23,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Slf4j
 @Configuration
 public class MybatisPlusConfig {
+
+  @Value("${app.mybatis.illegal-sql-enabled:true}")
+  private boolean illegalSqlEnabled;
 
   @Bean
   @Primary
@@ -36,7 +40,11 @@ public class MybatisPlusConfig {
     interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
     interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
-    interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
+    if (illegalSqlEnabled) {
+      interceptor.addInnerInterceptor(createIllegalSqlInterceptor());
+    } else {
+      log.warn("Illegal SQL interceptor is disabled by app.mybatis.illegal-sql-enabled=false");
+    }
 
     return interceptor;
   }
