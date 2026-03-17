@@ -1,6 +1,7 @@
 package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.exception.SystemException;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.metrics.TradeMetrics;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -40,7 +42,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
   private final PaymentCompensationProperties properties;
   private final List<PaymentProviderGateway> providerGateways;
   private final PaymentMessageProducer paymentMessageProducer;
-  private final PaymentSuccessTxProducer paymentSuccessTxProducer;
+  private final ObjectProvider<PaymentSuccessTxProducer> paymentSuccessTxProducerProvider;
   private final TradeMetrics tradeMetrics;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
 
@@ -219,7 +221,11 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
             .paymentMethod(order.getChannel())
             .transactionNo(order.getProviderTxnNo())
             .build();
-    paymentSuccessTxProducer.send(event);
+    PaymentSuccessTxProducer producer = paymentSuccessTxProducerProvider.getIfAvailable();
+    if (producer == null) {
+      throw new SystemException("rocketmq template is not configured for tx producer");
+    }
+    producer.send(event);
   }
 
   private void publishRefundCompletedIfNeeded(

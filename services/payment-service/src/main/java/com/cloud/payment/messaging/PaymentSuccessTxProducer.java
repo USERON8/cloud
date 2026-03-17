@@ -6,11 +6,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.apache.rocketmq.spring.support.RocketMQHeaders;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@ConditionalOnBean(RocketMQTemplate.class)
 @Component
 @RequiredArgsConstructor
 public class PaymentSuccessTxProducer {

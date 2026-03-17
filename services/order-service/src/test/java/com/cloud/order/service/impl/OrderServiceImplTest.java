@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
@@ -49,6 +50,8 @@ class OrderServiceImplTest {
 
   @Mock private OrderRefundSagaCoordinator orderRefundSagaCoordinator;
 
+  @Mock private ObjectProvider<OrderRefundSagaCoordinator> orderRefundSagaCoordinatorProvider;
+
   @Mock private TradeMetrics tradeMetrics;
 
   @Mock private OrderAggregateCacheService orderAggregateCacheService;
@@ -61,6 +64,8 @@ class OrderServiceImplTest {
 
   @BeforeEach
   void setUp() {
+    when(orderRefundSagaCoordinatorProvider.getIfAvailable())
+        .thenReturn(orderRefundSagaCoordinator);
     orderService =
         new OrderServiceImpl(
             orderMainMapper,
@@ -68,7 +73,7 @@ class OrderServiceImplTest {
             orderItemMapper,
             afterSaleMapper,
             stockReservationRemoteService,
-            orderRefundSagaCoordinator,
+            orderRefundSagaCoordinatorProvider,
             tradeMetrics,
             orderAggregateCacheService,
             orderShippedMessageProducer,
