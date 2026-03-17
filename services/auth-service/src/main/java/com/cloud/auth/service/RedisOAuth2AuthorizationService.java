@@ -57,7 +57,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
 
     OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
         authorization.getToken(OAuth2AuthorizationCode.class);
-    if (authorizationCode != null) {
+    if (authorizationCode != null && authorizationCode.getToken() != null) {
       String codeKey = CODE_PREFIX + authorizationCode.getToken().getTokenValue();
       redisTemplate
           .opsForValue()
@@ -69,7 +69,7 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
     }
 
     OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getRefreshToken();
-    if (refreshToken != null) {
+    if (refreshToken != null && refreshToken.getToken() != null) {
       String refreshTokenKey = REFRESH_PREFIX + refreshToken.getToken().getTokenValue();
       redisTemplate
           .opsForValue()
@@ -184,6 +184,9 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
   }
 
   private long getExpireSeconds(OAuth2Token token) {
+    if (token == null) {
+      return 0L;
+    }
     Instant expiresAt = token.getExpiresAt();
     if (expiresAt != null) {
       return ChronoUnit.SECONDS.between(Instant.now(), expiresAt);
