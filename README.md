@@ -9,11 +9,12 @@ Frontend: UniApp (Vue 3 + TypeScript).
 
 ## Current Consistency Model
 
-- Order, payment, and stock services use local DB transactions + `outbox_event` for reliable messaging.
+- Order/stock/refund events use local DB transactions + `outbox_event` for reliable messaging.
 - Outbox relay runs inside each service (scheduled polling) and publishes to RocketMQ.
+- Payment success is delivered via RocketMQ transactional message in `payment-service`.
 - Consumers are idempotent (Redis-based) to tolerate replays.
 - User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
-- Seata is used for order placement TCC and refund SAGA in `order-service`. `payment-service` has Seata disabled.
+- Seata TCC (order placement) and Seata SAGA (refund) are enabled in `order-service`; `payment-service` keeps Seata disabled.
 
 ## Modules And Ports
 
@@ -123,7 +124,7 @@ pnpm --dir my-shop-uniapp build:h5
 
 - Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
 - Transactional messaging is implemented via `outbox_event` + scheduled relay in `order-service`, `payment-service`, and `stock-service`.
-- Seata configuration is present but not actively used by global transactions.
+- Seata TCC (order placement) and Seata SAGA (refund) are enabled in `order-service`; `payment-service` keeps Seata disabled.
 - SkyWalking agent is stored under `docker/monitor/skywalking/agent/`.
 - `start-platform.*` / `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services.
 - Ignore paths are configured in `docker/monitor/skywalking/agent/config/apm-trace-ignore-plugin.config` (filters health check noise).
@@ -138,14 +139,12 @@ pnpm --dir my-shop-uniapp build:h5
 - Blocked requests return HTTP `429` with unified JSON payload.
 - Sentinel dashboard: `http://127.0.0.1:18718` (docker compose).
 
-## Service-To-Service Auth (API Key)
+## Service-To-Service Auth (Internal JWT)
 
-- Selected approach: `API Key` (not mTLS).
-- Scope: all `/internal/**` endpoints.
-- Headers:
-- `X-Internal-Api-Key`
-- `X-Internal-Caller`
-- Dubbo internal RPC is now used for service-to-service calls; `/internal/**` HTTP endpoints are retained for debug/regression only.
+- Selected approach: OAuth2 client credentials + JWT (not mTLS).
+- Required scope/audience: `scope=internal` and `aud=internal-api` (validated by resource servers).
+- Internal client allowlist: `app.security.jwt.internal-client-ids` (default `client-service`).
+- Dubbo internal RPC is now used for service-to-service calls; `/internal/**` HTTP endpoints (if enabled) are retained for debug/regression only.
 
 ## Architecture Diagrams (Mermaid)
 
@@ -183,8 +182,7 @@ sequenceDiagram
     OB->>MQ: publish order.created
     C->>GW: pay
     GW->>P: create payment
-    P->>OB: write outbox_event
-    OB->>MQ: publish payment.paid
+    P->>MQ: send payment.paid (tx)
     MQ->>O: consume payment.paid
     O->>S: confirm reservation
 ```
@@ -203,7 +201,7 @@ sequenceDiagram
 - `docs/TEST_SCRIPT_INDEX.md`: test-script entrypoint index
 - `docs/dev-startup.md`: unified startup entrypoints and common flags
 - `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
-- `docs/seata-order-transaction.md`: Seata AT scope, startup prerequisites, and verification steps
+- `docs/seata-order-transaction.md`: Seata TCC/SAGA scope, startup prerequisites, and verification steps
 
 ## Postman Import
 
