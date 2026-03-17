@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.seata.saga.engine.StateMachineEngine;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
+@ConditionalOnBean(StateMachineEngine.class)
 @Component
 @RequiredArgsConstructor
 public class OrderRefundSagaCoordinator {
