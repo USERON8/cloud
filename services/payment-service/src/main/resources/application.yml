@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8086}
   tomcat:
     threads:
@@ -10,8 +10,6 @@ server:
 spring:
   application:
     name: payment-service
-  cache:
-    type: none
   profiles:
     active: dev
     include: rocketmq
@@ -19,80 +17,106 @@ spring:
     type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   cloud:
     nacos:
-      discovery:
+      config:
+        enabled: true
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
         namespace: public
         group: DEFAULT_GROUP
-        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
-        ip: ${NACOS_INSTANCE_IP:}
-        port: ${NACOS_INSTANCE_PORT:${server.port}}
-        ephemeral: ${NACOS_EPHEMERAL:true}
-        metadata:
-          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
-          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
-          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
-          singleton: ${SERVICE_SINGLETON:false}
-      config:
-        enabled: false
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
-        namespace: public
+        file-extension: yaml
+        shared-configs:
+          - data-id: common.yaml
+            group: DEFAULT_GROUP
+            refresh: true
         import-check:
           enabled: false
+
 rocketmq:
   name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
   producer:
     group: ${ROCKETMQ_PRODUCER_GROUP:payment-success-tx-group}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
-          issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-          cache-duration: PT30M
+
+logging:
+  file:
+    name: ${logging.file.path}/payment-service.log
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cloud.payment.module.entity
+
 app:
-  jwt:
-    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+  doc:
+    title: Payment Service API
+    description: Payment and refund endpoints
+    version: 1.1.0
+  async:
+    executors:
+      paymentAsyncExecutor:
+        core-pool-size: 3
+        max-pool-size: 8
+        queue-capacity: 400
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-async-
+        rejected-execution-handler: CALLER_RUNS
+      paymentCallbackExecutor:
+        core-pool-size: 4
+        max-pool-size: 12
+        queue-capacity: 200
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-callback-
+        rejected-execution-handler: CALLER_RUNS
+      paymentNotificationExecutor:
+        core-pool-size: 2
+        max-pool-size: 5
+        queue-capacity: 300
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-notification-
+        rejected-execution-handler: CALLER_RUNS
+      paymentReconciliationExecutor:
+        enabled: ${payment.reconciliation.enabled:true}
+        core-pool-size: 2
+        max-pool-size: 4
+        queue-capacity: 200
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-reconciliation-
+        rejected-execution-handler: CALLER_RUNS
+      paymentStatisticsExecutor:
+        enabled: ${payment.statistics.enabled:true}
+        core-pool-size: 4
+        max-pool-size: 5
+        queue-capacity: 100
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-stats-
+        rejected-execution-handler: CALLER_RUNS
+      paymentLogExecutor:
+        core-pool-size: 1
+        max-pool-size: 3
+        queue-capacity: 300
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-log-
+        rejected-execution-handler: CALLER_RUNS
+      paymentRefundExecutor:
+        core-pool-size: 2
+        max-pool-size: 6
+        queue-capacity: 250
+        keep-alive-seconds: 60
+        thread-name-prefix: payment-refund-
+        rejected-execution-handler: CALLER_RUNS
+      paymentCommonAsyncExecutor:
+        core-pool-size: 2
+        max-pool-size: 8
+        queue-capacity: 200
+        keep-alive-seconds: 60
+        thread-name-prefix: common-async-
+        rejected-execution-handler: CALLER_RUNS
   outbox:
     enabled: ${OUTBOX_ENABLED:true}
     batch-size: ${OUTBOX_BATCH_SIZE:100}
     poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:2000}
     max-retry: ${OUTBOX_MAX_RETRY:8}
     retry-backoff-seconds: ${OUTBOX_RETRY_BACKOFF_SECONDS:30}
-unified:
-  security:
-    enabled: true
-    permission:
-      refresh-interval: 300
-      cache-ttl: 1800
-      debug: false
-logging:
-  file:
-    path: logs
-    name: ${logging.file.path}/payment-service.log
-  level:
-    com.cloud: info
-    org.springframework.security: warn
-    org.springframework.web: warn
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.cloud.payment.module.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: true
-    lazy-loading-enabled: true
-    auto-mapping-behavior: full
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
-  global-config:
-    enable-sql-runner: true
-    db-config:
-      id-type: assign_id
-      logic-delete-field: deleted
-      logic-not-delete-value: 0
-      logic-delete-value: 1
+
 payment:
   async:
     enabled: true
@@ -111,21 +135,15 @@ payment:
       interval-seconds: ${PAYMENT_REFUND_RETRY_INTERVAL_SECONDS:300}
       max-attempts: ${PAYMENT_REFUND_RETRY_MAX_ATTEMPTS:6}
   security:
-    # 幂等 key TTL（秒）：防重复支付
     idempotent-ttl-seconds: ${PAYMENT_IDEMPOTENT_TTL_SECONDS:600}
-    # 支付结果短缓存 TTL（秒）：重复请求快速返回（不含金额与终态数据）
     result-ttl-seconds: ${PAYMENT_RESULT_TTL_SECONDS:600}
-    # 支付状态（非终态）TTL（秒）：挡前端轮询
     status-ttl-seconds: ${PAYMENT_STATUS_TTL_SECONDS:3}
     rate-limit:
-      # 支付防刷单限流开关
       enabled: ${PAYMENT_RATE_LIMIT_ENABLED:true}
-      # 滑动窗口（秒）
       window-seconds: ${PAYMENT_RATE_LIMIT_WINDOW_SECONDS:60}
-      # 每窗口最大请求数
       max-requests: ${PAYMENT_RATE_LIMIT_MAX_REQUESTS:20}
-    # 第三方 token 缓存 TTL（秒）：减少换 token 请求
     alipay-token-ttl-seconds: ${PAYMENT_ALIPAY_TOKEN_TTL_SECONDS:1500}
+
 redis:
   host: 127.0.0.1
   port: 16379
@@ -138,6 +156,7 @@ redis:
       max-wait: -1ms
       max-idle: 10
       min-idle: 2
+
 redisson:
   address: redis://${redis.host}:${redis.port}
   password: root
@@ -151,6 +170,7 @@ redisson:
   retry-interval: 1000
   subscriptions-per-connection: 5
   client-name: payment-service
+
 alipay:
   app-id: ${ALIPAY_APP_ID:2021000122671234}
   merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}
@@ -163,15 +183,8 @@ alipay:
   charset: UTF-8
   format: json
   timeout: 30m
+
 springdoc:
-  api-docs:
-    enabled: false
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: false
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
   group-configs:
     - group: 'payment-manage'
       paths-to-match: '/api/v1/payment/manage/**'
@@ -179,79 +192,11 @@ springdoc:
       paths-to-match: '/api/v1/payment/query/**'
     - group: 'payment-operation'
       paths-to-match: '/api/v1/payment/operation/**'
-knife4j:
-  enable: false
-  production: false
-  basic:
-    enable: false
-  setting:
-    language: ZH_CN
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-      base-path: /actuator
-    enabled-by-default: true
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: always
-    info:
-      enabled: true
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
-  health:
-    redis:
-      enabled: true
-    db:
-      enabled: true
-    nacos:
-      enabled: true
-  info:
-    env:
-      enabled: true
-    java:
-      enabled: true
-    os:
-      enabled: true
-
-dubbo:
-  application:
-    name: ${spring.application.name}
-    qos-enable: false
-  protocol:
-    name: dubbo
-    port: -1
-  registry:
-    address: nacos://${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-    username: ${NACOS_USERNAME:nacos}
-    password: ${NACOS_PASSWORD:nacos}
-    parameters:
-      namespace: public
-      group: DEFAULT_GROUP
-  consumer:
-    check: false
-    timeout: 5000
-    retries: 0
-  provider:
-    timeout: 5000
-    retries: 0
 
 xxl:
   job:
-    enabled: ${XXL_JOB_ENABLED:true}
-    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
-    access-token: ${XXL_JOB_ACCESS_TOKEN:}
     executor:
-      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
-      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
-      ip: ${XXL_JOB_EXECUTOR_IP:}
       port: ${XXL_JOB_PORT:19086}
-      log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
-      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
 
 seata:
   enabled: false

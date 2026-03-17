@@ -1,0 +1,188 @@
+﻿spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: public
+        group: DEFAULT_GROUP
+        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
+        ip: ${NACOS_INSTANCE_IP:}
+        port: ${NACOS_INSTANCE_PORT:${server.port}}
+        ephemeral: ${NACOS_EPHEMERAL:true}
+        metadata:
+          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
+          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
+          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
+          singleton: ${SERVICE_SINGLETON:false}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+          cache-duration: PT30M
+
+app:
+  jwt:
+    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+  security:
+    api-docs-enabled: false
+    public-actuator-enabled: false
+    testenv-bypass-enabled: false
+    test-token-value: TEST_ENV_PERMANENT_TOKEN
+    cors:
+      allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
+  async:
+    enabled: true
+    common:
+      monitoring-enabled: false
+      monitoring-interval-seconds: 60
+      pre-start-core-threads: false
+      task-decorator: false
+      log-slow-tasks: true
+      slow-task-threshold-ms: 5000
+  job:
+    lock-prefix: ${APP_JOB_LOCK_PREFIX:}
+
+unified:
+  security:
+    enabled: true
+    permission:
+      refresh-interval: 300
+      cache-ttl: 1800
+      debug: false
+
+logging:
+  file:
+    path: logs
+  level:
+    com.cloud: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    auto-mapping-behavior: full
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+springdoc:
+  api-docs:
+    enabled: false
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+knife4j:
+  enable: false
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: ZH_CN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+    enabled-by-default: true
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    nacos:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+dubbo:
+  application:
+    name: ${spring.application.name}
+    qos-enable: false
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    address: nacos://${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+    username: ${NACOS_USERNAME:nacos}
+    password: ${NACOS_PASSWORD:nacos}
+    parameters:
+      namespace: public
+      group: DEFAULT_GROUP
+  consumer:
+    check: false
+    timeout: 5000
+    retries: 0
+  provider:
+    timeout: 5000
+    retries: 0
+
+xxl:
+  job:
+    enabled: ${XXL_JOB_ENABLED:true}
+    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
+    access-token: ${XXL_JOB_ACCESS_TOKEN:}
+    executor:
+      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
+      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
+      ip: ${XXL_JOB_EXECUTOR_IP:}
+      log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
+      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
+
+seata:
+  enabled: ${SEATA_ENABLED:true}
+  application-id: ${spring.application.name}
+  tx-service-group: ${SEATA_TX_SERVICE_GROUP:default_tx_group}
+  enable-auto-data-source-proxy: true
+  undo-log:
+    retention-days: ${SEATA_UNDO_LOG_RETENTION_DAYS:7}
+  data-source-proxy-mode: AT
+  service:
+    vgroup-mapping:
+      default_tx_group: ${SEATA_TX_CLUSTER:default}
+    grouplist:
+      default: ${SEATA_SERVER_ADDR:127.0.0.1:18091}
+  registry:
+    type: ${SEATA_REGISTRY_TYPE:file}
+    nacos:
+      application: ${SEATA_REGISTRY_APPLICATION:seata-server}
+      server-addr: ${SEATA_REGISTRY_SERVER_ADDR:${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}}
+      group: ${SEATA_REGISTRY_GROUP:SEATA_GROUP}
+      namespace: ${SEATA_REGISTRY_NAMESPACE:}
+      cluster: ${SEATA_TX_CLUSTER:default}
+      username: ${SEATA_REGISTRY_USERNAME:${NACOS_USERNAME:nacos}}
+      password: ${SEATA_REGISTRY_PASSWORD:${NACOS_PASSWORD:nacos}}
+

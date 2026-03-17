@@ -1,4 +1,4 @@
-package com.cloud.order.task;
+﻿package com.cloud.common.task;
 
 import com.cloud.common.annotation.DistributedLock;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -8,11 +8,13 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "seata.enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 public class SeataUndoLogCleanupXxlJob {
 
@@ -21,9 +23,15 @@ public class SeataUndoLogCleanupXxlJob {
   @Value("${seata.undo-log.retention-days:7}")
   private int retentionDays;
 
+  @Value("${app.job.lock-prefix:}")
+  private String lockPrefix;
+
+  @Value("${spring.application.name:service}")
+  private String serviceName;
+
   @XxlJob("seataUndoLogCleanJob")
   @DistributedLock(
-      key = "'xxl:order:undo-log-clean'",
+      key = "#target.lockKey()",
       waitTime = 1,
       leaseTime = 600,
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
@@ -37,4 +45,14 @@ public class SeataUndoLogCleanupXxlJob {
     XxlJobHelper.log(message);
     log.info(message);
   }
+
+  public String lockKey() {
+    String prefix = lockPrefix;
+    if (prefix == null || prefix.isBlank()) {
+      prefix = "xxl:" + serviceName;
+    }
+    return prefix + ":undo-log-clean";
+  }
 }
+
+

@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8082}
   tomcat:
     threads:
@@ -10,37 +10,28 @@ server:
 spring:
   application:
     name: user-service
-  cache:
-    type: redis
   profiles:
     active: dev
   datasource:
     type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
+  cache:
+    type: redis
   main:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
-      discovery:
+      config:
+        enabled: true
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
         namespace: public
         group: DEFAULT_GROUP
-        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
-        ip: ${NACOS_INSTANCE_IP:}
-        port: ${NACOS_INSTANCE_PORT:${server.port}}
-        ephemeral: ${NACOS_EPHEMERAL:true}
-        metadata:
-          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
-          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
-          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
-          singleton: ${SERVICE_SINGLETON:false}
-      config:
-        enabled: false
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
-        namespace: public
+        file-extension: yaml
+        shared-configs:
+          - data-id: common.yaml
+            group: DEFAULT_GROUP
+            refresh: true
         import-check:
           enabled: false
     stream:
@@ -95,55 +86,67 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
-          issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-          cache-duration: PT30M
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+
 rocketmq:
   name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
-app:
-  jwt:
-    issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
-unified:
-  security:
-    enabled: true
-    permission:
-      refresh-interval: 300
-      cache-ttl: 1800
-      debug: false
+
 logging:
   file:
-    path: logs
     name: ${logging.file.path}/user-service.log
-  level:
-    com.cloud: info
-    org.springframework.security: warn
-    org.springframework.web: warn
+
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cloud.user.module.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: true
-    lazy-loading-enabled: true
-    auto-mapping-behavior: full
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
-  global-config:
-    enable-sql-runner: true
-    db-config:
-      id-type: assign_id
-      logic-delete-field: deleted
-      logic-not-delete-value: 0
-      logic-delete-value: 1
+
+app:
+  doc:
+    title: User Service API
+    description: User, merchant, and admin endpoints
+    version: 1.1.0
+  async:
+    executors:
+      userQueryExecutor:
+        core-pool-size: 4
+        max-pool-size: 12
+        queue-capacity: 300
+        keep-alive-seconds: 60
+        thread-name-prefix: user-query-
+        rejected-execution-handler: CALLER_RUNS
+      userOperationExecutor:
+        core-pool-size: 4
+        max-pool-size: 16
+        queue-capacity: 500
+        keep-alive-seconds: 60
+        thread-name-prefix: user-operation-
+        rejected-execution-handler: CALLER_RUNS
+      userNotificationExecutor:
+        core-pool-size: 4
+        max-pool-size: 8
+        queue-capacity: 400
+        keep-alive-seconds: 60
+        thread-name-prefix: user-notification-
+        rejected-execution-handler: CALLER_RUNS
+      userStatisticsExecutor:
+        core-pool-size: 4
+        max-pool-size: 5
+        queue-capacity: 100
+        keep-alive-seconds: 60
+        thread-name-prefix: user-statistics-
+        rejected-execution-handler: CALLER_RUNS
+      userCommonAsyncExecutor:
+        core-pool-size: 2
+        max-pool-size: 8
+        queue-capacity: 200
+        keep-alive-seconds: 60
+        thread-name-prefix: common-async-
+        rejected-execution-handler: CALLER_RUNS
+
 user:
   async:
     enabled: true
@@ -154,6 +157,7 @@ user:
   cache:
     info:
       ttl-seconds: ${USER_INFO_CACHE_TTL_SECONDS:1800}
+
 minio:
   endpoint: ${MINIO_ENDPOINT:}
   access-key: ${MINIO_ACCESS_KEY:}
@@ -162,27 +166,13 @@ minio:
   cert-bucket-name: ${MINIO_CERT_BUCKET_NAME:cloud-shop-certs}
   cert-presign-expire-seconds: ${MINIO_CERT_PRESIGN_EXPIRE_SECONDS:3600}
   public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
+
 xxl:
   job:
-    enabled: ${XXL_JOB_ENABLED:true}
-    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
-    access-token: ${XXL_JOB_ACCESS_TOKEN:}
     executor:
-      appname: ${XXL_JOB_APPNAME:${spring.application.name}}
-      address: ${XXL_JOB_EXECUTOR_ADDRESS:}
-      ip: ${XXL_JOB_EXECUTOR_IP:}
       port: ${XXL_JOB_PORT:19082}
-      log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
-      log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
+
 springdoc:
-  api-docs:
-    enabled: false
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: false
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
   group-configs:
     - group: 'user'
       paths-to-match: '/**'
@@ -193,55 +183,15 @@ springdoc:
     - group: 'admin'
       paths-to-match: '/**'
       packages-to-scan: com.cloud.user.controller
+
 knife4j:
-  enable: false
-  production: false
-  basic:
-    enable: false
-  setting:
-    language: ZH_CN
+  insight:
+    service-name: ${spring.application.name}
+
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-      base-path: /actuator
-    enabled-by-default: true
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: always
-    info:
-      enabled: true
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
   health:
     elasticsearch:
       enabled: false
-
-dubbo:
-  application:
-    name: ${spring.application.name}
-    qos-enable: false
-  protocol:
-    name: dubbo
-    port: -1
-  registry:
-    address: nacos://${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-    username: ${NACOS_USERNAME:nacos}
-    password: ${NACOS_PASSWORD:nacos}
-    parameters:
-      namespace: public
-      group: DEFAULT_GROUP
-  consumer:
-    check: false
-    timeout: 5000
-    retries: 0
-  provider:
-    timeout: 5000
-    retries: 0
 
 seata:
   enabled: false

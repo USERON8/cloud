@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.cloud</groupId>
         <artifactId>cloud</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -17,6 +17,7 @@
         <module>common-core</module>
         <module>common-domain</module>
         <module>common-async</module>
+        <module>common-minio</module>
         <module>common-web</module>
         <module>common-db</module>
         <module>common-security</module>

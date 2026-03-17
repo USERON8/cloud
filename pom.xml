@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.cloud</groupId>
     <artifactId>cloud</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.1.0</version>
 
 
     <name>cloud</name>
@@ -28,7 +28,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Encoding-safe comment -->
-        <project.version>0.0.1-SNAPSHOT</project.version>
+        <project.version>1.1.0</project.version>
         <spring-boot.version>3.5.3</spring-boot.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.0.0.0-preview</spring-cloud-alibaba.version>
@@ -264,6 +264,11 @@
             <dependency>
                 <groupId>com.cloud</groupId>
                 <artifactId>common-async</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloud</groupId>
+                <artifactId>common-minio</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

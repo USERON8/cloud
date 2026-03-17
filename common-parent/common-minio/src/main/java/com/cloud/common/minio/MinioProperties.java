@@ -1,15 +1,11 @@
-package com.cloud.user.config;
+﻿package com.cloud.common.minio;
 
-import io.minio.MinioClient;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 @Data
-@Configuration
 @ConfigurationProperties(prefix = "minio")
-public class MinioConfiguration {
+public class MinioProperties {
 
   private String endpoint;
 
@@ -24,9 +20,5 @@ public class MinioConfiguration {
   private Integer certPresignExpireSeconds;
 
   private String publicEndpoint;
-
-  @Bean
-  public MinioClient minioClient() {
-    return MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
-  }
 }
+

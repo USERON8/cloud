@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: ${SERVER_PORT:8080}
   tomcat:
     threads:
@@ -10,8 +10,6 @@ server:
 spring:
   application:
     name: gateway
-  cache:
-    type: none
   profiles:
     active: dev
     include: route
@@ -20,29 +18,18 @@ spring:
     web-application-type: reactive
   cloud:
     nacos:
-      discovery:
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
-        namespace: public
-        group: DEFAULT_GROUP
-        prefer-ip-address: ${NACOS_PREFER_IP_ADDRESS:true}
-        ip: ${NACOS_INSTANCE_IP:}
-        port: ${NACOS_INSTANCE_PORT:${server.port}}
-        ephemeral: ${NACOS_EPHEMERAL:true}
-        metadata:
-          instance-id: ${SERVICE_INSTANCE_ID:${spring.application.name}:${random.uuid}}
-          deploy-mode: ${SERVICE_DEPLOY_MODE:multi}
-          traffic-role: ${SERVICE_TRAFFIC_ROLE:business}
-          singleton: ${SERVICE_SINGLETON:false}
       config:
-        enabled: false
+        enabled: true
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
-        username: nacos
-        password: nacos
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
         namespace: public
-        file-extension: yaml
         group: DEFAULT_GROUP
+        file-extension: yaml
+        shared-configs:
+          - data-id: common.yaml
+            group: DEFAULT_GROUP
+            refresh: true
         import-check:
           enabled: false
     gateway:
@@ -84,11 +71,6 @@ spring:
     resources:
       static-locations: classpath:/static/
   security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}
-          issuer-uri: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
     headers:
       content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
       xss-protection-enabled: true
@@ -97,45 +79,60 @@ spring:
       cache-control: true
       content-type-options: true
       referrer-policy: "no-referrer-when-downgrade"
+
 logging:
   file:
-    path: logs
     name: ${logging.file.path}/gateway.log
   level:
-    com.cloud: INFO
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
-    org.springframework.security: WARN
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus,gateway
-      base-path: /actuator
-    enabled-by-default: true
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: always
-    info:
-      enabled: true
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
   health:
     redis:
       enabled: false
-    nacos:
-      enabled: true
-  info:
-    env:
-      enabled: true
-    java:
-      enabled: true
-    os:
-      enabled: true
+
 app:
+  doc:
+    title: Gateway API
+    description: API gateway endpoints
+    version: 1.1.0
+  async:
+    executors:
+      gatewayRouteExecutor:
+        core-pool-size: 4
+        max-pool-size: 16
+        queue-capacity: 500
+        keep-alive-seconds: 60
+        thread-name-prefix: gateway-route-
+        rejected-execution-handler: CALLER_RUNS
+      gatewayMonitorExecutor:
+        core-pool-size: 1
+        max-pool-size: 3
+        queue-capacity: 100
+        keep-alive-seconds: 60
+        thread-name-prefix: gateway-monitor-
+        rejected-execution-handler: CALLER_RUNS
+        wait-for-tasks-to-complete-on-shutdown: true
+        await-termination-seconds: 30
+      gatewayLogExecutor:
+        core-pool-size: 2
+        max-pool-size: 4
+        queue-capacity: 1000
+        keep-alive-seconds: 120
+        thread-name-prefix: gateway-log-
+        rejected-execution-handler: DISCARD_OLDEST
+      gatewayStatisticsExecutor:
+        core-pool-size: 1
+        max-pool-size: 3
+        queue-capacity: 2000
+        keep-alive-seconds: 180
+        thread-name-prefix: gateway-statistics-
+        rejected-execution-handler: DISCARD_OLDEST
   sentinel:
     gateway:
       enabled: ${APP_SENTINEL_GATEWAY_ENABLED:true}
@@ -146,7 +143,6 @@ app:
       search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-api-v2}
       route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
   security:
-    api-docs-enabled: false
     enable-test-api: false
     signature:
       enabled: ${APP_SECURITY_SIGNATURE_ENABLED:true}
@@ -202,12 +198,7 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 3
 
 knife4j:
-  enable: false
-  production: false
-  basic:
-    enable: false
   setting:
-    language: ZH_CN
     enable-version: true
     enable-swagger-models: true
     swagger-model-name: API Models
