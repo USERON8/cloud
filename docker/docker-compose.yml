@@ -418,6 +418,10 @@ services:
       SW_AGENT_NAME: product-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:19000}
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
@@ -486,6 +490,7 @@ services:
       SW_AGENT_NAME: payment-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      ROCKETMQ_PRODUCER_GROUP: payment-service-producer
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
@@ -520,6 +525,7 @@ services:
       SW_AGENT_NAME: search-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SEATA_ENABLED: "false"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
