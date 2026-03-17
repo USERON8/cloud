@@ -46,4 +46,3 @@ public class Knife4jAutoConfiguration extends BaseKnife4jConfig {
     return "1.0.0";
   }
 }
-

@@ -15,4 +15,3 @@ public class DocProperties {
 
   private String version = "1.0.0";
 }
-

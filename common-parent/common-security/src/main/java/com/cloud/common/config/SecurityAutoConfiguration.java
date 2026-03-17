@@ -24,4 +24,3 @@ public class SecurityAutoConfiguration {
     return new UnifiedSecurityExpressions();
   }
 }
-

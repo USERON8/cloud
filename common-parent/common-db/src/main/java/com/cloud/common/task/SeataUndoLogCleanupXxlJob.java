@@ -54,5 +54,3 @@ public class SeataUndoLogCleanupXxlJob {
     return prefix + ":undo-log-clean";
   }
 }
-
-
