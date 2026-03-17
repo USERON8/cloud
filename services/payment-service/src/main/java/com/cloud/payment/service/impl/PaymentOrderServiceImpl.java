@@ -7,6 +7,7 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.SystemException;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
@@ -22,6 +23,7 @@ import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +36,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final PaymentCallbackLogMapper paymentCallbackLogMapper;
   private final PaymentCompensationService paymentCompensationService;
   private final OrderStatusRemoteService orderStatusRemoteService;
-  private final PaymentSuccessTxProducer paymentSuccessTxProducer;
+  private final ObjectProvider<PaymentSuccessTxProducer> paymentSuccessTxProducerProvider;
   private final TradeMetrics tradeMetrics;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
 
@@ -206,7 +208,11 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             .paymentMethod(order.getChannel())
             .transactionNo(command.getProviderTxnNo())
             .build();
-    paymentSuccessTxProducer.send(event);
+    PaymentSuccessTxProducer producer = paymentSuccessTxProducerProvider.getIfAvailable();
+    if (producer == null) {
+      throw new SystemException("rocketmq template is not configured for tx producer");
+    }
+    producer.send(event);
   }
 
   @Override

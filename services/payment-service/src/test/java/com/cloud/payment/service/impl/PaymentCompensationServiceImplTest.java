@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentCompensationServiceImplTest {
@@ -41,11 +42,14 @@ class PaymentCompensationServiceImplTest {
 
   @Mock private PaymentSecurityCacheService paymentSecurityCacheService;
 
+  @Mock private ObjectProvider<PaymentSuccessTxProducer> paymentSuccessTxProducerProvider;
+
   private PaymentCompensationServiceImpl paymentCompensationService;
 
   @BeforeEach
   void setUp() {
     PaymentCompensationProperties properties = new PaymentCompensationProperties();
+    when(paymentSuccessTxProducerProvider.getIfAvailable()).thenReturn(paymentSuccessTxProducer);
     paymentCompensationService =
         new PaymentCompensationServiceImpl(
             paymentOrderMapper,
@@ -53,7 +57,7 @@ class PaymentCompensationServiceImplTest {
             properties,
             List.of(providerGateway),
             paymentMessageProducer,
-            paymentSuccessTxProducer,
+            paymentSuccessTxProducerProvider,
             tradeMetrics,
             paymentSecurityCacheService);
   }
