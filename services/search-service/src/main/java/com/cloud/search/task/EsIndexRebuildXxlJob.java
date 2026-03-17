@@ -129,9 +129,7 @@ public class EsIndexRebuildXxlJob {
       return supplier.get();
     } catch (RpcException ex) {
       throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-          "product-service unavailable when " + action,
-          ex);
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "product-service unavailable when " + action, ex);
     }
   }
 }

@@ -329,6 +329,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
     return successCount;
   }
+
   @Override
   @Transactional(rollbackFor = Exception.class)
   @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")

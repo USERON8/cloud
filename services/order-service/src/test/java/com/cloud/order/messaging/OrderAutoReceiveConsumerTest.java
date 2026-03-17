@@ -13,12 +13,12 @@ import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.rocketmq.common.message.MessageExt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.apache.rocketmq.common.message.MessageExt;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,8 +37,7 @@ class OrderAutoReceiveConsumerTest {
   void setUp() {
     objectMapper = new ObjectMapper();
     consumer = new OrderAutoReceiveConsumer(orderService, orderSubMapper, objectMapper);
-    ReflectionTestUtils.setField(
-        consumer, "messageIdempotencyService", messageIdempotencyService);
+    ReflectionTestUtils.setField(consumer, "messageIdempotencyService", messageIdempotencyService);
   }
 
   @Test

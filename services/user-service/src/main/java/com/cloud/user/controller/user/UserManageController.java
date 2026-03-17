@@ -39,8 +39,8 @@ public class UserManageController {
       @PathVariable @Parameter(description = "User ID") Long id,
       @RequestBody
           @Parameter(description = "User payload")
-      @Valid
-      @NotNull(message = "user payload is required")
+          @Valid
+          @NotNull(message = "user payload is required")
           UserUpsertRequestDTO requestDTO,
       Authentication authentication) {
     Boolean result = userService.updateUser(id, requestDTO);
@@ -64,7 +64,7 @@ public class UserManageController {
   public Result<Boolean> deleteBatch(
       @RequestBody
           @Parameter(description = "User ID array")
-      @NotNull(message = "user ids are required")
+          @NotNull(message = "user ids are required")
           Long[] ids,
       Authentication authentication) {
     BatchValidationUtils.validateIdArray(ids, "Batch delete users");
@@ -79,8 +79,8 @@ public class UserManageController {
   public Result<Boolean> updateBatch(
       @RequestBody
           @Parameter(description = "User payload list")
-      @Valid
-      @NotNull(message = "user payload list is required")
+          @Valid
+          @NotNull(message = "user payload list is required")
           List<UserUpsertRequestDTO> requestDTOList,
       Authentication authentication) {
     BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");

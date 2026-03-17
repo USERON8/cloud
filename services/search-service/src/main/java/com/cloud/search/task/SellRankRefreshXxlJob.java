@@ -77,9 +77,7 @@ public class SellRankRefreshXxlJob {
       return supplier.get();
     } catch (RpcException ex) {
       throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-          "order-service unavailable when " + action,
-          ex);
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "order-service unavailable when " + action, ex);
     }
   }
 }

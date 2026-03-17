@@ -150,8 +150,7 @@ public class UserAddressController {
       Authentication authentication) {
     if (pageDTO.getUserId() != null
         && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "no permission to query this user's addresses");
+      throw new BizException(ResultCode.FORBIDDEN, "no permission to query this user's addresses");
     }
     if (pageDTO.getUserId() == null && !SecurityPermissionUtils.isAdmin(authentication)) {
       throw new BizException(ResultCode.FORBIDDEN, "no permission to query all addresses");

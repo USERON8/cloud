@@ -51,8 +51,7 @@ public class PaymentOrderController {
       throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
     if (!canReadOrder(authentication, order)) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to query other user's payment order");
+      throw new BizException(ResultCode.FORBIDDEN, "forbidden to query other user's payment order");
     }
     return Result.success(order);
   }

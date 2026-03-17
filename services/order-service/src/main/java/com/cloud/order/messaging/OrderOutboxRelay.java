@@ -58,7 +58,9 @@ public class OrderOutboxRelay {
             event.getEventType(),
             ex);
         if (meterRegistry != null) {
-          meterRegistry.counter("outbox.relay.failure", "eventType", event.getEventType()).increment();
+          meterRegistry
+              .counter("outbox.relay.failure", "eventType", event.getEventType())
+              .increment();
         }
       }
 

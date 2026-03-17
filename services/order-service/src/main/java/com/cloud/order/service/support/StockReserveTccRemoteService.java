@@ -2,9 +2,9 @@ package com.cloud.order.service.support;
 
 import com.cloud.api.stock.StockReserveTccApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.RemoteException;
-import com.cloud.common.enums.ResultCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
@@ -44,7 +44,8 @@ public class StockReserveTccRemoteService {
     if (businessException != null) {
       return businessException;
     }
-    return new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock reserve tcc failed", ex);
+    return new RemoteException(
+        ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock reserve tcc failed", ex);
   }
 
   private BusinessException findBusinessException(Throwable throwable) {

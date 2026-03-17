@@ -102,7 +102,7 @@ public class MerchantController {
   public Result<MerchantDTO> getMerchantById(
       @Parameter(description = "Merchant ID")
           @PathVariable
-      @NotNull(message = "merchant id is required")
+          @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
       Authentication authentication) {
@@ -118,9 +118,9 @@ public class MerchantController {
   @Operation(summary = "Create merchant", description = "Create a merchant")
   public Result<MerchantDTO> createMerchant(
       @Parameter(description = "Merchant payload")
-      @RequestBody
-      @Valid
-      @NotNull(message = "merchant payload is required")
+          @RequestBody
+          @Valid
+          @NotNull(message = "merchant payload is required")
           MerchantUpsertRequestDTO requestDTO) {
     MerchantDTO created = merchantService.createMerchant(requestDTO);
     return Result.success("merchant created", created);
@@ -134,9 +134,9 @@ public class MerchantController {
   public Result<Boolean> updateMerchant(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
       @Parameter(description = "Merchant payload")
-      @RequestBody
-      @Valid
-      @NotNull(message = "merchant payload is required")
+          @RequestBody
+          @Valid
+          @NotNull(message = "merchant payload is required")
           MerchantUpsertRequestDTO requestDTO,
       Authentication authentication) {
     boolean result = merchantService.updateMerchant(id, requestDTO);

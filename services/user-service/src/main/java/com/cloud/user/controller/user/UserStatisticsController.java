@@ -52,8 +52,7 @@ public class UserStatisticsController {
   public Result<Map<LocalDate, Long>> getRegistrationTrend(
       @RequestParam @Parameter(description = "Start date") LocalDate startDate,
       @RequestParam @Parameter(description = "End date") LocalDate endDate) {
-    Map<LocalDate, Long> trend =
-        userStatisticsService.getUserRegistrationTrend(startDate, endDate);
+    Map<LocalDate, Long> trend = userStatisticsService.getUserRegistrationTrend(startDate, endDate);
     return Result.success("query successful", trend);
   }
 

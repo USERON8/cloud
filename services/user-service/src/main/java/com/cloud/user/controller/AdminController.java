@@ -50,7 +50,7 @@ public class AdminController {
       @Parameter(description = "Page size")
           @RequestParam(defaultValue = "10")
           @Min(value = 1, message = "size must be greater than 0")
-      @Max(value = 100, message = "size must be less than or equal to 100")
+          @Max(value = 100, message = "size must be less than or equal to 100")
           Integer size,
       Authentication authentication) {
     Page<AdminDTO> pageResult = adminService.getAdminsPage(page, size);
@@ -69,7 +69,7 @@ public class AdminController {
   public Result<AdminDTO> getAdminById(
       @Parameter(description = "Admin ID")
           @PathVariable
-      @NotNull(message = "admin id cannot be null")
+          @NotNull(message = "admin id cannot be null")
           @Positive(message = "admin id must be positive")
           Long id,
       Authentication authentication) {
@@ -86,8 +86,8 @@ public class AdminController {
   public Result<AdminDTO> createAdmin(
       @Parameter(description = "Admin payload")
           @RequestBody
-      @Valid
-      @NotNull(message = "admin payload cannot be null")
+          @Valid
+          @NotNull(message = "admin payload cannot be null")
           AdminUpsertRequestDTO requestDTO) {
     AdminDTO created = adminService.createAdmin(requestDTO);
     return Result.success("Admin created", created);
@@ -99,9 +99,9 @@ public class AdminController {
   public Result<Boolean> updateAdmin(
       @Parameter(description = "Admin ID") @PathVariable Long id,
       @Parameter(description = "Admin payload")
-      @RequestBody
-      @Valid
-      @NotNull(message = "admin payload cannot be null")
+          @RequestBody
+          @Valid
+          @NotNull(message = "admin payload cannot be null")
           AdminUpsertRequestDTO requestDTO,
       Authentication authentication) {
     boolean result = adminService.updateAdmin(id, requestDTO);

@@ -59,12 +59,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
         continue;
       }
       if (applyOrderAction(
-          orderId,
-          authentication,
-          action,
-          shippingCompany,
-          trackingNumber,
-          cancelReason)) {
+          orderId, authentication, action, shippingCompany, trackingNumber, cancelReason)) {
         success += 1;
       }
     }

@@ -1,8 +1,8 @@
 package com.cloud.user.controller.user;
 
-import com.cloud.common.messaging.event.UserNotificationEvent;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.messaging.event.UserNotificationEvent;
 import com.cloud.common.result.Result;
 import com.cloud.user.messaging.UserNotificationProducer;
 import com.cloud.user.module.dto.UserNotificationBatchRequestDTO;

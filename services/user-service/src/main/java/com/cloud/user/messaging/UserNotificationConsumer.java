@@ -89,16 +89,19 @@ public class UserNotificationConsumer extends AbstractMqConsumer<UserNotificatio
             case UserNotificationEvent.TYPE_ACTIVATION -> {
               if (event.getUserId() == null || event.getToken() == null) {
                 log.warn(
-                    "Notification event missing activation payload: eventId={}", event.getEventId());
+                    "Notification event missing activation payload: eventId={}",
+                    event.getEventId());
                 recordInvalid(eventId, "missing userId or token");
                 yield true;
               }
-              yield userNotificationService.sendActivationEmail(event.getUserId(), event.getToken());
+              yield userNotificationService.sendActivationEmail(
+                  event.getUserId(), event.getToken());
             }
             case UserNotificationEvent.TYPE_STATUS_CHANGE -> {
               if (event.getUserId() == null) {
                 log.warn(
-                    "Notification event missing status change payload: eventId={}", event.getEventId());
+                    "Notification event missing status change payload: eventId={}",
+                    event.getEventId());
                 recordInvalid(eventId, "missing userId");
                 yield true;
               }

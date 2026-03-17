@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.exception.BusinessException;
 import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
 import com.cloud.order.dto.CreateMainOrderRequest;
@@ -33,8 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -409,8 +409,7 @@ public class OrderCreateTccAction {
     }
 
     SpuDetailVO spuDetail =
-        invokeProductService(
-            "get spu by id", () -> productDubboApi.getSpuById(request.getSpuId()));
+        invokeProductService("get spu by id", () -> productDubboApi.getSpuById(request.getSpuId()));
     if (spuDetail == null || spuDetail.getMerchantId() == null) {
       throw new BusinessException("spu not found for direct checkout");
     }
@@ -464,8 +463,7 @@ public class OrderCreateTccAction {
         continue;
       }
       SpuDetailVO detail =
-          invokeProductService(
-              "get spu by id", () -> productDubboApi.getSpuById(item.getSpuId()));
+          invokeProductService("get spu by id", () -> productDubboApi.getSpuById(item.getSpuId()));
       if (detail != null) {
         result.put(item.getSpuId(), detail);
       }
@@ -589,9 +587,7 @@ public class OrderCreateTccAction {
       return supplier.get();
     } catch (RpcException ex) {
       throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-          "product-service unavailable when " + action,
-          ex);
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "product-service unavailable when " + action, ex);
     }
   }
 }

@@ -73,8 +73,7 @@ public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> 
   }
 
   @Override
-  protected void onUnknownException(
-      MessageExt msgExt, StockRestoreEvent payload, Exception ex) {
+  protected void onUnknownException(MessageExt msgExt, StockRestoreEvent payload, Exception ex) {
     tradeMetrics.incrementMessageConsume("stock_restore", "retry");
   }
 
