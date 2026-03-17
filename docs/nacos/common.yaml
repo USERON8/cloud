@@ -30,10 +30,12 @@ app:
   security:
     api-docs-enabled: false
     public-actuator-enabled: false
-    testenv-bypass-enabled: false
+    testenv-bypass-enabled: true
     test-token-value: TEST_ENV_PERMANENT_TOKEN
     cors:
       allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
+  mybatis:
+    illegal-sql-enabled: false
   async:
     enabled: true
     common:
@@ -153,7 +155,7 @@ dubbo:
 xxl:
   job:
     enabled: ${XXL_JOB_ENABLED:true}
-    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:18089/xxl-job-admin}
+    admin-addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://cloud-xxl-job-admin:8080/xxl-job-admin}
     access-token: ${XXL_JOB_ACCESS_TOKEN:}
     executor:
       appname: ${XXL_JOB_APPNAME:${spring.application.name}}
