@@ -1,9 +1,9 @@
 {
-  "name": "refundSaga",
-  "comment": "Refund saga for after-sale process",
-  "version": "1.0.0",
-  "startState": "refundApply",
-  "states": {
+  "Name": "refundSaga",
+  "Comment": "Refund saga for after-sale process",
+  "Version": "1.0.0",
+  "StartState": "refundApply",
+  "States": {
     "refundApply": {
       "type": "serviceTask",
       "serviceName": "orderRefundSagaService.applyRefund",
