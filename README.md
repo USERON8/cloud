@@ -1,10 +1,10 @@
-# Cloud Shop Microservices
+﻿# Cloud Shop Microservices
 Version: 1.1.0
 
 [中文](./README-zh.md)
 
-A simplified e-commerce microservices project.  
-Backend: Spring Boot + Spring Cloud Alibaba.  
+A simplified e-commerce microservices project.
+Backend: Spring Boot + Spring Cloud Alibaba.
 Frontend: UniApp (Vue 3 + TypeScript).
 
 ## Current Consistency Model
@@ -67,9 +67,9 @@ bash scripts/dev/start-all.sh --with-monitoring
 2. Database bootstrap:
 - Run `db/init/**/*.sql` first, then `db/test/**/*.sql` (optional).
 - In the current closed development phase:
-- MySQL is rebuilt on each container restart.
-- History data is not preserved.
-- Migration compatibility is not required.
+  - MySQL is rebuilt on each container restart.
+  - History data is not preserved.
+  - Migration compatibility is not required.
 
 3. Build backend:
 
@@ -120,122 +120,3 @@ pnpm --dir my-shop-uniapp build:h5
 - SkyWalking UI: `http://127.0.0.1:13001`
 - Sentinel Dashboard: `http://127.0.0.1:18718`
 
-## Druid / SkyWalking / XXL-Job
-
-- Druid is enabled with `com.alibaba.druid.pool.DruidDataSource`.
-- Transactional messaging is implemented via `outbox_event` + scheduled relay in `order-service`, `payment-service`, and `stock-service`.
-- Seata TCC (order placement) and Seata SAGA (refund) are enabled in `order-service`; `payment-service` keeps Seata disabled.
-- SkyWalking agent is stored under `docker/monitor/skywalking/agent/`.
-- `start-platform.*` / `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services.
-- Ignore paths are configured in `docker/monitor/skywalking/agent/config/apm-trace-ignore-plugin.config` (filters health check noise).
-- SkyWalking OAP telemetry is exposed for Prometheus at `http://127.0.0.1:1234/metrics`.
-- SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
-- XXL-Job executor is built in and disabled by default.
-
-## Sentinel Circuit Breaking (Gateway)
-
-- Sentinel is enabled in `gateway` and protects core v2 routes.
-- Default threshold: `80 QPS / 1s` (configurable by env vars).
-- Blocked requests return HTTP `429` with unified JSON payload.
-- Sentinel dashboard: `http://127.0.0.1:18718` (docker compose).
-
-## Service-To-Service Auth (Internal JWT)
-
-- Selected approach: OAuth2 client credentials + JWT (not mTLS).
-- Required scope/audience: `scope=internal` and `aud=internal-api` (validated by resource servers).
-- Internal client allowlist: `app.security.jwt.internal-client-ids` (default `client-service`).
-- Dubbo internal RPC is now used for service-to-service calls; `/internal/**` HTTP endpoints (if enabled) are retained for debug/regression only.
-
-## Architecture Diagrams (Mermaid)
-
-### 1) System Topology
-
-```mermaid
-flowchart LR
-    U[User / Admin] --> N[Nginx]
-    N --> G[gateway]
-    G --> A[auth-service]
-    G --> US[user-service]
-    G --> OS[order-service]
-    G --> PS[product-service]
-    G --> SS[stock-service]
-    G --> PAY[payment-service]
-    G --> SE[search-service]
-```
-
-### 2) Order Main Flow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant GW as Gateway
-    participant O as order-service
-    participant OB as Outbox Relay
-    participant S as stock-service
-    participant P as payment-service
-    participant MQ as RocketMQ
-
-    C->>GW: Create order
-    GW->>O: mainOrder + subOrders
-    O->>S: reserve(skuId, qty)
-    O->>OB: write outbox_event
-    OB->>MQ: publish order.created
-    C->>GW: pay
-    GW->>P: create payment
-    P->>MQ: send payment.paid (tx)
-    MQ->>O: consume payment.paid
-    O->>S: confirm reservation
-```
-
-## Directory Overview
-
-- `db/`: init/test/archive SQL
-- `docker/`: infrastructure configs
-- `tests/perf/k6/`: performance scripts
-- `docs/`: ops and troubleshooting docs
-- `docs/code-audit-2026-03-13-en.md`: 2026-03-13 backend code review & fix log (English)
-- `docs/project-closeout.md`: frozen project state and resume order
-- `docs/performance-baseline.md`: local performance ceilings, bottlenecks, and regression workflow
-- `docs/cache-strategy.md`: cache strategy, TTLs, and service-level cache map
-- `docs/transaction-strategy.md`: transaction strategy (TCC/SAGA/Outbox/RocketMQ)
-- `docs/TEST_SCRIPT_INDEX.md`: test-script entrypoint index
-- `docs/dev-startup.md`: unified startup entrypoints and common flags
-- `docs/observability-stack.md`: SkyWalking + Prometheus + Grafana setup and monitoring scope
-- `docs/seata-order-transaction.md`: Seata TCC/SAGA scope, startup prerequisites, and verification steps
-
-## Postman Import
-
-- Collection: `docs/postman/cloud-shop.postman_collection.json`
-- Environment: `docs/postman/cloud-shop.local.postman_environment.json`
-- Recommended order:
-1. Import and activate `Cloud Shop Local` environment
-2. Import the collection
-3. Run `Auth/Login` first to auto-fill `accessToken` and `refreshToken`
-
-# Frontend Entry & Ops Panels
-
-## Frontend Entry
-
-- Nginx deploy: `http://127.0.0.1:18080`
-- Vite dev: `http://127.0.0.1:5173`
-
-## Ops Panels / Management Consoles
-
-- Gateway API Docs: `http://127.0.0.1:18080/doc.html`
-- Nacos: `http://127.0.0.1:18080/nacos`
-- RocketMQ Dashboard: `http://127.0.0.1:38082`
-- MinIO Console: `http://127.0.0.1:19001`
-- Elasticsearch: `http://127.0.0.1:19200`
-- Kibana: `http://127.0.0.1:15601`
-- Prometheus: `http://127.0.0.1:19099`
-- Grafana: `http://127.0.0.1:13000`
-- SkyWalking UI: `http://127.0.0.1:13001`
-
-## Performance Baseline
-
-- See `docs/performance-baseline.md` for:
-- Hot data cache strategy
-- Timeout control baseline
-- Connection/thread/queue capacity planning
-- Async model (MQ + `@Async`)
-- MySQL index rules
