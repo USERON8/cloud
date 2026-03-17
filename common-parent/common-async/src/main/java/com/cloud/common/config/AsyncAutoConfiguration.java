@@ -48,4 +48,3 @@ public class AsyncAutoConfiguration implements AsyncConfigurer, ApplicationConte
     this.applicationContext = applicationContext;
   }
 }
-

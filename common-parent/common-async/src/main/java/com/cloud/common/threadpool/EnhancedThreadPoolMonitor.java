@@ -50,10 +50,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
           String statusIcon = getStatusIcon(info.getStatus());
           log.debug(
               "线程池状态: {} {} poolUsage={:.1f}% queueUsage={:.1f}%",
-              name,
-              statusIcon,
-              info.getPoolUsageRate(),
-              info.getQueueUsageRate());
+              name, statusIcon, info.getPoolUsageRate(), info.getQueueUsageRate());
         });
   }
 
@@ -73,15 +70,13 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
               healthStatus.addWarning(
                   name,
                   String.format(
-                      "线程池使用率过高: %.1f%% > %.1f%%",
-                      info.getPoolUsageRate(), usageThreshold));
+                      "线程池使用率过高: %.1f%% > %.1f%%", info.getPoolUsageRate(), usageThreshold));
             }
             if (info.getQueueUsageRate() > queueThreshold) {
               healthStatus.addWarning(
                   name,
                   String.format(
-                      "线程池队列使用率过高: %.1f%% > %.1f%%",
-                      info.getQueueUsageRate(), queueThreshold));
+                      "线程池队列使用率过高: %.1f%% > %.1f%%", info.getQueueUsageRate(), queueThreshold));
             }
           });
     }
@@ -118,9 +113,7 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
             if (usageDiff > 20) {
               log.warn(
                   "线程池使用率变化较大: {} {:.1f}% -> {:.1f}%",
-                  name,
-                  lastInfo.getPoolUsageRate(),
-                  currentInfo.getPoolUsageRate());
+                  name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
             }
           }
         });
@@ -131,29 +124,11 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     String newIcon = getStatusIcon(newStatus);
 
     if ("CRITICAL".equals(newStatus)) {
-      log.error(
-          "线程池状态变更: {} {}({}) -> {}({})",
-          poolName,
-          oldIcon,
-          oldStatus,
-          newIcon,
-          newStatus);
+      log.error("线程池状态变更: {} {}({}) -> {}({})", poolName, oldIcon, oldStatus, newIcon, newStatus);
     } else if ("WARNING".equals(newStatus)) {
-      log.warn(
-          "线程池状态变更: {} {}({}) -> {}({})",
-          poolName,
-          oldIcon,
-          oldStatus,
-          newIcon,
-          newStatus);
+      log.warn("线程池状态变更: {} {}({}) -> {}({})", poolName, oldIcon, oldStatus, newIcon, newStatus);
     } else if ("HEALTHY".equals(newStatus) && !"HEALTHY".equals(oldStatus)) {
-      log.info(
-          "线程池状态恢复: {} {}({}) -> {}({})",
-          poolName,
-          oldIcon,
-          oldStatus,
-          newIcon,
-          newStatus);
+      log.info("线程池状态恢复: {} {}({}) -> {}({})", poolName, oldIcon, oldStatus, newIcon, newStatus);
     }
   }
 
@@ -276,4 +251,3 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     }
   }
 }
-

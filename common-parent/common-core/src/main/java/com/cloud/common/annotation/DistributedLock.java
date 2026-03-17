@@ -52,4 +52,3 @@ public @interface DistributedLock {
     FAIL_FAST
   }
 }
-
