@@ -64,8 +64,6 @@ class OrderServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    when(orderRefundSagaCoordinatorProvider.getIfAvailable())
-        .thenReturn(orderRefundSagaCoordinator);
     orderService =
         new OrderServiceImpl(
             orderMainMapper,
