@@ -1,4 +1,4 @@
-﻿package com.cloud.common.minio;
+package com.cloud.common.minio;
 
 import io.minio.MinioClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

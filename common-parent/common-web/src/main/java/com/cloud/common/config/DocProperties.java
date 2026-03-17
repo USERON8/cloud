@@ -1,4 +1,4 @@
-﻿package com.cloud.common.config;
+package com.cloud.common.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

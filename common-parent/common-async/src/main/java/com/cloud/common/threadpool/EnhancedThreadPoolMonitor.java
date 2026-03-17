@@ -1,4 +1,4 @@
-﻿package com.cloud.common.threadpool;
+package com.cloud.common.threadpool;
 
 import com.cloud.common.config.properties.DynamicAsyncProperties;
 import io.micrometer.core.instrument.MeterRegistry;

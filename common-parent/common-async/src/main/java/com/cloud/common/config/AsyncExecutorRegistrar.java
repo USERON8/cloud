@@ -1,4 +1,4 @@
-﻿package com.cloud.common.config;
+package com.cloud.common.config;
 
 import com.cloud.common.config.properties.AsyncProperties;
 import com.cloud.common.config.properties.AsyncProperties.ThreadPoolConfig;

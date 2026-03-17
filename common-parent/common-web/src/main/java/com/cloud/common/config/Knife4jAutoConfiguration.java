@@ -1,4 +1,4 @@
-﻿package com.cloud.common.config;
+package com.cloud.common.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

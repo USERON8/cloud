@@ -1,4 +1,4 @@
-﻿package com.cloud.common.task;
+package com.cloud.common.task;
 
 import com.cloud.common.annotation.DistributedLock;
 import com.xxl.job.core.context.XxlJobHelper;

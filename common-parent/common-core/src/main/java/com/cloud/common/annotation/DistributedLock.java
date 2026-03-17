@@ -1,4 +1,4 @@
-﻿package com.cloud.common.annotation;
+package com.cloud.common.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

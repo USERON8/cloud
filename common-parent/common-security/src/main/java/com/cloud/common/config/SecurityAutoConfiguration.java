@@ -1,4 +1,4 @@
-﻿package com.cloud.common.config;
+package com.cloud.common.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
