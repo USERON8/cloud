@@ -15,10 +15,11 @@ class ResourceServerConfigContractTest {
   @Test
   void searchRoutesShouldRemainPublicBeforeGenericApiMatcher() throws IOException {
     String source = Files.readString(CONFIG);
+    String normalized = source.replaceAll("\\s+", "");
 
-    int searchIndex = source.indexOf(".pathMatchers(\"/api/search/**\").permitAll()");
-    int productViewIndex = source.indexOf(".pathMatchers(\"/api/product/*/view\").permitAll()");
-    int anyIndex = source.indexOf(".anyExchange().authenticated()");
+    int searchIndex = normalized.indexOf(".pathMatchers(\"/api/search/**\").permitAll()");
+    int productViewIndex = normalized.indexOf(".pathMatchers(\"/api/product/*/view\").permitAll()");
+    int anyIndex = normalized.indexOf(".anyExchange().authenticated()");
 
     assertThat(searchIndex).isGreaterThan(-1);
     assertThat(productViewIndex).isGreaterThan(-1);

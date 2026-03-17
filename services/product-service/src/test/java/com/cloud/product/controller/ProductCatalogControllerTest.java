@@ -1,6 +1,7 @@
 package com.cloud.product.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,6 +10,8 @@ import com.cloud.common.domain.dto.product.SkuDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.product.service.ProductCatalogService;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -31,10 +34,13 @@ class ProductCatalogControllerTest {
   void createSpuShouldRejectForeignMerchantForMerchantUser() {
     ProductCatalogController controller = new ProductCatalogController(productCatalogService);
 
-    var result =
-        controller.createSpu(requestWithMerchant(200L), authentication("100", "ROLE_MERCHANT"));
-
-    assertThat(result.getCode()).isEqualTo(403);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () ->
+                controller.createSpu(
+                    requestWithMerchant(200L), authentication("100", "ROLE_MERCHANT")));
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
   }
 
   @Test
@@ -44,11 +50,13 @@ class ProductCatalogControllerTest {
     when(productCatalogService.getSpuById(11L)).thenReturn(existing);
 
     ProductCatalogController controller = new ProductCatalogController(productCatalogService);
-    var result =
-        controller.updateSpu(
-            11L, requestWithMerchant(100L), authentication("100", "ROLE_MERCHANT"));
-
-    assertThat(result.getCode()).isEqualTo(403);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () ->
+                controller.updateSpu(
+                    11L, requestWithMerchant(100L), authentication("100", "ROLE_MERCHANT")));
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
   }
 
   @Test

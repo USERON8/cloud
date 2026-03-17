@@ -1,9 +1,12 @@
 package com.cloud.payment.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.util.Arrays;
@@ -47,10 +50,11 @@ class PaymentOrderControllerTest {
 
     PaymentOrderController controller =
         new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
-    var result = controller.getPaymentOrderByNo("PAY-2", authentication("99", "ROLE_USER"));
-
-    assertThat(result.getCode()).isEqualTo(403);
-    assertThat(result.getData()).isNull();
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () -> controller.getPaymentOrderByNo("PAY-2", authentication("99", "ROLE_USER")));
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
   }
 
   @Test
