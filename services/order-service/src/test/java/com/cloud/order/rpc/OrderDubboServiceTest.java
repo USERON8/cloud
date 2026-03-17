@@ -4,11 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
-import com.cloud.order.entity.OrderMain;
-import com.cloud.order.entity.OrderSub;
-import com.cloud.order.mapper.OrderItemMapper;
-import com.cloud.order.mapper.OrderMainMapper;
-import com.cloud.order.mapper.OrderSubMapper;
+import com.cloud.order.service.OrderQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,22 +14,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OrderDubboServiceTest {
 
-  @Mock private OrderMainMapper orderMainMapper;
-
-  @Mock private OrderSubMapper orderSubMapper;
-
-  @Mock private OrderItemMapper orderItemMapper;
+  @Mock private OrderQueryService orderQueryService;
 
   private OrderDubboService orderDubboService;
 
   @BeforeEach
   void setUp() {
-    orderDubboService = new OrderDubboService(orderMainMapper, orderSubMapper, orderItemMapper);
+    orderDubboService = new OrderDubboService(orderQueryService);
   }
 
   @Test
   void getSubOrderStatus_missingMainOrder_returnsNull() {
-    when(orderMainMapper.selectActiveByOrderNo("M1")).thenReturn(null);
+    when(orderQueryService.getSubOrderStatus("M1", "S1")).thenReturn(null);
 
     OrderSubStatusVO result = orderDubboService.getSubOrderStatus("M1", "S1");
 
@@ -42,17 +34,13 @@ class OrderDubboServiceTest {
 
   @Test
   void getSubOrderStatus_success_returnsVo() {
-    OrderMain main = new OrderMain();
-    main.setId(10L);
-    main.setMainOrderNo("M2");
-    main.setUserId(5L);
-    OrderSub sub = new OrderSub();
-    sub.setId(20L);
-    sub.setSubOrderNo("S2");
-    sub.setOrderStatus("PAID");
+    OrderSubStatusVO expected = new OrderSubStatusVO();
+    expected.setMainOrderId(10L);
+    expected.setSubOrderId(20L);
+    expected.setOrderStatus("PAID");
+    expected.setUserId(5L);
 
-    when(orderMainMapper.selectActiveByOrderNo("M2")).thenReturn(main);
-    when(orderSubMapper.selectActiveByMainOrderIdAndSubOrderNo(10L, "S2")).thenReturn(sub);
+    when(orderQueryService.getSubOrderStatus("M2", "S2")).thenReturn(expected);
 
     OrderSubStatusVO result = orderDubboService.getSubOrderStatus("M2", "S2");
 
