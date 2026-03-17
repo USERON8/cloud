@@ -53,18 +53,25 @@ jobs:
 
       - name: Health check
         run: |
-          curl --retry 10 --retry-delay 5 \
-            http://127.0.0.1:18080/actuator/health
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/actuator/health; then
+              exit 0
+            fi
+            echo "gateway not ready yet, retry=${i}"
+            sleep 5
+          done
+          exit 1
 
       - name: Run E2E Tests
         env:
           E2E_ACCESS_TOKEN: ${{ secrets.E2E_ACCESS_TOKEN }}
-          E2E_BASE_URL: http://127.0.0.1:18080
+          E2E_BASE_URL: http://127.0.0.1:8080
         run: mvn test -P e2e-test
 
       - name: Collect logs on failure
         if: failure()
         run: |
+          cd docker
           docker compose logs > e2e-logs.txt
 
       - name: Upload logs
@@ -72,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-logs
-          path: e2e-logs.txt
+          path: docker/e2e-logs.txt
 
       - name: Notify on failure
         if: failure()
