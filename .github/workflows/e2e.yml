@@ -22,7 +22,24 @@ jobs:
           docker compose up -d mysql redis nacos
 
           # 等待基础服务健康
-          docker compose wait mysql redis nacos
+          for svc in mysql redis nacos; do
+            container="cloud-${svc}"
+            echo "waiting for ${container} to be healthy..."
+            for i in $(seq 1 36); do
+              status="$(docker inspect -f '{{.State.Health.Status}}' "${container}" 2>/dev/null || echo unknown)"
+              if [ "${status}" = "healthy" ]; then
+                echo "${container} is healthy"
+                break
+              fi
+              echo "${container} status=${status}, retry=${i}"
+              sleep 5
+            done
+            if [ "${status}" != "healthy" ]; then
+              echo "${container} failed to become healthy"
+              docker logs "${container}" --tail 200 || true
+              exit 1
+            fi
+          done
 
       - name: Build and start business services
         run: |
