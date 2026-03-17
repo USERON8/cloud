@@ -54,10 +54,12 @@ jobs:
       - name: Health check
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/actuator/health; then
+            status="$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/actuator/health || true)"
+            if [ "${status}" = "200" ] || [ "${status}" = "401" ] || [ "${status}" = "403" ]; then
+              echo "gateway is ready, status=${status}"
               exit 0
             fi
-            echo "gateway not ready yet, retry=${i}"
+            echo "gateway not ready yet, status=${status}, retry=${i}"
             sleep 5
           done
           exit 1
