@@ -5,7 +5,6 @@ import com.cloud.common.messaging.deadletter.JdbcDeadLetterService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -17,10 +16,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class DeadLetterServiceConfiguration {
 
   @Bean
-  @ConditionalOnBean(DataSource.class)
   @ConditionalOnMissingBean(DeadLetterService.class)
   public DeadLetterService deadLetterService(
-      DataSource dataSource, ObjectProvider<ObjectMapper> mapperProvider) {
+      ObjectProvider<DataSource> dataSourceProvider, ObjectProvider<ObjectMapper> mapperProvider) {
+    DataSource dataSource = dataSourceProvider.getIfAvailable();
+    if (dataSource == null) {
+      throw new IllegalStateException("DeadLetterService requires a DataSource");
+    }
     return new JdbcDeadLetterService(new JdbcTemplate(dataSource), mapperProvider);
   }
 }
