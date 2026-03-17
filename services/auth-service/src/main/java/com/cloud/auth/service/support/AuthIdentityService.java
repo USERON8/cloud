@@ -9,8 +9,8 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
-import com.cloud.common.exception.BusinessException;
 import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.RemoteException;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,8 @@ public class AuthIdentityService {
       return List.of();
     }
     List<Long> userIds =
-        invokeAuthService("get user ids by role code", () -> authDubboApi.getUserIdsByRoleCode(roleCode));
+        invokeAuthService(
+            "get user ids by role code", () -> authDubboApi.getUserIdsByRoleCode(roleCode));
     return userIds == null ? List.of() : userIds;
   }
 
@@ -151,7 +152,8 @@ public class AuthIdentityService {
     principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
 
-    Long userId = invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
+    Long userId =
+        invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
     if (userId == null) {
       throw new BusinessException("failed to create user");
     }
@@ -236,7 +238,8 @@ public class AuthIdentityService {
     principal.setStatus(1);
     principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
-    Long userId = invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
+    Long userId =
+        invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
     if (userId == null) {
       throw new IllegalStateException("Failed to create OAuth user principal");
     }
@@ -295,9 +298,7 @@ public class AuthIdentityService {
       return supplier.get();
     } catch (RpcException ex) {
       throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-          "auth-service unavailable when " + action,
-          ex);
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "auth-service unavailable when " + action, ex);
     }
   }
 }

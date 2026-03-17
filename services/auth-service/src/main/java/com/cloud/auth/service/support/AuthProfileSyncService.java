@@ -27,8 +27,7 @@ public class AuthProfileSyncService {
     if (userId == null) {
       return null;
     }
-    return invokeUserService(
-        "loading user profile", () -> userDubboApi.findById(userId));
+    return invokeUserService("loading user profile", () -> userDubboApi.findById(userId));
   }
 
   public UserProfileDTO createRegisteredProfile(
@@ -77,9 +76,7 @@ public class AuthProfileSyncService {
     } catch (RpcException ex) {
       log.error("User-service call failed: action={}", action, ex);
       throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-          "user-service unavailable when " + action,
-          ex);
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "user-service unavailable when " + action, ex);
     }
   }
 

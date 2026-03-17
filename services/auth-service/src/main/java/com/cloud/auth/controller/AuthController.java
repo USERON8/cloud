@@ -137,5 +137,4 @@ public class AuthController {
             String.join(", ", authorization.getAuthorizedScopes()));
     return Result.success(message);
   }
-
 }
