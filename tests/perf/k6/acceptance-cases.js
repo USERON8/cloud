@@ -55,14 +55,20 @@ const REACHABLE_GET_PARAMS = Object.freeze({
 });
 
 const DEFAULT_HEALTH_TARGETS = buildDefaultHealthTargets(BASE_URL);
+const DEFAULT_QUERY_USERNAME = String(
+  __ENV.QUERY_USERNAME || __ENV.ADMIN_USERNAME || __ENV.USERNAME || "t_admin_24001"
+).trim();
+const DEFAULT_PAYMENT_NO = String(__ENV.PAYMENT_NO || "PAY202603050001").trim();
+const DEFAULT_STOCK_SKU_ID = String(__ENV.SKU_ID || "51001").trim();
+const DEFAULT_SEARCH_KEYWORD = String(__ENV.SEARCH_KEYWORD || "demo").trim();
 
 const GATEWAY_BATCH_REQUESTS = [
-  "/api/query/users?username=admin",
+  `/api/query/users?username=${encodeURIComponent(DEFAULT_QUERY_USERNAME || "t_admin_24001")}`,
   "/api/category/tree?enabledOnly=true",
   "/api/orders",
-  "/api/payments/orders/contract-check",
-  "/api/stocks/ledger/1",
-  "/api/search/basic?keyword=demo&page=0&size=1",
+  `/api/payments/orders/${encodeURIComponent(DEFAULT_PAYMENT_NO || "PAY202603050001")}`,
+  `/api/stocks/ledger/${encodeURIComponent(DEFAULT_STOCK_SKU_ID || "51001")}`,
+  `/api/search/search?keyword=${encodeURIComponent(DEFAULT_SEARCH_KEYWORD || "demo")}&page=0&size=1`,
 ].map((path) => ["GET", `${BASE_URL}${path}`]);
 
 function getLongEnv(name, fallback = 0) {
@@ -127,44 +133,23 @@ const AUTH_PRIMARY_ROLE_ENV = String(__ENV.AUTH_PRIMARY_ROLE || "USER").toUpperC
 function buildOrderCreateBody(userId) {
   const skuId = Number(TEST_DATA.skuId || __ENV.ORDER_SKU_ID || 0);
   const spuId = Number(TEST_DATA.spuId || __ENV.ORDER_SPU_ID || 0);
-  const merchantId = Number(TEST_DATA.merchantId || __ENV.ORDER_MERCHANT_ID || 0);
   const quantity = Number(__ENV.ORDER_ITEM_QUANTITY || 1);
   const unitPrice = String(__ENV.ORDER_ITEM_PRICE || "99.99");
-  const totalPrice = String(__ENV.ORDER_ITEM_TOTAL_PRICE || unitPrice);
+  const totalAmount = String(__ENV.ORDER_TOTAL_AMOUNT || unitPrice);
+  const payableAmount = String(__ENV.ORDER_PAY_AMOUNT || totalAmount);
 
   const payload = {
-    totalAmount: __ENV.ORDER_TOTAL_AMOUNT || "99.99",
-    payableAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
+    userId: userId ? Number(userId) : undefined,
+    spuId,
+    skuId,
+    quantity,
+    totalAmount,
+    payableAmount,
     remark: "k6 acceptance case02",
-    subOrders: [
-      {
-        merchantId,
-        itemAmount: __ENV.ORDER_ITEM_AMOUNT || "99.99",
-        shippingFee: __ENV.ORDER_SHIPPING_FEE || "0.00",
-        discountAmount: __ENV.ORDER_DISCOUNT_AMOUNT || "0.00",
-        payableAmount: __ENV.ORDER_SUB_PAYABLE_AMOUNT || "99.99",
-        receiverName: __ENV.RECEIVER_NAME || "k6 user",
-        receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
-        receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
-        items: [
-          {
-            spuId,
-            skuId,
-            skuCode: __ENV.ORDER_SKU_CODE || `SKU-${skuId}`,
-            skuName: __ENV.ORDER_SKU_NAME || "k6-sku",
-            skuSnapshot: __ENV.ORDER_SKU_SNAPSHOT || "{}",
-            quantity,
-            unitPrice,
-            totalPrice,
-          },
-        ],
-      },
-    ],
+    receiverName: __ENV.RECEIVER_NAME || "k6 user",
+    receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
+    receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
   };
-
-  if (userId) {
-    payload.userId = userId;
-  }
 
   return JSON.stringify(payload);
 }
@@ -402,6 +387,31 @@ function isStockInsufficientPayload(payload) {
   );
 }
 
+function isStockInsufficientResponse(response) {
+  if (!response) {
+    return false;
+  }
+
+  const parsed = parseJsonResponse(response);
+  const code = Number(parsed?.code);
+  const message = String(parsed?.message || "");
+  const messageMatch = /insufficient|stock|库存|缺货|不足/i.test(message);
+
+  if (response.status === 200 && isResultEnvelope(response)) {
+    return isStockInsufficientPayload(parsed?.data);
+  }
+
+  if (response.status === 409) {
+    return code === 6002 || messageMatch;
+  }
+
+  if (response.status === 400) {
+    return code === 6002 || code === 502 || messageMatch;
+  }
+
+  return false;
+}
+
 
 function extractDataIdFromResponse(response) {
   const parsed = parseJsonResponse(response);
@@ -460,14 +470,14 @@ export function case02OrderCreated(data) {
   runCase("02", "order-created", () => {
     const authToken = getAuthTokenFromSetup(data);
     const authUserId = getAuthUserIdFromSetup(data);
-    if (!authToken || !TEST_DATA.merchantId || !TEST_DATA.spuId || !TEST_DATA.skuId) {
+    if (!authToken || !authUserId || !TEST_DATA.spuId || !TEST_DATA.skuId) {
       return "skipped";
     }
 
     const authParams = jsonHeaders(authToken, true);
     authParams.headers["Idempotency-Key"] = `k6-order-${__VU}-${__ITER}-${Date.now()}`;
     const createOrderBody = buildOrderCreateBody(authUserId);
-    const createOrderResponse = http.post(`${BASE_URL}/api/v2/orders`, createOrderBody, authParams);
+    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, createOrderBody, authParams);
     const createOk = isResultSuccess(createOrderResponse) && isResultEnvelope(createOrderResponse);
     if (!createOk && DEBUG_CASE02) {
       const truncatedBody = String(createOrderResponse?.body || "").slice(0, 300);
@@ -491,7 +501,7 @@ export function case02OrderCreated(data) {
 
     const authReachableParams = jsonHeaders(authToken, true);
     const [orderResponse, stockResponse] = http.batch([
-      ["GET", `${BASE_URL}/api/orders/main/${orderId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/orders/${orderId}`, null, authReachableParams],
       ["GET", `${BASE_URL}/api/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
     ]);
 
@@ -577,10 +587,7 @@ export function case04StockInsufficient(data) {
       return "skipped";
     }
 
-    const parsed = parseJsonResponse(response);
-    const stockInsufficient = response.status === 200
-      && isResultEnvelope(response)
-      && isStockInsufficientPayload(parsed?.data);
+    const stockInsufficient = isStockInsufficientResponse(response);
 
     check(response, {
       "case04 stock insufficient path": () => stockInsufficient,
