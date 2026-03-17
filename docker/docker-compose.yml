@@ -393,6 +393,7 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      SEATA_SAGA_ENABLED: ${SEATA_SAGA_ENABLED:-false}
       SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
