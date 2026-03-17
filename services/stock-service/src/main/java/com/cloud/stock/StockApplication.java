@@ -1,5 +1,6 @@
 package com.cloud.stock;
 
+import com.cloud.common.messaging.config.OutboxAutoConfiguration;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -14,6 +15,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -39,6 +41,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableCaching
 @MapperScan({"com.cloud.stock.mapper", "com.cloud.common.messaging.outbox"})
+@Import(OutboxAutoConfiguration.class)
 public class StockApplication {
   public static void main(String[] args) {
 

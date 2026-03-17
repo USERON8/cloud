@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -18,7 +19,7 @@ public class OutboxEventService {
   public static final String STATUS_FAILED = "FAILED";
   public static final String STATUS_DEAD = "DEAD";
 
-  private final OutboxEventMapper outboxEventMapper;
+  private final ObjectProvider<OutboxEventMapper> outboxEventMapperProvider;
 
   @Transactional(rollbackFor = Exception.class)
   public OutboxEvent enqueue(
@@ -39,27 +40,27 @@ public class OutboxEventService {
     event.setStatus(STATUS_NEW);
     event.setRetryCount(0);
 
-    outboxEventMapper.insert(event);
+    requireMapper().insert(event);
     return event;
   }
 
   public List<OutboxEvent> fetchDueEvents(int limit) {
     int safeLimit = Math.max(1, limit);
-    return outboxEventMapper.selectDueEvents(safeLimit);
+    return requireMapper().selectDueEvents(safeLimit);
   }
 
   public boolean markProcessing(Long id) {
     if (id == null) {
       return false;
     }
-    return outboxEventMapper.markProcessing(id) > 0;
+    return requireMapper().markProcessing(id) > 0;
   }
 
   public void markSent(Long id) {
     if (id == null) {
       return;
     }
-    outboxEventMapper.markSent(id);
+    requireMapper().markSent(id);
   }
 
   public void markFailed(OutboxEvent event, int maxRetry, int backoffSeconds) {
@@ -77,7 +78,7 @@ public class OutboxEventService {
             ? null
             : LocalDateTime.now().plusSeconds((long) safeBackoff * nextRetry);
 
-    outboxEventMapper.updateStatus(event.getId(), status, nextRetry, nextRetryAt);
+    requireMapper().updateStatus(event.getId(), status, nextRetry, nextRetryAt);
     if (STATUS_DEAD.equals(status)) {
       log.warn(
           "Outbox event reached max retry, marked dead: eventId={}, eventType={}",
@@ -91,5 +92,13 @@ public class OutboxEventService {
       throw new IllegalArgumentException(field + " is required");
     }
     return value.trim();
+  }
+
+  private OutboxEventMapper requireMapper() {
+    OutboxEventMapper mapper = outboxEventMapperProvider.getIfAvailable();
+    if (mapper == null) {
+      throw new IllegalStateException("OutboxEventMapper is not available");
+    }
+    return mapper;
   }
 }
