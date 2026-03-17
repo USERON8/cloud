@@ -5,13 +5,9 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
-@ConditionalOnBean(JdbcTemplate.class)
 public class JdbcDeadLetterService implements DeadLetterService {
 
   private static final int MAX_ERROR_LENGTH = 512;
