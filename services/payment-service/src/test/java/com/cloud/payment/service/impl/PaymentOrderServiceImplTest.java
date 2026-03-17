@@ -50,7 +50,6 @@ class PaymentOrderServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    when(paymentSuccessTxProducerProvider.getIfAvailable()).thenReturn(paymentSuccessTxProducer);
     service =
         new PaymentOrderServiceImpl(
             paymentOrderMapper,

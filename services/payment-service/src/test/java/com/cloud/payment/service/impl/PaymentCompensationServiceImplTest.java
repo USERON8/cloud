@@ -49,7 +49,6 @@ class PaymentCompensationServiceImplTest {
   @BeforeEach
   void setUp() {
     PaymentCompensationProperties properties = new PaymentCompensationProperties();
-    when(paymentSuccessTxProducerProvider.getIfAvailable()).thenReturn(paymentSuccessTxProducer);
     paymentCompensationService =
         new PaymentCompensationServiceImpl(
             paymentOrderMapper,
@@ -91,6 +90,7 @@ class PaymentCompensationServiceImplTest {
     when(providerGateway.supports("ALIPAY")).thenReturn(true);
     when(providerGateway.queryPaymentOrder(order))
         .thenReturn(PaymentOrderQueryResult.paid("TXN-1", LocalDateTime.now(), "ok"));
+    when(paymentSuccessTxProducerProvider.getIfAvailable()).thenReturn(paymentSuccessTxProducer);
 
     int handled = paymentCompensationService.reconcilePendingOrders();
 
