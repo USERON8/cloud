@@ -15,7 +15,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -36,7 +35,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableDiscoveryClient
 @EnableCaching
 @Slf4j
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @ComponentScan(
     basePackages = {"com.cloud.user", "com.cloud.common"},

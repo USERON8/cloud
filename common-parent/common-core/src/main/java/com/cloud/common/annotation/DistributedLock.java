@@ -1,4 +1,4 @@
-package com.cloud.common.annotation;
+﻿package com.cloud.common.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -26,7 +26,7 @@ public @interface DistributedLock {
 
   LockFailStrategy failStrategy() default LockFailStrategy.THROW_EXCEPTION;
 
-  String failMessage() default "鑾峰彇鍒嗗竷寮忛攣澶辫触";
+  String failMessage() default "分布式锁获取失败";
 
   boolean autoRelease() default true;
 
@@ -52,3 +52,4 @@ public @interface DistributedLock {
     FAIL_FAST
   }
 }
+

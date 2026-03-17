@@ -16,7 +16,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
@@ -37,7 +36,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(basePackages = {"com.cloud.stock", "com.cloud.common"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableDiscoveryClient
-@EnableAsync
 @EnableScheduling
 @EnableCaching
 @MapperScan({"com.cloud.stock.mapper", "com.cloud.common.messaging.outbox"})

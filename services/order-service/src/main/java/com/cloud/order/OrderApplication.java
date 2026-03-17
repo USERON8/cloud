@@ -14,7 +14,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SecurityScheme(
@@ -32,7 +31,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = {"com.cloud.order", "com.cloud.common"})
 @EnableDubbo
 @EnableDiscoveryClient
-@EnableAsync
 @EnableScheduling
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)

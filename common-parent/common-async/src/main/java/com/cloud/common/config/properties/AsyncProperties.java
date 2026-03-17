@@ -34,6 +34,8 @@ public class AsyncProperties {
   @Data
   public static class ThreadPoolConfig {
 
+    private boolean enabled = true;
+
     private int corePoolSize;
 
     private int maxPoolSize;

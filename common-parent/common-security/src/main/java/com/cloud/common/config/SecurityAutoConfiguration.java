@@ -1,20 +1,19 @@
-package com.cloud.product.config;
+﻿package com.cloud.common.config;
 
-import com.cloud.common.config.PermissionChecker;
-import com.cloud.common.config.PermissionConfig;
-import com.cloud.common.config.UnifiedSecurityExpressions;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
-@Configuration
+@AutoConfiguration
+@ConditionalOnClass(EnableMethodSecurity.class)
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Import({PermissionConfig.class, PermissionChecker.class})
-public class SecurityConfig {
+public class SecurityAutoConfiguration {
 
   @Bean("securityExpressions")
   @ConditionalOnProperty(
@@ -25,3 +24,4 @@ public class SecurityConfig {
     return new UnifiedSecurityExpressions();
   }
 }
+
