@@ -113,7 +113,8 @@ CREATE TABLE IF NOT EXISTS outbox_event
     deleted            TINYINT       NOT NULL DEFAULT 0,
     version            INT           NOT NULL DEFAULT 0,
     UNIQUE KEY uk_outbox_event_id (event_id),
-    INDEX idx_outbox_status_next_retry_deleted (status, next_retry_at, deleted)
+    INDEX idx_outbox_status_next_retry_deleted (status, next_retry_at, deleted),
+    INDEX idx_outbox_deleted_status_retry (deleted, status, next_retry_at, created_at)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
