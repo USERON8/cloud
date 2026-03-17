@@ -1,4 +1,4 @@
-﻿x-skywalking-common: &skywalking-common
+x-skywalking-common: &skywalking-common
   JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar"
   SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
   SW_LOGGING_OUTPUT: "CONSOLE"
@@ -268,11 +268,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/gateway/target/gateway-0.0.1-SNAPSHOT.jar
+        source: ../services/gateway/target/gateway-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: gateway
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_REDIS_HOST: redis
@@ -302,11 +303,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar
+        source: ../services/auth-service/target/auth-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: auth-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -343,11 +345,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/user-service/target/user-service-0.0.1-SNAPSHOT.jar
+        source: ../services/user-service/target/user-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: user-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -377,11 +380,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/order-service/target/order-service-0.0.1-SNAPSHOT.jar
+        source: ../services/order-service/target/order-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: order-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -411,11 +415,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/product-service/target/product-service-0.0.1-SNAPSHOT.jar
+        source: ../services/product-service/target/product-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: product-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       MINIO_ENDPOINT: http://minio:9000
@@ -449,11 +454,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar
+        source: ../services/stock-service/target/stock-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: stock-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
@@ -483,11 +489,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar
+        source: ../services/payment-service/target/payment-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: payment-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       ROCKETMQ_PRODUCER_GROUP: payment-service-producer
@@ -519,11 +526,12 @@ services:
     volumes:
       - *skywalking-agent-volume
       - type: bind
-        source: ../services/search-service/target/search-service-0.0.1-SNAPSHOT.jar
+        source: ../services/search-service/target/search-service-1.1.0.jar
         target: /workspace/app.jar
     environment:
       <<: *skywalking-common
       SW_AGENT_NAME: search-service
+      LOGGING_FILE_PATH: /workspace/logs
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
