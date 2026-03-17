@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
@@ -10,6 +10,8 @@
 spring:
   application:
     name: auth-service
+  config:
+    import: "optional:nacos:common.yaml"
   profiles:
     active: dev
   main:

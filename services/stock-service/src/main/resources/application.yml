@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SERVER_PORT:8085}
   tomcat:
     threads:
@@ -10,6 +10,8 @@
 spring:
   application:
     name: stock-service
+  config:
+    import: "optional:nacos:common.yaml"
   profiles:
     active: dev
     include: rocketmq
