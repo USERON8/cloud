@@ -11,6 +11,7 @@ import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
+import com.cloud.user.service.MerchantService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,13 +33,16 @@ class MerchantAuthServiceImplTest {
 
   @Mock private Cache cache;
 
+  @Mock private MerchantService merchantService;
+
   private MerchantAuthServiceImpl merchantAuthService;
 
   @BeforeEach
   void setUp() {
     merchantAuthService =
         Mockito.spy(
-            new MerchantAuthServiceImpl(merchantAuthMapper, merchantAuthConverter, cacheManager));
+            new MerchantAuthServiceImpl(
+                merchantAuthMapper, merchantAuthConverter, cacheManager, merchantService));
     ReflectionTestUtils.setField(merchantAuthService, "baseMapper", merchantAuthMapper);
     lenient().when(cacheManager.getCache("merchantAuthCache")).thenReturn(cache);
   }

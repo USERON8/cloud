@@ -25,7 +25,7 @@ class OrderShippingServiceTest {
 
   @Mock private OrderAggregateCacheService orderAggregateCacheService;
 
-  @InjectMocks private OrderShippingService orderShippingService;
+  @InjectMocks private OrderShippingServiceImpl orderShippingService;
 
   @Test
   void ship_success_updatesStatusAndEvictsCache() {

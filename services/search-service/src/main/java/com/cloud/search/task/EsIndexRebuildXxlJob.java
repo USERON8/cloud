@@ -70,9 +70,11 @@ public class EsIndexRebuildXxlJob {
     int page = 1;
     int size = DEFAULT_PAGE_SIZE;
     while (true) {
+      int currentPage = page;
+      int currentSize = size;
       List<SpuDetailVO> spus =
           invokeProductService(
-              "list spu by page", () -> productDubboApi.listSpuByPage(page, size, 1));
+              "list spu by page", () -> productDubboApi.listSpuByPage(currentPage, currentSize, 1));
       if (spus == null || spus.isEmpty()) {
         break;
       }
