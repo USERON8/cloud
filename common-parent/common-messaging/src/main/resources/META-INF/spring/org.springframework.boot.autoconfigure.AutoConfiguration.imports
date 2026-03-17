@@ -1,1 +1,2 @@
 com.cloud.common.messaging.config.DeadLetterAutoConfiguration
+com.cloud.common.messaging.config.OutboxAutoConfiguration
