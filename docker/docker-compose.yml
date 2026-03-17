@@ -515,6 +515,7 @@ services:
     depends_on:
       - nacos
       - skywalking-oap
+      - elasticsearch
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -525,6 +526,7 @@ services:
       SW_AGENT_NAME: search-service
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SEATA_ENABLED: "false"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
       SPRING_REDIS_HOST: redis

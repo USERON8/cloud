@@ -5,26 +5,26 @@
   "StartState": "refundApply",
   "States": {
     "refundApply": {
-      "type": "serviceTask",
-      "serviceName": "orderRefundSagaService.applyRefund",
-      "compensateState": "refundApplyCompensate",
-      "next": "refundCreate"
+      "Type": "ServiceTask",
+      "ServiceName": "orderRefundSagaService.applyRefund",
+      "CompensateState": "refundApplyCompensate",
+      "Next": "refundCreate"
     },
     "refundCreate": {
-      "type": "serviceTask",
-      "serviceName": "orderRefundSagaService.createRefund",
-      "compensateState": "refundCreateCompensate",
-      "end": true
+      "Type": "ServiceTask",
+      "ServiceName": "orderRefundSagaService.createRefund",
+      "CompensateState": "refundCreateCompensate",
+      "End": true
     },
     "refundApplyCompensate": {
-      "type": "serviceTask",
-      "serviceName": "orderRefundSagaService.cancelRefund",
-      "end": true
+      "Type": "ServiceTask",
+      "ServiceName": "orderRefundSagaService.cancelRefund",
+      "End": true
     },
     "refundCreateCompensate": {
-      "type": "serviceTask",
-      "serviceName": "orderRefundSagaService.cancelRefundWithPayment",
-      "end": true
+      "Type": "ServiceTask",
+      "ServiceName": "orderRefundSagaService.cancelRefundWithPayment",
+      "End": true
     }
   }
 }

@@ -30,6 +30,8 @@ spring:
       validation-query: SELECT 1
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://127.0.0.1:19200}
   cloud:
     nacos:
       discovery:
