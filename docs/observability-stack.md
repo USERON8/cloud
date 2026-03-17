@@ -112,3 +112,5 @@ Prometheus 已配置以下抓取：
 - 业务指标由 `TradeMetrics` 采集：`trade_order_total` / `trade_payment_total` / `trade_refund_total` / `trade_stock_freeze_total` / `trade_message_consume_total`
 - 指标标签：`result`（success/failed/retry）与 `eventType`（如 payment_success、refund_completed）
 - Outbox 健康度建议：按库统计 `outbox_event` 的 `NEW/FAILED/DEAD` 数量，`DEAD > 0` 需要检查 Relay 与 MQ 发送链路
+- MQ 链路追踪说明：当前 RocketMQ 消息未自动透传 traceId，Outbox Relay 也不会写入 tracing header；需要手动透传才能在 SkyWalking 串联链路。
+- 死信监控说明：消费者失败会写入 `dead_letter` 表，但默认 Grafana 未展示该指标，如需可视化需自建采集与看板。

@@ -9,6 +9,7 @@
 ## 设计原则
 
 - 强一致优先：下单扣库存采用 Seata TCC，保证失败可回滚。
+- 强一致边界：仅覆盖下单扣库存；支付成功与退款结果通过 MQ 事件实现最终一致，`payment-service` 不参与 Seata。
 - 异步解耦：支付成功通知采用 RocketMQ 事务消息，避免本地事务与消息不一致。
 - 长流程补偿：退款全链路采用 Seata SAGA，通过补偿动作完成一致性收敛。
 - 延迟消息统一在本地事务提交后发送，避免回滚导致的“消息乱发”。
@@ -60,6 +61,7 @@
 
 - 订单：`ORDER_CREATED` / `ORDER_CANCELLED` / `STOCK_RESTORE` 由 `OrderOutboxRelay` 发布。
 - 支付：`REFUND_COMPLETED` 由 `PaymentOutboxRelay` 发布。
+- 支付成功通知不走 Outbox，使用 RocketMQ 事务消息。
 - 作用：确保本地事务成功后可靠投递 MQ。
 
 ### 消费者幂等
@@ -80,5 +82,6 @@
 - `refund-process` MQ 通道已移除，退款统一走 SAGA。
 - 下单扣库存走 TCC，`order_tcc_log` 存在且可追踪。
 - 支付成功通知走 RocketMQ 事务消息。
+- `payment-service` Seata 关闭，仅 order/stock 参与全局事务。
 - 延迟消息仅在本地事务提交后发送。
 - MQ 消费者均具备幂等防重能力。
