@@ -274,6 +274,9 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: gateway
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
+      SENTINEL_DASHBOARD: sentinel-dashboard:8858
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_REDIS_HOST: redis
@@ -309,6 +312,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: auth-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -351,6 +356,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: user-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -386,6 +393,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: order-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
@@ -422,6 +431,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: product-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       MINIO_ENDPOINT: http://minio:9000
@@ -461,6 +472,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: stock-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
@@ -496,6 +509,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: payment-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       ROCKETMQ_PRODUCER_GROUP: payment-service-producer
@@ -533,6 +548,8 @@ services:
       <<: *skywalking-common
       SW_AGENT_NAME: search-service
       LOGGING_FILE_PATH: /workspace/logs
+      AUTH_HOST: auth-service
+      AUTH_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
