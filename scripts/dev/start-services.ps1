@@ -42,14 +42,14 @@ for ($index = 0; $index -lt $CliArgs.Count; $index++) {
 
 function Get-ServiceCatalog {
     return @(
-        [pscustomobject]@{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-0.0.1-SNAPSHOT.jar"; profiles = "dev,route" },
-        [pscustomobject]@{ name = "auth-service";    port = 8081; jar = "services\auth-service\target\auth-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "user-service";    port = 8082; jar = "services\user-service\target\user-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "product-service"; port = 8084; jar = "services\product-service\target\product-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "stock-service";   port = 8085; jar = "services\stock-service\target\stock-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "payment-service"; port = 8086; jar = "services\payment-service\target\payment-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-0.0.1-SNAPSHOT.jar"; profiles = "dev" }
+        [pscustomobject]@{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-1.1.0.jar"; profiles = "dev,route" },
+        [pscustomobject]@{ name = "auth-service";    port = 8081; jar = "services\auth-service\target\auth-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "user-service";    port = 8082; jar = "services\user-service\target\user-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "product-service"; port = 8084; jar = "services\product-service\target\product-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "stock-service";   port = 8085; jar = "services\stock-service\target\stock-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "payment-service"; port = 8086; jar = "services\payment-service\target\payment-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-1.1.0.jar"; profiles = "dev" }
     )
 }
 
@@ -230,8 +230,17 @@ $runtimeLogRoot = if ([string]::IsNullOrWhiteSpace($env:SERVICE_RUNTIME_LOG_ROOT
 New-Item -ItemType Directory -Force -Path $runtimeLogRoot | Out-Null
 
 $skywalkingAgentJar = Join-Path $root "docker\monitor\skywalking\agent\skywalking-agent.jar"
-$skywalkingAgentAvailable = Test-Path $skywalkingAgentJar
-if (-not $skywalkingAgentAvailable) {
+$skywalkingEnabled = $true
+if (-not [string]::IsNullOrWhiteSpace($env:SKYWALKING_ENABLED)) {
+    $rawSkywalking = $env:SKYWALKING_ENABLED.Trim().ToLowerInvariant()
+    if ($rawSkywalking -in @("false", "0", "no", "off")) {
+        $skywalkingEnabled = $false
+    }
+}
+$skywalkingAgentAvailable = $skywalkingEnabled -and (Test-Path $skywalkingAgentJar)
+if (-not $skywalkingEnabled) {
+    Write-Host "SKYWALKING disabled reason=env-disabled"
+} elseif (-not $skywalkingAgentAvailable) {
     Write-Host ("SKYWALKING disabled reason=agent-not-found path={0}" -f $skywalkingAgentJar)
 }
 $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {

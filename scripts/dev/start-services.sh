@@ -39,14 +39,14 @@ for arg in "$@"; do
 done
 
 ALL_SERVICES=(
-  "gateway|8080|services/gateway/target/gateway-0.0.1-SNAPSHOT.jar|dev,route"
-  "auth-service|8081|services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar|dev"
-  "user-service|8082|services/user-service/target/user-service-0.0.1-SNAPSHOT.jar|dev"
-  "order-service|8083|services/order-service/target/order-service-0.0.1-SNAPSHOT.jar|dev"
-  "product-service|8084|services/product-service/target/product-service-0.0.1-SNAPSHOT.jar|dev"
-  "stock-service|8085|services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar|dev"
-  "payment-service|8086|services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar|dev"
-  "search-service|8087|services/search-service/target/search-service-0.0.1-SNAPSHOT.jar|dev"
+  "gateway|8080|services/gateway/target/gateway-1.1.0.jar|dev,route"
+  "auth-service|8081|services/auth-service/target/auth-service-1.1.0.jar|dev"
+  "user-service|8082|services/user-service/target/user-service-1.1.0.jar|dev"
+  "order-service|8083|services/order-service/target/order-service-1.1.0.jar|dev"
+  "product-service|8084|services/product-service/target/product-service-1.1.0.jar|dev"
+  "stock-service|8085|services/stock-service/target/stock-service-1.1.0.jar|dev"
+  "payment-service|8086|services/payment-service/target/payment-service-1.1.0.jar|dev"
+  "search-service|8087|services/search-service/target/search-service-1.1.0.jar|dev"
 )
 
 declare -A SERVICE_INDEX=()
@@ -121,11 +121,18 @@ mkdir -p "$RUNTIME_LOG_ROOT"
 SKYWALKING_AGENT_DIR="$ROOT_DIR/docker/monitor/skywalking/agent"
 SKYWALKING_AGENT_JAR="$SKYWALKING_AGENT_DIR/skywalking-agent.jar"
 SKYWALKING_AGENT_AVAILABLE=0
-if [ -f "$SKYWALKING_AGENT_JAR" ]; then
-  SKYWALKING_AGENT_AVAILABLE=1
-else
-  echo "SKYWALKING disabled reason=agent-not-found path=$SKYWALKING_AGENT_JAR" >&2
-fi
+case "${SKYWALKING_ENABLED:-true}" in
+  false|0|no|off)
+    echo "SKYWALKING disabled reason=env-disabled" >&2
+    ;;
+  *)
+    if [ -f "$SKYWALKING_AGENT_JAR" ]; then
+      SKYWALKING_AGENT_AVAILABLE=1
+    else
+      echo "SKYWALKING disabled reason=agent-not-found path=$SKYWALKING_AGENT_JAR" >&2
+    fi
+    ;;
+esac
 SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError}"
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 

@@ -91,6 +91,7 @@ function Set-ServiceRuntimeEnvironment {
     $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
     $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 19876
     $seataPort = Get-DockerPortValue -Root $Root -Name "PORT_SEATA_SERVER" -DefaultValue 18091
+    $minioPort = Get-DockerPortValue -Root $Root -Name "PORT_MINIO_API" -DefaultValue 19000
 
     $env:NACOS_HOST = "127.0.0.1"
     $env:NACOS_PORT = [string]$nacosPort
@@ -102,6 +103,27 @@ function Set-ServiceRuntimeEnvironment {
 
     $env:SEATA_SERVER_ADDR = "127.0.0.1:$seataPort"
     $env:SEATA_REGISTRY_TYPE = "file"
+    if ([string]::IsNullOrWhiteSpace($env:SEATA_SAGA_ENABLED)) {
+        $env:SEATA_SAGA_ENABLED = "false"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:XXL_JOB_ENABLED)) {
+        $env:XXL_JOB_ENABLED = "false"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:SKYWALKING_ENABLED)) {
+        $env:SKYWALKING_ENABLED = "false"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:MINIO_ENDPOINT)) {
+        $env:MINIO_ENDPOINT = "http://127.0.0.1:$minioPort"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:MINIO_PUBLIC_ENDPOINT)) {
+        $env:MINIO_PUBLIC_ENDPOINT = $env:MINIO_ENDPOINT
+    }
+    if ([string]::IsNullOrWhiteSpace($env:MINIO_ACCESS_KEY)) {
+        $env:MINIO_ACCESS_KEY = "minioadmin"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:MINIO_SECRET_KEY)) {
+        $env:MINIO_SECRET_KEY = "minioadmin"
+    }
     if ([string]::IsNullOrWhiteSpace($env:GATEWAY_SIGNATURE_SECRET)) {
         $env:GATEWAY_SIGNATURE_SECRET = "cloud-gateway-signature-dev"
     }

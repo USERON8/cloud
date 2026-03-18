@@ -68,10 +68,11 @@ open_local_url() {
 
 export_service_runtime_env() {
   local root="$1"
-  local nacos_port rocketmq_namesrv_port seata_port
+  local nacos_port rocketmq_namesrv_port seata_port minio_port
   nacos_port="$(docker_port_value "$root" PORT_NACOS_HTTP 18848)"
   rocketmq_namesrv_port="$(docker_port_value "$root" PORT_RMQ_NAMESRV 19876)"
   seata_port="$(docker_port_value "$root" PORT_SEATA_SERVER 18091)"
+  minio_port="$(docker_port_value "$root" PORT_MINIO_API 19000)"
 
   export NACOS_HOST="127.0.0.1"
   export NACOS_PORT="$nacos_port"
@@ -83,6 +84,19 @@ export_service_runtime_env() {
 
   export SEATA_SERVER_ADDR="127.0.0.1:${seata_port}"
   export SEATA_REGISTRY_TYPE="file"
+  if [ -z "${SEATA_SAGA_ENABLED:-}" ]; then
+    export SEATA_SAGA_ENABLED="false"
+  fi
+  if [ -z "${XXL_JOB_ENABLED:-}" ]; then
+    export XXL_JOB_ENABLED="false"
+  fi
+  if [ -z "${SKYWALKING_ENABLED:-}" ]; then
+    export SKYWALKING_ENABLED="false"
+  fi
+  export MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://127.0.0.1:${minio_port}}"
+  export MINIO_PUBLIC_ENDPOINT="${MINIO_PUBLIC_ENDPOINT:-$MINIO_ENDPOINT}"
+  export MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:-minioadmin}"
+  export MINIO_SECRET_KEY="${MINIO_SECRET_KEY:-minioadmin}"
   export GATEWAY_SIGNATURE_SECRET="${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}"
   export CLIENT_SERVICE_SECRET="${CLIENT_SERVICE_SECRET:-cloud-client-service-secret-dev}"
   export APP_OAUTH2_SERVICE_CLIENT_SECRET="${APP_OAUTH2_SERVICE_CLIENT_SECRET:-$CLIENT_SERVICE_SECRET}"
