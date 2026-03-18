@@ -141,9 +141,9 @@ dubbo:
     address: nacos://${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
     username: ${NACOS_USERNAME:nacos}
     password: ${NACOS_PASSWORD:nacos}
+    group: DUBBO_GROUP
     parameters:
       namespace: public
-      group: DEFAULT_GROUP
   consumer:
     check: false
     timeout: 5000

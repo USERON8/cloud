@@ -35,7 +35,7 @@ spring:
           enabled: false
 
 rocketmq:
-  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:19876}}
+  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
   producer:
     group: ${ROCKETMQ_PRODUCER_GROUP:payment-success-tx-group}
 
@@ -147,11 +147,11 @@ payment:
     alipay-token-ttl-seconds: ${PAYMENT_ALIPAY_TOKEN_TTL_SECONDS:1500}
 
 redis:
-  host: 127.0.0.1
-  port: 16379
-  password: root
-  database: 1
-  timeout: 10000
+  host: ${SPRING_REDIS_HOST:127.0.0.1}
+  port: ${SPRING_REDIS_PORT:16379}
+  password: ${SPRING_REDIS_PASSWORD:root}
+  database: ${SPRING_REDIS_DATABASE:1}
+  timeout: ${SPRING_REDIS_TIMEOUT:10000}
   lettuce:
     pool:
       max-active: 20
@@ -161,9 +161,9 @@ redis:
 
 redisson:
   address: redis://${redis.host}:${redis.port}
-  password: root
-  database: 1
-  timeout: 10000
+  password: ${redis.password}
+  database: ${redis.database}
+  timeout: ${redis.timeout}
   connection-pool-size: 32
   connection-minimum-idle-size: 8
   idle-connection-timeout: 10000
