@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS xxl_job_info
     add_time           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     author             VARCHAR(64)  NULL,
+    alarm_email        VARCHAR(255) NULL,
     schedule_type      VARCHAR(50)  NOT NULL DEFAULT 'CRON',
     schedule_conf      VARCHAR(128) NULL,
     misfire_strategy   VARCHAR(50)  NOT NULL DEFAULT 'DO_NOTHING',
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS xxl_job_info
     glue_type          VARCHAR(50)  NOT NULL DEFAULT 'BEAN',
     glue_source        MEDIUMTEXT   NULL,
     glue_remark        VARCHAR(128) NULL,
-    glue_updatetime    DATETIME     NULL,
+    glue_updatetime    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     child_jobid        VARCHAR(255) NULL,
     trigger_status     TINYINT      NOT NULL DEFAULT 0,
     trigger_last_time  BIGINT       NOT NULL DEFAULT 0,
@@ -80,6 +81,16 @@ CREATE TABLE IF NOT EXISTS xxl_job_registry
     update_time        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_xxl_job_registry_key (registry_key)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS xxl_job_lock
+(
+    lock_name          VARCHAR(50) NOT NULL,
+    PRIMARY KEY (lock_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+INSERT INTO xxl_job_lock (lock_name)
+SELECT 'schedule_lock'
+WHERE NOT EXISTS (SELECT 1 FROM xxl_job_lock WHERE lock_name = 'schedule_lock');
 
 CREATE TABLE IF NOT EXISTS xxl_job_user
 (

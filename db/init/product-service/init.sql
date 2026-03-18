@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS category
     path             VARCHAR(255)    NOT NULL,
     sort_order       INT             NOT NULL DEFAULT 0,
     status           TINYINT         NOT NULL DEFAULT 1,
+    create_by        BIGINT UNSIGNED NULL,
+    update_by        BIGINT UNSIGNED NULL,
     created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT         NOT NULL DEFAULT 0,
