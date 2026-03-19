@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.order.config.OrderAutomationProperties;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderAutomationService;
@@ -45,7 +47,7 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
     int handledCount = 0;
     for (OrderSub subOrder : subOrders) {
       try {
-        orderService.advanceSubOrderStatus(subOrder.getId(), "DONE");
+        orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.DONE);
         handledCount++;
       } catch (Exception ex) {
         log.warn(
@@ -85,12 +87,12 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
       if ("APPLIED".equals(current.getStatus())) {
         current =
             orderService.advanceAfterSaleStatus(
-                current.getId(), "AUDIT", "system timeout auto audit");
+                current.getId(), AfterSaleAction.AUDIT, "system timeout auto audit");
       }
       if ("AUDITING".equals(current.getStatus())) {
         current =
             orderService.advanceAfterSaleStatus(
-                current.getId(), "APPROVE", "system timeout auto approve");
+                current.getId(), AfterSaleAction.APPROVE, "system timeout auto approve");
       }
 
       if (!"APPROVED".equals(current.getStatus())) {
@@ -99,7 +101,7 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
 
       if ("RETURN_REFUND".equalsIgnoreCase(current.getAfterSaleType())) {
         orderService.advanceAfterSaleStatus(
-            current.getId(), "WAIT_RETURN", "system timeout auto approve");
+            current.getId(), AfterSaleAction.WAIT_RETURN, "system timeout auto approve");
         return true;
       }
 
@@ -115,6 +117,7 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
   }
 
   private void triggerRefund(AfterSale afterSale) {
-    orderService.advanceAfterSaleStatus(afterSale.getId(), "PROCESS", "system timeout auto refund");
+    orderService.advanceAfterSaleStatus(
+        afterSale.getId(), AfterSaleAction.PROCESS, "system timeout auto refund");
   }
 }

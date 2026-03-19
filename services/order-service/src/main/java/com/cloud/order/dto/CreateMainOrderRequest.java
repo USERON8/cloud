@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 public class CreateMainOrderRequest {
-  @NotNull private Long userId;
+  private Long userId;
 
   private Long cartId;
 

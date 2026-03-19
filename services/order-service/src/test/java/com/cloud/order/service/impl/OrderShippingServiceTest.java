@@ -5,8 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
@@ -54,14 +55,14 @@ class OrderShippingServiceTest {
     OrderSub result = orderShippingService.ship(1L, "SF", "TRACK1");
 
     assertThat(result).isSameAs(latest);
-    verify(orderService).advanceSubOrderStatus(1L, "SHIP");
+    verify(orderService).advanceSubOrderStatus(1L, OrderAction.SHIP);
     verify(orderAggregateCacheService).evict(100L);
   }
 
   @Test
   void ship_missingCarrier_throws() {
     assertThatThrownBy(() -> orderShippingService.ship(1L, " ", ""))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("shipping company and tracking number are required");
   }
 }

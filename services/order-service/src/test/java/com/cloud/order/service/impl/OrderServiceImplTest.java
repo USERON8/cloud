@@ -9,12 +9,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
@@ -128,8 +129,8 @@ class OrderServiceImplTest {
 
     when(orderSubMapper.selectById(12L)).thenReturn(subOrder);
 
-    assertThatThrownBy(() -> orderService.advanceSubOrderStatus(12L, "SHIP"))
-        .isInstanceOf(BusinessException.class)
+    assertThatThrownBy(() -> orderService.advanceSubOrderStatus(12L, OrderAction.SHIP))
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("shipping company and tracking number are required");
   }
 
@@ -160,7 +161,7 @@ class OrderServiceImplTest {
     when(orderItemMapper.listActiveBySubOrderId(13L)).thenReturn(List.of(item1, item2, item3));
     when(orderMainMapper.selectById(21L)).thenReturn(mainOrder);
 
-    orderService.advanceSubOrderStatus(13L, "CANCEL");
+    orderService.advanceSubOrderStatus(13L, OrderAction.CANCEL);
 
     ArgumentCaptor<StockOperateCommandDTO> captor =
         ArgumentCaptor.forClass(StockOperateCommandDTO.class);
@@ -195,7 +196,7 @@ class OrderServiceImplTest {
     when(orderMainMapper.selectById(31L)).thenReturn(mainOrder);
     when(orderSubMapper.listActiveByMainOrderId(31L)).thenReturn(List.of(subOrder));
 
-    OrderSub updated = orderService.advanceSubOrderStatus(14L, "SHIP");
+    OrderSub updated = orderService.advanceSubOrderStatus(14L, OrderAction.SHIP);
 
     assertThat(updated.getOrderStatus()).isEqualTo("SHIPPED");
     assertThat(updated.getShippedAt()).isNotNull();

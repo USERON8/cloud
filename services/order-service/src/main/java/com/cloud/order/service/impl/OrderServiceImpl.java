@@ -2,7 +2,7 @@ package com.cloud.order.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.common.messaging.event.OrderShippedEvent;
 import com.cloud.common.metrics.TradeMetrics;
@@ -12,6 +12,8 @@ import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
@@ -41,16 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-  private static final Map<String, String> SUB_ACTION_TARGET =
-      Map.of(
-          "RESERVE", "STOCK_RESERVED",
-          "PAY", "PAID",
-          "SHIP", "SHIPPED",
-          "DONE", "DONE",
-          "RECEIVE", "DONE",
-          "CANCEL", "CANCELLED",
-          "CLOSE", "CLOSED");
-
   private static final Map<String, Set<String>> SUB_STATUS_TRANSITIONS =
       Map.of(
           "CREATED", Set.of("STOCK_RESERVED", "CANCELLED", "CLOSED"),
@@ -60,19 +52,6 @@ public class OrderServiceImpl implements OrderService {
           "DONE", Set.of(),
           "CANCELLED", Set.of(),
           "CLOSED", Set.of());
-
-  private static final Map<String, String> AFTER_SALE_ACTION_TARGET =
-      Map.of(
-          "AUDIT", "AUDITING",
-          "APPROVE", "APPROVED",
-          "REJECT", "REJECTED",
-          "WAIT_RETURN", "WAIT_RETURN",
-          "RETURN", "RETURNED",
-          "RECEIVE", "RECEIVED",
-          "PROCESS", "REFUNDING",
-          "REFUND", "REFUNDED",
-          "CANCEL", "CANCELLED",
-          "CLOSE", "CLOSED");
 
   private static final Map<String, Set<String>> AFTER_SALE_TRANSITIONS =
       Map.ofEntries(
@@ -106,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
       String idempotencyKey =
           buildScopedIdempotencyKey(request.getUserId(), request.getIdempotencyKey());
       if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
-        throw new BusinessException("subOrders is required");
+        throw new BizException("subOrders is required");
       }
 
       OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey);
@@ -244,15 +223,12 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public OrderSub advanceSubOrderStatus(Long subOrderId, String action) {
+  public OrderSub advanceSubOrderStatus(Long subOrderId, OrderAction action) {
     OrderSub sub = orderSubMapper.selectById(subOrderId);
     if (sub == null || sub.getDeleted() == 1) {
-      throw new BusinessException("sub order not found");
+      throw new BizException("sub order not found");
     }
-    String targetStatus = SUB_ACTION_TARGET.get(action.toUpperCase());
-    if (targetStatus == null) {
-      throw new BusinessException("unsupported order action: " + action);
-    }
+    String targetStatus = action.targetStatus();
     validateSubTransition(sub.getOrderStatus(), targetStatus);
 
     if (requiresStockRelease(sub.getOrderStatus(), targetStatus)) {
@@ -308,8 +284,8 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public AfterSale advanceAfterSaleStatus(Long afterSaleId, String action, String remark) {
-    if ("PROCESS".equalsIgnoreCase(action)) {
+  public AfterSale advanceAfterSaleStatus(Long afterSaleId, AfterSaleAction action, String remark) {
+    if (action == AfterSaleAction.PROCESS) {
       return startRefundSaga(afterSaleId, remark);
     }
 
@@ -317,12 +293,9 @@ public class OrderServiceImpl implements OrderService {
     try {
       AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
       if (afterSale == null || afterSale.getDeleted() == 1) {
-        throw new BusinessException("after sale not found");
+        throw new BizException("after sale not found");
       }
-      String targetStatus = AFTER_SALE_ACTION_TARGET.get(action.toUpperCase());
-      if (targetStatus == null) {
-        throw new BusinessException("unsupported after-sale action: " + action);
-      }
+      String targetStatus = action.targetStatus();
       validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
       refundSuccess = "REFUNDED".equals(targetStatus);
 
@@ -361,14 +334,14 @@ public class OrderServiceImpl implements OrderService {
 
   private void assertLogisticsInfoReady(String company, String trackingNumber) {
     if (StrUtil.isBlank(company) || StrUtil.isBlank(trackingNumber)) {
-      throw new BusinessException("shipping company and tracking number are required");
+      throw new BizException("shipping company and tracking number are required");
     }
   }
 
   private void validateSubTransition(String current, String target) {
     Set<String> allowed = SUB_STATUS_TRANSITIONS.getOrDefault(current, Set.of());
     if (!allowed.contains(target)) {
-      throw new BusinessException("invalid order status transition: " + current + " -> " + target);
+      throw new BizException("invalid order status transition: " + current + " -> " + target);
     }
   }
 
@@ -412,8 +385,7 @@ public class OrderServiceImpl implements OrderService {
   private void validateAfterSaleTransition(String current, String target) {
     Set<String> allowed = AFTER_SALE_TRANSITIONS.getOrDefault(current, Set.of());
     if (!allowed.contains(target)) {
-      throw new BusinessException(
-          "invalid after-sale status transition: " + current + " -> " + target);
+      throw new BizException("invalid after-sale status transition: " + current + " -> " + target);
     }
   }
 
@@ -492,14 +464,14 @@ public class OrderServiceImpl implements OrderService {
   private AfterSale startRefundSaga(Long afterSaleId, String remark) {
     AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
     if (afterSale == null || afterSale.getDeleted() == 1) {
-      throw new BusinessException("after sale not found");
+      throw new BizException("after sale not found");
     }
-    String targetStatus = AFTER_SALE_ACTION_TARGET.get("PROCESS");
+    String targetStatus = AfterSaleAction.PROCESS.targetStatus();
     validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
 
     OrderRefundSagaCoordinator coordinator = orderRefundSagaCoordinatorProvider.getIfAvailable();
     if (coordinator == null) {
-      throw new BusinessException("refund saga is disabled");
+      throw new BizException("refund saga is disabled");
     }
 
     try {
@@ -514,22 +486,22 @@ public class OrderServiceImpl implements OrderService {
 
   private OrderMain requireOrderMain(Long mainOrderId) {
     if (mainOrderId == null) {
-      throw new BusinessException("main order id is required");
+      throw new BizException("main order id is required");
     }
     OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
     if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
-      throw new BusinessException("main order not found");
+      throw new BizException("main order not found");
     }
     return mainOrder;
   }
 
   private OrderSub requireSubOrder(Long subOrderId) {
     if (subOrderId == null) {
-      throw new BusinessException("sub order id is required");
+      throw new BizException("sub order id is required");
     }
     OrderSub subOrder = orderSubMapper.selectById(subOrderId);
     if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
-      throw new BusinessException("sub order not found");
+      throw new BizException("sub order not found");
     }
     return subOrder;
   }
@@ -540,10 +512,10 @@ public class OrderServiceImpl implements OrderService {
 
   private String buildScopedIdempotencyKey(Long userId, String idempotencyKey) {
     if (StrUtil.isBlank(idempotencyKey)) {
-      throw new BusinessException("idempotency key is required");
+      throw new BizException("idempotency key is required");
     }
     if (userId == null) {
-      throw new BusinessException("user id is required for idempotency");
+      throw new BizException("user id is required for idempotency");
     }
     String trimmed = idempotencyKey.trim();
     String prefix = userId + ":";

@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 import com.cloud.order.config.OrderAutomationProperties;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
@@ -44,8 +46,9 @@ class OrderAutomationServiceImplTest {
     sub2.setId(2L);
     when(orderSubMapper.selectList(org.mockito.ArgumentMatchers.any()))
         .thenReturn(List.of(sub1, sub2));
-    when(orderService.advanceSubOrderStatus(1L, "DONE")).thenReturn(sub1);
-    when(orderService.advanceSubOrderStatus(2L, "DONE")).thenThrow(new RuntimeException("fail"));
+    when(orderService.advanceSubOrderStatus(1L, OrderAction.DONE)).thenReturn(sub1);
+    when(orderService.advanceSubOrderStatus(2L, OrderAction.DONE))
+        .thenThrow(new RuntimeException("fail"));
 
     int handled = orderAutomationService.autoConfirmShippedOrders();
 
@@ -61,7 +64,7 @@ class OrderAutomationServiceImplTest {
     when(afterSaleMapper.selectList(org.mockito.ArgumentMatchers.any()))
         .thenReturn(List.of(afterSale));
 
-    when(orderService.advanceAfterSaleStatus(eq(10L), eq("PROCESS"), anyString()))
+    when(orderService.advanceAfterSaleStatus(eq(10L), eq(AfterSaleAction.PROCESS), anyString()))
         .thenReturn(afterSale);
 
     int handled = orderAutomationService.autoApproveTimedOutAfterSales();

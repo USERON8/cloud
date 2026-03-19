@@ -3,16 +3,18 @@ package com.cloud.order.controller;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.order.converter.AfterSaleDtoConverter;
 import com.cloud.order.dto.AfterSaleDTO;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
+import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderQueryService;
@@ -20,6 +22,7 @@ import com.cloud.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -41,26 +44,22 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Order API", description = "Order creation and after-sale APIs")
 public class OrderController {
 
-  private static final Set<String> AFTER_SALE_ACTIONS =
-      Set.of(
-          "AUDIT",
-          "APPROVE",
-          "REJECT",
-          "WAIT_RETURN",
-          "RETURN",
-          "RECEIVE",
-          "PROCESS",
-          "REFUND",
-          "CANCEL",
-          "CLOSE");
-  private static final Set<String> USER_AFTER_SALE_ACTIONS = Set.of("CANCEL");
-  private static final Set<String> MERCHANT_AFTER_SALE_ACTIONS =
-      Set.of("AUDIT", "APPROVE", "REJECT", "WAIT_RETURN", "RETURN", "RECEIVE");
+  private static final Set<AfterSaleAction> USER_AFTER_SALE_ACTIONS =
+      EnumSet.of(AfterSaleAction.CANCEL);
+  private static final Set<AfterSaleAction> MERCHANT_AFTER_SALE_ACTIONS =
+      EnumSet.of(
+          AfterSaleAction.AUDIT,
+          AfterSaleAction.APPROVE,
+          AfterSaleAction.REJECT,
+          AfterSaleAction.WAIT_RETURN,
+          AfterSaleAction.RETURN,
+          AfterSaleAction.RECEIVE);
 
   private final OrderService orderService;
   private final OrderPlacementService orderPlacementService;
   private final OrderBatchService orderBatchService;
   private final OrderQueryService orderQueryService;
+  private final AfterSaleDtoConverter afterSaleDtoConverter;
 
   @PostMapping
   @PreAuthorize("hasAuthority('order:create')")
@@ -70,7 +69,7 @@ public class OrderController {
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       Authentication authentication) {
     if (StrUtil.isBlank(idempotencyKey)) {
-      throw new BusinessException("Idempotency-Key header is required");
+      throw new BizException("Idempotency-Key header is required");
     }
     Long currentUserId = requireCurrentUserId(authentication);
     if (!isAdmin(authentication)) {
@@ -112,7 +111,7 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:create')")
   @Operation(summary = "Pay order")
   public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
-    orderBatchService.applyOrderAction(orderId, authentication, "PAY", null, null, null);
+    orderBatchService.applyOrderAction(orderId, authentication, OrderAction.PAY, null, null, null);
     return Result.success(true);
   }
 
@@ -123,7 +122,8 @@ public class OrderController {
       @PathVariable Long orderId,
       @RequestParam(required = false) String cancelReason,
       Authentication authentication) {
-    orderBatchService.applyOrderAction(orderId, authentication, "CANCEL", null, null, cancelReason);
+    orderBatchService.applyOrderAction(
+        orderId, authentication, OrderAction.CANCEL, null, null, cancelReason);
     return Result.success(true);
   }
 
@@ -139,7 +139,8 @@ public class OrderController {
     String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
     String tracking =
         StrUtil.isBlank(trackingNumber) ? "TEST-" + main.getMainOrderNo() : trackingNumber.trim();
-    orderBatchService.applyOrderAction(orderId, authentication, "SHIP", company, tracking, null);
+    orderBatchService.applyOrderAction(
+        orderId, authentication, OrderAction.SHIP, company, tracking, null);
     return Result.success(true);
   }
 
@@ -147,7 +148,7 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "Complete order")
   public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
-    orderBatchService.applyOrderAction(orderId, authentication, "DONE", null, null, null);
+    orderBatchService.applyOrderAction(orderId, authentication, OrderAction.DONE, null, null, null);
     return Result.success(true);
   }
 
@@ -156,7 +157,7 @@ public class OrderController {
   @Operation(summary = "Batch pay orders")
   public Result<Integer> batchPay(@RequestBody List<Long> orderIds, Authentication authentication) {
     return Result.success(
-        orderBatchService.batchApply(orderIds, authentication, "PAY", null, null, null));
+        orderBatchService.batchApply(orderIds, authentication, OrderAction.PAY, null, null, null));
   }
 
   @PostMapping("/batch/cancel")
@@ -167,7 +168,8 @@ public class OrderController {
       @RequestParam(required = false) String cancelReason,
       Authentication authentication) {
     return Result.success(
-        orderBatchService.batchApply(orderIds, authentication, "CANCEL", null, null, cancelReason));
+        orderBatchService.batchApply(
+            orderIds, authentication, OrderAction.CANCEL, null, null, cancelReason));
   }
 
   @PostMapping("/batch/ship")
@@ -181,7 +183,8 @@ public class OrderController {
     String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
     String tracking = StrUtil.isBlank(trackingNumber) ? "TEST" : trackingNumber.trim();
     return Result.success(
-        orderBatchService.batchApply(orderIds, authentication, "SHIP", company, tracking, null));
+        orderBatchService.batchApply(
+            orderIds, authentication, OrderAction.SHIP, company, tracking, null));
   }
 
   @PostMapping("/batch/complete")
@@ -190,7 +193,7 @@ public class OrderController {
   public Result<Integer> batchComplete(
       @RequestBody List<Long> orderIds, Authentication authentication) {
     return Result.success(
-        orderBatchService.batchApply(orderIds, authentication, "DONE", null, null, null));
+        orderBatchService.batchApply(orderIds, authentication, OrderAction.DONE, null, null, null));
   }
 
   @PostMapping("/after-sales")
@@ -201,7 +204,7 @@ public class OrderController {
     if (afterSaleDTO == null) {
       throw new BizException(ResultCode.BAD_REQUEST, "after sale payload is required");
     }
-    AfterSale afterSale = toAfterSaleEntity(afterSaleDTO);
+    AfterSale afterSale = afterSaleDtoConverter.toEntity(afterSaleDTO);
     Long currentUserId = requireCurrentUserId(authentication);
     if (!isAdmin(authentication)) {
       if (afterSale.getUserId() == null) {
@@ -212,7 +215,7 @@ public class OrderController {
       }
     }
     AfterSale created = orderService.applyAfterSale(afterSale);
-    return Result.success(toAfterSaleDTO(created));
+    return Result.success(afterSaleDtoConverter.toDto(created));
   }
 
   @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
@@ -239,13 +242,13 @@ public class OrderController {
             ResultCode.FORBIDDEN, "forbidden to operate another user's after-sale");
       }
     }
-    String normalizedAction = normalizeAction(action, AFTER_SALE_ACTIONS, "after-sale");
-    if (!isAllowedAfterSaleAction(normalizedAction, authentication)) {
+    AfterSaleAction afterSaleAction = AfterSaleAction.fromValue(action);
+    if (!isAllowedAfterSaleAction(afterSaleAction, authentication)) {
       throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to perform action: " + normalizedAction);
+          ResultCode.FORBIDDEN, "forbidden to perform action: " + afterSaleAction.code());
     }
-    AfterSale updated = orderService.advanceAfterSaleStatus(afterSaleId, normalizedAction, remark);
-    return Result.success(toAfterSaleDTO(updated));
+    AfterSale updated = orderService.advanceAfterSaleStatus(afterSaleId, afterSaleAction, remark);
+    return Result.success(afterSaleDtoConverter.toDto(updated));
   }
 
   private boolean isAdmin(Authentication authentication) {
@@ -256,67 +259,7 @@ public class OrderController {
     return SecurityPermissionUtils.isMerchant(authentication);
   }
 
-  private AfterSale toAfterSaleEntity(AfterSaleDTO afterSaleDTO) {
-    if (afterSaleDTO == null) {
-      return null;
-    }
-    AfterSale afterSale = new AfterSale();
-    afterSale.setId(afterSaleDTO.getId());
-    afterSale.setAfterSaleNo(afterSaleDTO.getAfterSaleNo());
-    afterSale.setMainOrderId(afterSaleDTO.getMainOrderId());
-    afterSale.setSubOrderId(afterSaleDTO.getSubOrderId());
-    afterSale.setUserId(afterSaleDTO.getUserId());
-    afterSale.setMerchantId(afterSaleDTO.getMerchantId());
-    afterSale.setAfterSaleType(afterSaleDTO.getAfterSaleType());
-    afterSale.setStatus(afterSaleDTO.getStatus());
-    afterSale.setReason(afterSaleDTO.getReason());
-    afterSale.setDescription(afterSaleDTO.getDescription());
-    afterSale.setApplyAmount(afterSaleDTO.getApplyAmount());
-    afterSale.setApprovedAmount(afterSaleDTO.getApprovedAmount());
-    afterSale.setReturnLogisticsCompany(afterSaleDTO.getReturnLogisticsCompany());
-    afterSale.setReturnLogisticsNo(afterSaleDTO.getReturnLogisticsNo());
-    afterSale.setRefundChannel(afterSaleDTO.getRefundChannel());
-    afterSale.setRefundedAt(afterSaleDTO.getRefundedAt());
-    afterSale.setClosedAt(afterSaleDTO.getClosedAt());
-    afterSale.setCloseReason(afterSaleDTO.getCloseReason());
-    afterSale.setCreatedAt(afterSaleDTO.getCreatedAt());
-    afterSale.setUpdatedAt(afterSaleDTO.getUpdatedAt());
-    afterSale.setDeleted(afterSaleDTO.getDeleted());
-    afterSale.setVersion(afterSaleDTO.getVersion());
-    return afterSale;
-  }
-
-  private AfterSaleDTO toAfterSaleDTO(AfterSale afterSale) {
-    if (afterSale == null) {
-      return null;
-    }
-    AfterSaleDTO dto = new AfterSaleDTO();
-    dto.setId(afterSale.getId());
-    dto.setAfterSaleNo(afterSale.getAfterSaleNo());
-    dto.setMainOrderId(afterSale.getMainOrderId());
-    dto.setSubOrderId(afterSale.getSubOrderId());
-    dto.setUserId(afterSale.getUserId());
-    dto.setMerchantId(afterSale.getMerchantId());
-    dto.setAfterSaleType(afterSale.getAfterSaleType());
-    dto.setStatus(afterSale.getStatus());
-    dto.setReason(afterSale.getReason());
-    dto.setDescription(afterSale.getDescription());
-    dto.setApplyAmount(afterSale.getApplyAmount());
-    dto.setApprovedAmount(afterSale.getApprovedAmount());
-    dto.setReturnLogisticsCompany(afterSale.getReturnLogisticsCompany());
-    dto.setReturnLogisticsNo(afterSale.getReturnLogisticsNo());
-    dto.setRefundChannel(afterSale.getRefundChannel());
-    dto.setRefundedAt(afterSale.getRefundedAt());
-    dto.setClosedAt(afterSale.getClosedAt());
-    dto.setCloseReason(afterSale.getCloseReason());
-    dto.setCreatedAt(afterSale.getCreatedAt());
-    dto.setUpdatedAt(afterSale.getUpdatedAt());
-    dto.setDeleted(afterSale.getDeleted());
-    dto.setVersion(afterSale.getVersion());
-    return dto;
-  }
-
-  private boolean isAllowedAfterSaleAction(String action, Authentication authentication) {
+  private boolean isAllowedAfterSaleAction(AfterSaleAction action, Authentication authentication) {
     if (isAdmin(authentication)) {
       return true;
     }
@@ -326,24 +269,13 @@ public class OrderController {
     return USER_AFTER_SALE_ACTIONS.contains(action);
   }
 
-  private String normalizeAction(String action, Set<String> allowedActions, String scope) {
-    if (StrUtil.isBlank(action)) {
-      throw new BusinessException(scope + " action is required");
-    }
-    String normalized = action.trim().toUpperCase();
-    if (!allowedActions.contains(normalized)) {
-      throw new BusinessException("unsupported " + scope + " action: " + normalized);
-    }
-    return normalized;
-  }
-
   private Long requireCurrentUserId(Authentication authentication) {
     String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
     if (userId == null || userId.isBlank()) {
-      throw new BusinessException("current user not found in token");
+      throw new BizException("current user not found in token");
     }
     if (!StrUtil.isNumeric(userId)) {
-      throw new BusinessException("invalid user_id in token");
+      throw new BizException("invalid user_id in token");
     }
     return Long.parseLong(userId);
   }

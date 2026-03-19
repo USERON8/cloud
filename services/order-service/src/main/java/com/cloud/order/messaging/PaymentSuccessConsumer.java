@@ -8,6 +8,7 @@ import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
@@ -78,7 +79,7 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
         continue;
       }
       confirmStockForSubOrder(subOrder, wrapped.getItems(), event.getOrderNo());
-      orderService.advanceSubOrderStatus(subOrder.getId(), "PAY");
+      orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.PAY);
     }
 
     pushPaymentSuccessMessage(event);
