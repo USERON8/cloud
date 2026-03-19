@@ -1,27 +1,22 @@
 package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.common.exception.SystemException;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
-import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.messaging.PaymentMessageProducer;
-import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
-import com.cloud.payment.service.support.PaymentSecurityCacheService;
+import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -30,9 +25,6 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class PaymentCompensationServiceImpl implements PaymentCompensationService {
 
-  private static final String ORDER_STATUS_CREATED = "CREATED";
-  private static final String ORDER_STATUS_PAID = "PAID";
-  private static final String ORDER_STATUS_FAILED = "FAILED";
   private static final String REFUND_STATUS_REFUNDING = "REFUNDING";
   private static final String REFUND_STATUS_REFUNDED = "REFUNDED";
   private static final String REFUND_STATUS_REFUND_FAILED = "REFUND_FAILED";
@@ -42,9 +34,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
   private final PaymentCompensationProperties properties;
   private final List<PaymentProviderGateway> providerGateways;
   private final PaymentMessageProducer paymentMessageProducer;
-  private final ObjectProvider<PaymentSuccessTxProducer> paymentSuccessTxProducerProvider;
-  private final TradeMetrics tradeMetrics;
-  private final PaymentSecurityCacheService paymentSecurityCacheService;
+  private final PaymentOrderStateSupport paymentOrderStateSupport;
 
   @Override
   public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
@@ -66,7 +56,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     List<PaymentOrderEntity> orders =
         paymentOrderMapper.selectList(
             new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getStatus, ORDER_STATUS_CREATED)
+                .eq(PaymentOrderEntity::getStatus, PaymentOrderStateSupport.ORDER_STATUS_CREATED)
                 .eq(PaymentOrderEntity::getDeleted, 0)
                 .isNotNull(PaymentOrderEntity::getNextPollAt)
                 .le(PaymentOrderEntity::getNextPollAt, now)
@@ -132,14 +122,12 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
 
     switch (result.status()) {
       case PAID -> {
-        order.setStatus(ORDER_STATUS_PAID);
-        order.setPaidAt(result.paidAt() != null ? result.paidAt() : now);
+        paymentOrderStateSupport.markPaid(order, result.providerTxnNo(), result.paidAt());
         order.setNextPollAt(null);
         order.setLastPollError(null);
-        publishPaymentSuccessIfNeeded(order, previousStatus);
       }
       case FAILED -> {
-        order.setStatus(ORDER_STATUS_FAILED);
+        paymentOrderStateSupport.markFailed(order);
         order.setNextPollAt(null);
         order.setLastPollError(truncate(result.message()));
       }
@@ -154,16 +142,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
       }
     }
     paymentOrderMapper.updateById(order);
-    if (ORDER_STATUS_PAID.equals(order.getStatus())
-        || ORDER_STATUS_FAILED.equals(order.getStatus())) {
-      paymentSecurityCacheService.evictStatus(order.getPaymentNo());
-    }
-    if (!ORDER_STATUS_PAID.equals(previousStatus) && ORDER_STATUS_PAID.equals(order.getStatus())) {
-      tradeMetrics.incrementPayment("success");
-    } else if (!ORDER_STATUS_FAILED.equals(previousStatus)
-        && ORDER_STATUS_FAILED.equals(order.getStatus())) {
-      tradeMetrics.incrementPayment("failed");
-    }
+    paymentOrderStateSupport.handlePersistedState(order, previousStatus);
   }
 
   private void applyRefundAttempt(
@@ -205,27 +184,6 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
           attemptNumber,
           firstAttempt);
     }
-  }
-
-  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
-    if (ORDER_STATUS_PAID.equals(previousStatus)) {
-      return;
-    }
-    PaymentSuccessEvent event =
-        PaymentSuccessEvent.builder()
-            .paymentId(order.getId())
-            .orderNo(order.getMainOrderNo())
-            .subOrderNo(order.getSubOrderNo())
-            .userId(order.getUserId())
-            .amount(order.getAmount())
-            .paymentMethod(order.getChannel())
-            .transactionNo(order.getProviderTxnNo())
-            .build();
-    PaymentSuccessTxProducer producer = paymentSuccessTxProducerProvider.getIfAvailable();
-    if (producer == null) {
-      throw new SystemException("rocketmq template is not configured for tx producer");
-    }
-    producer.send(event);
   }
 
   private void publishRefundCompletedIfNeeded(

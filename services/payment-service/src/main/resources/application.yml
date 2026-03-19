@@ -50,7 +50,7 @@ mybatis-plus:
 app:
   doc:
     title: Payment Service API
-    description: Payment and refund endpoints
+    description: Payment order, refund, and compensation endpoints
     version: 1.1.0
   async:
     executors:
@@ -144,7 +144,6 @@ payment:
       enabled: ${PAYMENT_RATE_LIMIT_ENABLED:true}
       window-seconds: ${PAYMENT_RATE_LIMIT_WINDOW_SECONDS:60}
       max-requests: ${PAYMENT_RATE_LIMIT_MAX_REQUESTS:20}
-    alipay-token-ttl-seconds: ${PAYMENT_ALIPAY_TOKEN_TTL_SECONDS:1500}
 
 redis:
   host: ${SPRING_REDIS_HOST:127.0.0.1}
@@ -178,8 +177,6 @@ alipay:
   merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}
   alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
-  notify-url: ${ALIPAY_NOTIFY_URL:${CPOLAR_PUBLIC_BASE_URL:http://127.0.0.1:8086}/api/v1/payment/alipay/notify}
-  return-url: ${ALIPAY_RETURN_URL:${CPOLAR_FRONTEND_BASE_URL:http://127.0.0.1:3000}/payment/success}
   app-encrypt-key: ${ALIPAY_APP_ENCRYPT_KEY:}
   sign-type: RSA2
   charset: UTF-8
@@ -188,18 +185,13 @@ alipay:
 
 springdoc:
   group-configs:
-    - group: 'payment-manage'
-      paths-to-match: '/api/v1/payment/manage/**'
-    - group: 'payment-query'
-      paths-to-match: '/api/v1/payment/query/**'
-    - group: 'payment-operation'
-      paths-to-match: '/api/v1/payment/operation/**'
+    - group: 'payment'
+      paths-to-match: '/api/payments/**'
+    - group: 'payment-callback'
+      paths-to-match: '/api/v1/payment/alipay/notify'
 
 xxl:
   job:
     executor:
       port: ${XXL_JOB_PORT:19086}
-
-seata:
-  enabled: false
 

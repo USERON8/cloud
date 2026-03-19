@@ -7,23 +7,19 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.exception.BusinessException;
-import com.cloud.common.exception.SystemException;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
-import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
-import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
+import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +32,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final PaymentCallbackLogMapper paymentCallbackLogMapper;
   private final PaymentCompensationService paymentCompensationService;
   private final OrderStatusRemoteService orderStatusRemoteService;
-  private final ObjectProvider<PaymentSuccessTxProducer> paymentSuccessTxProducerProvider;
-  private final TradeMetrics tradeMetrics;
+  private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
 
   @Override
@@ -173,46 +168,16 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     paymentCallbackLogMapper.insert(log);
 
     if ("SUCCESS".equalsIgnoreCase(command.getCallbackStatus())) {
-      order.setStatus("PAID");
-      order.setProviderTxnNo(command.getProviderTxnNo());
-      if (order.getPaidAt() == null) {
-        order.setPaidAt(LocalDateTime.now());
-      }
-      publishPaymentSuccess(order, command);
+      paymentOrderStateSupport.markPaid(order, command.getProviderTxnNo(), LocalDateTime.now());
     } else if ("FAIL".equalsIgnoreCase(command.getCallbackStatus())) {
-      order.setStatus("FAILED");
+      paymentOrderStateSupport.markFailed(order);
     }
     order.setNextPollAt(null);
     order.setLastPolledAt(LocalDateTime.now());
     order.setLastPollError(null);
     paymentOrderMapper.updateById(order);
-    if ("PAID".equals(order.getStatus()) || "FAILED".equals(order.getStatus())) {
-      paymentSecurityCacheService.evictStatus(order.getPaymentNo());
-    }
-    if (!"PAID".equals(previousStatus) && "PAID".equals(order.getStatus())) {
-      tradeMetrics.incrementPayment("success");
-    } else if (!"FAILED".equals(previousStatus) && "FAILED".equals(order.getStatus())) {
-      tradeMetrics.incrementPayment("failed");
-    }
+    paymentOrderStateSupport.handlePersistedState(order, previousStatus);
     return true;
-  }
-
-  private void publishPaymentSuccess(PaymentOrderEntity order, PaymentCallbackCommandDTO command) {
-    PaymentSuccessEvent event =
-        PaymentSuccessEvent.builder()
-            .paymentId(order.getId())
-            .orderNo(order.getMainOrderNo())
-            .subOrderNo(order.getSubOrderNo())
-            .userId(order.getUserId())
-            .amount(order.getAmount())
-            .paymentMethod(order.getChannel())
-            .transactionNo(command.getProviderTxnNo())
-            .build();
-    PaymentSuccessTxProducer producer = paymentSuccessTxProducerProvider.getIfAvailable();
-    if (producer == null) {
-      throw new SystemException("rocketmq template is not configured for tx producer");
-    }
-    producer.send(event);
   }
 
   @Override

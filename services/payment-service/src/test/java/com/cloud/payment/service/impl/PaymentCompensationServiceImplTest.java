@@ -14,6 +14,7 @@ import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
+import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,6 +50,9 @@ class PaymentCompensationServiceImplTest {
   @BeforeEach
   void setUp() {
     PaymentCompensationProperties properties = new PaymentCompensationProperties();
+    PaymentOrderStateSupport paymentOrderStateSupport =
+        new PaymentOrderStateSupport(
+            paymentSuccessTxProducerProvider, tradeMetrics, paymentSecurityCacheService);
     paymentCompensationService =
         new PaymentCompensationServiceImpl(
             paymentOrderMapper,
@@ -56,9 +60,7 @@ class PaymentCompensationServiceImplTest {
             properties,
             List.of(providerGateway),
             paymentMessageProducer,
-            paymentSuccessTxProducerProvider,
-            tradeMetrics,
-            paymentSecurityCacheService);
+            paymentOrderStateSupport);
   }
 
   @Test

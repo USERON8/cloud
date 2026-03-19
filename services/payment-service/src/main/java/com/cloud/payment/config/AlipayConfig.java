@@ -28,11 +28,6 @@ public class AlipayConfig {
   @NotBlank(message = "Alipay gateway url cannot be blank")
   private String gatewayUrl;
 
-  @NotBlank(message = "Alipay notify url cannot be blank")
-  private String notifyUrl;
-
-  private String returnUrl;
-
   private String appEncryptKey;
 
   private String signType = "RSA2";

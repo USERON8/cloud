@@ -13,9 +13,11 @@ import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.messaging.PaymentSuccessTxProducer;
+import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
+import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,9 @@ class PaymentOrderServiceImplTest {
 
   @BeforeEach
   void setUp() {
+    PaymentOrderStateSupport paymentOrderStateSupport =
+        new PaymentOrderStateSupport(
+            paymentSuccessTxProducerProvider, tradeMetrics, paymentSecurityCacheService);
     service =
         new PaymentOrderServiceImpl(
             paymentOrderMapper,
@@ -57,8 +62,7 @@ class PaymentOrderServiceImplTest {
             paymentCallbackLogMapper,
             paymentCompensationService,
             orderStatusRemoteService,
-            paymentSuccessTxProducerProvider,
-            tradeMetrics,
+            paymentOrderStateSupport,
             paymentSecurityCacheService);
   }
 
@@ -102,6 +106,42 @@ class PaymentOrderServiceImplTest {
     verify(paymentSecurityCacheService)
         .cacheResult(command.getMainOrderNo() + ":" + command.getSubOrderNo(), 77L);
     verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
+  }
+
+  @Test
+  void handlePaymentCallbackShouldPublishWhenOrderBecomesPaid() {
+    var command = new com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO();
+    command.setPaymentNo("P-2");
+    command.setCallbackNo("CB-1");
+    command.setCallbackStatus("SUCCESS");
+    command.setProviderTxnNo("TXN-2");
+    command.setIdempotencyKey("callback-idem");
+
+    PaymentOrderEntity order = new PaymentOrderEntity();
+    order.setId(12L);
+    order.setPaymentNo("P-2");
+    order.setMainOrderNo("M-2");
+    order.setSubOrderNo("S-2");
+    order.setUserId(7L);
+    order.setAmount(BigDecimal.TEN);
+    order.setChannel("ALIPAY");
+    order.setStatus("CREATED");
+
+    when(paymentCallbackLogMapper.selectOne(any())).thenReturn(null);
+    when(paymentOrderMapper.selectOne(any())).thenReturn(order);
+    when(paymentSuccessTxProducerProvider.getIfAvailable()).thenReturn(paymentSuccessTxProducer);
+
+    Boolean handled = service.handlePaymentCallback(command);
+
+    assertThat(handled).isTrue();
+    assertThat(order.getStatus()).isEqualTo("PAID");
+    assertThat(order.getProviderTxnNo()).isEqualTo("TXN-2");
+    assertThat(order.getPaidAt()).isNotNull();
+    verify(paymentCallbackLogMapper).insert(any(PaymentCallbackLogEntity.class));
+    verify(paymentOrderMapper).updateById(order);
+    verify(paymentSecurityCacheService).evictStatus("P-2");
+    verify(paymentSuccessTxProducer).send(any());
+    verify(tradeMetrics).incrementPayment("success");
   }
 
   private PaymentOrderCommandDTO buildCommand() {

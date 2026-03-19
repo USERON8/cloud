@@ -1,7 +1,7 @@
 ﻿# Payment Service
 Version: 1.1.0
 
-支付服务，包含支付单管理和支付宝聚合接口。
+支付服务，包含支付单管理、退款处理和支付通道补偿能力。
 
 - 服务名：`payment-service`
 - 端口：`8086`
@@ -10,8 +10,14 @@ Version: 1.1.0
 
 ## 核心接口
 
-- 支付单：`/api/payments/**`
-- 支付宝：`/api/v1/payment/alipay/** (create/query/refund/close/notify/verify)`
+- 支付单创建：`POST /api/payments/orders`
+- 支付单查询：`GET /api/payments/orders/{paymentNo}`
+- 支付状态查询：`GET /api/payments/orders/{paymentNo}/status`
+- 内部回调处理：`POST /api/payments/callbacks`
+- 外部回调兼容入口：`POST /api/v1/payment/alipay/notify`
+- 退款创建：`POST /api/payments/refunds`
+- 退款查询：`GET /api/payments/refunds/{refundNo}`
+- 支付通道接入：由 `PaymentProviderGateway` 实现，目前已接入支付宝查询/退款补偿链路
 
 ## 消息与一致性
 
@@ -30,28 +36,4 @@ Version: 1.1.0
 ```bash
 mvn -pl payment-service spring-boot:run
 ```
-
-## Cpolar 适配
-
-使用 cpolar 暴露支付回调地址时，直接注入环境变量即可，不需要改代码：
-
-```bash
-# 例如你的 cpolar 公网地址
-export CPOLAR_PUBLIC_BASE_URL=https://xxxxxx.cpolar.cn
-export CPOLAR_FRONTEND_BASE_URL=https://xxxxxx.cpolar.cn
-
-# 或者你想完全手动指定支付宝回调地址
-# export ALIPAY_NOTIFY_URL=https://xxxxxx.cpolar.cn/api/v1/payment/alipay/notify
-# export ALIPAY_RETURN_URL=https://xxxxxx.cpolar.cn/payment/success
-
-# 接口内容加密（可选）
-# export ALIPAY_APP_ENCRYPT_KEY=你的appEncryptKey
-
-mvn -pl payment-service spring-boot:run
-```
-
-优先级：
-1. `ALIPAY_NOTIFY_URL` / `ALIPAY_RETURN_URL`
-2. `CPOLAR_PUBLIC_BASE_URL` / `CPOLAR_FRONTEND_BASE_URL`
-3. 默认本地地址（`127.0.0.1`）
 

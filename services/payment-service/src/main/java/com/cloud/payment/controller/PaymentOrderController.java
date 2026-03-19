@@ -92,7 +92,7 @@ public class PaymentOrderController {
 
   @PostMapping("/callbacks")
   @PreAuthorize("hasAuthority('order:refund')")
-  @Operation(summary = "Handle payment callback")
+  @Operation(summary = "Handle internal payment callback")
   public Result<Boolean> handleCallback(@Valid @RequestBody PaymentCallbackCommandDTO command) {
     return Result.success(paymentOrderService.handlePaymentCallback(command));
   }

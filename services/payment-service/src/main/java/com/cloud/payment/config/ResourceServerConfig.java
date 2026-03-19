@@ -4,7 +4,6 @@ import com.cloud.common.config.ServiceSecurityCustomizer;
 import com.cloud.common.security.JwtAuthorityUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -22,12 +21,8 @@ public class ResourceServerConfig {
         authz
             .requestMatchers("/api/v1/payment/alipay/notify")
             .permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/payments/orders/*")
-            .authenticated()
             .requestMatchers("/api/payments/**")
-            .hasAnyRole("USER", "ADMIN")
-            .requestMatchers("/api/v1/payment/alipay/**")
-            .hasAnyRole("USER", "ADMIN");
+            .authenticated();
       }
 
       @Override

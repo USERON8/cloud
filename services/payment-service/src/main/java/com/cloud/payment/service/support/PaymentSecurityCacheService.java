@@ -17,7 +17,6 @@ public class PaymentSecurityCacheService {
   private static final String STATUS_HASH_USER_ID = "userId";
   private static final String STATUS_HASH_STATUS = "status";
   private static final String RATE_PREFIX = "pay:rate:";
-  private static final String ALIPAY_TOKEN_KEY = "pay:alipay:config";
 
   private final StringRedisTemplate stringRedisTemplate;
 
@@ -38,9 +37,6 @@ public class PaymentSecurityCacheService {
 
   @Value("${payment.security.rate-limit.max-requests:20}")
   private int rateLimitMaxRequests;
-
-  @Value("${payment.security.alipay-token-ttl-seconds:1500}")
-  private long alipayTokenTtlSeconds;
 
   public PaymentSecurityCacheService(StringRedisTemplate stringRedisTemplate) {
     this.stringRedisTemplate = stringRedisTemplate;
@@ -193,29 +189,6 @@ public class PaymentSecurityCacheService {
     } catch (Exception ex) {
       log.warn("Rate limit check failed: userId={}", userId, ex);
       return true;
-    }
-  }
-
-  public String getAlipayToken() {
-    try {
-      String value = stringRedisTemplate.opsForValue().get(ALIPAY_TOKEN_KEY);
-      return value == null || value.isBlank() ? null : value;
-    } catch (Exception ex) {
-      log.warn("Read alipay token cache failed", ex);
-      return null;
-    }
-  }
-
-  public void cacheAlipayToken(String token) {
-    if (token == null || token.isBlank()) {
-      return;
-    }
-    try {
-      stringRedisTemplate
-          .opsForValue()
-          .set(ALIPAY_TOKEN_KEY, token, Duration.ofSeconds(safeSeconds(alipayTokenTtlSeconds, 60)));
-    } catch (Exception ex) {
-      log.warn("Write alipay token cache failed", ex);
     }
   }
 
