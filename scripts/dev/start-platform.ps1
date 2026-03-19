@@ -87,6 +87,8 @@ function Wait-Infrastructure {
         @{ name = "mysql"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MYSQL" -DefaultValue 13306) },
         @{ name = "redis"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_REDIS" -DefaultValue 16379) },
         @{ name = "nacos"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_HTTP" -DefaultValue 18848) },
+        @{ name = "nacos-grpc"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_GRPC" -DefaultValue 19848) },
+        @{ name = "nacos-grpc-compat"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_GRPC_COMPAT" -DefaultValue 12937) },
         @{ name = "rocketmq-namesrv"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011) },
         @{ name = "elasticsearch"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_ES_HTTP" -DefaultValue 19200) },
         @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) },
@@ -104,12 +106,68 @@ function Wait-Infrastructure {
         )
     }
 
+    function Get-NacosHealthState {
+        param(
+            [Parameter(Mandatory = $true)]
+            [int]$Port
+        )
+
+        $response = $null
+        try {
+            $request = [System.Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/nacos/actuator/health")
+            $request.Method = "GET"
+            $request.Timeout = 5000
+            $request.ReadWriteTimeout = 5000
+            $response = [System.Net.HttpWebResponse]$request.GetResponse()
+            if ([int]$response.StatusCode -ne 200) {
+                return $false
+            }
+            $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+            $content = $reader.ReadToEnd()
+            $reader.Dispose()
+            return $content -match '"status"\s*:\s*"UP"'
+        } catch {
+            return $false
+        } finally {
+            if ($null -ne $response) {
+                $response.Dispose()
+            }
+        }
+    }
+
     foreach ($target in $targets) {
         Write-Host ("WAIT_PORT name={0} port={1} status=waiting" -f $target.name, $target.port)
         if (-not (Wait-TcpPort -TargetHost "127.0.0.1" -Port $target.port -TimeoutSeconds 120 -SleepMilliseconds 1000)) {
             throw ("Infrastructure port not ready: {0}:{1}" -f $target.name, $target.port)
         }
+        if ($target.name -eq "nacos") {
+            $deadline = (Get-Date).AddSeconds(120)
+            $ready = $false
+            while ((Get-Date) -lt $deadline) {
+                if (Get-NacosHealthState -Port $target.port) {
+                    $ready = $true
+                    break
+                }
+                Start-Sleep -Seconds 2
+            }
+            if (-not $ready) {
+                throw ("Infrastructure service not ready: {0}:{1}" -f $target.name, $target.port)
+            }
+        }
         Write-Host ("WAIT_PORT name={0} port={1} status=ready" -f $target.name, $target.port)
+    }
+
+    $nacosWarmupSeconds = 15
+    if (-not [string]::IsNullOrWhiteSpace($env:NACOS_READY_GRACE_SECONDS)) {
+        $parsedWarmup = 0
+        if ([int]::TryParse($env:NACOS_READY_GRACE_SECONDS, [ref]$parsedWarmup) -and $parsedWarmup -ge 0) {
+            $nacosWarmupSeconds = $parsedWarmup
+        }
+    }
+    if ($nacosWarmupSeconds -gt 0) {
+        Write-Host ("WAIT_PORT name=nacos-ready grace={0} status=waiting" -f $nacosWarmupSeconds)
+        Start-Sleep -Seconds $nacosWarmupSeconds
+        Write-Host ("WAIT_PORT name=nacos-ready grace={0} status=ready" -f $nacosWarmupSeconds)
     }
 }
 

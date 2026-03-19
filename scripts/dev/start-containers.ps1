@@ -17,29 +17,12 @@ $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
 
-$baseImages = @(
-    "mysql:9.3.0",
-    "redis:7.4.5-bookworm",
-    "nacos/nacos-server:v3.0.2",
-    "apache/rocketmq:5.3.2",
-    "apacherocketmq/rocketmq-dashboard:2.1.0",
-    "nginx:stable-perl",
-    "minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1",
-    "elasticsearch:9.1.2",
-    "kibana:9.1.2",
-    "logstash:9.1.2",
-    "apache/seata-server:2.6.0.jdk17"
-)
-
-$monitoringImages = @(
-    "bitnami/prometheus:3.5.0-debian-12-r3",
-    "grafana/grafana:12.2.0-17084981832",
-    "oliver006/redis_exporter:v1.67.0",
-    "prom/mysqld-exporter:v0.17.2",
-    "nginx/nginx-prometheus-exporter:1.4.2",
-    "quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0",
-    "prom/blackbox-exporter:v0.26.0"
-)
+function Assert-DockerDaemonReady {
+    docker version | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker daemon is not ready. Start Docker Desktop first."
+    }
+}
 
 $envPath = Join-Path $root "docker\.env"
 if (-not (Test-Path $envPath)) {
@@ -73,36 +56,18 @@ if ($killPorts) {
     }
 }
 
-$imagesToCheck = @($baseImages)
-if ($WithMonitoring) {
-    $imagesToCheck += $monitoringImages
-}
-
 if ($DryRun) {
-    Write-Host ("DRY_RUN_DONE script=start-containers images={0}" -f (($imagesToCheck | Select-Object -Unique) -join ","))
+    Write-Host ("DRY_RUN_DONE script=start-containers withMonitoring={0}" -f $WithMonitoring)
     exit 0
 }
 
-$missingImages = New-Object System.Collections.Generic.List[string]
-foreach ($image in ($imagesToCheck | Select-Object -Unique)) {
-    cmd /c "docker image inspect $image >nul 2>nul" | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host ("IMAGE_CHECK image={0} exists=true action=use-local" -f $image)
-    } else {
-        Write-Host ("IMAGE_CHECK image={0} exists=false action=abort" -f $image)
-        $missingImages.Add($image)
-    }
-}
-
-if ($missingImages.Count -gt 0) {
-    throw ("Local image check failed. Missing images: {0}" -f ($missingImages -join ", "))
-}
+Assert-DockerDaemonReady
 
 Push-Location (Join-Path $root "docker")
 try {
-    docker compose -f docker-compose.yml up -d --pull never
+    docker compose -f docker-compose.yml up -d --pull missing --build
     if ($WithMonitoring) {
-        docker compose -f monitoring-compose.yml up -d --pull never `
+        docker compose -f monitoring-compose.yml up -d --pull missing `
             prometheus grafana redis-exporter mysqld-exporter `
             nginx-exporter elasticsearch-exporter blackbox-exporter
     }

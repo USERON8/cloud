@@ -75,14 +75,14 @@ if ! [[ "$STOP_TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
 fi
 
 ALL_SERVICES=(
-  "gateway|8080|services/gateway/target/gateway-0.0.1-SNAPSHOT.jar"
-  "auth-service|8081|services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar"
-  "user-service|8082|services/user-service/target/user-service-0.0.1-SNAPSHOT.jar"
-  "order-service|8083|services/order-service/target/order-service-0.0.1-SNAPSHOT.jar"
-  "product-service|8084|services/product-service/target/product-service-0.0.1-SNAPSHOT.jar"
-  "stock-service|8085|services/stock-service/target/stock-service-0.0.1-SNAPSHOT.jar"
-  "payment-service|8086|services/payment-service/target/payment-service-0.0.1-SNAPSHOT.jar"
-  "search-service|8087|services/search-service/target/search-service-0.0.1-SNAPSHOT.jar"
+  "gateway|8080|services/gateway/target/gateway-1.1.0.jar"
+  "auth-service|8081|services/auth-service/target/auth-service-1.1.0.jar"
+  "user-service|8082|services/user-service/target/user-service-1.1.0.jar"
+  "order-service|8083|services/order-service/target/order-service-1.1.0.jar"
+  "product-service|8084|services/product-service/target/product-service-1.1.0.jar"
+  "stock-service|8085|services/stock-service/target/stock-service-1.1.0.jar"
+  "payment-service|8086|services/payment-service/target/payment-service-1.1.0.jar"
+  "search-service|8087|services/search-service/target/search-service-1.1.0.jar"
 )
 
 declare -A SERVICE_INDEX=()

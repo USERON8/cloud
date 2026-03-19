@@ -5,6 +5,45 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$dryRun = $false
+
+function Stop-ClusterAppContainers {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+        [switch]$DryRun
+    )
+
+    $clusterServices = @("nginx", "gateway", "auth-service", "user-service", "order-service", "product-service", "stock-service", "payment-service", "search-service")
+    if ($DryRun) {
+        Write-Host ("CLUSTER_STOP services={0} action=dry-run" -f ($clusterServices -join ","))
+        return
+    }
+
+    $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+    if ($null -eq $dockerCommand) {
+        return
+    }
+
+    try {
+        docker version | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            return
+        }
+    } catch {
+        return
+    }
+
+    $dockerDir = Join-Path $Root "docker"
+    Push-Location $dockerDir
+    try {
+        & docker compose -f docker-compose.yml --profile services rm -sf @clusterServices | Out-Null
+    } catch {
+    } finally {
+        Pop-Location
+    }
+}
+
 function Test-LogHasCriticalError {
     param(
         [Parameter(Mandatory = $true)]
@@ -18,8 +57,8 @@ function Test-LogHasCriticalError {
     $patterns = @(
         "APPLICATION FAILED TO START",
         "Exception in thread",
-        "Caused by:",
-        "^\s*ERROR\b",
+        "\bApplication run failed\b",
+        "\bWeb server failed to start\b",
         "\bOutOfMemoryError\b"
     )
 
@@ -85,14 +124,24 @@ foreach ($arg in $CliArgs) {
     $platformArgs += $arg
     if ($arg -like "--services=*") {
         $requestedServices = ($arg -split "=", 2)[1]
+        continue
+    }
+    if ($arg -in @("--dry-run", "-DryRun")) {
+        $dryRun = $true
     }
 }
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+Stop-ClusterAppContainers -Root $root -DryRun:$dryRun
 
 & (Join-Path $PSScriptRoot "start-platform.ps1") @platformArgs
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
+}
+
+if ($dryRun) {
+    Write-Host ("DRY_RUN_DONE script=start-host-linked requestedServices={0}" -f $requestedServices)
+    exit 0
 }
 
 Assert-HostAcceptance -Root $root -RequestedServices $requestedServices

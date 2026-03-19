@@ -42,14 +42,14 @@ for ($index = 0; $index -lt $CliArgs.Count; $index++) {
 
 function Get-ServiceCatalog {
     return @(
-        [pscustomobject]@{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-1.1.0.jar"; profiles = "dev,route" },
-        [pscustomobject]@{ name = "auth-service";    port = 8081; jar = "services\auth-service\target\auth-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "user-service";    port = 8082; jar = "services\user-service\target\user-service-1.1.0.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "auth-service";    port = 8081; jar = "services\auth-service\target\auth-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "product-service"; port = 8084; jar = "services\product-service\target\product-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "stock-service";   port = 8085; jar = "services\stock-service\target\stock-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "payment-service"; port = 8086; jar = "services\payment-service\target\payment-service-1.1.0.jar"; profiles = "dev" },
-        [pscustomobject]@{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-1.1.0.jar"; profiles = "dev" }
+        [pscustomobject]@{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-1.1.0.jar"; profiles = "dev,route" }
     )
 }
 
@@ -112,6 +112,105 @@ function Resolve-WritableDir {
         New-Item -ItemType Directory -Force -Path $FallbackDir | Out-Null
         return $FallbackDir
     }
+}
+
+function Get-ServiceModulePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$JarRelativePath
+    )
+
+    return Split-Path (Split-Path $JarRelativePath -Parent) -Parent
+}
+
+function Ensure-ServiceArtifacts {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$Services,
+        [Parameter(Mandatory = $true)]
+        [string]$Root
+    )
+
+    $missingServices = @()
+    $modulePaths = New-Object System.Collections.Generic.List[string]
+    $moduleSeen = @{}
+    foreach ($service in $Services) {
+        $jarPath = Join-Path $Root $service.jar
+        if (Test-Path $jarPath) {
+            continue
+        }
+
+        $missingServices += $service
+        $modulePath = Get-ServiceModulePath -JarRelativePath $service.jar
+        if (-not $moduleSeen.ContainsKey($modulePath)) {
+            $modulePaths.Add($modulePath)
+            $moduleSeen[$modulePath] = $true
+        }
+    }
+
+    if ($missingServices.Count -eq 0) {
+        return
+    }
+
+    $mvnCommand = Get-Command mvn -ErrorAction SilentlyContinue
+    if ($null -eq $mvnCommand) {
+        throw "mvn not found, cannot build missing service artifacts"
+    }
+
+    $requestedServices = ($missingServices | ForEach-Object { $_.name }) -join ","
+    $requestedModules = $modulePaths -join ","
+    Write-Host ("ARTIFACT_BUILD action=package services={0} modules={1}" -f $requestedServices, $requestedModules)
+
+    Push-Location $Root
+    try {
+        & $mvnCommand.Source "-DskipTests" "-T" "1C" "-pl" $requestedModules "-am" "package"
+        if ($LASTEXITCODE -ne 0) {
+            throw ("maven package failed for services: {0}" -f $requestedServices)
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $remainingMissing = $missingServices | Where-Object { -not (Test-Path (Join-Path $Root $_.jar)) }
+    if ($remainingMissing.Count -gt 0) {
+        throw ("service artifacts still missing after package: {0}" -f (($remainingMissing | ForEach-Object { $_.name }) -join ","))
+    }
+}
+
+function Get-ServiceEnvironmentOverrides {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ServiceName
+    )
+
+    $overrides = @{}
+    switch ($ServiceName) {
+        "auth-service" {
+            $overrides["SEATA_ENABLED"] = "false"
+        }
+        "user-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20880"
+            $overrides["APP_MYBATIS_ILLEGAL_SQL_ENABLED"] = "false"
+        }
+        "order-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20882"
+        }
+        "product-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20884"
+        }
+        "stock-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20886"
+        }
+        "payment-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20888"
+        }
+        "search-service" {
+            $overrides["SEATA_ENABLED"] = "false"
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20890"
+        }
+    }
+
+    return $overrides
 }
 
 function Update-ServiceStateFiles {
@@ -214,6 +313,7 @@ if ($DryRun) {
     exit 0
 }
 
+Ensure-ServiceArtifacts -Services $services -Root $root
 Set-ServiceRuntimeEnvironment -Root $root
 
 $java = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin\java.exe"))) {
@@ -256,6 +356,13 @@ if (-not [string]::IsNullOrWhiteSpace($env:SERVICE_STARTUP_TIMEOUT_SECONDS)) {
     $parsedTimeout = 0
     if ([int]::TryParse($env:SERVICE_STARTUP_TIMEOUT_SECONDS, [ref]$parsedTimeout) -and $parsedTimeout -gt 0) {
         $startupTimeoutSeconds = $parsedTimeout
+    }
+}
+$healthStabilizationSeconds = 8
+if (-not [string]::IsNullOrWhiteSpace($env:SERVICE_HEALTH_STABILIZATION_SECONDS)) {
+    $parsedStabilization = 0
+    if ([int]::TryParse($env:SERVICE_HEALTH_STABILIZATION_SECONDS, [ref]$parsedStabilization) -and $parsedStabilization -ge 0) {
+        $healthStabilizationSeconds = $parsedStabilization
     }
 }
 
@@ -366,6 +473,8 @@ foreach ($svc in $services) {
     $previousJavaToolOptions = $env:JAVA_TOOL_OPTIONS
     $previousAgentName = $env:SW_AGENT_NAME
     $previousLoggingDir = $env:SW_LOGGING_DIR
+    $serviceEnvOverrides = Get-ServiceEnvironmentOverrides -ServiceName $name
+    $previousServiceEnv = @{}
     if ($skywalkingAgentAvailable) {
         $skywalkingLogDir = Join-Path $runtimeLogDir "skywalking-agent"
         New-Item -ItemType Directory -Force -Path $skywalkingLogDir | Out-Null
@@ -376,6 +485,10 @@ foreach ($svc in $services) {
         $env:JAVA_TOOL_OPTIONS = $javaToolOptions
         $env:SW_AGENT_NAME = $name
         $env:SW_LOGGING_DIR = $skywalkingLogDir
+    }
+    foreach ($entry in $serviceEnvOverrides.GetEnumerator()) {
+        $previousServiceEnv[$entry.Key] = [Environment]::GetEnvironmentVariable($entry.Key, "Process")
+        Set-Item -Path ("Env:{0}" -f $entry.Key) -Value $entry.Value
     }
     foreach ($jvmOpt in ($serviceJvmOpts -split '\s+')) {
         if (-not [string]::IsNullOrWhiteSpace($jvmOpt)) {
@@ -411,6 +524,13 @@ foreach ($svc in $services) {
                 Remove-Item Env:\SW_LOGGING_DIR -ErrorAction SilentlyContinue
             }
         }
+        foreach ($entry in $serviceEnvOverrides.GetEnumerator()) {
+            if ($null -ne $previousServiceEnv[$entry.Key]) {
+                Set-Item -Path ("Env:{0}" -f $entry.Key) -Value $previousServiceEnv[$entry.Key]
+            } else {
+                Remove-Item ("Env:{0}" -f $entry.Key) -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     $deadline = $start.AddSeconds($startupTimeoutSeconds)
@@ -423,9 +543,27 @@ foreach ($svc in $services) {
         }
         $healthState = Get-ServiceHealthState -Port $port
         if (-not [string]::IsNullOrWhiteSpace($healthState)) {
-            $status = $healthState
-            $healthy = $true
-            break
+            $stabilized = $true
+            if ($healthStabilizationSeconds -gt 0) {
+                $stabilizationDeadline = (Get-Date).AddSeconds($healthStabilizationSeconds)
+                while ((Get-Date) -lt $stabilizationDeadline) {
+                    if ($proc.HasExited) {
+                        $stabilized = $false
+                        break
+                    }
+                    $confirmedHealth = Get-ServiceHealthState -Port $port
+                    if ([string]::IsNullOrWhiteSpace($confirmedHealth)) {
+                        $stabilized = $false
+                        break
+                    }
+                    Start-Sleep -Seconds 2
+                }
+            }
+            if ($stabilized) {
+                $status = $healthState
+                $healthy = $true
+                break
+            }
         }
         Start-Sleep -Seconds 2
     }

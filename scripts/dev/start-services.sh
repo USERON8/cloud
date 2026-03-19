@@ -26,6 +26,79 @@ resolve_writable_dir() {
   printf '%s\n' "$fallback_dir"
 }
 
+service_module_path() {
+  local jar_relative_path="$1"
+  dirname "$(dirname "$jar_relative_path")"
+}
+
+ensure_service_artifacts() {
+  local missing_names=()
+  local module_paths=()
+  local svc name jar module_path modules_csv
+
+  for svc in "$@"; do
+    IFS='|' read -r name _ jar _ <<< "$svc"
+    if [ -f "$ROOT_DIR/$jar" ]; then
+      continue
+    fi
+    missing_names+=("$name")
+    module_path="$(service_module_path "$jar")"
+    module_paths+=("$module_path")
+  done
+
+  if [ "${#missing_names[@]}" -eq 0 ]; then
+    return 0
+  fi
+
+  if ! command -v mvn >/dev/null 2>&1; then
+    echo "mvn not found, cannot build missing service artifacts" >&2
+    exit 1
+  fi
+
+  modules_csv="$(printf "%s\n" "${module_paths[@]}" | awk '!seen[$0]++' | paste -sd, -)"
+  echo "ARTIFACT_BUILD action=package services=$(IFS=,; echo "${missing_names[*]}") modules=${modules_csv}"
+  (
+    cd "$ROOT_DIR"
+    mvn -DskipTests -T 1C -pl "$modules_csv" -am package
+  )
+
+  for svc in "$@"; do
+    IFS='|' read -r name _ jar _ <<< "$svc"
+    if [ ! -f "$ROOT_DIR/$jar" ]; then
+      echo "service artifacts still missing after package: $name" >&2
+      exit 1
+    fi
+  done
+}
+
+service_environment_overrides() {
+  local service_name="$1"
+  case "$service_name" in
+    user-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20880"
+      printf '%s\n' "APP_MYBATIS_ILLEGAL_SQL_ENABLED=false"
+      ;;
+    order-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20882"
+      ;;
+    product-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20884"
+      ;;
+    stock-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20886"
+      ;;
+    payment-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20888"
+      ;;
+    auth-service|search-service)
+      printf '%s\n' "SEATA_ENABLED=false"
+      if [ "$service_name" = "search-service" ]; then
+        printf '%s\n' "DUBBO_PROTOCOL_PORT=20890"
+      fi
+      ;;
+  esac
+}
+
 KILL_PORTS=1
 DRY_RUN=0
 SERVICES_FILTER=""
@@ -39,14 +112,14 @@ for arg in "$@"; do
 done
 
 ALL_SERVICES=(
-  "gateway|8080|services/gateway/target/gateway-1.1.0.jar|dev,route"
-  "auth-service|8081|services/auth-service/target/auth-service-1.1.0.jar|dev"
   "user-service|8082|services/user-service/target/user-service-1.1.0.jar|dev"
-  "order-service|8083|services/order-service/target/order-service-1.1.0.jar|dev"
+  "auth-service|8081|services/auth-service/target/auth-service-1.1.0.jar|dev"
   "product-service|8084|services/product-service/target/product-service-1.1.0.jar|dev"
   "stock-service|8085|services/stock-service/target/stock-service-1.1.0.jar|dev"
   "payment-service|8086|services/payment-service/target/payment-service-1.1.0.jar|dev"
+  "order-service|8083|services/order-service/target/order-service-1.1.0.jar|dev"
   "search-service|8087|services/search-service/target/search-service-1.1.0.jar|dev"
+  "gateway|8080|services/gateway/target/gateway-1.1.0.jar|dev,route"
 )
 
 declare -A SERVICE_INDEX=()
@@ -106,6 +179,7 @@ if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
+ensure_service_artifacts "${SERVICES[@]}"
 export_service_runtime_env "$ROOT_DIR"
 
 JAVA_BIN="${JAVA_HOME:-}/bin/java"
@@ -138,6 +212,7 @@ if [ -n "${NACOS_GRPC_PORT_OFFSET:-}" ] && [[ "$SERVICE_JVM_OPTS" != *"nacos.ser
   SERVICE_JVM_OPTS="$SERVICE_JVM_OPTS -Dnacos.server.grpc.port.offset=${NACOS_GRPC_PORT_OFFSET}"
 fi
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
+SERVICE_HEALTH_STABILIZATION_SECONDS="${SERVICE_HEALTH_STABILIZATION_SECONDS:-8}"
 
 RESULT_ROWS=()
 ALL_OK=1
@@ -261,6 +336,10 @@ for svc in "${SERVICES[@]}"; do
     fi
     env_args+=("JAVA_TOOL_OPTIONS=${java_tool_opts}" "SW_AGENT_NAME=${name}" "SW_LOGGING_DIR=${skywalking_log_dir}")
   fi
+  while IFS= read -r override; do
+    [ -n "$override" ] || continue
+    env_args+=("$override")
+  done < <(service_environment_overrides "$name")
 
   start_ts="$(date +%s)"
   if command -v setsid >/dev/null 2>&1; then
@@ -287,9 +366,26 @@ for svc in "${SERVICES[@]}"; do
       break
     fi
     if health_state="$(health_status "$port")"; then
-      status="$health_state"
-      healthy=1
-      break
+      stabilized=1
+      if [ "$SERVICE_HEALTH_STABILIZATION_SECONDS" -gt 0 ]; then
+        stabilization_deadline=$(( $(date +%s) + SERVICE_HEALTH_STABILIZATION_SECONDS ))
+        while [ "$(date +%s)" -lt "$stabilization_deadline" ]; do
+          if ! kill -0 "$pid" >/dev/null 2>&1; then
+            stabilized=0
+            break
+          fi
+          if ! health_status "$port" >/dev/null; then
+            stabilized=0
+            break
+          fi
+          sleep 2
+        done
+      fi
+      if [ "$stabilized" = "1" ]; then
+        status="$health_state"
+        healthy=1
+        break
+      fi
     fi
     sleep 2
   done

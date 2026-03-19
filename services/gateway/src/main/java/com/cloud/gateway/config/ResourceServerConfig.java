@@ -44,7 +44,8 @@ public class ResourceServerConfig {
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
   private final Environment environment;
 
-  @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+  @Value(
+      "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}}")
   private String jwkSetUri;
 
   @Value(

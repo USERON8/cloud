@@ -44,6 +44,8 @@ wait_infrastructure() {
     "mysql|$(docker_port_value "$ROOT_DIR" PORT_MYSQL 13306)"
     "redis|$(docker_port_value "$ROOT_DIR" PORT_REDIS 16379)"
     "nacos|$(docker_port_value "$ROOT_DIR" PORT_NACOS_HTTP 18848)"
+    "nacos-grpc|$(docker_port_value "$ROOT_DIR" PORT_NACOS_GRPC 19848)"
+    "nacos-grpc-compat|$(docker_port_value "$ROOT_DIR" PORT_NACOS_GRPC_COMPAT 12937)"
     "rocketmq-namesrv|$(docker_port_value "$ROOT_DIR" PORT_RMQ_NAMESRV 20011)"
     "elasticsearch|$(docker_port_value "$ROOT_DIR" PORT_ES_HTTP 19200)"
     "minio|$(docker_port_value "$ROOT_DIR" PORT_MINIO_API 19000)"
@@ -60,6 +62,13 @@ wait_infrastructure() {
     )
   fi
 
+  nacos_health_ready() {
+    local port="$1"
+    local body
+    body="$(curl --noproxy '*' -sS --max-time 5 "http://127.0.0.1:${port}/nacos/actuator/health" || true)"
+    [[ "$body" =~ \"status\"[[:space:]]*:[[:space:]]*\"UP\" ]]
+  }
+
   local target name port
   for target in "${targets[@]}"; do
     IFS='|' read -r name port <<< "$target"
@@ -68,8 +77,35 @@ wait_infrastructure() {
       echo "Infrastructure port not ready: $name:$port" >&2
       exit 1
     fi
+    if [ "$name" = "nacos" ]; then
+      local deadline=$(( $(date +%s) + 120 ))
+      local ready=0
+      while [ "$(date +%s)" -lt "$deadline" ]; do
+        if nacos_health_ready "$port"; then
+          ready=1
+          break
+        fi
+        sleep 2
+      done
+      if [ "$ready" != "1" ]; then
+        echo "Infrastructure service not ready: $name:$port" >&2
+        exit 1
+      fi
+    fi
     echo "WAIT_PORT name=$name port=$port status=ready"
   done
+
+  local nacos_ready_grace_seconds="${NACOS_READY_GRACE_SECONDS:-15}"
+  case "$nacos_ready_grace_seconds" in
+    ''|*[!0-9]*)
+      nacos_ready_grace_seconds=15
+      ;;
+  esac
+  if [ "$nacos_ready_grace_seconds" -gt 0 ]; then
+    echo "WAIT_PORT name=nacos-ready grace=$nacos_ready_grace_seconds status=waiting"
+    sleep "$nacos_ready_grace_seconds"
+    echo "WAIT_PORT name=nacos-ready grace=$nacos_ready_grace_seconds status=ready"
+  fi
 }
 
 echo "=== START PLATFORM ==="

@@ -8,30 +8,6 @@ source "$SCRIPT_DIR/lib/port-guard.sh"
 WITH_MONITORING=0
 KILL_PORTS=1
 DRY_RUN=0
-
-BASE_IMAGES=(
-  "mysql:9.3.0"
-  "redis:7.4.5-bookworm"
-  "nacos/nacos-server:v3.0.2"
-  "apache/rocketmq:5.3.2"
-  "apacherocketmq/rocketmq-dashboard:2.1.0"
-  "nginx:stable-perl"
-  "minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1"
-  "elasticsearch:9.1.2"
-  "kibana:9.1.2"
-  "logstash:9.1.2"
-  "apache/seata-server:2.6.0.jdk17"
-)
-
-MONITORING_IMAGES=(
-  "bitnami/prometheus:3.5.0-debian-12-r3"
-  "grafana/grafana:12.2.0-17084981832"
-  "oliver006/redis_exporter:v1.67.0"
-  "prom/mysqld-exporter:v0.17.2"
-  "nginx/nginx-prometheus-exporter:1.4.2"
-  "quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0"
-  "prom/blackbox-exporter:v0.26.0"
-)
 for arg in "$@"; do
   case "$arg" in
     --with-monitoring) WITH_MONITORING=1 ;;
@@ -46,6 +22,13 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "docker/.env not found" >&2
   exit 1
 fi
+
+assert_docker_daemon_ready() {
+  docker version >/dev/null 2>&1 || {
+    echo "Docker daemon is not ready. Start Docker Desktop first." >&2
+    exit 1
+  }
+}
 
 mapfile -t PORTS < <(awk -F= '/^PORT_[A-Z0-9_]+=/{print $2}' "$ENV_FILE")
 
@@ -71,37 +54,17 @@ if [ "$KILL_PORTS" = "1" ]; then
   done
 fi
 
-IMAGES_TO_CHECK=("${BASE_IMAGES[@]}")
-if [ "$WITH_MONITORING" = "1" ]; then
-  IMAGES_TO_CHECK+=("${MONITORING_IMAGES[@]}")
-fi
-
 if [ "$DRY_RUN" = "1" ]; then
-  mapfile -t UNIQUE_IMAGES < <(printf "%s\n" "${IMAGES_TO_CHECK[@]}" | sort -u)
-  echo "DRY_RUN_DONE script=start-containers images=${UNIQUE_IMAGES[*]}"
+  echo "DRY_RUN_DONE script=start-containers withMonitoring=$WITH_MONITORING"
   exit 0
 fi
 
-mapfile -t UNIQUE_IMAGES < <(printf "%s\n" "${IMAGES_TO_CHECK[@]}" | sort -u)
-MISSING_IMAGES=()
-for image in "${UNIQUE_IMAGES[@]}"; do
-  if docker image inspect "$image" >/dev/null 2>&1; then
-    echo "IMAGE_CHECK image=${image} exists=true action=use-local"
-  else
-    echo "IMAGE_CHECK image=${image} exists=false action=abort"
-    MISSING_IMAGES+=("$image")
-  fi
-done
-
-if [ "${#MISSING_IMAGES[@]}" -gt 0 ]; then
-  echo "Local image check failed. Missing images: ${MISSING_IMAGES[*]}" >&2
-  exit 1
-fi
+assert_docker_daemon_ready
 
 cd "$ROOT_DIR/docker"
-docker compose -f docker-compose.yml up -d --pull never
+docker compose -f docker-compose.yml up -d --pull missing --build
 if [ "$WITH_MONITORING" = "1" ]; then
-  docker compose -f monitoring-compose.yml up -d --pull never \
+  docker compose -f monitoring-compose.yml up -d --pull missing \
     prometheus grafana redis-exporter mysqld-exporter \
     nginx-exporter elasticsearch-exporter blackbox-exporter
 fi

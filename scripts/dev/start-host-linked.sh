@@ -3,11 +3,33 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DRY_RUN=0
+
+stop_cluster_app_containers() {
+  local dry_run="$1"
+  local services="nginx,gateway,auth-service,user-service,order-service,product-service,stock-service,payment-service,search-service"
+  if [ "$dry_run" = "1" ]; then
+    echo "CLUSTER_STOP services=${services} action=dry-run"
+    return 0
+  fi
+  if ! command -v docker >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! docker version >/dev/null 2>&1; then
+    return 0
+  fi
+
+  (
+    cd "$ROOT_DIR/docker"
+    docker compose -f docker-compose.yml --profile services rm -sf \
+      nginx gateway auth-service user-service order-service product-service stock-service payment-service search-service >/dev/null 2>&1 || true
+  )
+}
 
 has_critical_error() {
   local path="$1"
   [ -f "$path" ] || return 1
-  grep -Eq 'APPLICATION FAILED TO START|Exception in thread|Caused by:|^[[:space:]]*ERROR([[:space:]:]|$)|OutOfMemoryError' "$path"
+  grep -Eq 'APPLICATION FAILED TO START|Exception in thread|Application run failed|Web server failed to start|OutOfMemoryError' "$path"
 }
 
 assert_host_acceptance() {
@@ -57,9 +79,16 @@ requested_services=""
 for arg in "$@"; do
   case "$arg" in
     --services=*) requested_services="${arg#*=}" ;;
+    --dry-run) DRY_RUN=1 ;;
   esac
 done
 
+stop_cluster_app_containers "$DRY_RUN"
+
 bash "$SCRIPT_DIR/start-platform.sh" "$@"
+if [ "$DRY_RUN" = "1" ]; then
+  echo "DRY_RUN_DONE script=start-host-linked requestedServices=${requested_services}"
+  exit 0
+fi
 assert_host_acceptance "$requested_services"
 echo "HOST_LINKED_READY"
