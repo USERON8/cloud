@@ -166,56 +166,58 @@
   size?: number
   sortField?: string
   sortOrder?: 'asc' \| 'desc'
+  searchAfter?: string
 } | query |
 | GET | /api/search/suggestions | listSearchSuggestions | keyword: string, size = 10 | query |
 | GET | /api/search/hot-keywords | listSearchHotKeywords | size = 10 | query |
 | GET | /api/search/keyword-recommendations | listSearchKeywordRecommendations | keyword = '', size = 10 | query |
-| GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams | query |
+| GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams（含 searchAfter?: string） | query |
 | PATCH | /api/product/{param}/status | updateProductStatus | id: number, status: 0 \| 1 | query |
-| POST | /api/product/spu | createProduct | payload: ProductUpsertPayload | body |
-| PUT | /api/product/spu/{spuId} | updateProduct | spuId: number, payload: ProductUpsertPayload | body |
 
 ## search-ops
 
 | 方法 | 路径 | 函数 | 参数 | 请求 |
 | --- | --- | --- | --- | --- |
-| POST | /api/search/complex-search | complexSearch | request: ProductSearchRequest | body |
-| POST | /api/search/filters | getProductFilters | request: ProductSearchRequest | body |
-| GET | /api/search/basic | basicSearch | params: { keyword?: string; page?: number; size?: number } | query |
+| POST | /api/search/complex-search | complexSearch | request: ProductSearchRequest, searchAfter?: string | body, query |
+| POST | /api/search/filters | getProductFilters | request: ProductSearchRequest, searchAfter?: string | body, query |
+| GET | /api/search/basic | basicSearch | params: { keyword?: string; page?: number; size?: number; searchAfter?: string } | query |
 | GET | /api/search/search | searchProducts | params: {
   keyword: string
   page?: number
   size?: number
   sortBy?: string
   sortDir?: string
+  searchAfter?: string
 } | query |
 | GET | /api/search/search/category/{param} | searchByCategory | categoryId: number,
-  params: { keyword?: string; page?: number; size?: number } = {} | query |
+  params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {} | query |
 | GET | /api/search/search/shop/{param} | searchByShop | shopId: number,
-  params: { keyword?: string; page?: number; size?: number } = {} | query |
+  params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {} | query |
 | GET | /api/search/search/advanced | advancedSearch | params: {
   keyword: string
   minPrice?: number
   maxPrice?: number
   page?: number
   size?: number
+  searchAfter?: string
 } | query |
-| GET | /api/search/recommended | listRecommendedProducts | page = 0, size = 20 | query |
-| GET | /api/search/new | listNewProducts | page = 0, size = 20 | query |
-| GET | /api/search/hot | listHotProducts | page = 0, size = 20 | query |
-| POST | /api/search/filter | filterSearch | request: ProductFilterRequest | body |
+| GET | /api/search/recommended | listRecommendedProducts | page = 0, size = 20, searchAfter?: string | query |
+| GET | /api/search/new | listNewProducts | page = 0, size = 20, searchAfter?: string | query |
+| GET | /api/search/hot | listHotProducts | page = 0, size = 20, searchAfter?: string | query |
+| POST | /api/search/filter | filterSearch | request: ProductFilterRequest, searchAfter?: string | body, query |
 | GET | /api/search/filter/category/{param} | filterByCategory | categoryId: number,
-  params: { page?: number; size?: number } = {} | query |
+  params: { page?: number; size?: number; searchAfter?: string } = {} | query |
 | GET | /api/search/filter/brand/{param} | filterByBrand | brandId: number,
-  params: { page?: number; size?: number } = {} | query |
+  params: { page?: number; size?: number; searchAfter?: string } = {} | query |
 | GET | /api/search/filter/price | filterByPrice | params: {
   minPrice?: number
   maxPrice?: number
   page?: number
   size?: number
+  searchAfter?: string
 } | query |
 | GET | /api/search/filter/shop/{param} | filterByShop | shopId: number,
-  params: { page?: number; size?: number } = {} | query |
+  params: { page?: number; size?: number; searchAfter?: string } = {} | query |
 
 ## shop-search
 
