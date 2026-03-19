@@ -38,11 +38,10 @@ spring:
     caffeine:
       spec: initialCapacity=${PRODUCT_CACHE_INITIAL_CAPACITY:150},maximumSize=${PRODUCT_CACHE_MAX_SIZE:1500},expireAfterWrite=${PRODUCT_CACHE_EXPIRE_AFTER_WRITE:45m},expireAfterAccess=${PRODUCT_CACHE_EXPIRE_AFTER_ACCESS:20m}${PRODUCT_CACHE_RECORD_STATS_SUFFIX:,recordStats}
     cache-names:
-      - productCache
-      - productListCache
       - categoryCache
-      - brandCache
-      - productStatsCache
+      - categoryTreeCache
+      - shopCache
+      - shopListCache
 
 logging:
   file:
@@ -79,91 +78,19 @@ app:
     title: Product Service API
     description: Product and category endpoints
     version: 1.1.0
-  async:
-    executors:
-      productAsyncExecutor:
-        core-pool-size: 2
-        max-pool-size: 4
-        queue-capacity: 500
-        keep-alive-seconds: 60
-        thread-name-prefix: product-async-
-        rejected-execution-handler: CALLER_RUNS
-      productLogExecutor:
-        core-pool-size: 1
-        max-pool-size: 2
-        queue-capacity: 1000
-        keep-alive-seconds: 60
-        thread-name-prefix: product-log-
-        rejected-execution-handler: CALLER_RUNS
-      productStatisticsExecutor:
-        enabled: ${product.statistics.enabled:true}
-        core-pool-size: 2
-        max-pool-size: 4
-        queue-capacity: 500
-        keep-alive-seconds: 60
-        thread-name-prefix: product-statistics-
-        rejected-execution-handler: CALLER_RUNS
-
-cache:
-  multi-level:
-    local:
-      enabled: true
-      initial-capacity: 150
-      maximum-size: 1500
-      expire-after-write: 45m
-      expire-after-access: 20m
-      record-stats: true
-    redis:
-      enabled: true
-      default-expire: 60m
-      key-prefix: "product:"
-      enable-key-prefix: true
-      use-key-prefix: true
 
 product:
-  async:
-    enabled: true
-  statistics:
-    enabled: true
   cache:
     guard:
-      enabled: ${PRODUCT_CACHE_GUARD_ENABLED:true}
-      bloom:
-        enabled: ${PRODUCT_CACHE_BLOOM_ENABLED:true}
-        rebuild-on-startup: ${PRODUCT_CACHE_BLOOM_REBUILD_ON_STARTUP:true}
-        expected-insertions: ${PRODUCT_CACHE_BLOOM_EXPECTED_INSERTIONS:500000}
-        false-positive-rate: ${PRODUCT_CACHE_BLOOM_FALSE_POSITIVE_RATE:0.01}
       detail-ttl-seconds: ${PRODUCT_CACHE_DETAIL_TTL_SECONDS:1800}
       detail-jitter-seconds: ${PRODUCT_CACHE_DETAIL_JITTER_SECONDS:300}
-      null-ttl-seconds: ${PRODUCT_CACHE_NULL_TTL_SECONDS:90}
-      null-jitter-seconds: ${PRODUCT_CACHE_NULL_JITTER_SECONDS:30}
-      lock:
-        wait-millis: ${PRODUCT_CACHE_LOCK_WAIT_MILLIS:120}
-        lease-millis: ${PRODUCT_CACHE_LOCK_LEASE_MILLIS:3000}
-        retry-times: ${PRODUCT_CACHE_LOCK_RETRY_TIMES:2}
-      pubsub:
-        enabled: ${PRODUCT_CACHE_PUBSUB_ENABLED:true}
-        channel: ${PRODUCT_CACHE_PUBSUB_CHANNEL:product:cache:invalidate}
-        node-id: ${PRODUCT_CACHE_PUBSUB_NODE_ID:}
-      list-ttl-seconds: ${PRODUCT_CACHE_LIST_TTL_SECONDS:900}
-      list-jitter-seconds: ${PRODUCT_CACHE_LIST_JITTER_SECONDS:180}
-      stats-ttl-seconds: ${PRODUCT_CACHE_STATS_TTL_SECONDS:300}
-      stats-jitter-seconds: ${PRODUCT_CACHE_STATS_JITTER_SECONDS:60}
-    warmup:
-      detail-size: ${PRODUCT_CACHE_WARMUP_DETAIL_SIZE:100}
-      hot-size: ${PRODUCT_CACHE_WARMUP_HOT_SIZE:50}
-      home-size: ${PRODUCT_CACHE_WARMUP_HOME_SIZE:30}
-      rank-size: ${PRODUCT_CACHE_WARMUP_RANK_SIZE:50}
+      l1-max-size: ${PRODUCT_CACHE_L1_MAX_SIZE:2000}
   config:
     page:
       default-size: 10
       max-size: 100
     batch:
       max-size: 100
-    cache:
-      warmup:
-        enabled: true
-        max-size: 500
 
 minio:
   endpoint: ${MINIO_ENDPOINT:}
@@ -203,7 +130,4 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-
-seata:
-  enabled: false
 

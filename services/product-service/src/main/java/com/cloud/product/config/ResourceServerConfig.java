@@ -18,7 +18,7 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers("/api/product/search", "/api/product/suggestions")
+            .requestMatchers("/api/product/search")
             .permitAll()
             .requestMatchers(HttpMethod.POST, "/api/product/spu")
             .hasAuthority("product:create")
