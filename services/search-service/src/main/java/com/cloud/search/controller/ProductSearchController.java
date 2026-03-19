@@ -137,7 +137,9 @@ public class ProductSearchController {
         searchFacadeService.searchByShop(shopId, keyword, page, size, searchAfter));
   }
 
-  @Operation(summary = "Advanced search", description = "Search by keyword and price range")
+  @Operation(
+      summary = "Advanced search",
+      description = "Compatibility alias of complex search for keyword and price range")
   @GetMapping("/search/advanced")
   public Result<SearchResultDTO<ProductDocument>> advancedSearch(
       @Parameter(description = "Keyword") @RequestParam String keyword,
@@ -153,7 +155,9 @@ public class ProductSearchController {
         searchFacadeService.advancedSearch(keyword, minPrice, maxPrice, page, size, searchAfter));
   }
 
-  @Operation(summary = "Smart search", description = "Search via optimized Elasticsearch query")
+  @Operation(
+      summary = "Smart search",
+      description = "Compatibility alias of complex search for optimized query parameters")
   @GetMapping("/smart-search")
   public Result<ElasticsearchOptimizedService.SearchResultDTO> smartSearch(
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
@@ -219,7 +223,9 @@ public class ProductSearchController {
         "Query hot products success", searchFacadeService.getHotProducts(page, size, searchAfter));
   }
 
-  @Operation(summary = "Basic API search", description = "Basic paged search API")
+  @Operation(
+      summary = "Basic API search",
+      description = "Compatibility alias of /api/search/search")
   @GetMapping("/basic")
   public Result<SearchResultDTO<ProductDocument>> basicSearch(
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
@@ -242,7 +248,9 @@ public class ProductSearchController {
     return Result.success("Search success", searchFacadeService.filterSearch(request, searchAfter));
   }
 
-  @Operation(summary = "Filter by category", description = "Filter products by category")
+  @Operation(
+      summary = "Filter by category",
+      description = "Compatibility alias of /api/search/filter for category-only filters")
   @GetMapping("/filter/category/{categoryId}")
   public Result<SearchResultDTO<ProductDocument>> filterByCategory(
       @Parameter(description = "Category id") @PathVariable Long categoryId,
@@ -256,7 +264,9 @@ public class ProductSearchController {
         searchFacadeService.searchByCategoryFilter(categoryId, page, size, searchAfter));
   }
 
-  @Operation(summary = "Filter by brand", description = "Filter products by brand")
+  @Operation(
+      summary = "Filter by brand",
+      description = "Compatibility alias of /api/search/filter for brand-only filters")
   @GetMapping("/filter/brand/{brandId}")
   public Result<SearchResultDTO<ProductDocument>> filterByBrand(
       @Parameter(description = "Brand id") @PathVariable Long brandId,
@@ -270,7 +280,9 @@ public class ProductSearchController {
         searchFacadeService.searchByBrandFilter(brandId, page, size, searchAfter));
   }
 
-  @Operation(summary = "Filter by price", description = "Filter products by price range")
+  @Operation(
+      summary = "Filter by price",
+      description = "Compatibility alias of /api/search/filter for price filters")
   @GetMapping("/filter/price")
   public Result<SearchResultDTO<ProductDocument>> filterByPrice(
       @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
@@ -285,7 +297,9 @@ public class ProductSearchController {
         searchFacadeService.searchByPriceFilter(minPrice, maxPrice, page, size, searchAfter));
   }
 
-  @Operation(summary = "Filter by shop", description = "Filter products by shop")
+  @Operation(
+      summary = "Filter by shop",
+      description = "Compatibility alias of /api/search/filter for shop-only filters")
   @GetMapping("/filter/shop/{shopId}")
   public Result<SearchResultDTO<ProductDocument>> filterByShop(
       @Parameter(description = "Shop id") @PathVariable Long shopId,
@@ -298,7 +312,9 @@ public class ProductSearchController {
         "Filter success", searchFacadeService.searchByShopFilter(shopId, page, size, searchAfter));
   }
 
-  @Operation(summary = "Combined filter", description = "Filter with multiple conditions")
+  @Operation(
+      summary = "Combined filter",
+      description = "Compatibility alias of complex search for combined filter conditions")
   @GetMapping("/filter/combined")
   public Result<SearchResultDTO<ProductDocument>> combinedFilter(
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,

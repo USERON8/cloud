@@ -44,7 +44,12 @@ public class HotKeywordXxlJob {
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
   public void warmUpHotKeywords() {
     try {
-      hotKeywordSyncService.restoreFromDbOnStartup();
+      if (!hotKeywordSyncService.shouldRestoreWithXxl()) {
+        logMessage(
+            "hotKeywordWarmUpJob skipped, trigger-mode=" + hotKeywordSyncService.getTriggerMode());
+        return;
+      }
+      hotKeywordSyncService.restoreFromDb();
       logMessage("hotKeywordWarmUpJob finished");
     } catch (Exception ex) {
       log.error("Hot keyword warmup job failed", ex);

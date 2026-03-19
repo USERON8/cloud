@@ -100,48 +100,18 @@ public class SearchFacadeService {
 
   public SearchResultDTO<ProductDocument> searchByCategory(
       Long categoryId, String keyword, int page, int size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.combinedSearch(
-          keyword, categoryId, null, null, null, null, "hotScore", "desc", page, size);
-    }
-
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setKeyword(keyword);
     request.setCategoryId(categoryId);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByShop(
       Long shopId, String keyword, int page, int size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.combinedSearch(
-          keyword, null, null, null, null, shopId, "hotScore", "desc", page, size);
-    }
-
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setKeyword(keyword);
     request.setShopId(shopId);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> advancedSearch(
@@ -151,28 +121,11 @@ public class SearchFacadeService {
       int page,
       int size,
       String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    BigDecimal safeMinPrice = minPrice != null ? minPrice : BigDecimal.ZERO;
-    BigDecimal safeMaxPrice = maxPrice != null ? maxPrice : new BigDecimal("999999");
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.combinedSearch(
-          keyword, null, null, safeMinPrice, safeMaxPrice, null, "hotScore", "desc", page, size);
-    }
-
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setKeyword(keyword);
-    request.setMinPrice(safeMinPrice);
-    request.setMaxPrice(safeMaxPrice);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    request.setMinPrice(minPrice != null ? minPrice : BigDecimal.ZERO);
+    request.setMaxPrice(maxPrice != null ? maxPrice : new BigDecimal("999999"));
+    return searchProducts(request, searchAfter);
   }
 
   public ElasticsearchOptimizedService.SearchResultDTO smartSearch(
@@ -280,96 +233,36 @@ public class SearchFacadeService {
 
   public SearchResultDTO<ProductDocument> filterSearch(
       ProductFilterRequest request, String searchAfter) {
-    ProductSearchRequest searchRequest = searchRequestMapper.toSearchRequest(request);
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.filterSearch(searchRequest);
-    }
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(searchRequest, searchAfterValues);
-    return toSearchResultDTO(
-        esResult,
-        resolvePage(searchRequest == null ? null : searchRequest.getPage()),
-        resolveSize(searchRequest == null ? null : searchRequest.getSize()),
-        System.currentTimeMillis() - start);
+    return searchProducts(searchRequestMapper.toSearchRequest(request), searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByCategoryFilter(
       Long categoryId, Integer page, Integer size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.searchByCategory(categoryId, page, size);
-    }
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setCategoryId(categoryId);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByBrandFilter(
       Long brandId, Integer page, Integer size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.searchByBrand(brandId, page, size);
-    }
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setBrandId(brandId);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByPriceFilter(
       BigDecimal minPrice, BigDecimal maxPrice, Integer page, Integer size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.searchByPriceRange(minPrice, maxPrice, page, size);
-    }
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setMinPrice(minPrice);
     request.setMaxPrice(maxPrice);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByShopFilter(
       Long shopId, Integer page, Integer size, String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.searchByShop(shopId, page, size);
-    }
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, "hotScore", "desc");
     request.setShopId(shopId);
-    request.setPage(page);
-    request.setSize(size);
-    request.setSortBy("hotScore");
-    request.setSortOrder("desc");
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    return searchProducts(request, searchAfter);
   }
 
   public SearchResultDTO<ProductDocument> combinedSearch(
@@ -384,27 +277,24 @@ public class SearchFacadeService {
       Integer page,
       Integer size,
       String searchAfter) {
-    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
-    if (searchAfterValues.isEmpty()) {
-      return productSearchService.combinedSearch(
-          keyword, categoryId, brandId, minPrice, maxPrice, shopId, sortBy, sortOrder, page, size);
-    }
-    ProductSearchRequest request = new ProductSearchRequest();
+    ProductSearchRequest request = buildSearchRequest(page, size, sortBy, sortOrder);
     request.setKeyword(keyword);
     request.setCategoryId(categoryId);
     request.setBrandId(brandId);
     request.setMinPrice(minPrice);
     request.setMaxPrice(maxPrice);
     request.setShopId(shopId);
-    request.setSortBy(sortBy);
-    request.setSortOrder(sortOrder);
+    return searchProducts(request, searchAfter);
+  }
+
+  private ProductSearchRequest buildSearchRequest(
+      Integer page, Integer size, String sortBy, String sortOrder) {
+    ProductSearchRequest request = new ProductSearchRequest();
     request.setPage(page);
     request.setSize(size);
-    long start = System.currentTimeMillis();
-    ElasticsearchOptimizedService.SearchResultDTO esResult =
-        elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
-    return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+    request.setSortBy(sortBy);
+    request.setSortOrder(sortOrder);
+    return request;
   }
 
   private int resolvePage(Integer page) {

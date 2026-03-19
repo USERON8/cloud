@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -47,6 +48,7 @@ class HotKeywordSyncServiceTest {
                 new HotKeywordJdbcRepository.HotKeywordRecord("tablet", 5L)));
     ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
     ReflectionTestUtils.setField(hotKeywordSyncService, "restoreSize", 2);
+    ReflectionTestUtils.setField(hotKeywordSyncService, "triggerMode", "scheduled");
 
     hotKeywordSyncService.restoreFromDbOnStartup();
 
@@ -54,6 +56,17 @@ class HotKeywordSyncServiceTest {
         ArgumentCaptor.forClass((Class) Set.class);
     verify(zSetOperations).add(eq(HotKeywordKeys.TOTAL_KEY), captor.capture());
     assertThat(captor.getValue()).hasSize(2);
+  }
+
+  @Test
+  void restoreFromDbOnStartup_skipsWhenXxlModeEnabled() {
+    ReflectionTestUtils.setField(hotKeywordSyncService, "dbSyncEnabled", true);
+    ReflectionTestUtils.setField(hotKeywordSyncService, "triggerMode", "xxl");
+
+    hotKeywordSyncService.restoreFromDbOnStartup();
+
+    verifyNoInteractions(
+        repositoryProvider, redisTemplate, zSetOperations, hotKeywordJdbcRepository);
   }
 
   @Test

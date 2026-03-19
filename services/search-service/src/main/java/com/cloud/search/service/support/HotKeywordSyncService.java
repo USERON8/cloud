@@ -47,6 +47,13 @@ public class HotKeywordSyncService {
 
   @EventListener(ApplicationReadyEvent.class)
   public void restoreFromDbOnStartup() {
+    if (!shouldRestoreOnStartup()) {
+      return;
+    }
+    restoreFromDb();
+  }
+
+  public void restoreFromDb() {
     if (!dbSyncEnabled) {
       return;
     }
@@ -129,7 +136,15 @@ public class HotKeywordSyncService {
     return triggerMode;
   }
 
+  public boolean shouldRestoreWithXxl() {
+    return shouldSyncWithXxl();
+  }
+
   private boolean shouldSyncWithSchedule() {
     return !shouldSyncWithXxl() && TRIGGER_MODE_SCHEDULED.equalsIgnoreCase(triggerMode);
+  }
+
+  private boolean shouldRestoreOnStartup() {
+    return shouldSyncWithSchedule();
   }
 }
