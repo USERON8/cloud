@@ -1,3 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.cloud.common.messaging.config.MessagingSupportAutoConfiguration,\
 com.cloud.common.messaging.config.DeadLetterAutoConfiguration,\
+com.cloud.common.messaging.config.OutboxMapperAutoConfiguration,\
 com.cloud.common.messaging.config.OutboxAutoConfiguration

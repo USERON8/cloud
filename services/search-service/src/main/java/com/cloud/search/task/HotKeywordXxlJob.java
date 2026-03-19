@@ -23,6 +23,11 @@ public class HotKeywordXxlJob {
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
   public void persistHotKeywords() {
     try {
+      if (!hotKeywordSyncService.shouldSyncWithXxl()) {
+        logMessage(
+            "hotKeywordPersistJob skipped, trigger-mode=" + hotKeywordSyncService.getTriggerMode());
+        return;
+      }
       hotKeywordSyncService.syncToDb();
       logMessage("hotKeywordPersistJob finished");
     } catch (Exception ex) {

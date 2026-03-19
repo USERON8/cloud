@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class HotKeywordSyncService {
 
+  private static final String TRIGGER_MODE_SCHEDULED = "scheduled";
+  private static final String TRIGGER_MODE_XXL = "xxl";
+
   private final StringRedisTemplate redisTemplate;
   private final ObjectProvider<HotKeywordJdbcRepository> repositoryProvider;
 
@@ -31,6 +34,9 @@ public class HotKeywordSyncService {
 
   @Value("${search.hot-keyword.db-sync.restore-size:2000}")
   private int restoreSize;
+
+  @Value("${search.hot-keyword.db-sync.trigger-mode:scheduled}")
+  private String triggerMode;
 
   public HotKeywordSyncService(
       StringRedisTemplate redisTemplate,
@@ -75,6 +81,13 @@ public class HotKeywordSyncService {
   }
 
   @Scheduled(fixedDelayString = "${search.hot-keyword.db-sync.interval-ms:300000}")
+  public void scheduledSyncToDb() {
+    if (!shouldSyncWithSchedule()) {
+      return;
+    }
+    syncToDb();
+  }
+
   public void syncToDb() {
     if (!dbSyncEnabled) {
       return;
@@ -106,5 +119,17 @@ public class HotKeywordSyncService {
     } catch (Exception ex) {
       log.warn("Sync hot keywords to DB failed", ex);
     }
+  }
+
+  public boolean shouldSyncWithXxl() {
+    return TRIGGER_MODE_XXL.equalsIgnoreCase(triggerMode);
+  }
+
+  public String getTriggerMode() {
+    return triggerMode;
+  }
+
+  private boolean shouldSyncWithSchedule() {
+    return !shouldSyncWithXxl() && TRIGGER_MODE_SCHEDULED.equalsIgnoreCase(triggerMode);
   }
 }
