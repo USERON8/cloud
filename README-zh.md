@@ -86,6 +86,26 @@ bash scripts/dev/start-services.sh
 说明：直接执行 `start-services.*` 时，脚本会自动注入本地开发环境需要的基础地址与默认 key/secret，例如 `GATEWAY_SIGNATURE_SECRET`、`CLIENT_SERVICE_SECRET`、`APP_OAUTH2_*_CLIENT_SECRET`、`APP_JWT_ALLOW_GENERATED_KEYPAIR`。
 补充：`start-platform.*` / `start-services.*` 会为 8 个业务服务配置 `JAVA_TOOL_OPTIONS` 与 `SW_AGENT_NAME`，使用 `docker/monitor/skywalking/agent/` 的 agent，便于在 SkyWalking UI 中查看 HTTP、Dubbo、Redis、JDBC/MyBatis 链路。
 
+宿主机先验收的工作流：
+
+```bash
+bash scripts/dev/start-host-linked.sh --services=gateway,auth-service,user-service
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-host-linked.ps1 --services=gateway,auth-service,user-service
+```
+
+`start-host-linked.*` 会先拉起基础依赖和指定的宿主机 Java 服务，再校验 `.tmp/acceptance/startup.csv` 及对应 stdout/stderr 日志。只有当服务健康状态为 `UP` 或 `UP_SECURED`、stderr 为空且 stdout 不含关键启动错误模式时，才视为宿主机验收通过。
+
+宿主机验收通过后再接入容器群：
+
+```bash
+bash scripts/dev/start-cluster-linked.sh --services=auth-service,user-service
+# 兼容 Windows PowerShell:
+# powershell -File scripts/dev/start-cluster-linked.ps1 --services=auth-service,user-service
+```
+
+`start-cluster-linked.*` 依赖前一步的宿主机验收结果。它会重建 Nginx 和指定服务容器，把应用服务宿主机映射端口避让到 `28080-28087`，对外入口仍保持 `18080`，并把 `NGINX_GATEWAY_UPSTREAM` 切到容器网络内的 `gateway:8080`。
+
 仅重启变更的服务：
 
 ```bash

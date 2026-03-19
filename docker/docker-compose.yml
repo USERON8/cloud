@@ -267,7 +267,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8080:8080"
+      - "${PORT_GATEWAY_SERVICE_HOST:-8080}:8080"
     depends_on:
       - nacos
       - skywalking-oap
@@ -305,7 +305,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8081:8081"
+      - "${PORT_AUTH_SERVICE_HOST:-8081}:8081"
     depends_on:
       - nacos
       - skywalking-oap
@@ -349,7 +349,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8082:8082"
+      - "${PORT_USER_SERVICE_HOST:-8082}:8082"
     depends_on:
       - nacos
       - skywalking-oap
@@ -386,7 +386,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8083:8083"
+      - "${PORT_ORDER_SERVICE_HOST:-8083}:8083"
     depends_on:
       - nacos
       - skywalking-oap
@@ -424,7 +424,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8084:8084"
+      - "${PORT_PRODUCT_SERVICE_HOST:-8084}:8084"
     depends_on:
       - nacos
       - skywalking-oap
@@ -465,7 +465,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8085:8085"
+      - "${PORT_STOCK_SERVICE_HOST:-8085}:8085"
     depends_on:
       - nacos
       - skywalking-oap
@@ -502,7 +502,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8086:8086"
+      - "${PORT_PAYMENT_SERVICE_HOST:-8086}:8086"
     depends_on:
       - nacos
       - skywalking-oap
@@ -540,7 +540,7 @@ services:
     networks:
       - service_net
     ports:
-      - "8087:8087"
+      - "${PORT_SEARCH_SERVICE_HOST:-8087}:8087"
     depends_on:
       - nacos
       - skywalking-oap

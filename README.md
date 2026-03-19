@@ -88,6 +88,26 @@ bash scripts/dev/start-services.sh
 When `start-services.*` is run directly, it auto-exports the local runtime addresses and development secrets required by gateway/auth, including `GATEWAY_SIGNATURE_SECRET`, `CLIENT_SERVICE_SECRET`, `APP_OAUTH2_*_CLIENT_SECRET`, and `APP_JWT_ALLOW_GENERATED_KEYPAIR`.
 `start-platform.*` and `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services, using the agent under `docker/monitor/skywalking/agent/`, so HTTP, Dubbo, Redis, and JDBC/MyBatis traces show up in SkyWalking UI.
 
+Host-first acceptance workflow:
+
+```bash
+bash scripts/dev/start-host-linked.sh --services=gateway,auth-service,user-service
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-host-linked.ps1 --services=gateway,auth-service,user-service
+```
+
+`start-host-linked.*` starts infrastructure plus the selected host-side Java services, then validates `.tmp/acceptance/startup.csv` and the corresponding stdout/stderr logs. A service is accepted only when health status is `UP` or `UP_SECURED`, stderr stays empty, and stdout has no critical startup error patterns.
+
+Cluster-linked deployment after host acceptance:
+
+```bash
+bash scripts/dev/start-cluster-linked.sh --services=auth-service,user-service
+# PowerShell compatibility:
+# powershell -File scripts/dev/start-cluster-linked.ps1 --services=auth-service,user-service
+```
+
+`start-cluster-linked.*` requires a successful `start-host-linked.*` run first. It recreates Nginx plus the selected service containers with host ports remapped to `28080-28087`, keeps the public gateway entrance on `18080`, and switches `NGINX_GATEWAY_UPSTREAM` to the in-cluster `gateway:8080`.
+
 Restart only the services you changed:
 
 ```bash

@@ -44,7 +44,7 @@ wait_infrastructure() {
     "mysql|$(docker_port_value "$ROOT_DIR" PORT_MYSQL 13306)"
     "redis|$(docker_port_value "$ROOT_DIR" PORT_REDIS 16379)"
     "nacos|$(docker_port_value "$ROOT_DIR" PORT_NACOS_HTTP 18848)"
-    "rocketmq-namesrv|$(docker_port_value "$ROOT_DIR" PORT_RMQ_NAMESRV 19876)"
+    "rocketmq-namesrv|$(docker_port_value "$ROOT_DIR" PORT_RMQ_NAMESRV 20011)"
     "elasticsearch|$(docker_port_value "$ROOT_DIR" PORT_ES_HTTP 19200)"
     "minio|$(docker_port_value "$ROOT_DIR" PORT_MINIO_API 19000)"
     "seata-server|$(docker_port_value "$ROOT_DIR" PORT_SEATA_SERVER 18091)"

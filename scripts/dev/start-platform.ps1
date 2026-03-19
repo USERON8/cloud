@@ -87,7 +87,7 @@ function Wait-Infrastructure {
         @{ name = "mysql"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MYSQL" -DefaultValue 13306) },
         @{ name = "redis"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_REDIS" -DefaultValue 16379) },
         @{ name = "nacos"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_HTTP" -DefaultValue 18848) },
-        @{ name = "rocketmq-namesrv"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_RMQ_NAMESRV" -DefaultValue 19876) },
+        @{ name = "rocketmq-namesrv"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011) },
         @{ name = "elasticsearch"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_ES_HTTP" -DefaultValue 19200) },
         @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) },
         @{ name = "seata-server"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_SEATA_SERVER" -DefaultValue 18091) }
