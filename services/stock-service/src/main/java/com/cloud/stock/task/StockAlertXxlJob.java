@@ -8,11 +8,11 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.StockAlertEvent;
+import com.cloud.common.task.XxlJobSupport;
 import com.cloud.stock.messaging.StockMessageProducer;
 import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.service.StockLedgerQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -60,13 +60,13 @@ public class StockAlertXxlJob {
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
   public void stockAlert() {
     if (!alertEnabled) {
-      XxlJobHelper.log("stockAlertJob skipped, alert disabled");
+      XxlJobSupport.logMessage(log, "stockAlertJob skipped, alert disabled");
       return;
     }
     int limit = alertLimit <= 0 ? 200 : alertLimit;
     List<StockLedger> ledgers = loadLowStockLedgers(limit);
     if (ledgers.isEmpty()) {
-      XxlJobHelper.log("stockAlertJob finished, empty ledgers");
+      XxlJobSupport.logMessage(log, "stockAlertJob finished, empty ledgers");
       return;
     }
 
@@ -90,9 +90,7 @@ public class StockAlertXxlJob {
       }
     }
 
-    String message = "stockAlertJob finished, notified=" + notified;
-    XxlJobHelper.log(message);
-    log.info(message);
+    XxlJobSupport.logCount(log, "stockAlertJob", "notified", notified);
   }
 
   private List<StockLedger> loadLowStockLedgers(int limit) {

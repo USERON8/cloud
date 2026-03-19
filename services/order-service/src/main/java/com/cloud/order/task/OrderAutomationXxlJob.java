@@ -1,8 +1,8 @@
 package com.cloud.order.task;
 
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.task.XxlJobSupport;
 import com.cloud.order.service.OrderAutomationService;
-import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +22,8 @@ public class OrderAutomationXxlJob {
       leaseTime = 300,
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
   public void autoConfirmReceipt() {
-    logHandledCount(
-        "orderAutoConfirmReceiptJob", orderAutomationService.autoConfirmShippedOrders());
+    XxlJobSupport.logHandledCount(
+        log, "orderAutoConfirmReceiptJob", orderAutomationService.autoConfirmShippedOrders());
   }
 
   @XxlJob("afterSaleAutoApproveJob")
@@ -33,13 +33,7 @@ public class OrderAutomationXxlJob {
       leaseTime = 300,
       failStrategy = DistributedLock.LockFailStrategy.RETURN_NULL)
   public void autoApproveAfterSales() {
-    logHandledCount(
-        "afterSaleAutoApproveJob", orderAutomationService.autoApproveTimedOutAfterSales());
-  }
-
-  private void logHandledCount(String jobName, int handledCount) {
-    String message = jobName + " finished, handled records: " + handledCount;
-    XxlJobHelper.log(message);
-    log.info(message);
+    XxlJobSupport.logHandledCount(
+        log, "afterSaleAutoApproveJob", orderAutomationService.autoApproveTimedOutAfterSales());
   }
 }

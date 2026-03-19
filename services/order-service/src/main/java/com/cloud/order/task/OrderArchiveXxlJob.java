@@ -1,7 +1,7 @@
 package com.cloud.order.task;
 
 import com.cloud.common.annotation.DistributedLock;
-import com.xxl.job.core.context.XxlJobHelper;
+import com.cloud.common.task.XxlJobSupport;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -39,7 +39,7 @@ public class OrderArchiveXxlJob {
   @Transactional(rollbackFor = Exception.class)
   public void archiveOrders() {
     if (!enabled) {
-      XxlJobHelper.log("orderArchiveJob skipped, disabled");
+      XxlJobSupport.logMessage(log, "orderArchiveJob skipped, disabled");
       return;
     }
     int safeBatchSize = batchSize <= 0 ? 200 : batchSize;
@@ -62,7 +62,7 @@ public class OrderArchiveXxlJob {
             safeBatchSize);
 
     if (mainIds == null || mainIds.isEmpty()) {
-      XxlJobHelper.log("orderArchiveJob finished, empty batch");
+      XxlJobSupport.logMessage(log, "orderArchiveJob finished, empty batch");
       return;
     }
 
@@ -126,7 +126,6 @@ public class OrderArchiveXxlJob {
         String.format(
             "orderArchiveJob finished, main=%d sub=%d item=%d deletedMain=%d deletedSub=%d deletedItem=%d",
             archivedMain, archivedSub, archivedItems, deletedMains, deletedSubs, deletedItems);
-    XxlJobHelper.log(message);
-    log.info(message);
+    XxlJobSupport.logMessage(log, message);
   }
 }

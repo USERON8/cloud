@@ -2,10 +2,10 @@ package com.cloud.stock.task;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.task.XxlJobSupport;
 import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.service.StockLedgerQueryService;
 import com.cloud.stock.service.support.StockRedisCacheService;
-import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +47,7 @@ public class StockCacheXxlJob {
       }
       pageIndex++;
     }
-    String message = "stockCacheWarmUpJob finished, total=" + total;
-    XxlJobHelper.log(message);
-    log.info(message);
+    XxlJobSupport.logCount(log, "stockCacheWarmUpJob", "total", total);
   }
 
   @XxlJob("stockCacheVerifyJob")
@@ -88,8 +86,6 @@ public class StockCacheXxlJob {
       }
       pageIndex++;
     }
-    String message = "stockCacheVerifyJob finished, fixed=" + fixed;
-    XxlJobHelper.log(message);
-    log.info(message);
+    XxlJobSupport.logCount(log, "stockCacheVerifyJob", "fixed", fixed);
   }
 }
