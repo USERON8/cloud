@@ -68,15 +68,20 @@ open_local_url() {
 
 export_service_runtime_env() {
   local root="$1"
-  local nacos_port rocketmq_namesrv_port seata_port minio_port
+  local nacos_port nacos_grpc_port nacos_grpc_offset rocketmq_namesrv_port seata_port minio_port
   nacos_port="$(docker_port_value "$root" PORT_NACOS_HTTP 18848)"
-  rocketmq_namesrv_port="$(docker_port_value "$root" PORT_RMQ_NAMESRV 19876)"
+  nacos_grpc_port="$(docker_port_value "$root" PORT_NACOS_GRPC $((nacos_port + 1000)))"
+  nacos_grpc_offset="$((nacos_grpc_port - nacos_port))"
+  rocketmq_namesrv_port="$(docker_port_value "$root" PORT_RMQ_NAMESRV 20011)"
   seata_port="$(docker_port_value "$root" PORT_SEATA_SERVER 18091)"
   minio_port="$(docker_port_value "$root" PORT_MINIO_API 19000)"
 
   export NACOS_HOST="127.0.0.1"
   export NACOS_PORT="$nacos_port"
   export NACOS_SERVER_ADDR="127.0.0.1:${nacos_port}"
+  if [ "$nacos_grpc_offset" -gt 0 ]; then
+    export NACOS_GRPC_PORT_OFFSET="$nacos_grpc_offset"
+  fi
 
   export ROCKETMQ_NAMESRV_HOST="127.0.0.1"
   export ROCKETMQ_NAMESRV_PORT="$rocketmq_namesrv_port"

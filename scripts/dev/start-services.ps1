@@ -248,6 +248,9 @@ $serviceJvmOpts = if ([string]::IsNullOrWhiteSpace($env:SERVICE_JVM_OPTS)) {
 } else {
     $env:SERVICE_JVM_OPTS
 }
+if (-not [string]::IsNullOrWhiteSpace($env:NACOS_GRPC_PORT_OFFSET) -and $serviceJvmOpts -notmatch "nacos\.server\.grpc\.port\.offset") {
+    $serviceJvmOpts = "$serviceJvmOpts -Dnacos.server.grpc.port.offset=$($env:NACOS_GRPC_PORT_OFFSET)"
+}
 $startupTimeoutSeconds = 300
 if (-not [string]::IsNullOrWhiteSpace($env:SERVICE_STARTUP_TIMEOUT_SECONDS)) {
     $parsedTimeout = 0

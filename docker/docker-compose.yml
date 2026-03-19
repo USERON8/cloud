@@ -95,7 +95,7 @@ services:
         ipv4_address: 172.28.0.30
     environment:
       MODE: standalone
-      NACOS_SERVER_IP: 172.28.0.30
+      NACOS_SERVER_IP: ${NACOS_SERVER_IP:-172.28.0.30}
 
       SPRING_DATASOURCE_PLATFORM: mysql
       MYSQL_SERVICE_HOST: mysql
@@ -140,8 +140,8 @@ services:
     mem_limit: 384m
     ports:
       - "${PORT_NACOS_HTTP:-18848}:8848"
-      - "${PORT_NACOS_GRPC:-19090}:9090"
-      - "${PORT_NACOS_RAFT:-19848}:9848"
+      - "${PORT_NACOS_GRPC:-19090}:9848"
+      - "${PORT_NACOS_RAFT:-19848}:9849"
     volumes:
       - type: bind
         source: ./docker-compose/nacos/logs
