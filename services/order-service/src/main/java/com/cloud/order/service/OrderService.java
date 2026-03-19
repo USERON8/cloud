@@ -5,6 +5,8 @@ import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.enums.OrderAction;
 import java.util.List;
 
 public interface OrderService {
@@ -19,11 +21,11 @@ public interface OrderService {
 
   OrderSub getSubOrder(Long subOrderId);
 
-  OrderSub advanceSubOrderStatus(Long subOrderId, String action);
+  OrderSub advanceSubOrderStatus(Long subOrderId, OrderAction action);
 
   AfterSale applyAfterSale(AfterSale afterSale);
 
   AfterSale getAfterSale(Long afterSaleId);
 
-  AfterSale advanceAfterSaleStatus(Long afterSaleId, String action, String remark);
+  AfterSale advanceAfterSaleStatus(Long afterSaleId, AfterSaleAction action, String remark);
 }

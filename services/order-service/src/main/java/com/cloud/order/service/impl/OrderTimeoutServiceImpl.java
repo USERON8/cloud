@@ -1,9 +1,10 @@
 package com.cloud.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
@@ -65,7 +66,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
   @Transactional(rollbackFor = Exception.class)
   public boolean cancelTimeoutOrder(Long subOrderId) {
     try {
-      OrderSub updated = orderService.advanceSubOrderStatus(subOrderId, "CANCEL");
+      OrderSub updated = orderService.advanceSubOrderStatus(subOrderId, OrderAction.CANCEL);
       if (updated == null) {
         return false;
       }
@@ -73,7 +74,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
       return true;
     } catch (Exception e) {
       log.error("Cancel timeout order failed: subOrderId={}", subOrderId, e);
-      throw new BusinessException("Cancel timeout order failed", e);
+      throw new BizException("Cancel timeout order failed", e);
     }
   }
 
@@ -105,7 +106,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
   @Override
   public boolean updateTimeoutConfig(Integer timeoutMinutes) {
     if (timeoutMinutes == null || timeoutMinutes <= 0) {
-      throw new BusinessException("timeoutMinutes must be greater than 0");
+      throw new BizException("timeoutMinutes must be greater than 0");
     }
     this.timeoutMinutes = timeoutMinutes;
     return true;

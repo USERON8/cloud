@@ -10,7 +10,7 @@ import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +101,7 @@ public class AuthIdentityService {
   @Transactional(rollbackFor = Exception.class)
   public Long createPrincipal(AuthPrincipalDTO authPrincipalDTO) {
     if (authPrincipalDTO == null || StrUtil.isBlank(authPrincipalDTO.getUsername())) {
-      throw new BusinessException("username is required");
+      throw new BizException("username is required");
     }
     return invokeAuthService(
         "create principal", () -> authDubboApi.createPrincipal(authPrincipalDTO));
@@ -110,7 +110,7 @@ public class AuthIdentityService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean updatePrincipal(AuthPrincipalDTO authPrincipalDTO) {
     if (authPrincipalDTO == null || authPrincipalDTO.getId() == null) {
-      throw new BusinessException("principal id is required");
+      throw new BizException("principal id is required");
     }
     return invokeAuthService(
         "update principal", () -> authDubboApi.updatePrincipal(authPrincipalDTO));
@@ -127,10 +127,10 @@ public class AuthIdentityService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean changePassword(Long userId, String oldPassword, String newPassword) {
     if (userId == null) {
-      throw new BusinessException("principal id is required");
+      throw new BizException("principal id is required");
     }
     if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
-      throw new BusinessException("old password and new password are required");
+      throw new BizException("old password and new password are required");
     }
     return invokeAuthService(
         "change password", () -> authDubboApi.changePassword(userId, oldPassword, newPassword));
@@ -140,7 +140,7 @@ public class AuthIdentityService {
   public UserDTO register(RegisterRequestDTO registerRequest) {
     String username = StrUtil.trim(registerRequest.getUsername());
     if (findByUsername(username) != null) {
-      throw new BusinessException("username already exists");
+      throw new BizException("username already exists");
     }
 
     AuthPrincipalDTO principal = new AuthPrincipalDTO();
@@ -155,7 +155,7 @@ public class AuthIdentityService {
     Long userId =
         invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));
     if (userId == null) {
-      throw new BusinessException("failed to create user");
+      throw new BizException("failed to create user");
     }
     principal.setId(userId);
 

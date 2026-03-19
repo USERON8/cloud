@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.OrderSummaryDTO;
@@ -80,7 +80,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   public OrderMain requireAccessibleMainOrder(Long orderId, Authentication authentication) {
     OrderMain main = orderService.getMainOrder(orderId);
     if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
-      throw new BusinessException("main order not found");
+      throw new BizException("main order not found");
     }
     if (isAdmin(authentication)) {
       return main;
@@ -95,12 +95,12 @@ public class OrderQueryServiceImpl implements OrderQueryService {
                       .eq(OrderSub::getDeleted, 0))
               > 0;
       if (!belongs) {
-        throw new BusinessException("forbidden");
+        throw new BizException("forbidden");
       }
       return main;
     }
     if (!Objects.equals(main.getUserId(), currentUserId)) {
-      throw new BusinessException("forbidden");
+      throw new BizException("forbidden");
     }
     return main;
   }
@@ -115,7 +115,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
     OrderMain main = orderMainMapper.selectById(mainOrderId);
     if (main == null || Integer.valueOf(1).equals(main.getDeleted())) {
-      throw new BusinessException("main order not found");
+      throw new BizException("main order not found");
     }
     main.setCancelReason(cancelReason.trim());
     orderMainMapper.updateById(main);
@@ -286,12 +286,12 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   private Long requireCurrentUserId(Authentication authentication) {
     String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
     if (userId == null || userId.isBlank()) {
-      throw new BusinessException("current user not found in token");
+      throw new BizException("current user not found in token");
     }
     try {
       return Long.parseLong(userId);
     } catch (NumberFormatException ex) {
-      throw new BusinessException("invalid user_id in token");
+      throw new BizException("invalid user_id in token");
     }
   }
 }

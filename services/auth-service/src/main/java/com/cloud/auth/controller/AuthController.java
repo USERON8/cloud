@@ -8,7 +8,7 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.auth.RegisterResponseDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,7 +51,7 @@ public class AuthController {
           RegisterRequestDTO registerRequestDTO) {
     UserDTO registeredUser = authIdentityService.register(registerRequestDTO);
     if (registeredUser == null) {
-      throw new BusinessException(ResultCode.USER_ALREADY_EXISTS);
+      throw new BizException(ResultCode.USER_ALREADY_EXISTS);
     }
 
     RegisterResponseDTO registerResponse =
@@ -84,7 +84,7 @@ public class AuthController {
     }
 
     if (!logoutSuccess) {
-      throw new BusinessException(ResultCode.UNAUTHORIZED);
+      throw new BizException(ResultCode.UNAUTHORIZED);
     }
 
     return Result.success("Logout successful", null);
@@ -122,12 +122,12 @@ public class AuthController {
 
     String accessToken = authorizationHeader.substring(7);
     if (!tokenManagementService.isTokenValid(accessToken)) {
-      throw new BusinessException(ResultCode.UNAUTHORIZED);
+      throw new BizException(ResultCode.UNAUTHORIZED);
     }
 
     OAuth2Authorization authorization = tokenManagementService.findByToken(accessToken);
     if (authorization == null) {
-      throw new BusinessException(ResultCode.UNAUTHORIZED);
+      throw new BizException(ResultCode.UNAUTHORIZED);
     }
 
     String message =

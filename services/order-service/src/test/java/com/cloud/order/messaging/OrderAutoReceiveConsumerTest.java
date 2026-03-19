@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,7 +58,7 @@ class OrderAutoReceiveConsumerTest {
 
     consumer.onMessage(message);
 
-    verify(orderService).advanceSubOrderStatus(11L, "DONE");
+    verify(orderService).advanceSubOrderStatus(11L, OrderAction.DONE);
     verify(messageIdempotencyService)
         .markSuccess(eq("order:auto-receive"), eq("ORDER_AUTO_RECEIVE:S2026000001"));
   }
@@ -92,7 +93,7 @@ class OrderAutoReceiveConsumerTest {
 
     consumer.onMessage(message);
 
-    verify(orderService, never()).advanceSubOrderStatus(13L, "DONE");
+    verify(orderService, never()).advanceSubOrderStatus(13L, OrderAction.DONE);
     verify(messageIdempotencyService)
         .markSuccess(eq("order:auto-receive"), eq("ORDER_AUTO_RECEIVE:S2026000003"));
   }

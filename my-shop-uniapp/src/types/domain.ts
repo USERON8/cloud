@@ -40,18 +40,6 @@ export interface ProductItem {
   imageUrl?: string
 }
 
-export interface ProductUpsertPayload {
-  shopId: number
-  name: string
-  price: number
-  stockQuantity: number
-  categoryId: number
-  brandId?: number
-  status?: number
-  description?: string
-  imageUrl?: string
-}
-
 export interface SearchProductDocument {
   productId?: number
   shopId?: number
@@ -72,6 +60,7 @@ export interface SmartSearchResult {
   from: number
   size: number
   aggregations?: Record<string, unknown>
+  searchAfter?: unknown[]
 }
 
 export interface OrderItem {
@@ -257,6 +246,7 @@ export interface SearchResult<T> {
   took?: number
   aggregations?: Record<string, unknown>
   highlights?: Record<string, string[]>
+  searchAfter?: unknown[]
 }
 
 export interface ShopDocument {

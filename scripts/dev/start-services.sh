@@ -134,6 +134,9 @@ case "${SKYWALKING_ENABLED:-true}" in
     ;;
 esac
 SERVICE_JVM_OPTS="${SERVICE_JVM_OPTS:--Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError}"
+if [ -n "${NACOS_GRPC_PORT_OFFSET:-}" ] && [[ "$SERVICE_JVM_OPTS" != *"nacos.server.grpc.port.offset="* ]]; then
+  SERVICE_JVM_OPTS="$SERVICE_JVM_OPTS -Dnacos.server.grpc.port.offset=${NACOS_GRPC_PORT_OFFSET}"
+fi
 SERVICE_STARTUP_TIMEOUT_SECONDS="${SERVICE_STARTUP_TIMEOUT_SECONDS:-300}"
 
 RESULT_ROWS=()

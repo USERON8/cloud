@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.cloud.common.config.PermissionConfig;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +68,7 @@ class LocalUserAuthorityServiceTest {
     userDTO.setStatus(0);
 
     assertThatThrownBy(() -> localUserAuthorityService.createAuthenticatedPrincipal(userDTO))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining(ResultCode.USER_DISABLED.getMessage());
   }
 

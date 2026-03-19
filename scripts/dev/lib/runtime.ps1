@@ -89,13 +89,18 @@ function Set-ServiceRuntimeEnvironment {
     )
 
     $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
-    $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 19876
+    $nacosGrpcPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_GRPC" -DefaultValue ($nacosPort + 1000)
+    $nacosGrpcOffset = $nacosGrpcPort - $nacosPort
+    $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011
     $seataPort = Get-DockerPortValue -Root $Root -Name "PORT_SEATA_SERVER" -DefaultValue 18091
     $minioPort = Get-DockerPortValue -Root $Root -Name "PORT_MINIO_API" -DefaultValue 19000
 
     $env:NACOS_HOST = "127.0.0.1"
     $env:NACOS_PORT = [string]$nacosPort
     $env:NACOS_SERVER_ADDR = "127.0.0.1:$nacosPort"
+    if ($nacosGrpcOffset -gt 0) {
+        $env:NACOS_GRPC_PORT_OFFSET = [string]$nacosGrpcOffset
+    }
 
     $env:ROCKETMQ_NAMESRV_HOST = "127.0.0.1"
     $env:ROCKETMQ_NAMESRV_PORT = [string]$rocketMqNamesrvPort

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.OrderItem;
@@ -99,7 +99,7 @@ class OrderPlacementServiceImplTest {
         .thenReturn(false);
 
     assertThatThrownBy(() -> orderPlacementService.createOrder(request))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("failed to create order aggregate");
   }
 }

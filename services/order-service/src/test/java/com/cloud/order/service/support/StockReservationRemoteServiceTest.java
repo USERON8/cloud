@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,11 +34,11 @@ class StockReservationRemoteServiceTest {
         .thenThrow(new RuntimeException("insufficient salable stock for sku"));
 
     assertThatThrownBy(() -> stockReservationRemoteService.reserve(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("insufficient salable stock")
         .satisfies(
             ex -> {
-              BusinessException be = (BusinessException) ex;
+              BizException be = (BizException) ex;
               org.assertj.core.api.Assertions.assertThat(be.getCode())
                   .isEqualTo(ResultCode.STOCK_INSUFFICIENT.getCode());
             });
@@ -47,7 +47,7 @@ class StockReservationRemoteServiceTest {
   @Test
   void reserve_businessException_passthrough() {
     StockOperateCommandDTO command = new StockOperateCommandDTO();
-    BusinessException original = new BusinessException(422, "invalid");
+    BizException original = new BizException(422, "invalid");
     when(stockDubboApi.reserve(command)).thenThrow(original);
 
     assertThatThrownBy(() -> stockReservationRemoteService.reserve(command)).isSameAs(original);

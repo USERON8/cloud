@@ -101,7 +101,7 @@ scrape_configs:
       - targets:
           - "host.docker.internal:13306"
           - "host.docker.internal:16379"
-          - "host.docker.internal:19876"
+          - "host.docker.internal:20011"
           - "host.docker.internal:30909"
           - "host.docker.internal:19000"
           - "host.docker.internal:19200"

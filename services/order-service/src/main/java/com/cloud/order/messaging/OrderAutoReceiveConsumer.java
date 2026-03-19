@@ -3,6 +3,7 @@ package com.cloud.order.messaging;
 import com.cloud.common.messaging.consumer.AbstractMqConsumer;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +45,7 @@ public class OrderAutoReceiveConsumer extends AbstractMqConsumer<OrderAutoReceiv
       return;
     }
 
-    orderService.advanceSubOrderStatus(subOrder.getId(), "DONE");
+    orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.DONE);
   }
 
   @Override

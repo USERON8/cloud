@@ -5,6 +5,7 @@ import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
@@ -51,7 +52,7 @@ public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFai
       }
       String status = subOrder.getOrderStatus();
       if (!"CANCELLED".equals(status) && !"CLOSED".equals(status)) {
-        orderService.advanceSubOrderStatus(subOrder.getId(), "CANCEL");
+        orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.CANCEL);
       }
     }
     tradeMetrics.incrementMessageConsume("stock_freeze_failed", "success");

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.AfterSaleMapper;
@@ -44,7 +44,7 @@ class OrderRefundSagaServiceTest {
             () ->
                 orderRefundSagaService.applyRefund(
                     Map.of("afterSaleId", 1L, "previousStatus", "APPROVED")))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("status mismatch");
   }
 

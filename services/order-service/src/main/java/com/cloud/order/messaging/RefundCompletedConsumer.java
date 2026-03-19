@@ -8,6 +8,7 @@ import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.AfterSaleAction;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderSubMapper;
@@ -61,7 +62,8 @@ public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedE
     }
 
     if (!"REFUNDED".equals(afterSale.getStatus())) {
-      orderService.advanceAfterSaleStatus(afterSale.getId(), "REFUND", "refund completed");
+      orderService.advanceAfterSaleStatus(
+          afterSale.getId(), AfterSaleAction.REFUND, "refund completed");
     }
 
     StockRestoreEvent restoreEvent = buildStockRestoreEvent(afterSale, event);

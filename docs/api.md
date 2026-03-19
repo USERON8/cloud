@@ -179,12 +179,12 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 | DELETE | /auth/users/{username}/sessions | Logout all user sessions | hasAuthority('admin:all') | path=username | Result<String> |
 | GET | /auth/tokens/validate | Validate access token | isAuthenticated() | header=Authorization(Bearer) | Result<String> |
 
-#### OAuth2Endpoint?/oauth2?
+#### OAuth21AuthorizationServerConfig（AuthorizationServerSettings）
 
-| ?? | ?? | ?? | ?? | ??/Body | ?? |
+| 方法 | 路径 | 说明 | 权限 | 参数/Body | 返回 |
 | --- | --- | --- | --- | --- | --- |
-| GET | /oauth2/authorize | OAuth2 authorize | ??? | query=AuthorizationRequestDTO | 302 Redirect |
-| POST | /oauth2/token | OAuth2 token | ??? | body=application/x-www-form-urlencoded | OAuthTokenResponse |
+| GET | /oauth2/authorize | OAuth2 authorize | 由 Spring Authorization Server 处理 | query=response_type,client_id,redirect_uri,scope?,state?,code_challenge,code_challenge_method,nonce? | 302 Redirect |
+| POST | /oauth2/token | OAuth2 token | 由 Spring Authorization Server 处理 | body=application/x-www-form-urlencoded(grant_type,code,redirect_uri,code_verifier 或 refresh_token/client_credentials) | OAuthTokenResponse |
 
 #### GitHubOAuth2Controller（/auth/oauth2/github）
 
@@ -286,26 +286,26 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 
 | 方法 | 路径 | 说明 | 权限 | 参数/Body | 返回 |
 | --- | --- | --- | --- | --- | --- |
-| POST | /api/search/complex-search | Complex search | 未标注 | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
-| POST | /api/search/filters | Get filter data | 未标注 | body=ProductSearchRequest | Result<SearchResult<ProductDocument>> |
+| POST | /api/search/complex-search | Complex search | 未标注 | body=ProductSearchRequest, query=searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| POST | /api/search/filters | Get filter data | 未标注 | body=ProductSearchRequest, query=searchAfter? | Result<SearchResultDTO<ProductDocument>> |
 | GET | /api/search/suggestions | Search suggestions | 未标注 | query=keyword,size | Result<List<String>> |
 | GET | /api/search/hot-keywords | Hot keywords | 未标注 | query=size | Result<List<String>> |
 | GET | /api/search/keyword-recommendations | Keyword recommendations | 未标注 | query=keyword,size | Result<List<String>> |
-| GET | /api/search/search | Basic search | 未标注 | query=keyword,page,size,sortBy,sortDir | Result<Page<ProductDocument>> |
-| GET | /api/search/search/category/{categoryId} | Search by category | 未标注 | path=categoryId, query=keyword,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/search/shop/{shopId} | Search by shop | 未标注 | path=shopId, query=keyword,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/search/advanced | Advanced search | 未标注 | query=keyword,minPrice,maxPrice,page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/smart-search | Smart search | 未标注 | query=keyword,categoryId,minPrice,maxPrice,sortField,sortOrder,page,size | Result<ElasticsearchOptimizedService.SearchResult> |
-| GET | /api/search/recommended | Recommended products | 未标注 | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/new | New products | 未标注 | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/hot | Hot products | 未标注 | query=page,size | Result<Page<ProductDocument>> |
-| GET | /api/search/basic | Basic API search | 未标注 | query=keyword,page,size | Result<SearchResult<ProductDocument>> |
-| POST | /api/search/filter | Filter search | 未标注 | body=ProductFilterRequest | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/category/{categoryId} | Filter by category | 未标注 | path=categoryId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/brand/{brandId} | Filter by brand | 未标注 | path=brandId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/price | Filter by price | 未标注 | query=minPrice,maxPrice,page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/shop/{shopId} | Filter by shop | 未标注 | path=shopId, query=page,size | Result<SearchResult<ProductDocument>> |
-| GET | /api/search/filter/combined | Combined filter | 未标注 | query=keyword,categoryId,brandId,minPrice,maxPrice,shopId,sortBy,sortOrder,page,size | Result<SearchResult<ProductDocument>> |
+| GET | /api/search/search | Basic search | 未标注 | query=keyword,page,size,sortBy,sortDir,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/search/category/{categoryId} | Search by category | 未标注 | path=categoryId, query=keyword,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/search/shop/{shopId} | Search by shop | 未标注 | path=shopId, query=keyword,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/search/advanced | Advanced search | 未标注 | query=keyword,minPrice,maxPrice,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/smart-search | Smart search | 未标注 | query=keyword,categoryId,minPrice,maxPrice,sortField,sortOrder,page,size,searchAfter? | Result<ElasticsearchOptimizedService.SearchResultDTO> |
+| GET | /api/search/recommended | Recommended products | 未标注 | query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/new | New products | 未标注 | query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/hot | Hot products | 未标注 | query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/basic | Basic API search | 未标注 | query=keyword,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| POST | /api/search/filter | Filter search | 未标注 | body=ProductFilterRequest, query=searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/filter/category/{categoryId} | Filter by category | 未标注 | path=categoryId, query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/filter/brand/{brandId} | Filter by brand | 未标注 | path=brandId, query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/filter/price | Filter by price | 未标注 | query=minPrice,maxPrice,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/filter/shop/{shopId} | Filter by shop | 未标注 | path=shopId, query=page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
+| GET | /api/search/filter/combined | Combined filter | 未标注 | query=keyword,categoryId,brandId,minPrice,maxPrice,shopId,sortBy,sortOrder,page,size,searchAfter? | Result<SearchResultDTO<ProductDocument>> |
 
 #### ShopSearchController（/api/search/shops）
 
@@ -471,7 +471,7 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 
 | 字段 | 类型 |
 | --- | --- |
-| userId | Long |
+| userId | Long（普通用户可省略，管理员创建时必填） |
 | cartId | Long |
 | spuId | Long |
 | skuId | Long |
@@ -493,7 +493,7 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 | afterSaleNo | String |
 | mainOrderId | Long |
 | subOrderId | Long |
-| userId | Long |
+| userId | Long（普通用户可省略，管理员创建时必填） |
 | merchantId | Long |
 | afterSaleType | String |
 | status | String |
@@ -520,7 +520,7 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 | paymentNo | String |
 | mainOrderNo | String |
 | subOrderNo | String |
-| userId | Long |
+| userId | Long（普通用户可省略，管理员创建时必填） |
 | amount | BigDecimal |
 | channel | String |
 | idempotencyKey | String |
@@ -606,7 +606,7 @@ Result<T> 定义见 common-parent/common-core/src/main/java/com/cloud/common/result
 | size | Long（PageQuery） |
 | orderBy | String（PageQuery） |
 | orderDirection | String（PageQuery） |
-| userId | Long |
+| userId | Long（普通用户可省略，管理员创建时必填） |
 | consignee | String |
 
 ### UserUpsertRequestDTO（继承 BaseAccountUpsertRequestDTO）

@@ -3,7 +3,7 @@ package com.cloud.auth.service;
 import com.cloud.common.config.PermissionConfig;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -66,7 +66,7 @@ public class LocalUserAuthorityService {
       throw new IllegalArgumentException("User DTO cannot be null");
     }
     if (userDTO.getStatus() != null && userDTO.getStatus() != 1) {
-      throw new BusinessException(ResultCode.USER_DISABLED);
+      throw new BizException(ResultCode.USER_DISABLED);
     }
 
     List<SimpleGrantedAuthority> authorities = buildAuthorities(userDTO.getRoles());

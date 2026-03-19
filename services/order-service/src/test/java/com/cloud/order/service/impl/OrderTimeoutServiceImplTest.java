@@ -6,9 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
@@ -32,7 +33,7 @@ class OrderTimeoutServiceImplTest {
   @Test
   void updateTimeoutConfig_invalid_throws() {
     assertThatThrownBy(() -> orderTimeoutService.updateTimeoutConfig(0))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("timeoutMinutes must be greater than 0");
   }
 
@@ -41,7 +42,7 @@ class OrderTimeoutServiceImplTest {
     OrderSub subOrder = new OrderSub();
     subOrder.setId(11L);
     subOrder.setMainOrderId(99L);
-    when(orderService.advanceSubOrderStatus(11L, "CANCEL")).thenReturn(subOrder);
+    when(orderService.advanceSubOrderStatus(11L, OrderAction.CANCEL)).thenReturn(subOrder);
     when(orderSubMapper.selectCount(any())).thenReturn(0L);
 
     OrderMain mainOrder = new OrderMain();

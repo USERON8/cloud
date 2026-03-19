@@ -1,9 +1,10 @@
 package com.cloud.order.service.impl;
 
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
@@ -26,7 +27,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
   public boolean applyOrderAction(
       Long orderId,
       Authentication authentication,
-      String action,
+      OrderAction action,
       String shippingCompany,
       String trackingNumber,
       String cancelReason) {
@@ -36,7 +37,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
     OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
     List<OrderSub> subs = orderService.listSubOrders(main.getId());
     applySubOrderAction(subs, action, authentication, shippingCompany, trackingNumber);
-    if ("CANCEL".equals(action)) {
+    if (action == OrderAction.CANCEL) {
       orderQueryService.updateCancelReason(main.getId(), cancelReason);
     }
     return true;
@@ -46,7 +47,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
   public int batchApply(
       List<Long> orderIds,
       Authentication authentication,
-      String action,
+      OrderAction action,
       String shippingCompany,
       String trackingNumber,
       String cancelReason) {
@@ -68,12 +69,12 @@ public class OrderBatchServiceImpl implements OrderBatchService {
 
   private void applySubOrderAction(
       List<OrderSub> subs,
-      String action,
+      OrderAction action,
       Authentication authentication,
       String shippingCompany,
       String trackingNumber) {
     if (subs == null || subs.isEmpty()) {
-      throw new BusinessException("sub orders not found");
+      throw new BizException("sub orders not found");
     }
     for (OrderSub sub : subs) {
       if (sub == null || sub.getId() == null) {
@@ -83,7 +84,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
           && !Objects.equals(sub.getMerchantId(), requireCurrentUserId(authentication))) {
         continue;
       }
-      if ("SHIP".equals(action)) {
+      if (action == OrderAction.SHIP) {
         orderShippingService.ship(sub.getId(), shippingCompany, trackingNumber);
       } else {
         orderService.advanceSubOrderStatus(sub.getId(), action);
@@ -94,12 +95,12 @@ public class OrderBatchServiceImpl implements OrderBatchService {
   private Long requireCurrentUserId(Authentication authentication) {
     String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
     if (userId == null || userId.isBlank()) {
-      throw new BusinessException("current user not found in token");
+      throw new BizException("current user not found in token");
     }
     try {
       return Long.parseLong(userId);
     } catch (NumberFormatException ex) {
-      throw new BusinessException("invalid user_id in token");
+      throw new BizException("invalid user_id in token");
     }
   }
 }

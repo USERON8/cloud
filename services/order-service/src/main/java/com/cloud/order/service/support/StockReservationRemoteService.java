@@ -3,7 +3,7 @@ package com.cloud.order.service.support;
 import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -62,30 +62,30 @@ public class StockReservationRemoteService {
   }
 
   private RuntimeException translateException(RuntimeException ex) {
-    BusinessException businessException = findBusinessException(ex);
-    if (businessException != null) {
-      String message = normalizeMessage(businessException.getMessage());
+    BizException BizException = findBusinessException(ex);
+    if (BizException != null) {
+      String message = normalizeMessage(BizException.getMessage());
       if (isInsufficientStock(message)) {
-        return new BusinessException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
+        return new BizException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
       }
-      if (businessException == ex) {
-        return businessException;
+      if (BizException == ex) {
+        return BizException;
       }
-      return new BusinessException(businessException.getCode(), message, ex);
+      return new BizException(BizException.getCode(), message, ex);
     }
 
     String message = normalizeMessage(ex.getMessage());
     if (isInsufficientStock(message)) {
-      return new BusinessException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
+      return new BizException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
     }
     return new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, message, ex);
   }
 
-  private BusinessException findBusinessException(Throwable throwable) {
+  private BizException findBusinessException(Throwable throwable) {
     Throwable cursor = throwable;
     while (cursor != null) {
-      if (cursor instanceof BusinessException businessException) {
-        return businessException;
+      if (cursor instanceof BizException BizException) {
+        return BizException;
       }
       cursor = cursor.getCause();
     }

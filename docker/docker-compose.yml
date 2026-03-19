@@ -95,7 +95,7 @@ services:
         ipv4_address: 172.28.0.30
     environment:
       MODE: standalone
-      NACOS_SERVER_IP: 172.28.0.30
+      NACOS_SERVER_IP: ${NACOS_SERVER_IP:-172.28.0.30}
 
       SPRING_DATASOURCE_PLATFORM: mysql
       MYSQL_SERVICE_HOST: mysql
@@ -140,8 +140,8 @@ services:
     mem_limit: 384m
     ports:
       - "${PORT_NACOS_HTTP:-18848}:8848"
-      - "${PORT_NACOS_GRPC:-19090}:9090"
-      - "${PORT_NACOS_RAFT:-19848}:9848"
+      - "${PORT_NACOS_GRPC:-19090}:9848"
+      - "${PORT_NACOS_RAFT:-19848}:9849"
     volumes:
       - type: bind
         source: ./docker-compose/nacos/logs
@@ -169,7 +169,7 @@ services:
       service_net:
         ipv4_address: 172.28.0.40
     ports:
-      - "${PORT_RMQ_NAMESRV:-19876}:9876"  # 兼容性注释已标准化。
+      - "${PORT_RMQ_NAMESRV:-20011}:9876"  # 兼容性注释已标准化。
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/namesrv/logs
@@ -237,6 +237,8 @@ services:
     networks:
       service_net:
         ipv4_address: 172.28.0.70
+    environment:
+      NGINX_GATEWAY_UPSTREAM: ${NGINX_GATEWAY_UPSTREAM:-host.docker.internal:8080}
     ports:
       - "${PORT_NGINX_HTTP:-18080}:80"      # 兼容性注释已标准化。
       - "${PORT_NGINX_HTTPS:-18443}:443"    # 兼容性注释已标准化。
@@ -250,6 +252,10 @@ services:
       - type: bind
         source: ../my-shop-uniapp/dist
         target: /usr/share/nginx/html
+    command:
+      - /bin/sh
+      - -lc
+      - envsubst '$$NGINX_GATEWAY_UPSTREAM' < /etc/nginx/nginx.conf > /tmp/nginx.conf && mv /tmp/nginx.conf /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'
     depends_on:
       - nacos
 
