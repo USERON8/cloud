@@ -1,41 +1,39 @@
 package com.cloud.payment.config;
 
-import com.cloud.common.config.BaseResourceServerConfig;
+import com.cloud.common.config.ServiceSecurityCustomizer;
 import com.cloud.common.security.JwtAuthorityUtils;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 
-@Configuration
-@EnableWebSecurity
-public class ResourceServerConfig extends BaseResourceServerConfig {
-  public ResourceServerConfig(Environment environment) {
-    super(environment);
-  }
+@Configuration(proxyBeanMethods = false)
+public class ResourceServerConfig {
 
-  @Override
-  protected void configureServiceEndpoints(
-      org.springframework.security.config.annotation.web.configurers
-                      .AuthorizeHttpRequestsConfigurer<
-                  HttpSecurity>
-              .AuthorizationManagerRequestMatcherRegistry
-          authz) {
-    authz
-        .requestMatchers("/api/v1/payment/alipay/notify")
-        .permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/payments/orders/*")
-        .authenticated()
-        .requestMatchers("/api/payments/**")
-        .hasAnyRole("USER", "ADMIN")
-        .requestMatchers("/api/v1/payment/alipay/**")
-        .hasAnyRole("USER", "ADMIN");
-  }
+  @Bean
+  public ServiceSecurityCustomizer serviceSecurityCustomizer() {
+    return new ServiceSecurityCustomizer() {
+      @Override
+      public void configureServiceEndpoints(
+          AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
+              authz) {
+        authz
+            .requestMatchers("/api/v1/payment/alipay/notify")
+            .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/payments/orders/*")
+            .authenticated()
+            .requestMatchers("/api/payments/**")
+            .hasAnyRole("USER", "ADMIN")
+            .requestMatchers("/api/v1/payment/alipay/**")
+            .hasAnyRole("USER", "ADMIN");
+      }
 
-  @Override
-  protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
-    return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, false, null);
+      @Override
+      public JwtAuthenticationConverter buildJwtAuthenticationConverter() {
+        return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, false, null);
+      }
+    };
   }
 }

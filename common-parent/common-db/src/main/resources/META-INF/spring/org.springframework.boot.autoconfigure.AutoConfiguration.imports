@@ -1,0 +1,2 @@
+com.cloud.common.config.CommonDbAutoConfiguration
+com.cloud.common.config.DistributedLockAutoConfiguration

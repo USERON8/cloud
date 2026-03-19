@@ -1,6 +1,11 @@
 package com.cloud.common.config;
 
 import com.cloud.common.config.properties.AsyncProperties;
+import com.cloud.common.config.properties.DynamicAsyncProperties;
+import com.cloud.common.threadpool.ContextAwareTaskDecorator;
+import com.cloud.common.threadpool.EnhancedThreadPoolMonitor;
+import com.cloud.common.threadpool.ThreadPoolMonitor;
+import com.cloud.common.threadpool.ThreadPoolShutdownManager;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import org.springframework.beans.BeansException;
@@ -10,13 +15,22 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.util.StringUtils;
 
 @AutoConfiguration
 @EnableAsync
-@EnableConfigurationProperties(AsyncProperties.class)
+@Import({
+  AsyncInfrastructureConfig.class,
+  ThreadPoolMonitorConfig.class,
+  ContextAwareTaskDecorator.class,
+  EnhancedThreadPoolMonitor.class,
+  ThreadPoolMonitor.class,
+  ThreadPoolShutdownManager.class
+})
+@EnableConfigurationProperties({AsyncProperties.class, DynamicAsyncProperties.class})
 @ConditionalOnProperty(name = "app.async.enabled", havingValue = "true", matchIfMissing = true)
 public class AsyncAutoConfiguration implements AsyncConfigurer, ApplicationContextAware {
 

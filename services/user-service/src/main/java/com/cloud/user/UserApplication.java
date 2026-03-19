@@ -1,5 +1,6 @@
 package com.cloud.user;
 
+import com.cloud.common.boot.CloudBootstrap;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -12,9 +13,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -36,29 +35,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableCaching
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@ComponentScan(
-    basePackages = {"com.cloud.user", "com.cloud.common"},
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.ASSIGNABLE_TYPE,
-          classes = {com.cloud.common.security.RateLimitManager.class}),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "com\\.cloud\\.common\\.config\\.base\\.example\\..*")
-    })
 @MapperScan("com.cloud.user.mapper")
 public class UserApplication implements WebMvcConfigurer {
 
   public static void main(String[] args) {
-    try {
-      System.setProperty("nacos.logging.default.config.enabled", "false");
-      System.setProperty("nacos.logging.config", "");
-      System.setProperty("nacos.logging.path", "");
-      SpringApplication.run(UserApplication.class, args);
-    } catch (Exception e) {
-      log.error("User service startup failed: {}", e.getMessage(), e);
-      throw e;
-    }
+    CloudBootstrap.initialize();
+    SpringApplication.run(UserApplication.class, args);
   }
 
   @Override

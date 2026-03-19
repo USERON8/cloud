@@ -1,2 +1,3 @@
+com.cloud.common.config.CommonWebAutoConfiguration
 com.cloud.common.config.Knife4jAutoConfiguration
 

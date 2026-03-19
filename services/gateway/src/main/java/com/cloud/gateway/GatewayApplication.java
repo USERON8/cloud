@@ -1,5 +1,6 @@
 package com.cloud.gateway;
 
+import com.cloud.common.boot.CloudBootstrap;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -24,11 +25,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 public class GatewayApplication {
 
   public static void main(String[] args) {
-
-    System.setProperty("nacos.logging.default.config.enabled", "false");
-    System.setProperty("nacos.logging.config", "");
-    System.setProperty("nacos.logging.path", "");
-
+    CloudBootstrap.initialize();
     SpringApplication.run(GatewayApplication.class, args);
   }
 }

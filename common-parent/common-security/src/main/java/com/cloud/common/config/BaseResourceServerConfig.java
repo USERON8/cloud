@@ -2,7 +2,6 @@ package com.cloud.common.config;
 
 import com.cloud.common.security.AudienceTokenValidator;
 import com.cloud.common.security.InternalScopeClientValidator;
-import com.cloud.common.security.JwtAuthorityUtils;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,9 +13,15 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,7 +45,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
-public abstract class BaseResourceServerConfig {
+@Configuration(proxyBeanMethods = false)
+@RequiredArgsConstructor
+@ConditionalOnClass({HttpSecurity.class, JwtDecoder.class})
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+@ConditionalOnBean(ServiceSecurityCustomizer.class)
+@ConditionalOnMissingBean(SecurityFilterChain.class)
+public class BaseResourceServerConfig {
 
   @Value(
       "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://127.0.0.1:8081/.well-known/jwks.json}}")
@@ -73,10 +84,7 @@ public abstract class BaseResourceServerConfig {
   private String corsAllowedOriginPatterns;
 
   private final Environment environment;
-
-  protected BaseResourceServerConfig(Environment environment) {
-    this.environment = environment;
-  }
+  private final ServiceSecurityCustomizer serviceSecurityCustomizer;
 
   @Bean
   @Order(100)
@@ -100,7 +108,7 @@ public abstract class BaseResourceServerConfig {
                       return config;
                     }));
 
-    if (isStatelessSession()) {
+    if (serviceSecurityCustomizer.isStatelessSession()) {
       http.sessionManagement(
           session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     }
@@ -121,7 +129,7 @@ public abstract class BaseResourceServerConfig {
     http.authorizeHttpRequests(
         authz -> {
           configurePublicEndpoints(authz);
-          configureServiceEndpoints(authz);
+          serviceSecurityCustomizer.configureServiceEndpoints(authz);
           authz.anyRequest().authenticated();
         });
 
@@ -130,7 +138,7 @@ public abstract class BaseResourceServerConfig {
           oauth2.jwt(
               jwt ->
                   jwt.decoder(jwtDecoder).jwtAuthenticationConverter(jwtAuthenticationConverter()));
-          if (!useBearerTokenHandlers()) {
+          if (!serviceSecurityCustomizer.useBearerTokenHandlers()) {
             oauth2.authenticationEntryPoint(
                 (request, response, authException) -> {
                   log.warn("JWT authentication failed: {}", authException.getMessage());
@@ -154,7 +162,7 @@ public abstract class BaseResourceServerConfig {
           }
         });
 
-    if (useBearerTokenHandlers()) {
+    if (serviceSecurityCustomizer.useBearerTokenHandlers()) {
       http.exceptionHandling(
           exceptions ->
               exceptions
@@ -183,21 +191,6 @@ public abstract class BaseResourceServerConfig {
     }
   }
 
-  protected boolean isStatelessSession() {
-    return false;
-  }
-
-  protected boolean useBearerTokenHandlers() {
-    return false;
-  }
-
-  protected abstract void configureServiceEndpoints(
-      org.springframework.security.config.annotation.web.configurers
-                      .AuthorizeHttpRequestsConfigurer<
-                  HttpSecurity>
-              .AuthorizationManagerRequestMatcherRegistry
-          authz);
-
   @Bean
   public OAuth2TokenValidator<Jwt> blacklistTokenValidator(
       RedisTemplate<String, Object> redisTemplate) {
@@ -220,11 +213,7 @@ public abstract class BaseResourceServerConfig {
 
   @Bean
   public JwtAuthenticationConverter jwtAuthenticationConverter() {
-    return buildJwtAuthenticationConverter();
-  }
-
-  protected JwtAuthenticationConverter buildJwtAuthenticationConverter() {
-    return JwtAuthorityUtils.buildJwtAuthenticationConverter(true, true, null);
+    return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
   }
 
   private boolean isProtectedProfile() {
