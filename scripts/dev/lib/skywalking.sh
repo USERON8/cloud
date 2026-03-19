@@ -69,7 +69,7 @@ skywalking_archive_is_valid() {
 skywalking_enable_optional_plugins() {
   local agent_jar_path="$1"
   local agent_home optional_plugins_dir plugins_dir plugin_glob plugin_path
-  local optional_patterns="${SKYWALKING_OPTIONAL_PLUGINS:-apm-spring-cloud-gateway-4.x-plugin-*.jar apm-spring-webflux-6.x-plugin-*.jar apm-mybatis-3.x-plugin-*.jar}"
+  local optional_patterns="${SKYWALKING_OPTIONAL_PLUGINS:-}"
 
   agent_home="$(dirname "$agent_jar_path")"
   optional_plugins_dir="$agent_home/optional-plugins"

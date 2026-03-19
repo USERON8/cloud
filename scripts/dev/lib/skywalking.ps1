@@ -124,11 +124,7 @@ function Enable-SkyWalkingOptionalPlugins {
     $patterns = if (-not [string]::IsNullOrWhiteSpace($env:SKYWALKING_OPTIONAL_PLUGINS)) {
         $env:SKYWALKING_OPTIONAL_PLUGINS -split "\s+"
     } else {
-        @(
-            "apm-spring-cloud-gateway-4.x-plugin-*.jar",
-            "apm-spring-webflux-6.x-plugin-*.jar",
-            "apm-mybatis-3.x-plugin-*.jar"
-        )
+        @()
     }
 
     foreach ($pattern in $patterns) {
