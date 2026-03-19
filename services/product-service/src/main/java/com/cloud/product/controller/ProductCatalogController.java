@@ -3,10 +3,9 @@ package com.cloud.product.controller;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.product.controller.support.ProductMerchantGuard;
 import com.cloud.product.service.ProductCatalogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,16 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductCatalogController {
 
   private final ProductCatalogService productCatalogService;
+  private final ProductMerchantGuard productMerchantGuard;
 
   @PostMapping("/spu")
   @PreAuthorize("hasAuthority('product:create')")
   @Operation(summary = "Create SPU")
   public Result<Long> createSpu(
       @Valid @RequestBody SpuCreateRequestDTO request, Authentication authentication) {
-    if (!canWriteMerchantData(authentication, request.getSpu().getMerchantId())) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to create product for another merchant");
-    }
+    productMerchantGuard.assertCanWriteMerchant(authentication, request.getSpu().getMerchantId());
     return Result.success(productCatalogService.createSpu(request));
   }
 
@@ -52,14 +49,7 @@ public class ProductCatalogController {
       @PathVariable Long spuId,
       @Valid @RequestBody SpuCreateRequestDTO request,
       Authentication authentication) {
-    SpuDetailVO existing = productCatalogService.getSpuById(spuId);
-    if (existing == null) {
-      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
-    }
-    if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to update another merchant's product");
-    }
+    SpuDetailVO existing = productMerchantGuard.requireWritableSpu(authentication, spuId);
     if (!SecurityPermissionUtils.isAdmin(authentication)) {
       request.getSpu().setMerchantId(existing.getMerchantId());
     }
@@ -90,19 +80,7 @@ public class ProductCatalogController {
   @Operation(summary = "Update SPU status")
   public Result<Boolean> updateSpuStatus(
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
-    SpuDetailVO existing = productCatalogService.getSpuById(spuId);
-    if (existing == null) {
-      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
-    }
-    if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to update another merchant's product");
-    }
+    productMerchantGuard.requireWritableSpu(authentication, spuId);
     return Result.success(productCatalogService.updateSpuStatus(spuId, status));
-  }
-
-  private boolean canWriteMerchantData(Authentication authentication, Long merchantId) {
-    return SecurityPermissionUtils.isAdmin(authentication)
-        || SecurityPermissionUtils.isMerchantOwner(authentication, merchantId);
   }
 }

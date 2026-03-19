@@ -1,11 +1,8 @@
 package com.cloud.product.controller;
 
-import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
-import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.product.controller.support.ProductMerchantGuard;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.ProductQueryService;
@@ -30,6 +27,7 @@ public class ProductQueryController {
 
   private final ProductCatalogService productCatalogService;
   private final ProductQueryService productQueryService;
+  private final ProductMerchantGuard productMerchantGuard;
 
   @GetMapping
   @Operation(summary = "List products")
@@ -56,19 +54,7 @@ public class ProductQueryController {
   @Operation(summary = "Update product status")
   public Result<Boolean> updateProductStatus(
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
-    SpuDetailVO existing = productCatalogService.getSpuById(spuId);
-    if (existing == null) {
-      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
-    }
-    if (!canWriteMerchantData(authentication, existing.getMerchantId())) {
-      throw new BizException(
-          ResultCode.FORBIDDEN, "forbidden to update another merchant's product");
-    }
+    productMerchantGuard.requireWritableSpu(authentication, spuId);
     return Result.success(productCatalogService.updateSpuStatus(spuId, status));
-  }
-
-  private boolean canWriteMerchantData(Authentication authentication, Long merchantId) {
-    return SecurityPermissionUtils.isAdmin(authentication)
-        || SecurityPermissionUtils.isMerchantOwner(authentication, merchantId);
   }
 }

@@ -12,6 +12,7 @@ import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.product.controller.support.ProductMerchantGuard;
 import com.cloud.product.service.ProductCatalogService;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -32,7 +33,9 @@ class ProductCatalogControllerTest {
 
   @Test
   void createSpuShouldRejectForeignMerchantForMerchantUser() {
-    ProductCatalogController controller = new ProductCatalogController(productCatalogService);
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
 
     BizException exception =
         assertThrows(
@@ -49,7 +52,9 @@ class ProductCatalogControllerTest {
     existing.setMerchantId(200L);
     when(productCatalogService.getSpuById(11L)).thenReturn(existing);
 
-    ProductCatalogController controller = new ProductCatalogController(productCatalogService);
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
     BizException exception =
         assertThrows(
             BizException.class,
@@ -66,7 +71,9 @@ class ProductCatalogControllerTest {
     when(productCatalogService.getSpuById(11L)).thenReturn(existing);
     when(productCatalogService.updateSpu(any(), any())).thenReturn(true);
 
-    ProductCatalogController controller = new ProductCatalogController(productCatalogService);
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
     SpuCreateRequestDTO request = requestWithMerchant(999L);
     var result = controller.updateSpu(11L, request, authentication("100", "ROLE_MERCHANT"));
 
@@ -82,7 +89,9 @@ class ProductCatalogControllerTest {
     when(productCatalogService.getSpuById(11L)).thenReturn(existing);
     when(productCatalogService.updateSpuStatus(11L, 1)).thenReturn(true);
 
-    ProductCatalogController controller = new ProductCatalogController(productCatalogService);
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
     var result = controller.updateSpuStatus(11L, 1, authentication("100", "ROLE_MERCHANT"));
 
     assertThat(result.getCode()).isEqualTo(200);
