@@ -4,7 +4,6 @@ import type {
   ProductItem,
   ProductPage,
   ProductQuery,
-  ProductUpsertPayload,
   SearchProductDocument,
   SearchResult,
   SmartSearchResult
@@ -54,6 +53,7 @@ export function smartSearchProducts(params: {
   size?: number
   sortField?: string
   sortOrder?: 'asc' | 'desc'
+  searchAfter?: string
 }): Promise<SmartSearchResult> {
   return http.get<SmartSearchResult, SmartSearchResult>('/api/search/smart-search', { params })
 }
@@ -190,6 +190,7 @@ export interface CombinedSearchParams {
   sortOrder?: 'asc' | 'desc'
   page?: number
   size?: number
+  searchAfter?: string
 }
 
 export function combinedSearchProducts(params: CombinedSearchParams): Promise<SearchResult<ProductDocument>> {
@@ -198,12 +199,4 @@ export function combinedSearchProducts(params: CombinedSearchParams): Promise<Se
 
 export function updateProductStatus(id: number, status: 0 | 1): Promise<boolean> {
   return http.patch<boolean, boolean>(`/api/product/${id}/status`, null, { params: { status } })
-}
-
-export function createProduct(payload: ProductUpsertPayload): Promise<number> {
-  return http.post<number, number>('/api/product/spu', payload)
-}
-
-export function updateProduct(id: number, payload: ProductUpsertPayload): Promise<boolean> {
-  return http.put<boolean, boolean>(`/api/product/spu/${id}`, payload)
 }
