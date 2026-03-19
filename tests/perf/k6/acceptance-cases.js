@@ -4,7 +4,7 @@ import { Counter, Rate, Trend } from "k6/metrics";
 
 function normalizeBaseUrl(rawUrl) {
   const url = String(rawUrl || "").trim().replace(/\/+$/, "");
-  return url || "http://host.docker.internal:8080";
+  return url || "http://host.docker.internal:18080";
 }
 
 function parseOrigin(rawUrl) {
@@ -36,7 +36,7 @@ function buildDefaultHealthTargets(baseUrl) {
   return [gatewayHealth, ...serviceHealth];
 }
 
-const BASE_URL = normalizeBaseUrl(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080");
+const BASE_URL = normalizeBaseUrl(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080");
 const DEFAULT_CASE_VUS = Number(__ENV.CASE_VUS || 1);
 const DEFAULT_CASE_DURATION = __ENV.CASE_DURATION || "30s";
 const CASE_STAGE_SECONDS = Number(__ENV.CASE_STAGE_SECONDS || 35);

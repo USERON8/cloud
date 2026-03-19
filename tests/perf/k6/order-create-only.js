@@ -2,7 +2,7 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
-const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:8080")
+const BASE_URL = String(__ENV.K6_BASE_URL || __ENV.BASE_URL || "http://host.docker.internal:18080")
   .trim()
   .replace(/\/+$/, "");
 const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "30s";
@@ -10,41 +10,25 @@ const ORDER_VUS = Number(__ENV.ORDER_VUS || 8);
 const ORDER_DURATION = __ENV.ORDER_DURATION || "30s";
 const ORDER_SLEEP_SECONDS = Number(__ENV.ORDER_SLEEP_SECONDS || 0);
 
-const SHOP_ID = String(__ENV.SHOP_ID || "").trim();
-const ADDRESS_ID = String(__ENV.ADDRESS_ID || "1").trim();
-const PRODUCT_ID = String(__ENV.PRODUCT_ID || "").trim();
-const USER_ID = String(__ENV.USER_ID || "").trim();
+const SPU_ID = String(__ENV.SPU_ID || "").trim();
+const SKU_ID = String(__ENV.SKU_ID || "").trim();
+const AUTH_USER_ID = String(__ENV.AUTH_USER_ID || "").trim();
 
 const orderCreateSuccessRate = new Rate("order_create_success_rate");
 const orderCreateDurationMs = new Trend("order_create_duration_ms", true);
 
 const DEFAULT_JSON_HEADERS = Object.freeze({ "Content-Type": "application/json" });
-const REQUEST_PARAMS = Object.freeze({
-  headers: DEFAULT_JSON_HEADERS,
-  timeout: REQUEST_TIMEOUT,
-});
-const authParamsCache = new Map();
 let missingPrerequisiteLogged = false;
 
-function authParams(token = "") {
-  if (!token) {
-    return REQUEST_PARAMS;
-  }
-
-  const cached = authParamsCache.get(token);
-  if (cached) {
-    return cached;
-  }
-
-  const params = {
+function authParams(token, idempotencyKey) {
+  return {
     headers: {
       ...DEFAULT_JSON_HEADERS,
       Authorization: `Bearer ${token}`,
+      "Idempotency-Key": idempotencyKey,
     },
     timeout: REQUEST_TIMEOUT,
   };
-  authParamsCache.set(token, params);
-  return params;
 }
 
 function parseJson(response) {
@@ -64,31 +48,27 @@ function isSuccess(response) {
 }
 
 function buildOrderCreateBody(userId) {
+  const quantity = Number(__ENV.ORDER_ITEM_QUANTITY || 1);
+  const unitPrice = String(__ENV.ORDER_ITEM_PRICE || "99.99");
+  const totalAmount = String(__ENV.ORDER_TOTAL_AMOUNT || unitPrice);
+  const payableAmount = String(__ENV.ORDER_PAY_AMOUNT || totalAmount);
   const payload = {
-    shopId: SHOP_ID,
-    addressId: ADDRESS_ID,
+    userId: Number(userId),
+    spuId: Number(SPU_ID),
+    skuId: Number(SKU_ID),
+    quantity,
     receiverName: __ENV.RECEIVER_NAME || "k6 user",
     receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
     receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
-    payType: Number(__ENV.PAY_TYPE || 1),
-    totalAmount: __ENV.ORDER_TOTAL_AMOUNT || "99.99",
-    payAmount: __ENV.ORDER_PAY_AMOUNT || "99.99",
+    totalAmount,
+    payableAmount,
     remark: "k6 order-only",
-    orderItems: [
-      {
-        productId: PRODUCT_ID,
-        productName: __ENV.PRODUCT_NAME || "k6-product",
-        price: __ENV.ORDER_ITEM_PRICE || "99.99",
-        quantity: Number(__ENV.ORDER_ITEM_QUANTITY || 1),
-      },
-    ],
   };
-
-  if (userId) {
-    payload.userId = userId;
-  }
-
   return JSON.stringify(payload);
+}
+
+function buildIdempotencyKey(userId) {
+  return `k6-order-only-${userId}-${__VU}-${__ITER}-${Date.now()}`;
 }
 
 export const options = {
@@ -110,7 +90,7 @@ export const options = {
 export function setup() {
   const setupData = {
     authToken: String(__ENV.AUTH_TOKEN || "").trim(),
-    authUserId: String(__ENV.AUTH_USER_ID || USER_ID || "").trim(),
+    authUserId: AUTH_USER_ID,
   };
   validatePrerequisites(setupData);
   return setupData;
@@ -118,9 +98,8 @@ export function setup() {
 
 function validatePrerequisites(setupData) {
   const missing = [];
-  if (!SHOP_ID) missing.push("SHOP_ID");
-  if (!ADDRESS_ID) missing.push("ADDRESS_ID");
-  if (!PRODUCT_ID) missing.push("PRODUCT_ID");
+  if (!SPU_ID) missing.push("SPU_ID");
+  if (!SKU_ID) missing.push("SKU_ID");
   if (!setupData?.authToken) missing.push("AUTH_TOKEN");
   if (!String(setupData?.authUserId || "").trim()) missing.push("AUTH_USER_ID");
 
@@ -131,11 +110,11 @@ function validatePrerequisites(setupData) {
 
 export default function run(data) {
   const authToken = String(data?.authToken || "").trim();
-  const authUserId = String(data?.authUserId || USER_ID || "").trim();
-  if (!authToken || !authUserId || !SHOP_ID || !ADDRESS_ID || !PRODUCT_ID) {
+  const authUserId = String(data?.authUserId || AUTH_USER_ID || "").trim();
+  if (!authToken || !authUserId || !SPU_ID || !SKU_ID) {
     if (!missingPrerequisiteLogged) {
       missingPrerequisiteLogged = true;
-      console.error("[order-only] skipped iteration due to missing auth or business IDs");
+      console.error("[order-only] skipped iteration due to missing auth or order IDs");
     }
     orderCreateSuccessRate.add(false);
     sleep(1);
@@ -143,10 +122,11 @@ export default function run(data) {
   }
 
   const startedAt = Date.now();
+  const idempotencyKey = buildIdempotencyKey(authUserId);
   const response = http.post(
     `${BASE_URL}/api/orders`,
     buildOrderCreateBody(authUserId),
-    authParams(authToken)
+    authParams(authToken, idempotencyKey)
   );
   const ok = isSuccess(response);
   orderCreateDurationMs.add(Date.now() - startedAt);
