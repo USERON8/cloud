@@ -1,7 +1,10 @@
 x-skywalking-common: &skywalking-common
-  JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar"
+  JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar -DNACOS.CONNECT.TIMEOUT=3000 -DNACOS.READ.TIMEOUT=10000 -Dnacos.remote.client.grpc.timeout=10000 -Dnacos.remote.client.grpc.server.check.timeout=10000 -Dnacos.remote.client.grpc.health.timeout=10000 -Dnacos.remote.client.grpc.health.retry=5"
   SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
   SW_LOGGING_OUTPUT: "CONSOLE"
+  SW_LOGGING_LEVEL: "WARN"
+  SW_AGENT_PROFILE_ACTIVE: "false"
+  SW_AGENT_ASYNC_PROFILER_ACTIVE: "false"
 
 x-skywalking-agent-volume: &skywalking-agent-volume
   type: bind
@@ -156,7 +159,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9090/nacos/" ]
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:9090/nacos/ >/dev/null && nc -z 127.0.0.1 9848" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -255,7 +258,7 @@ services:
     command:
       - /bin/sh
       - -lc
-      - envsubst '$$NGINX_GATEWAY_UPSTREAM' < /etc/nginx/nginx.conf > /tmp/nginx.conf && mv /tmp/nginx.conf /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'
+      - envsubst '$$NGINX_GATEWAY_UPSTREAM' < /etc/nginx/nginx.conf > /tmp/nginx-runtime.conf && exec nginx -c /tmp/nginx-runtime.conf -g 'daemon off;'
     depends_on:
       - nacos
 
@@ -269,8 +272,10 @@ services:
     ports:
       - "${PORT_GATEWAY_SERVICE_HOST:-8080}:8080"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -307,8 +312,10 @@ services:
     ports:
       - "${PORT_AUTH_SERVICE_HOST:-8081}:8081"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -351,8 +358,10 @@ services:
     ports:
       - "${PORT_USER_SERVICE_HOST:-8082}:8082"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -388,8 +397,10 @@ services:
     ports:
       - "${PORT_ORDER_SERVICE_HOST:-8083}:8083"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -426,8 +437,10 @@ services:
     ports:
       - "${PORT_PRODUCT_SERVICE_HOST:-8084}:8084"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -467,8 +480,10 @@ services:
     ports:
       - "${PORT_STOCK_SERVICE_HOST:-8085}:8085"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -504,8 +519,10 @@ services:
     ports:
       - "${PORT_PAYMENT_SERVICE_HOST:-8086}:8086"
     depends_on:
-      - nacos
-      - skywalking-oap
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
     volumes:
       - *skywalking-agent-volume
       - type: bind
@@ -542,9 +559,12 @@ services:
     ports:
       - "${PORT_SEARCH_SERVICE_HOST:-8087}:8087"
     depends_on:
-      - nacos
-      - skywalking-oap
-      - elasticsearch
+      nacos:
+        condition: service_healthy
+      skywalking-oap:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
     volumes:
       - *skywalking-agent-volume
       - type: bind
