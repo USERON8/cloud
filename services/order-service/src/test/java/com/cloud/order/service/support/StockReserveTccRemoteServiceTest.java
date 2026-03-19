@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.api.stock.StockReserveTccApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +44,7 @@ class StockReserveTccRemoteServiceTest {
     command.setQuantity(1);
     command.setReason("reason");
 
-    BusinessException original = new BusinessException("fail");
+    BizException original = new BizException("fail");
     when(stockReserveTccApi.tryReserve(any(), any(), any(), any(), any(), any()))
         .thenThrow(new RuntimeException(original));
 

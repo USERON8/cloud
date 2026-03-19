@@ -7,7 +7,7 @@ import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
 import com.cloud.order.dto.CreateMainOrderRequest;
@@ -84,10 +84,10 @@ public class OrderCreateTccAction {
       @BusinessActionContextParameter(paramName = "cartId") Long cartId,
       CreateMainOrderRequest request) {
     if (StrUtil.isBlank(idempotencyKey)) {
-      throw new BusinessException("idempotency key is required");
+      throw new BizException("idempotency key is required");
     }
     if (request == null) {
-      throw new BusinessException("order request is required");
+      throw new BizException("order request is required");
     }
     if (request.getCartId() != null) {
       buildFromCart(request);
@@ -95,13 +95,13 @@ public class OrderCreateTccAction {
       buildFromSingleItem(request);
     }
     if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
-      throw new BusinessException("subOrders is required");
+      throw new BizException("subOrders is required");
     }
 
     OrderTccLog existingLog = findLog(idempotencyKey);
     if (existingLog != null) {
       if (STATUS_CANCEL.equals(existingLog.getStatus())) {
-        throw new BusinessException("order create tcc cancelled");
+        throw new BizException("order create tcc cancelled");
       }
       return true;
     }
@@ -296,17 +296,17 @@ public class OrderCreateTccAction {
       return;
     }
     if (request.getUserId() == null) {
-      throw new BusinessException("user id is required for cart checkout");
+      throw new BizException("user id is required for cart checkout");
     }
     Cart cart = cartMapper.selectById(cartId);
     if (cart == null || cart.getDeleted() == 1) {
-      throw new BusinessException("cart not found");
+      throw new BizException("cart not found");
     }
     if (!request.getUserId().equals(cart.getUserId())) {
-      throw new BusinessException("cart does not belong to current user");
+      throw new BizException("cart does not belong to current user");
     }
     if (cart.getCartStatus() != null && !CART_STATUS_ACTIVE.equals(cart.getCartStatus())) {
-      throw new BusinessException("cart is not active");
+      throw new BizException("cart is not active");
     }
 
     List<CartItem> cartItems =
@@ -318,7 +318,7 @@ public class OrderCreateTccAction {
                 .eq(CartItem::getCheckedOut, 0)
                 .eq(CartItem::getDeleted, 0));
     if (cartItems == null || cartItems.isEmpty()) {
-      throw new BusinessException("cart has no selectable items");
+      throw new BizException("cart has no selectable items");
     }
 
     Map<Long, SpuDetailVO> spuDetails = loadSpuDetails(cartItems);
@@ -326,11 +326,11 @@ public class OrderCreateTccAction {
     Map<Long, List<CartItem>> itemsByMerchant = new HashMap<>();
     for (CartItem item : cartItems) {
       if (item.getSpuId() == null) {
-        throw new BusinessException("cart item missing spu id");
+        throw new BizException("cart item missing spu id");
       }
       SpuDetailVO spu = spuDetails.get(item.getSpuId());
       if (spu == null || spu.getMerchantId() == null) {
-        throw new BusinessException("missing merchant for spuId=" + item.getSpuId());
+        throw new BizException("missing merchant for spuId=" + item.getSpuId());
       }
       itemsByMerchant.computeIfAbsent(spu.getMerchantId(), ignored -> new ArrayList<>()).add(item);
     }
@@ -355,13 +355,11 @@ public class OrderCreateTccAction {
           unitPrice = skuDetail != null ? skuDetail.getSalePrice() : null;
         }
         if (unitPrice == null) {
-          throw new BusinessException(
-              "cart item missing unit price for skuId=" + cartItem.getSkuId());
+          throw new BizException("cart item missing unit price for skuId=" + cartItem.getSkuId());
         }
         Integer quantity = cartItem.getQuantity();
         if (quantity == null || quantity <= 0) {
-          throw new BusinessException(
-              "invalid cart item quantity for skuId=" + cartItem.getSkuId());
+          throw new BizException("invalid cart item quantity for skuId=" + cartItem.getSkuId());
         }
         BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         itemAmount = itemAmount.add(totalPrice);
@@ -405,27 +403,27 @@ public class OrderCreateTccAction {
     }
     Integer quantity = request.getQuantity();
     if (quantity == null || quantity <= 0) {
-      throw new BusinessException("quantity is required for direct item checkout");
+      throw new BizException("quantity is required for direct item checkout");
     }
 
     SpuDetailVO spuDetail =
         invokeProductService("get spu by id", () -> productDubboApi.getSpuById(request.getSpuId()));
     if (spuDetail == null || spuDetail.getMerchantId() == null) {
-      throw new BusinessException("spu not found for direct checkout");
+      throw new BizException("spu not found for direct checkout");
     }
     List<SkuDetailVO> skuDetails =
         invokeProductService(
             "list sku by ids", () -> productDubboApi.listSkuByIds(List.of(request.getSkuId())));
     SkuDetailVO skuDetail = skuDetails == null || skuDetails.isEmpty() ? null : skuDetails.get(0);
     if (skuDetail == null) {
-      throw new BusinessException("sku not found for direct checkout");
+      throw new BizException("sku not found for direct checkout");
     }
     if (skuDetail.getSpuId() != null && !skuDetail.getSpuId().equals(request.getSpuId())) {
-      throw new BusinessException("sku does not belong to requested spu");
+      throw new BizException("sku does not belong to requested spu");
     }
     BigDecimal unitPrice = skuDetail.getSalePrice();
     if (unitPrice == null) {
-      throw new BusinessException("sku price missing for direct checkout");
+      throw new BizException("sku price missing for direct checkout");
     }
     BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
 

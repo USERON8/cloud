@@ -2,7 +2,7 @@ package com.cloud.order.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.OrderItem;
@@ -41,12 +41,12 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     boolean prepared =
         orderCreateTccAction.prepare(null, idempotencyKey, request.getCartId(), request);
     if (!prepared) {
-      throw new BusinessException("failed to create order aggregate");
+      throw new BizException("failed to create order aggregate");
     }
 
     OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
     if (mainOrder == null) {
-      throw new BusinessException("order aggregate not found");
+      throw new BizException("order aggregate not found");
     }
 
     OrderAggregateResponse aggregate =
@@ -70,7 +70,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
 
       Boolean reserved = stockReserveTccRemoteService.tryReserve(command);
       if (!Boolean.TRUE.equals(reserved)) {
-        throw new BusinessException("reserve stock failed for skuId=" + task.getSkuId());
+        throw new BizException("reserve stock failed for skuId=" + task.getSkuId());
       }
     }
   }
@@ -90,13 +90,13 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
   private List<StockReservationTask> buildReservationTasks(
       OrderMain mainOrder, OrderSub subOrder, List<OrderItem> items) {
     if (items == null || items.isEmpty()) {
-      throw new BusinessException("order items are required for stock reservation");
+      throw new BizException("order items are required for stock reservation");
     }
 
     Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
     for (OrderItem item : items) {
       if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
-        throw new BusinessException("invalid order item for stock reservation");
+        throw new BizException("invalid order item for stock reservation");
       }
       skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
     }
@@ -115,20 +115,20 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
 
   private OrderAggregateResponse requireAggregate(OrderAggregateResponse aggregate) {
     if (aggregate == null || aggregate.getMainOrder() == null) {
-      throw new BusinessException("order aggregate not found");
+      throw new BizException("order aggregate not found");
     }
     if (aggregate.getSubOrders() == null || aggregate.getSubOrders().isEmpty()) {
-      throw new BusinessException("order aggregate has no sub orders");
+      throw new BizException("order aggregate has no sub orders");
     }
     return aggregate;
   }
 
   private String normalizeIdempotencyKey(String idempotencyKey, Long userId) {
     if (StrUtil.isBlank(idempotencyKey)) {
-      throw new BusinessException("idempotency key is required");
+      throw new BizException("idempotency key is required");
     }
     if (userId == null) {
-      throw new BusinessException("user id is required for idempotency");
+      throw new BizException("user id is required for idempotency");
     }
     String trimmed = idempotencyKey.trim();
     String prefix = userId + ":";

@@ -1,9 +1,9 @@
 package com.cloud.order.exception;
 
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 
-public class OrderServiceException extends BusinessException {
+public class OrderServiceException extends BizException {
 
   public OrderServiceException(int code, String message) {
     super(code, message);
@@ -31,7 +31,7 @@ public class OrderServiceException extends BusinessException {
     }
 
     public OrderNotFoundException(Long orderId) {
-      super(ResultCode.ORDER_NOT_FOUND, String.format("订单不存在，订单ID: %d", orderId));
+      super(ResultCode.ORDER_NOT_FOUND, String.format("璁㈠崟涓嶅瓨鍦紝璁㈠崟ID: %d", orderId));
     }
   }
 
@@ -67,13 +67,13 @@ public class OrderServiceException extends BusinessException {
 
   public static class OrderPaymentFailedException extends OrderServiceException {
     public OrderPaymentFailedException(String message) {
-      super(ResultCode.BUSINESS_ERROR, "订单支付失败: " + message);
+      super(ResultCode.BUSINESS_ERROR, "璁㈠崟鏀粯澶辫触: " + message);
     }
   }
 
   public static class OrderShippingFailedException extends OrderServiceException {
     public OrderShippingFailedException(String message) {
-      super(ResultCode.BUSINESS_ERROR, "订单发货失败: " + message);
+      super(ResultCode.BUSINESS_ERROR, "璁㈠崟鍙戣揣澶辫触: " + message);
     }
   }
 }

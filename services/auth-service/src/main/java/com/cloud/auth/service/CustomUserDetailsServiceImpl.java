@@ -4,7 +4,7 @@ import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.auth.util.OAuth2ComplianceChecker;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.exception.ValidationException;
 import java.util.List;
@@ -41,7 +41,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         throw new ResourceNotFoundException("User", username);
       }
       if (isDisabled(principal)) {
-        throw new BusinessException(ResultCode.USER_DISABLED);
+        throw new BizException(ResultCode.USER_DISABLED);
       }
 
       List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =

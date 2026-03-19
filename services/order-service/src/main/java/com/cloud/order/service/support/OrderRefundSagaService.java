@@ -1,7 +1,7 @@
 package com.cloud.order.service.support;
 
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.AfterSaleMapper;
@@ -26,17 +26,17 @@ public class OrderRefundSagaService {
     Long afterSaleId = asLong(params.get("afterSaleId"));
     String previousStatus = asText(params.get("previousStatus"));
     if (afterSaleId == null) {
-      throw new BusinessException("after sale id is required");
+      throw new BizException("after sale id is required");
     }
     AfterSale afterSale = afterSaleMapper.selectById(afterSaleId);
     if (afterSale == null || Integer.valueOf(1).equals(afterSale.getDeleted())) {
-      throw new BusinessException("after sale not found");
+      throw new BizException("after sale not found");
     }
     if ("REFUNDING".equals(afterSale.getStatus())) {
       return true;
     }
     if (previousStatus != null && !previousStatus.equals(afterSale.getStatus())) {
-      throw new BusinessException("after sale status mismatch for saga: " + afterSale.getStatus());
+      throw new BizException("after sale status mismatch for saga: " + afterSale.getStatus());
     }
 
     afterSale.setStatus("REFUNDING");
@@ -56,10 +56,10 @@ public class OrderRefundSagaService {
     String idempotencyKey = asText(params.get("idempotencyKey"));
 
     if (refundNo == null || paymentNo == null || afterSaleNo == null) {
-      throw new BusinessException("refund parameters missing");
+      throw new BizException("refund parameters missing");
     }
     if (refundAmount == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BusinessException("refund amount must be greater than 0");
+      throw new BizException("refund amount must be greater than 0");
     }
 
     PaymentRefundCommandDTO command = new PaymentRefundCommandDTO();
@@ -72,7 +72,7 @@ public class OrderRefundSagaService {
 
     Long refundId = paymentOrderRemoteService.createRefund(command);
     if (refundId == null) {
-      throw new BusinessException("refund request failed");
+      throw new BizException("refund request failed");
     }
     return true;
   }

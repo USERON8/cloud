@@ -1,7 +1,7 @@
 package com.cloud.order.service.support;
 
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
@@ -27,7 +27,7 @@ public class OrderRefundSagaCoordinator {
 
   public void startRefundSaga(AfterSale afterSale, String remark) {
     if (afterSale == null) {
-      throw new BusinessException("after sale is required");
+      throw new BizException("after sale is required");
     }
     OrderMain mainOrder = requireMainOrder(afterSale.getMainOrderId());
     OrderSub subOrder = requireSubOrder(afterSale.getSubOrderId());
@@ -36,7 +36,7 @@ public class OrderRefundSagaCoordinator {
         paymentOrderRemoteService.getPaymentOrderByOrderNo(
             mainOrder.getMainOrderNo(), subOrder.getSubOrderNo());
     if (paymentOrder == null) {
-      throw new BusinessException("payment order not found for refund process");
+      throw new BizException("payment order not found for refund process");
     }
 
     Map<String, Object> params = new HashMap<>();
@@ -60,22 +60,22 @@ public class OrderRefundSagaCoordinator {
 
   private OrderMain requireMainOrder(Long mainOrderId) {
     if (mainOrderId == null) {
-      throw new BusinessException("main order id is required");
+      throw new BizException("main order id is required");
     }
     OrderMain mainOrder = orderMainMapper.selectById(mainOrderId);
     if (mainOrder == null || Integer.valueOf(1).equals(mainOrder.getDeleted())) {
-      throw new BusinessException("main order not found");
+      throw new BizException("main order not found");
     }
     return mainOrder;
   }
 
   private OrderSub requireSubOrder(Long subOrderId) {
     if (subOrderId == null) {
-      throw new BusinessException("sub order id is required");
+      throw new BizException("sub order id is required");
     }
     OrderSub subOrder = orderSubMapper.selectById(subOrderId);
     if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
-      throw new BusinessException("sub order not found");
+      throw new BizException("sub order not found");
     }
     return subOrder;
   }
@@ -92,7 +92,7 @@ public class OrderRefundSagaCoordinator {
       amount = afterSale.getApplyAmount();
     }
     if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BusinessException("refund amount must be greater than 0");
+      throw new BizException("refund amount must be greater than 0");
     }
     return amount;
   }
