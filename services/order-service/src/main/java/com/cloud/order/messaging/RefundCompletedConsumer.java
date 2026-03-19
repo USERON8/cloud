@@ -1,7 +1,7 @@
 package com.cloud.order.messaging;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
@@ -13,7 +13,6 @@ import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +30,7 @@ import org.springframework.stereotype.Component;
     topic = "refund-completed",
     consumerGroup = "order-refund-completed-consumer-group",
     selectorExpression = "REFUND_COMPLETED")
-public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedEvent> {
+public class RefundCompletedConsumer extends AbstractJsonMqConsumer<RefundCompletedEvent> {
 
   private static final String NS_REFUND_COMPLETED = "order:refund:completed";
 
@@ -41,7 +40,6 @@ public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedE
   private final OrderService orderService;
   private final OrderMessageProducer orderMessageProducer;
   private final TradeMetrics tradeMetrics;
-  private final ObjectMapper objectMapper;
 
   @Override
   protected void doConsume(RefundCompletedEvent event, MessageExt msgExt) {
@@ -75,12 +73,13 @@ public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedE
   }
 
   @Override
-  protected RefundCompletedEvent deserialize(byte[] body) {
-    try {
-      return body == null ? null : objectMapper.readValue(body, RefundCompletedEvent.class);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException("Failed to deserialize RefundCompletedEvent", ex);
-    }
+  protected Class<RefundCompletedEvent> payloadClass() {
+    return RefundCompletedEvent.class;
+  }
+
+  @Override
+  protected String payloadDescription() {
+    return "RefundCompletedEvent";
   }
 
   @Override
@@ -92,7 +91,10 @@ public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedE
   @Override
   protected String buildIdempotentKey(
       String topic, String msgId, RefundCompletedEvent payload, MessageExt msgExt) {
-    return resolveEventId(payload);
+    return resolveEventId(
+        "REFUND_COMPLETED",
+        payload == null ? null : payload.getEventId(),
+        payload == null ? null : payload.getRefundNo());
   }
 
   @Override
@@ -157,15 +159,5 @@ public class RefundCompletedConsumer extends AbstractMqConsumer<RefundCompletedE
         .subOrderNo(subOrder.getSubOrderNo())
         .items(commands)
         .build();
-  }
-
-  private String resolveEventId(RefundCompletedEvent event) {
-    if (event != null && event.getEventId() != null && !event.getEventId().isBlank()) {
-      return event.getEventId();
-    }
-    if (event != null && event.getRefundNo() != null && !event.getRefundNo().isBlank()) {
-      return "REFUND_COMPLETED:" + event.getRefundNo();
-    }
-    return "REFUND_COMPLETED:" + System.currentTimeMillis();
   }
 }

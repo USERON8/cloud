@@ -1,7 +1,7 @@
 package com.cloud.order.messaging;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
-import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.dto.OrderAggregateResponse;
@@ -12,7 +12,6 @@ import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.StockReservationRemoteService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +31,7 @@ import org.springframework.stereotype.Component;
     topic = "payment-success",
     consumerGroup = "order-payment-success-consumer-group",
     selectorExpression = "PAYMENT_SUCCESS")
-public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEvent> {
+public class PaymentSuccessConsumer extends AbstractJsonMqConsumer<PaymentSuccessEvent> {
 
   private static final String NS_PAYMENT_SUCCESS = "order:payment:success";
   private static final Set<String> CONFIRMABLE_STATUSES = Set.of("STOCK_RESERVED");
@@ -43,7 +42,6 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
   private final StockReservationRemoteService stockReservationRemoteService;
   private final TradeMetrics tradeMetrics;
   private final StringRedisTemplate stringRedisTemplate;
-  private final ObjectMapper objectMapper;
 
   @Override
   protected void doConsume(PaymentSuccessEvent event, MessageExt msgExt) {
@@ -86,12 +84,13 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
   }
 
   @Override
-  protected PaymentSuccessEvent deserialize(byte[] body) {
-    try {
-      return body == null ? null : objectMapper.readValue(body, PaymentSuccessEvent.class);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException("Failed to deserialize PaymentSuccessEvent", ex);
-    }
+  protected Class<PaymentSuccessEvent> payloadClass() {
+    return PaymentSuccessEvent.class;
+  }
+
+  @Override
+  protected String payloadDescription() {
+    return "PaymentSuccessEvent";
   }
 
   @Override
@@ -103,7 +102,10 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
   @Override
   protected String buildIdempotentKey(
       String topic, String msgId, PaymentSuccessEvent payload, MessageExt msgExt) {
-    return resolveEventId(payload);
+    return resolveEventId(
+        "PAYMENT_SUCCESS",
+        payload == null ? null : payload.getEventId(),
+        payload == null ? null : payload.getOrderNo());
   }
 
   @Override
@@ -153,16 +155,6 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
     }
   }
 
-  private String resolveEventId(PaymentSuccessEvent event) {
-    if (event != null && event.getEventId() != null && !event.getEventId().isBlank()) {
-      return event.getEventId();
-    }
-    if (event != null && event.getOrderNo() != null && !event.getOrderNo().isBlank()) {
-      return "PAYMENT_SUCCESS:" + event.getOrderNo();
-    }
-    return "PAYMENT_SUCCESS:" + System.currentTimeMillis();
-  }
-
   private void pushPaymentSuccessMessage(PaymentSuccessEvent event) {
     if (event == null || event.getUserId() == null) {
       return;
@@ -178,7 +170,7 @@ public class PaymentSuccessConsumer extends AbstractMqConsumer<PaymentSuccessEve
               Map.of("orderId", event.getOrderNo(), "subOrderNo", event.getSubOrderNo()),
               "timestamp",
               Instant.now().toEpochMilli());
-      String payload = objectMapper.writeValueAsString(message);
+      String payload = objectMapper().writeValueAsString(message);
       stringRedisTemplate.convertAndSend(WS_CHANNEL_PREFIX + event.getUserId(), payload);
     } catch (Exception ex) {
       log.warn("Send payment success WS message failed: orderNo={}", event.getOrderNo(), ex);

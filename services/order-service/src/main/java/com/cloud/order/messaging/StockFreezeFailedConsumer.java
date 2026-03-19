@@ -1,6 +1,6 @@
 package com.cloud.order.messaging;
 
-import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.OrderMain;
@@ -9,7 +9,6 @@ import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ import org.springframework.stereotype.Component;
     topic = "stock-freeze-failed",
     consumerGroup = "order-stock-freeze-failed-consumer-group",
     selectorExpression = "STOCK_FREEZE_FAILED")
-public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFailedEvent> {
+public class StockFreezeFailedConsumer extends AbstractJsonMqConsumer<StockFreezeFailedEvent> {
 
   private static final String NS_STOCK_FREEZE_FAILED = "order:stock:freeze-failed";
 
@@ -32,7 +31,6 @@ public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFai
   private final OrderSubMapper orderSubMapper;
   private final OrderService orderService;
   private final TradeMetrics tradeMetrics;
-  private final ObjectMapper objectMapper;
 
   @Override
   protected void doConsume(StockFreezeFailedEvent event, MessageExt msgExt) {
@@ -59,12 +57,13 @@ public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFai
   }
 
   @Override
-  protected StockFreezeFailedEvent deserialize(byte[] body) {
-    try {
-      return body == null ? null : objectMapper.readValue(body, StockFreezeFailedEvent.class);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException("Failed to deserialize StockFreezeFailedEvent", ex);
-    }
+  protected Class<StockFreezeFailedEvent> payloadClass() {
+    return StockFreezeFailedEvent.class;
+  }
+
+  @Override
+  protected String payloadDescription() {
+    return "StockFreezeFailedEvent";
   }
 
   @Override
@@ -76,7 +75,10 @@ public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFai
   @Override
   protected String buildIdempotentKey(
       String topic, String msgId, StockFreezeFailedEvent payload, MessageExt msgExt) {
-    return resolveEventId(payload);
+    return resolveEventId(
+        "STOCK_FREEZE_FAILED",
+        payload == null ? null : payload.getEventId(),
+        payload == null ? null : payload.getOrderNo());
   }
 
   @Override
@@ -100,15 +102,5 @@ public class StockFreezeFailedConsumer extends AbstractMqConsumer<StockFreezeFai
   protected void onUnknownException(
       MessageExt msgExt, StockFreezeFailedEvent payload, Exception ex) {
     tradeMetrics.incrementMessageConsume("stock_freeze_failed", "retry");
-  }
-
-  private String resolveEventId(StockFreezeFailedEvent event) {
-    if (event != null && event.getEventId() != null && !event.getEventId().isBlank()) {
-      return event.getEventId();
-    }
-    if (event != null && event.getOrderNo() != null && !event.getOrderNo().isBlank()) {
-      return "STOCK_FREEZE_FAILED:" + event.getOrderNo();
-    }
-    return "STOCK_FREEZE_FAILED:" + System.currentTimeMillis();
   }
 }

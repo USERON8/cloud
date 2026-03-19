@@ -1,10 +1,9 @@
 package com.cloud.stock.messaging;
 
-import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.service.StockLedgerService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
@@ -18,13 +17,12 @@ import org.springframework.stereotype.Component;
     topic = "stock-restore",
     consumerGroup = "stock-restore-consumer-group",
     selectorExpression = "STOCK_RESTORE")
-public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> {
+public class StockRestoreConsumer extends AbstractJsonMqConsumer<StockRestoreEvent> {
 
   private static final String NS_STOCK_RESTORE = "stock:restore";
 
   private final StockLedgerService stockLedgerService;
   private final TradeMetrics tradeMetrics;
-  private final ObjectMapper objectMapper;
 
   @Override
   protected void doConsume(StockRestoreEvent event, MessageExt msgExt) {
@@ -37,12 +35,13 @@ public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> 
   }
 
   @Override
-  protected StockRestoreEvent deserialize(byte[] body) {
-    try {
-      return body == null ? null : objectMapper.readValue(body, StockRestoreEvent.class);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException("Failed to deserialize StockRestoreEvent", ex);
-    }
+  protected Class<StockRestoreEvent> payloadClass() {
+    return StockRestoreEvent.class;
+  }
+
+  @Override
+  protected String payloadDescription() {
+    return "StockRestoreEvent";
   }
 
   @Override
@@ -54,7 +53,10 @@ public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> 
   @Override
   protected String buildIdempotentKey(
       String topic, String msgId, StockRestoreEvent payload, MessageExt msgExt) {
-    return resolveEventId(payload);
+    return resolveEventId(
+        "STOCK_RESTORE",
+        payload == null ? null : payload.getEventId(),
+        payload == null ? null : payload.getRefundNo());
   }
 
   @Override
@@ -75,15 +77,5 @@ public class StockRestoreConsumer extends AbstractMqConsumer<StockRestoreEvent> 
   @Override
   protected void onUnknownException(MessageExt msgExt, StockRestoreEvent payload, Exception ex) {
     tradeMetrics.incrementMessageConsume("stock_restore", "retry");
-  }
-
-  private String resolveEventId(StockRestoreEvent event) {
-    if (event != null && event.getEventId() != null && !event.getEventId().isBlank()) {
-      return event.getEventId();
-    }
-    if (event != null && event.getRefundNo() != null && !event.getRefundNo().isBlank()) {
-      return "STOCK_RESTORE:" + event.getRefundNo();
-    }
-    return "STOCK_RESTORE:" + System.currentTimeMillis();
   }
 }
