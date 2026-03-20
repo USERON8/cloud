@@ -1,6 +1,7 @@
 package com.cloud.payment.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
+import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
@@ -71,6 +73,8 @@ class PaymentOrderServiceImplTest {
     PaymentOrderCommandDTO command = buildCommand();
     OrderSubStatusVO status = new OrderSubStatusVO();
     status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(command.getAmount());
     when(orderStatusRemoteService.getSubOrderStatus(
             command.getMainOrderNo(), command.getSubOrderNo()))
         .thenReturn(status);
@@ -91,6 +95,8 @@ class PaymentOrderServiceImplTest {
     PaymentOrderCommandDTO command = buildCommand();
     OrderSubStatusVO status = new OrderSubStatusVO();
     status.setOrderStatus("PAID");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(command.getAmount());
     when(orderStatusRemoteService.getSubOrderStatus(
             command.getMainOrderNo(), command.getSubOrderNo()))
         .thenReturn(status);
@@ -116,6 +122,7 @@ class PaymentOrderServiceImplTest {
     command.setCallbackStatus("SUCCESS");
     command.setProviderTxnNo("TXN-2");
     command.setIdempotencyKey("callback-idem");
+    command.setAmount(BigDecimal.TEN);
 
     PaymentOrderEntity order = new PaymentOrderEntity();
     order.setId(12L);
@@ -142,6 +149,67 @@ class PaymentOrderServiceImplTest {
     verify(paymentSecurityCacheService).evictStatus("P-2");
     verify(paymentSuccessTxProducer).send(any());
     verify(tradeMetrics).incrementPayment("success");
+  }
+
+  @Test
+  void createPaymentOrderShouldRejectMismatchedUser() {
+    PaymentOrderCommandDTO command = buildCommand();
+    OrderSubStatusVO status = new OrderSubStatusVO();
+    status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(99L);
+    status.setPayableAmount(command.getAmount());
+    when(orderStatusRemoteService.getSubOrderStatus(
+            command.getMainOrderNo(), command.getSubOrderNo()))
+        .thenReturn(status);
+
+    assertThatThrownBy(() -> service.createPaymentOrder(command))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("order owner");
+  }
+
+  @Test
+  void createPaymentOrderShouldRejectMismatchedAmount() {
+    PaymentOrderCommandDTO command = buildCommand();
+    OrderSubStatusVO status = new OrderSubStatusVO();
+    status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(BigDecimal.ONE);
+    when(orderStatusRemoteService.getSubOrderStatus(
+            command.getMainOrderNo(), command.getSubOrderNo()))
+        .thenReturn(status);
+
+    assertThatThrownBy(() -> service.createPaymentOrder(command))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("order payable amount");
+  }
+
+  @Test
+  void handlePaymentCallbackShouldIgnoreConflictingTerminalCallback() {
+    var command = new com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO();
+    command.setPaymentNo("P-3");
+    command.setCallbackNo("CB-3");
+    command.setCallbackStatus("FAIL");
+    command.setProviderTxnNo("TXN-3");
+    command.setIdempotencyKey("callback-idem-3");
+    command.setAmount(BigDecimal.TEN);
+
+    PaymentOrderEntity order = new PaymentOrderEntity();
+    order.setId(13L);
+    order.setPaymentNo("P-3");
+    order.setAmount(BigDecimal.TEN);
+    order.setProviderTxnNo("TXN-3");
+    order.setStatus("PAID");
+
+    when(paymentCallbackLogMapper.selectOne(any())).thenReturn(null);
+    when(paymentOrderMapper.selectOne(any())).thenReturn(order);
+
+    Boolean handled = service.handlePaymentCallback(command);
+
+    assertThat(handled).isTrue();
+    assertThat(order.getStatus()).isEqualTo("PAID");
+    verify(paymentCallbackLogMapper).insert(any(PaymentCallbackLogEntity.class));
+    verify(paymentOrderMapper, never()).updateById(any(PaymentOrderEntity.class));
+    verify(paymentSuccessTxProducerProvider, never()).getIfAvailable();
   }
 
   private PaymentOrderCommandDTO buildCommand() {

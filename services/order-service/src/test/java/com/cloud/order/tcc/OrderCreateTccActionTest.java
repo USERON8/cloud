@@ -1,6 +1,7 @@
 package com.cloud.order.tcc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -73,6 +74,24 @@ class OrderCreateTccActionTest {
     verify(orderTccLogMapper).insert(captor.capture());
     assertThat(captor.getValue().getBusinessKey()).isEqualTo("idem-1");
     assertThat(captor.getValue().getStatus()).isEqualTo("CANCEL");
+  }
+
+  @Test
+  void rollbackShouldPropagateFailureWhenPersistenceFails() {
+    BusinessActionContext context = org.mockito.Mockito.mock(BusinessActionContext.class);
+    when(context.getActionContext("idempotencyKey")).thenReturn("idem-2");
+
+    OrderTccLog log = new OrderTccLog();
+    log.setBusinessKey("idem-2");
+    log.setStatus("TRY");
+    when(orderTccLogMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(log);
+    org.mockito.Mockito.doThrow(new RuntimeException("db down"))
+        .when(orderTccLogMapper)
+        .updateById(log);
+
+    assertThatThrownBy(() -> action.rollback(context))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("idem-2");
   }
 
   private void injectProductDubboApi(OrderCreateTccAction target, ProductDubboApi api) {

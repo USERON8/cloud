@@ -143,6 +143,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     vo.setSubOrderNo(subOrder.getSubOrderNo());
     vo.setOrderStatus(subOrder.getOrderStatus());
     vo.setUserId(mainOrder.getUserId());
+    vo.setPayableAmount(subOrder.getPayableAmount());
     return vo;
   }
 

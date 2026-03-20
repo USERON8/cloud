@@ -1,6 +1,7 @@
 package com.cloud.order.messaging;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
+import com.cloud.common.exception.SystemException;
 import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
@@ -65,8 +66,8 @@ public class RefundCompletedConsumer extends AbstractJsonMqConsumer<RefundComple
     }
 
     StockRestoreEvent restoreEvent = buildStockRestoreEvent(afterSale, event);
-    if (restoreEvent != null) {
-      orderMessageProducer.sendStockRestoreEvent(restoreEvent);
+    if (restoreEvent != null && !orderMessageProducer.sendStockRestoreEvent(restoreEvent)) {
+      throw new SystemException("failed to enqueue stock restore event");
     }
 
     tradeMetrics.incrementMessageConsume("refund_completed", "success");

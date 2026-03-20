@@ -37,7 +37,7 @@ class OrderAutoReceiveConsumerTest {
   @BeforeEach
   void setUp() {
     objectMapper = new ObjectMapper();
-    consumer = new OrderAutoReceiveConsumer(orderService, orderSubMapper, objectMapper);
+    consumer = new OrderAutoReceiveConsumer(orderService, orderSubMapper);
     ReflectionTestUtils.setField(consumer, "messageIdempotencyService", messageIdempotencyService);
   }
 

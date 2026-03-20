@@ -3,6 +3,7 @@ package com.cloud.common.domain.dto.payment;
 import jakarta.validation.constraints.NotBlank;
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
@@ -18,6 +19,8 @@ public class PaymentCallbackCommandDTO implements Serializable {
   private String providerTxnNo;
 
   @NotBlank private String idempotencyKey;
+
+  private BigDecimal amount;
 
   private String payload;
 }

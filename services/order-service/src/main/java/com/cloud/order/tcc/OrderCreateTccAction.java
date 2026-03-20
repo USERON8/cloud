@@ -249,7 +249,7 @@ public class OrderCreateTccAction {
       return true;
     } catch (Exception ex) {
       log.error("TCC rollback failed: idempotencyKey={}", idempotencyKey, ex);
-      return true;
+      throw new IllegalStateException("TCC rollback failed for " + idempotencyKey, ex);
     }
   }
 

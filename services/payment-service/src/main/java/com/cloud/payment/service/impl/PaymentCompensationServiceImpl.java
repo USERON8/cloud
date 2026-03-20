@@ -1,6 +1,7 @@
 package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cloud.common.exception.SystemException;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
@@ -200,7 +201,9 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
             .mainOrderNo(order.getMainOrderNo())
             .subOrderNo(order.getSubOrderNo())
             .build();
-    paymentMessageProducer.sendRefundCompletedEvent(event);
+    if (!paymentMessageProducer.sendRefundCompletedEvent(event)) {
+      throw new SystemException("failed to enqueue refund completed event");
+    }
   }
 
   private PaymentOrderQueryResult queryOrder(PaymentOrderEntity order) {

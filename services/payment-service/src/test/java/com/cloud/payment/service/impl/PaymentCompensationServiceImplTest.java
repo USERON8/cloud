@@ -1,7 +1,9 @@
 package com.cloud.payment.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,8 +14,10 @@ import com.cloud.payment.mapper.PaymentRefundMapper;
 import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.messaging.PaymentSuccessTxProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
+import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
+import com.cloud.payment.service.provider.model.PaymentRefundResult;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.time.LocalDateTime;
@@ -106,5 +110,32 @@ class PaymentCompensationServiceImplTest {
     verify(paymentSuccessTxProducer).send(any());
     verify(paymentSecurityCacheService).evictStatus("P-1");
     verify(tradeMetrics).incrementPayment("success");
+  }
+
+  @Test
+  void submitRefundShouldFailWhenRefundCompletedEventCannotBeQueued() {
+    PaymentOrderEntity order = new PaymentOrderEntity();
+    order.setPaymentNo("P-9");
+    order.setMainOrderNo("M-9");
+    order.setSubOrderNo("S-9");
+    order.setChannel("ALIPAY");
+
+    PaymentRefundEntity refund = new PaymentRefundEntity();
+    refund.setId(9L);
+    refund.setRefundNo("R-9");
+    refund.setPaymentNo("P-9");
+    refund.setAfterSaleNo("AS-9");
+    refund.setStatus("REFUNDING");
+
+    when(providerGateway.supports("ALIPAY")).thenReturn(true);
+    when(providerGateway.executeRefund(order, refund))
+        .thenReturn(PaymentRefundResult.refunded(LocalDateTime.now(), "SUCCESS"));
+    when(paymentMessageProducer.sendRefundCompletedEvent(any())).thenReturn(false);
+
+    assertThatThrownBy(() -> paymentCompensationService.submitRefund(order, refund))
+        .isInstanceOf(com.cloud.common.exception.SystemException.class)
+        .hasMessageContaining("refund completed");
+    verify(paymentRefundMapper, never())
+        .updateById(org.mockito.ArgumentMatchers.<PaymentRefundEntity>any());
   }
 }

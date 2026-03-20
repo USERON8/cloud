@@ -1,5 +1,6 @@
 package com.cloud.common.domain.vo.order;
 
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
@@ -10,4 +11,5 @@ public class OrderSubStatusVO {
   private String subOrderNo;
   private String orderStatus;
   private Long userId;
+  private BigDecimal payableAmount;
 }

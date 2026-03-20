@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -104,6 +105,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     if (orderStatus == null) {
       throw new BusinessException("order status not found for payment");
     }
+    if (orderStatus.getUserId() != null && !orderStatus.getUserId().equals(command.getUserId())) {
+      throw new BusinessException("payment user does not match order owner");
+    }
+    if (orderStatus.getPayableAmount() != null
+        && command.getAmount() != null
+        && orderStatus.getPayableAmount().compareTo(command.getAmount()) != 0) {
+      throw new BusinessException("payment amount does not match order payable amount");
+    }
     if (!"STOCK_RESERVED".equals(orderStatus.getOrderStatus())
         && !"PAID".equals(orderStatus.getOrderStatus())) {
       throw new BusinessException(
@@ -137,13 +146,8 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
-    PaymentCallbackLogEntity callbackLog =
-        paymentCallbackLogMapper.selectOne(
-            new LambdaQueryWrapper<PaymentCallbackLogEntity>()
-                .eq(PaymentCallbackLogEntity::getIdempotencyKey, command.getIdempotencyKey())
-                .eq(PaymentCallbackLogEntity::getDeleted, 0)
-                .last("LIMIT 1"));
-    if (callbackLog != null) {
+    if (findCallbackLogByCallbackNo(command.getCallbackNo()) != null
+        || findCallbackLogByIdempotencyKey(command.getIdempotencyKey()) != null) {
       return true;
     }
 
@@ -156,20 +160,26 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     if (order == null) {
       throw new BusinessException("payment order not found");
     }
+    validateCallbackAgainstOrder(order, command);
     String previousStatus = order.getStatus();
+    String normalizedStatus = normalizeCallbackStatus(command.getCallbackStatus());
 
     PaymentCallbackLogEntity log = new PaymentCallbackLogEntity();
     log.setPaymentNo(command.getPaymentNo());
     log.setCallbackNo(command.getCallbackNo());
-    log.setCallbackStatus(command.getCallbackStatus());
+    log.setCallbackStatus(normalizedStatus);
     log.setProviderTxnNo(command.getProviderTxnNo());
     log.setPayload(command.getPayload());
     log.setIdempotencyKey(command.getIdempotencyKey());
     paymentCallbackLogMapper.insert(log);
 
-    if ("SUCCESS".equalsIgnoreCase(command.getCallbackStatus())) {
+    if (paymentOrderStateSupport.isTerminalStatus(previousStatus)) {
+      return true;
+    }
+
+    if ("SUCCESS".equals(normalizedStatus)) {
       paymentOrderStateSupport.markPaid(order, command.getProviderTxnNo(), LocalDateTime.now());
-    } else if ("FAIL".equalsIgnoreCase(command.getCallbackStatus())) {
+    } else if ("FAIL".equals(normalizedStatus)) {
       paymentOrderStateSupport.markFailed(order);
     }
     order.setNextPollAt(null);
@@ -298,5 +308,52 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private String buildOrderKey(PaymentOrderCommandDTO command) {
     return command.getMainOrderNo() + ":" + command.getSubOrderNo();
+  }
+
+  private PaymentCallbackLogEntity findCallbackLogByCallbackNo(String callbackNo) {
+    if (!StringUtils.hasText(callbackNo)) {
+      return null;
+    }
+    return paymentCallbackLogMapper.selectOne(
+        new LambdaQueryWrapper<PaymentCallbackLogEntity>()
+            .eq(PaymentCallbackLogEntity::getCallbackNo, callbackNo)
+            .eq(PaymentCallbackLogEntity::getDeleted, 0)
+            .last("LIMIT 1"));
+  }
+
+  private PaymentCallbackLogEntity findCallbackLogByIdempotencyKey(String idempotencyKey) {
+    if (!StringUtils.hasText(idempotencyKey)) {
+      return null;
+    }
+    return paymentCallbackLogMapper.selectOne(
+        new LambdaQueryWrapper<PaymentCallbackLogEntity>()
+            .eq(PaymentCallbackLogEntity::getIdempotencyKey, idempotencyKey)
+            .eq(PaymentCallbackLogEntity::getDeleted, 0)
+            .last("LIMIT 1"));
+  }
+
+  private void validateCallbackAgainstOrder(
+      PaymentOrderEntity order, PaymentCallbackCommandDTO command) {
+    if (command.getAmount() != null
+        && order.getAmount() != null
+        && order.getAmount().compareTo(command.getAmount()) != 0) {
+      throw new BusinessException("payment callback amount does not match order amount");
+    }
+    if (StringUtils.hasText(order.getProviderTxnNo())
+        && StringUtils.hasText(command.getProviderTxnNo())
+        && !order.getProviderTxnNo().equals(command.getProviderTxnNo())) {
+      throw new BusinessException("payment callback provider transaction does not match order");
+    }
+  }
+
+  private String normalizeCallbackStatus(String callbackStatus) {
+    if (!StringUtils.hasText(callbackStatus)) {
+      throw new BusinessException("payment callback status is required");
+    }
+    String normalized = callbackStatus.trim().toUpperCase();
+    if ("SUCCESS".equals(normalized) || "FAIL".equals(normalized)) {
+      return normalized;
+    }
+    throw new BusinessException("unsupported payment callback status: " + callbackStatus);
   }
 }

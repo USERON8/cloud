@@ -1,5 +1,6 @@
 package com.cloud.common.config;
 
+import com.cloud.common.annotation.RawResponse;
 import com.cloud.common.result.Result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,10 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
   @Override
   public boolean supports(
       MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+    if (returnType.hasMethodAnnotation(RawResponse.class)
+        || returnType.getContainingClass().isAnnotationPresent(RawResponse.class)) {
+      return false;
+    }
     return !Result.class.equals(returnType.getParameterType());
   }
 
