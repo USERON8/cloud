@@ -18,6 +18,11 @@ public final class ProductDocumentAssembler {
   private ProductDocumentAssembler() {}
 
   public static ProductDocument toDocument(SpuDetailVO spu) {
+    return toDocument(spu, null, null);
+  }
+
+  public static ProductDocument toDocument(
+      SpuDetailVO spu, Integer stockQuantity, Integer salesCount) {
     if (spu == null) {
       return null;
     }
@@ -46,6 +51,7 @@ public final class ProductDocumentAssembler {
         .productName(spu.getSpuName())
         .productNameKeyword(spu.getSpuName())
         .price(price)
+        .stockQuantity(normalizeCount(stockQuantity))
         .categoryId(spu.getCategoryId())
         .categoryName(spu.getCategoryName())
         .categoryNameKeyword(spu.getCategoryName())
@@ -59,6 +65,7 @@ public final class ProductDocumentAssembler {
         .detailImages(detailImages)
         .tags(spu.getTags())
         .sku(skuCode)
+        .salesCount(normalizeCount(salesCount))
         .rating(spu.getRating())
         .reviewCount(spu.getReviewCount())
         .recommended(Boolean.TRUE.equals(spu.getRecommended()))
@@ -69,6 +76,10 @@ public final class ProductDocumentAssembler {
         .hotScore(hotScore)
         .searchWeight(searchWeight)
         .build();
+  }
+
+  private static Integer normalizeCount(Integer value) {
+    return value == null ? 0 : Math.max(value, 0);
   }
 
   private static String resolveDetailImages(SpuDetailVO spu) {

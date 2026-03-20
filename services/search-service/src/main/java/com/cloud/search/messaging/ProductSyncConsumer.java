@@ -8,7 +8,7 @@ import com.cloud.common.messaging.consumer.AbstractMqConsumer;
 import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
-import com.cloud.search.support.ProductDocumentAssembler;
+import com.cloud.search.service.ProductDocumentBuildService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,7 @@ public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
 
   private static final String NS_PRODUCT_SYNC = "search:product:sync";
 
+  private final ProductDocumentBuildService productDocumentBuildService;
   private final ProductDocumentRepository productDocumentRepository;
   private final ObjectMapper objectMapper;
 
@@ -52,7 +53,7 @@ public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
       productDocumentRepository.deleteById(String.valueOf(spuId));
       return;
     }
-    ProductDocument document = ProductDocumentAssembler.toDocument(spu);
+    ProductDocument document = productDocumentBuildService.build(spu);
     if (document != null) {
       productDocumentRepository.save(document);
     }

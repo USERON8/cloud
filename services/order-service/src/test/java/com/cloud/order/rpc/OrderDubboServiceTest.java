@@ -1,10 +1,13 @@
 package com.cloud.order.rpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
 import com.cloud.order.service.OrderQueryService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,5 +52,19 @@ class OrderDubboServiceTest {
     assertThat(result.getSubOrderId()).isEqualTo(20L);
     assertThat(result.getOrderStatus()).isEqualTo("PAID");
     assertThat(result.getUserId()).isEqualTo(5L);
+  }
+
+  @Test
+  void statSellCountByProductIds_delegates() {
+    ProductSellStatDTO stat = new ProductSellStatDTO();
+    stat.setProductId(88L);
+    stat.setSellCount(16L);
+    when(orderQueryService.statSellCountByProductIds(List.of(88L))).thenReturn(List.of(stat));
+
+    List<ProductSellStatDTO> result = orderDubboService.statSellCountByProductIds(List.of(88L));
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getSellCount()).isEqualTo(16L);
+    verify(orderQueryService).statSellCountByProductIds(List.of(88L));
   }
 }

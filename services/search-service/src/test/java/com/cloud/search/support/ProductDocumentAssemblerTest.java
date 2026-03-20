@@ -43,9 +43,10 @@ class ProductDocumentAssemblerTest {
     spu.setUpdatedAt(LocalDateTime.now());
     spu.setSkus(List.of(highPriceSku, lowPriceSku));
 
-    ProductDocument document = ProductDocumentAssembler.toDocument(spu);
+    ProductDocument document = ProductDocumentAssembler.toDocument(spu, 15, 28);
 
     assertThat(document.getShopId()).isEqualTo(4001L);
+    assertThat(document.getStockQuantity()).isEqualTo(15);
     assertThat(document.getCategoryName()).isEqualTo("Phone");
     assertThat(document.getBrandName()).isEqualTo("Cloud");
     assertThat(document.getTags()).isEqualTo("fast,smooth");
@@ -54,6 +55,7 @@ class ProductDocumentAssemblerTest {
     assertThat(document.getRecommended()).isTrue();
     assertThat(document.getIsHot()).isTrue();
     assertThat(document.getIsNew()).isTrue();
+    assertThat(document.getSalesCount()).isEqualTo(28);
     assertThat(document.getHotScore()).isGreaterThan(0D);
     assertThat(document.getSearchWeight()).isGreaterThanOrEqualTo(document.getHotScore());
     assertThat(document.getPrice()).isEqualByComparingTo("99.00");

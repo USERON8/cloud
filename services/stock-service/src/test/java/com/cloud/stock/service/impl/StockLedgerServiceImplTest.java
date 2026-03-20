@@ -14,8 +14,10 @@ import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.mapper.StockReservationMapper;
 import com.cloud.stock.messaging.StockMessageProducer;
+import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.module.entity.StockReservation;
 import com.cloud.stock.service.support.StockRedisCacheService;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,6 +41,22 @@ class StockLedgerServiceImplTest {
   @Mock private StockRedisCacheService stockRedisCacheService;
 
   @InjectMocks private StockLedgerServiceImpl stockLedgerService;
+
+  @Test
+  void listLedgersBySkuIds_returnsVoList() {
+    StockLedger ledger = new StockLedger();
+    ledger.setId(1L);
+    ledger.setSkuId(12L);
+    ledger.setSalableQty(7);
+    when(stockLedgerMapper.listActiveBySkuIds(List.of(12L))).thenReturn(List.of(ledger));
+
+    List<com.cloud.common.domain.vo.stock.StockLedgerVO> result =
+        stockLedgerService.listLedgersBySkuIds(java.util.Arrays.asList(12L, 12L, null));
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getSkuId()).isEqualTo(12L);
+    assertThat(result.get(0).getSalableQty()).isEqualTo(7);
+  }
 
   @Test
   void reserve_duplicateReservationAlreadyReserved_skips() {

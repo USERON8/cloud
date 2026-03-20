@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -153,6 +154,23 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     LocalDateTime start = LocalDate.now().atStartOfDay();
     LocalDateTime end = start.plusDays(1);
     return orderItemMapper.listDailySellStats(start, end, safeLimit);
+  }
+
+  @Override
+  public List<ProductSellStatDTO> statSellCountByProductIds(List<Long> productIds) {
+    if (productIds == null || productIds.isEmpty()) {
+      return List.of();
+    }
+    List<Long> safeProductIds =
+        productIds.stream()
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+    if (safeProductIds.isEmpty()) {
+      return List.of();
+    }
+    return orderItemMapper.listSellStatsByProductIds(safeProductIds);
   }
 
   private boolean isAdmin(Authentication authentication) {

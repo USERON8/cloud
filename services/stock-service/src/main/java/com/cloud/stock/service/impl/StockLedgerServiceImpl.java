@@ -15,6 +15,7 @@ import com.cloud.stock.service.support.StockRedisCacheService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,23 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   @Override
   public StockLedgerVO getLedgerBySkuId(Long skuId) {
     return stockRedisCacheService.getOrLoadLedger(skuId);
+  }
+
+  @Override
+  public List<StockLedgerVO> listLedgersBySkuIds(List<Long> skuIds) {
+    if (skuIds == null || skuIds.isEmpty()) {
+      return List.of();
+    }
+    List<Long> safeSkuIds =
+        skuIds.stream()
+            .filter(skuId -> skuId != null)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+    if (safeSkuIds.isEmpty()) {
+      return List.of();
+    }
+    return stockLedgerMapper.listActiveBySkuIds(safeSkuIds).stream().map(this::toVO).toList();
   }
 
   @Override

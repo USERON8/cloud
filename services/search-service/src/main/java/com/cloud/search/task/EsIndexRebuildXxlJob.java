@@ -8,8 +8,8 @@ import com.cloud.common.exception.RemoteException;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
+import com.cloud.search.service.ProductDocumentBuildService;
 import com.cloud.search.service.ShopSearchService;
-import com.cloud.search.support.ProductDocumentAssembler;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.util.List;
@@ -31,6 +31,7 @@ public class EsIndexRebuildXxlJob {
   private final ProductDocumentRepository productDocumentRepository;
   private final ElasticsearchOperations elasticsearchOperations;
   private final CategorySearchService categorySearchService;
+  private final ProductDocumentBuildService productDocumentBuildService;
   private final ShopSearchService shopSearchService;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
@@ -76,10 +77,7 @@ public class EsIndexRebuildXxlJob {
         break;
       }
       List<ProductDocument> docs =
-          spus.stream()
-              .map(ProductDocumentAssembler::toDocument)
-              .filter(doc -> doc != null)
-              .toList();
+          productDocumentBuildService.buildAll(spus).stream().filter(doc -> doc != null).toList();
       if (!docs.isEmpty()) {
         productDocumentRepository.saveAll(docs);
         total += docs.size();

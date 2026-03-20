@@ -102,4 +102,20 @@ public interface StockLedgerMapper extends BaseMapper<StockLedger> {
   @Select(
       "SELECT * FROM stock_ledger FORCE INDEX (idx_stock_ledger_sku_deleted) WHERE sku_id = #{skuId} AND deleted = 0 LIMIT 1")
   StockLedger selectActiveBySkuId(@Param("skuId") Long skuId);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
+            SELECT *
+            FROM stock_ledger FORCE INDEX (idx_stock_ledger_sku_deleted)
+            WHERE deleted = 0
+              AND sku_id IN
+              <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+                #{skuId}
+              </foreach>
+            ORDER BY id ASC
+            </script>
+            """)
+  List<StockLedger> listActiveBySkuIds(@Param("skuIds") List<Long> skuIds);
 }

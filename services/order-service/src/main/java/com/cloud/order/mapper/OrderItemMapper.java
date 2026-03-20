@@ -60,4 +60,24 @@ public interface OrderItemMapper extends BaseMapper<OrderItem> {
       @Param("start") LocalDateTime start,
       @Param("end") LocalDateTime end,
       @Param("limit") Integer limit);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
+            SELECT oi.spu_id AS productId,
+                   SUM(oi.quantity) AS sellCount
+            FROM order_item oi
+            JOIN order_sub os ON oi.sub_order_id = os.id
+            WHERE oi.deleted = 0
+              AND os.deleted = 0
+              AND os.order_status = 'DONE'
+              AND oi.spu_id IN
+              <foreach collection="productIds" item="productId" open="(" separator="," close=")">
+                #{productId}
+              </foreach>
+            GROUP BY oi.spu_id
+            </script>
+            """)
+  List<ProductSellStatDTO> listSellStatsByProductIds(@Param("productIds") List<Long> productIds);
 }

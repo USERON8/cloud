@@ -8,6 +8,8 @@ public interface StockLedgerService {
 
   StockLedgerVO getLedgerBySkuId(Long skuId);
 
+  List<StockLedgerVO> listLedgersBySkuIds(List<Long> skuIds);
+
   Boolean reserve(StockOperateCommandDTO command);
 
   Boolean confirmReservation(StockOperateCommandDTO command);

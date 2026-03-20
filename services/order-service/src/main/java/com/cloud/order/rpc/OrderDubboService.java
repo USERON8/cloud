@@ -23,4 +23,9 @@ public class OrderDubboService implements OrderDubboApi {
   public List<ProductSellStatDTO> statSellCountToday(Integer limit) {
     return orderQueryService.statSellCountToday(limit);
   }
+
+  @Override
+  public List<ProductSellStatDTO> statSellCountByProductIds(List<Long> productIds) {
+    return orderQueryService.statSellCountByProductIds(productIds);
+  }
 }

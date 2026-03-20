@@ -4,6 +4,7 @@ import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.stock.service.StockLedgerService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
@@ -16,6 +17,11 @@ public class StockLedgerDubboService implements StockDubboApi {
   @Override
   public StockLedgerVO getLedgerBySkuId(Long skuId) {
     return stockLedgerService.getLedgerBySkuId(skuId);
+  }
+
+  @Override
+  public List<StockLedgerVO> listLedgersBySkuIds(List<Long> skuIds) {
+    return stockLedgerService.listLedgersBySkuIds(skuIds);
   }
 
   @Override

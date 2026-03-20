@@ -9,4 +9,6 @@ public interface OrderDubboApi {
   OrderSubStatusVO getSubOrderStatus(String mainOrderNo, String subOrderNo);
 
   List<ProductSellStatDTO> statSellCountToday(Integer limit);
+
+  List<ProductSellStatDTO> statSellCountByProductIds(List<Long> productIds);
 }
