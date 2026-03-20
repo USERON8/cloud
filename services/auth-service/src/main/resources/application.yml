@@ -130,9 +130,11 @@ app:
     clients:
       web:
         id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}
         redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback}
       mobile:
         id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
+        secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
         redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
       service:
         id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}

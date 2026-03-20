@@ -125,6 +125,18 @@ public class OAuth2TokenManagementService {
     }
   }
 
+  public boolean revokeAuthorizationById(String authorizationId, String reason) {
+    if (StrUtil.isBlank(authorizationId)) {
+      return false;
+    }
+    OAuth2Authorization authorization = authorizationService.findById(authorizationId.trim());
+    if (authorization == null) {
+      return false;
+    }
+    revokeAuthorization(authorization, reason);
+    return true;
+  }
+
   public OAuth2Authorization findByToken(String tokenValue) {
     if (StrUtil.isBlank(tokenValue)) {
       return null;
@@ -173,6 +185,36 @@ public class OAuth2TokenManagementService {
     return revoked;
   }
 
+  public long resolveTokenTtlSeconds(
+      OAuth2Authorization authorization, String tokenValue, long fallbackTtlSeconds) {
+    if (authorization == null || StrUtil.isBlank(tokenValue)) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    String normalizedTokenValue = tokenValue.trim();
+    if (matchesTokenValue(authorization.getAccessToken(), normalizedTokenValue)) {
+      return computeTtlSeconds(
+          authorization.getAccessToken().getToken().getExpiresAt(),
+          resolveRegisteredClientTtlSeconds(authorization, false, fallbackTtlSeconds));
+    }
+    if (matchesTokenValue(authorization.getRefreshToken(), normalizedTokenValue)) {
+      return computeTtlSeconds(
+          authorization.getRefreshToken().getToken().getExpiresAt(),
+          resolveRegisteredClientTtlSeconds(authorization, true, fallbackTtlSeconds));
+    }
+    OAuth2Authorization.Token<
+            org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode>
+        authorizationCode =
+            authorization.getToken(
+                org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode
+                    .class);
+    if (matchesTokenValue(authorizationCode, normalizedTokenValue)) {
+      return computeTtlSeconds(
+          authorizationCode.getToken().getExpiresAt(),
+          resolveAuthorizationCodeTtlSeconds(authorization, fallbackTtlSeconds));
+    }
+    return Math.max(fallbackTtlSeconds, 60L);
+  }
+
   public int logoutAllSessions(String username) {
     if (StrUtil.isBlank(username)) {
       return 0;
@@ -206,8 +248,7 @@ public class OAuth2TokenManagementService {
       if (authorization.getAccessToken() != null
           && authorization.getAccessToken().getToken() != null) {
         String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
-        long ttl =
-            computeTtlSeconds(authorization.getAccessToken().getToken().getExpiresAt(), 3600);
+        long ttl = resolveTokenTtlSeconds(authorization, accessTokenValue, 3600);
         tokenBlacklistService.addToBlacklist(
             accessTokenValue, authorization.getPrincipalName(), ttl, reason);
       }
@@ -215,8 +256,7 @@ public class OAuth2TokenManagementService {
       if (authorization.getRefreshToken() != null
           && authorization.getRefreshToken().getToken() != null) {
         String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
-        long ttl =
-            computeTtlSeconds(authorization.getRefreshToken().getToken().getExpiresAt(), 2592000);
+        long ttl = resolveTokenTtlSeconds(authorization, refreshTokenValue, 2592000);
         tokenBlacklistService.addToBlacklist(
             refreshTokenValue, authorization.getPrincipalName(), ttl, reason);
       }
@@ -229,10 +269,54 @@ public class OAuth2TokenManagementService {
 
   private long computeTtlSeconds(Instant expiresAt, long defaultTtl) {
     if (expiresAt == null) {
-      return defaultTtl;
+      return Math.max(defaultTtl, 60L);
     }
     long seconds = Duration.between(Instant.now(), expiresAt).getSeconds();
     return Math.max(seconds, 60);
+  }
+
+  private boolean matchesTokenValue(
+      OAuth2Authorization.Token<? extends OAuth2Token> token, String tokenValue) {
+    return token != null
+        && token.getToken() != null
+        && StrUtil.equals(token.getToken().getTokenValue(), tokenValue);
+  }
+
+  private long resolveRegisteredClientTtlSeconds(
+      OAuth2Authorization authorization, boolean refreshToken, long fallbackTtlSeconds) {
+    if (authorization == null || StrUtil.isBlank(authorization.getRegisteredClientId())) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    RegisteredClient registeredClient =
+        registeredClientRepository.findById(authorization.getRegisteredClientId());
+    if (registeredClient == null || registeredClient.getTokenSettings() == null) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    Duration ttl =
+        refreshToken
+            ? registeredClient.getTokenSettings().getRefreshTokenTimeToLive()
+            : registeredClient.getTokenSettings().getAccessTokenTimeToLive();
+    if (ttl == null) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    return Math.max(ttl.toSeconds(), 60L);
+  }
+
+  private long resolveAuthorizationCodeTtlSeconds(
+      OAuth2Authorization authorization, long fallbackTtlSeconds) {
+    if (authorization == null || StrUtil.isBlank(authorization.getRegisteredClientId())) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    RegisteredClient registeredClient =
+        registeredClientRepository.findById(authorization.getRegisteredClientId());
+    if (registeredClient == null || registeredClient.getTokenSettings() == null) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    Duration ttl = registeredClient.getTokenSettings().getAuthorizationCodeTimeToLive();
+    if (ttl == null) {
+      return Math.max(fallbackTtlSeconds, 60L);
+    }
+    return Math.max(ttl.toSeconds(), 60L);
   }
 
   private AuthorizationServerContext resolveAuthorizationServerContext() {

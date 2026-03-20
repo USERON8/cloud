@@ -127,7 +127,15 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       }
     }
 
-    return findByAccessTokenValue(token, tokenType);
+    OAuth2Authorization authorization = findByAccessTokenValue(token, OAuth2TokenType.ACCESS_TOKEN);
+    if (authorization != null) {
+      return authorization;
+    }
+    authorization = findByAuthorizationId(REFRESH_PREFIX + token);
+    if (authorization != null) {
+      return authorization;
+    }
+    return findByAuthorizationId(CODE_PREFIX + token);
   }
 
   private OAuth2Authorization findByAuthorizationId(String tokenKey) {

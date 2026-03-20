@@ -1,12 +1,15 @@
 package com.cloud.auth.config;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -16,9 +19,11 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 @Import({
   SecurityFilterChainConfig.class,
   JwtPasswordConfig.class,
@@ -27,8 +32,36 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 })
 public class OAuth21AuthorizationServerConfig {
 
+  private final PasswordEncoder passwordEncoder;
+
   @Value("${app.jwt.issuer:${AUTH_ISSUER_URI:http://127.0.0.1:8081}}")
   private String issuer;
+
+  @Value("${app.oauth2.clients.web.id:web-client}")
+  private String webClientId;
+
+  @Value("${app.oauth2.clients.web.secret:${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}}")
+  private String webClientSecret;
+
+  @Value(
+      "${app.oauth2.clients.web.redirect-uris:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback}")
+  private String webRedirectUris;
+
+  @Value("${app.oauth2.clients.internal.id:client-service}")
+  private String internalClientId;
+
+  @Value(
+      "${app.oauth2.clients.internal.secret:${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:cloud-client-service-secret-dev}}}")
+  private String internalClientSecret;
+
+  @Value("${app.oauth2.clients.mobile.id:mobile-client}")
+  private String mobileClientId;
+
+  @Value("${app.oauth2.clients.mobile.secret:${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}}")
+  private String mobileClientSecret;
+
+  @Value("${app.oauth2.clients.mobile.redirect-uris:weixin://oauth2/callback}")
+  private String mobileRedirectUris;
 
   @Bean
   public AuthorizationServerSettings authorizationServerSettings() {
@@ -47,14 +80,13 @@ public class OAuth21AuthorizationServerConfig {
 
   @Bean
   public RegisteredClientRepository registeredClientRepository() {
-    RegisteredClient userClient =
+    RegisteredClient.Builder userClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("cloud-shop-client")
-            .clientSecret("{noop}cloud-shop-secret")
+            .clientId(webClientId)
+            .clientSecret(encodeClientSecret(webClientSecret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri("http://127.0.0.1:18080/login/oauth2/code/cloud")
             .scope(OidcScopes.OPENID)
             .scope("user.read")
             .scope("order.write")
@@ -63,13 +95,13 @@ public class OAuth21AuthorizationServerConfig {
                     .requireAuthorizationConsent(false)
                     .requireProofKey(true)
                     .build())
-            .tokenSettings(userTokenSettings())
-            .build();
+            .tokenSettings(userTokenSettings());
+    applyRedirectUris(userClient, webRedirectUris);
 
     RegisteredClient serviceClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("client-service")
-            .clientSecret("{noop}cloud-client-service-secret-dev")
+            .clientId(internalClientId)
+            .clientSecret(encodeClientSecret(internalClientSecret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .scope("internal")
@@ -81,14 +113,13 @@ public class OAuth21AuthorizationServerConfig {
             .tokenSettings(serviceTokenSettings())
             .build();
 
-    RegisteredClient miniClient =
+    RegisteredClient.Builder miniClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("cloud-mini-client")
-            .clientSecret("{noop}cloud-mini-secret")
+            .clientId(mobileClientId)
+            .clientSecret(encodeClientSecret(mobileClientSecret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri("weixin://oauth2/callback")
             .scope(OidcScopes.OPENID)
             .scope("user.read")
             .clientSettings(
@@ -96,10 +127,11 @@ public class OAuth21AuthorizationServerConfig {
                     .requireAuthorizationConsent(false)
                     .requireProofKey(true)
                     .build())
-            .tokenSettings(userTokenSettings())
-            .build();
+            .tokenSettings(userTokenSettings());
+    applyRedirectUris(miniClient, mobileRedirectUris);
 
-    return new InMemoryRegisteredClientRepository(userClient, serviceClient, miniClient);
+    return new InMemoryRegisteredClientRepository(
+        userClient.build(), serviceClient, miniClient.build());
   }
 
   private TokenSettings userTokenSettings() {
@@ -118,5 +150,26 @@ public class OAuth21AuthorizationServerConfig {
         .accessTokenTimeToLive(Duration.ofHours(1))
         .reuseRefreshTokens(false)
         .build();
+  }
+
+  private void applyRedirectUris(RegisteredClient.Builder builder, String redirectUris) {
+    if (!StringUtils.hasText(redirectUris)) {
+      throw new IllegalStateException("OAuth2 redirect URIs must not be empty");
+    }
+    Arrays.stream(redirectUris.split(","))
+        .map(String::trim)
+        .filter(StringUtils::hasText)
+        .forEach(builder::redirectUri);
+  }
+
+  private String encodeClientSecret(String secret) {
+    if (!StringUtils.hasText(secret)) {
+      throw new IllegalStateException("OAuth2 client secret must not be empty");
+    }
+    String trimmedSecret = secret.trim();
+    if (trimmedSecret.startsWith("{")) {
+      return trimmedSecret;
+    }
+    return passwordEncoder.encode(trimmedSecret);
   }
 }

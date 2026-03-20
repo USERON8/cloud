@@ -1,5 +1,6 @@
 package com.cloud.auth.controller;
 
+import com.cloud.auth.service.OAuth2TokenManagementService;
 import com.cloud.auth.service.TokenBlacklistService;
 import com.cloud.auth.util.RedisKeyHelper;
 import com.cloud.common.exception.ResourceNotFoundException;
@@ -33,14 +34,17 @@ public class OAuth2TokenManageController {
   private final OAuth2AuthorizationService authorizationService;
   private final RedisTemplate<String, Object> redisTemplate;
   private final TokenBlacklistService tokenBlacklistService;
+  private final OAuth2TokenManagementService tokenManagementService;
 
   public OAuth2TokenManageController(
       OAuth2AuthorizationService authorizationService,
       @Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate,
-      TokenBlacklistService tokenBlacklistService) {
+      TokenBlacklistService tokenBlacklistService,
+      OAuth2TokenManagementService tokenManagementService) {
     this.authorizationService = authorizationService;
     this.redisTemplate = redisTemplate;
     this.tokenBlacklistService = tokenBlacklistService;
+    this.tokenManagementService = tokenManagementService;
   }
 
   @Operation(
@@ -109,13 +113,11 @@ public class OAuth2TokenManageController {
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> revokeAuthorization(
       @Parameter(description = "Authorization ID") @PathVariable String id) {
-    OAuth2Authorization authorization = authorizationService.findById(id);
-    if (authorization == null) {
+    boolean revoked = tokenManagementService.revokeAuthorizationById(id, "admin_revocation");
+    if (!revoked) {
       log.warn("Authorization not found: id={}", id);
       throw new ResourceNotFoundException("Authorization", id);
     }
-
-    authorizationService.remove(authorization);
     return Result.success();
   }
 
@@ -180,7 +182,8 @@ public class OAuth2TokenManageController {
           String reason) {
     OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
     String subject = authorization != null ? authorization.getPrincipalName() : "unknown";
-    long ttlSeconds = 3600;
+    long ttlSeconds =
+        tokenManagementService.resolveTokenTtlSeconds(authorization, tokenValue, 3600);
     tokenBlacklistService.addToBlacklist(tokenValue, subject, ttlSeconds, reason);
     return Result.success();
   }
