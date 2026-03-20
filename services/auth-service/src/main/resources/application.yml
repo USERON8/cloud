@@ -36,13 +36,6 @@ spring:
     oauth2:
       client:
         registration:
-          web-client:
-            client-id: web-client
-            client-authentication-method: none
-            authorization-grant-type: authorization_code
-            redirect-uri: ${WEB_CLIENT_REDIRECT_URI:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback}
-            scope: openid,profile,read,write,user.read,user.write,order.read,order.write
-            client-name: Web Client
           github:
             client-id: ${GITHUB_CLIENT_ID:}
             client-secret: ${GITHUB_CLIENT_SECRET:}
@@ -136,9 +129,6 @@ app:
         id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
         secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
         redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
-      service:
-        id: ${APP_OAUTH2_SERVICE_CLIENT_ID:service-client}
-        secret: ${APP_OAUTH2_SERVICE_CLIENT_SECRET}
       internal:
         id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
         secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
