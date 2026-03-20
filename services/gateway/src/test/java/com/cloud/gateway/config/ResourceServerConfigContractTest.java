@@ -19,13 +19,17 @@ class ResourceServerConfigContractTest {
 
     int searchIndex = normalized.indexOf(".pathMatchers(\"/api/search/**\").permitAll()");
     int productViewIndex = normalized.indexOf(".pathMatchers(\"/api/product/*/view\").permitAll()");
+    int websocketIndex = normalized.indexOf(".pathMatchers(\"/ws/**\").authenticated()");
     int anyIndex = normalized.indexOf(".anyExchange().authenticated()");
 
     assertThat(searchIndex).isGreaterThan(-1);
     assertThat(productViewIndex).isGreaterThan(-1);
+    assertThat(websocketIndex).isGreaterThan(-1);
     assertThat(anyIndex).isGreaterThan(-1);
     assertThat(searchIndex).isLessThan(anyIndex);
     assertThat(productViewIndex).isLessThan(anyIndex);
+    assertThat(websocketIndex).isLessThan(anyIndex);
+    assertThat(source).doesNotContain(".pathMatchers(\"/ws/**\").permitAll()");
     assertThat(source).doesNotContain("\"/users/**\"");
     assertThat(source).doesNotContain("\"/product/**\"");
     assertThat(source).doesNotContain("\"/payment/**\"");

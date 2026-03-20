@@ -102,7 +102,7 @@ public class ResourceServerConfig {
                       .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**")
                       .permitAll()
                       .pathMatchers("/ws/**")
-                      .permitAll()
+                      .authenticated()
                       .pathMatchers(HttpMethod.POST, "/api/v1/payment/alipay/notify")
                       .permitAll()
                       .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return")

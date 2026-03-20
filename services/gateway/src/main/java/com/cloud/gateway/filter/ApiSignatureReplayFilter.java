@@ -2,9 +2,11 @@ package com.cloud.gateway.filter;
 
 import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.PostConstruct;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
@@ -12,11 +14,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -97,24 +103,41 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
       return reject(exchange, HttpStatus.UNAUTHORIZED, "timestamp expired");
     }
 
-    String payload = method.name() + "\n" + path + "\n" + timestamp + "\n" + nonce;
-    String expected = sign(payload, secret);
-    if (!constantTimeEquals(signature, expected)) {
-      return reject(exchange, HttpStatus.UNAUTHORIZED, "invalid signature");
-    }
-
-    String nonceKey = NONCE_KEY_PREFIX + nonce;
-    Duration ttl = Duration.ofSeconds(Math.max(30, nonceExpireSeconds));
-    return reactiveStringRedisTemplate
-        .opsForValue()
-        .setIfAbsent(nonceKey, "1", ttl)
+    return DataBufferUtils.join(request.getBody())
+        .defaultIfEmpty(exchange.getResponse().bufferFactory().wrap(new byte[0]))
         .flatMap(
-            acquired -> {
-              if (Boolean.TRUE.equals(acquired)) {
-                return chain.filter(exchange);
+            dataBuffer -> {
+              byte[] bodyBytes = extractBytes(dataBuffer);
+              DataBufferUtils.release(dataBuffer);
+
+              String payload =
+                  buildPayload(
+                      method.name(),
+                      path,
+                      request.getURI().getRawQuery(),
+                      bodyBytes,
+                      timestamp,
+                      nonce);
+              String expected = sign(payload, secret);
+              if (!constantTimeEquals(signature, expected)) {
+                return reject(exchange, HttpStatus.UNAUTHORIZED, "invalid signature");
               }
-              log.warn("Replay request rejected: path={}, nonce={}", path, nonce);
-              return reject(exchange, HttpStatus.CONFLICT, "replay request");
+
+              String nonceKey = NONCE_KEY_PREFIX + nonce;
+              Duration ttl = Duration.ofSeconds(Math.max(30, nonceExpireSeconds));
+              ServerHttpRequest decoratedRequest =
+                  decorateRequest(request, exchange.getResponse().bufferFactory(), bodyBytes);
+              return reactiveStringRedisTemplate
+                  .opsForValue()
+                  .setIfAbsent(nonceKey, "1", ttl)
+                  .flatMap(
+                      acquired -> {
+                        if (Boolean.TRUE.equals(acquired)) {
+                          return chain.filter(exchange.mutate().request(decoratedRequest).build());
+                        }
+                        log.warn("Replay request rejected: path={}, nonce={}", path, nonce);
+                        return reject(exchange, HttpStatus.CONFLICT, "replay request");
+                      });
             })
         .onErrorResume(
             ex -> {
@@ -163,6 +186,42 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
       result |= a[i] ^ b[i];
     }
     return result == 0;
+  }
+
+  private byte[] extractBytes(DataBuffer dataBuffer) {
+    if (dataBuffer == null) {
+      return new byte[0];
+    }
+    ByteBuffer byteBuffer = dataBuffer.asByteBuffer().asReadOnlyBuffer();
+    byte[] bytes = new byte[byteBuffer.remaining()];
+    byteBuffer.get(bytes);
+    return bytes;
+  }
+
+  private String buildPayload(
+      String method,
+      String path,
+      String rawQuery,
+      byte[] bodyBytes,
+      String timestamp,
+      String nonce) {
+    String query = rawQuery == null ? "" : rawQuery;
+    String body = bodyBytes == null ? "" : Base64.getEncoder().encodeToString(bodyBytes);
+    return method + "\n" + path + "\n" + query + "\n" + body + "\n" + timestamp + "\n" + nonce;
+  }
+
+  private ServerHttpRequest decorateRequest(
+      ServerHttpRequest request, DataBufferFactory bufferFactory, byte[] bodyBytes) {
+    if (bodyBytes == null || bodyBytes.length == 0) {
+      return request;
+    }
+    return new ServerHttpRequestDecorator(request) {
+      @Override
+      public reactor.core.publisher.Flux<DataBuffer> getBody() {
+        return reactor.core.publisher.Flux.defer(
+            () -> reactor.core.publisher.Flux.just(bufferFactory.wrap(bodyBytes)));
+      }
+    };
   }
 
   private Mono<Void> reject(ServerWebExchange exchange, HttpStatus status, String message) {
