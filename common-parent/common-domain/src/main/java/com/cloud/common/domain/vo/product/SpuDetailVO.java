@@ -2,6 +2,7 @@ package com.cloud.common.domain.vo.product;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
@@ -22,6 +23,9 @@ public class SpuDetailVO implements Serializable {
   private String description;
   private String mainImage;
   private String mainImageFile;
+  private String tags;
+  private BigDecimal rating;
+  private Integer reviewCount;
   private Boolean recommended;
   private Boolean isHot;
   private LocalDateTime createdAt;

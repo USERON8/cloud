@@ -10,19 +10,24 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
+import com.cloud.product.mapper.ProductReviewMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Brand;
 import com.cloud.product.module.entity.Category;
+import com.cloud.product.module.entity.ProductReview;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.support.ProductDetailCacheService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +45,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   private final SkuMapper skuMapper;
   private final CategoryMapper categoryMapper;
   private final BrandMapper brandMapper;
+  private final ProductReviewMapper productReviewMapper;
   private final ProductDetailCacheService productDetailCacheService;
   private final ProductSyncMessageProducer productSyncMessageProducer;
 
@@ -250,7 +256,11 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   }
 
   private SpuDetailVO toSpuDetail(
-      Spu spu, List<Sku> skus, Map<Long, Category> categoryById, Map<Long, Brand> brandById) {
+      Spu spu,
+      List<Sku> skus,
+      Map<Long, Category> categoryById,
+      Map<Long, Brand> brandById,
+      Map<Long, ReviewAggregate> reviewAggregateBySpuId) {
     SpuDetailVO vo = new SpuDetailVO();
     vo.setSpuId(spu.getId());
     vo.setSpuName(spu.getSpuName());
@@ -264,6 +274,11 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     vo.setDescription(spu.getDescription());
     vo.setMainImage(spu.getMainImage());
     vo.setMainImageFile(spu.getMainImageFile());
+    ReviewAggregate reviewAggregate =
+        reviewAggregateBySpuId == null ? null : reviewAggregateBySpuId.get(spu.getId());
+    vo.setTags(reviewAggregate == null ? null : reviewAggregate.tags());
+    vo.setRating(reviewAggregate == null ? null : reviewAggregate.rating());
+    vo.setReviewCount(reviewAggregate == null ? 0 : reviewAggregate.reviewCount());
     vo.setRecommended(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsRecommended));
     vo.setIsHot(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsHot));
     vo.setCreatedAt(spu.getCreatedAt());
@@ -287,7 +302,8 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
     Map<Long, Category> categoryById = loadCategoryMap(List.of(spu));
     Map<Long, Brand> brandById = loadBrandMap(List.of(spu));
-    return toSpuDetail(spu, skus, categoryById, brandById);
+    Map<Long, ReviewAggregate> reviewAggregateBySpuId = loadReviewAggregateMap(List.of(spu));
+    return toSpuDetail(spu, skus, categoryById, brandById, reviewAggregateBySpuId);
   }
 
   private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
@@ -297,6 +313,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
     Map<Long, Category> categoryById = loadCategoryMap(spus);
     Map<Long, Brand> brandById = loadBrandMap(spus);
+    Map<Long, ReviewAggregate> reviewAggregateBySpuId = loadReviewAggregateMap(spus);
     List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
     Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
     if (!spuIds.isEmpty()) {
@@ -314,7 +331,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     List<SpuDetailVO> result = new ArrayList<>(spus.size());
     for (Spu spu : spus) {
       List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
-      result.add(toSpuDetail(spu, skus, categoryById, brandById));
+      result.add(toSpuDetail(spu, skus, categoryById, brandById, reviewAggregateBySpuId));
     }
     return result;
   }
@@ -386,6 +403,75 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     }
     Integer value = extractor.apply(brand);
     return value != null && value > 0;
+  }
+
+  private Map<Long, ReviewAggregate> loadReviewAggregateMap(List<Spu> spus) {
+    List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).distinct().toList();
+    if (spuIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    List<ProductReview> reviews =
+        productReviewMapper.selectList(
+            new LambdaQueryWrapper<ProductReview>()
+                .in(ProductReview::getSpuId, spuIds)
+                .eq(ProductReview::getDeleted, 0)
+                .eq(ProductReview::getAuditStatus, "APPROVED")
+                .eq(ProductReview::getIsVisible, 1));
+    if (reviews == null || reviews.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<Long, ReviewAggregateAccumulator> accumulatorBySpuId = new HashMap<>();
+    for (ProductReview review : reviews) {
+      if (review == null || review.getSpuId() == null) {
+        continue;
+      }
+      accumulatorBySpuId
+          .computeIfAbsent(review.getSpuId(), ignored -> new ReviewAggregateAccumulator())
+          .accumulate(review);
+    }
+
+    Map<Long, ReviewAggregate> reviewAggregateBySpuId = new HashMap<>(accumulatorBySpuId.size());
+    for (Map.Entry<Long, ReviewAggregateAccumulator> entry : accumulatorBySpuId.entrySet()) {
+      reviewAggregateBySpuId.put(entry.getKey(), entry.getValue().toAggregate());
+    }
+    return reviewAggregateBySpuId;
+  }
+
+  private record ReviewAggregate(BigDecimal rating, Integer reviewCount, String tags) {}
+
+  private static final class ReviewAggregateAccumulator {
+
+    private final Set<String> tagSet = new LinkedHashSet<>();
+    private int reviewCount;
+    private int ratingSum;
+
+    private void accumulate(ProductReview review) {
+      reviewCount++;
+      if (review.getRating() != null) {
+        ratingSum += review.getRating();
+      }
+      if (review.getTags() == null || review.getTags().isBlank()) {
+        return;
+      }
+      String[] tags = review.getTags().split(",");
+      for (String tag : tags) {
+        if (tag != null && !tag.isBlank()) {
+          tagSet.add(tag.trim());
+        }
+      }
+    }
+
+    private ReviewAggregate toAggregate() {
+      BigDecimal rating =
+          reviewCount == 0
+              ? null
+              : BigDecimal.valueOf(ratingSum)
+                  .divide(BigDecimal.valueOf(reviewCount), 2, RoundingMode.HALF_UP);
+      String tags = tagSet.isEmpty() ? null : String.join(",", tagSet);
+      return new ReviewAggregate(rating, reviewCount, tags);
+    }
   }
 
   private SkuDetailVO toSkuDetail(Sku sku) {

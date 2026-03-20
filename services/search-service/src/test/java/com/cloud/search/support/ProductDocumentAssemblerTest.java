@@ -34,6 +34,9 @@ class ProductDocumentAssemblerTest {
     spu.setStatus(1);
     spu.setDescription("flagship");
     spu.setMainImage("https://img.example.com/spu.jpg");
+    spu.setTags("fast,smooth");
+    spu.setRating(new BigDecimal("4.50"));
+    spu.setReviewCount(12);
     spu.setRecommended(true);
     spu.setIsHot(true);
     spu.setCreatedAt(LocalDateTime.now().minusDays(7));
@@ -45,11 +48,18 @@ class ProductDocumentAssemblerTest {
     assertThat(document.getShopId()).isEqualTo(4001L);
     assertThat(document.getCategoryName()).isEqualTo("Phone");
     assertThat(document.getBrandName()).isEqualTo("Cloud");
+    assertThat(document.getTags()).isEqualTo("fast,smooth");
+    assertThat(document.getRating()).isEqualByComparingTo("4.50");
+    assertThat(document.getReviewCount()).isEqualTo(12);
     assertThat(document.getRecommended()).isTrue();
     assertThat(document.getIsHot()).isTrue();
     assertThat(document.getIsNew()).isTrue();
+    assertThat(document.getHotScore()).isGreaterThan(0D);
+    assertThat(document.getSearchWeight()).isGreaterThanOrEqualTo(document.getHotScore());
     assertThat(document.getPrice()).isEqualByComparingTo("99.00");
     assertThat(document.getSku()).isEqualTo("SKU-LOW");
+    assertThat(document.getDetailImages())
+        .isEqualTo("https://img.example.com/spu.jpg,https://img.example.com/sku-low.jpg");
     assertThat(document.getImageUrl()).isEqualTo("https://img.example.com/sku-low.jpg");
   }
 }

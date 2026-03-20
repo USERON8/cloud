@@ -283,7 +283,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     long start = System.currentTimeMillis();
     Pageable pageable =
         PageRequest.of(
-            normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "salesCount"));
+            normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
     Page<ProductDocument> resultPage = productDocumentRepository.findByIsHotTrue(pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(

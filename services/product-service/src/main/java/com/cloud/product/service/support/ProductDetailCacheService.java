@@ -155,6 +155,9 @@ public class ProductDetailCacheService {
     target.setStatus(source.getStatus());
     target.setDescription(source.getDescription());
     target.setMainImage(source.getMainImage());
+    target.setTags(source.getTags());
+    target.setRating(source.getRating());
+    target.setReviewCount(source.getReviewCount());
     target.setRecommended(source.getRecommended());
     target.setIsHot(source.getIsHot());
     target.setCreatedAt(source.getCreatedAt());

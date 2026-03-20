@@ -11,11 +11,13 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
+import com.cloud.product.mapper.ProductReviewMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Brand;
 import com.cloud.product.module.entity.Category;
+import com.cloud.product.module.entity.ProductReview;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.impl.ProductCatalogServiceImpl;
@@ -38,6 +40,8 @@ class ProductCatalogServiceImplTest {
 
   @Mock private BrandMapper brandMapper;
 
+  @Mock private ProductReviewMapper productReviewMapper;
+
   @Mock private ProductDetailCacheService productDetailCacheService;
 
   @Mock private ProductSyncMessageProducer productSyncMessageProducer;
@@ -52,6 +56,7 @@ class ProductCatalogServiceImplTest {
             skuMapper,
             categoryMapper,
             brandMapper,
+            productReviewMapper,
             productDetailCacheService,
             productSyncMessageProducer);
   }
@@ -104,6 +109,13 @@ class ProductCatalogServiceImplTest {
     brand.setIsRecommended(1);
     brand.setIsHot(1);
 
+    ProductReview review = new ProductReview();
+    review.setSpuId(1001L);
+    review.setRating(5);
+    review.setTags("fast,smooth");
+    review.setAuditStatus("APPROVED");
+    review.setIsVisible(1);
+
     Page<Spu> page = new Page<>(1, 20);
     page.setRecords(List.of(spu));
 
@@ -111,12 +123,16 @@ class ProductCatalogServiceImplTest {
     when(skuMapper.selectList(any())).thenReturn(List.of());
     when(categoryMapper.selectBatchIds(List.of(2001L))).thenReturn(List.of(category));
     when(brandMapper.selectBatchIds(List.of(3001L))).thenReturn(List.of(brand));
+    when(productReviewMapper.selectList(any())).thenReturn(List.of(review));
 
     List<SpuDetailVO> result = service.listSpuByPage(1, 20, 1);
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getCategoryName()).isEqualTo("Phone");
     assertThat(result.get(0).getBrandName()).isEqualTo("Cloud");
+    assertThat(result.get(0).getTags()).isEqualTo("fast,smooth");
+    assertThat(result.get(0).getRating()).isEqualByComparingTo("5.00");
+    assertThat(result.get(0).getReviewCount()).isEqualTo(1);
     assertThat(result.get(0).getRecommended()).isTrue();
     assertThat(result.get(0).getIsHot()).isTrue();
   }

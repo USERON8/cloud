@@ -203,7 +203,7 @@ public class SearchFacadeService {
     request.setIsHot(true);
     request.setPage(page);
     request.setSize(size);
-    request.setSortBy("salesCount");
+    request.setSortBy("hotScore");
     request.setSortOrder("desc");
     long start = System.currentTimeMillis();
     ElasticsearchOptimizedService.SearchResultDTO esResult =

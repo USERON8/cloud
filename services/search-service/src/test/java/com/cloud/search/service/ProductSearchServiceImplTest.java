@@ -14,11 +14,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -63,5 +66,19 @@ class ProductSearchServiceImplTest {
     List<String> result = productSearchService.getSearchSuggestions("phone", 5);
 
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getHotProducts_shouldSortByHotScore() {
+    when(productDocumentRepository.findByIsHotTrue(any()))
+        .thenReturn(new PageImpl<>(List.of(new ProductDocument()), PageRequest.of(0, 10), 1));
+
+    productSearchService.getHotProducts(0, 10);
+
+    ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+    verify(productDocumentRepository).findByIsHotTrue(pageableCaptor.capture());
+    Sort.Order order = pageableCaptor.getValue().getSort().getOrderFor("hotScore");
+    assertThat(order).isNotNull();
+    assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
   }
 }
