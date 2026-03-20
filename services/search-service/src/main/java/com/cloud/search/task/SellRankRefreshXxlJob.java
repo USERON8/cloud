@@ -5,6 +5,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.RemoteException;
+import com.cloud.search.service.support.SellRankKeys;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.util.List;
@@ -22,8 +23,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SellRankRefreshXxlJob {
-
-  private static final String DAILY_RANK_KEY = "rank:sell:daily";
 
   private final StringRedisTemplate redisTemplate;
 
@@ -49,12 +48,12 @@ public class SellRankRefreshXxlJob {
         invokeOrderService(
             "stat sell count today", () -> orderDubboApi.statSellCountToday(safeLimit));
     if (stats == null || stats.isEmpty()) {
-      redisTemplate.delete(DAILY_RANK_KEY);
+      redisTemplate.delete(SellRankKeys.TODAY_KEY);
       XxlJobHelper.log("sellRankRefreshJob finished, empty stats");
       return;
     }
 
-    redisTemplate.delete(DAILY_RANK_KEY);
+    redisTemplate.delete(SellRankKeys.TODAY_KEY);
     for (ProductSellStatDTO stat : stats) {
       if (stat == null || stat.getProductId() == null || stat.getSellCount() == null) {
         continue;
@@ -62,11 +61,11 @@ public class SellRankRefreshXxlJob {
       redisTemplate
           .opsForZSet()
           .add(
-              DAILY_RANK_KEY,
+              SellRankKeys.TODAY_KEY,
               String.valueOf(stat.getProductId()),
               stat.getSellCount().doubleValue());
     }
-    redisTemplate.expire(DAILY_RANK_KEY, safeTtlDays, TimeUnit.DAYS);
+    redisTemplate.expire(SellRankKeys.TODAY_KEY, safeTtlDays, TimeUnit.DAYS);
     String message = "sellRankRefreshJob finished, size=" + stats.size();
     XxlJobHelper.log(message);
     log.info(message);

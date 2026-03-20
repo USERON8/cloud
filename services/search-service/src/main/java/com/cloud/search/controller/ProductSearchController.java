@@ -211,7 +211,7 @@ public class ProductSearchController {
         "Query new products success", searchFacadeService.getNewProducts(page, size, searchAfter));
   }
 
-  @Operation(summary = "Hot products", description = "Get hot products")
+  @Operation(summary = "Flagged hot products", description = "Get products marked as hot")
   @GetMapping("/hot")
   public Result<SearchResultDTO<ProductDocument>> getHotProducts(
       @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
@@ -221,6 +221,18 @@ public class ProductSearchController {
           String searchAfter) {
     return Result.success(
         "Query hot products success", searchFacadeService.getHotProducts(page, size, searchAfter));
+  }
+
+  @Operation(
+      summary = "Today hot selling products",
+      description = "Get products ranked by today's completed sales")
+  @GetMapping("/hot/today")
+  public Result<SearchResultDTO<ProductDocument>> getTodayHotSellingProducts(
+      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+    return Result.success(
+        "Query today hot selling products success",
+        searchFacadeService.getTodayHotSellingProducts(page, size));
   }
 
   @Operation(

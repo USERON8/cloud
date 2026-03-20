@@ -64,4 +64,18 @@ class ProductDocumentAssemblerTest {
         .isEqualTo("https://img.example.com/spu.jpg,https://img.example.com/sku-low.jpg");
     assertThat(document.getImageUrl()).isEqualTo("https://img.example.com/sku-low.jpg");
   }
+
+  @Test
+  void toDocumentShouldIncreaseHotScoreWhenSalesCountGrows() {
+    SpuDetailVO spu = new SpuDetailVO();
+    spu.setSpuId(1002L);
+    spu.setSpuName("Cloud Tablet");
+    spu.setCreatedAt(LocalDateTime.now().minusDays(10));
+
+    ProductDocument lowSales = ProductDocumentAssembler.toDocument(spu, 5, 1);
+    ProductDocument highSales = ProductDocumentAssembler.toDocument(spu, 5, 120);
+
+    assertThat(highSales.getHotScore()).isGreaterThan(lowSales.getHotScore());
+    assertThat(highSales.getSearchWeight()).isGreaterThan(lowSales.getSearchWeight());
+  }
 }

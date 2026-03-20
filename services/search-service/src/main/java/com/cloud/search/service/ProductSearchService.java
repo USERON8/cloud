@@ -35,6 +35,8 @@ public interface ProductSearchService {
 
   SearchResultDTO<ProductDocument> getHotProducts(Integer page, Integer size);
 
+  SearchResultDTO<ProductDocument> getTodayHotSellingProducts(Integer page, Integer size);
+
   SearchResultDTO<ProductDocument> combinedSearch(
       String keyword,
       Long categoryId,

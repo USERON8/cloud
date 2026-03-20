@@ -212,6 +212,10 @@ public class SearchFacadeService {
         esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
   }
 
+  public SearchResultDTO<ProductDocument> getTodayHotSellingProducts(int page, int size) {
+    return productSearchService.getTodayHotSellingProducts(page, size);
+  }
+
   public SearchResultDTO<ProductDocument> basicSearch(
       String keyword, Integer page, Integer size, String searchAfter) {
     List<Object> searchAfterValues = parseSearchAfter(searchAfter);

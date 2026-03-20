@@ -10,6 +10,8 @@ import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.impl.ProductSearchServiceImpl;
 import com.cloud.search.service.support.HotKeywordKeys;
+import com.cloud.search.service.support.SellRankKeys;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -80,5 +82,27 @@ class ProductSearchServiceImplTest {
     Sort.Order order = pageableCaptor.getValue().getSort().getOrderFor("hotScore");
     assertThat(order).isNotNull();
     assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
+  }
+
+  @Test
+  void getTodayHotSellingProducts_shouldUseRedisRankOrder() {
+    ProductDocument first = new ProductDocument();
+    first.setId("1002");
+    first.setStatus(1);
+    ProductDocument second = new ProductDocument();
+    second.setId("1001");
+    second.setStatus(1);
+
+    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+    when(zSetOperations.size(SellRankKeys.TODAY_KEY)).thenReturn(2L);
+    when(zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, 1L))
+        .thenReturn(new LinkedHashSet<>(List.of("1001", "1002")));
+    when(productDocumentRepository.findAllById(List.of("1001", "1002")))
+        .thenReturn(List.of(second, first));
+
+    var result = productSearchService.getTodayHotSellingProducts(0, 2);
+
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getList()).extracting(ProductDocument::getId).containsExactly("1001", "1002");
   }
 }

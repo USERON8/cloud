@@ -38,11 +38,12 @@ public final class ProductDocumentAssembler {
     String skuCode = minPriceSku.map(SkuDetailVO::getSkuCode).orElse(null);
     String imageUrl = minPriceSku.map(SkuDetailVO::getImageUrl).orElse(spu.getMainImage());
     String detailImages = resolveDetailImages(spu);
+    int normalizedSalesCount = normalizeCount(salesCount);
     boolean isNew =
         spu.getCreatedAt() != null
             && spu.getCreatedAt().isAfter(LocalDateTime.now().minusDays(NEW_PRODUCT_DAYS));
-    double hotScore = calculateHotScore(spu, isNew);
-    double searchWeight = calculateSearchWeight(hotScore, spu);
+    double hotScore = calculateHotScore(spu, isNew, normalizedSalesCount);
+    double searchWeight = calculateSearchWeight(hotScore, spu, normalizedSalesCount);
 
     return ProductDocument.builder()
         .id(String.valueOf(spu.getSpuId()))
@@ -65,7 +66,7 @@ public final class ProductDocumentAssembler {
         .detailImages(detailImages)
         .tags(spu.getTags())
         .sku(skuCode)
-        .salesCount(normalizeCount(salesCount))
+        .salesCount(normalizedSalesCount)
         .rating(spu.getRating())
         .reviewCount(spu.getReviewCount())
         .recommended(Boolean.TRUE.equals(spu.getRecommended()))
@@ -97,7 +98,7 @@ public final class ProductDocumentAssembler {
     return imageUrls.isEmpty() ? null : String.join(",", imageUrls);
   }
 
-  private static double calculateHotScore(SpuDetailVO spu, boolean isNew) {
+  private static double calculateHotScore(SpuDetailVO spu, boolean isNew, int salesCount) {
     double score = 0D;
     if (Boolean.TRUE.equals(spu.getRecommended())) {
       score += 30D;
@@ -114,13 +115,19 @@ public final class ProductDocumentAssembler {
     if (spu.getRating() != null) {
       score += Math.min(spu.getRating().doubleValue(), 5D) * 20D;
     }
+    if (salesCount > 0) {
+      score += Math.log1p(salesCount) * 25D;
+    }
     return score;
   }
 
-  private static double calculateSearchWeight(double hotScore, SpuDetailVO spu) {
+  private static double calculateSearchWeight(double hotScore, SpuDetailVO spu, int salesCount) {
     double weight = hotScore;
     if (spu.getSpuName() != null && !spu.getSpuName().isBlank()) {
       weight += 10D;
+    }
+    if (salesCount > 0) {
+      weight += Math.min(salesCount, 500) * 0.1D;
     }
     return weight;
   }

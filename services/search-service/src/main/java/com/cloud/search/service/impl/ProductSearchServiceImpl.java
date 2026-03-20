@@ -7,6 +7,7 @@ import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ProductSearchService;
 import com.cloud.search.service.support.HotKeywordKeys;
+import com.cloud.search.service.support.SellRankKeys;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -292,6 +293,57 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         resultPage.getNumber(),
         resultPage.getSize(),
         took);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public SearchResultDTO<ProductDocument> getTodayHotSellingProducts(Integer page, Integer size) {
+    long start = System.currentTimeMillis();
+    int pageNum = normalizePage(page);
+    int pageSize = normalizeSize(size);
+    long offset = (long) pageNum * pageSize;
+    long end = offset + pageSize - 1L;
+
+    try {
+      var zSetOperations = redisTemplate.opsForZSet();
+      Long total = zSetOperations.size(SellRankKeys.TODAY_KEY);
+      if (total == null || total <= 0L) {
+        return SearchResultDTO.of(
+            List.of(), 0L, pageNum, pageSize, System.currentTimeMillis() - start);
+      }
+
+      var rankedProductIds = zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, offset, end);
+      if (rankedProductIds == null || rankedProductIds.isEmpty()) {
+        return SearchResultDTO.of(
+            List.of(), total, pageNum, pageSize, System.currentTimeMillis() - start);
+      }
+
+      List<String> orderedIds = rankedProductIds.stream().toList();
+      Map<String, ProductDocument> documentsById = new LinkedHashMap<>();
+      for (ProductDocument document : productDocumentRepository.findAllById(orderedIds)) {
+        if (document == null
+            || document.getId() == null
+            || !Integer.valueOf(1).equals(document.getStatus())) {
+          continue;
+        }
+        documentsById.put(document.getId(), document);
+      }
+
+      List<ProductDocument> orderedDocuments = new ArrayList<>(orderedIds.size());
+      for (String productId : orderedIds) {
+        ProductDocument document = documentsById.get(productId);
+        if (document != null) {
+          orderedDocuments.add(document);
+        }
+      }
+
+      return SearchResultDTO.of(
+          orderedDocuments, total, pageNum, pageSize, System.currentTimeMillis() - start);
+    } catch (Exception ex) {
+      log.error("Get today hot selling products failed", ex);
+      return SearchResultDTO.of(
+          List.of(), 0L, pageNum, pageSize, System.currentTimeMillis() - start);
+    }
   }
 
   @Override
