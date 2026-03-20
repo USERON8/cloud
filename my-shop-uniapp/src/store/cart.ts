@@ -1,4 +1,6 @@
 import { computed, reactive } from 'vue'
+import { sessionState, subscribeSessionChange } from '../auth/session'
+import type { UserInfo } from '../types/domain'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 export interface CartEntry {
@@ -10,34 +12,89 @@ export interface CartEntry {
   shopId: number
 }
 
-const CART_KEY = 'shop.cart'
+const LEGACY_CART_KEY = 'shop.cart'
+const CART_KEY_PREFIX = 'shop.cart'
+const GUEST_CART_KEY = `${CART_KEY_PREFIX}.guest`
 
 const state = reactive<{ items: CartEntry[] }>({ items: [] })
+let activeCartKey = resolveCartStorageKey(sessionState.user)
+let hasHydrated = false
+
+function resolveCartStorageKey(user: Pick<UserInfo, 'id' | 'username'> | null | undefined): string {
+  if (typeof user?.id === 'number' && user.id > 0) {
+    return `${CART_KEY_PREFIX}.user.${user.id}`
+  }
+  const username = typeof user?.username === 'string' ? user.username.trim().toLowerCase() : ''
+  if (username) {
+    return `${CART_KEY_PREFIX}.user.${encodeURIComponent(username)}`
+  }
+  return GUEST_CART_KEY
+}
+
+function normalizeCartEntries(parsed: CartEntry[] | null): CartEntry[] {
+  if (!Array.isArray(parsed)) {
+    return []
+  }
+  return parsed.filter(
+    (item) =>
+      typeof item.productId === 'number' &&
+      typeof item.skuId === 'number' &&
+      typeof item.shopId === 'number' &&
+      item.shopId > 0 &&
+      typeof item.productName === 'string' &&
+      item.productName.trim().length > 0 &&
+      typeof item.price === 'number' &&
+      item.price > 0 &&
+      typeof item.quantity === 'number' &&
+      item.quantity > 0
+  )
+}
 
 function persist(): void {
-  setStorage(CART_KEY, state.items)
+  setStorage(activeCartKey, state.items)
+}
+
+function readCart(key: string): CartEntry[] {
+  return normalizeCartEntries(getStorage<CartEntry[]>(key))
+}
+
+function loadCart(key: string): void {
+  activeCartKey = key
+  state.items = readCart(key)
+}
+
+function migrateLegacyCart(targetKey: string): void {
+  if (targetKey === LEGACY_CART_KEY || getStorage<CartEntry[]>(targetKey)) {
+    return
+  }
+
+  const legacyItems = readCart(LEGACY_CART_KEY)
+  if (legacyItems.length === 0) {
+    removeStorage(LEGACY_CART_KEY)
+    return
+  }
+
+  setStorage(targetKey, legacyItems)
+  removeStorage(LEGACY_CART_KEY)
+}
+
+function syncCartStorage(user: UserInfo | null): void {
+  const nextKey = resolveCartStorageKey(user)
+  if (!hasHydrated) {
+    activeCartKey = nextKey
+    return
+  }
+  if (nextKey === activeCartKey) {
+    return
+  }
+  loadCart(nextKey)
 }
 
 export function hydrateCartFromStorage(): void {
-  const parsed = getStorage<CartEntry[]>(CART_KEY)
-  if (!parsed) {
-    return
-  }
-  if (Array.isArray(parsed)) {
-    state.items = parsed.filter(
-      (item) =>
-        typeof item.productId === 'number' &&
-        typeof item.skuId === 'number' &&
-        typeof item.shopId === 'number' &&
-        item.shopId > 0 &&
-        typeof item.productName === 'string' &&
-        item.productName.trim().length > 0 &&
-        typeof item.price === 'number' &&
-        item.price > 0 &&
-        typeof item.quantity === 'number' &&
-        item.quantity > 0
-    )
-  }
+  const targetKey = resolveCartStorageKey(sessionState.user)
+  migrateLegacyCart(targetKey)
+  loadCart(targetKey)
+  hasHydrated = true
 }
 
 export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: number }): void {
@@ -75,7 +132,7 @@ export function setCartItemQuantity(productId: number, skuId: number, quantity: 
 
 export function clearCart(): void {
   state.items = []
-  removeStorage(CART_KEY)
+  removeStorage(activeCartKey)
 }
 
 export function removeItemsByShops(shopIds: number[]): void {
@@ -91,3 +148,7 @@ export function removeItemsByShops(shopIds: number[]): void {
 export const cartItems = computed(() => state.items)
 export const cartCount = computed(() => state.items.reduce((sum, i) => sum + i.quantity, 0))
 export const cartTotal = computed(() => state.items.reduce((sum, i) => sum + i.price * i.quantity, 0))
+
+subscribeSessionChange((user) => {
+  syncCartStorage(user)
+})

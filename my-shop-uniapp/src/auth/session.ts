@@ -20,6 +20,8 @@ interface StoredSession {
   user: UserInfo | null
 }
 
+type SessionChangeListener = (user: UserInfo | null) => void
+
 export const sessionState = reactive<SessionState>({
   accessToken: '',
   tokenType: 'Bearer',
@@ -27,6 +29,8 @@ export const sessionState = reactive<SessionState>({
   scope: '',
   user: null
 })
+
+const sessionChangeListeners = new Set<SessionChangeListener>()
 
 function persist(): void {
   const payload: StoredSession = {
@@ -37,6 +41,12 @@ function persist(): void {
     user: sessionState.user
   }
   setStorage(SESSION_KEY, payload)
+}
+
+function notifySessionChange(): void {
+  sessionChangeListeners.forEach((listener) => {
+    listener(sessionState.user)
+  })
 }
 
 function decodeBase64Url(value: string): string {
@@ -134,6 +144,7 @@ export function hydrateSessionFromStorage(): void {
   sessionState.expiresAt = payload.expiresAt
   sessionState.scope = payload.scope || ''
   sessionState.user = payload.user || null
+  notifySessionChange()
 }
 
 export function setSessionFromTokenResponse(payload: OAuthTokenResponse): void {
@@ -146,6 +157,7 @@ export function setSessionFromTokenResponse(payload: OAuthTokenResponse): void {
   sessionState.scope = payload.scope || ''
   sessionState.user = buildUserInfo(accessClaims, idClaims)
   persist()
+  notifySessionChange()
 }
 
 export function clearSession(): void {
@@ -155,6 +167,7 @@ export function clearSession(): void {
   sessionState.scope = ''
   sessionState.user = null
   removeStorage(SESSION_KEY)
+  notifySessionChange()
 }
 
 export function patchSessionUser(patch: Partial<UserInfo>): void {
@@ -166,6 +179,7 @@ export function patchSessionUser(patch: Partial<UserInfo>): void {
     ...patch
   }
   persist()
+  notifySessionChange()
 }
 
 export function getAccessToken(): string {
@@ -178,4 +192,11 @@ export function getAccessToken(): string {
 
 export function isAuthenticated(): boolean {
   return getAccessToken().length > 0
+}
+
+export function subscribeSessionChange(listener: SessionChangeListener): () => void {
+  sessionChangeListeners.add(listener)
+  return () => {
+    sessionChangeListeners.delete(listener)
+  }
 }

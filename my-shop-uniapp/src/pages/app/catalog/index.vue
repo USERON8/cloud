@@ -31,7 +31,7 @@ function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
   return {
     id: typeof item.productId === 'number' ? item.productId : 0,
     shopId: item.shopId,
-    name: item.productName || '未命名商品',
+    name: item.productName || 'Unnamed product',
     price: item.price,
     stockQuantity: item.stockQuantity,
     categoryId: item.categoryId,
@@ -73,7 +73,7 @@ async function loadProducts(reset = false): Promise<void> {
     hasMore.value = rows.value.length < result.total
     await refreshKeywords(keyword.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载商品失败')
+    toast(error instanceof Error ? error.message : 'Failed to load products')
   } finally {
     loading.value = false
   }
@@ -96,24 +96,41 @@ function onLoadMore(): void {
   void loadProducts()
 }
 
+async function resolveCartSkuId(item: ProductItem): Promise<number | null> {
+  if (typeof item.skuId === 'number' && item.skuId > 0) {
+    return item.skuId
+  }
+
+  const spu = await getSpu(item.id)
+  const availableSkus = (spu?.skus || []).filter((sku) => typeof sku.skuId === 'number' && sku.skuId > 0)
+  if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'number') {
+    return availableSkus[0].skuId
+  }
+  if (availableSkus.length === 0) {
+    toast('SKU information is unavailable')
+    return null
+  }
+
+  toast('This product has multiple variants and cannot be added from the list view')
+  return null
+}
+
 async function onAddToCart(item: ProductItem): Promise<void> {
   if (typeof item.price !== 'number' || item.price <= 0) {
-    toast('??????')
+    toast('Product price is unavailable')
     return
   }
   if (typeof item.shopId !== 'number' || item.shopId <= 0) {
-    toast('????????')
+    toast('Shop information is unavailable')
     return
   }
   if (typeof item.stockQuantity === 'number' && item.stockQuantity <= 0) {
-    toast('??????')
+    toast('Product is out of stock')
     return
   }
   try {
-    const spu = await getSpu(item.id)
-    const skuId = spu?.skus?.[0]?.skuId
+    const skuId = await resolveCartSkuId(item)
     if (typeof skuId !== 'number') {
-      toast('???????')
       return
     }
     addToCart({
@@ -123,9 +140,9 @@ async function onAddToCart(item: ProductItem): Promise<void> {
       price: item.price,
       shopId: item.shopId
     })
-    toast('??????', 'success')
+    toast('Added to cart', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '??????')
+    toast(error instanceof Error ? error.message : 'Failed to add product to cart')
   }
 }
 
@@ -139,19 +156,19 @@ onMounted(() => {
   <AppShell title="Products">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">商品目录</text>
+        <text class="section-title">Product catalog</text>
         <button v-if="canManage" class="btn-outline" @click="navigateTo(Routes.appCatalogManage, undefined, { requiresAuth: true })">
-          管理商品
+          Manage products
         </button>
       </view>
 
       <view class="search-row">
-        <input v-model="keyword" class="search-input" placeholder="搜索商品" @confirm="onSearch" />
-        <button class="btn-primary" @click="onSearch">搜索</button>
+        <input v-model="keyword" class="search-input" placeholder="Search products" @confirm="onSearch" />
+        <button class="btn-primary" @click="onSearch">Search</button>
       </view>
 
       <view class="keyword-block" v-if="hotKeywords.length">
-        <text class="keyword-title">热门</text>
+        <text class="keyword-title">Trending</text>
         <view class="keyword-list">
           <text v-for="item in hotKeywords" :key="`hot-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
             {{ item }}
@@ -160,7 +177,7 @@ onMounted(() => {
       </view>
 
       <view class="keyword-block" v-if="recommendations.length">
-        <text class="keyword-title">推荐</text>
+        <text class="keyword-title">Recommended</text>
         <view class="keyword-list">
           <text v-for="item in recommendations" :key="`rec-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
             {{ item }}
@@ -171,19 +188,19 @@ onMounted(() => {
       <view class="product-list">
         <view v-for="item in rows" :key="item.id" class="product-card">
           <image v-if="item.imageUrl" :src="item.imageUrl" class="product-image" mode="aspectFill" />
-          <view v-else class="product-image placeholder">暂无图片</view>
+          <view v-else class="product-image placeholder">No image</view>
           <view class="product-main">
             <text class="product-name">{{ item.name }}</text>
             <text class="product-meta">{{ formatPrice(item.price) }}</text>
-            <text class="product-meta">库存 {{ item.stockQuantity ?? '--' }}</text>
+            <text class="product-meta">Stock {{ item.stockQuantity ?? '--' }}</text>
           </view>
-          <button class="btn-outline" @click="onAddToCart(item)">加入购物车</button>
+          <button class="btn-outline" @click="onAddToCart(item)">Add to cart</button>
         </view>
       </view>
 
       <view class="load-more">
-        <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">加载更多</button>
-        <text v-else class="text-muted">没有更多商品</text>
+        <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">Load more</button>
+        <text v-else class="text-muted">No more products</text>
       </view>
     </view>
   </AppShell>

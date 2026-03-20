@@ -102,6 +102,25 @@ function onLoadMore(): void {
   void loadProducts()
 }
 
+async function resolveCartSkuId(item: ProductItem): Promise<number | null> {
+  if (typeof item.skuId === 'number' && item.skuId > 0) {
+    return item.skuId
+  }
+
+  const spu = await getSpu(item.id)
+  const availableSkus = (spu?.skus || []).filter((sku) => typeof sku.skuId === 'number' && sku.skuId > 0)
+  if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'number') {
+    return availableSkus[0].skuId
+  }
+  if (availableSkus.length === 0) {
+    toast('SKU information is unavailable')
+    return null
+  }
+
+  toast('This product has multiple variants and cannot be added from the list view')
+  return null
+}
+
 async function onAddToCart(item: ProductItem): Promise<void> {
   if (typeof item.price !== 'number' || item.price <= 0) {
     toast('Product price is unavailable')
@@ -116,10 +135,8 @@ async function onAddToCart(item: ProductItem): Promise<void> {
     return
   }
   try {
-    const spu = await getSpu(item.id)
-    const skuId = spu?.skus?.[0]?.skuId
+    const skuId = await resolveCartSkuId(item)
     if (typeof skuId !== 'number') {
-      toast('Sku information is unavailable')
       return
     }
     addToCart({

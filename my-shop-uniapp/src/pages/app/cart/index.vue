@@ -44,17 +44,17 @@ function changeQuantity(item: CartEntry, delta: number): void {
 }
 
 async function onRemove(item: CartEntry): Promise<void> {
-  const ok = await confirm(`确认移除 ${item.productName}？`)
+  const ok = await confirm(`Remove ${item.productName} from the cart?`)
   if (!ok) return
   removeFromCart(item.productId, item.skuId)
-  toast('已移除', 'success')
+  toast('Item removed', 'success')
 }
 
 async function onClearCart(): Promise<void> {
-  const ok = await confirm('确认清空购物车？')
+  const ok = await confirm('Clear the cart?')
   if (!ok) return
   clearCart()
-  toast('购物车已清空', 'success')
+  toast('Cart cleared', 'success')
 }
 
 async function onPlaceOrder(): Promise<void> {
@@ -66,14 +66,18 @@ async function onPlaceOrder(): Promise<void> {
   if (!ok) return
 
   placing.value = true
-  const failedShops: number[] = []
-  let successCount = 0
+  const orderGroups = shopGroups.value.map((group) => ({
+    shopId: group.shopId,
+    items: group.items.map((item) => ({ ...item }))
+  }))
+  const failedShops = new Set<number>()
+  const successfulItems: CartEntry[] = []
 
   try {
-    for (const group of shopGroups.value) {
+    for (const group of orderGroups) {
       for (const item of group.items) {
         if (typeof item.skuId !== 'number') {
-          failedShops.push(group.shopId)
+          failedShops.add(group.shopId)
           toast(`Shop ${group.shopId} item is missing a SKU`)
           continue
         }
@@ -85,10 +89,9 @@ async function onPlaceOrder(): Promise<void> {
             quantity: item.quantity,
             price: item.price
           })
-          removeFromCart(item.productId, item.skuId)
-          successCount += 1
+          successfulItems.push(item)
         } catch (error) {
-          failedShops.push(group.shopId)
+          failedShops.add(group.shopId)
           const msg = error instanceof Error ? error.message : 'Unknown error'
           toast(`Shop ${group.shopId}: ${msg}`)
         }
@@ -98,17 +101,22 @@ async function onPlaceOrder(): Promise<void> {
     placing.value = false
   }
 
-  if (successCount > 0) {
-    toast(`Submitted ${successCount} item(s)`, 'success')
-    if (failedShops.length === 0) {
-      navigateTo(Routes.appOrders, undefined, { requiresAuth: true })
-      return
-    }
+  successfulItems.forEach((item) => {
+    removeFromCart(item.productId, item.skuId)
+  })
+
+  if (failedShops.size === 0) {
+    toast(`Submitted ${successfulItems.length} item(s)`, 'success')
+    navigateTo(Routes.appOrders, undefined, { requiresAuth: true })
+    return
   }
 
-  if (failedShops.length > 0) {
-    toast(`Failed shops: ${failedShops.join(', ')}`)
+  if (successfulItems.length > 0) {
+    toast('Some items were submitted. Only failed items remain in the cart.')
+    return
   }
+
+  toast(`Failed shops: ${[...failedShops].join(', ')}`)
 }
 </script>
 
@@ -116,22 +124,22 @@ async function onPlaceOrder(): Promise<void> {
   <AppShell title="Cart">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">购物车</text>
+        <text class="section-title">Cart</text>
         <view class="header-actions">
           <button class="btn-outline" @click="navigateTo(Routes.appCatalog, undefined, { requiresAuth: true })">
-            继续购物
+            Continue shopping
           </button>
-          <button v-if="cartItems.length > 0" class="btn-outline" @click="onClearCart">清空</button>
+          <button v-if="cartItems.length > 0" class="btn-outline" @click="onClearCart">Clear</button>
         </view>
       </view>
 
       <view v-if="cartItems.length === 0" class="empty">
-        <text class="text-muted">购物车为空</text>
+        <text class="text-muted">Your cart is empty</text>
       </view>
 
       <view v-else>
         <view v-for="group in shopGroups" :key="group.shopId" class="shop-group">
-          <text class="shop-title">店铺 {{ group.shopId }} · 小计 {{ formatPrice(group.subtotal) }}</text>
+          <text class="shop-title">Shop {{ group.shopId }} - Subtotal {{ formatPrice(group.subtotal) }}</text>
           <view v-for="item in group.items" :key="item.productId" class="item-row">
             <view class="item-info">
               <text class="item-name">{{ item.productName }}</text>
@@ -141,14 +149,14 @@ async function onPlaceOrder(): Promise<void> {
               <button class="btn-outline" @click="changeQuantity(item, -1)">-</button>
               <text class="qty">{{ item.quantity }}</text>
               <button class="btn-outline" @click="changeQuantity(item, 1)">+</button>
-              <button class="btn-outline" @click="onRemove(item)">移除</button>
+              <button class="btn-outline" @click="onRemove(item)">Remove</button>
             </view>
           </view>
         </view>
 
         <view class="summary">
-          <text class="summary-text">合计：{{ formatPrice(cartTotal) }}</text>
-          <button class="btn-primary" :loading="placing" @click="onPlaceOrder">提交订单</button>
+          <text class="summary-text">Total: {{ formatPrice(cartTotal) }}</text>
+          <button class="btn-primary" :loading="placing" @click="onPlaceOrder">Submit orders</button>
         </view>
       </view>
     </view>

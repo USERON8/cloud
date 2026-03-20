@@ -95,7 +95,7 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
 
   const isGet = method === 'GET'
   const targetUrl = buildUrl(url, config.params)
-  const payload = isGet ? config.params : config.data
+  const payload = isGet ? undefined : config.data
 
   return new Promise<T>((resolve, reject) => {
     uni.request({

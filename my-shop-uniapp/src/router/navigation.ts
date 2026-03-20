@@ -22,12 +22,12 @@ function buildQuery(params?: Record<string, unknown>): string {
   return query ? `?${query}` : ''
 }
 
-function ensureAuth(path: string, guard?: GuardOptions): boolean {
+function ensureAuth(targetUrl: string, guard?: GuardOptions): boolean {
   if (!guard?.requiresAuth) {
     return true
   }
   if (!isAuthenticated()) {
-    const redirect = encodeURIComponent(path)
+    const redirect = encodeURIComponent(targetUrl)
     uni.redirectTo({ url: `${Routes.login}?redirect=${redirect}` })
     return false
   }
@@ -40,7 +40,7 @@ function ensureAuth(path: string, guard?: GuardOptions): boolean {
 
 export function navigateTo(path: RoutePath, query?: Record<string, unknown>, guard?: GuardOptions): void {
   const url = `${path}${buildQuery(query)}`
-  if (!ensureAuth(path, guard)) {
+  if (!ensureAuth(url, guard)) {
     return
   }
   uni.navigateTo({ url })
@@ -48,7 +48,7 @@ export function navigateTo(path: RoutePath, query?: Record<string, unknown>, gua
 
 export function redirectTo(path: RoutePath, query?: Record<string, unknown>, guard?: GuardOptions): void {
   const url = `${path}${buildQuery(query)}`
-  if (!ensureAuth(path, guard)) {
+  if (!ensureAuth(url, guard)) {
     return
   }
   uni.redirectTo({ url })
@@ -56,7 +56,7 @@ export function redirectTo(path: RoutePath, query?: Record<string, unknown>, gua
 
 export function reLaunch(path: RoutePath, query?: Record<string, unknown>, guard?: GuardOptions): void {
   const url = `${path}${buildQuery(query)}`
-  if (!ensureAuth(path, guard)) {
+  if (!ensureAuth(url, guard)) {
     return
   }
   uni.reLaunch({ url })
