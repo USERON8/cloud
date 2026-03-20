@@ -13,25 +13,25 @@ const refundInfo = ref<PaymentRefundInfo | null>(null)
 
 async function queryPayment(): Promise<void> {
   if (!paymentNo.value.trim()) {
-    toast('ÇëÊäÈëÖ§¸¶µ¥ºÅ')
+    toast('è¯·è¾“å…¥æ”¯ä»˜å•å·')
     return
   }
   try {
     paymentInfo.value = await getPaymentOrderByNo(paymentNo.value.trim())
   } catch (error) {
-    toast(error instanceof Error ? error.message : '²éÑ¯Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'æŸ¥è¯¢å¤±è´¥')
   }
 }
 
 async function queryRefund(): Promise<void> {
   if (!refundNo.value.trim()) {
-    toast('ÇëÊäÈëÍË¿îµ¥ºÅ')
+    toast('è¯·è¾“å…¥é€€æ¬¾å•å·')
     return
   }
   try {
     refundInfo.value = await getRefundByNo(refundNo.value.trim())
   } catch (error) {
-    toast(error instanceof Error ? error.message : '²éÑ¯Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'æŸ¥è¯¢å¤±è´¥')
   }
 }
 </script>
@@ -39,32 +39,32 @@ async function queryRefund(): Promise<void> {
 <template>
   <AppShell title="Payments">
     <view class="panel glass-card">
-      <text class="section-title">Ö§¸¶²éÑ¯</text>
+      <text class="section-title">æ”¯ä»˜æŸ¥è¯¢</text>
       <view class="search-row">
-        <input v-model="paymentNo" class="search-input" placeholder="Ö§¸¶µ¥ºÅ" />
-        <button class="btn-primary" @click="queryPayment">²éÑ¯</button>
+        <input v-model="paymentNo" class="search-input" placeholder="æ”¯ä»˜å•å·" />
+        <button class="btn-primary" @click="queryPayment">æŸ¥è¯¢</button>
       </view>
 
       <view v-if="paymentInfo" class="result">
-        <text class="name">Ö§¸¶µ¥ºÅ£º{{ paymentInfo.paymentNo }}</text>
-        <text class="meta">½ğ¶î£º{{ formatPrice(paymentInfo.amount) }}</text>
-        <text class="meta">×´Ì¬£º{{ paymentInfo.status || '--' }}</text>
-        <text class="meta">Íê³ÉÊ±¼ä£º{{ formatDate(paymentInfo.paidAt) }}</text>
+        <text class="name">æ”¯ä»˜å•å·ï¼š{{ paymentInfo.paymentNo }}</text>
+        <text class="meta">é‡‘é¢ï¼š{{ formatPrice(paymentInfo.amount) }}</text>
+        <text class="meta">çŠ¶æ€ï¼š{{ paymentInfo.status || '--' }}</text>
+        <text class="meta">å®Œæˆæ—¶é—´ï¼š{{ formatDate(paymentInfo.paidAt) }}</text>
       </view>
     </view>
 
     <view class="panel glass-card">
-      <text class="section-title">ÍË¿î²éÑ¯</text>
+      <text class="section-title">é€€æ¬¾æŸ¥è¯¢</text>
       <view class="search-row">
-        <input v-model="refundNo" class="search-input" placeholder="ÍË¿îµ¥ºÅ" />
-        <button class="btn-primary" @click="queryRefund">²éÑ¯</button>
+        <input v-model="refundNo" class="search-input" placeholder="é€€æ¬¾å•å·" />
+        <button class="btn-primary" @click="queryRefund">æŸ¥è¯¢</button>
       </view>
 
       <view v-if="refundInfo" class="result">
-        <text class="name">ÍË¿îµ¥ºÅ£º{{ refundInfo.refundNo }}</text>
-        <text class="meta">½ğ¶î£º{{ formatPrice(refundInfo.refundAmount) }}</text>
-        <text class="meta">×´Ì¬£º{{ refundInfo.status || '--' }}</text>
-        <text class="meta">Íê³ÉÊ±¼ä£º{{ formatDate(refundInfo.refundedAt) }}</text>
+        <text class="name">é€€æ¬¾å•å·ï¼š{{ refundInfo.refundNo }}</text>
+        <text class="meta">é‡‘é¢ï¼š{{ formatPrice(refundInfo.refundAmount) }}</text>
+        <text class="meta">çŠ¶æ€ï¼š{{ refundInfo.status || '--' }}</text>
+        <text class="meta">å®Œæˆæ—¶é—´ï¼š{{ formatDate(refundInfo.refundedAt) }}</text>
       </view>
     </view>
   </AppShell>

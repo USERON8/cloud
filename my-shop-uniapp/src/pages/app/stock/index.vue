@@ -11,13 +11,13 @@ const ledger = ref<StockLedger | null>(null)
 async function queryLedger(): Promise<void> {
   const id = Number(skuId.value)
   if (!Number.isFinite(id) || id <= 0) {
-    toast('ÇëÊäÈëÓĞĞ§ SKU ID')
+    toast('è¯·è¾“å…¥æœ‰æ•ˆ SKU ID')
     return
   }
   try {
     ledger.value = await getStockLedger(id)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '²éÑ¯Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'æŸ¥è¯¢å¤±è´¥')
   }
 }
 </script>
@@ -25,18 +25,18 @@ async function queryLedger(): Promise<void> {
 <template>
   <AppShell title="Stock Ledger">
     <view class="panel glass-card">
-      <text class="section-title">¿â´æÌ¨ÕË</text>
+      <text class="section-title">åº“å­˜å°è´¦</text>
       <view class="search-row">
         <input v-model="skuId" class="search-input" placeholder="SKU ID" />
-        <button class="btn-primary" @click="queryLedger">²éÑ¯</button>
+        <button class="btn-primary" @click="queryLedger">æŸ¥è¯¢</button>
       </view>
 
       <view v-if="ledger" class="result">
-        <text class="meta">¿ÉÓÃ¿â´æ£º{{ ledger.salableQty ?? '--' }}</text>
-        <text class="meta">ÔÚ¿â¿â´æ£º{{ ledger.onHandQty ?? '--' }}</text>
-        <text class="meta">Ëø¶¨¿â´æ£º{{ ledger.reservedQty ?? '--' }}</text>
-        <text class="meta">Ô¤¾¯ãĞÖµ£º{{ ledger.alertThreshold ?? '--' }}</text>
-        <text class="meta">×´Ì¬£º{{ ledger.status ?? '--' }}</text>
+        <text class="meta">å¯ç”¨åº“å­˜ï¼š{{ ledger.salableQty ?? '--' }}</text>
+        <text class="meta">åœ¨åº“åº“å­˜ï¼š{{ ledger.onHandQty ?? '--' }}</text>
+        <text class="meta">é”å®šåº“å­˜ï¼š{{ ledger.reservedQty ?? '--' }}</text>
+        <text class="meta">é¢„è­¦é˜ˆå€¼ï¼š{{ ledger.alertThreshold ?? '--' }}</text>
+        <text class="meta">çŠ¶æ€ï¼š{{ ledger.status ?? '--' }}</text>
       </view>
     </view>
   </AppShell>

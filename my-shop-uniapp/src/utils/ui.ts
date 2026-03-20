@@ -2,7 +2,7 @@ export function toast(message: string, icon: 'none' | 'success' | 'loading' = 'n
   uni.showToast({ title: message, icon })
 }
 
-export function confirm(content: string, title = 'Ã· æ'): Promise<boolean> {
+export function confirm(content: string, title = 'ÊèêÁ§∫'): Promise<boolean> {
   return new Promise((resolve) => {
     uni.showModal({
       title,
@@ -13,7 +13,7 @@ export function confirm(content: string, title = 'Ã· æ'): Promise<boolean> {
   })
 }
 
-export function showLoading(title = 'º”‘ÿ÷–'): void {
+export function showLoading(title = 'Âä†ËΩΩ‰∏≠'): void {
   uni.showLoading({ title, mask: true })
 }
 

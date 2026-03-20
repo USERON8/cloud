@@ -44,7 +44,7 @@ x-skywalking-agent-volume: &skywalking-agent-volume
   read_only: true
 
 services:
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   mysql:
     image: mysql:9.3.0
     container_name: cloud-mysql
@@ -87,11 +87,11 @@ services:
       - "${PORT_MYSQL:-13306}:3306"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
-      interval: 10s    # 从 5s 改 10s，降低健康检查频率
-      timeout: 5s      # 超时时间
-      retries: 8       # 重试次数
+      interval: 10s    # Raised from 5s to reduce health check frequency.
+      timeout: 5s      # Health check timeout.
+      retries: 8       # Retry count.
 
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   redis:
     image: redis:7.4.5-bookworm
     container_name: cloud-redis
@@ -120,7 +120,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   nacos:
     image: nacos/nacos-server:v3.0.2
     container_name: cloud-nacos
@@ -140,35 +140,35 @@ services:
       MYSQL_DATABASE_NUM: 1
       MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
 
-      # 兼容性注释已标准化。
-      NACOS_SERVER_CONTEXTPATH: /nacos  # 兼容性注释已标准化。
-      NACOS_CONSOLE_CONTEXTPATH: /nacos  # 兼容性注释已标准化。
-      NACOS_CONSOLE_REMOTE_SERVER_CONTEXT_PATH: /nacos  # 兼容性注释已标准化。
+      # Compatibility note standardized.
+      NACOS_SERVER_CONTEXTPATH: /nacos  # Compatibility note standardized.
+      NACOS_CONSOLE_CONTEXTPATH: /nacos  # Compatibility note standardized.
+      NACOS_CONSOLE_REMOTE_SERVER_CONTEXT_PATH: /nacos  # Compatibility note standardized.
 
-      # 兼容性注释已标准化。
-      NACOS_AUTH_ENABLE: "true"  # 兼容性注释已标准化。
-      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # 兼容性注释已标准化。
+      # Compatibility note standardized.
+      NACOS_AUTH_ENABLE: "true"  # Compatibility note standardized.
+      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # Compatibility note standardized.
       NACOS_AUTH_IDENTITY_VALUE: ServerIdentity_Value_123
-      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # 兼容性注释已标准化。
-      NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # 兼容性注释已标准化。
+      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # Compatibility note standardized.
+      NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # Compatibility note standardized.
 
-      # 兼容性注释已标准化。
-      NACOS_SECURITY_ADMIN_USER: nacos  # 兼容性注释已标准化。
+      # Compatibility note standardized.
+      NACOS_SECURITY_ADMIN_USER: nacos  # Compatibility note standardized.
       NACOS_SECURITY_ADMIN_PASSWORD: nacos
 
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
       NACOS_CORE_AUTH_DEFAULT_RESOURCE: "public:*:*"
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       JVM_XMS: 256m
       JVM_XMX: 256m
-      # 关闭 CMDB（不需要）
+      # Disable CMDB (not needed)
       NACOS_CMDB_ENABLED: "false"
-      # 关闭 Istio MCP（不需要）
+      # Disable Istio MCP (not needed)
       NACOS_ISTIO_MCP_SERVER_ENABLED: "false"
-      # 空服务自动清理（保留开启）
+      # Keep empty-service auto-clean enabled
       NACOS_NAMING_EMPTY_SERVICE_AUTO_CLEAN: "true"
-      # 调小心跳间隔，减少网络开销（毫秒）
+      # Reduce the heartbeat interval to lower network overhead (milliseconds)
       NACOS_NAMING_CLIENT_BEAT_INTERVAL: "5000"
 
     mem_limit: 384m
@@ -196,7 +196,7 @@ services:
       timeout: 5s
       retries: 12
 
-  # 兼容性注释已标准化。 
+  # Compatibility note standardized. 
   namesrv:
     image: apache/rocketmq:5.3.2
     container_name: cloud-rmq-namesrv
@@ -204,7 +204,7 @@ services:
       service_net:
         ipv4_address: 172.28.0.40
     ports:
-      - "${PORT_RMQ_NAMESRV:-20011}:9876"  # 兼容性注释已标准化。
+      - "${PORT_RMQ_NAMESRV:-20011}:9876"  # Compatibility note standardized.
     volumes:
       - type: bind
         source: ./docker-compose/rocketmq/namesrv/logs
@@ -215,7 +215,7 @@ services:
     environment:
       - NAMESRV_ADDR=namesrv:9876
     command: sh mqnamesrv
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   broker:
     image: apache/rocketmq:5.3.2
     container_name: cloud-rmq-broker
@@ -229,11 +229,11 @@ services:
     depends_on:
       - namesrv
     ports:
-      - "${PORT_RMQ_BROKER_MAIN:-39009}:39009"  # 兼容性注释已标准化。
-      - "${PORT_RMQ_BROKER_HA:-39011}:39011"  # 兼容性注释已标准化。
-      - "${PORT_RMQ_BROKER_FAST_REPLY:-39012}:39012"  # 兼容性注释已标准化。
-      - "${PORT_RMQ_PROXY_REMOTING:-38080}:8080"   # 兼容性注释已标准化。
-      - "${PORT_RMQ_PROXY_HTTP2:-38081}:8081"   # 兼容性注释已标准化。
+      - "${PORT_RMQ_BROKER_MAIN:-39009}:39009"  # Compatibility note standardized.
+      - "${PORT_RMQ_BROKER_HA:-39011}:39011"  # Compatibility note standardized.
+      - "${PORT_RMQ_BROKER_FAST_REPLY:-39012}:39012"  # Compatibility note standardized.
+      - "${PORT_RMQ_PROXY_REMOTING:-38080}:8080"   # Compatibility note standardized.
+      - "${PORT_RMQ_PROXY_HTTP2:-38081}:8081"   # Compatibility note standardized.
     volumes:
       - rmq-broker-logs:/home/rocketmq/logs
       - rmq-broker-store:/home/rocketmq/store
@@ -243,13 +243,13 @@ services:
     environment:
       - NAMESRV_ADDR=namesrv:9876
       - JAVA_OPT_EXT=-Xms256m -Xmx256m
-    # 兼容性注释已标准化。
+    # Compatibility note standardized.
     command:
       - /bin/sh
       - -lc
       - mkdir -p /home/rocketmq/logs/rocketmqlogs && exec sh mqbroker -n namesrv:9876 --enable-proxy -c /home/rocketmq/conf/broker.conf
 
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   rmq-console:
     image: apacherocketmq/rocketmq-dashboard:2.1.0
     container_name: cloud-rmq-dashboard
@@ -265,7 +265,7 @@ services:
     environment:
       JAVA_OPTS: -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
 
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   nginx:
     image: nginx:stable-perl
     container_name: cloud-nginx-gateway
@@ -275,8 +275,8 @@ services:
     environment:
       NGINX_GATEWAY_UPSTREAM: ${NGINX_GATEWAY_UPSTREAM:-host.docker.internal:8080}
     ports:
-      - "${PORT_NGINX_HTTP:-18080}:80"      # 兼容性注释已标准化。
-      - "${PORT_NGINX_HTTPS:-18443}:443"    # 兼容性注释已标准化。
+      - "${PORT_NGINX_HTTP:-18080}:80"      # Compatibility note standardized.
+      - "${PORT_NGINX_HTTPS:-18443}:443"    # Compatibility note standardized.
     volumes:
       - type: bind
         source: ./docker-compose/nginx/config/nginx.conf
@@ -616,7 +616,7 @@ services:
       - -jar
       - /workspace/app.jar
       - --spring.profiles.active=dev
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
     container_name: cloud-minio
@@ -636,20 +636,20 @@ services:
       - type: bind
         source: ./docker-compose/minio/data
         target: /home/minio/data
-  # 兼容性注释已标准化。
+  # Compatibility note standardized.
   elasticsearch:
     image: elasticsearch:9.1.2
     container_name: cloud-es-search
     networks:
       service_net:
-        ipv4_address: 172.28.0.90  # 兼容性注释已标准化。
+        ipv4_address: 172.28.0.90  # Compatibility note standardized.
     mem_limit: 1g
     environment:
-      # 兼容性注释已标准化。
-      - discovery.type=single-node  # 兼容性注释已标准化。
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m  # 兼容性注释已标准化。
-      - bootstrap.memory_lock=true  # 兼容性注释已标准化。
-      - xpack.security.enabled=false  # 兼容性注释已标准化。
+      # Compatibility note standardized.
+      - discovery.type=single-node  # Compatibility note standardized.
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m  # Compatibility note standardized.
+      - bootstrap.memory_lock=true  # Compatibility note standardized.
+      - xpack.security.enabled=false  # Compatibility note standardized.
       - http.cors.enabled=true
       - http.cors.allow-origin="*"
     volumes:
@@ -661,9 +661,9 @@ services:
         source: ./docker-compose/elasticsearch/plugins
         target: /usr/share/elasticsearch/plugins
     ports:
-      - "${PORT_ES_HTTP:-19200}:9200"  # 兼容性注释已标准化。
-      - "${PORT_ES_TRANSPORT:-19300}:9300"  # 兼容性注释已标准化。
-    ulimits: # 兼容性注释已标准化。
+      - "${PORT_ES_HTTP:-19200}:9200"  # Compatibility note standardized.
+      - "${PORT_ES_TRANSPORT:-19300}:9300"  # Compatibility note standardized.
+    ulimits: # Compatibility note standardized.
       memlock:
         soft: -1
         hard: -1
@@ -720,30 +720,30 @@ services:
     ports:
       - "${PORT_KIBANA_HTTP:-15601}:5601"
     environment:
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_HOST=0.0.0.0
       - SERVER_NAME=kibana-service
 
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       - NODE_OPTIONS=--max-old-space-size=512
 
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       - XPACK_APM_ENABLED=false
       - XPACK_INFRA_ENABLED=false
       - XPACK_MONITORING_UI_ENABLED=false
       - XPACK_OBSERVABILITY_ENABLED=false
       - TELEMETRY_ENABLED=false
 
-      # 兼容性注释已标准化。
+      # Compatibility note standardized.
       - LOGGING_JSON_ENABLED=false
     volumes:
       - type: bind
         source: ./docker-compose/kibana/config
         target: /usr/share/kibana/config
-        # 兼容性注释已标准化。
+        # Compatibility note standardized.
       - kibana-data:/usr/share/kibana/data
-    healthcheck: # 兼容性注释已标准化。
+    healthcheck: # Compatibility note standardized.
       test: [ "CMD", "curl", "-f", "http://127.0.0.1:5601/api/status" ]
       interval: 30s
       timeout: 10s
@@ -777,7 +777,7 @@ services:
       ES_HOST: elasticsearch
       ES_PORT: 9200
       LS_JAVA_OPTS: "-Xms128m -Xmx256m"
-      # 管道批量处理
+      # Pipeline batch handling
       PIPELINE_BATCH_SIZE: "500"
       PIPELINE_BATCH_DELAY: "50"
       PIPELINE_WORKERS: "2"
@@ -861,11 +861,11 @@ services:
       SW_TELEMETRY_PROMETHEUS_HOST: 0.0.0.0
       SW_TELEMETRY_PROMETHEUS_PORT: 1234
       JAVA_OPTS: -Xms768m -Xmx768m -DSW_STORAGE_ES_RESPONSE_TIMEOUT=60000 -DSW_STORAGE_ES_SOCKET_TIMEOUT=60000
-      # 不需要100%采样，10%够分析用（1000=10%，10000=100%）
+      # Full sampling is not required; 10 percent is sufficient for analysis (1000 = 10%, 10000 = 100%)
       SW_TRACE_SAMPLE_RATE: "1000"
-      # 慢SQL阈值（毫秒）
+      # Slow SQL threshold (milliseconds)
       SW_SLOW_DB_THRESHOLD: "default:500"
-      # 关闭不需要的功能（保持默认空值，避免类型不匹配）
+      # Leave optional features disabled and keep the default empty value to avoid type mismatches
 
   skywalking-ui:
     image: apache/skywalking-ui:10.3.0
@@ -966,7 +966,7 @@ services:
     environment:
       SEATA_CONFIG_NAME: file:/seata-server/resources/registry
 
-      # 使用 MySQL 存储事务日志
+      # Store transaction logs in MySQL
       SEATA_STORE_MODE: db
       SEATA_STORE_DB_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       SEATA_STORE_DB_URL: jdbc:mysql://mysql:3306/seata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
@@ -983,12 +983,12 @@ services:
         read_only: true
     restart: unless-stopped
 
-# 兼容性注释已标准化。
+# Compatibility note standardized.
 networks:
   service_net:
     driver: bridge
     driver_opts:
-      com.docker.network.driver.mtu: "1450"   # 避免分片
+      com.docker.network.driver.mtu: "1450"   # Avoid packet fragmentation
     ipam:
       config:
         - subnet: 172.28.0.0/24

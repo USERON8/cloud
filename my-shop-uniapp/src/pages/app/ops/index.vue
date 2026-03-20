@@ -153,7 +153,7 @@ function normalizeDateInput(value: string, label: string): string | null {
   return trimmed
 }
 
-// Token & 授权
+// Token and authorization
 const tokenStats = ref<Record<string, unknown> | null>(null)
 const storageStructure = ref<Record<string, unknown> | null>(null)
 const authorizationId = ref('')
@@ -307,7 +307,7 @@ async function logoutAll(): Promise<void> {
     toast(error instanceof Error ? error.message : '操作失败')
   }
 }
-// 线程池
+// Thread pools
 const threadPools = ref<Record<string, unknown>[] | null>(null)
 const threadPoolName = ref('')
 const threadPoolDetail = ref<Record<string, unknown> | null>(null)
@@ -334,7 +334,7 @@ async function loadThreadPoolDetail(): Promise<void> {
   }
 }
 
-// 分类运维
+// Category operations
 const categoryIdInput = ref('')
 const categorySortInput = ref('')
 const categoryMoveParent = ref('')
@@ -452,7 +452,7 @@ async function moveCategoryAction(): Promise<void> {
     toast(error instanceof Error ? error.message : '移动失败')
   }
 }
-// 商品目录
+// Product catalog
 const spuId = ref('')
 const spuStatus = ref('')
 const spuCategoryId = ref('')
@@ -826,7 +826,7 @@ async function runSearchProducts(): Promise<void> {
   }
 }
 
-// 店铺搜索
+// Shop search
 const shopId = ref('')
 const shopLocation = ref('')
 const shopSuggestKeyword = ref('')
@@ -912,7 +912,7 @@ async function searchShopsByGeo(): Promise<void> {
     toast(error instanceof Error ? error.message : '搜索失败')
   }
 }
-// 批量运维
+// Bulk operations
 const userFindUsername = ref('')
 const userBatchJson = ref('')
 const userBatchResult = ref<unknown>(null)
@@ -1009,7 +1009,7 @@ async function reviewMerchantAuthBatchAction(): Promise<void> {
   }
 }
 
-// 支付运维
+// Payment operations
 const paymentOrderJson = ref('')
 const paymentRefundJson = ref('')
 const paymentCallbackJson = ref('')
@@ -1048,7 +1048,7 @@ async function handlePaymentCallbackAction(): Promise<void> {
   }
 }
 
-// 统计运维
+// Statistics operations
 const statsStartDate = ref('')
 const statsEndDate = ref('')
 const statsOverviewAsync = ref<unknown>(null)

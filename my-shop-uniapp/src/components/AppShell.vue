@@ -63,7 +63,7 @@ async function handleLogout(): Promise<void> {
     // ignore
   } finally {
     clearSession()
-    uni.showToast({ title: 'ÒÑÍË³ö', icon: 'success' })
+    uni.showToast({ title: 'å·²é€€å‡º', icon: 'success' })
     redirectTo(Routes.login)
   }
 }
@@ -79,7 +79,7 @@ async function handleLogout(): Promise<void> {
       <view class="user-meta">
         <view class="role-chip">{{ roleLabel }}</view>
         <text class="user-name">{{ displayName }}</text>
-        <button class="btn-outline" @click="handleLogout">ÍË³öµÇÂ¼</button>
+        <button class="btn-outline" @click="handleLogout">é€€å‡ºç™»å½•</button>
       </view>
     </view>
 

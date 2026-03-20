@@ -13,14 +13,14 @@ const userId = computed(() => sessionState.user?.id)
 async function loadAddresses(): Promise<void> {
   if (loading.value) return
   if (typeof userId.value !== 'number') {
-    toast('È±ÉÙÓÃ»§ĞÅÏ¢')
+    toast('ç¼ºå°‘ç”¨æˆ·ä¿¡æ¯')
     return
   }
   loading.value = true
   try {
     rows.value = await listUserAddresses(userId.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '¼ÓÔØµØÖ·Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'åŠ è½½åœ°å€å¤±è´¥')
   } finally {
     loading.value = false
   }
@@ -35,21 +35,21 @@ onMounted(() => {
   <AppShell title="Addresses">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">µØÖ·²¾</text>
-        <button class="btn-outline" @click="loadAddresses">Ë¢ĞÂ</button>
+        <text class="section-title">åœ°å€ç°¿</text>
+        <button class="btn-outline" @click="loadAddresses">åˆ·æ–°</button>
       </view>
 
       <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">ÔİÎŞµØÖ·</text>
+        <text class="text-muted">æš‚æ— åœ°å€</text>
       </view>
 
       <view v-else class="list">
         <view v-for="item in rows" :key="item.id" class="row">
-          <text class="name">{{ item.consignee }} ¡¤ {{ item.phone }}</text>
+          <text class="name">{{ item.consignee }} Â· {{ item.phone }}</text>
           <text class="meta">
             {{ item.province }}{{ item.city }}{{ item.district }}{{ item.street }}{{ item.detailAddress }}
           </text>
-          <text class="meta" v-if="item.isDefault === 1">Ä¬ÈÏµØÖ·</text>
+          <text class="meta" v-if="item.isDefault === 1">é»˜è®¤åœ°å€</text>
         </view>
       </view>
     </view>

@@ -11,9 +11,9 @@ const loading = ref(false)
 const rows = ref<ProductItem[]>([])
 
 function statusText(status?: number): string {
-  if (status === 1) return 'ÉÏ¼Ü'
-  if (status === 0) return 'ÏÂ¼Ü'
-  return 'Î´Öª'
+  if (status === 1) return 'ä¸Šæ¶'
+  if (status === 0) return 'ä¸‹æ¶'
+  return 'æœªçŸ¥'
 }
 
 async function loadProducts(): Promise<void> {
@@ -23,7 +23,7 @@ async function loadProducts(): Promise<void> {
     const result = await listProducts({ page: 1, size: 50, name: keyword.value || undefined })
     rows.value = result.records
   } catch (error) {
-    toast(error instanceof Error ? error.message : '¼ÓÔØÉÌÆ·Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'åŠ è½½å•†å“å¤±è´¥')
   } finally {
     loading.value = false
   }
@@ -32,14 +32,14 @@ async function loadProducts(): Promise<void> {
 async function toggleStatus(item: ProductItem): Promise<void> {
   if (typeof item.id !== 'number') return
   const nextStatus: 0 | 1 = item.status === 1 ? 0 : 1
-  const ok = await confirm(`È·ÈÏ½«ÉÌÆ·"${item.name}"ÉèÖÃÎª${nextStatus === 1 ? 'ÉÏ¼Ü' : 'ÏÂ¼Ü'}£¿`)
+  const ok = await confirm(`ç¡®è®¤å°†å•†å“"${item.name}"è®¾ç½®ä¸º${nextStatus === 1 ? 'ä¸Šæ¶' : 'ä¸‹æ¶'}ï¼Ÿ`)
   if (!ok) return
   try {
     await updateProductStatus(item.id, nextStatus)
-    toast('×´Ì¬ÒÑ¸üĞÂ', 'success')
+    toast('çŠ¶æ€å·²æ›´æ–°', 'success')
     await loadProducts()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '¸üĞÂÊ§°Ü')
+    toast(error instanceof Error ? error.message : 'æ›´æ–°å¤±è´¥')
   }
 }
 
@@ -52,17 +52,17 @@ onMounted(() => {
   <AppShell title="Product Admin">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">ÉÌÆ·¹ÜÀí</text>
-        <button class="btn-outline" @click="loadProducts">Ë¢ĞÂ</button>
+        <text class="section-title">å•†å“ç®¡ç†</text>
+        <button class="btn-outline" @click="loadProducts">åˆ·æ–°</button>
       </view>
 
       <view class="search-row">
-        <input v-model="keyword" class="search-input" placeholder="ËÑË÷ÉÌÆ·" @confirm="loadProducts" />
-        <button class="btn-primary" @click="loadProducts">ËÑË÷</button>
+        <input v-model="keyword" class="search-input" placeholder="æœç´¢å•†å“" @confirm="loadProducts" />
+        <button class="btn-primary" @click="loadProducts">æœç´¢</button>
       </view>
 
       <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">ÔİÎŞÉÌÆ·</text>
+        <text class="text-muted">æš‚æ— å•†å“</text>
       </view>
 
       <view v-else class="list">
@@ -70,10 +70,10 @@ onMounted(() => {
           <view class="info">
             <text class="name">{{ item.name }}</text>
             <text class="meta">{{ formatPrice(item.price) }}</text>
-            <text class="meta">×´Ì¬£º{{ statusText(item.status) }}</text>
+            <text class="meta">çŠ¶æ€ï¼š{{ statusText(item.status) }}</text>
           </view>
           <button class="btn-outline" @click="toggleStatus(item)">
-            {{ item.status === 1 ? 'ÏÂ¼Ü' : 'ÉÏ¼Ü' }}
+            {{ item.status === 1 ? 'ä¸‹æ¶' : 'ä¸Šæ¶' }}
           </button>
         </view>
       </view>

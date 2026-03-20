@@ -1,7 +1,5 @@
 package com.cloud.gateway.websocket;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -28,15 +26,13 @@ public class WebSocketRedisConfig {
     ReactiveRedisMessageListenerContainer container =
         new ReactiveRedisMessageListenerContainer(connectionFactory);
 
-    // ✅ 用 ChannelMessage<String, String> 明确泛型类型
-    // 配合 StringRedisSerializer 自动反序列化
+    // Use string serialization so both channel and payload arrive as decoded strings.
     ReactiveRedisOperations<String, String> ops =
         new ReactiveRedisTemplate<>(connectionFactory, RedisSerializationContext.string());
 
     ops.listenToPattern(USER_CHANNEL_PREFIX + "*")
         .subscribe(
             message -> {
-              // ✅ 直接拿 String，不需要 decode
               String channel = message.getChannel();
               String payload = message.getMessage();
 
@@ -59,11 +55,5 @@ public class WebSocketRedisConfig {
     }
     String userId = channel.substring(USER_CHANNEL_PREFIX.length());
     return userId.isBlank() ? null : userId;
-  }
-
-  // ✅ decode 方法保留备用，但不再需要
-  private String decode(ByteBuffer buffer) {
-    if (buffer == null) return null;
-    return StandardCharsets.UTF_8.decode(buffer.asReadOnlyBuffer()).toString();
   }
 }

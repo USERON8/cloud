@@ -46,7 +46,7 @@ cache:
     l2:
       type: redis
       redis:
-        # 仅开发环境兜底缓存，避免与业务缓存 TTL 冲突
+        # Development-only fallback cache to avoid TTL conflicts with business caches.
         time-to-live: 10m
 logging:
   level:
@@ -70,4 +70,3 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
-

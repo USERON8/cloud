@@ -34,7 +34,7 @@ async function handleAuthorizationStart(provider: 'password' | 'github'): Promis
     }
     await startAuthorization(redirectPath.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'ÎŞ·¨·¢ÆğµÇÂ¼')
+    toast(error instanceof Error ? error.message : 'æ— æ³•å‘èµ·ç™»å½•')
     startingProvider.value = ''
   }
 }
@@ -49,15 +49,15 @@ function backToMarket(): void {
     <view class="signin-card glass-card">
       <view class="header">
         <text class="eyebrow">My Shop</text>
-        <text class="title">µÇÂ¼</text>
-        <text class="muted">Í³Ò» OAuth 2.1 ÊÚÈ¨Èë¿Ú</text>
+        <text class="title">ç™»å½•</text>
+        <text class="muted">ç»Ÿä¸€ OAuth 2.1 æˆæƒå…¥å£</text>
       </view>
 
       <view class="signin-content">
         <view class="signin-hint">
-          <text class="hint-title">Í³Ò»Èë¿Ú</text>
+          <text class="hint-title">ç»Ÿä¸€å…¥å£</text>
           <text class="hint-copy">
-            {{ entryLabel === 'merchant' ? 'ÉÌ¼Ò' : 'ÓÃ»§' }} µÇÂ¼ºó½ÇÉ«ÓÉÊÚÈ¨·şÎñÆ÷·µ»Ø¡£
+            {{ entryLabel === 'merchant' ? 'å•†å®¶' : 'ç”¨æˆ·' }} ç™»å½•åè§’è‰²ç”±æˆæƒæœåŠ¡å™¨è¿”å›ã€‚
           </text>
         </view>
 
@@ -66,11 +66,11 @@ function backToMarket(): void {
           :loading="startingProvider === 'password'"
           @click="handleAuthorizationStart('password')"
         >
-          Í¨¹ıÊÚÈ¨·şÎñÆ÷¼ÌĞø
+          é€šè¿‡æˆæƒæœåŠ¡å™¨ç»§ç»­
         </button>
 
         <view class="divider">
-          <text>»òÕß</text>
+          <text>æˆ–è€…</text>
         </view>
 
         <button
@@ -78,10 +78,10 @@ function backToMarket(): void {
           :loading="startingProvider === 'github'"
           @click="handleAuthorizationStart('github')"
         >
-          GitHub µÇÂ¼
+          GitHub ç™»å½•
         </button>
 
-        <button class="btn-outline full-width" @click="backToMarket">·µ»ØÉÌ³Ç</button>
+        <button class="btn-outline full-width" @click="backToMarket">è¿”å›å•†åŸ</button>
       </view>
     </view>
   </view>

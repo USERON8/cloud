@@ -1,9 +1,9 @@
 ﻿name: E2E Test
 
 on:
-  workflow_dispatch:        # 手动触发
+  workflow_dispatch:        # Manual trigger
   schedule:
-    - cron: '0 16 * * *'   # 每天凌晨0点（Asia/Shanghai = UTC+8）
+    - cron: '0 16 * * *'   # 00:00 every day in Asia/Shanghai (UTC+8)
 
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
           cd docker
           docker compose up -d mysql redis nacos
 
-          # 等待基础服务健康
+          # Wait for core infrastructure to become healthy.
           for svc in mysql redis nacos; do
             container="cloud-${svc}"
             echo "waiting for ${container} to be healthy..."
@@ -48,7 +48,7 @@ jobs:
           docker compose up -d gateway order-service \
             user-service payment-service
 
-          # 等待业务服务就绪
+          # Wait for business services to finish booting.
           sleep 60
 
       - name: Health check
@@ -93,9 +93,9 @@ jobs:
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const sha = context.sha.substring(0, 7);
             const label = 'e2e-failure';
-            const title = `E2E 失败 ${new Date().toISOString().slice(0, 10)} (${sha})`;
+            const title = `E2E failure ${new Date().toISOString().slice(0, 10)} (${sha})`;
             const body = [
-              'E2E 任务失败，请查看日志与运行详情。',
+              'The E2E workflow failed. Check the logs and run details.',
               '',
               `Run: ${runUrl}`,
               `Commit: ${context.sha}`,

@@ -15,7 +15,7 @@ onLoad((query) => {
   <view class="page">
     <web-view v-if="url" :src="url" />
     <view v-else class="empty">
-      <text>暂无可打开的地址</text>
+      <text>鏆傛棤鍙墦寮�鐨勫湴鍧�</text>
     </view>
   </view>
 </template>

@@ -131,14 +131,14 @@ public class RateLimitManager {
                 local limit = tonumber(ARGV[3])
                 local window_size = tonumber(ARGV[4])
 
-                -- 兼容性注释已标准化。
+                -- Compatibility note standardized.
                 redis.call('ZREMRANGEBYSCORE', key, 0, window_start)
 
-                -- 兼容性注释已标准化。
+                -- Compatibility note standardized.
                 local current_count = redis.call('ZCARD', key)
 
                 if current_count < limit then
-                    -- 兼容性注释已标准化。
+                    -- Compatibility note standardized.
                     redis.call('ZADD', key, now, now .. ':' .. math.random())
                     redis.call('EXPIRE', key, window_size)
                     return {1, limit - current_count - 1, window_size}
@@ -193,7 +193,7 @@ public class RateLimitManager {
                 local tokens = tonumber(bucket[1]) or capacity
                 local last_refill = tonumber(bucket[2]) or now
 
-                -- 兼容性注释已标准化。
+                -- Compatibility note standardized.
                 local time_passed = now - last_refill
                 local tokens_to_add = time_passed * refill_rate
                 tokens = math.min(capacity, tokens + tokens_to_add)
@@ -246,7 +246,7 @@ public class RateLimitManager {
                 local volume = tonumber(bucket[1]) or 0
                 local last_leak = tonumber(bucket[2]) or now
 
-                -- 兼容性注释已标准化。
+                -- Compatibility note standardized.
                 local time_passed = now - last_leak
                 local leaked = time_passed * leak_rate
                 volume = math.max(0, volume - leaked)
@@ -429,7 +429,7 @@ public class RateLimitManager {
     }
 
     public static RateLimitResult allow(long remaining, long resetTime) {
-      return new RateLimitResult(true, remaining, resetTime, "閸忎浇顔忕拋鍧楁６");
+      return new RateLimitResult(true, remaining, resetTime, "Allowed");
     }
 
     public static RateLimitResult reject(long resetTime, String reason) {

@@ -10,12 +10,12 @@ const rows = ref<OrderItem[]>([])
 const loading = ref(false)
 
 function statusText(status?: number): string {
-  if (status === 0) return '´ıÖ§¸¶'
-  if (status === 1) return 'ÒÑÖ§¸¶'
-  if (status === 2) return 'ÒÑ·¢»õ'
-  if (status === 3) return 'ÒÑÍê³É'
-  if (status === 4) return 'ÒÑÈ¡Ïû'
-  return status != null ? String(status) : 'Î´Öª'
+  if (status === 0) return 'å¾…æ”¯ä»˜'
+  if (status === 1) return 'å·²æ”¯ä»˜'
+  if (status === 2) return 'å·²å‘è´§'
+  if (status === 3) return 'å·²å®Œæˆ'
+  if (status === 4) return 'å·²å–æ¶ˆ'
+  return status != null ? String(status) : 'æœªçŸ¥'
 }
 
 async function loadOrders(): Promise<void> {
@@ -25,7 +25,7 @@ async function loadOrders(): Promise<void> {
     const result = await listOrders({ page: 1, size: 30 })
     rows.value = result.records
   } catch (error) {
-    toast(error instanceof Error ? error.message : '¼ÓÔØ¶©µ¥Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'åŠ è½½è®¢å•å¤±è´¥')
   } finally {
     loading.value = false
   }
@@ -33,27 +33,27 @@ async function loadOrders(): Promise<void> {
 
 async function onPay(order: OrderItem): Promise<void> {
   if (typeof order.id !== 'number') return
-  const ok = await confirm(`È·ÈÏÖ§¸¶¶©µ¥ ${order.orderNo}£¿`)
+  const ok = await confirm(`ç¡®è®¤æ”¯ä»˜è®¢å• ${order.orderNo}ï¼Ÿ`)
   if (!ok) return
   try {
     await payOrder(order.id)
-    toast('ÒÑÌá½»Ö§¸¶', 'success')
+    toast('å·²æäº¤æ”¯ä»˜', 'success')
     await loadOrders()
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'Ö§¸¶Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'æ”¯ä»˜å¤±è´¥')
   }
 }
 
 async function onCancel(order: OrderItem): Promise<void> {
   if (typeof order.id !== 'number') return
-  const ok = await confirm(`È·ÈÏÈ¡Ïû¶©µ¥ ${order.orderNo}£¿`)
+  const ok = await confirm(`ç¡®è®¤å–æ¶ˆè®¢å• ${order.orderNo}ï¼Ÿ`)
   if (!ok) return
   try {
     await cancelOrder(order.id)
-    toast('ÒÑÈ¡Ïû', 'success')
+    toast('å·²å–æ¶ˆ', 'success')
     await loadOrders()
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'È¡ÏûÊ§°Ü')
+    toast(error instanceof Error ? error.message : 'å–æ¶ˆå¤±è´¥')
   }
 }
 
@@ -66,25 +66,25 @@ onMounted(() => {
   <AppShell title="Orders">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">ÎÒµÄ¶©µ¥</text>
-        <button class="btn-outline" @click="loadOrders">Ë¢ĞÂ</button>
+        <text class="section-title">æˆ‘çš„è®¢å•</text>
+        <button class="btn-outline" @click="loadOrders">åˆ·æ–°</button>
       </view>
 
       <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">ÔİÎŞ¶©µ¥</text>
+        <text class="text-muted">æš‚æ— è®¢å•</text>
       </view>
 
       <view v-else class="list">
         <view v-for="item in rows" :key="item.id" class="row">
           <view class="info">
-            <text class="name">¶©µ¥ºÅ£º{{ item.orderNo }}</text>
-            <text class="meta">½ğ¶î£º{{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
-            <text class="meta">×´Ì¬£º{{ statusText(item.status) }}</text>
-            <text class="meta">ÏÂµ¥Ê±¼ä£º{{ formatDate(item.createdAt) }}</text>
+            <text class="name">è®¢å•å·ï¼š{{ item.orderNo }}</text>
+            <text class="meta">é‡‘é¢ï¼š{{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
+            <text class="meta">çŠ¶æ€ï¼š{{ statusText(item.status) }}</text>
+            <text class="meta">ä¸‹å•æ—¶é—´ï¼š{{ formatDate(item.createdAt) }}</text>
           </view>
           <view class="actions">
-            <button class="btn-outline" @click="onPay(item)">Ö§¸¶</button>
-            <button class="btn-outline" @click="onCancel(item)">È¡Ïû</button>
+            <button class="btn-outline" @click="onPay(item)">æ”¯ä»˜</button>
+            <button class="btn-outline" @click="onCancel(item)">å–æ¶ˆ</button>
           </view>
         </view>
       </view>

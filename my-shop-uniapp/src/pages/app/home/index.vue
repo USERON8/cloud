@@ -5,30 +5,30 @@ import { sessionState } from '../../../auth/session'
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
 
-const displayName = computed(() => sessionState.user?.nickname || sessionState.user?.username || '╣╠г╟сц╩╖')
+const displayName = computed(() => sessionState.user?.nickname || sessionState.user?.username || 'Е╫⌠Е┴█Г■╗Ф┬╥')
 const roleLabel = computed(() => (sessionState.user?.roles || []).join(', ') || 'USER')
 </script>
 
 <template>
   <AppShell title="Dashboard">
     <view class="card glass-card">
-      <text class="section-title">╩╤с╜╩ью╢</text>
+      <text class="section-title">Ф╛╒Х©▌Е⌡·Ф²╔</text>
       <text class="muted">{{ displayName }}</text>
-      <text class="muted">╫ги╚ё╨{{ roleLabel }}</text>
+      <text class="muted">Х╖▓Х┴╡О╪ {{ roleLabel }}</text>
     </view>
 
     <view class="quick-grid">
       <button class="btn-primary" @click="navigateTo(Routes.appCatalog, undefined, { requiresAuth: true })">
-        илф╥ап╠М
+        Е∙├Е⌠│Е┬≈Х║╗
       </button>
       <button class="btn-outline" @click="navigateTo(Routes.appOrders, undefined, { requiresAuth: true })">
-        нр╣д╤╘╣╔
+        Ф┬▒Г └Х╝╒Е█∙
       </button>
       <button class="btn-outline" @click="navigateTo(Routes.appCart, undefined, { requiresAuth: true })">
-        ╧╨нОЁ╣
+        Х╢╜Г┴╘Х╫╕
       </button>
       <button class="btn-outline" @click="navigateTo(Routes.appProfile, undefined, { requiresAuth: true })">
-        ╦Жхкпео╒
+        Д╦╙Д╨╨Д©║Ф│╞
       </button>
     </view>
   </AppShell>

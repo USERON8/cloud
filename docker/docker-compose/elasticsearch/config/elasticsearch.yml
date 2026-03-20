@@ -1,45 +1,45 @@
-# elasticsearch.yml (search 实例 — 面向业务搜索)
+# elasticsearch.yml (search instance for business search traffic)
 
-# 集群与节点标识
+# Cluster and node identity
 cluster.name: my-application
 node.name: ${HOSTNAME}
 node.roles: [ master, data, ingest ]
 
-# 数据与日志路径
+# Data and log paths
 path.data: /usr/share/elasticsearch/data
 path.logs: /usr/share/elasticsearch/logs
 
-# 启动与内存锁
+# Startup and memory locking
 bootstrap.memory_lock: true
 
-# 网络与端口
+# Network and ports
 network.host: 0.0.0.0
 http.port: 9200
 transport.port: 9300
 
-# 单机模式（本地开发）
+# Single-node mode for local development
 discovery.type: single-node
 
-# 关闭安全（本地）
+# Disable security in local development
 xpack.security.enabled: false
 
-# CORS（本地调试）
+# CORS for local debugging
 http.cors.enabled: true
 http.cors.allow-origin: "*"
 http.cors.allow-credentials: true
 
-# 查询与索引调优（业务搜索）
-indices.query.bool.max_clause_count: 4096          # 复杂查询的最大子句数
-search.max_buckets: 200000                         # 聚合桶上限
-indices.memory.index_buffer_size: 20%              # 索引缓冲区比例（搜索场景）
-indices.queries.cache.size: 10%                    # 查询缓存比例
-indices.fielddata.cache.size: 20%                  # 字段数据缓存比例
-thread_pool.search.size: 4                         # 搜索线程池大小
-thread_pool.search.queue_size: 2000                # 搜索队列
-thread_pool.write.size: 2                          # 写线程池大小
-thread_pool.write.queue_size: 1000                 # 写队列
+# Query and index tuning for the search workload
+indices.query.bool.max_clause_count: 4096
+search.max_buckets: 200000
+indices.memory.index_buffer_size: 20%
+indices.queries.cache.size: 10%
+indices.fielddata.cache.size: 20%
+thread_pool.search.size: 4
+thread_pool.search.queue_size: 2000
+thread_pool.write.size: 2
+thread_pool.write.queue_size: 1000
 
-# 磁盘水位（单机容忍度）
-cluster.routing.allocation.disk.watermark.low: 92%       # 低水位
-cluster.routing.allocation.disk.watermark.high: 95%      # 高水位
-cluster.routing.allocation.disk.watermark.flood_stage: 97%  # 紧急水位
+# Disk watermarks with looser tolerance for single-node development
+cluster.routing.allocation.disk.watermark.low: 92%
+cluster.routing.allocation.disk.watermark.high: 95%
+cluster.routing.allocation.disk.watermark.flood_stage: 97%
