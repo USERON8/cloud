@@ -1,20 +1,20 @@
-﻿# Product Service
+# Product Service
 Version: 1.1.0
 
-商品域服务，提供商品、分类与批量操作接口。
+Product domain service providing product, category, and batch operation endpoints.
 
-- 服务名：`product-service`
-- 端口：`8084`
-- 数据库脚本：`db/init/product-service/init.sql`
-- 测试数据：`db/test/product-service/test.sql`
+- Service name: `product-service`
+- Port: `8084`
+- Database bootstrap: `db/init/product-service/init.sql`
+- Test data: `db/test/product-service/test.sql`
 
-## 核心接口
+## Core Endpoints
 
-- 商品：`/api/product/**`
-- 分类：`/api/category/**`
-- 内部调用：`/internal/product/**`
+- Products: `/api/product/**`
+- Categories: `/api/category/**`
+- Internal access: `/internal/product/**`
 
-## 本地启动
+## Local Run
 
 ```bash
 mvn -pl product-service spring-boot:run

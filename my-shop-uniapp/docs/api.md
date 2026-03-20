@@ -1,16 +1,16 @@
-﻿# UniApp 前端 API 清单
+# UniApp Frontend API List
 
-生成时间：2026-03-15 18:47
-来源：my-shop-uniapp/src/api/*.ts
+Generated on: 2026-03-15 18:47
+Source: my-shop-uniapp/src/api/*.ts
 
-说明：
-- 方法与路径来自前端调用代码。
-- 参数列为函数签名（字段名以代码为准）。
-- 请求列标识 query/body/headers 的存在（若未检测到则显示 -）。
+Notes:
+- Methods and paths are extracted from frontend call sites.
+- The parameter column follows the function signature; field names come from code.
+- The request column indicates whether query/body/headers are used; `-` means no usage was detected.
 
 ## address
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/user/address/list/{param} | listUserAddresses | userId: number | - |
 | GET | /api/user/address/default/{param} | getDefaultAddress | userId: number | - |
@@ -23,7 +23,7 @@
 
 ## admin
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/admin | getAdmins | params: { page?: number; size?: number } = {} | query |
 | GET | /api/admin/{param} | getAdminById | id: number | - |
@@ -35,7 +35,7 @@
 
 ## auth-tokens
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /auth/tokens/stats | getTokenStats | - | - |
 | GET | /auth/tokens/authorization/{param} | getAuthorizationDetails | id: string | - |
@@ -49,7 +49,7 @@
 
 ## auth
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /auth/oauth2/github/login-url | startGitHubAuthorization | redirectPath = '/app/home' | query |
 | GET | /oauth2/authorize | startAuthorization | redirectPath = '/app/home' | query |
@@ -63,7 +63,7 @@
 
 ## category
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/category | getCategories | params: CategoryQuery = {} | query |
 | GET | /api/category/{param} | getCategoryById | id: number | - |
@@ -81,7 +81,7 @@
 
 ## merchant-auth
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/merchant/auth/apply/{param} | applyMerchantAuth | merchantId: number, payload: MerchantAuthPayload | body |
 | GET | /api/merchant/auth/get/{param} | getMerchantAuth | merchantId: number | - |
@@ -92,7 +92,7 @@
 
 ## merchant
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/merchant | getMerchants | params: { page?: number; size?: number; status?: number } = {} | query |
 | GET | /api/merchant/{param} | getMerchantById | id: number | - |
@@ -109,7 +109,7 @@
 
 ## notification
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/user/notification/welcome/{param} | sendWelcomeNotification | userId: number | - |
 | POST | /api/user/notification/status-change/{param} | sendStatusChangeNotification | userId: number,
@@ -119,9 +119,9 @@
 
 ## order
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
-| POST | /api/orders | createOrder | payload: CreateOrderPayload（必须包含 skuId）, idempotencyKey: string | headers, body |
+| POST | /api/orders | createOrder | payload: CreateOrderPayload (must include `skuId`), idempotencyKey: string | headers, body |
 | GET | /api/orders | listOrders | params: OrderQuery = {} | query |
 | GET | /api/orders/{param} | getOrderById | id: number | - |
 | POST | /api/orders/{param}/pay | payOrder | id: number | - |
@@ -135,7 +135,7 @@
 
 ## payment
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/payments/orders/{param} | getPaymentOrderByNo | paymentNo: string | - |
 | GET | /api/payments/refunds/{param} | getRefundByNo | refundNo: string | - |
@@ -145,7 +145,7 @@
 
 ## product-catalog
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/product/spu | createSpu | payload: SpuCreateRequest | body |
 | PUT | /api/product/spu/{param} | updateSpu | spuId: number, payload: SpuCreateRequest | body |
@@ -156,7 +156,7 @@
 
 ## product
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/product | listProducts | params: ProductQuery = {} | query |
 | GET | /api/product/search | searchProducts | name: string | query |
@@ -172,12 +172,12 @@
 | GET | /api/search/hot-keywords | listSearchHotKeywords | size = 10 | query |
 | GET | /api/search/keyword-recommendations | listSearchKeywordRecommendations | keyword = '', size = 10 | query |
 | GET | /api/search/hot/today | listTodayHotSellingProducts | page = 0, size = 20 | query |
-| GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams（含 searchAfter?: string） | query |
+| GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams (includes `searchAfter?: string`) | query |
 | PATCH | /api/product/{param}/status | updateProductStatus | id: number, status: 0 \| 1 | query |
 
 ## search-ops
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/search/complex-search | complexSearch | request: ProductSearchRequest, searchAfter?: string | body, query |
 | POST | /api/search/filters | getProductFilters | request: ProductSearchRequest, searchAfter?: string | body, query |
@@ -223,7 +223,7 @@
 
 ## shop-search
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/search/shops/complex-search | searchShops | request: ShopSearchRequest | body |
 | POST | /api/search/shops/filters | getShopFilters | request: ShopSearchRequest | body |
@@ -235,7 +235,7 @@
 
 ## statistics
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/statistics/overview | getStatisticsOverview | - | - |
 | GET | /api/statistics/overview/async | getStatisticsOverviewAsync | - | - |
@@ -250,7 +250,7 @@
 
 ## stock
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/stocks/ledger/{param} | getStockLedger | skuId: number | - |
 | POST | /api/stocks/reserve | reserveStock | payload: StockOperatePayload | body |
@@ -260,14 +260,14 @@
 
 ## thread-pool
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/thread-pool/info | getThreadPools | - | - |
 | GET | /api/thread-pool/info/detail | getThreadPoolDetail | name: string | query |
 
 ## user-management
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/query/users | findUserByUsername | username: string | query |
 | GET | /api/query/users/search | searchUsers | params: UserSearchParams | query |
@@ -279,7 +279,7 @@
 
 ## user
 
-| 方法 | 路径 | 函数 | 参数 | 请求 |
+| Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/user/profile/current | getCurrentProfile | - | - |
 | PUT | /api/user/profile/current | updateCurrentProfile | payload: Partial<UserInfo> | body |

@@ -1,26 +1,26 @@
-﻿# Stock Service
+# Stock Service
 Version: 1.1.0
 
-库存服务，支持库存增减、预留/释放、盘点与变更日志查询。
+Inventory service supporting stock increments and decrements, reservation and release, stocktaking, and ledger queries.
 
-- 服务名：`stock-service`
-- 端口：`8085`
-- 数据库脚本：`db/init/stock-service/init.sql`
-- 测试数据：`db/test/stock-service/test.sql`
+- Service name: `stock-service`
+- Port: `8085`
+- Database bootstrap: `db/init/stock-service/init.sql`
+- Test data: `db/test/stock-service/test.sql`
 
-## 核心接口
+## Core Endpoints
 
-- 统一入口：`/api/stocks/**`
-- 内部调用：`/internal/stock/**`
+- Unified entry: `/api/stocks/**`
+- Internal access: `/internal/stock/**`
 
-## 消息与一致性
+## Messaging And Consistency
 
-- 生产消息：库存不足时发送 `STOCK_FREEZE_FAILED`
-- 可靠投递：写入 `outbox_event`，由 `StockOutboxRelay` 定时发布到 RocketMQ
-- 消费消息：`STOCK_RESTORE`（退款完成后回滚库存）
-- 事务模式：参与 Seata TCC（下单预占 Try/Confirm/Cancel），其余本地事务 + Outbox
+- Produced event: `STOCK_FREEZE_FAILED` when reservation fails because inventory is insufficient
+- Reliable delivery: events are persisted to `outbox_event` and published by `StockOutboxRelay`
+- Consumed event: `STOCK_RESTORE` (inventory rollback after refund completion)
+- Transaction model: participates in Seata TCC for order reservation Try/Confirm/Cancel; other writes use local transactions + Outbox
 
-## 本地启动
+## Local Run
 
 ```bash
 mvn -pl stock-service spring-boot:run

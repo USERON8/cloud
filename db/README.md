@@ -1,9 +1,9 @@
-﻿# 数据库脚本说明
+# Database Script Guide
 Version: 1.1.0
 
-本项目数据库脚本统一放在 `db/`，主流程仅保留 `init.sql` 与 `test.sql`。
+Project database scripts live under `db/`. The main development path keeps only `init.sql` and `test.sql`.
 
-## 目录结构
+## Directory Layout
 
 - `db/init/infra/nacos/init.sql`
 - `db/init/infra/seata/init.sql`
@@ -15,28 +15,28 @@ Version: 1.1.0
 - `db/init/order-service/init.sql`
 - `db/init/stock-service/init.sql`
 - `db/init/payment-service/init.sql`
-- `db/test/*/test.sql`（含 auth-service 在内的业务服务）
+- `db/test/*/test.sql` (including `auth-service` and the business services)
 
-## 执行顺序
+## Execution Order
 
 1. `db/init/infra/nacos/init.sql`
-2. 可选执行 `db/init/infra/seata/init.sql` / `db/init/infra/skywalking/init.sql` / `db/init/infra/xxl-job/init.sql`
-3. 各业务服务 `db/init/*/init.sql`
-4. 可选执行 `db/test/*/test.sql`
+2. Optionally run `db/init/infra/seata/init.sql`, `db/init/infra/skywalking/init.sql`, and `db/init/infra/xxl-job/init.sql`
+3. Run each business service bootstrap script under `db/init/*/init.sql`
+4. Optionally run `db/test/*/test.sql`
 
-## 公共表说明
+## Shared Tables
 
-以下表在 `order-service` / `payment-service` / `stock-service` 的 `init.sql` 中统一包含，用于消息可靠性与事务补偿：
+The following tables are included consistently in the `init.sql` files for `order-service`, `payment-service`, and `stock-service` to support reliable messaging and transaction compensation:
 
-- `outbox_event`：本地事务内写入的消息盒，定时 Relay 发布到 RocketMQ
-- `inbox_consume_log`：消费端幂等记录
-- `undo_log`：Seata 回滚日志（当前 Seata 未启用全局事务，但表已预置）
+- `outbox_event`: local transaction outbox persisted before scheduled relay publishing to RocketMQ
+- `inbox_consume_log`: consumer-side idempotency records
+- `undo_log`: Seata rollback log (currently pre-created even though global Seata transactions are not fully enabled everywhere)
 
-## 示例（MySQL 在 127.0.0.1:3306）
+## Example (MySQL on `127.0.0.1:3306`)
 
 ```bash
 mysql -h127.0.0.1 -P3306 -uroot -proot < db/init/user-service/init.sql
 mysql -h127.0.0.1 -P3306 -uroot -proot < db/test/user-service/test.sql
 ```
 
-如使用容器内 MySQL，可改为 `docker exec -i mysql_db mysql -uroot -proot` 执行同一脚本内容。
+If you use the MySQL container directly, run the same script through `docker exec -i mysql_db mysql -uroot -proot`.

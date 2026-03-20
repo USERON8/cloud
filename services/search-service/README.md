@@ -1,25 +1,25 @@
-﻿# Search Service
+# Search Service
 Version: 1.1.0
 
-搜索服务，负责商品与店铺检索、推荐与建议词能力。
+Search service responsible for product and shop discovery, recommendations, and suggestion features.
 
-- 服务名：`search-service`
-- 端口：`8087`
-- 主要依赖：Elasticsearch、Redis、Nacos
+- Service name: `search-service`
+- Port: `8087`
+- Primary dependencies: Elasticsearch, Redis, and Nacos
 
-## 核心接口
+## Core Endpoints
 
-- 商品搜索：`/api/search/**`
-- 店铺搜索：`/api/search/shops/**`
+- Product search: `/api/search/**`
+- Shop search: `/api/search/shops/**`
 
-## 说明
+## Notes
 
-- 当前服务不维护独立 MySQL 初始化脚本
-- 商品数据由上游同步到 Elasticsearch，当前已接入 MQ 增量同步和 XXL 全量重建
-- 内置 L1/L2 缓存与热词刷新策略（配置见 `application.yml`）
-- 热词 DB 同步默认使用 `scheduled` 模式；切换到 XXL 需要设置 `SEARCH_HOT_DB_SYNC_TRIGGER_MODE=xxl`
+- This service does not maintain an independent MySQL bootstrap script
+- Product data is synchronized from upstream services into Elasticsearch, with MQ-based incremental sync and XXL full rebuild already connected
+- Built-in L1/L2 caches and hot keyword refresh policies are configured in `application.yml`
+- Hot keyword DB synchronization uses `scheduled` mode by default; switch to XXL with `SEARCH_HOT_DB_SYNC_TRIGGER_MODE=xxl`
 
-## 本地启动
+## Local Run
 
 ```bash
 mvn -pl search-service spring-boot:run

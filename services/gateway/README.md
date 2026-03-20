@@ -1,33 +1,33 @@
-﻿# Gateway
+# Gateway
 Version: 1.1.0
 
-统一入口网关，负责路由、JWT 资源服务校验和统一跨域处理。
+Unified entry gateway responsible for routing, JWT resource server validation, and shared CORS handling.
 
-- 服务名：`gateway`
-- 端口：`8080`
-- 依赖：Nacos、Redis、auth-service
+- Service name: `gateway`
+- Port: `8080`
+- Dependencies: Nacos, Redis, `auth-service`
 
-## 当前路由前缀
+## Current Route Prefixes
 
-- `/auth/**`、`/oauth2/**`、`/.well-known/**` -> `auth-service`
-- `/api/manage/users/**`、`/api/query/users/**`、`/api/user/**`、`/api/merchant/**`、`/api/admin/**`、`/api/statistics/**` -> `user-service`
-- `/api/product/**`、`/api/category/**` -> `product-service`
+- `/auth/**`, `/oauth2/**`, `/.well-known/**` -> `auth-service`
+- `/api/manage/users/**`, `/api/query/users/**`, `/api/user/**`, `/api/merchant/**`, `/api/admin/**`, `/api/statistics/**` -> `user-service`
+- `/api/product/**`, `/api/category/**` -> `product-service`
 - `/api/orders/**` -> `order-service`
-- `/api/payments/**`、`/api/v1/payment/alipay/**` -> `payment-service`
+- `/api/payments/**`, `/api/v1/payment/alipay/**` -> `payment-service`
 - `/api/stocks/**` -> `stock-service`
 - `/api/search/**` -> `search-service`
 
-## CORS 说明
+## CORS Notes
 
-网关已开启 `DedupeResponseHeader`，避免重复 `Access-Control-Allow-Origin` 导致浏览器拦截。
+The gateway enables `DedupeResponseHeader` to prevent duplicate `Access-Control-Allow-Origin` headers from being rejected by browsers.
 
-## 限流与缓存
+## Rate Limiting And Cache
 
-- Sentinel 已启用，默认保护订单路由（默认阈值 `80 QPS / 1s`，可通过环境变量覆盖）
-- 搜索回退缓存：`SearchFallbackCache` 按路由/参数分级 TTL 缓存搜索回退响应
-  - 配置前缀：`app.search.fallback.cache`
+- Sentinel is enabled and protects order routes by default (`80 QPS / 1s`, overrideable through environment variables)
+- Search fallback cache: `SearchFallbackCache` stores fallback responses with route- and parameter-aware TTLs
+  - Configuration prefix: `app.search.fallback.cache`
 
-## 本地启动
+## Local Run
 
 ```bash
 mvn -pl gateway spring-boot:run

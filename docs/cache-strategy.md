@@ -1,136 +1,144 @@
-# 项目缓存策略与实现思路
+# Cache Strategy And Implementation Notes
 
-本文档说明当前项目的缓存总体策略、各服务缓存内容与 TTL、关键实现与注意事项。目标是提升性能与稳定性，同时保证数据正确性与安全性。
+This document describes the current cache strategy across the project, including service-level cache contents, TTL choices, key implementation points, and operational notes. The goal is to improve performance and stability without sacrificing data correctness or security.
 
-## 总体原则
+## Global Principles
 
-- 业务优先：金额、终态、对账相关数据不缓存。
-- 分层策略：可用时采用 L1（本地）+ L2（Redis），降低跨网络访问成本。
-- 以一致性为先：写操作优先更新数据库，再失效/回源刷新缓存。
-- 控制热点：热点/高频查询采用更短 TTL 或刷新机制；支持轻微抖动避免雪崩。
-- 安全场景分离：支付服务使用 Redis 的目的以安全与幂等为主，而非性能。
+- Business correctness first: do not cache money, terminal states, or reconciliation-critical data.
+- Layered strategy: when practical, use L1 (local) + L2 (Redis) to reduce cross-network reads.
+- Consistency first: write to the database first, then invalidate or refresh caches.
+- Hotspot control: use shorter TTLs or refresh mechanisms for hot queries, and add light jitter to avoid cache avalanches.
+- Security isolation: the payment service uses Redis mainly for security and idempotency instead of raw performance.
 
-## 全局缓存配置（默认 TTL）
+## Shared Cache Defaults
 
-默认 TTL 位于公共 Redis 配置，按服务维度设置：
+Default TTLs are defined in the shared Redis configuration and grouped by service:
 
-- user-service: 10 分钟
-- order-service: 1 小时
-- search-service: 默认 10 分钟（实际按功能细分 2–10 分钟）
+- `user-service`: 10 minutes
+- `order-service`: 1 hour
+- `search-service`: 10 minutes by default, with feature-specific TTLs ranging from 2 to 10 minutes
 
-配置位置：
+Configuration location:
+
 - `common-parent/common-db/src/main/java/com/cloud/common/config/RedisConfig.java`
 
-## 服务级缓存策略
+## Service-Level Strategies
 
-### product-service（商品服务）
+### `product-service`
 
-目标：详情查询高频，使用 L1+L2 缓存，减少 DB 压力。
+Goal: product detail reads are frequent, so L1 + L2 caching reduces database pressure.
 
-- 缓存类型：L1 Caffeine + L2 Redis
-- 关键内容：商品详情（SpuDetail）
-- TTL：30 分钟（默认 1800s）
-- Key：`product:detail:{spuId}`
-- 失效策略：更新商品/状态变更时主动失效
+- Cache type: L1 Caffeine + L2 Redis
+- Cached data: product details (`SpuDetail`)
+- TTL: 30 minutes (`1800s` by default)
+- Key: `product:detail:{spuId}`
+- Invalidation: actively invalidate on product updates or status changes
 
-实现位置：
+Implementation:
+
 - `services/product-service/src/main/java/com/cloud/product/service/support/ProductDetailCacheService.java`
 - `services/product-service/src/main/java/com/cloud/product/service/impl/ProductCatalogServiceImpl.java`
-- 配置：`services/product-service/src/main/resources/application.yml`
+- Configuration: `services/product-service/src/main/resources/application.yml`
 
-### stock-service（库存服务）
+### `stock-service`
 
-目标：库存需要原子操作，优先保证正确性，使用 Redis Lua 原子更新，避免 TTL。
+Goal: stock updates must stay atomic and correct, so Redis Lua updates are preferred over TTL-driven caches.
 
-- 缓存类型：Redis Hash + Lua 脚本原子更新
-- Key：`stock:ledger:{skuId}`
-- TTL：不设置（永久）
-- 写路径：DB 更新成功后尝试 Lua 原子更新缓存，失败回源刷新
+- Cache type: Redis hash + Lua scripts for atomic updates
+- Key: `stock:ledger:{skuId}`
+- TTL: not set (persistent)
+- Write path: update the database first, then apply a Lua cache update; if that fails, rebuild from the source of truth
 
-实现位置：
+Implementation:
+
 - `services/stock-service/src/main/java/com/cloud/stock/service/support/StockRedisCacheService.java`
 - `services/stock-service/src/main/java/com/cloud/stock/service/impl/StockLedgerServiceImpl.java`
 
-### user-service（用户服务）
+### `user-service`
 
-目标：用户与商家信息读取频繁，Redis 缓存 + 双 key 失效。
+Goal: user and merchant reads are frequent, so Redis caching with dual-key invalidation is used.
 
-- 缓存类型：L2 Redis
-- TTL：10 分钟
-- 失效策略：按 id 与 username 双 key 同步清理
+- Cache type: L2 Redis
+- TTL: 10 minutes
+- Invalidation: clear both `id` and `username` keys together
 
-实现位置：
+Implementation:
+
 - `services/user-service/src/main/java/com/cloud/user/service/impl/UserServiceImpl.java`
-- 全局 TTL：`common-parent/common-db/src/main/java/com/cloud/common/config/RedisConfig.java`
+- Shared TTL: `common-parent/common-db/src/main/java/com/cloud/common/config/RedisConfig.java`
 
-### order-service（订单服务）
+### `order-service`
 
-目标：仅缓存已完成订单聚合数据，避免中间态一致性问题。
+Goal: cache only completed order aggregates and avoid inconsistent intermediate states.
 
-- 缓存类型：L2 Redis
-- TTL：1 小时
-- 缓存内容：完成订单的聚合视图
-- 失效策略：订单状态变更、售后状态变更时清理
-- Key：`order:aggregate:{mainOrderId}`
+- Cache type: L2 Redis
+- TTL: 1 hour
+- Cached data: aggregate view of completed orders
+- Invalidation: clear on order status or after-sale status changes
+- Key: `order:aggregate:{mainOrderId}`
 
-实现位置：
+Implementation:
+
 - `services/order-service/src/main/java/com/cloud/order/service/support/OrderAggregateCacheService.java`
 - `services/order-service/src/main/java/com/cloud/order/service/impl/OrderServiceImpl.java`
 
-### search-service（搜索服务）
+### `search-service`
 
-目标：高频检索与推荐，采用 L1+Caffeine 与 L2/Redis，按热点分层 TTL。
+Goal: search and recommendation traffic is hot, so use layered caches with TTLs tuned by freshness sensitivity.
 
-- 缓存类型：L1 Caffeine + L2 Redis
-- TTL（L2）
-- 搜索结果：10 分钟
-- 搜索建议：5 分钟
-- 热词：2 分钟
-- 推荐：5 分钟
+- Cache type: L1 Caffeine + L2 Redis
+- L2 TTLs:
+  - Search results: 10 minutes
+  - Suggestions: 5 minutes
+  - Hot keywords: 2 minutes
+  - Recommendations: 5 minutes
 
-实现位置：
+Implementation:
+
 - `services/search-service/src/main/java/com/cloud/search/service/ElasticsearchOptimizedService.java`
-- 配置：`services/search-service/src/main/resources/application.yml`
+- Configuration: `services/search-service/src/main/resources/application.yml`
 
-### auth-service（认证服务）
+### `auth-service`
 
-目标：JWT 黑名单同步 token 生命周期，保障安全。
+Goal: keep blacklist entries aligned with JWT lifetime to preserve security guarantees.
 
-- 缓存类型：Redis
-- TTL：与 JWT 过期时间同步
-- Key 前缀：`oauth2:blacklist:`
+- Cache type: Redis
+- TTL: aligned with JWT expiration
+- Key prefix: `oauth2:blacklist:`
 
-实现位置：
+Implementation:
+
 - `services/auth-service/src/main/java/com/cloud/auth/service/TokenBlacklistService.java`
 - `common-parent/common-security/src/main/java/com/cloud/common/security/JwtBlacklistTokenValidator.java`
 
-### payment-service（支付服务）
+### `payment-service`
 
-目标：安全与幂等优先，不缓存金额与终态数据。
+Goal: prioritize security and idempotency instead of caching monetary values or terminal states.
 
-- Redis 幂等 key：`pay:idempotent:{orderId}`，TTL 10 分钟
-- 支付结果缓存：`pay:result:{orderId}`，TTL 10 分钟，仅缓存支付单 ID
-- 支付状态（非终态）：`pay:status:{orderId}`，TTL 3 秒，挡轮询
-- 限流计数器：`pay:rate:{userId}`，1 分钟滑动窗口
-- 第三方 token：`pay:alipay:token`，TTL 25 分钟
-- 终态与金额不缓存，回调与补偿完成后清理状态缓存
+- Idempotency key: `pay:idempotent:{orderId}`, TTL 10 minutes
+- Lightweight payment result cache: `pay:result:{orderId}`, TTL 10 minutes, storing only the payment order identifier
+- Non-terminal payment status cache: `pay:status:{orderId}`, TTL 3 seconds, used to absorb polling traffic
+- Rate-limit counter: `pay:rate:{userId}`, 1-minute sliding window
+- Third-party token cache: `pay:alipay:token`, TTL 25 minutes
+- Terminal states and money values are never cached; status caches are cleared after callback processing or compensation
 
-实现位置：
+Implementation:
+
 - `services/payment-service/src/main/java/com/cloud/payment/service/support/PaymentSecurityCacheService.java`
 - `services/payment-service/src/main/java/com/cloud/payment/service/impl/PaymentOrderServiceImpl.java`
 - `services/payment-service/src/main/java/com/cloud/payment/controller/PaymentOrderController.java`
 - `services/payment-service/src/main/java/com/cloud/payment/service/impl/PaymentCompensationServiceImpl.java`
-- 配置：`services/payment-service/src/main/resources/application.yml`
+- Configuration: `services/payment-service/src/main/resources/application.yml`
 
-## 关键设计思路
+## Key Design Choices
 
-- 写优先：先落库再改缓存，缓存失败时以 DB 为准并可回源刷新。
-- 轻量结果缓存：支付结果缓存仅存 ID，不存金额与终态。
-- 热点分层：热词/建议与结果的 TTL 分层，兼顾新鲜度与命中率。
-- 安全场景隔离：支付缓存用于幂等与限流，避免业务金额缓存。
+- Write-first policy: persist to the database before touching caches; if cache writes fail, the database remains the source of truth and can rebuild cache state.
+- Lightweight result caching: payment result caches store identifiers only, not monetary data or terminal outcomes.
+- TTL layering for hot paths: hot keywords, suggestions, and result sets use different TTLs to balance freshness and hit rate.
+- Security isolation: payment caches support idempotency and rate limiting rather than business state caching.
 
-## 注意事项
+## Operational Notes
 
-- 若需要调整 TTL，优先通过配置项覆盖，避免硬编码。
-- 线上变更 TTL 需评估雪崩风险，必要时加抖动或分级释放。
-- 关键链路（支付、库存）可增加日志或监控，追踪缓存命中与回源比例。
+- Prefer configuration overrides when adjusting TTLs instead of hard-coded changes.
+- Evaluate cache avalanche risk before changing production TTLs; add jitter or staged rollouts when needed.
+- For critical paths such as payment and inventory, consider additional logs or metrics to track hit rates and cache rebuild frequency.

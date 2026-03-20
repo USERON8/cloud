@@ -1,17 +1,18 @@
-# 可观测性栈（SkyWalking + Prometheus + Grafana）
+# Observability Stack (SkyWalking + Prometheus + Grafana)
 Version: 1.1.0
 
-本文说明如何在本项目中同时监控业务服务和中间件。
+This document explains how to monitor both business services and middleware in the current project.
 
-## 1. 启动基础设施与监控组件
+## 1. Start Infrastructure And Monitoring Components
 
 ```bash
 bash scripts/dev/start-containers.sh --with-monitoring
-# 兼容 Windows PowerShell:
+# Windows PowerShell:
 # powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 ```
 
-该命令会启动：
+This command starts:
+
 - Prometheus
 - Grafana
 - Redis Exporter
@@ -20,29 +21,31 @@ bash scripts/dev/start-containers.sh --with-monitoring
 - Elasticsearch Exporter
 - Blackbox Exporter
 
-## 2. 启动服务并接入 SkyWalking
+## 2. Start Services And Attach SkyWalking
 
 ### 2.1 SkyWalking OAP/UI
 
-`docker/docker-compose.yml` 已包含：
-- `skywalking-oap`（gRPC: `11800`，HTTP: `12800`，Prometheus telemetry: `1234`）
-- `skywalking-ui`（`13001`）
+`docker/docker-compose.yml` already includes:
 
-### 2.2 Java 服务注入 SkyWalking Agent
+- `skywalking-oap` (gRPC: `11800`, HTTP: `12800`, Prometheus telemetry: `1234`)
+- `skywalking-ui` (`13001`)
 
-`start-platform.*` 和 `start-services.*` 现在会默认尝试接入 SkyWalking：
-- 优先使用 `SKYWALKING_AGENT_PATH`
-- 否则复用 `.tmp/skywalking/` 下的缓存 agent
-- 本地没有缓存时，会自动下载 agent 到 `.tmp/skywalking/downloads/`
-- 自动激活 `gateway/webflux/mybatis` 相关 optional plugins，便于查看网关入口、Dubbo、Redis、JDBC/MyBatis 链路
+### 2.2 Inject The SkyWalking Agent Into Java Services
 
-直接启动即可：
+`start-platform.*` and `start-services.*` try to enable SkyWalking automatically:
+
+- Prefer `SKYWALKING_AGENT_PATH` when provided
+- Otherwise reuse the cached agent under `.tmp/skywalking/`
+- If no local cache exists, download the agent into `.tmp/skywalking/downloads/`
+- Auto-enable optional plugins for `gateway`, WebFlux, and MyBatis so gateway entry, Dubbo, Redis, and JDBC/MyBatis traces remain visible
+
+Start everything directly:
 
 ```bash
 bash scripts/dev/start-platform.sh --with-monitoring
 ```
 
-如需显式控制：
+To control the agent explicitly:
 
 ```bash
 export SKYWALKING_AGENT_PATH=/path/to/skywalking-agent.jar
@@ -50,67 +53,71 @@ export SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800
 bash scripts/dev/start-services.sh
 ```
 
-如需关闭自动接入：
+To disable automatic attachment:
 
 ```bash
 export SKYWALKING_AUTO_ENABLE=false
 ```
 
-## 3. Prometheus 抓取范围
+## 3. Prometheus Scrape Coverage
 
-Prometheus 已配置以下抓取：
-- 全部 Spring Boot 服务：`8080`~`8087` 的 `/actuator/prometheus`
-- SkyWalking OAP telemetry：`http://127.0.0.1:1234/metrics`
+Prometheus is configured to scrape:
+
+- All Spring Boot services: `/actuator/prometheus` on `8080` through `8087`
+- SkyWalking OAP telemetry: `http://127.0.0.1:1234/metrics`
 - Redis Exporter
 - MySQL Exporter
 - Nginx Exporter
 - Elasticsearch Exporter
-- MinIO 指标：`/minio/v2/metrics/cluster`
-- Blackbox HTTP/TCP 可用性探测（Nacos、RocketMQ、Kibana、SkyWalking、Sentinel、XXL-Job 等）
+- MinIO metrics: `/minio/v2/metrics/cluster`
+- Blackbox HTTP/TCP availability probes for Nacos, RocketMQ, Kibana, SkyWalking, Sentinel, XXL-JOB, and similar dependencies
 
-## 4. Grafana 看板
+## 4. Grafana Dashboards
 
-新增看板：
-- `Cloud Middleware & Services`（UID: `cloud-middleware-services`）
+Added dashboard:
 
-主要展示：
-- 服务与中间件 `up` 状态
-- Blackbox 探测可用性
-- 服务 HTTP RPS / P95
+- `Cloud Middleware & Services` (UID: `cloud-middleware-services`)
+
+Main panels cover:
+
+- Service and middleware `up` state
+- Blackbox availability probes
+- Service HTTP RPS / P95
 - Redis/MySQL QPS
-- MySQL 连接线程
-- Nginx 连接与请求速率
-- Elasticsearch 健康与文档量
-- MinIO 请求速率
+- MySQL connection threads
+- Nginx connections and request rate
+- Elasticsearch health and document volume
+- MinIO request rate
 
-## 5. 访问地址
+## 5. Access URLs
 
 - Prometheus: `http://127.0.0.1:19099`
-- Grafana: `http://127.0.0.1:13000`（默认 `admin/admin`）
+- Grafana: `http://127.0.0.1:13000` (default `admin/admin`)
 - SkyWalking UI: `http://127.0.0.1:13001`
 
-在 SkyWalking UI 里可以优先查看：
-- `Services` / `Topology`: HTTP + Dubbo 调用链
-- `Trace`: 单次请求里的 Redis/JDBC/MyBatis span
-- `Database`: 慢 SQL 与数据库耗时分布
+In SkyWalking UI, focus first on:
 
-## 6. 常见问题
+- `Services` / `Topology`: HTTP + Dubbo call topology
+- `Trace`: Redis, JDBC, and MyBatis spans inside one request
+- `Database`: slow SQL and latency distribution
 
-- 如果某些 `host.docker.internal` 抓取失败：
-  - 确认 Docker Desktop 已运行并支持 `host-gateway`。
-  - 确认本机对应端口已监听（例如服务 `808x`、中间件映射端口）。
-- 如果 `spring-boot` 某服务 `up=0`：
-  - 检查该服务是否已启动。
-  - 检查该服务的 `/actuator/prometheus` 是否被鉴权或被网关策略拦截。
-- 如果 SkyWalking UI 没有服务数据：
-  - 检查 `.tmp/service-runtime/<service>/skywalking-agent/` 下的 agent 日志。
-  - 检查服务启动参数里是否包含 `-javaagent:.../skywalking-agent.jar`。
-  - 检查 `skywalking-oap` 的 `11800` 端口是否可达。
+## 6. Common Issues
 
-## 7. 业务指标与 Outbox 关注点
+- If some `host.docker.internal` probes fail:
+  - Verify Docker Desktop is running and supports `host-gateway`
+  - Verify the required local ports are listening, such as service ports `808x` and middleware-mapped ports
+- If a Spring Boot service shows `up=0`:
+  - Verify the service actually started
+  - Check whether `/actuator/prometheus` is blocked by authentication or gateway policy
+- If SkyWalking UI shows no service data:
+  - Check agent logs under `.tmp/service-runtime/<service>/skywalking-agent/`
+  - Confirm the startup parameters include `-javaagent:.../skywalking-agent.jar`
+  - Confirm `skywalking-oap` port `11800` is reachable
 
-- 业务指标由 `TradeMetrics` 采集：`trade_order_total` / `trade_payment_total` / `trade_refund_total` / `trade_stock_freeze_total` / `trade_message_consume_total`
-- 指标标签：`result`（success/failed/retry）与 `eventType`（如 payment_success、refund_completed）
-- Outbox 健康度建议：按库统计 `outbox_event` 的 `NEW/FAILED/DEAD` 数量，`DEAD > 0` 需要检查 Relay 与 MQ 发送链路
-- MQ 链路追踪说明：当前 RocketMQ 消息未自动透传 traceId，Outbox Relay 也不会写入 tracing header；需要手动透传才能在 SkyWalking 串联链路。
-- 死信监控说明：消费者失败会写入 `dead_letter` 表，但默认 Grafana 未展示该指标，如需可视化需自建采集与看板。
+## 7. Business Metrics And Outbox Focus Points
+
+- Business metrics are reported by `TradeMetrics`: `trade_order_total`, `trade_payment_total`, `trade_refund_total`, `trade_stock_freeze_total`, and `trade_message_consume_total`
+- Metric labels include `result` (`success`, `failed`, `retry`) and `eventType` (such as `payment_success` and `refund_completed`)
+- Outbox health recommendation: track `NEW`, `FAILED`, and `DEAD` rows in `outbox_event` per database; `DEAD > 0` means the relay or MQ send path needs inspection
+- MQ trace note: RocketMQ does not automatically propagate `traceId`, and the Outbox relay does not inject tracing headers either; manual propagation is required for full SkyWalking end-to-end traces
+- Dead-letter monitoring note: failed consumers write into the `dead_letter` table, but Grafana does not visualize it by default; add a dedicated collector and dashboard if needed

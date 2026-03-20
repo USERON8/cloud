@@ -1,39 +1,38 @@
-﻿# Payment Service
+# Payment Service
 Version: 1.1.0
 
-支付服务，包含支付单管理、退款处理和支付通道补偿能力。
+Payment service for payment order management, refund processing, and payment channel compensation.
 
-- 服务名：`payment-service`
-- 端口：`8086`
-- 数据库脚本：`db/init/payment-service/init.sql`
-- 测试数据：`db/test/payment-service/test.sql`
+- Service name: `payment-service`
+- Port: `8086`
+- Database bootstrap: `db/init/payment-service/init.sql`
+- Test data: `db/test/payment-service/test.sql`
 
-## 核心接口
+## Core Endpoints
 
-- 支付单创建：`POST /api/payments/orders`
-- 支付单查询：`GET /api/payments/orders/{paymentNo}`
-- 支付状态查询：`GET /api/payments/orders/{paymentNo}/status`
-- 内部回调处理：`POST /api/payments/callbacks`
-- 外部回调兼容入口：`POST /api/v1/payment/alipay/notify`
-- 退款创建：`POST /api/payments/refunds`
-- 退款查询：`GET /api/payments/refunds/{refundNo}`
-- 支付通道接入：由 `PaymentProviderGateway` 实现，目前已接入支付宝查询/退款补偿链路
+- Create payment order: `POST /api/payments/orders`
+- Query payment order: `GET /api/payments/orders/{paymentNo}`
+- Query payment status: `GET /api/payments/orders/{paymentNo}/status`
+- Internal callback handling: `POST /api/payments/callbacks`
+- External compatibility callback: `POST /api/v1/payment/alipay/notify`
+- Create refund: `POST /api/payments/refunds`
+- Query refund: `GET /api/payments/refunds/{refundNo}`
+- Payment provider integration: implemented through `PaymentProviderGateway`, currently with Alipay query and refund compensation paths
 
-## 消息与一致性
+## Messaging And Consistency
 
-- 生产消息：`PAYMENT_SUCCESS`（RocketMQ 事务消息） / `REFUND_COMPLETED`（Outbox）
-- 可靠投递：`REFUND_COMPLETED` 写入 `outbox_event`，由 `PaymentOutboxRelay` 定时发布到 RocketMQ
-- 事务模式：支付成功使用 RocketMQ 事务消息；退款使用本地事务 + Outbox
+- Produced events: `PAYMENT_SUCCESS` (RocketMQ transactional message) and `REFUND_COMPLETED` (Outbox)
+- Reliable delivery: `REFUND_COMPLETED` is persisted to `outbox_event` and published by `PaymentOutboxRelay`
+- Transaction model: payment success uses RocketMQ transactional messages; refunds use local transactions + Outbox
 
-## 调度任务
+## Scheduled Jobs
 
-- 业务补偿任务通过 `XXL-JOB` 执行
-- 当前已接入 handler：`paymentOrderReconcileJob`
-- 当前已接入 handler：`paymentRefundRetryJob`
+- Compensation jobs run through `XXL-JOB`
+- Registered handler: `paymentOrderReconcileJob`
+- Registered handler: `paymentRefundRetryJob`
 
-## 本地启动
+## Local Run
 
 ```bash
 mvn -pl payment-service spring-boot:run
 ```
-

@@ -1,7 +1,7 @@
 ﻿# Cloud Shop Microservices
 Version: 1.1.0
 
-[中文](./README-zh.md)
+[Chinese](./README-zh.md)
 
 A simplified e-commerce microservices project.
 Backend: Spring Boot + Spring Cloud Alibaba.

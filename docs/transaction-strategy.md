@@ -1,87 +1,87 @@
-﻿# 事务策略文档
+# Transaction Strategy
 
-更新日期：2026-03-13
+Updated on: 2026-03-13
 
-## 目标
+## Goal
 
-在订单、库存、支付、退款等关键链路上，明确强一致与最终一致的边界，降低分布式事务复杂度，同时确保关键事件可靠投递与消费者幂等。
+Define the boundary between strong consistency and eventual consistency across order, inventory, payment, refund, and other critical flows. The strategy reduces distributed transaction complexity while keeping critical event delivery reliable and consumer handling idempotent.
 
-## 设计原则
+## Design Principles
 
-- 强一致优先：下单扣库存采用 Seata TCC，保证失败可回滚。
-- 强一致边界：仅覆盖下单扣库存；支付成功与退款结果通过 MQ 事件实现最终一致，`payment-service` 不参与 Seata。
-- 异步解耦：支付成功通知采用 RocketMQ 事务消息，避免本地事务与消息不一致。
-- 长流程补偿：退款全链路采用 Seata SAGA，通过补偿动作完成一致性收敛。
-- 延迟消息统一在本地事务提交后发送，避免回滚导致的“消息乱发”。
-- 全链路幂等：消息消费、TCC、SAGA 均具备幂等/空回滚/防重机制。
-- 不保留兼容链路：退款流程不再走 `refund-process` 旧 MQ 通道。
+- Strong consistency first where required: order placement inventory deduction uses Seata TCC so failures can roll back cleanly.
+- Limited strong-consistency boundary: only order placement inventory deduction is inside the strict global transaction boundary; payment success and refund completion rely on MQ-driven eventual consistency, and `payment-service` does not participate in Seata.
+- Asynchronous decoupling: payment success notifications use RocketMQ transactional messages to avoid mismatches between local transactions and outgoing messages.
+- Long-running compensation: the full refund flow uses Seata SAGA and compensation actions to converge state.
+- Delayed messages are sent only after the local transaction commits to avoid stray timeout events after rollback.
+- End-to-end idempotency: MQ consumers, TCC, and SAGA all provide idempotent handling, empty rollback protection, and replay prevention.
+- No compatibility path retention: refund flows no longer use the legacy `refund-process` MQ channel.
 
-## 场景映射
+## Scenario Mapping
 
-| 业务场景 | 方案 | 关键实现 |
+| Business Scenario | Strategy | Key Implementation |
 | --- | --- | --- |
-| 下单扣库存 | Seata TCC | `OrderPlacementServiceImpl` + `OrderCreateTccAction` + `StockReserveTccService` |
-| 支付成功通知 | RocketMQ 事务消息 | `PaymentSuccessTxProducer` + `PaymentSuccessTransactionListener` |
-| 订单超时取消 | RocketMQ 延迟消息 | `OrderTimeoutMessageProducer` + `OrderTimeoutConsumer` |
-| 退款全链路 | Seata SAGA | `refund-saga.json` + `OrderRefundSagaCoordinator` + `OrderRefundSagaService` |
-| 单服务内状态变更 | 本地事务 | `@Transactional` 覆盖写操作 |
+| Order placement inventory deduction | Seata TCC | `OrderPlacementServiceImpl` + `OrderCreateTccAction` + `StockReserveTccService` |
+| Payment success notification | RocketMQ transactional message | `PaymentSuccessTxProducer` + `PaymentSuccessTransactionListener` |
+| Order timeout cancellation | RocketMQ delayed message | `OrderTimeoutMessageProducer` + `OrderTimeoutConsumer` |
+| Full refund flow | Seata SAGA | `refund-saga.json` + `OrderRefundSagaCoordinator` + `OrderRefundSagaService` |
+| Intra-service state changes | Local transaction | `@Transactional` on write operations |
 
-## 关键实现说明
+## Key Implementation Notes
 
-### Seata TCC（下单扣库存）
+### Seata TCC (Order Placement Inventory Deduction)
 
-- 入口：`OrderPlacementServiceImpl#createOrder` 使用 `@GlobalTransactional`。
-- Try：`OrderCreateTccAction#prepare` 生成订单聚合，并写入 `order_tcc_log`。
-- Confirm：`OrderCreateTccAction#commit` 将订单状态推进到 `STOCK_RESERVED`，并在事务提交后发送 `ORDER_TIMEOUT` 延迟消息。
-- Cancel：`OrderCreateTccAction#rollback` 回滚订单与子单状态。
-- 空回滚/悬挂：通过 `order_tcc_log` 状态与幂等判断处理，Stock 侧通过 reservation token 与 rollback marker 防悬挂。
-- Stock TCC：`StockReserveTccService` 负责 Try/Confirm/Cancel，实际落地到 `StockLedgerService`。
+- Entry point: `OrderPlacementServiceImpl#createOrder` uses `@GlobalTransactional`
+- Try: `OrderCreateTccAction#prepare` creates the order aggregate and writes `order_tcc_log`
+- Confirm: `OrderCreateTccAction#commit` advances the order to `STOCK_RESERVED` and sends the `ORDER_TIMEOUT` delayed message after commit
+- Cancel: `OrderCreateTccAction#rollback` rolls back the order and order item states
+- Empty rollback / hanging prevention: `order_tcc_log` state and idempotency checks guard order-side rollback; the stock side uses reservation tokens and rollback markers
+- Stock TCC: `StockReserveTccService` implements Try/Confirm/Cancel and delegates persistence to `StockLedgerService`
 
-### RocketMQ 事务消息（支付成功通知）
+### RocketMQ Transactional Message (Payment Success Notification)
 
-- 生产：`PaymentSuccessTxProducer#send` 使用 `sendMessageInTransaction`。
-- 事务检查：`PaymentSuccessTransactionListener` 做本地事务确认/回查。
-- 目的：支付成功通知可靠投递，解耦订单后置流程。
+- Producer: `PaymentSuccessTxProducer#send` uses `sendMessageInTransaction`
+- Transaction check: `PaymentSuccessTransactionListener` confirms or checks the local transaction state
+- Purpose: keep payment success delivery reliable while decoupling downstream order processing
 
-### RocketMQ 延迟消息（订单超时取消）
+### RocketMQ Delayed Message (Order Timeout Cancellation)
 
-- 生产：`OrderTimeoutMessageProducer#sendAfterCommit` 在本地事务提交后发送。
-- 延迟级别：由 `order.timeout.delay-level` 控制，避免业务回滚导致延迟消息误发。
+- Producer: `OrderTimeoutMessageProducer#sendAfterCommit` sends after the local transaction commits
+- Delay level: controlled by `order.timeout.delay-level` so timeout messages are not published for rolled-back orders
 
-### Seata SAGA（退款全链路）
+### Seata SAGA (Full Refund Flow)
 
-- 定义：`services/order-service/src/main/resources/saga/refund-saga.json`。
-- 发起：`OrderRefundSagaCoordinator#startRefundSaga` 以 `afterSaleNo` 作为业务 key。
-- 主流程：`orderRefundSagaService.applyRefund` -> `orderRefundSagaService.createRefund`。
-- 补偿：`orderRefundSagaService.cancelRefund` 回退售后状态；若已创建支付侧退款，则调用 `cancelRefund` 进行撤销标记。
-- 退款金额：必须大于 0，否则拒绝发起退款流程。
-- 幂等键：`after-sale:refund:{afterSaleNo}` 进入支付退款创建接口。
+- Definition: `services/order-service/src/main/resources/saga/refund-saga.json`
+- Entry point: `OrderRefundSagaCoordinator#startRefundSaga` uses `afterSaleNo` as the business key
+- Main flow: `orderRefundSagaService.applyRefund` -> `orderRefundSagaService.createRefund`
+- Compensation: `orderRefundSagaService.cancelRefund` restores after-sale status; if the payment-side refund already exists, it calls `cancelRefund` to mark the cancellation
+- Refund amount: must be greater than zero or the refund flow is rejected
+- Idempotency key: `after-sale:refund:{afterSaleNo}` is passed into the payment refund creation path
 
-### Outbox（可靠投递）
+### Outbox (Reliable Delivery)
 
-- 订单：`ORDER_CREATED` / `ORDER_CANCELLED` / `STOCK_RESTORE` 由 `OrderOutboxRelay` 发布。
-- 支付：`REFUND_COMPLETED` 由 `PaymentOutboxRelay` 发布。
-- 支付成功通知不走 Outbox，使用 RocketMQ 事务消息。
-- 作用：确保本地事务成功后可靠投递 MQ。
+- Orders: `ORDER_CREATED`, `ORDER_CANCELLED`, and `STOCK_RESTORE` are published by `OrderOutboxRelay`
+- Payment: `REFUND_COMPLETED` is published by `PaymentOutboxRelay`
+- Payment success notifications do not use Outbox and continue to use RocketMQ transactional messaging
+- Role: guarantees MQ delivery after the local transaction succeeds
 
-### 消费者幂等
+### Consumer Idempotency
 
-- 统一通过 `MessageIdempotencyService`（Redis）做事件去重与失败重试控制。
-- 事件 `eventId` 缺失时，使用业务主键派生保证幂等。
+- `MessageIdempotencyService` (Redis) centralizes event deduplication and retry safety
+- If an event does not carry `eventId`, a derived business key is used to preserve idempotency
 
-## 配置位置
+## Configuration Locations
 
-- SAGA 配置：`services/order-service/src/main/resources/application.yml`
-- SAGA 定义：`services/order-service/src/main/resources/saga/refund-saga.json`
-- RocketMQ 绑定（order-service）：`services/order-service/src/main/resources/application-rocketmq.yml`
-- RocketMQ 绑定（payment-service）：`services/payment-service/src/main/resources/application-rocketmq.yml`
-- RocketMQ 绑定（stock-service）：`services/stock-service/src/main/resources/application-rocketmq.yml`
+- SAGA configuration: `services/order-service/src/main/resources/application.yml`
+- SAGA definition: `services/order-service/src/main/resources/saga/refund-saga.json`
+- RocketMQ bindings (`order-service`): `services/order-service/src/main/resources/application-rocketmq.yml`
+- RocketMQ bindings (`payment-service`): `services/payment-service/src/main/resources/application-rocketmq.yml`
+- RocketMQ bindings (`stock-service`): `services/stock-service/src/main/resources/application-rocketmq.yml`
 
-## 自检清单
+## Self-Check List
 
-- `refund-process` MQ 通道已移除，退款统一走 SAGA。
-- 下单扣库存走 TCC，`order_tcc_log` 存在且可追踪。
-- 支付成功通知走 RocketMQ 事务消息。
-- `payment-service` Seata 关闭，仅 order/stock 参与全局事务。
-- 延迟消息仅在本地事务提交后发送。
-- MQ 消费者均具备幂等防重能力。
+- The `refund-process` MQ channel has been removed and refund handling goes through SAGA only
+- Order placement inventory deduction uses TCC, and `order_tcc_log` exists for traceability
+- Payment success notifications use RocketMQ transactional messages
+- `payment-service` keeps Seata disabled; only order and stock participate in global transactions
+- Delayed messages are sent only after the local transaction commits
+- MQ consumers are idempotent and replay-safe
