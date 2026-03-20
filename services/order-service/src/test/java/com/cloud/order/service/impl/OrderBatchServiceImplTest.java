@@ -1,10 +1,14 @@
 package com.cloud.order.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.order.entity.OrderMain;
+import com.cloud.order.entity.OrderSub;
 import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
@@ -15,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 class OrderBatchServiceImplTest {
@@ -61,5 +68,52 @@ class OrderBatchServiceImplTest {
         .hasMessageContaining("direct pay actions are disabled");
 
     verifyNoInteractions(orderService, orderQueryService, orderShippingService);
+  }
+
+  @Test
+  void applyOrderActionShouldRejectShippingForRegularUser() {
+    JwtAuthenticationToken authentication = authentication("101", "ROLE_USER", "order:query");
+    OrderMain mainOrder = new OrderMain();
+    mainOrder.setId(10L);
+    OrderSub subOrder = new OrderSub();
+    subOrder.setId(20L);
+    subOrder.setMainOrderId(10L);
+    subOrder.setMerchantId(300L);
+
+    when(orderQueryService.requireAccessibleMainOrder(10L, authentication)).thenReturn(mainOrder);
+    when(orderService.listSubOrders(10L)).thenReturn(List.of(subOrder));
+
+    assertThatThrownBy(
+            () ->
+                orderBatchService.applyOrderAction(
+                    10L, authentication, OrderAction.SHIP, "SF", "T-10", null))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                org.assertj.core.api.Assertions.assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.FORBIDDEN.getCode()))
+        .hasMessageContaining("shipping requires merchant or admin privileges");
+
+    verify(orderService).listSubOrders(10L);
+    verifyNoInteractions(orderShippingService);
+  }
+
+  private JwtAuthenticationToken authentication(
+      String userId, String primaryRole, String... authorities) {
+    Jwt jwt =
+        Jwt.withTokenValue("token")
+            .header("alg", "none")
+            .claim("user_id", userId)
+            .claim("username", "tester")
+            .build();
+    return new JwtAuthenticationToken(
+        jwt, AuthorityUtils.createAuthorityList(merge(primaryRole, authorities)));
+  }
+
+  private String[] merge(String first, String[] remaining) {
+    String[] merged = new String[remaining.length + 1];
+    merged[0] = first;
+    System.arraycopy(remaining, 0, merged, 1, remaining.length);
+    return merged;
   }
 }

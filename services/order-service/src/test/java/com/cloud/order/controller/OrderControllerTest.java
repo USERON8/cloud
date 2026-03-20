@@ -2,6 +2,7 @@ package com.cloud.order.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,8 +10,11 @@ import static org.mockito.Mockito.when;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.order.converter.AfterSaleDtoConverter;
+import com.cloud.order.dto.AfterSaleDTO;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
+import com.cloud.order.entity.AfterSale;
+import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderQueryService;
@@ -73,6 +77,91 @@ class OrderControllerTest {
               assertThat(bizException.getCode()).isEqualTo(ResultCode.BAD_REQUEST.getCode());
             })
         .hasMessageContaining("userId is required for admin order creation");
+  }
+
+  @Test
+  void shipOrderShouldRejectRegularUser() {
+    assertThatThrownBy(
+            () ->
+                orderController.shipOrderStandard(
+                    88L, "SF", "T-88", authentication("101", "ROLE_USER", "order:query")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex -> {
+              BizException bizException = (BizException) ex;
+              assertThat(bizException.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
+            })
+        .hasMessageContaining("shipping requires merchant or admin privileges");
+  }
+
+  @Test
+  void shipOrderShouldRejectMissingShippingCompany() {
+    assertThatThrownBy(
+            () ->
+                orderController.shipOrderStandard(
+                    88L, " ", "T-88", authentication("201", "ROLE_MERCHANT", "order:query")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex -> {
+              BizException bizException = (BizException) ex;
+              assertThat(bizException.getCode()).isEqualTo(ResultCode.BAD_REQUEST.getCode());
+            })
+        .hasMessageContaining("shipping company is required");
+  }
+
+  @Test
+  void batchShipShouldTrimShippingFieldsForMerchant() {
+    when(orderBatchService.batchApply(
+            eq(java.util.List.of(7L)),
+            org.mockito.ArgumentMatchers.any(),
+            eq(OrderAction.SHIP),
+            eq("SF"),
+            eq("TRACK-7"),
+            eq(null)))
+        .thenReturn(1);
+
+    var result =
+        orderController.batchShip(
+            java.util.List.of(7L),
+            " SF ",
+            " TRACK-7 ",
+            authentication("201", "ROLE_MERCHANT", "order:query"));
+
+    assertThat(result.getData()).isEqualTo(1);
+    verify(orderBatchService)
+        .batchApply(
+            eq(java.util.List.of(7L)),
+            org.mockito.ArgumentMatchers.any(),
+            eq(OrderAction.SHIP),
+            eq("SF"),
+            eq("TRACK-7"),
+            eq(null));
+  }
+
+  @Test
+  void applyAfterSaleShouldFillUserIdFromTokenForRegularUser() {
+    AfterSaleDTO dto = new AfterSaleDTO();
+    dto.setMainOrderId(10L);
+    dto.setSubOrderId(11L);
+    dto.setApplyAmount(BigDecimal.valueOf(30));
+
+    AfterSale mapped = new AfterSale();
+    mapped.setMainOrderId(10L);
+    mapped.setSubOrderId(11L);
+    mapped.setApplyAmount(BigDecimal.valueOf(30));
+    AfterSale created = new AfterSale();
+    AfterSaleDTO responseDto = new AfterSaleDTO();
+
+    when(afterSaleDtoConverter.toEntity(same(dto))).thenReturn(mapped);
+    when(orderService.applyAfterSale(same(mapped))).thenReturn(created);
+    when(afterSaleDtoConverter.toDto(same(created))).thenReturn(responseDto);
+
+    var result =
+        orderController.applyAfterSale(dto, authentication("101", "ROLE_USER", "order:refund"));
+
+    assertThat(mapped.getUserId()).isEqualTo(101L);
+    assertThat(result.getData()).isSameAs(responseDto);
+    verify(orderService).applyAfterSale(same(mapped));
   }
 
   private CreateMainOrderRequest buildDirectOrderRequest() {

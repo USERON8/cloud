@@ -79,6 +79,9 @@ public class OrderBatchServiceImpl implements OrderBatchService {
     if (subs == null || subs.isEmpty()) {
       throw new BizException("sub orders not found");
     }
+    if (action == OrderAction.SHIP) {
+      requireShipOperator(authentication);
+    }
     for (OrderSub sub : subs) {
       if (sub == null || sub.getId() == null) {
         continue;
@@ -101,6 +104,14 @@ public class OrderBatchServiceImpl implements OrderBatchService {
           ResultCode.BAD_REQUEST,
           "direct pay actions are disabled; wait for verified payment confirmation");
     }
+  }
+
+  private void requireShipOperator(Authentication authentication) {
+    if (SecurityPermissionUtils.isAdmin(authentication)
+        || SecurityPermissionUtils.isMerchant(authentication)) {
+      return;
+    }
+    throw new BizException(ResultCode.FORBIDDEN, "shipping requires merchant or admin privileges");
   }
 
   private Long requireCurrentUserId(Authentication authentication) {

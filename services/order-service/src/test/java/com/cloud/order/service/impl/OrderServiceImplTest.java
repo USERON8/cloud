@@ -9,9 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.dto.CreateMainOrderRequest;
+import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
@@ -206,6 +208,130 @@ class OrderServiceImplTest {
     verify(orderAggregateCacheService).evict(31L);
   }
 
+  @Test
+  void applyAfterSaleShouldRejectMismatchedSubOrderRelationship() {
+    AfterSale afterSale = buildAfterSale();
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 999L, 88L, "PAID", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
+        .hasMessageContaining("sub order does not belong to main order");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldRejectOrderOwnerMismatch() {
+    AfterSale afterSale = buildAfterSale();
+    afterSale.setUserId(1000L);
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode()))
+        .hasMessageContaining("after sale user does not match the order owner");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldRejectMerchantMismatch() {
+    AfterSale afterSale = buildAfterSale();
+    afterSale.setMerchantId(999L);
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode()))
+        .hasMessageContaining("after sale merchant does not match the sub order merchant");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldRejectAmountExceedingPayableAmount() {
+    AfterSale afterSale = buildAfterSale();
+    afterSale.setApplyAmount(BigDecimal.valueOf(60));
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
+        .hasMessageContaining("apply amount cannot exceed sub order payable amount");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldRejectIneligibleSubOrderStatus() {
+    AfterSale afterSale = buildAfterSale();
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "STOCK_RESERVED", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
+        .hasMessageContaining("after sale is not allowed for sub order status");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldCanonicalizeProtectedFields() {
+    AfterSale afterSale = buildAfterSale();
+    afterSale.setStatus("APPROVED");
+    afterSale.setMerchantId(null);
+    afterSale.setApprovedAmount(BigDecimal.valueOf(20));
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    AfterSale created = orderService.applyAfterSale(afterSale);
+
+    assertThat(created.getStatus()).isEqualTo("APPLIED");
+    assertThat(created.getMerchantId()).isEqualTo(88L);
+    assertThat(created.getUserId()).isEqualTo(9L);
+    assertThat(created.getApprovedAmount()).isNull();
+    assertThat(created.getAfterSaleNo()).startsWith("AS");
+    verify(afterSaleMapper).insert(afterSale);
+    verify(orderAggregateCacheService).evict(50L);
+  }
+
   private CreateMainOrderRequest buildRequest() {
     CreateMainOrderRequest request = new CreateMainOrderRequest();
     request.setUserId(1L);
@@ -236,5 +362,37 @@ class OrderServiceImplTest {
 
     request.setSubOrders(List.of(sub));
     return request;
+  }
+
+  private AfterSale buildAfterSale() {
+    AfterSale afterSale = new AfterSale();
+    afterSale.setMainOrderId(50L);
+    afterSale.setSubOrderId(60L);
+    afterSale.setUserId(9L);
+    afterSale.setMerchantId(88L);
+    afterSale.setApplyAmount(BigDecimal.valueOf(30));
+    afterSale.setAfterSaleType("REFUND");
+    afterSale.setReason("damaged");
+    return afterSale;
+  }
+
+  private OrderMain buildMainOrder(Long mainOrderId, Long userId) {
+    OrderMain mainOrder = new OrderMain();
+    mainOrder.setId(mainOrderId);
+    mainOrder.setUserId(userId);
+    mainOrder.setDeleted(0);
+    return mainOrder;
+  }
+
+  private OrderSub buildSubOrder(
+      Long subOrderId, Long mainOrderId, Long merchantId, String status, BigDecimal payableAmount) {
+    OrderSub subOrder = new OrderSub();
+    subOrder.setId(subOrderId);
+    subOrder.setMainOrderId(mainOrderId);
+    subOrder.setMerchantId(merchantId);
+    subOrder.setOrderStatus(status);
+    subOrder.setPayableAmount(payableAmount);
+    subOrder.setDeleted(0);
+    return subOrder;
   }
 }

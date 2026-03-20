@@ -2,6 +2,7 @@ package com.cloud.order.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.common.messaging.event.OrderShippedEvent;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
+  private static final Set<String> AFTER_SALE_ELIGIBLE_SUB_STATUSES =
+      Set.of("PAID", "SHIPPED", "DONE");
 
   private static final Map<String, Set<String>> SUB_STATUS_TRANSITIONS =
       Map.of(
@@ -267,10 +272,13 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public AfterSale applyAfterSale(AfterSale afterSale) {
+    validateAfterSaleCreation(afterSale);
     afterSale.setAfterSaleNo("AS" + System.currentTimeMillis());
-    if (afterSale.getStatus() == null) {
-      afterSale.setStatus("APPLIED");
-    }
+    afterSale.setStatus("APPLIED");
+    afterSale.setApprovedAmount(null);
+    afterSale.setRefundedAt(null);
+    afterSale.setClosedAt(null);
+    afterSale.setCloseReason(null);
     afterSaleMapper.insert(afterSale);
     syncSubOrderAfterSaleStatus(afterSale.getSubOrderId(), afterSale.getStatus());
     orderAggregateCacheService.evict(afterSale.getMainOrderId());
@@ -330,6 +338,43 @@ public class OrderServiceImpl implements OrderService {
     }
     subOrder.setAfterSaleStatus(afterSaleStatus);
     orderSubMapper.updateById(subOrder);
+  }
+
+  private void validateAfterSaleCreation(AfterSale afterSale) {
+    if (afterSale == null) {
+      throw new BizException(ResultCode.BAD_REQUEST, "after sale payload is required");
+    }
+    OrderMain mainOrder = requireOrderMain(afterSale.getMainOrderId());
+    OrderSub subOrder = requireSubOrder(afterSale.getSubOrderId());
+    if (!Objects.equals(subOrder.getMainOrderId(), mainOrder.getId())) {
+      throw new BizException(ResultCode.BAD_REQUEST, "sub order does not belong to main order");
+    }
+    if (afterSale.getUserId() != null
+        && !Objects.equals(afterSale.getUserId(), mainOrder.getUserId())) {
+      throw new BizException(
+          ResultCode.FORBIDDEN, "after sale user does not match the order owner");
+    }
+    if (afterSale.getMerchantId() != null
+        && !Objects.equals(afterSale.getMerchantId(), subOrder.getMerchantId())) {
+      throw new BizException(
+          ResultCode.FORBIDDEN, "after sale merchant does not match the sub order merchant");
+    }
+    if (!AFTER_SALE_ELIGIBLE_SUB_STATUSES.contains(subOrder.getOrderStatus())) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST,
+          "after sale is not allowed for sub order status: " + subOrder.getOrderStatus());
+    }
+    BigDecimal applyAmount = requirePositiveAmount(afterSale.getApplyAmount(), "apply amount");
+    BigDecimal payableAmount = defaultAmount(subOrder.getPayableAmount());
+    if (applyAmount.compareTo(payableAmount) > 0) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "apply amount cannot exceed sub order payable amount");
+    }
+    afterSale.setMainOrderId(mainOrder.getId());
+    afterSale.setSubOrderId(subOrder.getId());
+    afterSale.setUserId(mainOrder.getUserId());
+    afterSale.setMerchantId(subOrder.getMerchantId());
+    afterSale.setApplyAmount(applyAmount);
   }
 
   private void assertLogisticsInfoReady(String company, String trackingNumber) {
@@ -504,6 +549,13 @@ public class OrderServiceImpl implements OrderService {
       throw new BizException("sub order not found");
     }
     return subOrder;
+  }
+
+  private BigDecimal requirePositiveAmount(BigDecimal amount, String fieldName) {
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BizException(ResultCode.BAD_REQUEST, fieldName + " must be greater than 0");
+    }
+    return amount;
   }
 
   private BigDecimal defaultAmount(BigDecimal amount) {

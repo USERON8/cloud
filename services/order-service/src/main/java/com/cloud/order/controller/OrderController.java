@@ -12,7 +12,6 @@ import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
-import com.cloud.order.entity.OrderMain;
 import com.cloud.order.enums.AfterSaleAction;
 import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderBatchService;
@@ -128,17 +127,16 @@ public class OrderController {
   }
 
   @PostMapping("/{orderId}/ship")
-  @PreAuthorize("hasAuthority('order:query')")
+  @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
   @Operation(summary = "Ship order")
   public Result<Boolean> shipOrderStandard(
       @PathVariable Long orderId,
       @RequestParam(required = false) String shippingCompany,
       @RequestParam(required = false) String trackingNumber,
       Authentication authentication) {
-    OrderMain main = orderQueryService.requireAccessibleMainOrder(orderId, authentication);
-    String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
-    String tracking =
-        StrUtil.isBlank(trackingNumber) ? "TEST-" + main.getMainOrderNo() : trackingNumber.trim();
+    requireMerchantOrAdmin(authentication);
+    String company = requireShippingValue(shippingCompany, "shipping company");
+    String tracking = requireShippingValue(trackingNumber, "tracking number");
     orderBatchService.applyOrderAction(
         orderId, authentication, OrderAction.SHIP, company, tracking, null);
     return Result.success(true);
@@ -173,15 +171,16 @@ public class OrderController {
   }
 
   @PostMapping("/batch/ship")
-  @PreAuthorize("hasAuthority('order:query')")
+  @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
   @Operation(summary = "Batch ship orders")
   public Result<Integer> batchShip(
       @RequestBody List<Long> orderIds,
       @RequestParam(required = false) String shippingCompany,
       @RequestParam(required = false) String trackingNumber,
       Authentication authentication) {
-    String company = StrUtil.isBlank(shippingCompany) ? "TEST" : shippingCompany.trim();
-    String tracking = StrUtil.isBlank(trackingNumber) ? "TEST" : trackingNumber.trim();
+    requireMerchantOrAdmin(authentication);
+    String company = requireShippingValue(shippingCompany, "shipping company");
+    String tracking = requireShippingValue(trackingNumber, "tracking number");
     return Result.success(
         orderBatchService.batchApply(
             orderIds, authentication, OrderAction.SHIP, company, tracking, null));
@@ -267,6 +266,20 @@ public class OrderController {
       return MERCHANT_AFTER_SALE_ACTIONS.contains(action);
     }
     return USER_AFTER_SALE_ACTIONS.contains(action);
+  }
+
+  private void requireMerchantOrAdmin(Authentication authentication) {
+    if (isAdmin(authentication) || isMerchant(authentication)) {
+      return;
+    }
+    throw new BizException(ResultCode.FORBIDDEN, "shipping requires merchant or admin privileges");
+  }
+
+  private String requireShippingValue(String value, String fieldName) {
+    if (StrUtil.isBlank(value)) {
+      throw new BizException(ResultCode.BAD_REQUEST, fieldName + " is required");
+    }
+    return value.trim();
   }
 
   private Long requireCurrentUserId(Authentication authentication) {
