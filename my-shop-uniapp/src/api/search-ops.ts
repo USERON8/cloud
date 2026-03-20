@@ -98,6 +98,15 @@ export function listHotProducts(
   })
 }
 
+export function listTodayHotSellingProducts(
+  page = 0,
+  size = 20
+): Promise<SearchResult<ProductDocument>> {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/hot/today', {
+    params: { page, size }
+  })
+}
+
 export function filterSearch(
   request: ProductFilterRequest,
   searchAfter?: string

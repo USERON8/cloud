@@ -171,6 +171,7 @@
 | GET | /api/search/suggestions | listSearchSuggestions | keyword: string, size = 10 | query |
 | GET | /api/search/hot-keywords | listSearchHotKeywords | size = 10 | query |
 | GET | /api/search/keyword-recommendations | listSearchKeywordRecommendations | keyword = '', size = 10 | query |
+| GET | /api/search/hot/today | listTodayHotSellingProducts | page = 0, size = 20 | query |
 | GET | /api/search/filter/combined | combinedSearchProducts | params: CombinedSearchParams（含 searchAfter?: string） | query |
 | PATCH | /api/product/{param}/status | updateProductStatus | id: number, status: 0 \| 1 | query |
 
@@ -204,6 +205,7 @@
 | GET | /api/search/recommended | listRecommendedProducts | page = 0, size = 20, searchAfter?: string | query |
 | GET | /api/search/new | listNewProducts | page = 0, size = 20, searchAfter?: string | query |
 | GET | /api/search/hot | listHotProducts | page = 0, size = 20, searchAfter?: string | query |
+| GET | /api/search/hot/today | listTodayHotSellingProducts | page = 0, size = 20 | query |
 | POST | /api/search/filter | filterSearch | request: ProductFilterRequest, searchAfter?: string | body, query |
 | GET | /api/search/filter/category/{param} | filterByCategory | categoryId: number,
   params: { page?: number; size?: number; searchAfter?: string } = {} | query |

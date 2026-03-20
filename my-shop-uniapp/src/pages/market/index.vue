@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { listSearchHotKeywordsWithFallback, listSearchKeywordRecommendationsWithFallback, smartSearchProductsWithFallback } from '../../api/product'
+import {
+  listSearchHotKeywordsWithFallback,
+  listSearchKeywordRecommendationsWithFallback,
+  listTodayHotSellingProductsWithFallback,
+  smartSearchProductsWithFallback
+} from '../../api/product'
 import { getSpu } from '../../api/product-catalog'
 import type { ProductItem, SearchProductDocument } from '../../types/domain'
 import { addToCart } from '../../store/cart'
@@ -20,12 +25,17 @@ const hotKeywords = ref<string[]>([])
 const recommendations = ref<string[]>([])
 
 const loggedIn = computed(() => isAuthenticated())
+const activeKeyword = computed(() => keyword.value.trim())
+const resultsTitle = computed(() => (activeKeyword.value ? 'Search Results' : 'Today Hot Selling'))
+const resultsHint = computed(() =>
+  activeKeyword.value ? `Keyword: ${activeKeyword.value}` : 'Ranked by completed sales today'
+)
 
 function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
   return {
     id: typeof item.productId === 'number' ? item.productId : 0,
     shopId: item.shopId,
-    name: item.productName || '未命名商品',
+    name: item.productName || 'Unnamed product',
     price: item.price,
     stockQuantity: item.stockQuantity,
     categoryId: item.categoryId,
@@ -55,19 +65,21 @@ async function loadProducts(reset = false): Promise<void> {
   }
   loading.value = true
   try {
-    const result = await smartSearchProductsWithFallback({
-      keyword: keyword.value || undefined,
-      page: page.value,
-      size: size.value,
-      sortField: 'score',
-      sortOrder: 'desc'
-    })
+    const result = activeKeyword.value
+      ? await smartSearchProductsWithFallback({
+          keyword: activeKeyword.value,
+          page: page.value,
+          size: size.value,
+          sortField: 'score',
+          sortOrder: 'desc'
+        })
+      : await listTodayHotSellingProductsWithFallback(page.value, size.value)
     const items = result.documents.map(mapSearchDocumentToProduct)
     rows.value = reset ? items : rows.value.concat(items)
     hasMore.value = rows.value.length < result.total
-    await refreshKeywords(keyword.value)
+    await refreshKeywords(activeKeyword.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载商品失败')
+    toast(error instanceof Error ? error.message : 'Failed to load products')
   } finally {
     loading.value = false
   }
@@ -92,22 +104,22 @@ function onLoadMore(): void {
 
 async function onAddToCart(item: ProductItem): Promise<void> {
   if (typeof item.price !== 'number' || item.price <= 0) {
-    toast('??????')
+    toast('Product price is unavailable')
     return
   }
   if (typeof item.shopId !== 'number' || item.shopId <= 0) {
-    toast('????????')
+    toast('Shop information is unavailable')
     return
   }
   if (typeof item.stockQuantity === 'number' && item.stockQuantity <= 0) {
-    toast('??????')
+    toast('Product is out of stock')
     return
   }
   try {
     const spu = await getSpu(item.id)
     const skuId = spu?.skus?.[0]?.skuId
     if (typeof skuId !== 'number') {
-      toast('???????')
+      toast('Sku information is unavailable')
       return
     }
     addToCart({
@@ -117,9 +129,9 @@ async function onAddToCart(item: ProductItem): Promise<void> {
       price: item.price,
       shopId: item.shopId
     })
-    toast('??????', 'success')
+    toast('Added to cart', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '??????')
+    toast(error instanceof Error ? error.message : 'Failed to add product to cart')
   }
 }
 
@@ -138,21 +150,21 @@ onMounted(() => {
     <view class="hero glass-card">
       <view class="hero-main">
         <text class="hero-title">My Shop</text>
-        <text class="hero-sub">移动端商城入口</text>
+        <text class="hero-sub">Mobile storefront</text>
       </view>
-      <button v-if="!loggedIn" class="btn-primary" @click="goLogin">登录</button>
+      <button v-if="!loggedIn" class="btn-primary" @click="goLogin">Sign in</button>
       <button v-else class="btn-outline" @click="navigateTo(Routes.appHome, undefined, { requiresAuth: true })">
-        进入控制台
+        Open dashboard
       </button>
     </view>
 
     <view class="search-row glass-card">
-      <input v-model="keyword" class="search-input" placeholder="搜索商品" @confirm="onSearch" />
-      <button class="btn-primary" @click="onSearch">搜索</button>
+      <input v-model="keyword" class="search-input" placeholder="Search products" @confirm="onSearch" />
+      <button class="btn-primary" @click="onSearch">Search</button>
     </view>
 
     <view class="keyword-block" v-if="hotKeywords.length">
-      <text class="keyword-title">热门</text>
+      <text class="keyword-title">Trending</text>
       <view class="keyword-list">
         <text v-for="item in hotKeywords" :key="`hot-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
           {{ item }}
@@ -161,7 +173,7 @@ onMounted(() => {
     </view>
 
     <view class="keyword-block" v-if="recommendations.length">
-      <text class="keyword-title">推荐</text>
+      <text class="keyword-title">Recommended</text>
       <view class="keyword-list">
         <text v-for="item in recommendations" :key="`rec-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
           {{ item }}
@@ -169,22 +181,27 @@ onMounted(() => {
       </view>
     </view>
 
+    <view class="section-head">
+      <text class="section-title">{{ resultsTitle }}</text>
+      <text class="section-hint">{{ resultsHint }}</text>
+    </view>
+
     <view class="product-list">
       <view v-for="item in rows" :key="item.id" class="product-card glass-card">
         <image v-if="item.imageUrl" :src="item.imageUrl" class="product-image" mode="aspectFill" />
-        <view v-else class="product-image placeholder">暂无图片</view>
+        <view v-else class="product-image placeholder">No image</view>
         <view class="product-main">
           <text class="product-name">{{ item.name }}</text>
           <text class="product-meta">{{ formatPrice(item.price) }}</text>
-          <text class="product-meta">库存 {{ item.stockQuantity ?? '--' }}</text>
+          <text class="product-meta">Stock {{ item.stockQuantity ?? '--' }}</text>
         </view>
-        <button class="btn-outline" @click="onAddToCart(item)">加入购物车</button>
+        <button class="btn-outline" @click="onAddToCart(item)">Add to cart</button>
       </view>
     </view>
 
     <view class="load-more">
-      <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">加载更多</button>
-      <text v-else class="text-muted">没有更多商品</text>
+      <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">Load more</button>
+      <text v-else class="text-muted">No more products</text>
     </view>
   </view>
 </template>
@@ -248,6 +265,22 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.section-hint {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .keyword-chip {

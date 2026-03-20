@@ -70,6 +70,12 @@ export function listSearchKeywordRecommendations(keyword = '', size = 10): Promi
   return http.get<string[], string[]>('/api/search/keyword-recommendations', { params: { keyword, size } })
 }
 
+export function listTodayHotSellingProducts(page = 0, size = 20): Promise<SearchResult<ProductDocument>> {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/hot/today', {
+    params: { page, size }
+  })
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs = SEARCH_FALLBACK_TIMEOUT_MS): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -89,6 +95,22 @@ function toSearchDocument(item: ProductItem): SearchProductDocument {
     productId: item.id,
     shopId: item.shopId,
     productName: item.name,
+    price: item.price,
+    stockQuantity: item.stockQuantity,
+    categoryId: item.categoryId,
+    brandId: item.brandId,
+    status: item.status,
+    description: item.description,
+    imageUrl: item.imageUrl
+  }
+}
+
+function toSearchDocumentFromProductDocument(item: ProductDocument): SearchProductDocument {
+  return {
+    productId: item.productId,
+    shopId: item.shopId,
+    shopName: item.shopName,
+    productName: item.productName,
     price: item.price,
     stockQuantity: item.stockQuantity,
     categoryId: item.categoryId,
@@ -176,6 +198,32 @@ export async function listSearchKeywordRecommendationsWithFallback(keyword = '',
     const result = await listSearchSuggestionsWithFallback(keyword, size)
     setCachedValue(recommendationCache, cacheKey, result, RECOMMENDATION_CACHE_TTL)
     return result
+  }
+}
+
+export async function listTodayHotSellingProductsWithFallback(
+  page = 1,
+  size = 20
+): Promise<SmartSearchResult> {
+  const safePage = Math.max(1, page)
+  const safeSize = Math.max(1, size)
+  try {
+    const result = await withTimeout(listTodayHotSellingProducts(safePage - 1, safeSize))
+    return {
+      documents: result.list.map(toSearchDocumentFromProductDocument),
+      total: result.total,
+      from: result.page * result.size,
+      size: result.size,
+      aggregations: result.aggregations,
+      searchAfter: result.searchAfter
+    }
+  } catch {
+    return smartSearchProductsWithFallback({
+      page: safePage,
+      size: safeSize,
+      sortField: 'sales_count',
+      sortOrder: 'desc'
+    })
   }
 }
 
