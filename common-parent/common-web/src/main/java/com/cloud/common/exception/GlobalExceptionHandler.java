@@ -50,14 +50,15 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Result<String>> handleSystemException(
       SystemException e, HttpServletRequest request) {
     exceptionReporter.reportSystem(e, request);
-    return buildResponse(500, Result.error(e.getCode(), "系统繁忙，请稍后重试"));
+    return buildResponse(500, Result.error(e.getCode(), "System is busy, please retry later"));
   }
 
   @ExceptionHandler(RemoteException.class)
   public ResponseEntity<Result<String>> handleRemoteException(
       RemoteException e, HttpServletRequest request) {
     exceptionReporter.reportRemote(e, request);
-    return buildResponse(503, Result.error(e.getCode(), "远程服务不可用，请稍后重试"));
+    return buildResponse(
+        503, Result.error(e.getCode(), "Remote service is unavailable, please retry later"));
   }
 
   @ExceptionHandler(ValidationException.class)
@@ -109,7 +110,7 @@ public class GlobalExceptionHandler {
     String errorMessage = String.join(", ", errors);
     exceptionReporter.reportWarn(
         "VALIDATION", request, "Request body validation failed: " + errorMessage);
-    return buildResponse(400, Result.paramError("参数校验失败: " + errorMessage));
+    return buildResponse(400, Result.paramError("Request validation failed: " + errorMessage));
   }
 
   @ExceptionHandler(HandlerMethodValidationException.class)
@@ -148,7 +149,7 @@ public class GlobalExceptionHandler {
     String errorMessage = errors.isEmpty() ? e.getMessage() : String.join(", ", errors);
     exceptionReporter.reportWarn(
         "VALIDATION", request, "Method parameter validation failed: " + errorMessage);
-    return buildResponse(400, Result.paramError("参数校验失败: " + errorMessage));
+    return buildResponse(400, Result.paramError("Request validation failed: " + errorMessage));
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
@@ -163,21 +164,21 @@ public class GlobalExceptionHandler {
     String errorMessage = String.join(", ", errors);
     exceptionReporter.reportWarn(
         "VALIDATION", request, "Constraint validation failed: " + errorMessage);
-    return buildResponse(400, Result.paramError("参数校验失败: " + errorMessage));
+    return buildResponse(400, Result.paramError("Request validation failed: " + errorMessage));
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<Result<String>> handleIllegalArgumentException(
       IllegalArgumentException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("VALIDATION", request, "Illegal argument: " + e.getMessage());
-    return buildResponse(400, Result.paramError("非法参数: " + e.getMessage()));
+    return buildResponse(400, Result.paramError("Illegal argument: " + e.getMessage()));
   }
 
   @ExceptionHandler(NullPointerException.class)
   public ResponseEntity<Result<String>> handleNullPointerException(
       NullPointerException e, HttpServletRequest request) {
     exceptionReporter.reportSystem(ResultCode.SYSTEM_ERROR, e, request, "Null pointer");
-    return buildResponse(500, Result.systemError("系统繁忙，请稍后重试"));
+    return buildResponse(500, Result.systemError("System is busy, please retry later"));
   }
 
   @ExceptionHandler(org.springframework.dao.DataAccessException.class)
@@ -210,7 +211,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Result<String>> handleJsonProcessingException(
       com.fasterxml.jackson.core.JsonProcessingException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("JSON", request, "Invalid JSON payload: " + e.getMessage());
-    return buildResponse(400, Result.error("JSON 格式错误"));
+    return buildResponse(400, Result.error("Invalid JSON payload"));
   }
 
   @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
@@ -218,7 +219,8 @@ public class GlobalExceptionHandler {
       org.springframework.http.converter.HttpMessageNotReadableException e,
       HttpServletRequest request) {
     exceptionReporter.reportWarn("JSON", request, "Unreadable HTTP message: " + e.getMessage());
-    return buildResponse(400, Result.error("请求体格式错误，请检查 JSON"));
+    return buildResponse(
+        400, Result.error("Malformed request body, please check the JSON payload"));
   }
 
   @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
@@ -227,7 +229,8 @@ public class GlobalExceptionHandler {
       HttpServletRequest request) {
     exceptionReporter.reportWarn(
         "VALIDATION", request, "Missing parameter: " + e.getParameterName());
-    return buildResponse(400, Result.paramError("缺少必填参数: " + e.getParameterName()));
+    return buildResponse(
+        400, Result.paramError("Missing required parameter: " + e.getParameterName()));
   }
 
   @ExceptionHandler(org.springframework.validation.BindException.class)
@@ -246,7 +249,7 @@ public class GlobalExceptionHandler {
 
     String errorMessage = String.join(", ", errors);
     exceptionReporter.reportWarn("VALIDATION", request, "Bind validation failed: " + errorMessage);
-    return buildResponse(400, Result.paramError("参数绑定失败: " + errorMessage));
+    return buildResponse(400, Result.paramError("Parameter binding failed: " + errorMessage));
   }
 
   @ExceptionHandler(OAuth2Exception.class)
@@ -273,7 +276,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Result<String>> handleException(Exception e, HttpServletRequest request) {
     exceptionReporter.reportSystem(ResultCode.SYSTEM_ERROR, e, request, "Unhandled exception");
-    return buildResponse(500, Result.systemError("系统繁忙，请稍后重试"));
+    return buildResponse(500, Result.systemError("System is busy, please retry later"));
   }
 
   private <T> ResponseEntity<Result<T>> buildResponse(int httpStatus, Result<T> body) {

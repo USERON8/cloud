@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 @ConditionalOnClass({RedisConnectionFactory.class, RedisTemplate.class})
 public class RedisConfig {
+
+  private static final String TYPE_HINT_PROPERTY = "@class";
+  private static final String NULL_VALUE_TYPE = "org.springframework.cache.support.NullValue";
+  private static final String SPRING_DATA_DOMAIN_TYPE_PREFIX = "org.springframework.data.domain.";
 
   @Value("${cache.ttl.user:600}") // user-service: 10 minutes
   private long userTtl;
@@ -60,11 +65,13 @@ public class RedisConfig {
     ObjectMapper objectMapper = new ObjectMapper();
 
     objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-    objectMapper.activateDefaultTyping(
-        LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
-
+    // Keep shared DTO and collection cache round-trips working while rejecting arbitrary type
+    // materialization from Redis payloads.
+    GenericJackson2JsonRedisSerializer.registerNullValueSerializer(
+        objectMapper, TYPE_HINT_PROPERTY);
+    objectMapper.activateDefaultTypingAsProperty(
+        redisTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL, TYPE_HINT_PROPERTY);
     objectMapper.findAndRegisterModules();
-    objectMapper.registerModule(new JavaTimeModule());
     objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     return new GenericJackson2JsonRedisSerializer(objectMapper);
@@ -143,5 +150,19 @@ public class RedisConfig {
         .serializeValuesWith(
             RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
         .disableCachingNullValues();
+  }
+
+  private BasicPolymorphicTypeValidator redisTypeValidator() {
+    return BasicPolymorphicTypeValidator.builder()
+        .allowIfSubType("com.cloud.")
+        .allowIfSubType(SPRING_DATA_DOMAIN_TYPE_PREFIX)
+        .allowIfSubType(NULL_VALUE_TYPE)
+        .allowIfSubType("java.math.")
+        .allowIfSubType("java.time.")
+        .allowIfSubType(Collection.class)
+        .allowIfSubType(Map.class)
+        .allowIfSubType(Date.class)
+        .allowIfSubTypeIsArray()
+        .build();
   }
 }

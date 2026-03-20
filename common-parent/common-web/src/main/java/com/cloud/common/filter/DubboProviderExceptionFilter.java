@@ -33,7 +33,8 @@ public class DubboProviderExceptionFilter implements Filter {
     String target = invoker.getInterface().getName() + "." + invocation.getMethodName();
     log.error("[DUBBO-PROVIDER] unhandled exception in {}", target, ex);
     AppResponse appResponse = new AppResponse();
-    appResponse.setException(new SystemException(ResultCode.SYSTEM_ERROR, "服务内部错误", ex));
+    appResponse.setException(
+        new SystemException(ResultCode.SYSTEM_ERROR, "Internal service error", ex));
     return appResponse;
   }
 }

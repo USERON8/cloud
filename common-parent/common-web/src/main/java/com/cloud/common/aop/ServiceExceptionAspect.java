@@ -51,14 +51,14 @@ public class ServiceExceptionAspect {
           pjp.getSignature().getDeclaringTypeName(),
           pjp.getSignature().getName(),
           e);
-      throw new SystemException(ResultCode.DB_ERROR, "数据库操作失败", e);
+      throw new SystemException(ResultCode.DB_ERROR, "Database operation failed", e);
     } catch (Exception e) {
       log.error(
           "[SERVICE-UNKNOWN] {}.{}",
           pjp.getSignature().getDeclaringTypeName(),
           pjp.getSignature().getName(),
           e);
-      throw new SystemException(ResultCode.SYSTEM_ERROR, "服务内部错误", e);
+      throw new SystemException(ResultCode.SYSTEM_ERROR, "Internal service error", e);
     }
   }
 }
