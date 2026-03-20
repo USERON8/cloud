@@ -1,7 +1,7 @@
-<script setup lang="ts">
+Ôªø<script setup lang="ts">
 import { computed, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { cartItems, cartTotal, clearCart, removeFromCart, removeItemsByShops, setCartItemQuantity } from '../../../store/cart'
+import { cartItems, cartTotal, clearCart, removeFromCart, setCartItemQuantity } from '../../../store/cart'
 import type { CartEntry } from '../../../store/cart'
 import { createOrder } from '../../../api/order'
 import { formatPrice } from '../../../utils/format'
@@ -44,60 +44,62 @@ function changeQuantity(item: CartEntry, delta: number): void {
 }
 
 async function onRemove(item: CartEntry): Promise<void> {
-  const ok = await confirm(`»∑»œ“∆≥˝ ${item.productName}£ø`)
+  const ok = await confirm(`Á°ÆËÆ§ÁßªÈô§ ${item.productName}Ôºü`)
   if (!ok) return
   removeFromCart(item.productId, item.skuId)
-  toast('“—“∆≥˝', 'success')
+  toast('Â∑≤ÁßªÈô§', 'success')
 }
 
 async function onClearCart(): Promise<void> {
-  const ok = await confirm('»∑»œ«Âø’π∫ŒÔ≥µ£ø')
+  const ok = await confirm('Á°ÆËÆ§Ê∏ÖÁ©∫Ë¥≠Áâ©ËΩ¶Ôºü')
   if (!ok) return
   clearCart()
-  toast('π∫ŒÔ≥µ“—«Âø’', 'success')
+  toast('Ë¥≠Áâ©ËΩ¶Â∑≤Ê∏ÖÁ©∫', 'success')
 }
 
 async function onPlaceOrder(): Promise<void> {
   if (shopGroups.value.length === 0) {
-    toast('?????')
+    toast('Cart is empty')
     return
   }
-  const ok = await confirm(`???? ${shopGroups.value.length} ????`)
+  const ok = await confirm(`Submit ${shopGroups.value.length} shop order(s)?`)
   if (!ok) return
 
   placing.value = true
-  const successShops: number[] = []
   const failedShops: number[] = []
+  let successCount = 0
 
-  for (const group of shopGroups.value) {
-    for (const item of group.items) {
-      if (typeof item.skuId !== 'number') {
-        failedShops.push(group.shopId)
-        toast(`?? ${group.shopId}??? SKU ??`)
-        continue
-      }
-      try {
-        await createOrder({
-          shopId: group.shopId,
-          spuId: item.productId,
-          skuId: item.skuId,
-          quantity: item.quantity,
-          price: item.price
-        })
-        successShops.push(group.shopId)
-      } catch (error) {
-        failedShops.push(group.shopId)
-        const msg = error instanceof Error ? error.message : '??????'
-        toast(`?? ${group.shopId}?${msg}`)
+  try {
+    for (const group of shopGroups.value) {
+      for (const item of group.items) {
+        if (typeof item.skuId !== 'number') {
+          failedShops.push(group.shopId)
+          toast(`Shop ${group.shopId} item is missing a SKU`)
+          continue
+        }
+        try {
+          await createOrder({
+            shopId: group.shopId,
+            spuId: item.productId,
+            skuId: item.skuId,
+            quantity: item.quantity,
+            price: item.price
+          })
+          removeFromCart(item.productId, item.skuId)
+          successCount += 1
+        } catch (error) {
+          failedShops.push(group.shopId)
+          const msg = error instanceof Error ? error.message : 'Unknown error'
+          toast(`Shop ${group.shopId}: ${msg}`)
+        }
       }
     }
+  } finally {
+    placing.value = false
   }
 
-  placing.value = false
-
-  if (successShops.length > 0) {
-    removeItemsByShops(successShops)
-    toast(`???? ${successShops.length} ?`, 'success')
+  if (successCount > 0) {
+    toast(`Submitted ${successCount} item(s)`, 'success')
     if (failedShops.length === 0) {
       navigateTo(Routes.appOrders, undefined, { requiresAuth: true })
       return
@@ -105,7 +107,7 @@ async function onPlaceOrder(): Promise<void> {
   }
 
   if (failedShops.length > 0) {
-    toast(`?????${failedShops.join(', ')}`)
+    toast(`Failed shops: ${failedShops.join(', ')}`)
   }
 }
 </script>
@@ -114,22 +116,22 @@ async function onPlaceOrder(): Promise<void> {
   <AppShell title="Cart">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">π∫ŒÔ≥µ</text>
+        <text class="section-title">Ë¥≠Áâ©ËΩ¶</text>
         <view class="header-actions">
           <button class="btn-outline" @click="navigateTo(Routes.appCatalog, undefined, { requiresAuth: true })">
-            ºÃ–¯π∫ŒÔ
+            ÁªßÁª≠Ë¥≠Áâ©
           </button>
-          <button v-if="cartItems.length > 0" class="btn-outline" @click="onClearCart">«Âø’</button>
+          <button v-if="cartItems.length > 0" class="btn-outline" @click="onClearCart">Ê∏ÖÁ©∫</button>
         </view>
       </view>
 
       <view v-if="cartItems.length === 0" class="empty">
-        <text class="text-muted">π∫ŒÔ≥µŒ™ø’</text>
+        <text class="text-muted">Ë¥≠Áâ©ËΩ¶‰∏∫Á©∫</text>
       </view>
 
       <view v-else>
         <view v-for="group in shopGroups" :key="group.shopId" class="shop-group">
-          <text class="shop-title">µÍ∆Ã {{ group.shopId }} °§ –°º∆ {{ formatPrice(group.subtotal) }}</text>
+          <text class="shop-title">Â∫óÈì∫ {{ group.shopId }} ¬∑ Â∞èËÆ° {{ formatPrice(group.subtotal) }}</text>
           <view v-for="item in group.items" :key="item.productId" class="item-row">
             <view class="item-info">
               <text class="item-name">{{ item.productName }}</text>
@@ -139,14 +141,14 @@ async function onPlaceOrder(): Promise<void> {
               <button class="btn-outline" @click="changeQuantity(item, -1)">-</button>
               <text class="qty">{{ item.quantity }}</text>
               <button class="btn-outline" @click="changeQuantity(item, 1)">+</button>
-              <button class="btn-outline" @click="onRemove(item)">“∆≥˝</button>
+              <button class="btn-outline" @click="onRemove(item)">ÁßªÈô§</button>
             </view>
           </view>
         </view>
 
         <view class="summary">
-          <text class="summary-text">∫œº∆£∫{{ formatPrice(cartTotal) }}</text>
-          <button class="btn-primary" :loading="placing" @click="onPlaceOrder">Ã·Ωª∂©µ•</button>
+          <text class="summary-text">ÂêàËÆ°Ôºö{{ formatPrice(cartTotal) }}</text>
+          <button class="btn-primary" :loading="placing" @click="onPlaceOrder">Êèê‰∫§ËÆ¢Âçï</button>
         </view>
       </view>
     </view>

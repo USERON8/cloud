@@ -47,11 +47,8 @@ export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: numb
     existing.quantity += qty
   } else {
     state.items.push({
-      productId: entry.productId,
-      productName: entry.productName,
-      price: entry.price,
-      quantity: qty,
-      shopId: entry.shopId
+      ...entry,
+      quantity: qty
     })
   }
   persist()

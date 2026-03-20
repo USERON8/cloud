@@ -4,7 +4,7 @@ import { BusinessError, SUCCESS_CODE, type ResultEnvelope } from '../types/api'
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export interface RequestConfig {
-  params?: Record<string, unknown>
+  params?: object
   data?: unknown
   headers?: Record<string, string>
   raw?: boolean
@@ -21,13 +21,13 @@ function buildApiUrl(path: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}${path}`
 }
 
-function buildUrl(path: string, params?: Record<string, unknown>): string {
+function buildUrl(path: string, params?: object): string {
   const base = buildApiUrl(path)
   if (!params) {
     return base
   }
   const search = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(params as Record<string, unknown>).forEach(([key, value]) => {
     if (value == null) {
       return
     }
@@ -100,8 +100,8 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
   return new Promise<T>((resolve, reject) => {
     uni.request({
       url: targetUrl,
-      method,
-      data: payload,
+      method: method as any,
+      data: payload as any,
       header: headers,
       timeout: apiTimeout,
       withCredentials: true,
