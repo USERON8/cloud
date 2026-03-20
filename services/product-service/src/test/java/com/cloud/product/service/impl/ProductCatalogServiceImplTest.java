@@ -9,6 +9,8 @@ import com.cloud.common.domain.dto.product.SkuDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.mapper.BrandMapper;
+import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
@@ -28,6 +30,10 @@ class ProductCatalogServiceImplTest {
   @Mock private SpuMapper spuMapper;
 
   @Mock private SkuMapper skuMapper;
+
+  @Mock private CategoryMapper categoryMapper;
+
+  @Mock private BrandMapper brandMapper;
 
   @Mock private ProductDetailCacheService productDetailCacheService;
 

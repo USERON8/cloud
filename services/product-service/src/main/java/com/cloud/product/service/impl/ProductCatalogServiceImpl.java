@@ -8,15 +8,20 @@ import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.mapper.BrandMapper;
+import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
+import com.cloud.product.module.entity.Brand;
+import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.support.ProductDetailCacheService;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +38,8 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
   private final SpuMapper spuMapper;
   private final SkuMapper skuMapper;
+  private final CategoryMapper categoryMapper;
+  private final BrandMapper brandMapper;
   private final ProductDetailCacheService productDetailCacheService;
   private final ProductSyncMessageProducer productSyncMessageProducer;
 
@@ -242,18 +249,23 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     return sku;
   }
 
-  private SpuDetailVO toSpuDetail(Spu spu, List<Sku> skus) {
+  private SpuDetailVO toSpuDetail(
+      Spu spu, List<Sku> skus, Map<Long, Category> categoryById, Map<Long, Brand> brandById) {
     SpuDetailVO vo = new SpuDetailVO();
     vo.setSpuId(spu.getId());
     vo.setSpuName(spu.getSpuName());
     vo.setSubtitle(spu.getSubtitle());
     vo.setCategoryId(spu.getCategoryId());
+    vo.setCategoryName(resolveCategoryName(spu.getCategoryId(), categoryById));
     vo.setBrandId(spu.getBrandId());
+    vo.setBrandName(resolveBrandName(spu.getBrandId(), brandById));
     vo.setMerchantId(spu.getMerchantId());
     vo.setStatus(spu.getStatus());
     vo.setDescription(spu.getDescription());
     vo.setMainImage(spu.getMainImage());
     vo.setMainImageFile(spu.getMainImageFile());
+    vo.setRecommended(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsRecommended));
+    vo.setIsHot(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsHot));
     vo.setCreatedAt(spu.getCreatedAt());
     vo.setUpdatedAt(spu.getUpdatedAt());
 
@@ -273,7 +285,9 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     List<Sku> skus =
         skuMapper.selectList(
             new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
-    return toSpuDetail(spu, skus);
+    Map<Long, Category> categoryById = loadCategoryMap(List.of(spu));
+    Map<Long, Brand> brandById = loadBrandMap(List.of(spu));
+    return toSpuDetail(spu, skus, categoryById, brandById);
   }
 
   private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
@@ -281,6 +295,8 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       return Collections.emptyList();
     }
 
+    Map<Long, Category> categoryById = loadCategoryMap(spus);
+    Map<Long, Brand> brandById = loadBrandMap(spus);
     List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
     Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
     if (!spuIds.isEmpty()) {
@@ -298,9 +314,78 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     List<SpuDetailVO> result = new ArrayList<>(spus.size());
     for (Spu spu : spus) {
       List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
-      result.add(toSpuDetail(spu, skus));
+      result.add(toSpuDetail(spu, skus, categoryById, brandById));
     }
     return result;
+  }
+
+  private Map<Long, Category> loadCategoryMap(List<Spu> spus) {
+    List<Long> categoryIds =
+        spus.stream().map(Spu::getCategoryId).filter(id -> id != null).distinct().toList();
+    if (categoryIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, Category> categoryById = new HashMap<>(categoryIds.size());
+    List<Category> categories = categoryMapper.selectBatchIds(categoryIds);
+    if (categories == null || categories.isEmpty()) {
+      return categoryById;
+    }
+    for (Category category : categories) {
+      if (category != null && category.getId() != null) {
+        categoryById.put(category.getId(), category);
+      }
+    }
+    return categoryById;
+  }
+
+  private Map<Long, Brand> loadBrandMap(List<Spu> spus) {
+    List<Long> brandIds =
+        spus.stream().map(Spu::getBrandId).filter(id -> id != null).distinct().toList();
+    if (brandIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, Brand> brandById = new HashMap<>(brandIds.size());
+    List<Brand> brands = brandMapper.selectBatchIds(brandIds);
+    if (brands == null || brands.isEmpty()) {
+      return brandById;
+    }
+    for (Brand brand : brands) {
+      if (brand != null && brand.getId() != null) {
+        brandById.put(brand.getId(), brand);
+      }
+    }
+    return brandById;
+  }
+
+  private String resolveCategoryName(Long categoryId, Map<Long, Category> categoryById) {
+    if (categoryId == null || categoryById == null || categoryById.isEmpty()) {
+      return null;
+    }
+    Category category = categoryById.get(categoryId);
+    return category == null ? null : category.getName();
+  }
+
+  private String resolveBrandName(Long brandId, Map<Long, Brand> brandById) {
+    if (brandId == null || brandById == null || brandById.isEmpty()) {
+      return null;
+    }
+    Brand brand = brandById.get(brandId);
+    return brand == null ? null : brand.getBrandName();
+  }
+
+  private Boolean resolveBrandFlag(
+      Long brandId,
+      Map<Long, Brand> brandById,
+      java.util.function.Function<Brand, Integer> extractor) {
+    if (brandId == null || brandById == null || brandById.isEmpty()) {
+      return Boolean.FALSE;
+    }
+    Brand brand = brandById.get(brandId);
+    if (brand == null) {
+      return Boolean.FALSE;
+    }
+    Integer value = extractor.apply(brand);
+    return value != null && value > 0;
   }
 
   private SkuDetailVO toSkuDetail(Sku sku) {

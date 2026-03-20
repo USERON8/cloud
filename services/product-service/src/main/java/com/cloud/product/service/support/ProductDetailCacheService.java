@@ -148,11 +148,15 @@ public class ProductDetailCacheService {
     target.setSpuName(source.getSpuName());
     target.setSubtitle(source.getSubtitle());
     target.setCategoryId(source.getCategoryId());
+    target.setCategoryName(source.getCategoryName());
     target.setBrandId(source.getBrandId());
+    target.setBrandName(source.getBrandName());
     target.setMerchantId(source.getMerchantId());
     target.setStatus(source.getStatus());
     target.setDescription(source.getDescription());
     target.setMainImage(source.getMainImage());
+    target.setRecommended(source.getRecommended());
+    target.setIsHot(source.getIsHot());
     target.setCreatedAt(source.getCreatedAt());
     target.setUpdatedAt(source.getUpdatedAt());
     target.setSkus(null);

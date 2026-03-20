@@ -5,12 +5,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
+import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.mapper.BrandMapper;
+import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
+import com.cloud.product.module.entity.Brand;
+import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.Sku;
+import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.impl.ProductCatalogServiceImpl;
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +34,10 @@ class ProductCatalogServiceImplTest {
 
   @Mock private SkuMapper skuMapper;
 
+  @Mock private CategoryMapper categoryMapper;
+
+  @Mock private BrandMapper brandMapper;
+
   @Mock private ProductDetailCacheService productDetailCacheService;
 
   @Mock private ProductSyncMessageProducer productSyncMessageProducer;
@@ -37,7 +48,12 @@ class ProductCatalogServiceImplTest {
   void setUp() {
     service =
         new ProductCatalogServiceImpl(
-            spuMapper, skuMapper, productDetailCacheService, productSyncMessageProducer);
+            spuMapper,
+            skuMapper,
+            categoryMapper,
+            brandMapper,
+            productDetailCacheService,
+            productSyncMessageProducer);
   }
 
   @Test
@@ -66,5 +82,42 @@ class ProductCatalogServiceImplTest {
     assertThatThrownBy(() -> service.updateSpuStatus(99L, 1))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("spu not found");
+  }
+
+  @Test
+  void listSpuByPageShouldPopulateSearchMetadata() {
+    Spu spu = new Spu();
+    spu.setId(1001L);
+    spu.setSpuName("Cloud Phone");
+    spu.setCategoryId(2001L);
+    spu.setBrandId(3001L);
+    spu.setMerchantId(4001L);
+    spu.setStatus(1);
+
+    Category category = new Category();
+    category.setId(2001L);
+    category.setName("Phone");
+
+    Brand brand = new Brand();
+    brand.setId(3001L);
+    brand.setBrandName("Cloud");
+    brand.setIsRecommended(1);
+    brand.setIsHot(1);
+
+    Page<Spu> page = new Page<>(1, 20);
+    page.setRecords(List.of(spu));
+
+    when(spuMapper.selectPage(any(Page.class), any())).thenReturn(page);
+    when(skuMapper.selectList(any())).thenReturn(List.of());
+    when(categoryMapper.selectBatchIds(List.of(2001L))).thenReturn(List.of(category));
+    when(brandMapper.selectBatchIds(List.of(3001L))).thenReturn(List.of(brand));
+
+    List<SpuDetailVO> result = service.listSpuByPage(1, 20, 1);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getCategoryName()).isEqualTo("Phone");
+    assertThat(result.get(0).getBrandName()).isEqualTo("Cloud");
+    assertThat(result.get(0).getRecommended()).isTrue();
+    assertThat(result.get(0).getIsHot()).isTrue();
   }
 }

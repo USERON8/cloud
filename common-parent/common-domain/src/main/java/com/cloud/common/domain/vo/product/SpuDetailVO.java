@@ -14,12 +14,16 @@ public class SpuDetailVO implements Serializable {
   private String spuName;
   private String subtitle;
   private Long categoryId;
+  private String categoryName;
   private Long brandId;
+  private String brandName;
   private Long merchantId;
   private Integer status;
   private String description;
   private String mainImage;
   private String mainImageFile;
+  private Boolean recommended;
+  private Boolean isHot;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private List<SkuDetailVO> skus;
