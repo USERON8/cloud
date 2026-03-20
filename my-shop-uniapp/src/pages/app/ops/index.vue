@@ -5,6 +5,7 @@ import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToke
 import {
   advancedSearch,
   basicSearch,
+  combinedSearchProducts,
   complexSearch,
   filterByBrand,
   filterByCategory,
@@ -15,6 +16,7 @@ import {
   listHotProducts,
   listNewProducts,
   listRecommendedProducts,
+  smartSearchProducts,
   searchByCategory,
   searchByShop,
   searchProducts
@@ -29,7 +31,6 @@ import {
   searchShopsByLocation,
   type ShopSearchRequest
 } from '../../../api/shop-search'
-import { combinedSearchProducts, smartSearchProducts } from '../../../api/product'
 import { findUserByUsername, updateUsersBatch } from '../../../api/user-management'
 import { approveMerchantsBatch, deleteMerchantsBatch, updateMerchantStatusBatch } from '../../../api/merchant'
 import { reviewMerchantAuthBatch } from '../../../api/merchant-auth'

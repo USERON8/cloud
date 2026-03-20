@@ -5,7 +5,7 @@ import {
   listSearchKeywordRecommendationsWithFallback,
   listTodayHotSellingProductsWithFallback,
   smartSearchProductsWithFallback
-} from '../../api/product'
+} from '../../api/search-ops'
 import { getSpu } from '../../api/product-catalog'
 import type { ProductItem, SearchProductDocument } from '../../types/domain'
 import { addToCart } from '../../store/cart'

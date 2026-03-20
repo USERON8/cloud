@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { listSearchHotKeywordsWithFallback, listSearchKeywordRecommendationsWithFallback, smartSearchProductsWithFallback } from '../../../api/product'
+import {
+  listSearchHotKeywordsWithFallback,
+  listSearchKeywordRecommendationsWithFallback,
+  smartSearchProductsWithFallback
+} from '../../../api/search-ops'
 import { getSpu } from '../../../api/product-catalog'
 import type { ProductItem, SearchProductDocument } from '../../../types/domain'
 import { addToCart } from '../../../store/cart'
@@ -27,7 +31,7 @@ function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
   return {
     id: typeof item.productId === 'number' ? item.productId : 0,
     shopId: item.shopId,
-    name: item.productName || 'Î´ÃüÃûÉÌÆ·',
+    name: item.productName || 'æœªå‘½åå•†å“',
     price: item.price,
     stockQuantity: item.stockQuantity,
     categoryId: item.categoryId,
@@ -69,7 +73,7 @@ async function loadProducts(reset = false): Promise<void> {
     hasMore.value = rows.value.length < result.total
     await refreshKeywords(keyword.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '¼ÓÔØÉÌÆ·Ê§°Ü')
+    toast(error instanceof Error ? error.message : 'åŠ è½½å•†å“å¤±è´¥')
   } finally {
     loading.value = false
   }
@@ -135,19 +139,19 @@ onMounted(() => {
   <AppShell title="Products">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">ÉÌÆ·Ä¿Â¼</text>
+        <text class="section-title">å•†å“ç›®å½•</text>
         <button v-if="canManage" class="btn-outline" @click="navigateTo(Routes.appCatalogManage, undefined, { requiresAuth: true })">
-          ¹ÜÀíÉÌÆ·
+          ç®¡ç†å•†å“
         </button>
       </view>
 
       <view class="search-row">
-        <input v-model="keyword" class="search-input" placeholder="ËÑË÷ÉÌÆ·" @confirm="onSearch" />
-        <button class="btn-primary" @click="onSearch">ËÑË÷</button>
+        <input v-model="keyword" class="search-input" placeholder="æœç´¢å•†å“" @confirm="onSearch" />
+        <button class="btn-primary" @click="onSearch">æœç´¢</button>
       </view>
 
       <view class="keyword-block" v-if="hotKeywords.length">
-        <text class="keyword-title">ÈÈÃÅ</text>
+        <text class="keyword-title">çƒ­é—¨</text>
         <view class="keyword-list">
           <text v-for="item in hotKeywords" :key="`hot-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
             {{ item }}
@@ -156,7 +160,7 @@ onMounted(() => {
       </view>
 
       <view class="keyword-block" v-if="recommendations.length">
-        <text class="keyword-title">ÍÆ¼ö</text>
+        <text class="keyword-title">æ¨è</text>
         <view class="keyword-list">
           <text v-for="item in recommendations" :key="`rec-${item}`" class="keyword-chip" @click="onKeywordSelect(item)">
             {{ item }}
@@ -167,19 +171,19 @@ onMounted(() => {
       <view class="product-list">
         <view v-for="item in rows" :key="item.id" class="product-card">
           <image v-if="item.imageUrl" :src="item.imageUrl" class="product-image" mode="aspectFill" />
-          <view v-else class="product-image placeholder">ÔİÎŞÍ¼Æ¬</view>
+          <view v-else class="product-image placeholder">æš‚æ— å›¾ç‰‡</view>
           <view class="product-main">
             <text class="product-name">{{ item.name }}</text>
             <text class="product-meta">{{ formatPrice(item.price) }}</text>
-            <text class="product-meta">¿â´æ {{ item.stockQuantity ?? '--' }}</text>
+            <text class="product-meta">åº“å­˜ {{ item.stockQuantity ?? '--' }}</text>
           </view>
-          <button class="btn-outline" @click="onAddToCart(item)">¼ÓÈë¹ºÎï³µ</button>
+          <button class="btn-outline" @click="onAddToCart(item)">åŠ å…¥è´­ç‰©è½¦</button>
         </view>
       </view>
 
       <view class="load-more">
-        <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">¼ÓÔØ¸ü¶à</button>
-        <text v-else class="text-muted">Ã»ÓĞ¸ü¶àÉÌÆ·</text>
+        <button v-if="hasMore" class="btn-outline" :loading="loading" @click="onLoadMore">åŠ è½½æ›´å¤š</button>
+        <text v-else class="text-muted">æ²¡æœ‰æ›´å¤šå•†å“</text>
       </view>
     </view>
   </AppShell>
