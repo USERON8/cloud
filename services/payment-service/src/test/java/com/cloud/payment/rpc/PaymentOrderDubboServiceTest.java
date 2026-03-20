@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.payment.service.PaymentOrderService;
@@ -44,5 +45,16 @@ class PaymentOrderDubboServiceTest {
     PaymentOrderVO result = paymentOrderDubboService.getPaymentOrderByNo("P1");
 
     assertThat(result).isSameAs(vo);
+  }
+
+  @Test
+  void handlePaymentCallback_delegatesToInternalHandler() {
+    PaymentCallbackCommandDTO command = new PaymentCallbackCommandDTO();
+    when(paymentOrderService.handleInternalPaymentCallback(command)).thenReturn(Boolean.TRUE);
+
+    Boolean result = paymentOrderDubboService.handlePaymentCallback(command);
+
+    assertThat(result).isTrue();
+    verify(paymentOrderService).handleInternalPaymentCallback(command);
   }
 }

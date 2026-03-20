@@ -94,7 +94,7 @@ public class PaymentOrderController {
   @PreAuthorize("hasAuthority('order:refund')")
   @Operation(summary = "Handle internal payment callback")
   public Result<Boolean> handleCallback(@Valid @RequestBody PaymentCallbackCommandDTO command) {
-    return Result.success(paymentOrderService.handlePaymentCallback(command));
+    return Result.success(paymentOrderService.handleInternalPaymentCallback(command));
   }
 
   @PostMapping("/refunds")

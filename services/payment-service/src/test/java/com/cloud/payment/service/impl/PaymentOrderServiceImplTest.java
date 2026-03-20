@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
@@ -210,6 +211,21 @@ class PaymentOrderServiceImplTest {
     verify(paymentCallbackLogMapper).insert(any(PaymentCallbackLogEntity.class));
     verify(paymentOrderMapper, never()).updateById(any(PaymentOrderEntity.class));
     verify(paymentSuccessTxProducerProvider, never()).getIfAvailable();
+  }
+
+  @Test
+  void handleInternalPaymentCallbackShouldRejectStateMutation() {
+    var command = new com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO();
+    command.setPaymentNo("P-4");
+    command.setCallbackStatus("SUCCESS");
+
+    assertThatThrownBy(() -> service.handleInternalPaymentCallback(command))
+        .isInstanceOf(BusinessException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BusinessException) ex).getCode())
+                    .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
+        .hasMessageContaining("internal payment callbacks cannot update payment state");
   }
 
   private PaymentOrderCommandDTO buildCommand() {

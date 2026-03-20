@@ -16,6 +16,8 @@ public interface PaymentOrderService {
 
   Boolean handlePaymentCallback(PaymentCallbackCommandDTO command);
 
+  Boolean handleInternalPaymentCallback(PaymentCallbackCommandDTO command);
+
   Long createRefund(PaymentRefundCommandDTO command);
 
   PaymentRefundVO getRefundByNo(String refundNo);

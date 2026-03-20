@@ -1,5 +1,6 @@
 package com.cloud.order.service.impl;
 
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.entity.OrderMain;
@@ -31,6 +32,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
       String shippingCompany,
       String trackingNumber,
       String cancelReason) {
+    validateSupportedAction(action);
     if (orderId == null) {
       return false;
     }
@@ -51,6 +53,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
       String shippingCompany,
       String trackingNumber,
       String cancelReason) {
+    validateSupportedAction(action);
     if (orderIds == null || orderIds.isEmpty()) {
       return 0;
     }
@@ -89,6 +92,14 @@ public class OrderBatchServiceImpl implements OrderBatchService {
       } else {
         orderService.advanceSubOrderStatus(sub.getId(), action);
       }
+    }
+  }
+
+  private void validateSupportedAction(OrderAction action) {
+    if (action == OrderAction.PAY) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST,
+          "direct pay actions are disabled; wait for verified payment confirmation");
     }
   }
 

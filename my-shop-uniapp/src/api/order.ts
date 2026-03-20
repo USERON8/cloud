@@ -5,10 +5,10 @@ import { sessionState } from '../auth/session'
 export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
   const userId = sessionState.user?.id
   if (typeof userId !== 'number') {
-    return Promise.reject(new Error('用户信息缺失'))
+    return Promise.reject(new Error('User session is required'))
   }
   if (typeof payload.skuId !== 'number') {
-    return Promise.reject(new Error('skuId 必填'))
+    return Promise.reject(new Error('skuId is required'))
   }
   const totalAmount = Number((payload.price * payload.quantity).toFixed(2))
   const body = {
@@ -40,7 +40,9 @@ export function payOrder(id: number): Promise<boolean> {
 }
 
 export function cancelOrder(id: number, reason?: string): Promise<boolean> {
-  return http.post<boolean, boolean>(`/api/orders/${id}/cancel`, null, { params: { cancelReason: reason } })
+  return http.post<boolean, boolean>(`/api/orders/${id}/cancel`, null, {
+    params: { cancelReason: reason }
+  })
 }
 
 export function shipOrder(id: number): Promise<boolean> {
@@ -56,7 +58,9 @@ export function batchPayOrders(ids: number[]): Promise<number> {
 }
 
 export function batchCancelOrders(ids: number[], reason?: string): Promise<number> {
-  return http.post<number, number>('/api/orders/batch/cancel', ids, { params: { cancelReason: reason } })
+  return http.post<number, number>('/api/orders/batch/cancel', ids, {
+    params: { cancelReason: reason }
+  })
 }
 
 export function batchShipOrders(ids: number[]): Promise<number> {

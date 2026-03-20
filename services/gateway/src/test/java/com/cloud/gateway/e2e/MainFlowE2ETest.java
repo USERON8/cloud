@@ -41,7 +41,7 @@ class MainFlowE2ETest {
   }
 
   @Test
-  void shouldCreatePaymentAndCallback() {
+  void shouldCreatePaymentAndQueryPaymentOrder() {
     E2ETestSupport.assumeHasAccessToken();
     E2ETestSupport.assumeHasInternalToken();
 
@@ -68,25 +68,6 @@ class MainFlowE2ETest {
     assertThat(createPayment.statusCode()).isEqualTo(200);
     assertThat(createPayment.jsonPath().getInt("code")).isEqualTo(200);
 
-    Map<String, Object> callbackBody = new HashMap<>();
-    callbackBody.put("paymentNo", paymentNo);
-    callbackBody.put("callbackNo", E2ETestSupport.newCallbackNo());
-    callbackBody.put("callbackStatus", "SUCCESS");
-    callbackBody.put("providerTxnNo", "ALI-" + System.currentTimeMillis());
-    callbackBody.put("idempotencyKey", E2ETestSupport.newIdempotencyKey());
-    callbackBody.put("payload", "{\"tradeStatus\":\"TRADE_SUCCESS\"}");
-
-    Response callback =
-        given()
-            .header("Authorization", "Bearer " + E2ETestSupport.internalToken())
-            .contentType(ContentType.JSON)
-            .body(callbackBody)
-            .when()
-            .post("/api/payments/callbacks");
-
-    assertThat(callback.statusCode()).isEqualTo(200);
-    assertThat(callback.jsonPath().getInt("code")).isEqualTo(200);
-
     Response queryPayment =
         given()
             .header("Authorization", "Bearer " + E2ETestSupport.accessToken())
@@ -96,6 +77,7 @@ class MainFlowE2ETest {
     assertThat(queryPayment.statusCode()).isEqualTo(200);
     assertThat(queryPayment.jsonPath().getInt("code")).isEqualTo(200);
     assertThat(queryPayment.jsonPath().getString("data.paymentNo")).isEqualTo(paymentNo);
+    assertThat(queryPayment.jsonPath().getString("data.status")).isEqualTo("CREATED");
   }
 
   private OrderContext createOrder(String token) {

@@ -33,7 +33,7 @@ public class PaymentOrderDubboService implements PaymentDubboApi {
 
   @Override
   public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
-    return paymentOrderService.handlePaymentCallback(command);
+    return paymentOrderService.handleInternalPaymentCallback(command);
   }
 
   @Override

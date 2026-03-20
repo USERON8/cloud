@@ -6,6 +6,7 @@ import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
@@ -188,6 +189,12 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     paymentOrderMapper.updateById(order);
     paymentOrderStateSupport.handlePersistedState(order, previousStatus);
     return true;
+  }
+
+  @Override
+  public Boolean handleInternalPaymentCallback(PaymentCallbackCommandDTO command) {
+    throw new BusinessException(
+        ResultCode.BAD_REQUEST, "internal payment callbacks cannot update payment state");
   }
 
   @Override

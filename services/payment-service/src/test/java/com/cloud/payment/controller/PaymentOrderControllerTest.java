@@ -2,8 +2,10 @@ package com.cloud.payment.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
@@ -70,6 +72,20 @@ class PaymentOrderControllerTest {
 
     assertThat(result.getCode()).isEqualTo(200);
     assertThat(result.getData()).isSameAs(order);
+  }
+
+  @Test
+  void handleCallbackShouldUseInternalCallbackHandler() {
+    PaymentCallbackCommandDTO command = new PaymentCallbackCommandDTO();
+    when(paymentOrderService.handleInternalPaymentCallback(command)).thenReturn(Boolean.TRUE);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result = controller.handleCallback(command);
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isTrue();
+    verify(paymentOrderService).handleInternalPaymentCallback(command);
   }
 
   private Authentication authentication(String userId, String... authorities) {
