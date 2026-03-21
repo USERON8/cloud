@@ -107,8 +107,20 @@ public class PaymentOrderController {
   @GetMapping("/refunds/{refundNo}")
   @PreAuthorize("hasAuthority('order:refund')")
   @Operation(summary = "Get refund by number")
-  public Result<PaymentRefundVO> getRefundByNo(@PathVariable String refundNo) {
-    return Result.success(paymentOrderService.getRefundByNo(refundNo));
+  public Result<PaymentRefundVO> getRefundByNo(
+      @PathVariable String refundNo, Authentication authentication) {
+    PaymentRefundVO refund = paymentOrderService.getRefundByNo(refundNo);
+    if (refund == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "payment refund not found");
+    }
+    PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(refund.getPaymentNo());
+    if (order == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found for refund");
+    }
+    if (!canReadOrder(authentication, order)) {
+      throw new BizException(ResultCode.FORBIDDEN, "forbidden to query other user's refund");
+    }
+    return Result.success(refund);
   }
 
   private boolean canReadOrder(Authentication authentication, PaymentOrderVO order) {

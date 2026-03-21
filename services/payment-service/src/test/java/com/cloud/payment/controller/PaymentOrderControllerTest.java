@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
+import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.payment.service.PaymentOrderService;
@@ -86,6 +87,81 @@ class PaymentOrderControllerTest {
     assertThat(result.getCode()).isEqualTo(200);
     assertThat(result.getData()).isTrue();
     verify(paymentOrderService).handleInternalPaymentCallback(command);
+  }
+
+  @Test
+  void getRefundByNoShouldAllowOwner() {
+    PaymentRefundVO refund = new PaymentRefundVO();
+    refund.setRefundNo("RF-1");
+    refund.setPaymentNo("PAY-10");
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-10");
+    order.setUserId(12L);
+    when(paymentOrderService.getRefundByNo("RF-1")).thenReturn(refund);
+    when(paymentOrderService.getPaymentOrderByNo("PAY-10")).thenReturn(order);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result = controller.getRefundByNo("RF-1", authentication("12", "ROLE_USER"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isSameAs(refund);
+  }
+
+  @Test
+  void getRefundByNoShouldForbidOtherUser() {
+    PaymentRefundVO refund = new PaymentRefundVO();
+    refund.setRefundNo("RF-2");
+    refund.setPaymentNo("PAY-20");
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-20");
+    order.setUserId(18L);
+    when(paymentOrderService.getRefundByNo("RF-2")).thenReturn(refund);
+    when(paymentOrderService.getPaymentOrderByNo("PAY-20")).thenReturn(order);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () -> controller.getRefundByNo("RF-2", authentication("99", "ROLE_USER")));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
+    assertThat(exception.getMessage()).contains("other user's refund");
+  }
+
+  @Test
+  void getRefundByNoShouldAllowAdmin() {
+    PaymentRefundVO refund = new PaymentRefundVO();
+    refund.setRefundNo("RF-3");
+    refund.setPaymentNo("PAY-30");
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-30");
+    order.setUserId(18L);
+    when(paymentOrderService.getRefundByNo("RF-3")).thenReturn(refund);
+    when(paymentOrderService.getPaymentOrderByNo("PAY-30")).thenReturn(order);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result = controller.getRefundByNo("RF-3", authentication(null, "ROLE_ADMIN"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isSameAs(refund);
+  }
+
+  @Test
+  void getRefundByNoShouldRejectMissingRefund() {
+    when(paymentOrderService.getRefundByNo("RF-404")).thenReturn(null);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () -> controller.getRefundByNo("RF-404", authentication("12", "ROLE_USER")));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.NOT_FOUND.getCode());
+    assertThat(exception.getMessage()).contains("payment refund not found");
   }
 
   private Authentication authentication(String userId, String... authorities) {
