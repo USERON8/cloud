@@ -215,7 +215,7 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | Method | Path | Description | Authorization | Parameters / Body | Response |
 | --- | --- | --- | --- | --- | --- |
 | POST | /api/orders | Create main order | hasAuthority('order:create') | header=Idempotency-Key, body=CreateMainOrderRequest | Result<OrderAggregateResponse> |
-| GET | /api/orders | List orders | hasAuthority('order:query') | query=page,size,userId),shopId),status) | Result<PageResult<OrderSummaryDTO>> |
+| GET | /api/orders | List orders | hasAuthority('order:query') | query=page,size,userId,merchantId,status (`shopId` remains a legacy alias) | Result<PageResult<OrderSummaryDTO>> |
 | GET | /api/orders/{orderId} | Get order detail | hasAuthority('order:query') | path=orderId | Result<OrderSummaryDTO> |
 | POST | /api/orders/{orderId}/pay | Pay order | hasAuthority('order:create') | path=orderId | Result<Boolean> |
 | POST | /api/orders/{orderId}/cancel | Cancel order | hasAuthority('order:cancel') | path=orderId, query=cancelReason) | Result<Boolean> |
@@ -692,7 +692,6 @@ Note: choose either `cartId` or the tuple (`spuId`, `skuId`, `quantity`). Single
 
 Postman collection: `docs/postman/cloud-shop.postman_collection.json`.
 Default test data comes from `db/test/*/test.sql` (`userId=20001`, `merchantId=30001`, `categoryId=300`, `spuId=50001`, `skuId=51001`).
-
 
 
 

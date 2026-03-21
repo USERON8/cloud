@@ -44,7 +44,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       Integer page,
       Integer size,
       Long userId,
-      Long shopId,
+      Long merchantId,
       Integer status) {
     int safePage = page == null || page < 1 ? 1 : page;
     int safeSize = size == null || size <= 0 ? 20 : size;
@@ -52,7 +52,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
 
     List<String> statusFilters = resolveMainStatusFilters(status);
     IPage<OrderMain> pageResult =
-        queryMainOrders(authentication, safePage, safeSize, userId, shopId, statusFilters);
+        queryMainOrders(authentication, safePage, safeSize, userId, merchantId, statusFilters);
     List<OrderMain> mains = pageResult == null ? Collections.emptyList() : pageResult.getRecords();
     Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains);
 
@@ -186,12 +186,12 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       int page,
       int size,
       Long userId,
-      Long shopId,
+      Long merchantId,
       List<String> statusFilters) {
     Page<OrderMain> pageData = new Page<>(page, size);
     if (isAdmin(authentication)) {
-      if (shopId != null) {
-        return orderMainMapper.selectPageByMerchant(pageData, shopId, statusFilters, userId);
+      if (merchantId != null) {
+        return orderMainMapper.selectPageByMerchant(pageData, merchantId, statusFilters, userId);
       }
       LambdaQueryWrapper<OrderMain> wrapper =
           new LambdaQueryWrapper<OrderMain>().eq(OrderMain::getDeleted, 0);
@@ -206,8 +206,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
 
     if (isMerchant(authentication)) {
-      Long merchantId = requireCurrentUserId(authentication);
-      return orderMainMapper.selectPageByMerchant(pageData, merchantId, statusFilters, null);
+      Long currentMerchantId = requireCurrentUserId(authentication);
+      return orderMainMapper.selectPageByMerchant(pageData, currentMerchantId, statusFilters, null);
     }
 
     Long currentUserId = requireCurrentUserId(authentication);

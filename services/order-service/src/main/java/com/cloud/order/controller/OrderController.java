@@ -91,11 +91,14 @@ public class OrderController {
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size,
       @RequestParam(required = false) Long userId,
-      @RequestParam(required = false) Long shopId,
+      @RequestParam(required = false) Long merchantId,
+      @RequestParam(name = "shopId", required = false) Long legacyShopId,
       @RequestParam(required = false) Integer status,
       Authentication authentication) {
+    Long effectiveMerchantId = resolveMerchantId(merchantId, legacyShopId);
     return Result.success(
-        orderQueryService.listOrders(authentication, page, size, userId, shopId, status));
+        orderQueryService.listOrders(
+            authentication, page, size, userId, effectiveMerchantId, status));
   }
 
   @GetMapping("/{orderId}")
@@ -280,6 +283,14 @@ public class OrderController {
       throw new BizException(ResultCode.BAD_REQUEST, fieldName + " is required");
     }
     return value.trim();
+  }
+
+  private Long resolveMerchantId(Long merchantId, Long legacyShopId) {
+    if (merchantId != null && legacyShopId != null && !Objects.equals(merchantId, legacyShopId)) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "merchantId and shopId must match when both are provided");
+    }
+    return merchantId != null ? merchantId : legacyShopId;
   }
 
   private Long requireCurrentUserId(Authentication authentication) {

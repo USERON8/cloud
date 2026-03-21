@@ -28,7 +28,13 @@ export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
 }
 
 export function listOrders(params: OrderQuery = {}): Promise<OrderPage> {
-  return http.get<OrderPage, OrderPage>('/api/orders', { params })
+  const { merchantId, shopId, ...rest } = params
+  return http.get<OrderPage, OrderPage>('/api/orders', {
+    params: {
+      ...rest,
+      merchantId: merchantId ?? shopId
+    }
+  })
 }
 
 export function getOrderById(id: number): Promise<OrderItem> {

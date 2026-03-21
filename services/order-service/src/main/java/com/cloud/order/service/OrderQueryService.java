@@ -15,7 +15,7 @@ public interface OrderQueryService {
       Integer page,
       Integer size,
       Long userId,
-      Long shopId,
+      Long merchantId,
       Integer status);
 
   OrderSummaryDTO getOrderSummary(Long orderId, Authentication authentication);

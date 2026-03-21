@@ -88,6 +88,7 @@ export interface OrderQuery {
   page?: number
   size?: number
   userId?: number
+  merchantId?: number
   shopId?: number
   status?: number
 }

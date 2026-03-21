@@ -9,10 +9,12 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.result.PageResult;
 import com.cloud.order.converter.AfterSaleDtoConverter;
 import com.cloud.order.dto.AfterSaleDTO;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
+import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.enums.OrderAction;
 import com.cloud.order.service.OrderBatchService;
@@ -162,6 +164,43 @@ class OrderControllerTest {
     assertThat(mapped.getUserId()).isEqualTo(101L);
     assertThat(result.getData()).isSameAs(responseDto);
     verify(orderService).applyAfterSale(same(mapped));
+  }
+
+  @Test
+  void listOrdersShouldPreferMerchantIdAndAllowLegacyShopIdAlias() {
+    PageResult<OrderSummaryDTO> pageResult = PageResult.of(1L, 20L, 0L, java.util.List.of());
+    when(orderQueryService.listOrders(
+            org.mockito.ArgumentMatchers.any(), eq(1), eq(20), eq(101L), eq(201L), eq(2)))
+        .thenReturn(pageResult);
+
+    var result =
+        orderController.listOrders(
+            1, 20, 101L, 201L, null, 2, authentication("1", "ROLE_ADMIN", "order:query"));
+
+    assertThat(result.getData()).isSameAs(pageResult);
+    verify(orderQueryService)
+        .listOrders(org.mockito.ArgumentMatchers.any(), eq(1), eq(20), eq(101L), eq(201L), eq(2));
+  }
+
+  @Test
+  void listOrdersShouldRejectConflictingMerchantIdAndShopIdAlias() {
+    assertThatThrownBy(
+            () ->
+                orderController.listOrders(
+                    1,
+                    20,
+                    null,
+                    301L,
+                    401L,
+                    null,
+                    authentication("1", "ROLE_ADMIN", "order:query")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex -> {
+              BizException bizException = (BizException) ex;
+              assertThat(bizException.getCode()).isEqualTo(ResultCode.BAD_REQUEST.getCode());
+            })
+        .hasMessageContaining("merchantId and shopId must match");
   }
 
   private CreateMainOrderRequest buildDirectOrderRequest() {
