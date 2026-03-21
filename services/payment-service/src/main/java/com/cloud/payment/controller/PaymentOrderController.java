@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -47,6 +48,23 @@ public class PaymentOrderController {
   public Result<PaymentOrderVO> getPaymentOrderByNo(
       @PathVariable String paymentNo, Authentication authentication) {
     PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
+    if (order == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
+    }
+    if (!canReadOrder(authentication, order)) {
+      throw new BizException(ResultCode.FORBIDDEN, "forbidden to query other user's payment order");
+    }
+    return Result.success(order);
+  }
+
+  @GetMapping("/orders/by-order")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "Get payment order by order numbers")
+  public Result<PaymentOrderVO> getPaymentOrderByOrderNo(
+      @RequestParam String mainOrderNo,
+      @RequestParam String subOrderNo,
+      Authentication authentication) {
+    PaymentOrderVO order = paymentOrderService.getPaymentOrderByOrderNo(mainOrderNo, subOrderNo);
     if (order == null) {
       throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
@@ -105,7 +123,7 @@ public class PaymentOrderController {
   }
 
   @GetMapping("/refunds/{refundNo}")
-  @PreAuthorize("hasAuthority('order:refund')")
+  @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get refund by number")
   public Result<PaymentRefundVO> getRefundByNo(
       @PathVariable String refundNo, Authentication authentication) {

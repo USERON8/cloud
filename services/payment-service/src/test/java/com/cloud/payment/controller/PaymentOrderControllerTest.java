@@ -76,6 +76,41 @@ class PaymentOrderControllerTest {
   }
 
   @Test
+  void getPaymentOrderByOrderNoShouldAllowOwner() {
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-4");
+    order.setMainOrderNo("M-1");
+    order.setSubOrderNo("S-1");
+    order.setUserId(12L);
+    when(paymentOrderService.getPaymentOrderByOrderNo("M-1", "S-1")).thenReturn(order);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result =
+        controller.getPaymentOrderByOrderNo("M-1", "S-1", authentication("12", "ROLE_USER"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isSameAs(order);
+  }
+
+  @Test
+  void getPaymentOrderByOrderNoShouldRejectMissingOrder() {
+    when(paymentOrderService.getPaymentOrderByOrderNo("M-404", "S-404")).thenReturn(null);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () ->
+                controller.getPaymentOrderByOrderNo(
+                    "M-404", "S-404", authentication("12", "ROLE_USER")));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.NOT_FOUND.getCode());
+    assertThat(exception.getMessage()).contains("payment order not found");
+  }
+
+  @Test
   void handleCallbackShouldUseInternalCallbackHandler() {
     PaymentCallbackCommandDTO command = new PaymentCallbackCommandDTO();
     when(paymentOrderService.handleInternalPaymentCallback(command)).thenReturn(Boolean.TRUE);

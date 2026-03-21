@@ -1,4 +1,5 @@
 import http from './http'
+import { BusinessError } from '../types/api'
 import type {
   PaymentCallbackCommand,
   PaymentOrderCommand,
@@ -9,6 +10,22 @@ import type {
 
 export function getPaymentOrderByNo(paymentNo: string): Promise<PaymentOrderInfo> {
   return http.get<PaymentOrderInfo, PaymentOrderInfo>(`/api/payments/orders/${paymentNo}`)
+}
+
+export async function getPaymentOrderByOrderNo(
+  mainOrderNo: string,
+  subOrderNo: string
+): Promise<PaymentOrderInfo | null> {
+  try {
+    return await http.get<PaymentOrderInfo, PaymentOrderInfo>('/api/payments/orders/by-order', {
+      params: { mainOrderNo, subOrderNo }
+    })
+  } catch (error) {
+    if (error instanceof BusinessError && error.code === 404) {
+      return null
+    }
+    throw error
+  }
 }
 
 export function getRefundByNo(refundNo: string): Promise<PaymentRefundInfo> {

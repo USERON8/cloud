@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { advanceAfterSaleStatus, applyAfterSale, cancelOrder, listOrders } from '../../../api/order'
+import {
+  advanceAfterSaleStatus,
+  applyAfterSale,
+  cancelOrder,
+  completeOrder,
+  listOrders
+} from '../../../api/order'
+import { createPaymentOrder, getPaymentOrderByOrderNo } from '../../../api/payment'
 import type { AfterSaleInfo, OrderItem } from '../../../types/domain'
+import { navigateTo } from '../../../router/navigation'
+import { Routes } from '../../../router/routes'
 import { formatDate, formatPrice } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const rows = ref<OrderItem[]>([])
 const loading = ref(false)
 const refundingOrderId = ref<number | null>(null)
+const payingOrderId = ref<number | null>(null)
+const completingOrderId = ref<number | null>(null)
 
 const afterSaleDraft = reactive({
   orderId: null as number | null,
@@ -39,6 +50,31 @@ function canApplyAfterSale(order: OrderItem): boolean {
 
 function canCancelAfterSale(order: OrderItem): boolean {
   return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'APPLIED'
+}
+
+function canPay(order: OrderItem): boolean {
+  return order.status === 0 && typeof order.userId === 'number' && !!order.orderNo && !!order.subOrderNo
+}
+
+function canComplete(order: OrderItem): boolean {
+  return typeof order.id === 'number' && order.status === 2
+}
+
+function canViewRefund(order: OrderItem): boolean {
+  return !!order.afterSaleNo && ['REFUNDING', 'REFUNDED'].includes(order.afterSaleStatus ?? '')
+}
+
+function buildPaymentNo(order: OrderItem): string {
+  const subOrderNo = order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, '') || String(order.id)
+  return `PAY-${subOrderNo}`
+}
+
+function buildRefundNo(order: OrderItem): string {
+  return `RF${order.afterSaleNo}`
+}
+
+function buildPaymentIdempotencyKey(order: OrderItem): string {
+  return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}`
 }
 
 function resetAfterSaleDraft(): void {
@@ -108,10 +144,46 @@ async function loadOrders(): Promise<void> {
   }
 }
 
-function onPay(order: OrderItem): void {
-  toast(
-    `Direct order payment is disabled for ${order.orderNo}. Complete payment through the payment service flow.`
-  )
+async function onPay(order: OrderItem): Promise<void> {
+  if (!canPay(order) || typeof order.userId !== 'number' || !order.subOrderNo) {
+    toast('This order is missing payment metadata')
+    return
+  }
+  const amount = Number(order.payAmount ?? order.totalAmount ?? NaN)
+  if (!Number.isFinite(amount) || amount <= 0) {
+    toast('This order does not have a valid payable amount')
+    return
+  }
+
+  payingOrderId.value = order.id
+  try {
+    const existingOrder = await getPaymentOrderByOrderNo(order.orderNo, order.subOrderNo)
+    const paymentNo = existingOrder?.paymentNo ?? buildPaymentNo(order)
+    if (!existingOrder) {
+      await createPaymentOrder({
+        paymentNo,
+        mainOrderNo: order.orderNo,
+        subOrderNo: order.subOrderNo,
+        userId: order.userId,
+        amount: Number(amount.toFixed(2)),
+        channel: 'ALIPAY',
+        idempotencyKey: buildPaymentIdempotencyKey(order)
+      })
+      toast(`Payment order created: ${paymentNo}`, 'success')
+    }
+    navigateTo(
+      Routes.appPayments,
+      { paymentNo },
+      {
+        requiresAuth: true,
+        roles: ['USER', 'MERCHANT', 'ADMIN']
+      }
+    )
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Failed to prepare payment')
+  } finally {
+    payingOrderId.value = null
+  }
 }
 
 async function onCancel(order: OrderItem): Promise<void> {
@@ -125,6 +197,42 @@ async function onCancel(order: OrderItem): Promise<void> {
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to cancel order')
   }
+}
+
+async function onComplete(order: OrderItem): Promise<void> {
+  if (!canComplete(order) || typeof order.id !== 'number') {
+    toast('This order cannot be completed')
+    return
+  }
+  const ok = await confirm(`Confirm receipt for order ${order.orderNo}?`)
+  if (!ok) {
+    return
+  }
+  completingOrderId.value = order.id
+  try {
+    await completeOrder(order.id)
+    toast('Order completed', 'success')
+    await loadOrders()
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Failed to complete the order')
+  } finally {
+    completingOrderId.value = null
+  }
+}
+
+function onViewRefund(order: OrderItem): void {
+  if (!canViewRefund(order)) {
+    toast('Refund tracking is not available for this order')
+    return
+  }
+  navigateTo(
+    Routes.appPayments,
+    { refundNo: buildRefundNo(order) },
+    {
+      requiresAuth: true,
+      roles: ['USER', 'MERCHANT', 'ADMIN']
+    }
+  )
 }
 
 async function submitAfterSale(): Promise<void> {
@@ -202,8 +310,24 @@ onMounted(() => {
               </text>
             </view>
             <view class="actions">
-              <button v-if="item.status === 0" class="btn-outline" @click="onPay(item)">
-                Payment Info
+              <button
+                v-if="item.status === 0"
+                class="btn-outline"
+                :loading="payingOrderId === item.id"
+                @click="onPay(item)"
+              >
+                {{ payingOrderId === item.id ? 'Preparing payment...' : 'Pay now' }}
+              </button>
+              <button
+                v-if="canComplete(item)"
+                class="btn-outline"
+                :loading="completingOrderId === item.id"
+                @click="onComplete(item)"
+              >
+                Confirm receipt
+              </button>
+              <button v-if="canViewRefund(item)" class="btn-outline" @click="onViewRefund(item)">
+                View refund
               </button>
               <button v-if="canApplyAfterSale(item)" class="btn-outline" @click="openAfterSale(item)">
                 Apply after-sale

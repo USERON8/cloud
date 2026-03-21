@@ -236,10 +236,11 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | --- | --- | --- | --- | --- | --- |
 | POST | /api/payments/orders | Create payment order | hasAuthority('order:create') | body=PaymentOrderCommandDTO | Result<Long> |
 | GET | /api/payments/orders/{paymentNo} | Get payment order by number | isAuthenticated() | path=paymentNo | Result<PaymentOrderVO> |
+| GET | /api/payments/orders/by-order | Get payment order by order numbers | isAuthenticated() | query=mainOrderNo,subOrderNo | Result<PaymentOrderVO> |
 | GET | /api/payments/orders/{paymentNo}/status | Get payment order status | isAuthenticated() | path=paymentNo | Result<Map<String,Object>> |
 | POST | /api/payments/callbacks | Handle payment callback | hasAuthority('order:refund') | body=PaymentCallbackCommandDTO | Result<Boolean> |
 | POST | /api/payments/refunds | Create payment refund | hasAuthority('order:refund') | body=PaymentRefundCommandDTO | Result<Long> |
-| GET | /api/payments/refunds/{refundNo} | Get refund by number | hasAuthority('order:refund') | path=refundNo | Result<PaymentRefundVO> |
+| GET | /api/payments/refunds/{refundNo} | Get refund by number | isAuthenticated() | path=refundNo | Result<PaymentRefundVO> |
 
 ### product-service
 

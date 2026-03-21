@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
 import { getPaymentOrderByNo, getRefundByNo } from '../../../api/payment'
 import type { PaymentOrderInfo, PaymentRefundInfo } from '../../../types/domain'
@@ -34,6 +35,17 @@ async function queryRefund(): Promise<void> {
     toast(error instanceof Error ? error.message : 'Failed to query the refund order')
   }
 }
+
+onLoad((query) => {
+  if (typeof query.paymentNo === 'string' && query.paymentNo.trim()) {
+    paymentNo.value = query.paymentNo.trim()
+    void queryPayment()
+  }
+  if (typeof query.refundNo === 'string' && query.refundNo.trim()) {
+    refundNo.value = query.refundNo.trim()
+    void queryRefund()
+  }
+})
 </script>
 
 <template>
@@ -47,8 +59,11 @@ async function queryRefund(): Promise<void> {
 
       <view v-if="paymentInfo" class="result">
         <text class="name">Payment number: {{ paymentInfo.paymentNo }}</text>
+        <text class="meta">Main order: {{ paymentInfo.mainOrderNo || '--' }}</text>
+        <text class="meta">Sub order: {{ paymentInfo.subOrderNo || '--' }}</text>
         <text class="meta">Amount: {{ formatPrice(paymentInfo.amount) }}</text>
         <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
+        <text class="meta">Channel: {{ paymentInfo.channel || '--' }}</text>
         <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
       </view>
     </view>
@@ -62,6 +77,8 @@ async function queryRefund(): Promise<void> {
 
       <view v-if="refundInfo" class="result">
         <text class="name">Refund number: {{ refundInfo.refundNo }}</text>
+        <text class="meta">Payment number: {{ refundInfo.paymentNo || '--' }}</text>
+        <text class="meta">After-sale number: {{ refundInfo.afterSaleNo || '--' }}</text>
         <text class="meta">Amount: {{ formatPrice(refundInfo.refundAmount) }}</text>
         <text class="meta">Status: {{ refundInfo.status || '--' }}</text>
         <text class="meta">Refunded at: {{ formatDate(refundInfo.refundedAt) }}</text>

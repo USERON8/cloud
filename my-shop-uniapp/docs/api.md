@@ -141,6 +141,7 @@ Notes:
 | Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/payments/orders/{param} | getPaymentOrderByNo | paymentNo: string | - |
+| GET | /api/payments/orders/by-order | getPaymentOrderByOrderNo | mainOrderNo: string, subOrderNo: string | query |
 | GET | /api/payments/refunds/{param} | getRefundByNo | refundNo: string | - |
 | POST | /api/payments/orders | createPaymentOrder | payload: PaymentOrderCommand | body |
 | POST | /api/payments/refunds | createPaymentRefund | payload: PaymentRefundCommand | body |
