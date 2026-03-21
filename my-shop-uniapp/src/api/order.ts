@@ -1,5 +1,5 @@
 import http from './http'
-import type { CreateOrderPayload, OrderItem, OrderPage, OrderQuery } from '../types/domain'
+import type { AfterSaleInfo, CreateOrderPayload, OrderItem, OrderPage, OrderQuery } from '../types/domain'
 import { sessionState } from '../auth/session'
 
 export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
@@ -85,4 +85,8 @@ export function batchShipOrders(ids: number[], shippingCompany: string, tracking
 
 export function batchCompleteOrders(ids: number[]): Promise<number> {
   return http.post<number, number>('/api/orders/batch/complete', ids)
+}
+
+export function applyAfterSale(payload: AfterSaleInfo): Promise<AfterSaleInfo> {
+  return http.post<AfterSaleInfo, AfterSaleInfo>('/api/orders/after-sales', payload)
 }

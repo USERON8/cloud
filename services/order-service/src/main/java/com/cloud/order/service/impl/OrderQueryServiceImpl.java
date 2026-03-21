@@ -257,6 +257,13 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     summary.setPayAmount(main.getPayableAmount());
     summary.setCreatedAt(main.getCreatedAt());
     summary.setStatus(resolveStatusCode(subs));
+    if (subs != null && subs.size() == 1) {
+      OrderSub sub = subs.get(0);
+      summary.setSubOrderId(sub.getId());
+      summary.setSubOrderNo(sub.getSubOrderNo());
+      summary.setMerchantId(sub.getMerchantId());
+      summary.setAfterSaleStatus(sub.getAfterSaleStatus());
+    }
     return summary;
   }
 

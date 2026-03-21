@@ -133,6 +133,7 @@ Notes:
 | POST | /api/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
 | POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany: string, trackingNumber: string | query, body |
 | POST | /api/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
+| POST | /api/orders/after-sales | applyAfterSale | payload: AfterSaleInfo | body |
 
 ## payment
 

@@ -67,10 +67,14 @@ export interface OrderItem {
   id: number
   orderNo: string
   userId: number
+  subOrderId?: number
+  subOrderNo?: string
+  merchantId?: number
   shopId?: number
   totalAmount?: number
   payAmount?: number
   status?: number
+  afterSaleStatus?: string
   addressId?: number
   createdAt?: string
 }
@@ -360,6 +364,29 @@ export interface PaymentRefundCommand {
   refundAmount: number
   reason: string
   idempotencyKey: string
+}
+
+export interface AfterSaleInfo {
+  id?: number
+  afterSaleNo?: string
+  mainOrderId: number
+  subOrderId: number
+  userId?: number
+  merchantId?: number
+  afterSaleType: string
+  status?: string
+  reason: string
+  description?: string
+  applyAmount: number
+  approvedAmount?: number
+  returnLogisticsCompany?: string
+  returnLogisticsNo?: string
+  refundChannel?: string
+  refundedAt?: string
+  closedAt?: string
+  closeReason?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface PaymentCallbackCommand {
