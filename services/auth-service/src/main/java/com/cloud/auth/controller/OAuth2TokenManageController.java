@@ -55,12 +55,17 @@ public class OAuth2TokenManageController {
   public Result<Map<String, Object>> getTokenStats() {
     Map<String, Object> stats = new HashMap<>();
     long tokenCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*");
+    long accessIndexCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:access:*");
     long refreshCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:refresh:*");
     long codeCount = RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:code:*");
+    long principalIndexCount =
+        RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:principal:*");
 
     stats.put("authorizationCount", tokenCount);
+    stats.put("accessIndexCount", accessIndexCount);
     stats.put("refreshIndexCount", refreshCount);
     stats.put("codeIndexCount", codeCount);
+    stats.put("principalIndexCount", principalIndexCount);
     stats.put("redisInfo", "Key/value storage mode");
     stats.put("storageType", "Redis Key");
 
@@ -144,13 +149,17 @@ public class OAuth2TokenManageController {
 
     Map<String, String> hashExample = new HashMap<>();
     hashExample.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
+    hashExample.put("oauth2:access:{accessToken}", "Access token index to authorization ID");
     hashExample.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
     hashExample.put("oauth2:code:{code}", "Authorization code index to authorization ID");
+    hashExample.put("oauth2:principal:{username}", "Principal to authorization ID set");
 
     Map<String, String> tokenIndex = new HashMap<>();
     tokenIndex.put("oauth2:token:{authorizationId}", "Authorization object storage");
+    tokenIndex.put("oauth2:access:{accessToken}", "Access token index");
     tokenIndex.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
     tokenIndex.put("oauth2:code:{code}", "Authorization code index");
+    tokenIndex.put("oauth2:principal:{username}", "Principal authorization set");
 
     structure.put("keys", hashExample);
     structure.put("tokenIndexes", tokenIndex);
@@ -158,9 +167,11 @@ public class OAuth2TokenManageController {
         "advantages",
         java.util.List.of(
             "Simple key/value storage",
+            "Direct index for access tokens",
             "Token TTL aligned with Redis TTL",
             "Easy manual inspection",
-            "Direct index for refresh/code tokens"));
+            "Direct index for refresh/code tokens",
+            "Direct principal to authorization lookup"));
     return Result.success(structure);
   }
 

@@ -66,6 +66,7 @@ public class AuthController {
   }
 
   @DeleteMapping("/sessions")
+  @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Logout current session")
   public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
     String authorizationHeader = request.getHeader("Authorization");

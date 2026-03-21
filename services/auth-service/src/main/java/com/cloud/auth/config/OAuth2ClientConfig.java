@@ -2,7 +2,10 @@ package com.cloud.auth.config;
 
 import cn.hutool.core.util.StrUtil;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +20,7 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
+@Slf4j
 @Configuration
 public class OAuth2ClientConfig {
 
@@ -43,43 +47,45 @@ public class OAuth2ClientConfig {
   public ClientRegistrationRepository clientRegistrationRepository() {
     List<ClientRegistration> registrations = new ArrayList<>();
 
-    if (StrUtil.isBlank(githubClientId) || StrUtil.isBlank(githubClientSecret)) {
-      throw new IllegalStateException(
-          "Missing GitHub OAuth2 credentials. Set spring.security.oauth2.client.registration.github.client-id and client-secret");
+    if (StrUtil.isNotBlank(githubClientId) && StrUtil.isNotBlank(githubClientSecret)) {
+      ClientRegistration githubClient =
+          ClientRegistration.withRegistrationId("github")
+              .clientId(githubClientId)
+              .clientSecret(githubClientSecret)
+              .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+              .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+              .redirectUri(githubRedirectUri)
+              .scope("read:user", "user:email")
+              .authorizationUri("https://github.com/login/oauth/authorize")
+              .tokenUri("https://github.com/login/oauth/access_token")
+              .userInfoUri("https://api.github.com/user")
+              .userNameAttributeName("id")
+              .clientName("GitHub")
+              .build();
+      registrations.add(githubClient);
+    } else {
+      log.info("GitHub OAuth client registration disabled because credentials are missing");
     }
 
-    ClientRegistration githubClient =
-        ClientRegistration.withRegistrationId("github")
-            .clientId(githubClientId)
-            .clientSecret(githubClientSecret)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .redirectUri(githubRedirectUri)
-            .scope("read:user", "user:email")
-            .authorizationUri("https://github.com/login/oauth/authorize")
-            .tokenUri("https://github.com/login/oauth/access_token")
-            .userInfoUri("https://api.github.com/user")
-            .userNameAttributeName("id")
-            .clientName("GitHub")
-            .build();
-    registrations.add(githubClient);
-
-    if (StrUtil.isBlank(serviceClientSecret)) {
-      throw new IllegalStateException(
-          "Missing client-service secret. Set spring.security.oauth2.client.registration.client-service.client-secret");
+    if (StrUtil.isNotBlank(serviceClientSecret)) {
+      ClientRegistration clientService =
+          ClientRegistration.withRegistrationId("client-service")
+              .clientId(serviceClientId)
+              .clientSecret(serviceClientSecret)
+              .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+              .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+              .tokenUri(authTokenUri)
+              .scope("internal")
+              .build();
+      registrations.add(clientService);
+    } else {
+      log.info("client-service OAuth client registration disabled because secret is missing");
     }
 
-    ClientRegistration clientService =
-        ClientRegistration.withRegistrationId("client-service")
-            .clientId(serviceClientId)
-            .clientSecret(serviceClientSecret)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-            .tokenUri(authTokenUri)
-            .scope("internal")
-            .build();
+    if (registrations.isEmpty()) {
+      return new EmptyClientRegistrationRepository();
+    }
 
-    registrations.add(clientService);
     return new InMemoryClientRegistrationRepository(registrations);
   }
 
@@ -103,5 +109,19 @@ public class OAuth2ClientConfig {
 
     authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
     return authorizedClientManager;
+  }
+
+  private static final class EmptyClientRegistrationRepository
+      implements ClientRegistrationRepository, Iterable<ClientRegistration> {
+
+    @Override
+    public ClientRegistration findByRegistrationId(String registrationId) {
+      return null;
+    }
+
+    @Override
+    public Iterator<ClientRegistration> iterator() {
+      return Collections.emptyIterator();
+    }
   }
 }

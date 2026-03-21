@@ -21,8 +21,10 @@ import org.springframework.util.Assert;
 public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationService {
 
   private static final String TOKEN_PREFIX = "oauth2:token:";
+  private static final String ACCESS_PREFIX = "oauth2:access:";
   private static final String REFRESH_PREFIX = "oauth2:refresh:";
   private static final String CODE_PREFIX = "oauth2:code:";
+  private static final String PRINCIPAL_PREFIX = "oauth2:principal:";
   private static final OAuth2TokenType AUTHORIZATION_CODE =
       new OAuth2TokenType(OAuth2ParameterNames.CODE);
   private final RedisTemplate<String, Object> redisTemplate;
@@ -80,6 +82,26 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
               TimeUnit.SECONDS);
     }
 
+    OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
+    if (accessToken != null && accessToken.getToken() != null) {
+      String accessTokenKey = ACCESS_PREFIX + accessToken.getToken().getTokenValue();
+      redisTemplate
+          .opsForValue()
+          .set(
+              accessTokenKey,
+              authorization.getId(),
+              getExpireSeconds(accessToken.getToken()),
+              TimeUnit.SECONDS);
+    }
+
+    if (authorization.getPrincipalName() != null && !authorization.getPrincipalName().isBlank()) {
+      String principalKey = PRINCIPAL_PREFIX + authorization.getPrincipalName();
+      redisTemplate.opsForSet().add(principalKey, authorization.getId());
+      if (authorizationTtl > 0) {
+        redisTemplate.expire(principalKey, authorizationTtl, TimeUnit.SECONDS);
+      }
+    }
+
     log.debug("Saved authorization with id: {}", authorization.getId());
   }
 
@@ -103,6 +125,17 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       redisTemplate.delete(refreshTokenKey);
     }
 
+    OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
+    if (accessToken != null) {
+      String accessTokenKey = ACCESS_PREFIX + accessToken.getToken().getTokenValue();
+      redisTemplate.delete(accessTokenKey);
+    }
+
+    if (authorization.getPrincipalName() != null && !authorization.getPrincipalName().isBlank()) {
+      String principalKey = PRINCIPAL_PREFIX + authorization.getPrincipalName();
+      redisTemplate.opsForSet().remove(principalKey, authorization.getId());
+    }
+
     log.debug("Removed authorization with id: {}", authorization.getId());
   }
 
@@ -122,12 +155,15 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       if (AUTHORIZATION_CODE.equals(tokenType)) {
         return findByAuthorizationId(CODE_PREFIX + token);
       }
+      if (OAuth2TokenType.ACCESS_TOKEN.equals(tokenType)) {
+        return findByAuthorizationId(ACCESS_PREFIX + token);
+      }
       if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
         return findByAuthorizationId(REFRESH_PREFIX + token);
       }
     }
 
-    OAuth2Authorization authorization = findByAccessTokenValue(token, OAuth2TokenType.ACCESS_TOKEN);
+    OAuth2Authorization authorization = findByAuthorizationId(ACCESS_PREFIX + token);
     if (authorization != null) {
       return authorization;
     }
@@ -145,23 +181,6 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       return null;
     }
     return findById(authorizationId);
-  }
-
-  private OAuth2Authorization findByAccessTokenValue(String token, OAuth2TokenType tokenType) {
-    var keys = redisTemplate.keys(TOKEN_PREFIX + "*");
-    if (keys == null || keys.isEmpty()) {
-      return null;
-    }
-    for (String key : keys) {
-      Object obj = redisTemplate.opsForValue().get(key);
-      if (!(obj instanceof OAuth2Authorization authorization)) {
-        continue;
-      }
-      if (matchToken(authorization, token, tokenType)) {
-        return authorization;
-      }
-    }
-    return null;
   }
 
   private boolean matchToken(

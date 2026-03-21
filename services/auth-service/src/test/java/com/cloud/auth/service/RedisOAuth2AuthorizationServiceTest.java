@@ -1,10 +1,11 @@
 package com.cloud.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,12 +67,40 @@ class RedisOAuth2AuthorizationServiceTest {
             .build();
 
     when(valueOperations.get("oauth2:refresh:refresh-token")).thenReturn("authorization-id");
-    when(valueOperations.get("oauth2:token:authorization-id")).thenReturn(authorization);
-    when(redisTemplate.keys("oauth2:token:*")).thenReturn(Set.of("oauth2:token:authorization-id"));
+    when(valueOperations.get("oauth2:access:refresh-token")).thenReturn(null);
     when(valueOperations.get("oauth2:token:authorization-id")).thenReturn(authorization);
 
     OAuth2Authorization result = authorizationService.findByToken("refresh-token", null);
 
     assertThat(result).isSameAs(authorization);
+  }
+
+  @Test
+  void findByTokenShouldResolveAccessTokenWithoutScanningRedisKeys() {
+    Instant issuedAt = Instant.parse("2026-03-21T00:00:00Z");
+    OAuth2Authorization authorization =
+        OAuth2Authorization.withRegisteredClient(
+                RegisteredClient.withId("registered-client-id")
+                    .clientId("client-service")
+                    .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                    .build())
+            .id("authorization-id")
+            .principalName("service-user")
+            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+            .accessToken(
+                new OAuth2AccessToken(
+                    OAuth2AccessToken.TokenType.BEARER,
+                    "access-token",
+                    issuedAt,
+                    issuedAt.plusSeconds(3600)))
+            .build();
+
+    when(valueOperations.get("oauth2:access:access-token")).thenReturn("authorization-id");
+    when(valueOperations.get("oauth2:token:authorization-id")).thenReturn(authorization);
+
+    OAuth2Authorization result = authorizationService.findByToken("access-token", null);
+
+    assertThat(result).isSameAs(authorization);
+    verify(redisTemplate, never()).keys("oauth2:token:*");
   }
 }

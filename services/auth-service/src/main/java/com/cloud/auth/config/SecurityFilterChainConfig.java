@@ -97,7 +97,7 @@ public class SecurityFilterChainConfig {
                     .requestMatchers(HttpMethod.POST, "/auth/users/register")
                     .permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/auth/sessions")
-                    .permitAll()
+                    .authenticated()
                     .requestMatchers("/auth/oauth2/github/**")
                     .permitAll()
                     .requestMatchers("/admin/**", "/management/**")

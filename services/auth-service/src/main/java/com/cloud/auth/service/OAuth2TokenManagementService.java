@@ -1,15 +1,12 @@
 package com.cloud.auth.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.cloud.auth.util.RedisKeyHelper;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,11 +29,11 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OAuth2TokenManagementService {
 
+  private static final String PRINCIPAL_PREFIX = "oauth2:principal:";
   private final OAuth2AuthorizationService authorizationService;
   private final RegisteredClientRepository registeredClientRepository;
   private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
@@ -220,51 +217,50 @@ public class OAuth2TokenManagementService {
       return 0;
     }
 
-    Set<String> authKeys = RedisKeyHelper.scanKeys(redisTemplate, "oauth2:token:*");
-    if (authKeys == null || authKeys.isEmpty()) {
+    String principalKey = PRINCIPAL_PREFIX + username.trim();
+    Set<Object> authorizationIds = redisTemplate.opsForSet().members(principalKey);
+    if (authorizationIds == null || authorizationIds.isEmpty()) {
       return 0;
     }
 
-    List<String> authKeyList = authKeys.stream().toList();
-    List<Object> authorizations = redisTemplate.opsForValue().multiGet(authKeyList);
     int revokedCount = 0;
-    if (authorizations != null) {
-      for (Object obj : authorizations) {
-        if (!(obj instanceof OAuth2Authorization authorization)) {
-          continue;
-        }
-        if (!username.equals(authorization.getPrincipalName())) {
-          continue;
-        }
-        revokeAuthorization(authorization, "logout_all_sessions");
-        revokedCount++;
+    for (Object authorizationId : authorizationIds) {
+      if (authorizationId == null) {
+        continue;
       }
+      OAuth2Authorization authorization =
+          authorizationService.findById(String.valueOf(authorizationId));
+      if (authorization == null) {
+        redisTemplate.opsForSet().remove(principalKey, authorizationId);
+        continue;
+      }
+      if (!username.equals(authorization.getPrincipalName())) {
+        continue;
+      }
+      revokeAuthorization(authorization, "logout_all_sessions");
+      revokedCount++;
     }
     return revokedCount;
   }
 
   private void revokeAuthorization(OAuth2Authorization authorization, String reason) {
-    try {
-      if (authorization.getAccessToken() != null
-          && authorization.getAccessToken().getToken() != null) {
-        String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
-        long ttl = resolveTokenTtlSeconds(authorization, accessTokenValue, 3600);
-        tokenBlacklistService.addToBlacklist(
-            accessTokenValue, authorization.getPrincipalName(), ttl, reason);
-      }
-
-      if (authorization.getRefreshToken() != null
-          && authorization.getRefreshToken().getToken() != null) {
-        String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
-        long ttl = resolveTokenTtlSeconds(authorization, refreshTokenValue, 2592000);
-        tokenBlacklistService.addToBlacklist(
-            refreshTokenValue, authorization.getPrincipalName(), ttl, reason);
-      }
-
-      authorizationService.remove(authorization);
-    } catch (Exception e) {
-      log.warn("Failed to revoke authorization id={}: {}", authorization.getId(), e.getMessage());
+    if (authorization.getAccessToken() != null
+        && authorization.getAccessToken().getToken() != null) {
+      String accessTokenValue = authorization.getAccessToken().getToken().getTokenValue();
+      long ttl = resolveTokenTtlSeconds(authorization, accessTokenValue, 3600);
+      tokenBlacklistService.addToBlacklist(
+          accessTokenValue, authorization.getPrincipalName(), ttl, reason);
     }
+
+    if (authorization.getRefreshToken() != null
+        && authorization.getRefreshToken().getToken() != null) {
+      String refreshTokenValue = authorization.getRefreshToken().getToken().getTokenValue();
+      long ttl = resolveTokenTtlSeconds(authorization, refreshTokenValue, 2592000);
+      tokenBlacklistService.addToBlacklist(
+          refreshTokenValue, authorization.getPrincipalName(), ttl, reason);
+    }
+
+    authorizationService.remove(authorization);
   }
 
   private long computeTtlSeconds(Instant expiresAt, long defaultTtl) {
