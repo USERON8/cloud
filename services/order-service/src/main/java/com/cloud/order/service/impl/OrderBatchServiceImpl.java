@@ -81,6 +81,8 @@ public class OrderBatchServiceImpl implements OrderBatchService {
     }
     if (action == OrderAction.SHIP) {
       requireShipOperator(authentication);
+    } else if (action == OrderAction.DONE) {
+      requireCompleteOperator(authentication);
     }
     for (OrderSub sub : subs) {
       if (sub == null || sub.getId() == null) {
@@ -112,6 +114,14 @@ public class OrderBatchServiceImpl implements OrderBatchService {
       return;
     }
     throw new BizException(ResultCode.FORBIDDEN, "shipping requires merchant or admin privileges");
+  }
+
+  private void requireCompleteOperator(Authentication authentication) {
+    if (!SecurityPermissionUtils.isMerchant(authentication)) {
+      return;
+    }
+    throw new BizException(
+        ResultCode.FORBIDDEN, "order completion requires the order owner or admin privileges");
   }
 
   private Long requireCurrentUserId(Authentication authentication) {

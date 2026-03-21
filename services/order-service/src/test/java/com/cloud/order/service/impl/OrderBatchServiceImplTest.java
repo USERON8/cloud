@@ -98,6 +98,34 @@ class OrderBatchServiceImplTest {
     verifyNoInteractions(orderShippingService);
   }
 
+  @Test
+  void applyOrderActionShouldRejectCompletionForMerchant() {
+    JwtAuthenticationToken authentication = authentication("201", "ROLE_MERCHANT", "order:query");
+    OrderMain mainOrder = new OrderMain();
+    mainOrder.setId(10L);
+    OrderSub subOrder = new OrderSub();
+    subOrder.setId(20L);
+    subOrder.setMainOrderId(10L);
+    subOrder.setMerchantId(201L);
+
+    when(orderQueryService.requireAccessibleMainOrder(10L, authentication)).thenReturn(mainOrder);
+    when(orderService.listSubOrders(10L)).thenReturn(List.of(subOrder));
+
+    assertThatThrownBy(
+            () ->
+                orderBatchService.applyOrderAction(
+                    10L, authentication, OrderAction.DONE, null, null, null))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                org.assertj.core.api.Assertions.assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.FORBIDDEN.getCode()))
+        .hasMessageContaining("order completion requires the order owner or admin privileges");
+
+    verify(orderService).listSubOrders(10L);
+    verifyNoInteractions(orderShippingService);
+  }
+
   private JwtAuthenticationToken authentication(
       String userId, String primaryRole, String... authorities) {
     Jwt jwt =
