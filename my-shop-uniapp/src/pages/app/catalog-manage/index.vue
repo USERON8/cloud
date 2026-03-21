@@ -11,9 +11,9 @@ const loading = ref(false)
 const rows = ref<ProductItem[]>([])
 
 function statusText(status?: number): string {
-  if (status === 1) return '上架'
-  if (status === 0) return '下架'
-  return '未知'
+  if (status === 1) return 'Published'
+  if (status === 0) return 'Unpublished'
+  return 'Unknown'
 }
 
 async function loadProducts(): Promise<void> {
@@ -23,7 +23,7 @@ async function loadProducts(): Promise<void> {
     const result = await listProducts({ page: 1, size: 50, name: keyword.value || undefined })
     rows.value = result.records
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载商品失败')
+    toast(error instanceof Error ? error.message : 'Failed to load products')
   } finally {
     loading.value = false
   }
@@ -32,14 +32,15 @@ async function loadProducts(): Promise<void> {
 async function toggleStatus(item: ProductItem): Promise<void> {
   if (typeof item.id !== 'number') return
   const nextStatus: 0 | 1 = item.status === 1 ? 0 : 1
-  const ok = await confirm(`确认将商品"${item.name}"设置为${nextStatus === 1 ? '上架' : '下架'}？`)
+  const action = nextStatus === 1 ? 'publish' : 'unpublish'
+  const ok = await confirm(`Set "${item.name}" to ${action}?`)
   if (!ok) return
   try {
     await updateProductStatus(item.id, nextStatus)
-    toast('状态已更新', 'success')
+    toast('Status updated', 'success')
     await loadProducts()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Failed to update status')
   }
 }
 
@@ -52,17 +53,17 @@ onMounted(() => {
   <AppShell title="Product Admin">
     <view class="panel glass-card">
       <view class="header">
-        <text class="section-title">商品管理</text>
-        <button class="btn-outline" @click="loadProducts">刷新</button>
+        <text class="section-title">Product management</text>
+        <button class="btn-outline" @click="loadProducts">Refresh</button>
       </view>
 
       <view class="search-row">
-        <input v-model="keyword" class="search-input" placeholder="搜索商品" @confirm="loadProducts" />
-        <button class="btn-primary" @click="loadProducts">搜索</button>
+        <input v-model="keyword" class="search-input" placeholder="Search products" @confirm="loadProducts" />
+        <button class="btn-primary" @click="loadProducts">Search</button>
       </view>
 
       <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">暂无商品</text>
+        <text class="text-muted">No products found</text>
       </view>
 
       <view v-else class="list">
@@ -70,10 +71,10 @@ onMounted(() => {
           <view class="info">
             <text class="name">{{ item.name }}</text>
             <text class="meta">{{ formatPrice(item.price) }}</text>
-            <text class="meta">状态：{{ statusText(item.status) }}</text>
+            <text class="meta">Status: {{ statusText(item.status) }}</text>
           </view>
           <button class="btn-outline" @click="toggleStatus(item)">
-            {{ item.status === 1 ? '下架' : '上架' }}
+            {{ item.status === 1 ? 'Unpublish' : 'Publish' }}
           </button>
         </view>
       </view>

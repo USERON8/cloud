@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { sessionState } from '../../../auth/session'
@@ -45,15 +45,15 @@ const statsEntries = computed(() =>
 type UploadField = 'businessLicenseUrl' | 'idCardFrontUrl' | 'idCardBackUrl'
 
 function statusText(status?: number): string {
-  if (status === 1) return '通过'
-  if (status === 2) return '驳回'
-  if (status === 0) return '待审核'
-  return '未知'
+  if (status === 1) return 'Approved'
+  if (status === 2) return 'Rejected'
+  if (status === 0) return 'Pending review'
+  return 'Unknown'
 }
 
 function resolveUploadUrl(): string | null {
   if (!uploadUrl) {
-    toast('未配置上传地址，请设置 VITE_MERCHANT_AUTH_UPLOAD_URL 或 VITE_UPLOAD_URL')
+    toast('Upload endpoint is not configured. Set VITE_MERCHANT_AUTH_UPLOAD_URL or VITE_UPLOAD_URL')
     return null
   }
   return uploadUrl
@@ -88,18 +88,18 @@ async function uploadAuthImage(field: UploadField): Promise<void> {
     })
     const filePath = chooseResult.tempFilePaths?.[0]
     if (!filePath) {
-      toast('未选择图片')
+      toast('No image selected')
       return
     }
 
     if (field === 'businessLicenseUrl') {
       if (!merchantId.value) {
-        toast('商家会话缺失，请重新登录')
+        toast('Merchant session is missing. Please sign in again.')
         return
       }
       const result = await uploadMerchantBusinessLicense(merchantId.value, filePath)
       authForm.businessLicenseUrl = result.previewUrl
-      toast('上传成功', 'success')
+      toast('Upload completed', 'success')
       return
     }
 
@@ -115,18 +115,18 @@ async function uploadAuthImage(field: UploadField): Promise<void> {
       })
     })
     if (uploadResult.statusCode && uploadResult.statusCode >= 400) {
-      toast('上传失败')
+      toast('Upload failed')
       return
     }
     const url = extractUploadUrl(uploadResult.data)
     if (!url) {
-      toast('未获取到上传地址')
+      toast('The upload response did not contain a file URL')
       return
     }
     authForm[field] = url
-    toast('上传成功', 'success')
+    toast('Upload completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '上传失败')
+    toast(error instanceof Error ? error.message : 'Upload failed')
   } finally {
     uploadState[field] = false
   }
@@ -134,7 +134,7 @@ async function uploadAuthImage(field: UploadField): Promise<void> {
 
 function previewImage(url?: string): void {
   if (!url) {
-    toast('暂无可预览图片')
+    toast('There is no image to preview')
     return
   }
   uni.previewImage({
@@ -144,7 +144,7 @@ function previewImage(url?: string): void {
 
 async function loadMerchant(): Promise<void> {
   if (!merchantId.value) {
-    toast('商家会话缺失，请重新登录')
+    toast('Merchant session is missing. Please sign in again.')
     return
   }
   loading.value = true
@@ -171,7 +171,7 @@ async function loadMerchant(): Promise<void> {
       authForm.contactAddress = auth.contactAddress || ''
     }
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载商家信息失败')
+    toast(error instanceof Error ? error.message : 'Failed to load merchant data')
   } finally {
     loading.value = false
   }
@@ -184,10 +184,10 @@ async function saveProfile(): Promise<void> {
   saving.value = true
   try {
     await updateMerchant(merchantId.value, profileForm)
-    toast('资料已更新', 'success')
+    toast('Profile updated', 'success')
     await loadMerchant()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   } finally {
     saving.value = false
   }
@@ -200,10 +200,10 @@ async function submitAuth(): Promise<void> {
   authSaving.value = true
   try {
     await applyMerchantAuth(merchantId.value, authForm)
-    toast('认证已提交', 'success')
+    toast('Merchant auth submitted', 'success')
     await loadMerchant()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '提交失败')
+    toast(error instanceof Error ? error.message : 'Submit failed')
   } finally {
     authSaving.value = false
   }
@@ -213,16 +213,16 @@ async function revokeAuth(): Promise<void> {
   if (!merchantId.value) {
     return
   }
-  const ok = await confirm('确认撤销商家认证？')
+  const ok = await confirm('Revoke merchant authentication?')
   if (!ok) {
     return
   }
   try {
     await revokeMerchantAuth(merchantId.value)
-    toast('已撤销', 'success')
+    toast('Merchant auth revoked', 'success')
     await loadMerchant()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '撤销失败')
+    toast(error instanceof Error ? error.message : 'Revoke failed')
   }
 }
 
@@ -235,91 +235,91 @@ onMounted(() => {
   <AppShell title="Merchant Center">
     <view class="grid">
       <view class="card glass-card">
-        <text class="label">商家概览</text>
-        <text class="title">{{ merchantInfo?.merchantName || merchantInfo?.username || '商家' }}</text>
-        <text class="muted">商家 ID：{{ merchantInfo?.id ?? '-' }}</text>
-        <text class="muted">状态：{{ statusText(merchantInfo?.status) }}</text>
-        <text class="muted">认证状态：{{ statusText(merchantInfo?.authStatus) }}</text>
-        <button class="btn-outline" :loading="loading" @click="loadMerchant">刷新</button>
+        <text class="label">Merchant overview</text>
+        <text class="title">{{ merchantInfo?.merchantName || merchantInfo?.username || 'Merchant' }}</text>
+        <text class="muted">Merchant ID: {{ merchantInfo?.id ?? '-' }}</text>
+        <text class="muted">Status: {{ statusText(merchantInfo?.status) }}</text>
+        <text class="muted">Auth status: {{ statusText(merchantInfo?.authStatus) }}</text>
+        <button class="btn-outline" :loading="loading" @click="loadMerchant">Refresh</button>
       </view>
 
       <view class="card glass-card wide">
-        <text class="label">商家资料</text>
+        <text class="label">Merchant profile</text>
         <view class="form">
           <view class="field">
-            <text class="field-label">商家名称</text>
-            <input v-model="profileForm.merchantName" class="input" placeholder="请输入商家名称" />
+            <text class="field-label">Merchant name</text>
+            <input v-model="profileForm.merchantName" class="input" placeholder="Enter the merchant name" />
           </view>
           <view class="field">
-            <text class="field-label">邮箱</text>
-            <input v-model="profileForm.email" class="input" placeholder="请输入邮箱" />
+            <text class="field-label">Email</text>
+            <input v-model="profileForm.email" class="input" placeholder="Enter the email address" />
           </view>
           <view class="field">
-            <text class="field-label">联系电话</text>
-            <input v-model="profileForm.phone" class="input" placeholder="请输入联系电话" />
+            <text class="field-label">Phone</text>
+            <input v-model="profileForm.phone" class="input" placeholder="Enter the phone number" />
           </view>
         </view>
-        <button class="btn-primary" :loading="saving" @click="saveProfile">保存资料</button>
+        <button class="btn-primary" :loading="saving" @click="saveProfile">Save profile</button>
       </view>
 
       <view class="card glass-card wide">
         <view class="section-head">
-          <text class="label">商家认证</text>
+          <text class="label">Merchant authentication</text>
           <text v-if="authInfo" class="status-chip">{{ statusText(authInfo.authStatus) }}</text>
         </view>
         <view class="form">
           <view class="field">
-            <text class="field-label">营业执照号</text>
-            <input v-model="authForm.businessLicenseNumber" class="input" placeholder="请输入营业执照号" />
+            <text class="field-label">Business license number</text>
+            <input v-model="authForm.businessLicenseNumber" class="input" placeholder="Enter the business license number" />
           </view>
           <view class="field">
-            <text class="field-label">营业执照 URL</text>
+            <text class="field-label">Business license URL</text>
             <view class="row-inline">
-              <input v-model="authForm.businessLicenseUrl" class="input" placeholder="请输入营业执照图片地址" />
+              <input v-model="authForm.businessLicenseUrl" class="input" placeholder="Enter the business license image URL" />
               <button class="btn-outline" :loading="uploadState.businessLicenseUrl" @click="uploadAuthImage('businessLicenseUrl')">
-                上传
+                Upload
               </button>
-              <button class="btn-outline" @click="previewImage(authForm.businessLicenseUrl)">预览</button>
+              <button class="btn-outline" @click="previewImage(authForm.businessLicenseUrl)">Preview</button>
             </view>
           </view>
           <view class="field">
-            <text class="field-label">身份证正面 URL</text>
+            <text class="field-label">Front ID card URL</text>
             <view class="row-inline">
-              <input v-model="authForm.idCardFrontUrl" class="input" placeholder="请输入身份证正面地址" />
+              <input v-model="authForm.idCardFrontUrl" class="input" placeholder="Enter the front ID card image URL" />
               <button class="btn-outline" :loading="uploadState.idCardFrontUrl" @click="uploadAuthImage('idCardFrontUrl')">
-                上传
+                Upload
               </button>
-              <button class="btn-outline" @click="previewImage(authForm.idCardFrontUrl)">预览</button>
+              <button class="btn-outline" @click="previewImage(authForm.idCardFrontUrl)">Preview</button>
             </view>
           </view>
           <view class="field">
-            <text class="field-label">身份证反面 URL</text>
+            <text class="field-label">Back ID card URL</text>
             <view class="row-inline">
-              <input v-model="authForm.idCardBackUrl" class="input" placeholder="请输入身份证反面地址" />
+              <input v-model="authForm.idCardBackUrl" class="input" placeholder="Enter the back ID card image URL" />
               <button class="btn-outline" :loading="uploadState.idCardBackUrl" @click="uploadAuthImage('idCardBackUrl')">
-                上传
+                Upload
               </button>
-              <button class="btn-outline" @click="previewImage(authForm.idCardBackUrl)">预览</button>
+              <button class="btn-outline" @click="previewImage(authForm.idCardBackUrl)">Preview</button>
             </view>
           </view>
           <view class="field">
-            <text class="field-label">联系人电话</text>
-            <input v-model="authForm.contactPhone" class="input" placeholder="请输入联系人电话" />
+            <text class="field-label">Contact phone</text>
+            <input v-model="authForm.contactPhone" class="input" placeholder="Enter the contact phone number" />
           </view>
           <view class="field">
-            <text class="field-label">联系地址</text>
-            <textarea v-model="authForm.contactAddress" class="textarea" placeholder="请输入联系地址" />
+            <text class="field-label">Contact address</text>
+            <textarea v-model="authForm.contactAddress" class="textarea" placeholder="Enter the contact address" />
           </view>
         </view>
         <view class="actions">
-          <button class="btn-primary" :loading="authSaving" @click="submitAuth">提交认证</button>
-          <button v-if="authInfo" class="btn-outline" @click="revokeAuth">撤销认证</button>
+          <button class="btn-primary" :loading="authSaving" @click="submitAuth">Submit auth</button>
+          <button v-if="authInfo" class="btn-outline" @click="revokeAuth">Revoke auth</button>
         </view>
       </view>
 
       <view class="card glass-card">
-        <text class="label">商家统计</text>
-        <view v-if="statsEntries.length === 0" class="muted">暂无统计数据</view>
+        <text class="label">Merchant statistics</text>
+        <view v-if="statsEntries.length === 0" class="muted">No statistics available</view>
         <view v-else class="stats-list">
           <view v-for="entry in statsEntries" :key="entry.key" class="stats-row">
             <text class="stats-key">{{ entry.key }}</text>
@@ -453,5 +453,3 @@ onMounted(() => {
   }
 }
 </style>
-
-
