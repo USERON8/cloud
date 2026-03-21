@@ -1,3 +1,4 @@
+import axios, { AxiosHeaders, type AxiosRequestConfig, type AxiosResponse, isAxiosError } from 'axios'
 import { clearSession, getAccessToken } from '../auth/session'
 import { BusinessError, SUCCESS_CODE, type ResultEnvelope } from '../types/api'
 
@@ -7,6 +8,11 @@ export interface RequestConfig {
   params?: object
   data?: unknown
   headers?: Record<string, string>
+  raw?: boolean
+  skipAuth?: boolean
+}
+
+interface InternalRequestConfig extends AxiosRequestConfig {
   raw?: boolean
   skipAuth?: boolean
 }
@@ -26,10 +32,9 @@ export function resolveApiUrl(path: string): string {
   return buildApiUrl(path)
 }
 
-function buildUrl(path: string, params?: object): string {
-  const base = buildApiUrl(path)
+function buildSearchParams(params?: object): string {
   if (!params) {
-    return base
+    return ''
   }
   const search = new URLSearchParams()
   Object.entries(params as Record<string, unknown>).forEach(([key, value]) => {
@@ -46,11 +51,33 @@ function buildUrl(path: string, params?: object): string {
     }
     search.append(key, String(value))
   })
-  const query = search.toString()
+  return search.toString()
+}
+
+function buildUrl(path: string, params?: object): string {
+  const base = buildApiUrl(path)
+  const query = buildSearchParams(params)
   if (!query) {
     return base
   }
   return base.includes('?') ? `${base}&${query}` : `${base}?${query}`
+}
+
+function normalizeHeaders(headers?: AxiosRequestConfig['headers']): Record<string, string> {
+  if (!headers) {
+    return {}
+  }
+  const normalized: Record<string, string> = {}
+  if (headers instanceof AxiosHeaders) {
+    Object.entries(headers.toJSON()).forEach(([key, value]) => {
+      normalized[key] = value == null ? '' : String(value)
+    })
+    return normalized
+  }
+  Object.entries(headers as Record<string, unknown>).forEach(([key, value]) => {
+    normalized[key] = value == null ? '' : String(value)
+  })
+  return normalized
 }
 
 function isResultEnvelope(payload: unknown): payload is ResultEnvelope<unknown> {
@@ -89,57 +116,92 @@ function normalizeError(payload: unknown, fallbackMessage: string): Error {
   return new Error(fallbackMessage)
 }
 
-async function request<T>(method: HttpMethod, url: string, config: RequestConfig = {}): Promise<T> {
-  const headers: Record<string, string> = { ...(config.headers || {}) }
-  if (!config.skipAuth) {
+const httpClient = axios.create({
+  timeout: apiTimeout,
+  validateStatus: () => true,
+  adapter: async (config) => {
+    const targetUrl = buildUrl(config.url || '', config.params as object | undefined)
+    const payload = config.method?.toUpperCase() === 'GET' ? undefined : config.data
+    const headers = normalizeHeaders(config.headers)
+
+    return new Promise<AxiosResponse>((resolve, reject) => {
+      uni.request({
+        url: targetUrl,
+        method: (config.method || 'GET').toUpperCase() as any,
+        data: payload as any,
+        header: headers,
+        timeout: config.timeout,
+        withCredentials: true,
+        success: (res) => {
+          resolve({
+            data: res.data,
+            status: res.statusCode || 0,
+            statusText: String(res.statusCode || ''),
+            headers: res.header as Record<string, string>,
+            config,
+            request: null
+          })
+        },
+        fail: (error) => {
+          reject(error)
+        }
+      })
+    })
+  }
+})
+
+httpClient.interceptors.request.use((config) => {
+  const nextConfig = config as InternalRequestConfig & { headers?: any }
+  if (!nextConfig.skipAuth) {
     const token = getAccessToken()
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      const headers = AxiosHeaders.from(nextConfig.headers)
+      headers.set('Authorization', `Bearer ${token}`)
+      nextConfig.headers = headers
     }
   }
+  return nextConfig as any
+})
 
-  const isGet = method === 'GET'
-  const targetUrl = buildUrl(url, config.params)
-  const payload = isGet ? undefined : config.data
-  const requestKey = isGet ? `${targetUrl}::${headers.Authorization || ''}` : ''
+async function request<T>(method: HttpMethod, url: string, config: RequestConfig = {}): Promise<T> {
+  const requestUrl = buildUrl(url, config.params)
+  const accessToken = config.skipAuth ? '' : getAccessToken()
+  const requestKey = method === 'GET' ? `${requestUrl}::${accessToken}` : ''
 
-  if (isGet) {
+  if (method === 'GET') {
     const inflightRequest = inflightGetRequests.get(requestKey)
     if (inflightRequest) {
       return inflightRequest as Promise<T>
     }
   }
 
-  const requestPromise = new Promise<T>((resolve, reject) => {
-    uni.request({
-      url: targetUrl,
-      method: method as any,
-      data: payload as any,
-      header: headers,
-      timeout: apiTimeout,
-      withCredentials: true,
-      success: (res) => {
-        if (res.statusCode === 401) {
-          clearSession()
-        }
-        if (res.statusCode && res.statusCode >= 400) {
-          reject(normalizeError(res.data, 'Network request failed'))
-          return
-        }
-        try {
-          const result = config.raw ? (res.data as T) : unwrapPayload<T>(res.data)
-          resolve(result)
-        } catch (error) {
-          reject(normalizeError(error, 'Request failed'))
-        }
-      },
-      fail: (error) => {
-        reject(normalizeError(error, 'Network request failed'))
+  const requestPromise = httpClient
+    .request<unknown>({
+      url,
+      method,
+      params: config.params,
+      data: config.data,
+      headers: config.headers,
+      raw: config.raw,
+      skipAuth: config.skipAuth
+    } as InternalRequestConfig)
+    .then((response) => {
+      if (response.status === 401) {
+        clearSession()
       }
+      if (response.status >= 400) {
+        throw normalizeError(response.data, 'Network request failed')
+      }
+      return config.raw ? (response.data as T) : unwrapPayload<T>(response.data)
     })
-  })
+    .catch((error) => {
+      if (isAxiosError(error) && error.response) {
+        throw normalizeError(error.response.data, 'Network request failed')
+      }
+      throw normalizeError(error, 'Network request failed')
+    })
 
-  if (!isGet) {
+  if (method !== 'GET') {
     return requestPromise
   }
 

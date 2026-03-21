@@ -1,5 +1,6 @@
-import { reactive } from 'vue'
+import { defineStore } from 'pinia'
 import type { OAuthTokenResponse, UserInfo } from '../types/domain'
+import { pinia } from '../stores/pinia'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 const SESSION_KEY = 'shop.session'
@@ -22,32 +23,7 @@ interface StoredSession {
 
 type SessionChangeListener = (user: UserInfo | null) => void
 
-export const sessionState = reactive<SessionState>({
-  accessToken: '',
-  tokenType: 'Bearer',
-  expiresAt: 0,
-  scope: '',
-  user: null
-})
-
 const sessionChangeListeners = new Set<SessionChangeListener>()
-
-function persist(): void {
-  const payload: StoredSession = {
-    accessToken: sessionState.accessToken,
-    tokenType: sessionState.tokenType,
-    expiresAt: sessionState.expiresAt,
-    scope: sessionState.scope,
-    user: sessionState.user
-  }
-  setStorage(SESSION_KEY, payload)
-}
-
-function notifySessionChange(): void {
-  sessionChangeListeners.forEach((listener) => {
-    listener(sessionState.user)
-  })
-}
 
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
@@ -124,70 +100,111 @@ function buildUserInfo(accessClaims: Record<string, unknown>, idClaims: Record<s
   }
 }
 
+export const useSessionStore = defineStore('session', {
+  state: (): SessionState => ({
+    accessToken: '',
+    tokenType: 'Bearer',
+    expiresAt: 0,
+    scope: '',
+    user: null
+  }),
+  actions: {
+    persist(): void {
+      const payload: StoredSession = {
+        accessToken: this.accessToken,
+        tokenType: this.tokenType,
+        expiresAt: this.expiresAt,
+        scope: this.scope,
+        user: this.user
+      }
+      setStorage(SESSION_KEY, payload)
+    },
+    notifySessionChange(): void {
+      sessionChangeListeners.forEach((listener) => {
+        listener(this.user)
+      })
+    },
+    hydrateFromStorage(): void {
+      if (this.accessToken) {
+        return
+      }
+
+      const payload = getStorage<StoredSession>(SESSION_KEY)
+      if (!payload) {
+        return
+      }
+
+      if (!payload.accessToken || !payload.expiresAt || payload.expiresAt <= Date.now()) {
+        removeStorage(SESSION_KEY)
+        return
+      }
+
+      this.accessToken = payload.accessToken
+      this.tokenType = payload.tokenType || 'Bearer'
+      this.expiresAt = payload.expiresAt
+      this.scope = payload.scope || ''
+      this.user = payload.user || null
+      this.notifySessionChange()
+    },
+    setSessionFromTokenResponse(payload: OAuthTokenResponse): void {
+      const accessClaims = parseJwtClaims(payload.access_token)
+      const idClaims = parseJwtClaims(payload.id_token)
+
+      this.accessToken = payload.access_token
+      this.tokenType = payload.token_type || 'Bearer'
+      this.expiresAt = Date.now() + (payload.expires_in || 0) * 1000
+      this.scope = payload.scope || ''
+      this.user = buildUserInfo(accessClaims, idClaims)
+      this.persist()
+      this.notifySessionChange()
+    },
+    clear(): void {
+      this.accessToken = ''
+      this.tokenType = 'Bearer'
+      this.expiresAt = 0
+      this.scope = ''
+      this.user = null
+      removeStorage(SESSION_KEY)
+      this.notifySessionChange()
+    },
+    patchUser(patch: Partial<UserInfo>): void {
+      this.user = {
+        ...(this.user || {}),
+        ...patch
+      }
+      this.persist()
+      this.notifySessionChange()
+    },
+    readAccessToken(): string {
+      if (this.expiresAt > 0 && this.expiresAt <= Date.now()) {
+        this.clear()
+        return ''
+      }
+      return this.accessToken
+    }
+  }
+})
+
+export const sessionState = useSessionStore(pinia)
+
 export function hydrateSessionFromStorage(): void {
-  if (sessionState.accessToken) {
-    return
-  }
-
-  const payload = getStorage<StoredSession>(SESSION_KEY)
-  if (!payload) {
-    return
-  }
-
-  if (!payload.accessToken || !payload.expiresAt || payload.expiresAt <= Date.now()) {
-    removeStorage(SESSION_KEY)
-    return
-  }
-
-  sessionState.accessToken = payload.accessToken
-  sessionState.tokenType = payload.tokenType || 'Bearer'
-  sessionState.expiresAt = payload.expiresAt
-  sessionState.scope = payload.scope || ''
-  sessionState.user = payload.user || null
-  notifySessionChange()
+  sessionState.hydrateFromStorage()
 }
 
 export function setSessionFromTokenResponse(payload: OAuthTokenResponse): void {
-  const accessClaims = parseJwtClaims(payload.access_token)
-  const idClaims = parseJwtClaims(payload.id_token)
-
-  sessionState.accessToken = payload.access_token
-  sessionState.tokenType = payload.token_type || 'Bearer'
-  sessionState.expiresAt = Date.now() + (payload.expires_in || 0) * 1000
-  sessionState.scope = payload.scope || ''
-  sessionState.user = buildUserInfo(accessClaims, idClaims)
-  persist()
-  notifySessionChange()
+  sessionState.setSessionFromTokenResponse(payload)
 }
 
 export function clearSession(): void {
-  sessionState.accessToken = ''
-  sessionState.tokenType = 'Bearer'
-  sessionState.expiresAt = 0
-  sessionState.scope = ''
-  sessionState.user = null
-  removeStorage(SESSION_KEY)
-  notifySessionChange()
+  sessionState.clear()
 }
 
 export function patchSessionUser(patch: Partial<UserInfo>): void {
-  if (!sessionState.user) {
-    sessionState.user = {}
-  }
-  sessionState.user = {
-    ...sessionState.user,
-    ...patch
-  }
-  persist()
-  notifySessionChange()
+  sessionState.patchUser(patch)
 }
 
 export function getAccessToken(): string {
-  if (sessionState.expiresAt > 0 && sessionState.expiresAt <= Date.now()) {
-    clearSession()
-    return ''
-  }
-  return sessionState.accessToken
+  return sessionState.readAccessToken()
 }
 
 export function isAuthenticated(): boolean {
