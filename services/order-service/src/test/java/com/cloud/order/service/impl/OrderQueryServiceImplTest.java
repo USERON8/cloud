@@ -79,6 +79,7 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getAfterSaleId()).isEqualTo(30L);
     assertThat(summary.getAfterSaleNo()).isEqualTo("AS-30");
     assertThat(summary.getAfterSaleType()).isEqualTo("RETURN_REFUND");
+    assertThat(summary.getRefundNo()).isEqualTo("RFAS-30");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("NONE");
     assertThat(summary.getStatus()).isEqualTo(1);
   }
@@ -120,6 +121,7 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getMerchantId()).isNull();
     assertThat(summary.getAfterSaleId()).isNull();
     assertThat(summary.getAfterSaleNo()).isNull();
+    assertThat(summary.getRefundNo()).isNull();
     assertThat(summary.getAfterSaleStatus()).isNull();
     assertThat(summary.getStatus()).isEqualTo(2);
   }
@@ -180,6 +182,7 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getAfterSaleId()).isEqualTo(61L);
     assertThat(summary.getAfterSaleNo()).isEqualTo("AS-61");
     assertThat(summary.getAfterSaleType()).isEqualTo("REFUND");
+    assertThat(summary.getRefundNo()).isEqualTo("RFAS-61");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("APPLIED");
     assertThat(summary.getStatus()).isEqualTo(1);
   }

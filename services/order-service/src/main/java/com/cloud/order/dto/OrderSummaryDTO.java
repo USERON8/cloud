@@ -15,6 +15,7 @@ public class OrderSummaryDTO {
   private Long afterSaleId;
   private String afterSaleNo;
   private String afterSaleType;
+  private String refundNo;
   private BigDecimal totalAmount;
   private BigDecimal payAmount;
   private Integer status;

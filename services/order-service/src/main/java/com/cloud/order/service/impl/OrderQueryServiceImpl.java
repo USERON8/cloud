@@ -18,6 +18,7 @@ import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.OrderRefundSagaCoordinator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -288,6 +289,10 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         summary.setAfterSaleId(latestAfterSale.getId());
         summary.setAfterSaleNo(latestAfterSale.getAfterSaleNo());
         summary.setAfterSaleType(latestAfterSale.getAfterSaleType());
+        if (StringUtils.hasText(latestAfterSale.getAfterSaleNo())) {
+          summary.setRefundNo(
+              OrderRefundSagaCoordinator.buildRefundNo(latestAfterSale.getAfterSaleNo()));
+        }
       }
     }
     return summary;

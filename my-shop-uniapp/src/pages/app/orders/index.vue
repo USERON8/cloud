@@ -61,20 +61,16 @@ function canComplete(order: OrderItem): boolean {
 }
 
 function canViewRefund(order: OrderItem): boolean {
-  return !!order.afterSaleNo && ['REFUNDING', 'REFUNDED'].includes(order.afterSaleStatus ?? '')
+  return !!order.refundNo && ['REFUNDING', 'REFUNDED'].includes(order.afterSaleStatus ?? '')
+}
+
+function buildPaymentIdempotencyKey(order: OrderItem): string {
+  return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}`
 }
 
 function buildPaymentNo(order: OrderItem): string {
   const subOrderNo = order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, '') || String(order.id)
   return `PAY-${subOrderNo}`
-}
-
-function buildRefundNo(order: OrderItem): string {
-  return `RF${order.afterSaleNo}`
-}
-
-function buildPaymentIdempotencyKey(order: OrderItem): string {
-  return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}`
 }
 
 function resetAfterSaleDraft(): void {
@@ -227,7 +223,7 @@ function onViewRefund(order: OrderItem): void {
   }
   navigateTo(
     Routes.appPayments,
-    { refundNo: buildRefundNo(order) },
+    { refundNo: order.refundNo },
     {
       requiresAuth: true,
       roles: ['USER', 'MERCHANT', 'ADMIN']

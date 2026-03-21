@@ -73,6 +73,7 @@ export interface OrderItem {
   afterSaleId?: number
   afterSaleNo?: string
   afterSaleType?: string
+  refundNo?: string
   shopId?: number
   totalAmount?: number
   payAmount?: number

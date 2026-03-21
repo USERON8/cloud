@@ -58,6 +58,13 @@ public class OrderRefundSagaCoordinator {
         "refundSaga", afterSale.getAfterSaleNo(), "refundApply", params);
   }
 
+  public static String buildRefundNo(String afterSaleNo) {
+    if (afterSaleNo == null || afterSaleNo.isBlank()) {
+      throw new BizException("after sale number is required");
+    }
+    return "RF" + afterSaleNo;
+  }
+
   private OrderMain requireMainOrder(Long mainOrderId) {
     if (mainOrderId == null) {
       throw new BizException("main order id is required");
@@ -81,7 +88,7 @@ public class OrderRefundSagaCoordinator {
   }
 
   private String buildRefundNo(AfterSale afterSale) {
-    return "RF" + afterSale.getAfterSaleNo();
+    return buildRefundNo(afterSale.getAfterSaleNo());
   }
 
   private BigDecimal resolveRefundAmount(AfterSale afterSale) {
