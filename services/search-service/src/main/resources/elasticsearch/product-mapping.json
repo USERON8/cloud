@@ -69,8 +69,7 @@
       "type": "keyword"
     },
     "tags": {
-      "type": "text",
-      "analyzer": "standard"
+      "type": "keyword"
     },
     "salesCount": {
       "type": "integer"

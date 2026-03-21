@@ -12,12 +12,14 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.ProductReviewMapper;
+import com.cloud.product.mapper.ShopMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Brand;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.ProductReview;
+import com.cloud.product.module.entity.Shop;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.impl.ProductCatalogServiceImpl;
@@ -40,6 +42,8 @@ class ProductCatalogServiceImplTest {
 
   @Mock private BrandMapper brandMapper;
 
+  @Mock private ShopMapper shopMapper;
+
   @Mock private ProductReviewMapper productReviewMapper;
 
   @Mock private ProductDetailCacheService productDetailCacheService;
@@ -56,6 +60,7 @@ class ProductCatalogServiceImplTest {
             skuMapper,
             categoryMapper,
             brandMapper,
+            shopMapper,
             productReviewMapper,
             productDetailCacheService,
             productSyncMessageProducer);
@@ -109,6 +114,10 @@ class ProductCatalogServiceImplTest {
     brand.setIsRecommended(1);
     brand.setIsHot(1);
 
+    Shop shop = new Shop();
+    shop.setMerchantId(4001L);
+    shop.setShopName("Cloud Flagship Store");
+
     ProductReview review = new ProductReview();
     review.setSpuId(1001L);
     review.setRating(5);
@@ -123,6 +132,7 @@ class ProductCatalogServiceImplTest {
     when(skuMapper.selectList(any())).thenReturn(List.of());
     when(categoryMapper.selectBatchIds(List.of(2001L))).thenReturn(List.of(category));
     when(brandMapper.selectBatchIds(List.of(3001L))).thenReturn(List.of(brand));
+    when(shopMapper.selectList(any())).thenReturn(List.of(shop));
     when(productReviewMapper.selectList(any())).thenReturn(List.of(review));
 
     List<SpuDetailVO> result = service.listSpuByPage(1, 20, 1);
@@ -130,6 +140,7 @@ class ProductCatalogServiceImplTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getCategoryName()).isEqualTo("Phone");
     assertThat(result.get(0).getBrandName()).isEqualTo("Cloud");
+    assertThat(result.get(0).getShopName()).isEqualTo("Cloud Flagship Store");
     assertThat(result.get(0).getTags()).isEqualTo("fast,smooth");
     assertThat(result.get(0).getRating()).isEqualByComparingTo("5.00");
     assertThat(result.get(0).getReviewCount()).isEqualTo(1);

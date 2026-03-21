@@ -19,6 +19,7 @@ public class SpuDetailVO implements Serializable {
   private Long brandId;
   private String brandName;
   private Long merchantId;
+  private String shopName;
   private Integer status;
   private String description;
   private String mainImage;

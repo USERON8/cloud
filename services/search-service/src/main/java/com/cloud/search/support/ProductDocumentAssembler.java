@@ -5,6 +5,7 @@ import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.search.document.ProductDocument;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,6 +50,7 @@ public final class ProductDocumentAssembler {
         .id(String.valueOf(spu.getSpuId()))
         .productId(spu.getSpuId())
         .shopId(spu.getMerchantId())
+        .shopName(spu.getShopName())
         .productName(spu.getSpuName())
         .productNameKeyword(spu.getSpuName())
         .price(price)
@@ -64,7 +66,7 @@ public final class ProductDocumentAssembler {
         .description(spu.getDescription())
         .imageUrl(imageUrl)
         .detailImages(detailImages)
-        .tags(spu.getTags())
+        .tags(resolveTags(spu.getTags()))
         .sku(skuCode)
         .salesCount(normalizedSalesCount)
         .rating(spu.getRating())
@@ -96,6 +98,17 @@ public final class ProductDocumentAssembler {
       }
     }
     return imageUrls.isEmpty() ? null : String.join(",", imageUrls);
+  }
+
+  private static List<String> resolveTags(String rawTags) {
+    if (rawTags == null || rawTags.isBlank()) {
+      return List.of();
+    }
+    return Arrays.stream(rawTags.split(","))
+        .map(String::trim)
+        .filter(tag -> !tag.isBlank())
+        .distinct()
+        .toList();
   }
 
   private static double calculateHotScore(SpuDetailVO spu, boolean isNew, int salesCount) {

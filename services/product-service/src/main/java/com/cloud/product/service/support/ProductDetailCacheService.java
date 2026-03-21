@@ -152,6 +152,7 @@ public class ProductDetailCacheService {
     target.setBrandId(source.getBrandId());
     target.setBrandName(source.getBrandName());
     target.setMerchantId(source.getMerchantId());
+    target.setShopName(source.getShopName());
     target.setStatus(source.getStatus());
     target.setDescription(source.getDescription());
     target.setMainImage(source.getMainImage());

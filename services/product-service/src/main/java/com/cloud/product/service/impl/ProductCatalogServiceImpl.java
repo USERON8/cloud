@@ -11,12 +11,14 @@ import com.cloud.common.exception.BusinessException;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.ProductReviewMapper;
+import com.cloud.product.mapper.ShopMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Brand;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.ProductReview;
+import com.cloud.product.module.entity.Shop;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
 import com.cloud.product.service.ProductCatalogService;
@@ -45,6 +47,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   private final SkuMapper skuMapper;
   private final CategoryMapper categoryMapper;
   private final BrandMapper brandMapper;
+  private final ShopMapper shopMapper;
   private final ProductReviewMapper productReviewMapper;
   private final ProductDetailCacheService productDetailCacheService;
   private final ProductSyncMessageProducer productSyncMessageProducer;
@@ -260,6 +263,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       List<Sku> skus,
       Map<Long, Category> categoryById,
       Map<Long, Brand> brandById,
+      Map<Long, Shop> shopByMerchantId,
       Map<Long, ReviewAggregate> reviewAggregateBySpuId) {
     SpuDetailVO vo = new SpuDetailVO();
     vo.setSpuId(spu.getId());
@@ -270,6 +274,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     vo.setBrandId(spu.getBrandId());
     vo.setBrandName(resolveBrandName(spu.getBrandId(), brandById));
     vo.setMerchantId(spu.getMerchantId());
+    vo.setShopName(resolveShopName(spu.getMerchantId(), shopByMerchantId));
     vo.setStatus(spu.getStatus());
     vo.setDescription(spu.getDescription());
     vo.setMainImage(spu.getMainImage());
@@ -302,8 +307,10 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
             new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
     Map<Long, Category> categoryById = loadCategoryMap(List.of(spu));
     Map<Long, Brand> brandById = loadBrandMap(List.of(spu));
+    Map<Long, Shop> shopByMerchantId = loadShopMap(List.of(spu));
     Map<Long, ReviewAggregate> reviewAggregateBySpuId = loadReviewAggregateMap(List.of(spu));
-    return toSpuDetail(spu, skus, categoryById, brandById, reviewAggregateBySpuId);
+    return toSpuDetail(
+        spu, skus, categoryById, brandById, shopByMerchantId, reviewAggregateBySpuId);
   }
 
   private List<SpuDetailVO> buildSpuDetails(List<Spu> spus) {
@@ -313,6 +320,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
     Map<Long, Category> categoryById = loadCategoryMap(spus);
     Map<Long, Brand> brandById = loadBrandMap(spus);
+    Map<Long, Shop> shopByMerchantId = loadShopMap(spus);
     Map<Long, ReviewAggregate> reviewAggregateBySpuId = loadReviewAggregateMap(spus);
     List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
     Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
@@ -331,7 +339,9 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     List<SpuDetailVO> result = new ArrayList<>(spus.size());
     for (Spu spu : spus) {
       List<Sku> skus = skusBySpuId.getOrDefault(spu.getId(), Collections.emptyList());
-      result.add(toSpuDetail(spu, skus, categoryById, brandById, reviewAggregateBySpuId));
+      result.add(
+          toSpuDetail(
+              spu, skus, categoryById, brandById, shopByMerchantId, reviewAggregateBySpuId));
     }
     return result;
   }
@@ -374,6 +384,29 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     return brandById;
   }
 
+  private Map<Long, Shop> loadShopMap(List<Spu> spus) {
+    List<Long> merchantIds =
+        spus.stream().map(Spu::getMerchantId).filter(id -> id != null).distinct().toList();
+    if (merchantIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, Shop> shopByMerchantId = new HashMap<>(merchantIds.size());
+    List<Shop> shops =
+        shopMapper.selectList(
+            new LambdaQueryWrapper<Shop>()
+                .in(Shop::getMerchantId, merchantIds)
+                .eq(Shop::getDeleted, 0));
+    if (shops == null || shops.isEmpty()) {
+      return shopByMerchantId;
+    }
+    for (Shop shop : shops) {
+      if (shop != null && shop.getMerchantId() != null) {
+        shopByMerchantId.putIfAbsent(shop.getMerchantId(), shop);
+      }
+    }
+    return shopByMerchantId;
+  }
+
   private String resolveCategoryName(Long categoryId, Map<Long, Category> categoryById) {
     if (categoryId == null || categoryById == null || categoryById.isEmpty()) {
       return null;
@@ -388,6 +421,14 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     }
     Brand brand = brandById.get(brandId);
     return brand == null ? null : brand.getBrandName();
+  }
+
+  private String resolveShopName(Long merchantId, Map<Long, Shop> shopByMerchantId) {
+    if (merchantId == null || shopByMerchantId == null || shopByMerchantId.isEmpty()) {
+      return null;
+    }
+    Shop shop = shopByMerchantId.get(merchantId);
+    return shop == null ? null : shop.getShopName();
   }
 
   private Boolean resolveBrandFlag(

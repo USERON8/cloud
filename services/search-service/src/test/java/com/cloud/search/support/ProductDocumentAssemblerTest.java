@@ -31,6 +31,7 @@ class ProductDocumentAssemblerTest {
     spu.setBrandId(3001L);
     spu.setBrandName("Cloud");
     spu.setMerchantId(4001L);
+    spu.setShopName("Cloud Flagship Store");
     spu.setStatus(1);
     spu.setDescription("flagship");
     spu.setMainImage("https://img.example.com/spu.jpg");
@@ -46,10 +47,11 @@ class ProductDocumentAssemblerTest {
     ProductDocument document = ProductDocumentAssembler.toDocument(spu, 15, 28);
 
     assertThat(document.getShopId()).isEqualTo(4001L);
+    assertThat(document.getShopName()).isEqualTo("Cloud Flagship Store");
     assertThat(document.getStockQuantity()).isEqualTo(15);
     assertThat(document.getCategoryName()).isEqualTo("Phone");
     assertThat(document.getBrandName()).isEqualTo("Cloud");
-    assertThat(document.getTags()).isEqualTo("fast,smooth");
+    assertThat(document.getTags()).containsExactly("fast", "smooth");
     assertThat(document.getRating()).isEqualByComparingTo("4.50");
     assertThat(document.getReviewCount()).isEqualTo(12);
     assertThat(document.getRecommended()).isTrue();

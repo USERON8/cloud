@@ -223,6 +223,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                             .query(buildShopQuery(request))
                             .from(from)
                             .size(pageSize)
+                            .trackTotalHits(t -> t.enabled(true))
                             .source(src -> src.fetch(true));
                     if (includeAggregations) {
                       builder.aggregations(buildShopAggregations());

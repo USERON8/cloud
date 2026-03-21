@@ -2,6 +2,7 @@ package com.cloud.search.document;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -76,8 +77,8 @@ public class ProductDocument {
   @Field(type = FieldType.Keyword)
   private String detailImages;
 
-  @Field(type = FieldType.Text, analyzer = "standard")
-  private String tags;
+  @Field(type = FieldType.Keyword)
+  private List<String> tags;
 
   @Field(type = FieldType.Double)
   private BigDecimal weight;

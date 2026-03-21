@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
@@ -25,6 +26,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -138,9 +140,12 @@ class ShopSearchServiceImplTest {
 
     var result = shopSearchService.searchShops(request);
 
-    verify(elasticsearchClient)
-        .search(any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class));
+    ArgumentCaptor<SearchRequest> searchRequestCaptor =
+        ArgumentCaptor.forClass(SearchRequest.class);
+    verify(elasticsearchClient).search(searchRequestCaptor.capture(), eq(Map.class));
     verifyNoInteractions(shopDocumentRepository);
+    assertThat(searchRequestCaptor.getValue().trackTotalHits()).isNotNull();
+    assertThat(searchRequestCaptor.getValue().trackTotalHits().enabled()).isTrue();
     assertThat(result.getList())
         .extracting(ShopDocument::getShopName)
         .containsExactly("Combined Shop");
