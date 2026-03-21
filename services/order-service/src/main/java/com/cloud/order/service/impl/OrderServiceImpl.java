@@ -47,6 +47,8 @@ public class OrderServiceImpl implements OrderService {
 
   private static final Set<String> AFTER_SALE_ELIGIBLE_SUB_STATUSES =
       Set.of("PAID", "SHIPPED", "DONE");
+  private static final Set<String> REAPPLY_ALLOWED_AFTER_SALE_STATUSES =
+      Set.of("NONE", "CANCELLED", "REJECTED", "CLOSED");
 
   private static final Map<String, Set<String>> SUB_STATUS_TRANSITIONS =
       Map.of(
@@ -364,6 +366,7 @@ public class OrderServiceImpl implements OrderService {
           ResultCode.BAD_REQUEST,
           "after sale is not allowed for sub order status: " + subOrder.getOrderStatus());
     }
+    validateAfterSaleAvailability(subOrder);
     BigDecimal applyAmount = requirePositiveAmount(afterSale.getApplyAmount(), "apply amount");
     BigDecimal payableAmount = defaultAmount(subOrder.getPayableAmount());
     if (applyAmount.compareTo(payableAmount) > 0) {
@@ -375,6 +378,21 @@ public class OrderServiceImpl implements OrderService {
     afterSale.setUserId(mainOrder.getUserId());
     afterSale.setMerchantId(subOrder.getMerchantId());
     afterSale.setApplyAmount(applyAmount);
+  }
+
+  private void validateAfterSaleAvailability(OrderSub subOrder) {
+    String afterSaleStatus = subOrder.getAfterSaleStatus();
+    String normalizedStatus =
+        afterSaleStatus == null || afterSaleStatus.isBlank() ? "NONE" : afterSaleStatus.trim();
+    if (REAPPLY_ALLOWED_AFTER_SALE_STATUSES.contains(normalizedStatus)) {
+      return;
+    }
+    if ("REFUNDED".equals(normalizedStatus)) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "after sale is already completed for this sub order");
+    }
+    throw new BizException(
+        ResultCode.BAD_REQUEST, "an active after-sale request already exists for this sub order");
   }
 
   private void assertLogisticsInfoReady(String company, String trackingNumber) {

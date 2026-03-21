@@ -310,6 +310,43 @@ class OrderServiceImplTest {
   }
 
   @Test
+  void applyAfterSaleShouldRejectActiveAfterSaleStatus() {
+    AfterSale afterSale = buildAfterSale();
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+    subOrder.setAfterSaleStatus("APPLIED");
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    assertThatThrownBy(() -> orderService.applyAfterSale(afterSale))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex ->
+                assertThat(((BizException) ex).getCode())
+                    .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
+        .hasMessageContaining("active after-sale request already exists");
+
+    verify(afterSaleMapper, never()).insert(any(AfterSale.class));
+  }
+
+  @Test
+  void applyAfterSaleShouldAllowReapplyAfterTerminalStatus() {
+    AfterSale afterSale = buildAfterSale();
+    OrderMain mainOrder = buildMainOrder(50L, 9L);
+    OrderSub subOrder = buildSubOrder(60L, 50L, 88L, "PAID", BigDecimal.valueOf(40));
+    subOrder.setAfterSaleStatus("REJECTED");
+
+    when(orderMainMapper.selectById(50L)).thenReturn(mainOrder);
+    when(orderSubMapper.selectById(60L)).thenReturn(subOrder);
+
+    AfterSale created = orderService.applyAfterSale(afterSale);
+
+    assertThat(created.getStatus()).isEqualTo("APPLIED");
+    verify(afterSaleMapper).insert(afterSale);
+  }
+
+  @Test
   void applyAfterSaleShouldCanonicalizeProtectedFields() {
     AfterSale afterSale = buildAfterSale();
     afterSale.setStatus("APPROVED");
