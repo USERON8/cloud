@@ -374,20 +374,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @Caching(
+      evict = {
+        @CacheEvict(cacheNames = "user", allEntries = true),
+        @CacheEvict(cacheNames = "userList", allEntries = true),
+        @CacheEvict(cacheNames = "auth", allEntries = true)
+      })
   public boolean updateUsersBatch(List<UserUpsertRequestDTO> requestDTOList) {
     if (requestDTOList == null || requestDTOList.isEmpty()) {
       throw new BusinessException("user payload list is required");
     }
     List<User> entities = new ArrayList<>(requestDTOList.size());
+    Map<Long, User> existingUsers = new HashMap<>(requestDTOList.size());
     for (UserUpsertRequestDTO requestDTO : requestDTOList) {
       if (requestDTO == null || requestDTO.getId() == null) {
         throw new BusinessException("user id is required");
+      }
+      User existingUser = getById(requestDTO.getId());
+      if (existingUser == null) {
+        throw new EntityNotFoundException("user", requestDTO.getId());
+      }
+      existingUsers.put(requestDTO.getId(), existingUser);
+      if (StrUtil.isNotBlank(requestDTO.getUsername())
+          && !StrUtil.equals(requestDTO.getUsername(), existingUser.getUsername())) {
+        authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), requestDTO.getId());
       }
       User user = toUserEntity(requestDTO);
       user.setId(requestDTO.getId());
       entities.add(user);
     }
-    return updateBatchById(entities);
+    boolean updated = persistUserBatch(entities);
+    if (!updated) {
+      return false;
+    }
+    for (UserUpsertRequestDTO requestDTO : requestDTOList) {
+      User existingUser = existingUsers.get(requestDTO.getId());
+      if (existingUser == null) {
+        continue;
+      }
+      authPrincipalService.updatePrincipal(
+          toAuthPrincipalDTO(requestDTO.getId(), requestDTO, existingUser));
+      evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
+      updateUserCache(existingUser, requestDTO);
+    }
+    return true;
   }
 
   @Override
@@ -565,6 +595,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
           .forEach(this::updateUserCache);
     }
     return updated;
+  }
+
+  protected boolean persistUserBatch(Collection<User> entityList) {
+    return super.updateBatchById(entityList);
   }
 
   @Override

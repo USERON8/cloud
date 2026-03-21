@@ -115,6 +115,13 @@ public class UserProfileController {
     }
 
     String avatarUrl = minioService.uploadAvatar(file);
+    UserProfileUpsertDTO profileUpsertDTO = new UserProfileUpsertDTO();
+    profileUpsertDTO.setId(currentUserId);
+    profileUpsertDTO.setAvatarUrl(avatarUrl);
+    boolean updated = userService.updateProfile(profileUpsertDTO);
+    if (!updated) {
+      throw new BizException(ResultCode.BUSINESS_ERROR, "failed to persist avatar url");
+    }
     return Result.success("avatar uploaded", avatarUrl);
   }
 
