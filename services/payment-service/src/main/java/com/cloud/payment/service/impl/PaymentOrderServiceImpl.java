@@ -57,6 +57,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
       return cachedResult;
     }
 
+    PaymentOrderEntity existingByOrder =
+        findPaymentOrderEntityByOrderNo(command.getMainOrderNo(), command.getSubOrderNo());
+    if (existingByOrder != null) {
+      paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
+      paymentSecurityCacheService.cacheResult(orderKey, existingByOrder.getId());
+      return existingByOrder.getId();
+    }
+
     PaymentOrderEntity existing =
         paymentOrderMapper.selectOne(
             new LambdaQueryWrapper<PaymentOrderEntity>()
@@ -400,6 +408,16 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private String buildOrderKey(PaymentOrderCommandDTO command) {
     return command.getMainOrderNo() + ":" + command.getSubOrderNo();
+  }
+
+  private PaymentOrderEntity findPaymentOrderEntityByOrderNo(
+      String mainOrderNo, String subOrderNo) {
+    return paymentOrderMapper.selectOne(
+        new LambdaQueryWrapper<PaymentOrderEntity>()
+            .eq(PaymentOrderEntity::getMainOrderNo, mainOrderNo)
+            .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
+            .eq(PaymentOrderEntity::getDeleted, 0)
+            .last("LIMIT 1"));
   }
 
   private PaymentCallbackLogEntity findCallbackLogByCallbackNo(String callbackNo) {

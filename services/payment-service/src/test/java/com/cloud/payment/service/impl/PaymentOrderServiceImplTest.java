@@ -96,6 +96,35 @@ class PaymentOrderServiceImplTest {
   }
 
   @Test
+  void createPaymentOrderShouldReuseExistingOrderForSameOrderPair() {
+    PaymentOrderCommandDTO command = buildCommand();
+    OrderSubStatusVO status = new OrderSubStatusVO();
+    status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(command.getAmount());
+    PaymentOrderEntity existing = new PaymentOrderEntity();
+    existing.setId(66L);
+    existing.setMainOrderNo(command.getMainOrderNo());
+    existing.setSubOrderNo(command.getSubOrderNo());
+
+    when(orderStatusRemoteService.getSubOrderStatus(
+            command.getMainOrderNo(), command.getSubOrderNo()))
+        .thenReturn(status);
+    when(paymentSecurityCacheService.allowRateLimit(command.getUserId())).thenReturn(true);
+    when(paymentSecurityCacheService.getCachedResult(
+            command.getMainOrderNo() + ":" + command.getSubOrderNo()))
+        .thenReturn(null);
+    when(paymentOrderMapper.selectOne(any())).thenReturn(existing);
+
+    Long result = service.createPaymentOrder(command);
+
+    assertThat(result).isEqualTo(66L);
+    verify(paymentSecurityCacheService)
+        .cacheResult(command.getMainOrderNo() + ":" + command.getSubOrderNo(), 66L);
+    verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
+  }
+
+  @Test
   void createPaymentOrderShouldReturnDuplicatedWhenIdempotentLockFails() {
     PaymentOrderCommandDTO command = buildCommand();
     OrderSubStatusVO status = new OrderSubStatusVO();
