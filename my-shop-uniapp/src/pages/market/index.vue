@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import {
   listSearchHotKeywordsWithFallback,
   listSearchKeywordRecommendationsWithFallback,
@@ -23,6 +24,9 @@ const size = ref(10)
 const hasMore = ref(true)
 const hotKeywords = ref<string[]>([])
 const recommendations = ref<string[]>([])
+const skuIdCache = new Map<number, number | null>()
+const skuLookupCache = new Map<number, Promise<number | null>>()
+const initialized = ref(false)
 
 const loggedIn = computed(() => isAuthenticated())
 const activeKeyword = computed(() => keyword.value.trim())
@@ -103,22 +107,43 @@ function onLoadMore(): void {
 }
 
 async function resolveCartSkuId(item: ProductItem): Promise<number | null> {
+  const cachedSkuId = skuIdCache.get(item.id)
+  if (cachedSkuId !== undefined) {
+    return cachedSkuId
+  }
+  const inflightLookup = skuLookupCache.get(item.id)
+  if (inflightLookup) {
+    return inflightLookup
+  }
+
   if (typeof item.skuId === 'number' && item.skuId > 0) {
+    skuIdCache.set(item.id, item.skuId)
     return item.skuId
   }
 
-  const spu = await getSpu(item.id)
-  const availableSkus = (spu?.skus || []).filter((sku) => typeof sku.skuId === 'number' && sku.skuId > 0)
-  if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'number') {
-    return availableSkus[0].skuId
-  }
-  if (availableSkus.length === 0) {
-    toast('SKU information is unavailable')
-    return null
-  }
+  const lookupPromise = (async () => {
+    const spu = await getSpu(item.id)
+    const availableSkus = (spu?.skus || []).filter((sku) => typeof sku.skuId === 'number' && sku.skuId > 0)
+    if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'number') {
+      const resolvedSkuId = availableSkus[0].skuId
+      skuIdCache.set(item.id, resolvedSkuId)
+      return resolvedSkuId
+    }
+    if (availableSkus.length === 0) {
+      skuIdCache.set(item.id, null)
+      toast('SKU information is unavailable')
+      return null
+    }
 
-  toast('This product has multiple variants and cannot be added from the list view')
-  return null
+    skuIdCache.set(item.id, null)
+    toast('This product has multiple variants and cannot be added from the list view')
+    return null
+  })().finally(() => {
+    skuLookupCache.delete(item.id)
+  })
+
+  skuLookupCache.set(item.id, lookupPromise)
+  return lookupPromise
 }
 
 async function onAddToCart(item: ProductItem): Promise<void> {
@@ -156,7 +181,11 @@ function goLogin(): void {
   navigateTo(Routes.login, { redirect: Routes.appHome })
 }
 
-onMounted(() => {
+onShow(() => {
+  if (initialized.value) {
+    return
+  }
+  initialized.value = true
   void loadProducts(true)
   void refreshKeywords('')
 })

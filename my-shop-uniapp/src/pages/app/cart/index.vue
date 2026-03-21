@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
 import { cartItems, cartTotal, clearCart, removeFromCart, setCartItemQuantity } from '../../../store/cart'
@@ -178,10 +178,6 @@ async function onPlaceOrder(): Promise<void> {
 
   toast(`Failed shops: ${[...failedShops].join(', ')}`)
 }
-
-onMounted(() => {
-  void loadDefaultAddress()
-})
 
 onShow(() => {
   void loadDefaultAddress()

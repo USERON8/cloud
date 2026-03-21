@@ -13,6 +13,7 @@ export interface RequestConfig {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const apiTimeout = Number(import.meta.env.VITE_API_TIMEOUT || 10000)
+const inflightGetRequests = new Map<string, Promise<unknown>>()
 
 function buildApiUrl(path: string): string {
   if (!apiBaseUrl) {
@@ -100,8 +101,16 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
   const isGet = method === 'GET'
   const targetUrl = buildUrl(url, config.params)
   const payload = isGet ? undefined : config.data
+  const requestKey = isGet ? `${targetUrl}::${headers.Authorization || ''}` : ''
 
-  return new Promise<T>((resolve, reject) => {
+  if (isGet) {
+    const inflightRequest = inflightGetRequests.get(requestKey)
+    if (inflightRequest) {
+      return inflightRequest as Promise<T>
+    }
+  }
+
+  const requestPromise = new Promise<T>((resolve, reject) => {
     uni.request({
       url: targetUrl,
       method: method as any,
@@ -128,6 +137,15 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
         reject(normalizeError(error, 'Network request failed'))
       }
     })
+  })
+
+  if (!isGet) {
+    return requestPromise
+  }
+
+  inflightGetRequests.set(requestKey, requestPromise)
+  return requestPromise.finally(() => {
+    inflightGetRequests.delete(requestKey)
   })
 }
 

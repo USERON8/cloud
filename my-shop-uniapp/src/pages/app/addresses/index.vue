@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
 import { addUserAddress, deleteUserAddress, listUserAddresses, updateUserAddress } from '../../../api/address'
@@ -167,11 +167,7 @@ async function removeAddress(item: UserAddress): Promise<void> {
   }
 }
 
-onMounted(() => {
-  resetForm()
-  void loadAddresses()
-})
-
+resetForm()
 onShow(() => {
   void loadAddresses()
 })
