@@ -1,6 +1,7 @@
 package com.cloud.order.messaging;
 
 import com.cloud.common.messaging.event.OrderCreatedEvent;
+import com.cloud.common.messaging.event.OrderTimeoutEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.messaging.outbox.AbstractOutboxRelay;
 import com.cloud.common.messaging.outbox.OutboxEvent;
@@ -11,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.common.message.MessageConst;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,13 +23,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderOutboxRelay extends AbstractOutboxRelay {
 
+  private final int orderTimeoutDelayLevel;
+
   public OrderOutboxRelay(
       OutboxEventService outboxEventService,
       OutboxProperties outboxProperties,
       StreamBridge streamBridge,
       ObjectMapper objectMapper,
-      @Nullable MeterRegistry meterRegistry) {
+      @Nullable MeterRegistry meterRegistry,
+      @Value("${order.timeout.delay-level:16}") int orderTimeoutDelayLevel) {
     super(outboxEventService, outboxProperties, streamBridge, objectMapper, meterRegistry);
+    this.orderTimeoutDelayLevel = Math.max(1, orderTimeoutDelayLevel);
   }
 
   @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms:2000}")
@@ -45,6 +52,7 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
     return switch (eventType) {
       case "ORDER_CREATED" -> sendOrderCreated(event);
       case "ORDER_CANCELLED" -> sendOrderCancelled(event);
+      case "ORDER_TIMEOUT" -> sendOrderTimeout(event);
       case "STOCK_RESTORE" -> sendStockRestore(event);
       default -> {
         log.warn(
@@ -69,6 +77,18 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
     Map<String, Object> payload = readPayload(event, new TypeReference<Map<String, Object>>() {});
     return sendMessage(
         "orderCancelledProducer-out-0", payload, asText(payload.get("orderNo")), "ORDER_CANCELLED");
+  }
+
+  private boolean sendOrderTimeout(OutboxEvent event) throws Exception {
+    OrderTimeoutEvent payload = readPayload(event, OrderTimeoutEvent.class);
+    return sendMessage(
+        "orderTimeoutProducer-out-0",
+        payload,
+        payload.getSubOrderNo(),
+        "ORDER_TIMEOUT",
+        payload.getEventId(),
+        payload.getEventType(),
+        Map.of(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(orderTimeoutDelayLevel)));
   }
 
   private boolean sendStockRestore(OutboxEvent event) throws Exception {

@@ -2,10 +2,13 @@ package com.cloud.order.tcc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.api.product.ProductDubboApi;
+import com.cloud.order.entity.OrderMain;
+import com.cloud.order.entity.OrderSub;
 import com.cloud.order.entity.OrderTccLog;
 import com.cloud.order.mapper.CartItemMapper;
 import com.cloud.order.mapper.CartMapper;
@@ -92,6 +95,37 @@ class OrderCreateTccActionTest {
     assertThatThrownBy(() -> action.rollback(context))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("idem-2");
+  }
+
+  @Test
+  void commitShouldPropagateWhenOrderTimeoutEventEnqueueFails() {
+    BusinessActionContext context = org.mockito.Mockito.mock(BusinessActionContext.class);
+    when(context.getActionContext("idempotencyKey")).thenReturn("idem-3");
+
+    OrderTccLog log = new OrderTccLog();
+    log.setBusinessKey("idem-3");
+    log.setStatus("TRY");
+    when(orderTccLogMapper.selectOne(any())).thenReturn(log);
+
+    OrderMain mainOrder = new OrderMain();
+    mainOrder.setId(11L);
+    mainOrder.setMainOrderNo("M-100");
+    mainOrder.setUserId(22L);
+    when(orderMainMapper.selectActiveByIdempotencyKey("idem-3")).thenReturn(mainOrder);
+
+    OrderSub subOrder = new OrderSub();
+    subOrder.setId(33L);
+    subOrder.setSubOrderNo("S-100");
+    subOrder.setOrderStatus("STOCK_RESERVED");
+    when(orderSubMapper.listActiveByMainOrderId(11L)).thenReturn(java.util.List.of(subOrder));
+
+    org.mockito.Mockito.doThrow(new IllegalStateException("outbox down"))
+        .when(orderTimeoutMessageProducer)
+        .sendAfterCommit(any());
+
+    assertThatThrownBy(() -> action.commit(context))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("outbox down");
   }
 
   private void injectProductDubboApi(OrderCreateTccAction target, ProductDubboApi api) {

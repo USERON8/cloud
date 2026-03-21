@@ -87,9 +87,20 @@ public abstract class AbstractOutboxRelay {
       String tag,
       @Nullable String eventId,
       @Nullable String eventType) {
+    return sendMessage(bindingName, payload, key, tag, eventId, eventType, null);
+  }
+
+  protected final boolean sendMessage(
+      String bindingName,
+      Object payload,
+      String key,
+      String tag,
+      @Nullable String eventId,
+      @Nullable String eventType,
+      @Nullable Map<String, Object> extraHeaders) {
     Message<Object> message =
         MessageBuilder.withPayload(payload)
-            .copyHeaders(buildHeaders(key, tag, eventId, eventType))
+            .copyHeaders(buildHeaders(key, tag, eventId, eventType, extraHeaders))
             .build();
     return streamBridge.send(bindingName, message);
   }
@@ -99,12 +110,19 @@ public abstract class AbstractOutboxRelay {
   }
 
   private Map<String, Object> buildHeaders(
-      String key, String tag, @Nullable String eventId, @Nullable String eventType) {
+      String key,
+      String tag,
+      @Nullable String eventId,
+      @Nullable String eventType,
+      @Nullable Map<String, Object> extraHeaders) {
     Map<String, Object> headers = new HashMap<>();
     putIfHasText(headers, MessageConst.PROPERTY_KEYS, key);
     putIfHasText(headers, MessageConst.PROPERTY_TAGS, tag);
     putIfHasText(headers, "eventId", eventId);
     putIfHasText(headers, "eventType", eventType);
+    if (extraHeaders != null && !extraHeaders.isEmpty()) {
+      headers.putAll(extraHeaders);
+    }
     return headers;
   }
 

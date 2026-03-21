@@ -15,8 +15,8 @@ Order and refund service covering the order lifecycle and batch status operation
 ## Messaging And Consistency
 
 - Produced events: `ORDER_CREATED`, `ORDER_CANCELLED`, `STOCK_RESTORE`, `ORDER_TIMEOUT`
-- Reliable delivery: `ORDER_CREATED`, `ORDER_CANCELLED`, and `STOCK_RESTORE` are persisted to `outbox_event` and published by `OrderOutboxRelay`
-- Delayed delivery: `ORDER_TIMEOUT` is sent directly through RocketMQ delay levels
+- Reliable delivery: `ORDER_CREATED`, `ORDER_CANCELLED`, `STOCK_RESTORE`, and `ORDER_TIMEOUT` are persisted to `outbox_event` and published by `OrderOutboxRelay`
+- Delayed delivery: `ORDER_TIMEOUT` is relayed with RocketMQ delay levels after it is written to the outbox
 - Consumer idempotency: `MessageIdempotencyService` (Redis) prevents replay side effects
 - Transaction model: Seata TCC is used for order placement inventory reservation; refunds use Seata SAGA compensation; timeout cancellation uses delayed RocketMQ messages
 
