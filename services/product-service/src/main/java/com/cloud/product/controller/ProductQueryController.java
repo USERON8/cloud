@@ -1,5 +1,7 @@
 package com.cloud.product.controller;
 
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.product.controller.support.ProductMerchantGuard;
@@ -38,8 +40,9 @@ public class ProductQueryController {
       @RequestParam(required = false) Long categoryId,
       @RequestParam(required = false) Long brandId,
       @RequestParam(required = false) Integer status) {
+    Integer effectiveStatus = normalizePublicStatus(status);
     return Result.success(
-        productQueryService.listProducts(page, size, name, categoryId, brandId, status));
+        productQueryService.listProducts(page, size, name, categoryId, brandId, effectiveStatus));
   }
 
   @GetMapping("/search")
@@ -56,5 +59,16 @@ public class ProductQueryController {
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
     productMerchantGuard.requireWritableSpu(authentication, spuId);
     return Result.success(productCatalogService.updateSpuStatus(spuId, status));
+  }
+
+  private Integer normalizePublicStatus(Integer status) {
+    if (status == null) {
+      return 1;
+    }
+    if (!Integer.valueOf(1).equals(status)) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "public product queries only support active status");
+    }
+    return status;
   }
 }

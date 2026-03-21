@@ -144,6 +144,18 @@ class ProductCatalogControllerTest {
   }
 
   @Test
+  void listByCategoryShouldRejectInactiveStatusFilter() {
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
+
+    BizException exception =
+        assertThrows(BizException.class, () -> controller.listByCategory(7L, 0));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.BAD_REQUEST.getCode());
+  }
+
+  @Test
   void listSkuByIdsShouldFilterInactiveSku() {
     when(productCatalogService.listSkuByIds(List.of(401L, 402L)))
         .thenReturn(List.of(skuDetail(401L, 41L, 1), skuDetail(402L, 42L, 0)));

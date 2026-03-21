@@ -74,7 +74,7 @@ public class ProductCatalogController {
   @Operation(summary = "List SPU by category")
   public Result<List<SpuDetailVO>> listByCategory(
       @PathVariable Long categoryId, @RequestParam(required = false) Integer status) {
-    Integer effectiveStatus = status != null ? status : 1;
+    Integer effectiveStatus = normalizePublicStatus(status);
     return Result.success(
         productCatalogService.listSpuByCategory(categoryId, effectiveStatus).stream()
             .map(this::toPublicSpu)
@@ -131,5 +131,16 @@ public class ProductCatalogController {
   private boolean isActiveSpu(Long spuId) {
     SpuDetailVO detail = productCatalogService.getSpuById(spuId);
     return detail != null && Integer.valueOf(1).equals(detail.getStatus());
+  }
+
+  private Integer normalizePublicStatus(Integer status) {
+    if (status == null) {
+      return 1;
+    }
+    if (!Integer.valueOf(1).equals(status)) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "public product queries only support active status");
+    }
+    return status;
   }
 }
