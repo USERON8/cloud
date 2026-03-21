@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import {
   advanceAfterSaleStatus,
@@ -299,7 +300,7 @@ async function cancelAfterSale(order: OrderItem): Promise<void> {
   }
 }
 
-onMounted(() => {
+onShow(() => {
   void loadOrders()
 })
 </script>
