@@ -2,7 +2,9 @@ package com.cloud.search.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.cloud.search.document.ProductDocument;
@@ -11,13 +13,15 @@ import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.impl.ProductSearchServiceImpl;
 import com.cloud.search.service.support.HotKeywordKeys;
 import com.cloud.search.service.support.SellRankKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -35,9 +39,21 @@ class ProductSearchServiceImplTest {
 
   @Mock private StringRedisTemplate redisTemplate;
 
+  @Mock private ElasticsearchOptimizedService elasticsearchOptimizedService;
+
   @Mock private ZSetOperations<String, String> zSetOperations;
 
-  @InjectMocks private ProductSearchServiceImpl productSearchService;
+  private ProductSearchServiceImpl productSearchService;
+
+  @BeforeEach
+  void setUp() {
+    productSearchService =
+        new ProductSearchServiceImpl(
+            productDocumentRepository,
+            redisTemplate,
+            elasticsearchOptimizedService,
+            new ObjectMapper());
+  }
 
   @Test
   void searchProducts_withKeyword_recordsHotSearch() {
@@ -127,5 +143,40 @@ class ProductSearchServiceImplTest {
 
     assertThat(result.getTotal()).isEqualTo(2L);
     assertThat(result.getList()).extracting(ProductDocument::getId).containsExactly("1001", "1002");
+  }
+
+  @Test
+  void getProductFilters_shouldUseElasticsearchAggregations() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("phone");
+    request.setPage(1);
+    request.setSize(5);
+    request.setIncludeAggregations(false);
+
+    var esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(List.of(Map.of("productName", "Cloud Phone", "brandName", "Cloud")))
+            .total(9L)
+            .from(5)
+            .size(5)
+            .aggregations(Map.of("categories", Map.of("Phones", 9L), "brands", Map.of("Cloud", 7L)))
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(any(), eq(List.of())))
+        .thenReturn(esResult);
+
+    var result = productSearchService.getProductFilters(request);
+
+    ArgumentCaptor<ProductSearchRequest> captor =
+        ArgumentCaptor.forClass(ProductSearchRequest.class);
+    verify(elasticsearchOptimizedService).productSearchAfter(captor.capture(), eq(List.of()));
+    verifyNoInteractions(productDocumentRepository);
+    assertThat(captor.getValue().getIncludeAggregations()).isTrue();
+    assertThat(result.getAggregations())
+        .isEqualTo(Map.of("categories", Map.of("Phones", 9L), "brands", Map.of("Cloud", 7L)));
+    assertThat(result.getList())
+        .extracting(ProductDocument::getProductName)
+        .containsExactly("Cloud Phone");
   }
 }

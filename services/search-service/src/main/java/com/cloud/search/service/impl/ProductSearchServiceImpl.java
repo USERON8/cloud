@@ -5,9 +5,11 @@ import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.repository.ProductDocumentRepository;
+import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import com.cloud.search.service.support.HotKeywordKeys;
 import com.cloud.search.service.support.SellRankKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,6 +38,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
   private final ProductDocumentRepository productDocumentRepository;
   private final StringRedisTemplate redisTemplate;
+  private final ElasticsearchOptimizedService elasticsearchOptimizedService;
+  private final ObjectMapper objectMapper;
 
   @Value("${search.hot-keyword.daily-ttl-days:7}")
   private long hotKeywordDailyTtlDays;
@@ -119,24 +123,19 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   @Override
   @Transactional(readOnly = true)
   public SearchResultDTO<ProductDocument> getProductFilters(ProductSearchRequest request) {
-    SearchResultDTO<ProductDocument> base = searchProducts(request);
-    List<ProductDocument> list = base.getList() == null ? new ArrayList<>() : base.getList();
-
-    Map<String, Object> aggregations = new LinkedHashMap<>();
-    aggregations.put(
-        "categories",
-        list.stream()
-            .filter(item -> StrUtil.isNotBlank(item.getCategoryName()))
-            .collect(
-                Collectors.groupingBy(ProductDocument::getCategoryName, Collectors.counting())));
-    aggregations.put(
-        "brands",
-        list.stream()
-            .filter(item -> StrUtil.isNotBlank(item.getBrandName()))
-            .collect(Collectors.groupingBy(ProductDocument::getBrandName, Collectors.counting())));
-
-    base.setAggregations(aggregations);
-    return base;
+    ProductSearchRequest aggregationRequest = copyRequest(request);
+    aggregationRequest.setIncludeAggregations(true);
+    long start = System.currentTimeMillis();
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        elasticsearchOptimizedService.productSearchAfter(aggregationRequest, List.of());
+    SearchResultDTO<ProductDocument> result =
+        toSearchResultDTO(
+            esResult,
+            normalizePage(aggregationRequest.getPage()),
+            normalizeSize(aggregationRequest.getSize()),
+            System.currentTimeMillis() - start);
+    result.setAggregations(normalizeProductAggregations(result.getAggregations()));
+    return result;
   }
 
   @Override
@@ -413,5 +412,64 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     Sort.Direction direction =
         "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
     return Sort.by(direction, field);
+  }
+
+  private ProductSearchRequest copyRequest(ProductSearchRequest request) {
+    if (request == null) {
+      return new ProductSearchRequest();
+    }
+    return objectMapper.convertValue(request, ProductSearchRequest.class);
+  }
+
+  private SearchResultDTO<ProductDocument> toSearchResultDTO(
+      ElasticsearchOptimizedService.SearchResultDTO esResult, int page, int size, long took) {
+    List<ProductDocument> list =
+        esResult == null || esResult.getDocuments() == null
+            ? Collections.emptyList()
+            : esResult.getDocuments().stream()
+                .map(document -> objectMapper.convertValue(document, ProductDocument.class))
+                .toList();
+    long total = esResult == null ? list.size() : esResult.getTotal();
+    int totalPages = size <= 0 ? 0 : (int) Math.ceil((double) total / size);
+    return SearchResultDTO.<ProductDocument>builder()
+        .list(list)
+        .total(total)
+        .page(page)
+        .size(size)
+        .totalPages(totalPages)
+        .hasNext(page < totalPages - 1)
+        .hasPrevious(page > 0)
+        .took(took)
+        .aggregations(esResult == null ? Map.of() : esResult.getAggregations())
+        .searchAfter(esResult == null ? List.of() : esResult.getSearchAfter())
+        .build();
+  }
+
+  private Map<String, Object> normalizeProductAggregations(Map<String, Object> rawAggregations) {
+    if (rawAggregations == null || rawAggregations.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, Object> normalized = new LinkedHashMap<>();
+    normalized.put("categories", normalizeBucketCounts(rawAggregations.get("categories")));
+    normalized.put("brands", normalizeBucketCounts(rawAggregations.get("brands")));
+    if (rawAggregations.containsKey("priceRanges")) {
+      normalized.put("priceRanges", rawAggregations.get("priceRanges"));
+    }
+    return normalized;
+  }
+
+  private Map<String, Long> normalizeBucketCounts(Object rawBuckets) {
+    if (!(rawBuckets instanceof Map<?, ?> bucketMap)) {
+      return Map.of();
+    }
+    Map<String, Long> normalized = new LinkedHashMap<>();
+    for (Map.Entry<?, ?> entry : bucketMap.entrySet()) {
+      String key = entry.getKey() == null ? "" : String.valueOf(entry.getKey()).trim();
+      if (key.isEmpty() || !(entry.getValue() instanceof Number number)) {
+        continue;
+      }
+      normalized.put(key, number.longValue());
+    }
+    return normalized;
   }
 }
