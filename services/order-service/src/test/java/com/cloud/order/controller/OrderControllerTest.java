@@ -233,6 +233,62 @@ class OrderControllerTest {
         .advanceAfterSaleStatus(55L, com.cloud.order.enums.AfterSaleAction.PROCESS, "start refund");
   }
 
+  @Test
+  void advanceAfterSaleStatusShouldAllowUserReturnAction() {
+    AfterSale afterSale = new AfterSale();
+    afterSale.setId(66L);
+    afterSale.setMerchantId(201L);
+    afterSale.setUserId(101L);
+    afterSale.setStatus("WAIT_RETURN");
+
+    AfterSale updated = new AfterSale();
+    updated.setId(66L);
+    updated.setStatus("RETURNED");
+    AfterSaleDTO response = new AfterSaleDTO();
+    response.setId(66L);
+    response.setStatus("RETURNED");
+
+    when(orderService.getAfterSale(66L)).thenReturn(afterSale);
+    when(orderService.advanceAfterSaleStatus(
+            66L, com.cloud.order.enums.AfterSaleAction.RETURN, "parcel sent"))
+        .thenReturn(updated);
+    when(afterSaleDtoConverter.toDto(updated)).thenReturn(response);
+
+    var result =
+        orderController.advanceAfterSaleStatus(
+            66L, "RETURN", "parcel sent", authentication("101", "ROLE_USER", "order:refund"));
+
+    assertThat(result.getData()).isSameAs(response);
+    verify(orderService)
+        .advanceAfterSaleStatus(66L, com.cloud.order.enums.AfterSaleAction.RETURN, "parcel sent");
+  }
+
+  @Test
+  void advanceAfterSaleStatusShouldRejectMerchantReturnAction() {
+    AfterSale afterSale = new AfterSale();
+    afterSale.setId(67L);
+    afterSale.setMerchantId(201L);
+    afterSale.setUserId(101L);
+    afterSale.setStatus("WAIT_RETURN");
+
+    when(orderService.getAfterSale(67L)).thenReturn(afterSale);
+
+    assertThatThrownBy(
+            () ->
+                orderController.advanceAfterSaleStatus(
+                    67L,
+                    "RETURN",
+                    "skip user handoff",
+                    authentication("201", "ROLE_MERCHANT", "order:refund")))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            ex -> {
+              BizException bizException = (BizException) ex;
+              assertThat(bizException.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
+            })
+        .hasMessageContaining("forbidden to perform action: RETURN");
+  }
+
   private CreateMainOrderRequest buildDirectOrderRequest() {
     CreateMainOrderRequest request = new CreateMainOrderRequest();
     request.setSpuId(10L);

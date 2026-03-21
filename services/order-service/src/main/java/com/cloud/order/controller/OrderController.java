@@ -44,14 +44,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
   private static final Set<AfterSaleAction> USER_AFTER_SALE_ACTIONS =
-      EnumSet.of(AfterSaleAction.CANCEL);
+      EnumSet.of(AfterSaleAction.CANCEL, AfterSaleAction.RETURN);
   private static final Set<AfterSaleAction> MERCHANT_AFTER_SALE_ACTIONS =
       EnumSet.of(
           AfterSaleAction.AUDIT,
           AfterSaleAction.APPROVE,
           AfterSaleAction.REJECT,
           AfterSaleAction.WAIT_RETURN,
-          AfterSaleAction.RETURN,
           AfterSaleAction.RECEIVE,
           AfterSaleAction.PROCESS);
 
