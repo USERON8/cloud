@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { watchDebounced } from '@vueuse/core'
 import {
   listSearchHotKeywordsWithFallback,
   listSearchKeywordRecommendationsWithFallback,
@@ -28,8 +29,6 @@ const skuIdCache = new Map<number, number | null>()
 const skuLookupCache = new Map<number, Promise<number | null>>()
 const initialized = ref(false)
 const latestLoadRequestId = ref(0)
-
-let keywordRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
 const loggedIn = computed(() => isAuthenticated())
 const activeKeyword = computed(() => keyword.value.trim())
@@ -194,16 +193,12 @@ function goLogin(): void {
   navigateTo(Routes.login, { redirect: Routes.appHome })
 }
 
-watch(
+watchDebounced(
   () => activeKeyword.value,
   (value) => {
-    if (keywordRefreshTimer) {
-      clearTimeout(keywordRefreshTimer)
-    }
-    keywordRefreshTimer = setTimeout(() => {
-      void refreshKeywords(value)
-    }, 250)
-  }
+    void refreshKeywords(value)
+  },
+  { debounce: 250, maxWait: 800 }
 )
 
 onShow(() => {
