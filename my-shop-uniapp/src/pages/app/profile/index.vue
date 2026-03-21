@@ -9,21 +9,21 @@ const user = computed(() => sessionState.user)
 <template>
   <AppShell title="Profile">
     <view class="panel glass-card">
-      <text class="section-title">个人信息</text>
+      <text class="section-title">Profile details</text>
       <view class="row">
-        <text class="label">用户名</text>
+        <text class="label">Username</text>
         <text class="value">{{ user?.username || '--' }}</text>
       </view>
       <view class="row">
-        <text class="label">昵称</text>
+        <text class="label">Display name</text>
         <text class="value">{{ user?.nickname || '--' }}</text>
       </view>
       <view class="row">
-        <text class="label">邮箱</text>
+        <text class="label">Email</text>
         <text class="value">{{ user?.email || '--' }}</text>
       </view>
       <view class="row">
-        <text class="label">角色</text>
+        <text class="label">Roles</text>
         <text class="value">{{ (user?.roles || []).join(', ') || '--' }}</text>
       </view>
     </view>

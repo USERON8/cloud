@@ -34,7 +34,7 @@ async function handleAuthorizationStart(provider: 'password' | 'github'): Promis
     }
     await startAuthorization(redirectPath.value)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '无法发起登录')
+    toast(error instanceof Error ? error.message : 'Failed to start sign-in')
     startingProvider.value = ''
   }
 }
@@ -49,15 +49,16 @@ function backToMarket(): void {
     <view class="signin-card glass-card">
       <view class="header">
         <text class="eyebrow">My Shop</text>
-        <text class="title">登录</text>
-        <text class="muted">统一 OAuth 2.1 授权入口</text>
+        <text class="title">Sign in</text>
+        <text class="muted">Unified OAuth 2.1 entry point</text>
       </view>
 
       <view class="signin-content">
         <view class="signin-hint">
-          <text class="hint-title">统一入口</text>
+          <text class="hint-title">Unified access</text>
           <text class="hint-copy">
-            {{ entryLabel === 'merchant' ? '商家' : '用户' }} 登录后角色由授权服务器返回。
+            {{ entryLabel === 'merchant' ? 'Merchant' : 'Customer' }} roles are returned by the
+            authorization server after sign-in.
           </text>
         </view>
 
@@ -66,11 +67,11 @@ function backToMarket(): void {
           :loading="startingProvider === 'password'"
           @click="handleAuthorizationStart('password')"
         >
-          通过授权服务器继续
+          Continue with the authorization server
         </button>
 
         <view class="divider">
-          <text>或者</text>
+          <text>or</text>
         </view>
 
         <button
@@ -78,10 +79,10 @@ function backToMarket(): void {
           :loading="startingProvider === 'github'"
           @click="handleAuthorizationStart('github')"
         >
-          GitHub 登录
+          Sign in with GitHub
         </button>
 
-        <button class="btn-outline full-width" @click="backToMarket">返回商城</button>
+        <button class="btn-outline full-width" @click="backToMarket">Back to the market</button>
       </view>
     </view>
   </view>

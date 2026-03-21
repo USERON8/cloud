@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { redirectTo } from '../../router/navigation'
 import { Routes } from '../../router/routes'
 
-const message = ref('登录失败，请稍后重试。')
+const message = ref('Sign-in failed. Please try again later.')
 
 onLoad((query) => {
   if (typeof query.message === 'string') {
@@ -20,9 +20,9 @@ function backToLogin(): void {
 <template>
   <view class="page">
     <view class="card glass-card">
-      <text class="title">认证失败</text>
+      <text class="title">Authorization failed</text>
       <text class="muted">{{ message }}</text>
-      <button class="btn-primary" @click="backToLogin">返回登录</button>
+      <button class="btn-primary" @click="backToLogin">Back to sign in</button>
     </view>
   </view>
 </template>

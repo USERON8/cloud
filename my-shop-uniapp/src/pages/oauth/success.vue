@@ -9,7 +9,7 @@ import { toast } from '../../utils/ui'
 
 const processing = ref(true)
 const failed = ref(false)
-const failureMessage = ref('无法完成登录，请稍后重试。')
+const failureMessage = ref('Unable to complete sign-in. Please try again later.')
 
 async function handleOAuth(query: Record<string, unknown>): Promise<void> {
   const code = typeof query.code === 'string' ? query.code : ''
@@ -23,13 +23,13 @@ async function handleOAuth(query: Record<string, unknown>): Promise<void> {
       throw new Error(oauthErrorDescription || oauthError)
     }
     if (!code || !state) {
-      throw new Error('缺少授权参数')
+      throw new Error('Missing authorization parameters')
     }
 
     const tokenResponse = await exchangeAuthorizationCode(code, state)
     setSessionFromTokenResponse(tokenResponse)
     const redirectPath = consumePendingRedirectPath()
-    toast('登录成功', 'success')
+    toast('Signed in successfully', 'success')
     uni.reLaunch({ url: redirectPath })
   } catch (error) {
     clearPendingAuthorizationState()
@@ -55,15 +55,15 @@ onLoad((query) => {
     <view class="card glass-card">
       <template v-if="processing">
         <text class="eyebrow">OAuth 2.1</text>
-        <text class="title">正在处理登录</text>
-        <text class="muted">请稍候，正在完成授权。</text>
+        <text class="title">Processing sign-in</text>
+        <text class="muted">Please wait while the authorization is being completed.</text>
       </template>
 
       <template v-else-if="failed">
         <text class="eyebrow">OAuth 2.1</text>
-        <text class="title">登录失败</text>
+        <text class="title">Sign-in failed</text>
         <text class="muted">{{ failureMessage }}</text>
-        <button class="btn-primary" @click="backToLogin">返回登录</button>
+        <button class="btn-primary" @click="backToLogin">Back to sign in</button>
       </template>
     </view>
   </view>

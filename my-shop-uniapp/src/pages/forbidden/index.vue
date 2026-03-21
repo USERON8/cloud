@@ -10,9 +10,9 @@ function backToMarket(): void {
 <template>
   <view class="page">
     <view class="card glass-card">
-      <text class="title">访问受限</text>
-      <text class="muted">当前账号没有权限访问该页面。</text>
-      <button class="btn-primary" @click="backToMarket">返回商城</button>
+      <text class="title">Access denied</text>
+      <text class="muted">The current account does not have permission to open this page.</text>
+      <button class="btn-primary" @click="backToMarket">Back to the market</button>
     </view>
   </view>
 </template>
