@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.search.document.ShopDocument;
+import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.service.ShopSearchService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,5 +43,14 @@ class ShopSearchControllerTest {
     ShopSearchController controller = new ShopSearchController(shopSearchService);
 
     assertThrows(ResourceNotFoundException.class, () -> controller.getShopById(12L));
+  }
+
+  @Test
+  void complexSearchShouldRejectInactiveStatusFilter() {
+    ShopSearchController controller = new ShopSearchController(shopSearchService);
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setStatus(0);
+
+    assertThrows(BizException.class, () -> controller.complexSearch(request));
   }
 }

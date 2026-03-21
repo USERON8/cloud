@@ -1,5 +1,7 @@
 package com.cloud.search.controller;
 
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductFilterRequest;
@@ -39,6 +41,7 @@ public class ProductSearchController {
       @Parameter(description = "search_after values, json array or comma separated")
           @RequestParam(required = false)
           String searchAfter) {
+    normalizePublicStatus(request);
     return Result.success(
         "Search success", searchFacadeService.searchProducts(request, searchAfter));
   }
@@ -52,6 +55,7 @@ public class ProductSearchController {
       @Parameter(description = "search_after values, json array or comma separated")
           @RequestParam(required = false)
           String searchAfter) {
+    normalizePublicStatus(request);
     return Result.success(
         "Get filters success", searchFacadeService.getProductFilters(request, searchAfter));
   }
@@ -356,5 +360,19 @@ public class ProductSearchController {
             page,
             size,
             searchAfter));
+  }
+
+  private void normalizePublicStatus(ProductSearchRequest request) {
+    if (request == null) {
+      return;
+    }
+    Integer status = request.getStatus();
+    if (status == null) {
+      request.setStatus(1);
+      return;
+    }
+    if (!Integer.valueOf(1).equals(status)) {
+      throw new BizException(ResultCode.BAD_REQUEST, "public search only supports active status");
+    }
   }
 }

@@ -1,5 +1,7 @@
 package com.cloud.search.controller;
 
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ShopDocument;
@@ -34,6 +36,7 @@ public class ShopSearchController {
   @PostMapping("/complex-search")
   public Result<SearchResultDTO<ShopDocument>> complexSearch(
       @Valid @RequestBody ShopSearchRequest request) {
+    normalizePublicStatus(request);
     SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
     return Result.success("Search success", result);
   }
@@ -42,6 +45,7 @@ public class ShopSearchController {
   @PostMapping("/filters")
   public Result<SearchResultDTO<ShopDocument>> getShopFilters(
       @Valid @RequestBody ShopSearchRequest request) {
+    normalizePublicStatus(request);
     SearchResultDTO<ShopDocument> result = shopSearchService.getShopFilters(request);
     return Result.success("Get filters success", result);
   }
@@ -111,5 +115,20 @@ public class ShopSearchController {
 
     SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
     return Result.success("Search success", result);
+  }
+
+  private void normalizePublicStatus(ShopSearchRequest request) {
+    if (request == null) {
+      return;
+    }
+    Integer status = request.getStatus();
+    if (status == null) {
+      request.setStatus(1);
+      return;
+    }
+    if (!Integer.valueOf(1).equals(status)) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "public shop search only supports active status");
+    }
   }
 }
