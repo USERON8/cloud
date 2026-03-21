@@ -2,7 +2,7 @@ export function toast(message: string, icon: 'none' | 'success' | 'loading' = 'n
   uni.showToast({ title: message, icon })
 }
 
-export function confirm(content: string, title = '提示'): Promise<boolean> {
+export function confirm(content: string, title = 'Confirm'): Promise<boolean> {
   return new Promise((resolve) => {
     uni.showModal({
       title,
@@ -13,7 +13,7 @@ export function confirm(content: string, title = '提示'): Promise<boolean> {
   })
 }
 
-export function showLoading(title = '加载中'): void {
+export function showLoading(title = 'Loading'): void {
   uni.showLoading({ title, mask: true })
 }
 

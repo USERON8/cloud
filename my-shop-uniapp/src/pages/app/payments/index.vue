@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { getPaymentOrderByNo, getRefundByNo } from '../../../api/payment'
 import type { PaymentOrderInfo, PaymentRefundInfo } from '../../../types/domain'
-import { formatPrice, formatDate } from '../../../utils/format'
+import { formatDate, formatPrice } from '../../../utils/format'
 import { toast } from '../../../utils/ui'
 
 const paymentNo = ref('')
@@ -13,25 +13,25 @@ const refundInfo = ref<PaymentRefundInfo | null>(null)
 
 async function queryPayment(): Promise<void> {
   if (!paymentNo.value.trim()) {
-    toast('请输入支付单号')
+    toast('Enter a payment number')
     return
   }
   try {
     paymentInfo.value = await getPaymentOrderByNo(paymentNo.value.trim())
   } catch (error) {
-    toast(error instanceof Error ? error.message : '查询失败')
+    toast(error instanceof Error ? error.message : 'Failed to query the payment order')
   }
 }
 
 async function queryRefund(): Promise<void> {
   if (!refundNo.value.trim()) {
-    toast('请输入退款单号')
+    toast('Enter a refund number')
     return
   }
   try {
     refundInfo.value = await getRefundByNo(refundNo.value.trim())
   } catch (error) {
-    toast(error instanceof Error ? error.message : '查询失败')
+    toast(error instanceof Error ? error.message : 'Failed to query the refund order')
   }
 }
 </script>
@@ -39,32 +39,32 @@ async function queryRefund(): Promise<void> {
 <template>
   <AppShell title="Payments">
     <view class="panel glass-card">
-      <text class="section-title">支付查询</text>
+      <text class="section-title">Payment lookup</text>
       <view class="search-row">
-        <input v-model="paymentNo" class="search-input" placeholder="支付单号" />
-        <button class="btn-primary" @click="queryPayment">查询</button>
+        <input v-model="paymentNo" class="search-input" placeholder="Payment number" />
+        <button class="btn-primary" @click="queryPayment">Search</button>
       </view>
 
       <view v-if="paymentInfo" class="result">
-        <text class="name">支付单号：{{ paymentInfo.paymentNo }}</text>
-        <text class="meta">金额：{{ formatPrice(paymentInfo.amount) }}</text>
-        <text class="meta">状态：{{ paymentInfo.status || '--' }}</text>
-        <text class="meta">完成时间：{{ formatDate(paymentInfo.paidAt) }}</text>
+        <text class="name">Payment number: {{ paymentInfo.paymentNo }}</text>
+        <text class="meta">Amount: {{ formatPrice(paymentInfo.amount) }}</text>
+        <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
+        <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
       </view>
     </view>
 
     <view class="panel glass-card">
-      <text class="section-title">退款查询</text>
+      <text class="section-title">Refund lookup</text>
       <view class="search-row">
-        <input v-model="refundNo" class="search-input" placeholder="退款单号" />
-        <button class="btn-primary" @click="queryRefund">查询</button>
+        <input v-model="refundNo" class="search-input" placeholder="Refund number" />
+        <button class="btn-primary" @click="queryRefund">Search</button>
       </view>
 
       <view v-if="refundInfo" class="result">
-        <text class="name">退款单号：{{ refundInfo.refundNo }}</text>
-        <text class="meta">金额：{{ formatPrice(refundInfo.refundAmount) }}</text>
-        <text class="meta">状态：{{ refundInfo.status || '--' }}</text>
-        <text class="meta">完成时间：{{ formatDate(refundInfo.refundedAt) }}</text>
+        <text class="name">Refund number: {{ refundInfo.refundNo }}</text>
+        <text class="meta">Amount: {{ formatPrice(refundInfo.refundAmount) }}</text>
+        <text class="meta">Status: {{ refundInfo.status || '--' }}</text>
+        <text class="meta">Refunded at: {{ formatDate(refundInfo.refundedAt) }}</text>
       </view>
     </view>
   </AppShell>
