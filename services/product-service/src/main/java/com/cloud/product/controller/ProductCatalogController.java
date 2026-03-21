@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -84,8 +85,19 @@ public class ProductCatalogController {
   @GetMapping("/sku/batch")
   @Operation(summary = "Batch query SKU details")
   public Result<List<SkuDetailVO>> listSkuByIds(@RequestParam List<Long> skuIds) {
+    List<SkuDetailVO> skuDetails = productCatalogService.listSkuByIds(skuIds);
+    Set<Long> activeSpuIds =
+        skuDetails.stream()
+            .map(SkuDetailVO::getSpuId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .filter(this::isActiveSpu)
+            .collect(java.util.stream.Collectors.toSet());
     return Result.success(
-        productCatalogService.listSkuByIds(skuIds).stream().filter(this::isActiveSku).toList());
+        skuDetails.stream()
+            .filter(this::isActiveSku)
+            .filter(sku -> sku.getSpuId() != null && activeSpuIds.contains(sku.getSpuId()))
+            .toList());
   }
 
   @PatchMapping("/spu/{spuId}/status")
@@ -113,6 +125,11 @@ public class ProductCatalogController {
   }
 
   private boolean isActiveSku(SkuDetailVO detail) {
+    return detail != null && Integer.valueOf(1).equals(detail.getStatus());
+  }
+
+  private boolean isActiveSpu(Long spuId) {
+    SpuDetailVO detail = productCatalogService.getSpuById(spuId);
     return detail != null && Integer.valueOf(1).equals(detail.getStatus());
   }
 }

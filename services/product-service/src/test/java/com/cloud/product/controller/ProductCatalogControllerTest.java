@@ -120,12 +120,12 @@ class ProductCatalogControllerTest {
     SpuDetailVO activeSpu = new SpuDetailVO();
     activeSpu.setSpuId(31L);
     activeSpu.setStatus(1);
-    activeSpu.setSkus(List.of(skuDetail(301L, 1), skuDetail(302L, 0)));
+    activeSpu.setSkus(List.of(skuDetail(301L, 31L, 1), skuDetail(302L, 31L, 0)));
 
     SpuDetailVO inactiveSpu = new SpuDetailVO();
     inactiveSpu.setSpuId(32L);
     inactiveSpu.setStatus(0);
-    inactiveSpu.setSkus(List.of(skuDetail(303L, 1)));
+    inactiveSpu.setSkus(List.of(skuDetail(303L, 32L, 1)));
 
     when(productCatalogService.listSpuByCategory(7L, 1))
         .thenReturn(List.of(activeSpu, inactiveSpu));
@@ -146,7 +146,33 @@ class ProductCatalogControllerTest {
   @Test
   void listSkuByIdsShouldFilterInactiveSku() {
     when(productCatalogService.listSkuByIds(List.of(401L, 402L)))
-        .thenReturn(List.of(skuDetail(401L, 1), skuDetail(402L, 0)));
+        .thenReturn(List.of(skuDetail(401L, 41L, 1), skuDetail(402L, 42L, 0)));
+    SpuDetailVO activeSpu = new SpuDetailVO();
+    activeSpu.setSpuId(41L);
+    activeSpu.setStatus(1);
+    when(productCatalogService.getSpuById(41L)).thenReturn(activeSpu);
+
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
+
+    var result = controller.listSkuByIds(List.of(401L, 402L));
+
+    assertThat(result.getData()).extracting(SkuDetailVO::getSkuId).containsExactly(401L);
+  }
+
+  @Test
+  void listSkuByIdsShouldHideSkuFromInactiveSpu() {
+    when(productCatalogService.listSkuByIds(List.of(401L, 402L)))
+        .thenReturn(List.of(skuDetail(401L, 41L, 1), skuDetail(402L, 42L, 1)));
+    SpuDetailVO activeSpu = new SpuDetailVO();
+    activeSpu.setSpuId(41L);
+    activeSpu.setStatus(1);
+    SpuDetailVO inactiveSpu = new SpuDetailVO();
+    inactiveSpu.setSpuId(42L);
+    inactiveSpu.setStatus(0);
+    when(productCatalogService.getSpuById(41L)).thenReturn(activeSpu);
+    when(productCatalogService.getSpuById(42L)).thenReturn(inactiveSpu);
 
     ProductCatalogController controller =
         new ProductCatalogController(
@@ -189,9 +215,10 @@ class ProductCatalogControllerTest {
         "merchant-" + userId);
   }
 
-  private SkuDetailVO skuDetail(Long skuId, Integer status) {
+  private SkuDetailVO skuDetail(Long skuId, Long spuId, Integer status) {
     SkuDetailVO sku = new SkuDetailVO();
     sku.setSkuId(skuId);
+    sku.setSpuId(spuId);
     sku.setStatus(status);
     return sku;
   }
