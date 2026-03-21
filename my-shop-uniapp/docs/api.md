@@ -94,7 +94,7 @@ Notes:
 
 | Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
-| GET | /api/merchant | getMerchants | params: { page?: number; size?: number; status?: number } = {} | query |
+| GET | /api/merchant | getMerchants | params: { page?: number; size?: number; status?: number; auditStatus?: number } = {} | query |
 | GET | /api/merchant/{param} | getMerchantById | id: number | - |
 | POST | /api/merchant | createMerchant | payload: MerchantUpsertPayload | body |
 | PUT | /api/merchant/{param} | updateMerchant | id: number, payload: MerchantUpsertPayload | body |
@@ -270,7 +270,7 @@ Notes:
 | Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | GET | /api/query/users | findUserByUsername | username: string | query |
-| GET | /api/query/users/search | searchUsers | params: UserSearchParams | query |
+| GET | /api/query/users/search | searchUsers | params: UserSearchParams (`page`, `size`, `username`, `email`, `phone`, `nickname`, `status`, `roleCode`) | query |
 | PUT | /api/manage/users/{param} | updateUser | id: number, payload: UserUpsertPayload | body |
 | POST | /api/manage/users/delete | deleteUser | id: number | body |
 | POST | /api/manage/users/deleteBatch | deleteUsersBatch | ids: number[] | body |

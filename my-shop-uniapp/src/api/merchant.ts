@@ -2,7 +2,7 @@ import http from './http'
 import type { PageResult } from '../types/api'
 import type { MerchantInfo, MerchantUpsertPayload } from '../types/domain'
 
-export function getMerchants(params: { page?: number; size?: number; status?: number } = {}): Promise<PageResult<MerchantInfo>> {
+export function getMerchants(params: { page?: number; size?: number; status?: number; auditStatus?: number } = {}): Promise<PageResult<MerchantInfo>> {
   return http.get<PageResult<MerchantInfo>, PageResult<MerchantInfo>>('/api/merchant', { params })
 }
 

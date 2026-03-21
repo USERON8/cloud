@@ -418,7 +418,7 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | Method | Path | Description | Authorization | Parameters / Body | Response |
 | --- | --- | --- | --- | --- | --- |
 | GET | /api/query/users | Find user by username | hasAuthority('admin:all') | query=username | Result<UserDTO> |
-| GET | /api/query/users/search | Search users | hasAuthority('admin:all') | query=page,size,username,email,roleCode | Result<PageResult<UserVO>> |
+| GET | /api/query/users/search | Search users | hasAuthority('admin:all') | query=page,size,username,email,phone,nickname,status,roleCode | Result<PageResult<UserVO>> |
 
 #### UserNotificationController（/api/user/notification）
 

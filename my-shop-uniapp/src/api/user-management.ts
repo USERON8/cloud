@@ -7,6 +7,9 @@ export interface UserSearchParams {
   size?: number
   username?: string
   email?: string
+  phone?: string
+  nickname?: string
+  status?: number
   roleCode?: string
 }
 
