@@ -2,10 +2,14 @@ package com.cloud.gateway.config;
 
 import com.cloud.common.security.AudienceTokenValidator;
 import com.cloud.common.security.InternalScopeClientValidator;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,9 +44,11 @@ import reactor.core.publisher.Mono;
 public class ResourceServerConfig {
 
   private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
+  private static final Duration LOCAL_BLACKLIST_GRACE_PERIOD = Duration.ofMinutes(10);
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
   private final Environment environment;
+  private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
 
   @Value(
       "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}}")
@@ -297,26 +303,7 @@ public class ResourceServerConfig {
         new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
             withIssuer, withAudience, withInternalClient));
 
-    return token ->
-        decoder
-            .decode(token)
-            .flatMap(
-                jwt ->
-                    reactiveStringRedisTemplate
-                        .hasKey(BLACKLIST_KEY_PREFIX + token)
-                        .flatMap(
-                            blacklisted -> {
-                              if (Boolean.TRUE.equals(blacklisted)) {
-                                return Mono.error(new BadJwtException("Token is blacklisted"));
-                              }
-                              return Mono.just(jwt);
-                            })
-                        .onErrorResume(
-                            ex -> {
-                              log.error("Gateway blacklist validation failed", ex);
-                              return Mono.error(
-                                  new BadJwtException("Gateway blacklist validation unavailable"));
-                            }));
+    return token -> decoder.decode(token).flatMap(jwt -> validateBlacklist(jwt, token));
   }
 
   @Bean
@@ -369,5 +356,67 @@ public class ResourceServerConfig {
         .map(String::trim)
         .filter(value -> !value.isBlank())
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  Mono<Jwt> validateBlacklist(Jwt jwt, String tokenValue) {
+    if (jwt == null || tokenValue == null || tokenValue.isBlank()) {
+      return Mono.justOrEmpty(jwt);
+    }
+    evictExpiredLocalEntry(tokenValue);
+    return reactiveStringRedisTemplate
+        .hasKey(BLACKLIST_KEY_PREFIX + tokenValue)
+        .flatMap(
+            blacklisted -> {
+              if (Boolean.TRUE.equals(blacklisted)) {
+                rememberBlacklistedToken(tokenValue, jwt);
+                return Mono.error(new BadJwtException("Token is blacklisted"));
+              }
+              localBlacklistCache.remove(tokenValue);
+              return Mono.just(jwt);
+            })
+        .onErrorResume(
+            ex -> {
+              if (isLocallyBlacklisted(tokenValue)) {
+                log.warn(
+                    "Gateway blacklist validation fell back to local cache: sub={}, jti={}",
+                    jwt.getSubject(),
+                    jwt.getId(),
+                    ex);
+                return Mono.error(new BadJwtException("Token is blacklisted"));
+              }
+              log.error(
+                  "Gateway blacklist validation failed, allow token temporarily: sub={}, jti={}",
+                  jwt.getSubject(),
+                  jwt.getId(),
+                  ex);
+              return Mono.just(jwt);
+            });
+  }
+
+  private void rememberBlacklistedToken(String tokenValue, Jwt jwt) {
+    Instant expiresAt = jwt.getExpiresAt();
+    if (expiresAt == null || expiresAt.isBefore(Instant.now())) {
+      expiresAt = Instant.now().plus(LOCAL_BLACKLIST_GRACE_PERIOD);
+    }
+    localBlacklistCache.put(tokenValue, expiresAt);
+  }
+
+  private boolean isLocallyBlacklisted(String tokenValue) {
+    Instant expiresAt = localBlacklistCache.get(tokenValue);
+    if (expiresAt == null) {
+      return false;
+    }
+    if (expiresAt.isBefore(Instant.now())) {
+      localBlacklistCache.remove(tokenValue, expiresAt);
+      return false;
+    }
+    return true;
+  }
+
+  private void evictExpiredLocalEntry(String tokenValue) {
+    Instant expiresAt = localBlacklistCache.get(tokenValue);
+    if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
+      localBlacklistCache.remove(tokenValue, expiresAt);
+    }
   }
 }
