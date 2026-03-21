@@ -122,7 +122,7 @@ Notes:
 
 | Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
-| POST | /api/orders | createOrder | payload: CreateOrderPayload (must include `skuId`), idempotencyKey: string | headers, body |
+| POST | /api/orders | createOrder | payload: CreateOrderPayload (must include `skuId`, `receiverName`, `receiverPhone`, `receiverAddress`), idempotencyKey: string | headers, body |
 | GET | /api/orders | listOrders | params: OrderQuery = {} | query |
 | GET | /api/orders/{param} | getOrderById | id: number | - |
 | POST | /api/orders/{param}/pay | payOrder | id: number | - |

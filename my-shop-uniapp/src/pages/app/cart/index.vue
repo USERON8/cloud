@@ -1,9 +1,13 @@
-﻿<script setup lang="ts">
-import { computed, ref } from 'vue'
+<script setup lang="ts">
+import { onMounted, computed, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
 import { cartItems, cartTotal, clearCart, removeFromCart, setCartItemQuantity } from '../../../store/cart'
 import type { CartEntry } from '../../../store/cart'
+import { getDefaultAddress } from '../../../api/address'
 import { createOrder } from '../../../api/order'
+import { sessionState } from '../../../auth/session'
+import type { UserAddress } from '../../../types/domain'
 import { formatPrice } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 import { navigateTo } from '../../../router/navigation'
@@ -16,6 +20,9 @@ interface ShopGroup {
 }
 
 const placing = ref(false)
+const loadingAddress = ref(false)
+const selectedAddress = ref<UserAddress | null>(null)
+const userId = computed(() => sessionState.user?.id)
 
 const shopGroups = computed<ShopGroup[]>(() => {
   const map = new Map<number, CartEntry[]>()
@@ -33,6 +40,40 @@ const shopGroups = computed<ShopGroup[]>(() => {
     subtotal: items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   }))
 })
+
+function formatAddress(address: UserAddress | null): string {
+  if (!address) {
+    return ''
+  }
+  return [address.province, address.city, address.district, address.street, address.detailAddress]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .join(' ')
+}
+
+async function loadDefaultAddress(): Promise<void> {
+  if (loadingAddress.value) {
+    return
+  }
+  if (typeof userId.value !== 'number') {
+    selectedAddress.value = null
+    return
+  }
+
+  loadingAddress.value = true
+  try {
+    selectedAddress.value = await getDefaultAddress(userId.value)
+  } catch (error) {
+    selectedAddress.value = null
+    toast(error instanceof Error ? error.message : 'Failed to load the default address')
+  } finally {
+    loadingAddress.value = false
+  }
+}
+
+function openAddressBook(): void {
+  navigateTo(Routes.appAddresses, undefined, { requiresAuth: true })
+}
 
 function changeQuantity(item: CartEntry, delta: number): void {
   const next = item.quantity + delta
@@ -62,6 +103,22 @@ async function onPlaceOrder(): Promise<void> {
     toast('Cart is empty')
     return
   }
+  if (!selectedAddress.value) {
+    toast('Add a default address before checkout')
+    openAddressBook()
+    return
+  }
+
+  const receiverAddress = formatAddress(selectedAddress.value)
+  const receiverName = selectedAddress.value.consignee.trim()
+  const receiverPhone = selectedAddress.value.phone.trim()
+
+  if (!receiverName || !receiverPhone || !receiverAddress) {
+    toast('The default address is incomplete')
+    openAddressBook()
+    return
+  }
+
   const ok = await confirm(`Submit ${shopGroups.value.length} shop order(s)?`)
   if (!ok) return
 
@@ -87,7 +144,10 @@ async function onPlaceOrder(): Promise<void> {
             spuId: item.productId,
             skuId: item.skuId,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            receiverName,
+            receiverPhone,
+            receiverAddress
           })
           successfulItems.push(item)
         } catch (error) {
@@ -118,6 +178,14 @@ async function onPlaceOrder(): Promise<void> {
 
   toast(`Failed shops: ${[...failedShops].join(', ')}`)
 }
+
+onMounted(() => {
+  void loadDefaultAddress()
+})
+
+onShow(() => {
+  void loadDefaultAddress()
+})
 </script>
 
 <template>
@@ -131,6 +199,21 @@ async function onPlaceOrder(): Promise<void> {
           </button>
           <button v-if="cartItems.length > 0" class="btn-outline" @click="onClearCart">Clear</button>
         </view>
+      </view>
+
+      <view class="address-card">
+        <view class="address-copy">
+          <text class="address-title">Delivery address</text>
+          <template v-if="selectedAddress">
+            <text class="address-name">{{ selectedAddress.consignee }} · {{ selectedAddress.phone }}</text>
+            <text class="address-text">{{ formatAddress(selectedAddress) }}</text>
+          </template>
+          <text v-else-if="loadingAddress" class="address-text">Loading default address...</text>
+          <text v-else class="address-text">No default address is available.</text>
+        </view>
+        <button class="btn-outline" @click="openAddressBook">
+          {{ selectedAddress ? 'Manage addresses' : 'Add address' }}
+        </button>
       </view>
 
       <view v-if="cartItems.length === 0" class="empty">
@@ -156,7 +239,9 @@ async function onPlaceOrder(): Promise<void> {
 
         <view class="summary">
           <text class="summary-text">Total: {{ formatPrice(cartTotal) }}</text>
-          <button class="btn-primary" :loading="placing" @click="onPlaceOrder">Submit orders</button>
+          <button class="btn-primary" :loading="placing" :disabled="placing || !selectedAddress" @click="onPlaceOrder">
+            Submit orders
+          </button>
         </view>
       </view>
     </view>
@@ -182,6 +267,39 @@ async function onPlaceOrder(): Promise<void> {
 .header-actions {
   display: flex;
   gap: 8px;
+}
+
+.address-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.address-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.address-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.address-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.address-text {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .empty {

@@ -99,6 +99,9 @@ export interface CreateOrderPayload {
   skuId: number
   quantity: number
   price: number
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
 }
 
 export interface UserAddress {

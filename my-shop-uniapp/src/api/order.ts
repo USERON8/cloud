@@ -10,6 +10,9 @@ export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
   if (typeof payload.skuId !== 'number') {
     return Promise.reject(new Error('skuId is required'))
   }
+  if (!payload.receiverName.trim() || !payload.receiverPhone.trim() || !payload.receiverAddress.trim()) {
+    return Promise.reject(new Error('Receiver details are required'))
+  }
   const totalAmount = Number((payload.price * payload.quantity).toFixed(2))
   const body = {
     userId,
@@ -17,7 +20,10 @@ export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
     skuId: payload.skuId,
     quantity: payload.quantity,
     totalAmount,
-    payableAmount: totalAmount
+    payableAmount: totalAmount,
+    receiverName: payload.receiverName.trim(),
+    receiverPhone: payload.receiverPhone.trim(),
+    receiverAddress: payload.receiverAddress.trim()
   }
   const idempotencyKey = `${userId}-${payload.spuId}-${payload.skuId}-${Date.now()}`
   return http.post<unknown, unknown>('/api/orders', body, {
