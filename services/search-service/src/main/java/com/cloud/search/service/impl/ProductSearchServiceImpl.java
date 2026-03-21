@@ -305,8 +305,6 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     long start = System.currentTimeMillis();
     int pageNum = normalizePage(page);
     int pageSize = normalizeSize(size);
-    long offset = (long) pageNum * pageSize;
-    long end = offset + pageSize - 1L;
 
     try {
       var zSetOperations = redisTemplate.opsForZSet();
@@ -316,7 +314,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             List.of(), 0L, pageNum, pageSize, System.currentTimeMillis() - start);
       }
 
-      var rankedProductIds = zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, offset, end);
+      var rankedProductIds = zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, total - 1L);
       if (rankedProductIds == null || rankedProductIds.isEmpty()) {
         return SearchResultDTO.of(
             List.of(), total, pageNum, pageSize, System.currentTimeMillis() - start);
@@ -341,8 +339,13 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         }
       }
 
+      int fromIndex = Math.min(pageNum * pageSize, orderedDocuments.size());
+      int toIndex = Math.min(fromIndex + pageSize, orderedDocuments.size());
+      List<ProductDocument> pageList = orderedDocuments.subList(fromIndex, toIndex);
+      long filteredTotal = orderedDocuments.size();
+
       return SearchResultDTO.of(
-          orderedDocuments, total, pageNum, pageSize, System.currentTimeMillis() - start);
+          pageList, filteredTotal, pageNum, pageSize, System.currentTimeMillis() - start);
     } catch (Exception ex) {
       log.error("Get today hot selling products failed", ex);
       return SearchResultDTO.of(

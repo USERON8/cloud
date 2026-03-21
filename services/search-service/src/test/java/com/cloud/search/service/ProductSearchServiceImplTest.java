@@ -146,6 +146,29 @@ class ProductSearchServiceImplTest {
   }
 
   @Test
+  void getTodayHotSellingProducts_shouldFilterInactiveProductsFromTotal() {
+    ProductDocument active = new ProductDocument();
+    active.setId("1001");
+    active.setStatus(1);
+    ProductDocument inactive = new ProductDocument();
+    inactive.setId("1002");
+    inactive.setStatus(0);
+
+    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
+    when(zSetOperations.size(SellRankKeys.TODAY_KEY)).thenReturn(2L);
+    when(zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, 1L))
+        .thenReturn(new LinkedHashSet<>(List.of("1001", "1002")));
+    when(productDocumentRepository.findAllById(List.of("1001", "1002")))
+        .thenReturn(List.of(active, inactive));
+
+    var result = productSearchService.getTodayHotSellingProducts(0, 10);
+
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getList()).extracting(ProductDocument::getId).containsExactly("1001");
+    assertThat(result.getHasNext()).isFalse();
+  }
+
+  @Test
   void getProductFilters_shouldUseElasticsearchAggregations() {
     ProductSearchRequest request = new ProductSearchRequest();
     request.setKeyword("phone");
