@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { completeOrder, listOrders, shipOrder } from '../../../api/order'
+import { advanceAfterSaleStatus, completeOrder, listOrders, shipOrder } from '../../../api/order'
 import type { OrderItem } from '../../../types/domain'
 import { formatDate, formatPrice } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const rows = ref<OrderItem[]>([])
 const loading = ref(false)
+const afterSaleActingOrderId = ref<number | null>(null)
 const shippingForm = reactive({
   shippingCompany: '',
   trackingNumber: ''
+})
+const afterSaleForm = reactive({
+  remark: ''
 })
 
 function statusText(status?: number): string {
@@ -44,6 +48,18 @@ function requireShippingField(value: string, label: string): string | null {
   return trimmed
 }
 
+function canAuditAfterSale(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'APPLIED'
+}
+
+function canApproveAfterSale(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'AUDITING'
+}
+
+function canRejectAfterSale(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && ['APPLIED', 'AUDITING'].includes(order.afterSaleStatus ?? '')
+}
+
 async function onShip(order: OrderItem): Promise<void> {
   if (typeof order.id !== 'number') return
   const shippingCompany = requireShippingField(shippingForm.shippingCompany, 'Shipping company')
@@ -74,6 +90,33 @@ async function onComplete(order: OrderItem): Promise<void> {
   }
 }
 
+async function onAdvanceAfterSale(order: OrderItem, action: 'AUDIT' | 'APPROVE' | 'REJECT'): Promise<void> {
+  if (typeof order.afterSaleId !== 'number' || typeof order.id !== 'number') {
+    toast('This order is missing after-sale metadata')
+    return
+  }
+  const labels: Record<typeof action, string> = {
+    AUDIT: 'start review',
+    APPROVE: 'approve',
+    REJECT: 'reject'
+  }
+  const ok = await confirm(`Confirm ${labels[action]} for ${order.afterSaleNo ?? order.afterSaleId}?`)
+  if (!ok) {
+    return
+  }
+  afterSaleActingOrderId.value = order.id
+  try {
+    const remark = afterSaleForm.remark.trim() || undefined
+    await advanceAfterSaleStatus(order.afterSaleId, action, remark)
+    toast(`After-sale ${labels[action]} completed`, 'success')
+    await loadOrders()
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Failed to update the after-sale request')
+  } finally {
+    afterSaleActingOrderId.value = null
+  }
+}
+
 onMounted(() => {
   void loadOrders()
 })
@@ -92,6 +135,8 @@ onMounted(() => {
         <input v-model="shippingForm.trackingNumber" class="input" placeholder="Tracking number" />
       </view>
 
+      <input v-model="afterSaleForm.remark" class="input" placeholder="After-sale remark" />
+
       <view v-if="rows.length === 0" class="empty">
         <text class="text-muted">No orders</text>
       </view>
@@ -103,10 +148,37 @@ onMounted(() => {
             <text class="meta">Amount: {{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
             <text class="meta">Status: {{ statusText(item.status) }}</text>
             <text class="meta">Created At: {{ formatDate(item.createdAt) }}</text>
+            <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="meta">
+              After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
+            </text>
           </view>
           <view class="actions">
             <button class="btn-outline" @click="onShip(item)">Ship</button>
             <button class="btn-outline" @click="onComplete(item)">Complete</button>
+            <button
+              v-if="canAuditAfterSale(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'AUDIT')"
+            >
+              Start review
+            </button>
+            <button
+              v-if="canApproveAfterSale(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'APPROVE')"
+            >
+              Approve
+            </button>
+            <button
+              v-if="canRejectAfterSale(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'REJECT')"
+            >
+              Reject
+            </button>
           </view>
         </view>
       </view>
@@ -168,6 +240,7 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .input {

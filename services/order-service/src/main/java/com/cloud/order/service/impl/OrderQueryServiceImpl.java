@@ -57,7 +57,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     IPage<OrderMain> pageResult =
         queryMainOrders(authentication, safePage, safeSize, userId, merchantId, statusFilters);
     List<OrderMain> mains = pageResult == null ? Collections.emptyList() : pageResult.getRecords();
-    Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains);
+    Long summaryMerchantId = resolveSummaryMerchantId(authentication, merchantId);
+    Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains, summaryMerchantId);
 
     List<OrderSummaryDTO> summaries = new ArrayList<>(mains.size());
     for (OrderMain main : mains) {
@@ -76,7 +77,9 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   @Override
   public OrderSummaryDTO getOrderSummary(Long orderId, Authentication authentication) {
     OrderMain main = requireAccessibleMainOrder(orderId, authentication);
-    List<OrderSub> subs = orderService.listSubOrders(orderId);
+    Long summaryMerchantId = resolveSummaryMerchantId(authentication, null);
+    List<OrderSub> subs =
+        filterSummarySubOrders(orderService.listSubOrders(orderId), summaryMerchantId);
     return toSummary(main, subs);
   }
 
@@ -225,7 +228,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     return orderMainMapper.selectPage(pageData, wrapper);
   }
 
-  private Map<Long, List<OrderSub>> loadSubOrdersByMainIds(List<OrderMain> mains) {
+  private Map<Long, List<OrderSub>> loadSubOrdersByMainIds(
+      List<OrderMain> mains, Long summaryMerchantId) {
     if (mains == null || mains.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -238,6 +242,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
             new LambdaQueryWrapper<OrderSub>()
                 .in(OrderSub::getMainOrderId, mainIds)
                 .eq(OrderSub::getDeleted, 0));
+    subs = filterSummarySubOrders(subs, summaryMerchantId);
     if (subs == null || subs.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -249,6 +254,18 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       grouped.computeIfAbsent(sub.getMainOrderId(), ignored -> new ArrayList<>()).add(sub);
     }
     return grouped;
+  }
+
+  private List<OrderSub> filterSummarySubOrders(List<OrderSub> subs, Long summaryMerchantId) {
+    if (subs == null || subs.isEmpty()) {
+      return Collections.emptyList();
+    }
+    if (summaryMerchantId == null) {
+      return subs;
+    }
+    return subs.stream()
+        .filter(sub -> sub != null && Objects.equals(sub.getMerchantId(), summaryMerchantId))
+        .toList();
   }
 
   private OrderSummaryDTO toSummary(OrderMain main, List<OrderSub> subs) {
@@ -313,6 +330,13 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       return 1;
     }
     return 0;
+  }
+
+  private Long resolveSummaryMerchantId(Authentication authentication, Long requestedMerchantId) {
+    if (isMerchant(authentication)) {
+      return requireCurrentUserId(authentication);
+    }
+    return requestedMerchantId;
   }
 
   private List<String> resolveMainStatusFilters(Integer statusCode) {

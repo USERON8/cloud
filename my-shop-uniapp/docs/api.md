@@ -134,6 +134,7 @@ Notes:
 | POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany: string, trackingNumber: string | query, body |
 | POST | /api/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
 | POST | /api/orders/after-sales | applyAfterSale | payload: AfterSaleInfo | body |
+| POST | /api/orders/after-sales/{param}/actions/{param} | advanceAfterSaleStatus | afterSaleId: number, action: string, remark?: string | query |
 
 ## payment
 

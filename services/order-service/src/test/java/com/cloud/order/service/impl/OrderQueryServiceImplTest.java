@@ -3,6 +3,7 @@ package com.cloud.order.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
@@ -119,6 +120,64 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getAfterSaleNo()).isNull();
     assertThat(summary.getAfterSaleStatus()).isNull();
     assertThat(summary.getStatus()).isEqualTo(2);
+  }
+
+  @Test
+  void listOrdersShouldProjectMerchantOwnedSubOrderMetadata() {
+    OrderMain main = new OrderMain();
+    main.setId(12L);
+    main.setMainOrderNo("M-12");
+    main.setUserId(900L);
+    main.setTotalAmount(BigDecimal.valueOf(220));
+    main.setPayableAmount(BigDecimal.valueOf(200));
+
+    OrderSub ownSub = new OrderSub();
+    ownSub.setId(41L);
+    ownSub.setMainOrderId(12L);
+    ownSub.setSubOrderNo("S-41");
+    ownSub.setMerchantId(301L);
+    ownSub.setOrderStatus("PAID");
+    ownSub.setAfterSaleStatus("APPLIED");
+
+    OrderSub otherSub = new OrderSub();
+    otherSub.setId(42L);
+    otherSub.setMainOrderId(12L);
+    otherSub.setSubOrderNo("S-42");
+    otherSub.setMerchantId(302L);
+    otherSub.setOrderStatus("SHIPPED");
+    otherSub.setAfterSaleStatus("NONE");
+
+    Page<OrderMain> page = new Page<>(1, 20);
+    page.setRecords(List.of(main));
+    page.setTotal(1);
+
+    AfterSale afterSale = new AfterSale();
+    afterSale.setId(61L);
+    afterSale.setAfterSaleNo("AS-61");
+
+    when(orderMainMapper.selectPageByMerchant(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(301L),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(page);
+    when(orderSubMapper.selectList(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.of(ownSub, otherSub));
+    when(afterSaleMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(afterSale);
+
+    var result =
+        orderQueryService.listOrders(
+            authentication("301", "ROLE_MERCHANT", "order:query"), 1, 20, null, null, null);
+
+    assertThat(result.getRecords()).hasSize(1);
+    OrderSummaryDTO summary = result.getRecords().get(0);
+    assertThat(summary.getSubOrderId()).isEqualTo(41L);
+    assertThat(summary.getSubOrderNo()).isEqualTo("S-41");
+    assertThat(summary.getMerchantId()).isEqualTo(301L);
+    assertThat(summary.getAfterSaleId()).isEqualTo(61L);
+    assertThat(summary.getAfterSaleNo()).isEqualTo("AS-61");
+    assertThat(summary.getAfterSaleStatus()).isEqualTo("APPLIED");
+    assertThat(summary.getStatus()).isEqualTo(1);
   }
 
   private JwtAuthenticationToken authentication(
