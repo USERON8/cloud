@@ -72,16 +72,39 @@ class ProductSearchServiceImplTest {
 
   @Test
   void getHotProducts_shouldSortByHotScore() {
-    when(productDocumentRepository.findByIsHotTrue(any()))
+    when(productDocumentRepository.findByIsHotTrueAndStatus(any(), any()))
         .thenReturn(new PageImpl<>(List.of(new ProductDocument()), PageRequest.of(0, 10), 1));
 
     productSearchService.getHotProducts(0, 10);
 
     ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-    verify(productDocumentRepository).findByIsHotTrue(pageableCaptor.capture());
+    verify(productDocumentRepository)
+        .findByIsHotTrueAndStatus(org.mockito.ArgumentMatchers.eq(1), pageableCaptor.capture());
     Sort.Order order = pageableCaptor.getValue().getSort().getOrderFor("hotScore");
     assertThat(order).isNotNull();
     assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
+  }
+
+  @Test
+  void getRecommendedProducts_shouldUseActiveStatus() {
+    when(productDocumentRepository.findByRecommendedTrueAndStatus(any(), any()))
+        .thenReturn(new PageImpl<>(List.of(new ProductDocument()), PageRequest.of(0, 5), 1));
+
+    productSearchService.getRecommendedProducts(0, 5);
+
+    verify(productDocumentRepository)
+        .findByRecommendedTrueAndStatus(org.mockito.ArgumentMatchers.eq(1), any());
+  }
+
+  @Test
+  void getNewProducts_shouldUseActiveStatus() {
+    when(productDocumentRepository.findByIsNewTrueAndStatus(any(), any()))
+        .thenReturn(new PageImpl<>(List.of(new ProductDocument()), PageRequest.of(0, 5), 1));
+
+    productSearchService.getNewProducts(0, 5);
+
+    verify(productDocumentRepository)
+        .findByIsNewTrueAndStatus(org.mockito.ArgumentMatchers.eq(1), any());
   }
 
   @Test

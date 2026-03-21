@@ -30,6 +30,12 @@ public interface ProductDocumentRepository
 
   Page<ProductDocument> findByIsHotTrue(Pageable pageable);
 
+  Page<ProductDocument> findByRecommendedTrueAndStatus(Integer status, Pageable pageable);
+
+  Page<ProductDocument> findByIsNewTrueAndStatus(Integer status, Pageable pageable);
+
+  Page<ProductDocument> findByIsHotTrueAndStatus(Integer status, Pageable pageable);
+
   @Query(
       """
             {

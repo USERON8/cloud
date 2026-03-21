@@ -70,7 +70,7 @@ public class ShopSearchController {
   public Result<ShopDocument> getShopById(
       @Parameter(description = "Shop id") @PathVariable Long shopId) {
     ShopDocument shop = shopSearchService.findByShopId(shopId);
-    if (shop == null) {
+    if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())) {
       throw new ResourceNotFoundException("Shop", String.valueOf(shopId));
     }
     return Result.success("Query success", shop);

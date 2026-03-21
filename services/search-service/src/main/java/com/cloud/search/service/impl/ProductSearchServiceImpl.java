@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ProductSearchServiceImpl implements ProductSearchService {
 
+  private static final int ACTIVE_STATUS = 1;
+
   private final ProductDocumentRepository productDocumentRepository;
   private final StringRedisTemplate redisTemplate;
 
@@ -46,7 +48,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
 
     int pageNum = normalizePage(safeRequest.getPage());
     int pageSize = normalizeSize(safeRequest.getSize());
-    int status = safeRequest.getStatus() != null ? safeRequest.getStatus() : 1;
+    int status = safeRequest.getStatus() != null ? safeRequest.getStatus() : ACTIVE_STATUS;
 
     Pageable pageable =
         PageRequest.of(
@@ -150,7 +152,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
       resultPage = productDocumentRepository.searchByKeyword(keyword, pageable);
       recordHotSearch(keyword);
     } else {
-      resultPage = productDocumentRepository.findByStatus(1, pageable);
+      resultPage = productDocumentRepository.findByStatus(ACTIVE_STATUS, pageable);
     }
 
     long took = System.currentTimeMillis() - start;
@@ -177,7 +179,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
     Page<ProductDocument> resultPage =
-        productDocumentRepository.findByCategoryIdAndStatus(categoryId, 1, pageable);
+        productDocumentRepository.findByCategoryIdAndStatus(categoryId, ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -195,7 +197,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
     Page<ProductDocument> resultPage =
-        productDocumentRepository.findByBrandIdAndStatus(brandId, 1, pageable);
+        productDocumentRepository.findByBrandIdAndStatus(brandId, ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -216,7 +218,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     BigDecimal min = minPrice == null ? BigDecimal.ZERO : minPrice;
     BigDecimal max = maxPrice == null ? new BigDecimal("99999999") : maxPrice;
     Page<ProductDocument> resultPage =
-        productDocumentRepository.findByPriceBetweenAndStatus(min, max, 1, pageable);
+        productDocumentRepository.findByPriceBetweenAndStatus(min, max, ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -234,7 +236,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
     Page<ProductDocument> resultPage =
-        productDocumentRepository.findByShopIdAndStatus(shopId, 1, pageable);
+        productDocumentRepository.findByShopIdAndStatus(shopId, ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -251,7 +253,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     Pageable pageable =
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
-    Page<ProductDocument> resultPage = productDocumentRepository.findByRecommendedTrue(pageable);
+    Page<ProductDocument> resultPage =
+        productDocumentRepository.findByRecommendedTrueAndStatus(ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -268,7 +271,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     Pageable pageable =
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "createdAt"));
-    Page<ProductDocument> resultPage = productDocumentRepository.findByIsNewTrue(pageable);
+    Page<ProductDocument> resultPage =
+        productDocumentRepository.findByIsNewTrueAndStatus(ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -285,7 +289,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     Pageable pageable =
         PageRequest.of(
             normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
-    Page<ProductDocument> resultPage = productDocumentRepository.findByIsHotTrue(pageable);
+    Page<ProductDocument> resultPage =
+        productDocumentRepository.findByIsHotTrueAndStatus(ACTIVE_STATUS, pageable);
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -323,7 +328,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
       for (ProductDocument document : productDocumentRepository.findAllById(orderedIds)) {
         if (document == null
             || document.getId() == null
-            || !Integer.valueOf(1).equals(document.getStatus())) {
+            || !Integer.valueOf(ACTIVE_STATUS).equals(document.getStatus())) {
           continue;
         }
         documentsById.put(document.getId(), document);
@@ -364,7 +369,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         PageRequest.of(normalizePage(page), normalizeSize(size), buildSort(sortBy, sortOrder));
     Page<ProductDocument> resultPage =
         productDocumentRepository.combinedSearch(
-            keyword, categoryId, brandId, shopId, minPrice, maxPrice, 1, pageable);
+            keyword, categoryId, brandId, shopId, minPrice, maxPrice, ACTIVE_STATUS, pageable);
     if (StrUtil.isNotBlank(keyword)) {
       recordHotSearch(keyword);
     }

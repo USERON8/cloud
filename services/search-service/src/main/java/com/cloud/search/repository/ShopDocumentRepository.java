@@ -14,11 +14,21 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
   @Query("{\"bool\": {\"must\": [{\"match\": {\"shopName\": \"?0\"}}]}}")
   Page<ShopDocument> findByShopNameContaining(String shopName, Pageable pageable);
 
+  @Query(
+      "{\"bool\": {\"must\": [{\"match\": {\"shopName\": \"?0\"}}, {\"term\": {\"status\": ?1}}]}}")
+  Page<ShopDocument> findByShopNameContainingAndStatus(
+      String shopName, Integer status, Pageable pageable);
+
   Page<ShopDocument> findByMerchantId(Long merchantId, Pageable pageable);
 
   Page<ShopDocument> findByStatus(Integer status, Pageable pageable);
 
   Page<ShopDocument> findByRecommended(Boolean recommended, Pageable pageable);
+
+  @Query(
+      "{\"bool\": {\"must\": [{\"term\": {\"recommended\": ?0}}, {\"term\": {\"status\": ?1}}]}}")
+  Page<ShopDocument> findByRecommendedAndStatus(
+      Boolean recommended, Integer status, Pageable pageable);
 
   @Query("{\"bool\": {\"must\": [{\"range\": {\"rating\": {\"gte\": ?0, \"lte\": ?1}}}]}}")
   Page<ShopDocument> findByRatingBetween(
@@ -26,6 +36,11 @@ public interface ShopDocumentRepository extends ElasticsearchRepository<ShopDocu
 
   @Query("{\"bool\": {\"must\": [{\"match\": {\"address\": \"?0\"}}]}}")
   Page<ShopDocument> findByAddressContaining(String address, Pageable pageable);
+
+  @Query(
+      "{\"bool\": {\"must\": [{\"match\": {\"address\": \"?0\"}}, {\"term\": {\"status\": ?1}}]}}")
+  Page<ShopDocument> findByAddressContainingAndStatus(
+      String address, Integer status, Pageable pageable);
 
   @Query(
       "{\"bool\": {\"must\": [{\"multi_match\": {\"query\": \"?0\", \"fields\": [\"shopName\", \"description\", \"address\"]}}, {\"term\": {\"status\": ?1}}]}}")

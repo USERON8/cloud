@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ShopSearchServiceImpl implements ShopSearchService {
 
+  private static final int ACTIVE_STATUS = 1;
   private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
   private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
   private static final int PROCESSED_LOOKBACK_DAYS = 1;
@@ -190,7 +191,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     int limit = size == null || size <= 0 ? 10 : Math.min(size, 50);
     try {
       Page<ShopDocument> page =
-          shopDocumentRepository.findByShopNameContaining(keyword, PageRequest.of(0, limit));
+          shopDocumentRepository.findByShopNameContainingAndStatus(
+              keyword, ACTIVE_STATUS, PageRequest.of(0, limit));
       return page.getContent().stream()
           .map(ShopDocument::getShopName)
           .filter(StrUtil::isNotBlank)
@@ -210,7 +212,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     try {
       Page<ShopDocument> page =
           shopDocumentRepository.findByStatus(
-              1, PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "hotScore")));
+              ACTIVE_STATUS, PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "hotScore")));
       return page.getContent();
     } catch (Exception e) {
       log.error("Get hot shops failed", e);
@@ -238,38 +240,31 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   }
 
   private Page<ShopDocument> selectPage(ShopSearchRequest request, Pageable pageable) {
-    Integer status = request.getStatus();
-    if (StrUtil.isNotBlank(request.getKeyword()) && status != null) {
-      return shopDocumentRepository.searchByKeywordAndStatus(
-          request.getKeyword(), status, pageable);
-    }
+    int effectiveStatus = request.getStatus() != null ? request.getStatus() : ACTIVE_STATUS;
     if (StrUtil.isNotBlank(request.getKeyword())) {
-      return shopDocumentRepository.findByShopNameContaining(request.getKeyword(), pageable);
-    }
-    if (request.getMerchantId() != null && status != null) {
-      return shopDocumentRepository.findByMerchantIdAndStatus(
-          request.getMerchantId(), status, pageable);
+      return shopDocumentRepository.searchByKeywordAndStatus(
+          request.getKeyword(), effectiveStatus, pageable);
     }
     if (request.getMerchantId() != null) {
-      return shopDocumentRepository.findByMerchantId(request.getMerchantId(), pageable);
+      return shopDocumentRepository.findByMerchantIdAndStatus(
+          request.getMerchantId(), effectiveStatus, pageable);
     }
     if (request.getRecommended() != null) {
-      return shopDocumentRepository.findByRecommended(request.getRecommended(), pageable);
+      return shopDocumentRepository.findByRecommendedAndStatus(
+          request.getRecommended(), effectiveStatus, pageable);
     }
     if (StrUtil.isNotBlank(request.getAddressKeyword())) {
-      return shopDocumentRepository.findByAddressContaining(request.getAddressKeyword(), pageable);
+      return shopDocumentRepository.findByAddressContainingAndStatus(
+          request.getAddressKeyword(), effectiveStatus, pageable);
     }
     if (request.getMinRating() != null) {
       return shopDocumentRepository.advancedSearch(
           StrUtil.isNotBlank(request.getKeyword()) ? request.getKeyword() : "",
           request.getMinRating(),
-          status != null ? status : 1,
+          effectiveStatus,
           pageable);
     }
-    if (status != null) {
-      return shopDocumentRepository.findByStatus(status, pageable);
-    }
-    return shopDocumentRepository.findAll(pageable);
+    return shopDocumentRepository.findByStatus(effectiveStatus, pageable);
   }
 
   private int normalizePage(Integer page) {
