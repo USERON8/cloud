@@ -60,4 +60,57 @@ public interface OrderMainMapper extends BaseMapper<OrderMain> {
       @Param("merchantId") Long merchantId,
       @Param("statuses") List<String> statuses,
       @Param("userId") Long userId);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
+            SELECT om.*
+            FROM order_main om
+            JOIN (
+              SELECT os.main_order_id
+              FROM order_main source_main
+              JOIN order_sub os ON os.main_order_id = source_main.id AND os.deleted = 0
+              WHERE source_main.deleted = 0
+                <if test="merchantId != null">
+                  AND os.merchant_id = #{merchantId}
+                </if>
+                <if test="userId != null">
+                  AND source_main.user_id = #{userId}
+                </if>
+              GROUP BY os.main_order_id
+              HAVING
+                <choose>
+                  <when test="statusCode == 0">
+                    SUM(CASE WHEN os.order_status IN ('PAID', 'SHIPPED', 'DONE') THEN 1 ELSE 0 END) = 0
+                    AND SUM(CASE WHEN os.order_status IN ('CREATED', 'STOCK_RESERVED') THEN 1 ELSE 0 END) &gt; 0
+                  </when>
+                  <when test="statusCode == 1">
+                    SUM(CASE WHEN os.order_status IN ('CANCELLED', 'CLOSED') THEN 1 ELSE 0 END) &lt; COUNT(*)
+                    AND SUM(CASE WHEN os.order_status = 'DONE' THEN 1 ELSE 0 END) &lt; COUNT(*)
+                    AND SUM(CASE WHEN os.order_status = 'SHIPPED' THEN 1 ELSE 0 END) = 0
+                    AND SUM(CASE WHEN os.order_status = 'PAID' THEN 1 ELSE 0 END) &gt; 0
+                  </when>
+                  <when test="statusCode == 2">
+                    SUM(CASE WHEN os.order_status IN ('CANCELLED', 'CLOSED') THEN 1 ELSE 0 END) &lt; COUNT(*)
+                    AND SUM(CASE WHEN os.order_status = 'DONE' THEN 1 ELSE 0 END) &lt; COUNT(*)
+                    AND SUM(CASE WHEN os.order_status = 'SHIPPED' THEN 1 ELSE 0 END) &gt; 0
+                  </when>
+                  <when test="statusCode == 3">
+                    SUM(CASE WHEN os.order_status = 'DONE' THEN 1 ELSE 0 END) = COUNT(*)
+                  </when>
+                  <when test="statusCode == 4">
+                    SUM(CASE WHEN os.order_status IN ('CANCELLED', 'CLOSED') THEN 1 ELSE 0 END) = COUNT(*)
+                  </when>
+                </choose>
+            ) filtered ON filtered.main_order_id = om.id
+            WHERE om.deleted = 0
+            ORDER BY om.id DESC
+            </script>
+            """)
+  IPage<OrderMain> selectPageByVisibleStatus(
+      IPage<OrderMain> page,
+      @Param("merchantId") Long merchantId,
+      @Param("userId") Long userId,
+      @Param("statusCode") Integer statusCode);
 }

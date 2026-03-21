@@ -1,6 +1,9 @@
 package com.cloud.order.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -185,6 +188,76 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getRefundNo()).isEqualTo("RFAS-61");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("APPLIED");
     assertThat(summary.getStatus()).isEqualTo(1);
+  }
+
+  @Test
+  void listOrdersShouldUseVisibleSubOrderStatusesForPaidFilter() {
+    OrderMain main = new OrderMain();
+    main.setId(21L);
+    main.setMainOrderNo("M-21");
+    main.setUserId(901L);
+    main.setTotalAmount(BigDecimal.valueOf(120));
+    main.setPayableAmount(BigDecimal.valueOf(120));
+
+    OrderSub paidSub = new OrderSub();
+    paidSub.setId(51L);
+    paidSub.setMainOrderId(21L);
+    paidSub.setSubOrderNo("S-51");
+    paidSub.setMerchantId(401L);
+    paidSub.setOrderStatus("PAID");
+    paidSub.setAfterSaleStatus("NONE");
+
+    Page<OrderMain> page = new Page<>(1, 20);
+    page.setRecords(List.of(main));
+    page.setTotal(1);
+
+    when(orderMainMapper.selectPageByVisibleStatus(any(), eq(null), eq(901L), eq(1)))
+        .thenReturn(page);
+    when(orderSubMapper.selectList(any())).thenReturn(List.of(paidSub));
+
+    var result =
+        orderQueryService.listOrders(
+            authentication("901", "ROLE_USER", "order:query"), 1, 20, null, null, 1);
+
+    assertThat(result.getTotal()).isEqualTo(1);
+    assertThat(result.getRecords()).hasSize(1);
+    assertThat(result.getRecords().get(0).getStatus()).isEqualTo(1);
+    verify(orderMainMapper).selectPageByVisibleStatus(any(), eq(null), eq(901L), eq(1));
+  }
+
+  @Test
+  void listOrdersShouldUseVisibleSubOrderStatusesForShippedFilter() {
+    OrderMain main = new OrderMain();
+    main.setId(22L);
+    main.setMainOrderNo("M-22");
+    main.setUserId(902L);
+    main.setTotalAmount(BigDecimal.valueOf(180));
+    main.setPayableAmount(BigDecimal.valueOf(160));
+
+    OrderSub shippedSub = new OrderSub();
+    shippedSub.setId(52L);
+    shippedSub.setMainOrderId(22L);
+    shippedSub.setSubOrderNo("S-52");
+    shippedSub.setMerchantId(402L);
+    shippedSub.setOrderStatus("SHIPPED");
+    shippedSub.setAfterSaleStatus("NONE");
+
+    Page<OrderMain> page = new Page<>(1, 20);
+    page.setRecords(List.of(main));
+    page.setTotal(1);
+
+    when(orderMainMapper.selectPageByVisibleStatus(any(), eq(null), eq(902L), eq(2)))
+        .thenReturn(page);
+    when(orderSubMapper.selectList(any())).thenReturn(List.of(shippedSub));
+
+    var result =
+        orderQueryService.listOrders(
+            authentication("902", "ROLE_USER", "order:query"), 1, 20, null, null, 2);
+
+    assertThat(result.getTotal()).isEqualTo(1);
+    assertThat(result.getRecords()).hasSize(1);
+    assertThat(result.getRecords().get(0).getStatus()).isEqualTo(2);
+    verify(orderMainMapper).selectPageByVisibleStatus(any(), eq(null), eq(902L), eq(2));
   }
 
   private JwtAuthenticationToken authentication(

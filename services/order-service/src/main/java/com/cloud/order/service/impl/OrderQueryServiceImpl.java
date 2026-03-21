@@ -54,9 +54,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     int safeSize = size == null || size <= 0 ? 20 : size;
     safeSize = Math.min(safeSize, 100);
 
-    List<String> statusFilters = resolveMainStatusFilters(status);
     IPage<OrderMain> pageResult =
-        queryMainOrders(authentication, safePage, safeSize, userId, merchantId, statusFilters);
+        queryMainOrders(authentication, safePage, safeSize, userId, merchantId, status);
     List<OrderMain> mains = pageResult == null ? Collections.emptyList() : pageResult.getRecords();
     Long summaryMerchantId = resolveSummaryMerchantId(authentication, merchantId);
     Map<Long, List<OrderSub>> subOrdersByMainId = loadSubOrdersByMainIds(mains, summaryMerchantId);
@@ -64,11 +63,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     List<OrderSummaryDTO> summaries = new ArrayList<>(mains.size());
     for (OrderMain main : mains) {
       List<OrderSub> subs = subOrdersByMainId.getOrDefault(main.getId(), List.of());
-      OrderSummaryDTO summary = toSummary(main, subs);
-      if (status != null && !status.equals(summary.getStatus())) {
-        continue;
-      }
-      summaries.add(summary);
+      summaries.add(toSummary(main, subs));
     }
 
     long total = pageResult == null ? 0L : pageResult.getTotal();
@@ -194,19 +189,28 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       int size,
       Long userId,
       Long merchantId,
-      List<String> statusFilters) {
+      Integer status) {
     Page<OrderMain> pageData = new Page<>(page, size);
+    if (status != null) {
+      if (isAdmin(authentication)) {
+        return orderMainMapper.selectPageByVisibleStatus(pageData, merchantId, userId, status);
+      }
+      if (isMerchant(authentication)) {
+        Long currentMerchantId = requireCurrentUserId(authentication);
+        return orderMainMapper.selectPageByVisibleStatus(pageData, currentMerchantId, null, status);
+      }
+      Long currentUserId = requireCurrentUserId(authentication);
+      return orderMainMapper.selectPageByVisibleStatus(pageData, null, currentUserId, status);
+    }
+
     if (isAdmin(authentication)) {
       if (merchantId != null) {
-        return orderMainMapper.selectPageByMerchant(pageData, merchantId, statusFilters, userId);
+        return orderMainMapper.selectPageByMerchant(pageData, merchantId, List.of(), userId);
       }
       LambdaQueryWrapper<OrderMain> wrapper =
           new LambdaQueryWrapper<OrderMain>().eq(OrderMain::getDeleted, 0);
       if (userId != null) {
         wrapper.eq(OrderMain::getUserId, userId);
-      }
-      if (statusFilters != null && !statusFilters.isEmpty()) {
-        wrapper.in(OrderMain::getOrderStatus, statusFilters);
       }
       wrapper.orderByDesc(OrderMain::getId);
       return orderMainMapper.selectPage(pageData, wrapper);
@@ -214,7 +218,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
 
     if (isMerchant(authentication)) {
       Long currentMerchantId = requireCurrentUserId(authentication);
-      return orderMainMapper.selectPageByMerchant(pageData, currentMerchantId, statusFilters, null);
+      return orderMainMapper.selectPageByMerchant(pageData, currentMerchantId, List.of(), null);
     }
 
     Long currentUserId = requireCurrentUserId(authentication);
@@ -222,9 +226,6 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         new LambdaQueryWrapper<OrderMain>()
             .eq(OrderMain::getDeleted, 0)
             .eq(OrderMain::getUserId, currentUserId);
-    if (statusFilters != null && !statusFilters.isEmpty()) {
-      wrapper.in(OrderMain::getOrderStatus, statusFilters);
-    }
     wrapper.orderByDesc(OrderMain::getId);
     return orderMainMapper.selectPage(pageData, wrapper);
   }
@@ -343,20 +344,6 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       return requireCurrentUserId(authentication);
     }
     return requestedMerchantId;
-  }
-
-  private List<String> resolveMainStatusFilters(Integer statusCode) {
-    if (statusCode == null) {
-      return List.of();
-    }
-    return switch (statusCode) {
-      case 0 -> List.of("CREATED", "STOCK_RESERVED");
-      case 1 -> List.of("PAID");
-      case 2 -> List.of("PAID", "SHIPPED");
-      case 3 -> List.of("DONE");
-      case 4 -> List.of("CANCELLED", "CLOSED");
-      default -> List.of();
-    };
   }
 
   private Long requireCurrentUserId(Authentication authentication) {
