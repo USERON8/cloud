@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import ChartView from '../../../components/ChartView.vue'
@@ -56,13 +56,13 @@ import { createAdmin, deleteAdmin, getAdmins, resetAdminPassword, updateAdmin, u
 import { confirm, toast } from '../../../utils/ui'
 
 const tabs = [
-  { key: 'users', label: '用户管理' },
-  { key: 'merchants', label: '商家管理' },
-  { key: 'auth', label: '资质审核' },
-  { key: 'categories', label: '分类管理' },
-  { key: 'notifications', label: '通知中心' },
-  { key: 'statistics', label: '数据统计' },
-  { key: 'admins', label: '管理员' }
+  { key: 'users', label: 'User management' },
+  { key: 'merchants', label: 'Merchant management' },
+  { key: 'auth', label: 'Auth review' },
+  { key: 'categories', label: 'Category management' },
+  { key: 'notifications', label: 'Notification center' },
+  { key: 'statistics', label: 'Statistics' },
+  { key: 'admins', label: 'Administrators' }
 ]
 
 const activeTab = ref('users')
@@ -80,7 +80,7 @@ function normalizeStatus(value: unknown, label: string): number | null {
   if (num === 0 || num === 1) {
     return num
   }
-  toast(`${label}状态需为 0 或 1`)
+  toast(`${label} status must be 0 or 1`)
   return null
 }
 
@@ -98,7 +98,7 @@ function normalizeOptionalNumber(value: unknown): number | undefined {
 function requireText(value: string, label: string): string | null {
   const trimmed = value.trim()
   if (!trimmed) {
-    toast(`请输入${label}`)
+    toast(`Please enter ${label}`)
     return null
   }
   return trimmed
@@ -154,7 +154,7 @@ async function loadUsers(): Promise<void> {
     userTotal.value = result.total
     userSelection.value = []
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载用户失败')
+    toast(error instanceof Error ? error.message : 'Failed to load users')
   } finally {
     userLoading.value = false
   }
@@ -204,12 +204,12 @@ function closeUserEdit(): void {
 
 async function saveUser(): Promise<void> {
   if (!userEditId.value) {
-    toast('请选择用户')
+    toast('Please select a user')
     return
   }
-  const username = requireText(userForm.username, '用户名')
+  const username = requireText(userForm.username, 'username')
   if (!username) return
-  const status = normalizeStatus(userForm.status, '用户')
+  const status = normalizeStatus(userForm.status, 'User')
   if (status === null) return
   const payload: UserUpsertPayload = {
     ...userForm,
@@ -226,60 +226,60 @@ async function saveUser(): Promise<void> {
   }
   try {
     await updateUser(userEditId.value, payload)
-    toast('用户已更新', 'success')
+    toast('User updated', 'success')
     closeUserEdit()
     await loadUsers()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function confirmDeleteUser(row: UserSummary): Promise<void> {
-  const ok = await confirm(`确认删除用户 ${row.username}？`)
+  const ok = await confirm(`Delete user ${row.username}?`)
   if (!ok) return
   try {
     await deleteUser(row.id)
-    toast('用户已删除', 'success')
+    toast('User deleted', 'success')
     await loadUsers()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
 async function batchUpdateUserStatus(status: number): Promise<void> {
   const ids = userSelection.value
   if (ids.length === 0) {
-    toast('请先选择用户')
+    toast('Please select users first')
     return
   }
   try {
     await updateUserStatusBatch(ids, status)
-    toast('用户状态已更新', 'success')
+    toast('User status updated', 'success')
     await loadUsers()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function batchDeleteUsers(): Promise<void> {
   const ids = userSelection.value
   if (ids.length === 0) {
-    toast('请先选择用户')
+    toast('Please select users first')
     return
   }
-  const ok = await confirm(`确认删除 ${ids.length} 个用户？`)
+  const ok = await confirm(`Delete ${ids.length} users?`)
   if (!ok) return
   try {
     await deleteUsersBatch(ids)
-    toast('批量删除完成', 'success')
+    toast('Batch delete completed', 'success')
     await loadUsers()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
 function userStatusText(status?: number): string {
-  return status === 1 ? '启用' : '停用'
+  return status === 1 ? 'Enabled' : 'Disabled'
 }
 // Merchants
 const merchantLoading = ref(false)
@@ -319,7 +319,7 @@ async function loadMerchants(): Promise<void> {
     merchantRows.value = result.records
     merchantTotal.value = result.total
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载商家失败')
+    toast(error instanceof Error ? error.message : 'Failed to load merchants')
   } finally {
     merchantLoading.value = false
   }
@@ -360,16 +360,16 @@ function closeMerchantDialog(): void {
 }
 
 async function saveMerchant(): Promise<void> {
-  const username = requireText(merchantForm.username, '商家用户名')
+  const username = requireText(merchantForm.username, 'merchant username')
   if (!username) return
-  const merchantName = requireText(merchantForm.merchantName, '商家名称')
+  const merchantName = requireText(merchantForm.merchantName, 'merchant name')
   if (!merchantName) return
   const password = merchantForm.password?.trim() || ''
   if (!merchantEditId.value && !password) {
-    toast('请输入商家密码')
+    toast('Please enter a merchant password')
     return
   }
-  const status = normalizeStatus(merchantForm.status, '商家')
+  const status = normalizeStatus(merchantForm.status, 'Merchant')
   if (status === null) return
   const payload: MerchantUpsertPayload = {
     ...merchantForm,
@@ -383,59 +383,59 @@ async function saveMerchant(): Promise<void> {
   try {
     if (merchantEditId.value) {
       await updateMerchant(merchantEditId.value, payload)
-      toast('商家已更新', 'success')
+      toast('Merchant updated', 'success')
     } else {
       await createMerchant(payload)
-      toast('商家已创建', 'success')
+      toast('Merchant created', 'success')
     }
     closeMerchantDialog()
     await loadMerchants()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '保存失败')
+    toast(error instanceof Error ? error.message : 'Save failed')
   }
 }
 
 async function confirmDeleteMerchant(row: MerchantInfo): Promise<void> {
-  const name = row.merchantName || row.username || '商家'
-  const ok = await confirm(`确认删除 ${name}？`)
+  const name = row.merchantName || row.username || 'Merchant'
+  const ok = await confirm(`Delete ${name}?`)
   if (!ok) return
   try {
     await deleteMerchant(row.id)
-    toast('商家已删除', 'success')
+    toast('Merchant deleted', 'success')
     await loadMerchants()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
 async function approveMerchantRow(row: MerchantInfo): Promise<void> {
   try {
     await approveMerchant(row.id, merchantApproveRemark.value || undefined)
-    toast('已通过', 'success')
+    toast('Merchant approved', 'success')
     await loadMerchants()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '审核失败')
+    toast(error instanceof Error ? error.message : 'Review failed')
   }
 }
 
 async function rejectMerchantRow(row: MerchantInfo): Promise<void> {
   if (!merchantRejectReason.value.trim()) {
-    toast('请输入驳回原因')
+    toast('Please enter a rejection reason')
     return
   }
   try {
     await rejectMerchant(row.id, merchantRejectReason.value.trim())
-    toast('已驳回', 'success')
+    toast('Merchant rejected', 'success')
     await loadMerchants()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '驳回失败')
+    toast(error instanceof Error ? error.message : 'Reject failed')
   }
 }
 
 function merchantStatusText(status?: number): string {
-  if (status === 1) return '启用'
-  if (status === 0) return '停用'
-  return '未知'
+  if (status === 1) return 'Enabled'
+  if (status === 0) return 'Disabled'
+  return 'Unknown'
 }
 
 // Merchant Auth
@@ -450,7 +450,7 @@ async function loadMerchantAuth(): Promise<void> {
     const status = toNumber(authStatusFilter.value, 0) || 0
     authRows.value = await listMerchantAuthByStatus(status)
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载审核失败')
+    toast(error instanceof Error ? error.message : 'Failed to load auth reviews')
   } finally {
     authLoading.value = false
   }
@@ -459,10 +459,10 @@ async function loadMerchantAuth(): Promise<void> {
 async function reviewMerchantAuthRow(row: MerchantAuthInfo, status: number): Promise<void> {
   try {
     await reviewMerchantAuth(row.merchantId!, status, authRemark.value || undefined)
-    toast('审核已提交', 'success')
+    toast('Auth review submitted', 'success')
     await loadMerchantAuth()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '审核失败')
+    toast(error instanceof Error ? error.message : 'Review failed')
   }
 }
 // Categories
@@ -491,7 +491,7 @@ async function loadCategories(): Promise<void> {
     categoryRows.value = result.records
     categoryTotal.value = result.total
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载分类失败')
+    toast(error instanceof Error ? error.message : 'Failed to load categories')
   } finally {
     categoryLoading.value = false
   }
@@ -530,9 +530,9 @@ function closeCategoryDialog(): void {
 }
 
 async function saveCategory(): Promise<void> {
-  const name = requireText(categoryForm.name, '分类名称')
+  const name = requireText(categoryForm.name, 'category name')
   if (!name) return
-  const status = normalizeStatus(categoryForm.status, '分类')
+  const status = normalizeStatus(categoryForm.status, 'Category')
   if (status === null) return
   const payload: CategoryItem = {
     ...categoryForm,
@@ -545,28 +545,28 @@ async function saveCategory(): Promise<void> {
   try {
     if (categoryEditId.value) {
       await updateCategory(categoryEditId.value, payload)
-      toast('分类已更新', 'success')
+      toast('Category updated', 'success')
     } else {
       await createCategory(payload)
-      toast('分类已创建', 'success')
+      toast('Category created', 'success')
     }
     closeCategoryDialog()
     await loadCategories()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '保存失败')
+    toast(error instanceof Error ? error.message : 'Save failed')
   }
 }
 
 async function deleteCategoryRow(row: CategoryItem): Promise<void> {
   if (!row.id) return
-  const ok = await confirm(`确认删除分类 ${row.name}？`)
+  const ok = await confirm(`Delete category ${row.name}?`)
   if (!ok) return
   try {
     await deleteCategory(row.id)
-    toast('分类已删除', 'success')
+    toast('Category deleted', 'success')
     await loadCategories()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
@@ -574,10 +574,10 @@ async function updateCategoryRowStatus(row: CategoryItem, status: number): Promi
   if (!row.id) return
   try {
     await updateCategoryStatus(row.id, status)
-    toast('状态已更新', 'success')
+    toast('Status updated', 'success')
     await loadCategories()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
@@ -585,15 +585,15 @@ async function updateCategoryRowSort(row: CategoryItem): Promise<void> {
   if (!row.id) return
   const sort = Number(row.sortOrder)
   if (!Number.isFinite(sort)) {
-    toast('请输入排序值')
+    toast('Please enter a sort value')
     return
   }
   row.sortOrder = sort
   try {
     await updateCategorySort(row.id, row.sortOrder)
-    toast('排序已更新', 'success')
+    toast('Sort order updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
@@ -615,21 +615,21 @@ function parseIdList(raw: string): number[] {
 async function sendWelcome(): Promise<void> {
   const id = Number(welcomeUserId.value)
   if (!id) {
-    toast('请输入有效用户 ID')
+    toast('Please enter a valid user ID')
     return
   }
   try {
     await sendWelcomeNotification(id)
-    toast('欢迎通知已发送', 'success')
+    toast('Welcome notification sent', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '发送失败')
+    toast(error instanceof Error ? error.message : 'Send failed')
   }
 }
 
 async function sendStatusChange(): Promise<void> {
   const id = Number(statusChangeUserId.value)
   if (!id) {
-    toast('请输入有效用户 ID')
+    toast('Please enter a valid user ID')
     return
   }
   try {
@@ -637,16 +637,16 @@ async function sendStatusChange(): Promise<void> {
       newStatus: statusChangeForm.newStatus,
       reason: statusChangeForm.reason || undefined
     })
-    toast('状态通知已发送', 'success')
+    toast('Status notification sent', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '发送失败')
+    toast(error instanceof Error ? error.message : 'Send failed')
   }
 }
 
 async function sendBatch(): Promise<void> {
   const ids = parseIdList(batchUserIds.value)
   if (ids.length === 0) {
-    toast('请输入用户 ID 列表')
+    toast('Please enter a list of user IDs')
     return
   }
   try {
@@ -655,9 +655,9 @@ async function sendBatch(): Promise<void> {
       title: batchForm.title,
       content: batchForm.content
     })
-    toast('批量通知已发送', 'success')
+    toast('Batch notification sent', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '发送失败')
+    toast(error instanceof Error ? error.message : 'Send failed')
   }
 }
 
@@ -667,9 +667,9 @@ async function sendAnnouncement(): Promise<void> {
       title: announcementForm.title,
       content: announcementForm.content
     })
-    toast('公告已发送', 'success')
+    toast('Announcement sent', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '发送失败')
+    toast(error instanceof Error ? error.message : 'Send failed')
   }
 }
 // Statistics
@@ -719,7 +719,7 @@ const trendChartData = computed(() => {
     categories: trendList.value.map((entry) => entry[0]),
     series: [
       {
-        name: '注册量',
+        name: 'Registrations',
         data: trendList.value.map((entry) => entry[1])
       }
     ]
@@ -732,7 +732,7 @@ const rankingChartData = computed(() => {
     categories: rankingList.value.map((entry) => entry[0]),
     series: [
       {
-        name: '活跃度',
+        name: 'Activity',
         data: rankingList.value.map((entry) => entry[1])
       }
     ]
@@ -764,7 +764,7 @@ async function loadStatistics(): Promise<void> {
     growthRate.value = growth
     activityRanking.value = ranking
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载统计失败')
+    toast(error instanceof Error ? error.message : 'Failed to load statistics')
   } finally {
     statsLoading.value = false
   }
@@ -797,7 +797,7 @@ async function loadAdmins(): Promise<void> {
     adminRows.value = result.records
     adminTotal.value = result.total
   } catch (error) {
-    toast(error instanceof Error ? error.message : '加载管理员失败')
+    toast(error instanceof Error ? error.message : 'Failed to load administrators')
   } finally {
     adminLoading.value = false
   }
@@ -838,16 +838,16 @@ function closeAdminDialog(): void {
 }
 
 async function saveAdmin(): Promise<void> {
-  const username = requireText(adminForm.username, '用户名')
+  const username = requireText(adminForm.username, 'username')
   if (!username) return
-  const realName = requireText(adminForm.realName, '姓名')
+  const realName = requireText(adminForm.realName, 'real name')
   if (!realName) return
   const password = adminForm.password?.trim() || ''
   if (!adminEditId.value && !password) {
-    toast('请输入管理员密码')
+    toast('Please enter an administrator password')
     return
   }
-  const status = normalizeStatus(adminForm.status, '管理员')
+  const status = normalizeStatus(adminForm.status, 'Administrator')
   if (status === null) return
   const payload: AdminUpsertPayload = {
     ...adminForm,
@@ -861,48 +861,48 @@ async function saveAdmin(): Promise<void> {
   try {
     if (adminEditId.value) {
       await updateAdmin(adminEditId.value, payload)
-      toast('管理员已更新', 'success')
+      toast('Administrator updated', 'success')
     } else {
       await createAdmin(payload)
-      toast('管理员已创建', 'success')
+      toast('Administrator created', 'success')
     }
     closeAdminDialog()
     await loadAdmins()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '保存失败')
+    toast(error instanceof Error ? error.message : 'Save failed')
   }
 }
 
 async function confirmDeleteAdmin(row: AdminInfo): Promise<void> {
-  const ok = await confirm(`确认删除管理员 ${row.username}？`)
+  const ok = await confirm(`Delete administrator ${row.username}?`)
   if (!ok) return
   try {
     await deleteAdmin(row.id)
-    toast('管理员已删除', 'success')
+    toast('Administrator deleted', 'success')
     await loadAdmins()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
 async function updateAdminRowStatus(row: AdminInfo, status: number): Promise<void> {
   try {
     await updateAdminStatus(row.id, status)
-    toast('状态已更新', 'success')
+    toast('Status updated', 'success')
     await loadAdmins()
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function resetPassword(row: AdminInfo): Promise<void> {
-  const ok = await confirm(`确认重置 ${row.username} 密码？`)
+  const ok = await confirm(`Reset password for ${row.username}?`)
   if (!ok) return
   try {
     const temporaryPassword = await resetAdminPassword(row.id)
-    toast(`临时密码：${temporaryPassword}`, 'success')
+    toast(`Temporary password: ${temporaryPassword}`, 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '重置失败')
+    toast(error instanceof Error ? error.message : 'Reset failed')
   }
 }
 
@@ -958,24 +958,24 @@ onMounted(() => {
 
     <view v-if="activeTab === 'users'" class="panel glass-card">
       <view class="toolbar">
-        <input v-model="userQuery.username" class="input" placeholder="用户名" />
-        <input v-model="userQuery.email" class="input" placeholder="邮箱" />
-        <input v-model="userQuery.phone" class="input" placeholder="手机号" />
-        <input v-model="userQuery.nickname" class="input" placeholder="昵称" />
-        <input v-model="userQuery.status" class="input" placeholder="状态(0/1)" />
-        <input v-model="userQuery.roleCode" class="input" placeholder="角色" />
-        <button class="btn-primary" @click="loadUsers">查询</button>
+        <input v-model="userQuery.username" class="input" placeholder="Username" />
+        <input v-model="userQuery.email" class="input" placeholder="Email" />
+        <input v-model="userQuery.phone" class="input" placeholder="Phone" />
+        <input v-model="userQuery.nickname" class="input" placeholder="Nickname" />
+        <input v-model="userQuery.status" class="input" placeholder="Status (0/1)" />
+        <input v-model="userQuery.roleCode" class="input" placeholder="Role code" />
+        <button class="btn-primary" @click="loadUsers">Search</button>
       </view>
 
       <view class="toolbar">
-        <button class="btn-outline" @click="toggleAllUsers">{{ allUsersSelected ? '取消全选' : '全选' }}</button>
-        <button class="btn-outline" @click="batchUpdateUserStatus(1)">批量启用</button>
-        <button class="btn-outline" @click="batchUpdateUserStatus(0)">批量停用</button>
-        <button class="btn-outline" @click="batchDeleteUsers">批量删除</button>
+        <button class="btn-outline" @click="toggleAllUsers">{{ allUsersSelected ? 'Clear selection' : 'Select all' }}</button>
+        <button class="btn-outline" @click="batchUpdateUserStatus(1)">Batch enable</button>
+        <button class="btn-outline" @click="batchUpdateUserStatus(0)">Batch disable</button>
+        <button class="btn-outline" @click="batchDeleteUsers">Batch delete</button>
       </view>
-      <text class="muted">共 {{ userTotal }} 条</text>
+      <text class="muted">Total {{ userTotal }} records</text>
 
-      <view v-if="userLoading" class="muted">加载中...</view>
+      <view v-if="userLoading" class="muted">Loading...</view>
       <view v-else class="list">
         <view v-for="row in userRows" :key="row.id" class="row">
           <view class="row-head">
@@ -983,240 +983,240 @@ onMounted(() => {
             <text class="name">{{ row.username }}</text>
             <text class="muted">#{{ row.id }}</text>
           </view>
-          <text class="muted">昵称：{{ row.nickname || '--' }}</text>
-          <text class="muted">邮箱：{{ row.email || '--' }}</text>
-          <text class="muted">角色：{{ row.roles?.join(', ') || '--' }}</text>
-          <text class="muted">状态：{{ userStatusText(row.status) }}</text>
+          <text class="muted">Nickname: {{ row.nickname || '--' }}</text>
+          <text class="muted">Email: {{ row.email || '--' }}</text>
+          <text class="muted">Roles: {{ row.roles?.join(', ') || '--' }}</text>
+          <text class="muted">Status: {{ userStatusText(row.status) }}</text>
           <view class="actions">
-            <button class="btn-outline" @click="openUserEdit(row)">编辑</button>
-            <button class="btn-outline" @click="confirmDeleteUser(row)">删除</button>
+            <button class="btn-outline" @click="openUserEdit(row)">Edit</button>
+            <button class="btn-outline" @click="confirmDeleteUser(row)">Delete</button>
           </view>
         </view>
       </view>
 
       <view class="pagination">
-        <button class="btn-outline" :disabled="userQuery.page <= 1" @click="changeUserPage(-1)">上一页</button>
-        <text class="muted">第 {{ userQuery.page }} / {{ userTotalPages }} 页</text>
-        <button class="btn-outline" :disabled="userQuery.page >= userTotalPages" @click="changeUserPage(1)">下一页</button>
+        <button class="btn-outline" :disabled="userQuery.page <= 1" @click="changeUserPage(-1)">Previous</button>
+        <text class="muted">Page {{ userQuery.page }} / {{ userTotalPages }}</text>
+        <button class="btn-outline" :disabled="userQuery.page >= userTotalPages" @click="changeUserPage(1)">Next</button>
       </view>
 
       <view v-if="userDialogVisible" class="dialog">
-        <text class="section-title">编辑用户</text>
+        <text class="section-title">Edit user</text>
         <view class="form">
-          <input v-model="userForm.username" class="input" placeholder="用户名" />
-          <input v-model="userForm.nickname" class="input" placeholder="昵称" />
-          <input v-model="userForm.email" class="input" placeholder="邮箱" />
-          <input v-model="userForm.phone" class="input" placeholder="手机号" />
-          <input v-model="userForm.avatarUrl" class="input" placeholder="头像 URL" />
-          <input v-model="userRolesInput" class="input" placeholder="角色(逗号分隔)" />
-          <input v-model="userForm.status" class="input" placeholder="状态(0/1)" />
+          <input v-model="userForm.username" class="input" placeholder="Username" />
+          <input v-model="userForm.nickname" class="input" placeholder="Nickname" />
+          <input v-model="userForm.email" class="input" placeholder="Email" />
+          <input v-model="userForm.phone" class="input" placeholder="Phone" />
+          <input v-model="userForm.avatarUrl" class="input" placeholder="Avatar URL" />
+          <input v-model="userRolesInput" class="input" placeholder="Roles (comma separated)" />
+          <input v-model="userForm.status" class="input" placeholder="Status (0/1)" />
         </view>
         <view class="actions">
-          <button class="btn-primary" @click="saveUser">保存</button>
-          <button class="btn-outline" @click="closeUserEdit">取消</button>
+          <button class="btn-primary" @click="saveUser">Save</button>
+          <button class="btn-outline" @click="closeUserEdit">Cancel</button>
         </view>
       </view>
     </view>
 
     <view v-if="activeTab === 'merchants'" class="panel glass-card">
       <view class="toolbar">
-        <input v-model="merchantQuery.status" class="input" placeholder="状态(可选)" />
-        <input v-model="merchantQuery.auditStatus" class="input" placeholder="审核状态(可选)" />
-        <button class="btn-primary" @click="loadMerchants">查询</button>
-        <button class="btn-outline" @click="openMerchantCreate">新增商家</button>
+        <input v-model="merchantQuery.status" class="input" placeholder="Status (optional)" />
+        <input v-model="merchantQuery.auditStatus" class="input" placeholder="Audit status (optional)" />
+        <button class="btn-primary" @click="loadMerchants">Search</button>
+        <button class="btn-outline" @click="openMerchantCreate">New merchant</button>
       </view>
       <view class="toolbar">
-        <input v-model="merchantApproveRemark" class="input" placeholder="通过备注(可选)" />
-        <input v-model="merchantRejectReason" class="input" placeholder="驳回原因" />
+        <input v-model="merchantApproveRemark" class="input" placeholder="Approval remark (optional)" />
+        <input v-model="merchantRejectReason" class="input" placeholder="Rejection reason" />
       </view>
-      <text class="muted">共 {{ merchantTotal }} 条</text>
+      <text class="muted">Total {{ merchantTotal }} records</text>
 
-      <view v-if="merchantLoading" class="muted">加载中...</view>
+      <view v-if="merchantLoading" class="muted">Loading...</view>
       <view v-else class="list">
         <view v-for="row in merchantRows" :key="row.id" class="row">
-          <text class="name">{{ row.merchantName || row.username || '商家' }}</text>
-          <text class="muted">邮箱：{{ row.email || '--' }}</text>
-          <text class="muted">电话：{{ row.phone || '--' }}</text>
-          <text class="muted">状态：{{ merchantStatusText(row.status) }}</text>
-          <text class="muted">认证：{{ merchantStatusText(row.authStatus) }}</text>
+          <text class="name">{{ row.merchantName || row.username || 'Merchant' }}</text>
+          <text class="muted">Email: {{ row.email || '--' }}</text>
+          <text class="muted">Phone: {{ row.phone || '--' }}</text>
+          <text class="muted">Status: {{ merchantStatusText(row.status) }}</text>
+          <text class="muted">Auth: {{ merchantStatusText(row.authStatus) }}</text>
           <view class="actions">
-            <button class="btn-outline" @click="openMerchantEdit(row)">编辑</button>
-            <button class="btn-outline" @click="approveMerchantRow(row)">通过</button>
-            <button class="btn-outline" @click="rejectMerchantRow(row)">驳回</button>
-            <button class="btn-outline" @click="confirmDeleteMerchant(row)">删除</button>
+            <button class="btn-outline" @click="openMerchantEdit(row)">Edit</button>
+            <button class="btn-outline" @click="approveMerchantRow(row)">Approve</button>
+            <button class="btn-outline" @click="rejectMerchantRow(row)">Reject</button>
+            <button class="btn-outline" @click="confirmDeleteMerchant(row)">Delete</button>
           </view>
         </view>
       </view>
 
       <view class="pagination">
-        <button class="btn-outline" :disabled="merchantQuery.page <= 1" @click="changeMerchantPage(-1)">上一页</button>
-        <text class="muted">第 {{ merchantQuery.page }} / {{ merchantTotalPages }} 页</text>
-        <button class="btn-outline" :disabled="merchantQuery.page >= merchantTotalPages" @click="changeMerchantPage(1)">下一页</button>
+        <button class="btn-outline" :disabled="merchantQuery.page <= 1" @click="changeMerchantPage(-1)">Previous</button>
+        <text class="muted">Page {{ merchantQuery.page }} / {{ merchantTotalPages }}</text>
+        <button class="btn-outline" :disabled="merchantQuery.page >= merchantTotalPages" @click="changeMerchantPage(1)">Next</button>
       </view>
 
       <view v-if="merchantDialogVisible" class="dialog">
-        <text class="section-title">{{ merchantEditId ? '编辑商家' : '新增商家' }}</text>
+        <text class="section-title">{{ merchantEditId ? 'Edit merchant' : 'New merchant' }}</text>
         <view class="form">
-          <input v-model="merchantForm.username" class="input" placeholder="商家用户名" />
+          <input v-model="merchantForm.username" class="input" placeholder="Merchant username" />
           <input
             v-model="merchantForm.password"
             class="input"
-            :placeholder="merchantEditId ? '密码(留空则不修改)' : '密码'"
+            :placeholder="merchantEditId ? 'Password (leave blank to keep current)' : 'Password'"
             password
           />
-          <input v-model="merchantForm.merchantName" class="input" placeholder="商家名称" />
-          <input v-model="merchantForm.email" class="input" placeholder="邮箱" />
-          <input v-model="merchantForm.phone" class="input" placeholder="电话" />
-          <input v-model="merchantForm.status" class="input" placeholder="状态(0/1)" />
+          <input v-model="merchantForm.merchantName" class="input" placeholder="Merchant name" />
+          <input v-model="merchantForm.email" class="input" placeholder="Email" />
+          <input v-model="merchantForm.phone" class="input" placeholder="Phone" />
+          <input v-model="merchantForm.status" class="input" placeholder="Status (0/1)" />
         </view>
         <view class="actions">
-          <button class="btn-primary" @click="saveMerchant">保存</button>
-          <button class="btn-outline" @click="closeMerchantDialog">取消</button>
+          <button class="btn-primary" @click="saveMerchant">Save</button>
+          <button class="btn-outline" @click="closeMerchantDialog">Cancel</button>
         </view>
       </view>
     </view>
 
     <view v-if="activeTab === 'auth'" class="panel glass-card">
       <view class="toolbar">
-        <input v-model="authStatusFilter" class="input" placeholder="状态(0待审/1通过/2驳回)" />
-        <input v-model="authRemark" class="input" placeholder="审核备注" />
-        <button class="btn-primary" @click="loadMerchantAuth">查询</button>
+        <input v-model="authStatusFilter" class="input" placeholder="Status (0 pending / 1 approved / 2 rejected)" />
+        <input v-model="authRemark" class="input" placeholder="Review remark" />
+        <button class="btn-primary" @click="loadMerchantAuth">Search</button>
       </view>
 
-      <view v-if="authLoading" class="muted">加载中...</view>
+      <view v-if="authLoading" class="muted">Loading...</view>
       <view v-else class="list">
         <view v-for="row in authRows" :key="row.id" class="row">
-          <text class="name">商家 ID：{{ row.merchantId }}</text>
-          <text class="muted">资质：{{ row.businessLicenseNumber || '--' }}</text>
-          <text class="muted">状态：{{ merchantStatusText(row.authStatus) }}</text>
+          <text class="name">Merchant ID: {{ row.merchantId }}</text>
+          <text class="muted">License: {{ row.businessLicenseNumber || '--' }}</text>
+          <text class="muted">Status: {{ merchantStatusText(row.authStatus) }}</text>
           <view class="actions">
-            <button class="btn-outline" @click="reviewMerchantAuthRow(row, 1)">通过</button>
-            <button class="btn-outline" @click="reviewMerchantAuthRow(row, 2)">驳回</button>
+            <button class="btn-outline" @click="reviewMerchantAuthRow(row, 1)">Approve</button>
+            <button class="btn-outline" @click="reviewMerchantAuthRow(row, 2)">Reject</button>
           </view>
         </view>
       </view>
     </view>
     <view v-if="activeTab === 'categories'" class="panel glass-card">
       <view class="toolbar">
-        <button class="btn-outline" @click="openCategoryCreate">新增分类</button>
-        <button class="btn-outline" @click="loadCategories">刷新</button>
+        <button class="btn-outline" @click="openCategoryCreate">New category</button>
+        <button class="btn-outline" @click="loadCategories">Refresh</button>
       </view>
-      <text class="muted">共 {{ categoryTotal }} 条</text>
+      <text class="muted">Total {{ categoryTotal }} records</text>
 
-      <view v-if="categoryLoading" class="muted">加载中...</view>
+      <view v-if="categoryLoading" class="muted">Loading...</view>
       <view v-else class="list">
         <view v-for="row in categoryRows" :key="row.id" class="row">
           <text class="name">{{ row.name }}</text>
-          <text class="muted">描述：{{ row.description || '--' }}</text>
-          <text class="muted">状态：{{ row.status === 1 ? '启用' : '停用' }}</text>
+          <text class="muted">Description: {{ row.description || '--' }}</text>
+          <text class="muted">Status: {{ row.status === 1 ? 'Enabled' : 'Disabled' }}</text>
           <view class="row-inline">
-            <input v-model="row.sortOrder" class="input small" placeholder="排序" />
-            <button class="btn-outline" @click="updateCategoryRowSort(row)">保存排序</button>
+            <input v-model="row.sortOrder" class="input small" placeholder="Sort order" />
+            <button class="btn-outline" @click="updateCategoryRowSort(row)">Save sort</button>
           </view>
           <view class="actions">
-            <button class="btn-outline" @click="openCategoryEdit(row)">编辑</button>
-            <button class="btn-outline" @click="updateCategoryRowStatus(row, 1)">启用</button>
-            <button class="btn-outline" @click="updateCategoryRowStatus(row, 0)">停用</button>
-            <button class="btn-outline" @click="deleteCategoryRow(row)">删除</button>
+            <button class="btn-outline" @click="openCategoryEdit(row)">Edit</button>
+            <button class="btn-outline" @click="updateCategoryRowStatus(row, 1)">Enable</button>
+            <button class="btn-outline" @click="updateCategoryRowStatus(row, 0)">Disable</button>
+            <button class="btn-outline" @click="deleteCategoryRow(row)">Delete</button>
           </view>
         </view>
       </view>
 
       <view class="pagination">
-        <button class="btn-outline" :disabled="categoryQuery.page <= 1" @click="changeCategoryPage(-1)">上一页</button>
-        <text class="muted">第 {{ categoryQuery.page }} / {{ categoryTotalPages }} 页</text>
-        <button class="btn-outline" :disabled="categoryQuery.page >= categoryTotalPages" @click="changeCategoryPage(1)">下一页</button>
+        <button class="btn-outline" :disabled="categoryQuery.page <= 1" @click="changeCategoryPage(-1)">Previous</button>
+        <text class="muted">Page {{ categoryQuery.page }} / {{ categoryTotalPages }}</text>
+        <button class="btn-outline" :disabled="categoryQuery.page >= categoryTotalPages" @click="changeCategoryPage(1)">Next</button>
       </view>
 
       <view v-if="categoryDialogVisible" class="dialog">
-        <text class="section-title">{{ categoryEditId ? '编辑分类' : '新增分类' }}</text>
+        <text class="section-title">{{ categoryEditId ? 'Edit category' : 'New category' }}</text>
         <view class="form">
-          <input v-model="categoryForm.name" class="input" placeholder="分类名称" />
-          <input v-model="categoryForm.description" class="input" placeholder="分类描述" />
-          <input v-model="categoryForm.parentId" class="input" placeholder="父级 ID(可选)" />
-          <input v-model="categoryForm.status" class="input" placeholder="状态(0/1)" />
-          <input v-model="categoryForm.sortOrder" class="input" placeholder="排序(可选)" />
+          <input v-model="categoryForm.name" class="input" placeholder="Category name" />
+          <input v-model="categoryForm.description" class="input" placeholder="Category description" />
+          <input v-model="categoryForm.parentId" class="input" placeholder="Parent ID (optional)" />
+          <input v-model="categoryForm.status" class="input" placeholder="Status (0/1)" />
+          <input v-model="categoryForm.sortOrder" class="input" placeholder="Sort order (optional)" />
         </view>
         <view class="actions">
-          <button class="btn-primary" @click="saveCategory">保存</button>
-          <button class="btn-outline" @click="closeCategoryDialog">取消</button>
+          <button class="btn-primary" @click="saveCategory">Save</button>
+          <button class="btn-outline" @click="closeCategoryDialog">Cancel</button>
         </view>
       </view>
     </view>
 
     <view v-if="activeTab === 'notifications'" class="panel glass-card">
       <view class="section">
-        <text class="section-title">欢迎通知</text>
+        <text class="section-title">Welcome notification</text>
         <view class="row-inline">
-          <input v-model="welcomeUserId" class="input" placeholder="用户 ID" />
-          <button class="btn-primary" @click="sendWelcome">发送</button>
+          <input v-model="welcomeUserId" class="input" placeholder="User ID" />
+          <button class="btn-primary" @click="sendWelcome">Send</button>
         </view>
       </view>
 
       <view class="section">
-        <text class="section-title">状态变更通知</text>
+        <text class="section-title">Status change notification</text>
         <view class="row-inline">
-          <input v-model="statusChangeUserId" class="input" placeholder="用户 ID" />
-          <input v-model="statusChangeForm.newStatus" class="input" placeholder="新状态(0/1)" />
+          <input v-model="statusChangeUserId" class="input" placeholder="User ID" />
+          <input v-model="statusChangeForm.newStatus" class="input" placeholder="New status (0/1)" />
         </view>
-        <textarea v-model="statusChangeForm.reason" class="textarea" placeholder="原因(可选)" />
-        <button class="btn-primary" @click="sendStatusChange">发送</button>
+        <textarea v-model="statusChangeForm.reason" class="textarea" placeholder="Reason (optional)" />
+        <button class="btn-primary" @click="sendStatusChange">Send</button>
       </view>
 
       <view class="section">
-        <text class="section-title">批量通知</text>
-        <input v-model="batchUserIds" class="input" placeholder="用户 ID 列表(逗号分隔)" />
-        <input v-model="batchForm.title" class="input" placeholder="标题" />
-        <textarea v-model="batchForm.content" class="textarea" placeholder="内容" />
-        <button class="btn-primary" @click="sendBatch">发送</button>
+        <text class="section-title">Batch notification</text>
+        <input v-model="batchUserIds" class="input" placeholder="User ID list (comma separated)" />
+        <input v-model="batchForm.title" class="input" placeholder="Title" />
+        <textarea v-model="batchForm.content" class="textarea" placeholder="Content" />
+        <button class="btn-primary" @click="sendBatch">Send</button>
       </view>
 
       <view class="section">
-        <text class="section-title">系统公告</text>
-        <input v-model="announcementForm.title" class="input" placeholder="标题" />
-        <textarea v-model="announcementForm.content" class="textarea" placeholder="内容" />
-        <button class="btn-primary" @click="sendAnnouncement">发送</button>
+        <text class="section-title">System announcement</text>
+        <input v-model="announcementForm.title" class="input" placeholder="Title" />
+        <textarea v-model="announcementForm.content" class="textarea" placeholder="Content" />
+        <button class="btn-primary" @click="sendAnnouncement">Send</button>
       </view>
     </view>
 
     <view v-if="activeTab === 'statistics'" class="panel glass-card">
       <view class="toolbar">
-        <button class="btn-outline" @click="loadStatistics">刷新统计</button>
+        <button class="btn-outline" @click="loadStatistics">Refresh statistics</button>
       </view>
-      <view v-if="statsLoading" class="muted">加载中...</view>
+      <view v-if="statsLoading" class="muted">Loading...</view>
       <view v-else class="section">
-        <text class="section-title">概览</text>
+        <text class="section-title">Overview</text>
         <view class="stats-grid">
           <view class="stat-card">
-            <text class="stat-label">用户总数</text>
+            <text class="stat-label">Total users</text>
             <text class="stat-value">{{ statsOverview?.totalUsers ?? '--' }}</text>
           </view>
           <view class="stat-card">
-            <text class="stat-label">今日新增</text>
+            <text class="stat-label">New today</text>
             <text class="stat-value">{{ statsOverview?.todayNewUsers ?? '--' }}</text>
           </view>
           <view class="stat-card">
-            <text class="stat-label">本月新增</text>
+            <text class="stat-label">New this month</text>
             <text class="stat-value">{{ statsOverview?.monthNewUsers ?? '--' }}</text>
           </view>
           <view class="stat-card">
-            <text class="stat-label">活跃用户(7天)</text>
+            <text class="stat-label">Active users (7d)</text>
             <text class="stat-value">{{ activeUsers ?? '--' }}</text>
           </view>
           <view class="stat-card">
-            <text class="stat-label">增长率(7天)</text>
+            <text class="stat-label">Growth rate (7d)</text>
             <text class="stat-value">{{ growthRate ?? '--' }}</text>
           </view>
         </view>
       </view>
       <view class="section">
-        <text class="section-title">角色分布</text>
-        <view v-if="!roleChartData" class="muted">暂无数据</view>
+        <text class="section-title">Role distribution</text>
+        <view v-if="!roleChartData" class="muted">No data available</view>
         <ChartView v-else class="chart" type="pie" canvasId="roleChart" :chartData="roleChartData" :opts="chartOpts" />
       </view>
       <view class="section">
-        <text class="section-title">状态分布</text>
-        <view v-if="!statusChartData" class="muted">暂无数据</view>
+        <text class="section-title">Status distribution</text>
+        <view v-if="!statusChartData" class="muted">No data available</view>
         <ChartView
           v-else
           class="chart"
@@ -1227,13 +1227,13 @@ onMounted(() => {
         />
       </view>
       <view class="section">
-        <text class="section-title">注册趋势(30天)</text>
-        <view v-if="!trendChartData" class="muted">暂无数据</view>
+        <text class="section-title">Registration trend (30d)</text>
+        <view v-if="!trendChartData" class="muted">No data available</view>
         <ChartView v-else class="chart" type="line" canvasId="trendChart" :chartData="trendChartData" :opts="chartOpts" />
       </view>
       <view class="section">
-        <text class="section-title">活跃排行</text>
-        <view v-if="!rankingChartData" class="muted">暂无数据</view>
+        <text class="section-title">Activity ranking</text>
+        <view v-if="!rankingChartData" class="muted">No data available</view>
         <ChartView
           v-else
           class="chart"
@@ -1247,52 +1247,52 @@ onMounted(() => {
 
     <view v-if="activeTab === 'admins'" class="panel glass-card">
       <view class="toolbar">
-        <button class="btn-outline" @click="openAdminCreate">新增管理员</button>
-        <button class="btn-outline" @click="loadAdmins">刷新</button>
+        <button class="btn-outline" @click="openAdminCreate">New administrator</button>
+        <button class="btn-outline" @click="loadAdmins">Refresh</button>
       </view>
-      <text class="muted">共 {{ adminTotal }} 条</text>
+      <text class="muted">Total {{ adminTotal }} records</text>
 
-      <view v-if="adminLoading" class="muted">加载中...</view>
+      <view v-if="adminLoading" class="muted">Loading...</view>
       <view v-else class="list">
         <view v-for="row in adminRows" :key="row.id" class="row">
           <text class="name">{{ row.username }}</text>
-          <text class="muted">姓名：{{ row.realName || '--' }}</text>
-          <text class="muted">角色：{{ row.role || '--' }}</text>
-          <text class="muted">状态：{{ row.status === 1 ? '启用' : '停用' }}</text>
+          <text class="muted">Name: {{ row.realName || '--' }}</text>
+          <text class="muted">Role: {{ row.role || '--' }}</text>
+          <text class="muted">Status: {{ row.status === 1 ? 'Enabled' : 'Disabled' }}</text>
           <view class="actions">
-            <button class="btn-outline" @click="openAdminEdit(row)">编辑</button>
-            <button class="btn-outline" @click="updateAdminRowStatus(row, 1)">启用</button>
-            <button class="btn-outline" @click="updateAdminRowStatus(row, 0)">停用</button>
-            <button class="btn-outline" @click="resetPassword(row)">重置密码</button>
-            <button class="btn-outline" @click="confirmDeleteAdmin(row)">删除</button>
+            <button class="btn-outline" @click="openAdminEdit(row)">Edit</button>
+            <button class="btn-outline" @click="updateAdminRowStatus(row, 1)">Enable</button>
+            <button class="btn-outline" @click="updateAdminRowStatus(row, 0)">Disable</button>
+            <button class="btn-outline" @click="resetPassword(row)">Reset password</button>
+            <button class="btn-outline" @click="confirmDeleteAdmin(row)">Delete</button>
           </view>
         </view>
       </view>
 
       <view class="pagination">
-        <button class="btn-outline" :disabled="adminQuery.page <= 1" @click="changeAdminPage(-1)">上一页</button>
-        <text class="muted">第 {{ adminQuery.page }} / {{ adminTotalPages }} 页</text>
-        <button class="btn-outline" :disabled="adminQuery.page >= adminTotalPages" @click="changeAdminPage(1)">下一页</button>
+        <button class="btn-outline" :disabled="adminQuery.page <= 1" @click="changeAdminPage(-1)">Previous</button>
+        <text class="muted">Page {{ adminQuery.page }} / {{ adminTotalPages }}</text>
+        <button class="btn-outline" :disabled="adminQuery.page >= adminTotalPages" @click="changeAdminPage(1)">Next</button>
       </view>
 
       <view v-if="adminDialogVisible" class="dialog">
-        <text class="section-title">{{ adminEditId ? '编辑管理员' : '新增管理员' }}</text>
+        <text class="section-title">{{ adminEditId ? 'Edit administrator' : 'New administrator' }}</text>
         <view class="form">
-          <input v-model="adminForm.username" class="input" placeholder="用户名" />
+          <input v-model="adminForm.username" class="input" placeholder="Username" />
           <input
             v-model="adminForm.password"
             class="input"
-            :placeholder="adminEditId ? '密码(留空则不修改)' : '密码'"
+            :placeholder="adminEditId ? 'Password (leave blank to keep current)' : 'Password'"
             password
           />
-          <input v-model="adminForm.realName" class="input" placeholder="姓名" />
-          <input v-model="adminForm.phone" class="input" placeholder="电话" />
-          <input v-model="adminForm.role" class="input" placeholder="角色" />
-          <input v-model="adminForm.status" class="input" placeholder="状态(0/1)" />
+          <input v-model="adminForm.realName" class="input" placeholder="Real name" />
+          <input v-model="adminForm.phone" class="input" placeholder="Phone" />
+          <input v-model="adminForm.role" class="input" placeholder="Role" />
+          <input v-model="adminForm.status" class="input" placeholder="Status (0/1)" />
         </view>
         <view class="actions">
-          <button class="btn-primary" @click="saveAdmin">保存</button>
-          <button class="btn-outline" @click="closeAdminDialog">取消</button>
+          <button class="btn-primary" @click="saveAdmin">Save</button>
+          <button class="btn-outline" @click="closeAdminDialog">Cancel</button>
         </view>
       </view>
     </view>
