@@ -3,6 +3,8 @@ package com.cloud.product.controller;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.controller.support.ProductMerchantGuard;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -59,20 +62,30 @@ public class ProductCatalogController {
   @GetMapping("/spu/{spuId}")
   @Operation(summary = "Get SPU detail")
   public Result<SpuDetailVO> getSpu(@PathVariable Long spuId) {
-    return Result.success(productCatalogService.getSpuById(spuId));
+    SpuDetailVO detail = toPublicSpu(productCatalogService.getSpuById(spuId));
+    if (detail == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
+    }
+    return Result.success(detail);
   }
 
   @GetMapping("/spu/category/{categoryId}")
   @Operation(summary = "List SPU by category")
   public Result<List<SpuDetailVO>> listByCategory(
       @PathVariable Long categoryId, @RequestParam(required = false) Integer status) {
-    return Result.success(productCatalogService.listSpuByCategory(categoryId, status));
+    Integer effectiveStatus = status != null ? status : 1;
+    return Result.success(
+        productCatalogService.listSpuByCategory(categoryId, effectiveStatus).stream()
+            .map(this::toPublicSpu)
+            .filter(Objects::nonNull)
+            .toList());
   }
 
   @GetMapping("/sku/batch")
   @Operation(summary = "Batch query SKU details")
   public Result<List<SkuDetailVO>> listSkuByIds(@RequestParam List<Long> skuIds) {
-    return Result.success(productCatalogService.listSkuByIds(skuIds));
+    return Result.success(
+        productCatalogService.listSkuByIds(skuIds).stream().filter(this::isActiveSku).toList());
   }
 
   @PatchMapping("/spu/{spuId}/status")
@@ -82,5 +95,24 @@ public class ProductCatalogController {
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
     productMerchantGuard.requireWritableSpu(authentication, spuId);
     return Result.success(productCatalogService.updateSpuStatus(spuId, status));
+  }
+
+  private SpuDetailVO toPublicSpu(SpuDetailVO detail) {
+    if (detail == null || !Integer.valueOf(1).equals(detail.getStatus())) {
+      return null;
+    }
+    List<SkuDetailVO> activeSkus =
+        detail.getSkus() == null
+            ? List.of()
+            : detail.getSkus().stream().filter(this::isActiveSku).toList();
+    if (activeSkus.isEmpty()) {
+      return null;
+    }
+    detail.setSkus(activeSkus);
+    return detail;
+  }
+
+  private boolean isActiveSku(SkuDetailVO detail) {
+    return detail != null && Integer.valueOf(1).equals(detail.getStatus());
   }
 }

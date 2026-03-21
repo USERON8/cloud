@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProductQueryServiceImpl implements ProductQueryService {
 
+  private static final Integer ACTIVE_STATUS = 1;
+
   private final SpuMapper spuMapper;
   private final SkuMapper skuMapper;
 
@@ -48,9 +50,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     if (brandId != null) {
       wrapper.eq(Spu::getBrandId, brandId);
     }
-    if (status != null) {
-      wrapper.eq(Spu::getStatus, status);
-    }
+    wrapper.eq(Spu::getStatus, status != null ? status : ACTIVE_STATUS);
     wrapper.orderByDesc(Spu::getId);
 
     Page<Spu> pageData = new Page<>(safePage, safeSize);
@@ -73,6 +73,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     LambdaQueryWrapper<Spu> wrapper =
         new LambdaQueryWrapper<Spu>()
             .eq(Spu::getDeleted, 0)
+            .eq(Spu::getStatus, ACTIVE_STATUS)
             .like(Spu::getSpuName, name.trim())
             .orderByDesc(Spu::getId)
             .last("LIMIT " + safeSize);
@@ -90,7 +91,10 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     if (!spuIds.isEmpty()) {
       List<Sku> skus =
           skuMapper.selectList(
-              new LambdaQueryWrapper<Sku>().in(Sku::getSpuId, spuIds).eq(Sku::getDeleted, 0));
+              new LambdaQueryWrapper<Sku>()
+                  .in(Sku::getSpuId, spuIds)
+                  .eq(Sku::getDeleted, 0)
+                  .eq(Sku::getStatus, ACTIVE_STATUS));
       for (Sku sku : skus) {
         if (sku == null || sku.getSpuId() == null) {
           continue;
@@ -107,6 +111,10 @@ public class ProductQueryServiceImpl implements ProductQueryService {
       if (spu == null) {
         continue;
       }
+      Sku sku = minSkuBySpu.get(spu.getId());
+      if (sku == null) {
+        continue;
+      }
       ProductItemDTO item = new ProductItemDTO();
       item.setId(spu.getId());
       item.setShopId(spu.getMerchantId());
@@ -116,11 +124,8 @@ public class ProductQueryServiceImpl implements ProductQueryService {
       item.setStatus(spu.getStatus());
       item.setDescription(spu.getDescription());
 
-      Sku sku = minSkuBySpu.get(spu.getId());
-      if (sku != null) {
-        item.setPrice(sku.getSalePrice());
-        item.setImageUrl(sku.getImageUrl());
-      }
+      item.setPrice(sku.getSalePrice());
+      item.setImageUrl(sku.getImageUrl());
       if (item.getImageUrl() == null) {
         item.setImageUrl(spu.getMainImage());
       }

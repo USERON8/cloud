@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.cloud.common.domain.dto.product.SkuDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
+import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
@@ -98,6 +99,64 @@ class ProductCatalogControllerTest {
     verify(productCatalogService).updateSpuStatus(11L, 1);
   }
 
+  @Test
+  void getSpuShouldHideInactiveSpu() {
+    SpuDetailVO detail = new SpuDetailVO();
+    detail.setSpuId(21L);
+    detail.setStatus(0);
+    when(productCatalogService.getSpuById(21L)).thenReturn(detail);
+
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
+
+    BizException exception = assertThrows(BizException.class, () -> controller.getSpu(21L));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.NOT_FOUND.getCode());
+  }
+
+  @Test
+  void listByCategoryShouldDefaultToActiveAndFilterInactiveSku() {
+    SpuDetailVO activeSpu = new SpuDetailVO();
+    activeSpu.setSpuId(31L);
+    activeSpu.setStatus(1);
+    activeSpu.setSkus(List.of(skuDetail(301L, 1), skuDetail(302L, 0)));
+
+    SpuDetailVO inactiveSpu = new SpuDetailVO();
+    inactiveSpu.setSpuId(32L);
+    inactiveSpu.setStatus(0);
+    inactiveSpu.setSkus(List.of(skuDetail(303L, 1)));
+
+    when(productCatalogService.listSpuByCategory(7L, 1))
+        .thenReturn(List.of(activeSpu, inactiveSpu));
+
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
+
+    var result = controller.listByCategory(7L, null);
+
+    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getData().get(0).getSpuId()).isEqualTo(31L);
+    assertThat(result.getData().get(0).getSkus())
+        .extracting(SkuDetailVO::getSkuId)
+        .containsExactly(301L);
+  }
+
+  @Test
+  void listSkuByIdsShouldFilterInactiveSku() {
+    when(productCatalogService.listSkuByIds(List.of(401L, 402L)))
+        .thenReturn(List.of(skuDetail(401L, 1), skuDetail(402L, 0)));
+
+    ProductCatalogController controller =
+        new ProductCatalogController(
+            productCatalogService, new ProductMerchantGuard(productCatalogService));
+
+    var result = controller.listSkuByIds(List.of(401L, 402L));
+
+    assertThat(result.getData()).extracting(SkuDetailVO::getSkuId).containsExactly(401L);
+  }
+
   private SpuCreateRequestDTO requestWithMerchant(Long merchantId) {
     SpuDTO spu = new SpuDTO();
     spu.setSpuName("demo");
@@ -128,5 +187,12 @@ class ProductCatalogControllerTest {
         jwt,
         Arrays.stream(authorities).map(SimpleGrantedAuthority::new).toList(),
         "merchant-" + userId);
+  }
+
+  private SkuDetailVO skuDetail(Long skuId, Integer status) {
+    SkuDetailVO sku = new SkuDetailVO();
+    sku.setSkuId(skuId);
+    sku.setStatus(status);
+    return sku;
   }
 }
