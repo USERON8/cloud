@@ -127,11 +127,11 @@ Notes:
 | GET | /api/orders/{param} | getOrderById | id: number | - |
 | POST | /api/orders/{param}/pay | payOrder | id: number | - |
 | POST | /api/orders/{param}/cancel | cancelOrder | id: number, cancelReason?: string | query |
-| POST | /api/orders/{param}/ship | shipOrder | id: number, shippingCompany?: string, trackingNumber?: string | query |
+| POST | /api/orders/{param}/ship | shipOrder | id: number, shippingCompany: string, trackingNumber: string | query |
 | POST | /api/orders/{param}/complete | completeOrder | id: number | - |
 | POST | /api/orders/batch/pay | batchPayOrders | ids: number[] | body |
 | POST | /api/orders/batch/cancel | batchCancelOrders | ids: number[], cancelReason?: string | query, body |
-| POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany?: string, trackingNumber?: string | query, body |
+| POST | /api/orders/batch/ship | batchShipOrders | ids: number[], shippingCompany: string, trackingNumber: string | query, body |
 | POST | /api/orders/batch/complete | batchCompleteOrders | ids: number[] | body |
 
 ## payment

@@ -51,8 +51,10 @@ export function cancelOrder(id: number, reason?: string): Promise<boolean> {
   })
 }
 
-export function shipOrder(id: number): Promise<boolean> {
-  return http.post<boolean, boolean>(`/api/orders/${id}/ship`)
+export function shipOrder(id: number, shippingCompany: string, trackingNumber: string): Promise<boolean> {
+  return http.post<boolean, boolean>(`/api/orders/${id}/ship`, null, {
+    params: { shippingCompany, trackingNumber }
+  })
 }
 
 export function completeOrder(id: number): Promise<boolean> {
@@ -69,8 +71,10 @@ export function batchCancelOrders(ids: number[], reason?: string): Promise<numbe
   })
 }
 
-export function batchShipOrders(ids: number[]): Promise<number> {
-  return http.post<number, number>('/api/orders/batch/ship', ids)
+export function batchShipOrders(ids: number[], shippingCompany: string, trackingNumber: string): Promise<number> {
+  return http.post<number, number>('/api/orders/batch/ship', ids, {
+    params: { shippingCompany, trackingNumber }
+  })
 }
 
 export function batchCompleteOrders(ids: number[]): Promise<number> {

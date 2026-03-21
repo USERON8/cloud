@@ -219,11 +219,11 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | GET | /api/orders/{orderId} | Get order detail | hasAuthority('order:query') | path=orderId | Result<OrderSummaryDTO> |
 | POST | /api/orders/{orderId}/pay | Pay order | hasAuthority('order:create') | path=orderId | Result<Boolean> |
 | POST | /api/orders/{orderId}/cancel | Cancel order | hasAuthority('order:cancel') | path=orderId, query=cancelReason) | Result<Boolean> |
-| POST | /api/orders/{orderId}/ship | Ship order | hasAuthority('order:query') | path=orderId, query=shippingCompany),trackingNumber) | Result<Boolean> |
+| POST | /api/orders/{orderId}/ship | Ship order | hasAnyRole('ADMIN','MERCHANT') | path=orderId, query=shippingCompany,trackingNumber | Result<Boolean> |
 | POST | /api/orders/{orderId}/complete | Complete order | hasAuthority('order:query') | path=orderId | Result<Boolean> |
 | POST | /api/orders/batch/pay | Batch pay orders | hasAuthority('order:create') | body=List<Long> | Result<Integer> |
 | POST | /api/orders/batch/cancel | Batch cancel orders | hasAuthority('order:cancel') | body=List<Long>, query=cancelReason) | Result<Integer> |
-| POST | /api/orders/batch/ship | Batch ship orders | hasAuthority('order:query') | body=List<Long>, query=shippingCompany),trackingNumber) | Result<Integer> |
+| POST | /api/orders/batch/ship | Batch ship orders | hasAnyRole('ADMIN','MERCHANT') | body=List<Long>, query=shippingCompany,trackingNumber | Result<Integer> |
 | POST | /api/orders/batch/complete | Batch complete orders | hasAuthority('order:query') | body=List<Long> | Result<Integer> |
 | POST | /api/orders/after-sales | Apply after-sale | hasAuthority('order:refund') | body=AfterSale | Result<AfterSale> |
 | POST | /api/orders/after-sales/{afterSaleId}/actions/{action} | Advance after-sale status | hasAuthority('order:refund') | path=afterSaleId,action, query=remark) | Result<AfterSale> |
