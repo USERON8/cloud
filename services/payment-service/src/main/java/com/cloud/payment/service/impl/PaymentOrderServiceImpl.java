@@ -19,7 +19,10 @@ import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,8 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class PaymentOrderServiceImpl implements PaymentOrderService {
+
+  private static final Set<String> COUNTED_REFUND_STATUSES = Set.of("REFUNDING", "REFUNDED");
 
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
@@ -200,6 +205,9 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Long createRefund(PaymentRefundCommandDTO command) {
+    if (command == null) {
+      throw new BusinessException("refund command is required");
+    }
     PaymentRefundEntity existing =
         paymentRefundMapper.selectOne(
             new LambdaQueryWrapper<PaymentRefundEntity>()
@@ -219,6 +227,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     if (paymentOrder == null) {
       throw new BusinessException("payment order not found");
     }
+    validateRefundRequest(command, paymentOrder);
 
     PaymentRefundEntity entity = new PaymentRefundEntity();
     entity.setRefundNo(command.getRefundNo());
@@ -234,6 +243,82 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
     paymentCompensationService.submitRefund(paymentOrder, entity);
     return entity.getId();
+  }
+
+  private void validateRefundRequest(
+      PaymentRefundCommandDTO command, PaymentOrderEntity paymentOrder) {
+    if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(paymentOrder.getStatus())) {
+      throw new BusinessException(
+          "payment order is not eligible for refund: " + paymentOrder.getStatus());
+    }
+    if (paymentOrder.getAmount() == null
+        || paymentOrder.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BusinessException("payment order amount is invalid for refund");
+    }
+    if (command.getRefundAmount() == null
+        || command.getRefundAmount().compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BusinessException("refund amount must be greater than 0");
+    }
+    if (command.getRefundAmount().compareTo(paymentOrder.getAmount()) > 0) {
+      throw new BusinessException("refund amount cannot exceed payment amount");
+    }
+
+    List<PaymentRefundEntity> paymentRefunds =
+        paymentRefundMapper.selectList(
+            new LambdaQueryWrapper<PaymentRefundEntity>()
+                .eq(PaymentRefundEntity::getPaymentNo, paymentOrder.getPaymentNo())
+                .eq(PaymentRefundEntity::getDeleted, 0));
+    validateAfterSaleOwnership(command, paymentOrder, paymentRefunds);
+
+    BigDecimal accumulatedRefundAmount = BigDecimal.ZERO;
+    for (PaymentRefundEntity refund : paymentRefunds) {
+      if (refund == null || !COUNTED_REFUND_STATUSES.contains(refund.getStatus())) {
+        continue;
+      }
+      BigDecimal refundAmount = refund.getRefundAmount();
+      if (refundAmount == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        continue;
+      }
+      accumulatedRefundAmount = accumulatedRefundAmount.add(refundAmount);
+    }
+    if (accumulatedRefundAmount.add(command.getRefundAmount()).compareTo(paymentOrder.getAmount())
+        > 0) {
+      throw new BusinessException("refund amount exceeds the remaining paid amount");
+    }
+  }
+
+  private void validateAfterSaleOwnership(
+      PaymentRefundCommandDTO command,
+      PaymentOrderEntity paymentOrder,
+      List<PaymentRefundEntity> paymentRefunds) {
+    List<PaymentRefundEntity> sameAfterSaleRefunds =
+        paymentRefundMapper.selectList(
+            new LambdaQueryWrapper<PaymentRefundEntity>()
+                .eq(PaymentRefundEntity::getAfterSaleNo, command.getAfterSaleNo())
+                .eq(PaymentRefundEntity::getDeleted, 0));
+    for (PaymentRefundEntity refund : sameAfterSaleRefunds) {
+      if (refund == null) {
+        continue;
+      }
+      if (!paymentOrder.getPaymentNo().equals(refund.getPaymentNo())) {
+        throw new BusinessException(
+            "after-sale refund does not belong to the target payment order");
+      }
+      if (!command.getRefundNo().equals(refund.getRefundNo())) {
+        throw new BusinessException(
+            "after-sale refund already exists for the target payment order");
+      }
+    }
+
+    for (PaymentRefundEntity refund : paymentRefunds) {
+      if (refund == null || !command.getAfterSaleNo().equals(refund.getAfterSaleNo())) {
+        continue;
+      }
+      if (!command.getRefundNo().equals(refund.getRefundNo())) {
+        throw new BusinessException(
+            "after-sale refund already exists for the target payment order");
+      }
+    }
   }
 
   @Override
