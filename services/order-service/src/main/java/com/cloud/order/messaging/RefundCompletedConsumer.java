@@ -7,14 +7,18 @@ import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.AfterSale;
+import com.cloud.order.entity.AfterSaleItem;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.enums.AfterSaleAction;
+import com.cloud.order.mapper.AfterSaleItemMapper;
 import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +38,10 @@ import org.springframework.stereotype.Component;
 public class RefundCompletedConsumer extends AbstractJsonMqConsumer<RefundCompletedEvent> {
 
   private static final String NS_REFUND_COMPLETED = "order:refund:completed";
+  private static final String RETURN_REFUND_TYPE = "RETURN_REFUND";
 
   private final AfterSaleMapper afterSaleMapper;
+  private final AfterSaleItemMapper afterSaleItemMapper;
   private final OrderSubMapper orderSubMapper;
   private final OrderItemMapper orderItemMapper;
   private final OrderService orderService;
@@ -120,38 +126,17 @@ public class RefundCompletedConsumer extends AbstractJsonMqConsumer<RefundComple
 
   private StockRestoreEvent buildStockRestoreEvent(
       AfterSale afterSale, RefundCompletedEvent event) {
-    if (afterSale.getSubOrderId() == null) {
+    if (!RETURN_REFUND_TYPE.equalsIgnoreCase(afterSale.getAfterSaleType())
+        || afterSale.getSubOrderId() == null) {
       return null;
     }
     OrderSub subOrder = orderSubMapper.selectById(afterSale.getSubOrderId());
     if (subOrder == null || Integer.valueOf(1).equals(subOrder.getDeleted())) {
       return null;
     }
-    List<OrderItem> items = orderItemMapper.listActiveBySubOrderId(subOrder.getId());
-    if (items == null || items.isEmpty()) {
+    List<StockOperateCommandDTO> commands = resolveRestoreCommands(afterSale, event, subOrder);
+    if (commands.isEmpty()) {
       return null;
-    }
-
-    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
-    for (OrderItem item : items) {
-      if (item.getSkuId() == null || item.getQuantity() == null) {
-        continue;
-      }
-      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
-    }
-    if (skuQuantities.isEmpty()) {
-      return null;
-    }
-
-    List<StockOperateCommandDTO> commands = new ArrayList<>();
-    for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
-      StockOperateCommandDTO command = new StockOperateCommandDTO();
-      command.setSubOrderNo(subOrder.getSubOrderNo());
-      command.setOrderNo(event.getMainOrderNo());
-      command.setSkuId(entry.getKey());
-      command.setQuantity(entry.getValue());
-      command.setReason("refund restore " + afterSale.getAfterSaleNo());
-      commands.add(command);
     }
 
     return StockRestoreEvent.builder()
@@ -160,5 +145,133 @@ public class RefundCompletedConsumer extends AbstractJsonMqConsumer<RefundComple
         .subOrderNo(subOrder.getSubOrderNo())
         .items(commands)
         .build();
+  }
+
+  private List<StockOperateCommandDTO> resolveRestoreCommands(
+      AfterSale afterSale, RefundCompletedEvent event, OrderSub subOrder) {
+    List<StockOperateCommandDTO> fromEvent = sanitizeRestoreItems(event, subOrder, afterSale);
+    if (!fromEvent.isEmpty()) {
+      return fromEvent;
+    }
+
+    List<AfterSaleItem> afterSaleItems =
+        afterSale.getId() == null
+            ? Collections.emptyList()
+            : afterSaleItemMapper.listActiveByAfterSaleId(afterSale.getId());
+    List<StockOperateCommandDTO> fromAfterSaleItems =
+        buildCommandsFromAfterSaleItems(afterSaleItems, subOrder, event, afterSale);
+    if (!fromAfterSaleItems.isEmpty()) {
+      return fromAfterSaleItems;
+    }
+
+    if (!isFullSubOrderRefund(afterSale, subOrder)) {
+      return Collections.emptyList();
+    }
+    return buildCommandsFromOrderItems(subOrder, event, afterSale);
+  }
+
+  private List<StockOperateCommandDTO> sanitizeRestoreItems(
+      RefundCompletedEvent event, OrderSub subOrder, AfterSale afterSale) {
+    if (event == null || event.getItems() == null || event.getItems().isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<StockOperateCommandDTO> commands = new ArrayList<>();
+    for (StockOperateCommandDTO item : event.getItems()) {
+      if (item == null
+          || item.getSkuId() == null
+          || item.getQuantity() == null
+          || item.getQuantity() <= 0) {
+        continue;
+      }
+      StockOperateCommandDTO command = new StockOperateCommandDTO();
+      command.setSubOrderNo(subOrder.getSubOrderNo());
+      command.setOrderNo(event.getMainOrderNo());
+      command.setSkuId(item.getSkuId());
+      command.setQuantity(item.getQuantity());
+      command.setReason("refund restore " + afterSale.getAfterSaleNo());
+      commands.add(command);
+    }
+    return commands;
+  }
+
+  private List<StockOperateCommandDTO> buildCommandsFromAfterSaleItems(
+      List<AfterSaleItem> afterSaleItems,
+      OrderSub subOrder,
+      RefundCompletedEvent event,
+      AfterSale afterSale) {
+    if (afterSaleItems == null || afterSaleItems.isEmpty()) {
+      return Collections.emptyList();
+    }
+    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+    for (AfterSaleItem item : afterSaleItems) {
+      if (item == null
+          || item.getSkuId() == null
+          || item.getQuantity() == null
+          || item.getQuantity() <= 0) {
+        continue;
+      }
+      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
+    }
+    return buildCommandsFromQuantities(skuQuantities, subOrder, event, afterSale);
+  }
+
+  private List<StockOperateCommandDTO> buildCommandsFromOrderItems(
+      OrderSub subOrder, RefundCompletedEvent event, AfterSale afterSale) {
+    List<OrderItem> items = orderItemMapper.listActiveBySubOrderId(subOrder.getId());
+    if (items == null || items.isEmpty()) {
+      return Collections.emptyList();
+    }
+    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+    for (OrderItem item : items) {
+      if (item.getSkuId() == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+        continue;
+      }
+      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
+    }
+    return buildCommandsFromQuantities(skuQuantities, subOrder, event, afterSale);
+  }
+
+  private List<StockOperateCommandDTO> buildCommandsFromQuantities(
+      Map<Long, Integer> skuQuantities,
+      OrderSub subOrder,
+      RefundCompletedEvent event,
+      AfterSale afterSale) {
+    if (skuQuantities == null || skuQuantities.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<StockOperateCommandDTO> commands = new ArrayList<>();
+    for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
+      Integer quantity = entry.getValue();
+      if (entry.getKey() == null || quantity == null || quantity <= 0) {
+        continue;
+      }
+      StockOperateCommandDTO command = new StockOperateCommandDTO();
+      command.setSubOrderNo(subOrder.getSubOrderNo());
+      command.setOrderNo(event.getMainOrderNo());
+      command.setSkuId(entry.getKey());
+      command.setQuantity(quantity);
+      command.setReason("refund restore " + afterSale.getAfterSaleNo());
+      commands.add(command);
+    }
+    return commands;
+  }
+
+  private boolean isFullSubOrderRefund(AfterSale afterSale, OrderSub subOrder) {
+    BigDecimal refundAmount = resolveRefundAmount(afterSale);
+    BigDecimal payableAmount =
+        subOrder.getPayableAmount() == null ? BigDecimal.ZERO : subOrder.getPayableAmount();
+    return refundAmount.compareTo(BigDecimal.ZERO) > 0
+        && payableAmount.compareTo(BigDecimal.ZERO) > 0
+        && refundAmount.compareTo(payableAmount) >= 0;
+  }
+
+  private BigDecimal resolveRefundAmount(AfterSale afterSale) {
+    if (afterSale.getApprovedAmount() != null) {
+      return afterSale.getApprovedAmount();
+    }
+    if (afterSale.getApplyAmount() != null) {
+      return afterSale.getApplyAmount();
+    }
+    return BigDecimal.ZERO;
   }
 }
