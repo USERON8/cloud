@@ -74,4 +74,32 @@ class SearchFacadeServiceTest {
     assertThat(result.getList()).hasSize(1);
     assertThat(result.getList().get(0).getProductName()).isEqualTo("Cloud Phone");
   }
+
+  @Test
+  void searchProductsShouldUseOptimizedServiceForExtendedFilters() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("phone");
+    request.setMinSalesCount(3);
+    request.setPage(1);
+    request.setSize(10);
+
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(List.of(Map.of("productName", "Sales Phone")))
+            .total(1L)
+            .from(10)
+            .size(10)
+            .aggregations(Map.of())
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(eq(request), eq(List.of())))
+        .thenReturn(esResult);
+
+    var result = searchFacadeService.searchProducts(request, null);
+
+    verify(elasticsearchOptimizedService).productSearchAfter(eq(request), eq(List.of()));
+    verifyNoInteractions(productSearchService);
+    assertThat(result.getList()).extracting("productName").containsExactly("Sales Phone");
+  }
 }

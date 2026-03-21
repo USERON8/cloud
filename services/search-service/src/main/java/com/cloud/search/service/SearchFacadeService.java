@@ -8,6 +8,7 @@ import com.cloud.search.mapper.SearchRequestMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +31,19 @@ public class SearchFacadeService {
 
   public SearchResultDTO<ProductDocument> searchProducts(
       ProductSearchRequest request, String searchAfter) {
+    if (requiresOptimizedProductSearch(request)) {
+      return searchProductsViaElasticsearch(request, searchAfter);
+    }
     List<Object> searchAfterValues = parseSearchAfter(searchAfter);
     if (searchAfterValues.isEmpty()) {
       return productSearchService.searchProducts(request);
     }
+    return searchProductsViaElasticsearch(request, searchAfter);
+  }
+
+  private SearchResultDTO<ProductDocument> searchProductsViaElasticsearch(
+      ProductSearchRequest request, String searchAfter) {
+    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
     long start = System.currentTimeMillis();
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
@@ -56,10 +66,10 @@ public class SearchFacadeService {
         elasticsearchOptimizedService.productSearchAfter(aggregationRequest, searchAfterValues);
     SearchResultDTO<ProductDocument> result =
         toSearchResultDTO(
-        esResult,
-        resolvePage(aggregationRequest.getPage()),
-        resolveSize(aggregationRequest.getSize()),
-        System.currentTimeMillis() - start);
+            esResult,
+            resolvePage(aggregationRequest.getPage()),
+            resolveSize(aggregationRequest.getSize()),
+            System.currentTimeMillis() - start);
     result.setAggregations(normalizeProductAggregations(result.getAggregations()));
     return result;
   }
@@ -364,6 +374,19 @@ public class SearchFacadeService {
   }
 
   private Map<String, Long> normalizeBucketCounts(Object rawBuckets) {
+    if (rawBuckets instanceof Map<?, ?> bucketMap) {
+      Map<String, Long> normalized = new LinkedHashMap<>();
+      for (Map.Entry<?, ?> entry : bucketMap.entrySet()) {
+        String key = entry.getKey() == null ? "" : String.valueOf(entry.getKey()).trim();
+        if (key.isEmpty() || entry.getValue() == null) {
+          continue;
+        }
+        if (entry.getValue() instanceof Number number) {
+          normalized.put(key, number.longValue());
+        }
+      }
+      return normalized;
+    }
     if (!(rawBuckets instanceof List<?> bucketList)) {
       return Map.of();
     }
@@ -394,6 +417,24 @@ public class SearchFacadeService {
       normalized.put(key, count);
     }
     return normalized;
+  }
+
+  private boolean requiresOptimizedProductSearch(ProductSearchRequest request) {
+    if (request == null) {
+      return false;
+    }
+    return request.getStockStatus() != null
+        || request.getRecommended() != null
+        || request.getIsNew() != null
+        || request.getIsHot() != null
+        || request.getMinSalesCount() != null
+        || request.getMinRating() != null
+        || request.getHighlight() != null && request.getHighlight()
+        || request.getIncludeAggregations() != null && request.getIncludeAggregations()
+        || request.getShopName() != null && !request.getShopName().isBlank()
+        || request.getCategoryName() != null && !request.getCategoryName().isBlank()
+        || request.getBrandName() != null && !request.getBrandName().isBlank()
+        || request.getTags() != null && !request.getTags().isEmpty();
   }
 
   private ProductSearchRequest copyRequest(ProductSearchRequest request) {

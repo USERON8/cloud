@@ -4,21 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.TotalHits;
+import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.impl.ShopSearchServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -37,7 +43,18 @@ class ShopSearchServiceImplTest {
 
   @Mock private StringRedisTemplate redisTemplate;
 
-  @InjectMocks private ShopSearchServiceImpl shopSearchService;
+  private ShopSearchServiceImpl shopSearchService;
+
+  @BeforeEach
+  void setUp() {
+    shopSearchService =
+        new ShopSearchServiceImpl(
+            shopDocumentRepository,
+            elasticsearchClient,
+            elasticsearchOperations,
+            redisTemplate,
+            new ObjectMapper());
+  }
 
   @Test
   void searchShopsShouldDefaultToActiveStatusForKeyword() {
@@ -136,5 +153,45 @@ class ShopSearchServiceImplTest {
             Map.of(
                 "statusCount", Map.of(1, 5L),
                 "recommendCount", Map.of(true, 3L, false, 2L)));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void searchShopsShouldUseElasticsearchForCountFilters() throws Exception {
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setMinProductCount(5);
+
+    SearchResponse<Map> response = org.mockito.Mockito.mock(SearchResponse.class);
+    HitsMetadata<Map> hits = org.mockito.Mockito.mock(HitsMetadata.class);
+    TotalHits totalHits = TotalHits.of(total -> total.value(1L).relation(TotalHitsRelation.Eq));
+
+    when(elasticsearchClient.search(
+            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class)))
+        .thenReturn(response);
+    when(response.hits()).thenReturn(hits);
+    when(hits.total()).thenReturn(totalHits);
+    when(hits.hits())
+        .thenReturn(
+            List.of(
+                Hit.of(
+                    hit ->
+                        hit.index("shop_index")
+                            .id("1")
+                            .source(
+                                Map.of(
+                                    "shopId", 11,
+                                    "shopName", "Counted Shop",
+                                    "status", 1,
+                                    "productCount", 8)))));
+
+    var result = shopSearchService.searchShops(request);
+
+    verify(elasticsearchClient)
+        .search(any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class));
+    verifyNoInteractions(shopDocumentRepository);
+    assertThat(result.getList())
+        .extracting(ShopDocument::getShopName)
+        .containsExactly("Counted Shop");
+    assertThat(result.getTotal()).isEqualTo(1L);
   }
 }

@@ -3,6 +3,8 @@ package com.cloud.search.service.impl;
 import cn.hutool.core.util.StrUtil;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
@@ -17,12 +19,15 @@ import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.ShopSearchService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +57,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   private final ElasticsearchClient elasticsearchClient;
   private final ElasticsearchOperations elasticsearchOperations;
   private final StringRedisTemplate redisTemplate;
+  private final ObjectMapper objectMapper;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -181,6 +187,9 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   public SearchResultDTO<ShopDocument> searchShops(ShopSearchRequest request) {
     ShopSearchRequest safeRequest = request == null ? new ShopSearchRequest() : request;
     long start = System.currentTimeMillis();
+    if (requiresOptimizedShopSearch(safeRequest)) {
+      return searchShopsViaElasticsearch(safeRequest, start);
+    }
 
     Pageable pageable =
         PageRequest.of(
@@ -193,6 +202,47 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
     return SearchResultDTO.of(
         page.getContent(), page.getTotalElements(), page.getNumber(), page.getSize(), took);
+  }
+
+  private SearchResultDTO<ShopDocument> searchShopsViaElasticsearch(
+      ShopSearchRequest request, long start) {
+    int pageNum = normalizePage(request.getPage());
+    int pageSize = normalizeSize(request.getSize());
+    int from = pageNum * pageSize;
+    try {
+      SearchResponse<Map> response =
+          elasticsearchClient.search(
+              SearchRequest.of(
+                  s -> {
+                    SearchRequest.Builder builder =
+                        s.index(SHOP_INDEX)
+                            .query(buildShopQuery(request))
+                            .from(from)
+                            .size(pageSize)
+                            .source(src -> src.fetch(true));
+                    for (SortOptions sortOption :
+                        buildShopSortOptions(request.getSortBy(), request.getSortOrder())) {
+                      builder.sort(sortOption);
+                    }
+                    return builder;
+                  }),
+              Map.class);
+      List<ShopDocument> list =
+          response.hits().hits().stream()
+              .map(
+                  hit ->
+                      hit.source() == null
+                          ? null
+                          : objectMapper.convertValue(hit.source(), ShopDocument.class))
+              .filter(Objects::nonNull)
+              .toList();
+      long total = response.hits().total() == null ? list.size() : response.hits().total().value();
+      return SearchResultDTO.of(list, total, pageNum, pageSize, System.currentTimeMillis() - start);
+    } catch (Exception e) {
+      log.error("Optimized shop search failed", e);
+      return SearchResultDTO.of(
+          List.of(), 0L, pageNum, pageSize, System.currentTimeMillis() - start);
+    }
   }
 
   @Override
@@ -340,6 +390,32 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                                   n.field("rating")
                                       .gte(safeRequest.getMinRating().doubleValue())))));
     }
+    if (safeRequest.getMinProductCount() != null) {
+      boolQuery.filter(
+          Query.of(
+              q ->
+                  q.range(
+                      r ->
+                          r.number(
+                              n ->
+                                  n.field("productCount")
+                                      .gte(
+                                          (double)
+                                              Math.max(0, safeRequest.getMinProductCount()))))));
+    }
+    if (safeRequest.getMinFollowCount() != null) {
+      boolQuery.filter(
+          Query.of(
+              q ->
+                  q.range(
+                      r ->
+                          r.number(
+                              n ->
+                                  n.field("followCount")
+                                      .gte(
+                                          (double)
+                                              Math.max(0, safeRequest.getMinFollowCount()))))));
+    }
     return Query.of(q -> q.bool(boolQuery.build()));
   }
 
@@ -376,6 +452,18 @@ public class ShopSearchServiceImpl implements ShopSearchService {
       return key != 0L;
     }
     return Math.toIntExact(key);
+  }
+
+  private boolean requiresOptimizedShopSearch(ShopSearchRequest request) {
+    return request.getMinProductCount() != null || request.getMinFollowCount() != null;
+  }
+
+  private List<SortOptions> buildShopSortOptions(String sortBy, String sortOrder) {
+    List<SortOptions> sortOptions = new ArrayList<>();
+    String field = StrUtil.isNotBlank(sortBy) ? sortBy : "createdAt";
+    SortOrder order = "asc".equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
+    sortOptions.add(SortOptions.of(s -> s.field(f -> f.field(field).order(order))));
+    return sortOptions;
   }
 
   private int normalizePage(Integer page) {
