@@ -20,15 +20,33 @@ class ResourceServerConfigContractTest {
     int searchIndex = normalized.indexOf(".pathMatchers(\"/api/search/**\").permitAll()");
     int productViewIndex = normalized.indexOf(".pathMatchers(\"/api/product/*/view\").permitAll()");
     int websocketIndex = normalized.indexOf(".pathMatchers(\"/ws/**\").authenticated()");
+    int paymentCheckoutIndex =
+        normalized.indexOf(
+            ".pathMatchers(HttpMethod.GET,\"/api/payments/checkout/**\").permitAll()");
+    int paymentIndex =
+        normalized.indexOf(
+            ".pathMatchers(\"/api/payments/**\").hasAnyRole(\"USER\",\"MERCHANT\",\"ADMIN\")");
+    int stockLedgerIndex =
+        normalized.indexOf(
+            ".pathMatchers(HttpMethod.GET,\"/api/stocks/ledger/**\").hasRole(\"ADMIN\")");
+    int stockMutationIndex =
+        normalized.indexOf(".pathMatchers(\"/api/stocks/**\").hasAuthority(\"SCOPE_internal\")");
     int anyIndex = normalized.indexOf(".anyExchange().authenticated()");
 
     assertThat(searchIndex).isGreaterThan(-1);
     assertThat(productViewIndex).isGreaterThan(-1);
     assertThat(websocketIndex).isGreaterThan(-1);
+    assertThat(paymentCheckoutIndex).isGreaterThan(-1);
+    assertThat(paymentIndex).isGreaterThan(-1);
+    assertThat(stockLedgerIndex).isGreaterThan(-1);
+    assertThat(stockMutationIndex).isGreaterThan(-1);
     assertThat(anyIndex).isGreaterThan(-1);
     assertThat(searchIndex).isLessThan(anyIndex);
     assertThat(productViewIndex).isLessThan(anyIndex);
     assertThat(websocketIndex).isLessThan(anyIndex);
+    assertThat(paymentCheckoutIndex).isLessThan(paymentIndex);
+    assertThat(stockLedgerIndex).isLessThan(stockMutationIndex);
+    assertThat(stockMutationIndex).isLessThan(anyIndex);
     assertThat(source).doesNotContain(".pathMatchers(\"/ws/**\").permitAll()");
     assertThat(source).doesNotContain("\"/users/**\"");
     assertThat(source).doesNotContain("\"/product/**\"");
