@@ -13,7 +13,7 @@ import {
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
 import type { PaymentOrderInfo, PaymentRefundInfo, PaymentStatusInfo } from '../../../types/domain'
-import { formatDate, formatPrice } from '../../../utils/format'
+import { formatDate, formatPrice, formatRelativeDate } from '../../../utils/format'
 import { toast } from '../../../utils/ui'
 
 const paymentNo = ref('')
@@ -213,6 +213,7 @@ onUnload(() => {
         <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
         <text class="meta">Channel: {{ paymentInfo.channel || '--' }}</text>
         <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
+        <text v-if="paymentInfo.paidAt" class="meta">Paid: {{ formatRelativeDate(paymentInfo.paidAt) }}</text>
         <text v-if="paymentStatusHint" class="meta status-hint">{{ paymentStatusHint }}</text>
         <button
           v-if="paymentInfo.status === 'CREATED'"
@@ -247,6 +248,7 @@ onUnload(() => {
         <text class="meta">Amount: {{ formatPrice(refundInfo.refundAmount) }}</text>
         <text class="meta">Status: {{ refundInfo.status || '--' }}</text>
         <text class="meta">Refunded at: {{ formatDate(refundInfo.refundedAt) }}</text>
+        <text v-if="refundInfo.refundedAt" class="meta">Refunded: {{ formatRelativeDate(refundInfo.refundedAt) }}</text>
       </view>
     </view>
   </AppShell>

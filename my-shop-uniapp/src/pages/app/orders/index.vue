@@ -18,7 +18,7 @@ import {
 import type { AfterSaleInfo, OrderItem } from '../../../types/domain'
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
-import { formatDate, formatPrice } from '../../../utils/format'
+import { formatDate, formatPrice, formatRelativeDate } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const rows = ref<OrderItem[]>([])
@@ -325,6 +325,7 @@ onShow(() => {
               <text class="meta">Amount: {{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
               <text class="meta">Status: {{ statusText(item.status) }}</text>
               <text class="meta">Created: {{ formatDate(item.createdAt) }}</text>
+              <text class="meta">Age: {{ formatRelativeDate(item.createdAt) }}</text>
               <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="meta">
                 After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
               </text>

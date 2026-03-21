@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { advanceAfterSaleStatus, completeOrder, listOrders, shipOrder } from '../../../api/order'
 import type { OrderItem } from '../../../types/domain'
-import { formatDate, formatPrice } from '../../../utils/format'
+import { formatDate, formatPrice, formatRelativeDate } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const rows = ref<OrderItem[]>([])
@@ -179,6 +179,7 @@ onMounted(() => {
             <text class="meta">Amount: {{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
             <text class="meta">Status: {{ statusText(item.status) }}</text>
             <text class="meta">Created At: {{ formatDate(item.createdAt) }}</text>
+            <text class="meta">Age: {{ formatRelativeDate(item.createdAt) }}</text>
             <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="meta">
               After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
             </text>

@@ -1,4 +1,7 @@
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(relativeTime)
 
 export function formatPrice(price?: number, currency = 'CNY'): string {
   if (typeof price !== 'number' || !Number.isFinite(price)) {
@@ -38,4 +41,12 @@ export function formatDateOnly(value?: string): string {
     return '--'
   }
   return parsed.format('YYYY-MM-DD')
+}
+
+export function formatRelativeDate(value?: string): string {
+  const parsed = parseDate(value)
+  if (!parsed) {
+    return '--'
+  }
+  return parsed.fromNow()
 }
