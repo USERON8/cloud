@@ -53,6 +53,7 @@ import type {
 } from '../../../types/domain'
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
+import { isDateAfter } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const tabs = [
@@ -1360,7 +1361,7 @@ async function loadStatsTrendRange(): Promise<void> {
   if (!start) return
   const end = normalizeDateInput(statsEndDate.value, 'End date')
   if (!end) return
-  if (new Date(start).getTime() > new Date(end).getTime()) {
+  if (isDateAfter(start, end)) {
     toast('Start date cannot be later than end date')
     return
   }

@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export function formatPrice(price?: number, currency = 'CNY'): string {
   if (typeof price !== 'number' || !Number.isFinite(price)) {
     return '--'
@@ -5,18 +7,35 @@ export function formatPrice(price?: number, currency = 'CNY'): string {
   return `${currency} ${price.toFixed(2)}`
 }
 
-export function formatDate(value?: string): string {
+export function parseDate(value?: string): dayjs.Dayjs | null {
   if (!value) {
+    return null
+  }
+  const parsed = dayjs(value)
+  return parsed.isValid() ? parsed : null
+}
+
+export function formatDate(value?: string): string {
+  const parsed = parseDate(value)
+  if (!parsed) {
+    return value || '--'
+  }
+  return parsed.format('YYYY-MM-DD HH:mm')
+}
+
+export function isDateAfter(start?: string, end?: string): boolean {
+  const startDate = parseDate(start)
+  const endDate = parseDate(end)
+  if (!startDate || !endDate) {
+    return false
+  }
+  return startDate.isAfter(endDate)
+}
+
+export function formatDateOnly(value?: string): string {
+  const parsed = parseDate(value)
+  if (!parsed) {
     return '--'
   }
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const mi = String(date.getMinutes()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
+  return parsed.format('YYYY-MM-DD')
 }
