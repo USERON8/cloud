@@ -104,6 +104,50 @@ class ShopSearchServiceImplTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  void searchShopsShouldUseElasticsearchForCombinedFilters() throws Exception {
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setKeyword("cloud");
+    request.setRecommended(true);
+
+    SearchResponse<Map> response = org.mockito.Mockito.mock(SearchResponse.class);
+    HitsMetadata<Map> hits = org.mockito.Mockito.mock(HitsMetadata.class);
+    TotalHits totalHits = TotalHits.of(total -> total.value(1L).relation(TotalHitsRelation.Eq));
+
+    when(elasticsearchClient.search(
+            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class)))
+        .thenReturn(response);
+    when(response.hits()).thenReturn(hits);
+    when(hits.total()).thenReturn(totalHits);
+    when(hits.hits())
+        .thenReturn(
+            List.of(
+                Hit.of(
+                    hit ->
+                        hit.index("shop_index")
+                            .id("2")
+                            .source(
+                                Map.of(
+                                    "shopId",
+                                    22,
+                                    "shopName",
+                                    "Combined Shop",
+                                    "status",
+                                    1,
+                                    "recommended",
+                                    true)))));
+
+    var result = shopSearchService.searchShops(request);
+
+    verify(elasticsearchClient)
+        .search(any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class));
+    verifyNoInteractions(shopDocumentRepository);
+    assertThat(result.getList())
+        .extracting(ShopDocument::getShopName)
+        .containsExactly("Combined Shop");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   void getShopFiltersShouldUseElasticsearchAggregations() throws Exception {
     ShopSearchRequest request = new ShopSearchRequest();
     request.setKeyword("cloud");

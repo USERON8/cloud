@@ -455,7 +455,29 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   }
 
   private boolean requiresOptimizedShopSearch(ShopSearchRequest request) {
-    return request.getMinProductCount() != null || request.getMinFollowCount() != null;
+    if (request == null) {
+      return false;
+    }
+    if (request.getMinProductCount() != null || request.getMinFollowCount() != null) {
+      return true;
+    }
+    int filterCount = 0;
+    if (StrUtil.isNotBlank(request.getKeyword())) {
+      filterCount++;
+    }
+    if (request.getMerchantId() != null) {
+      filterCount++;
+    }
+    if (request.getRecommended() != null) {
+      filterCount++;
+    }
+    if (StrUtil.isNotBlank(request.getAddressKeyword())) {
+      filterCount++;
+    }
+    if (request.getMinRating() != null) {
+      filterCount++;
+    }
+    return filterCount > 1;
   }
 
   private List<SortOptions> buildShopSortOptions(String sortBy, String sortOrder) {
