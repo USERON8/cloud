@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { getPaymentStatus } from '../../api/payment'
 import { navigateTo, redirectTo } from '../../router/navigation'
@@ -96,6 +96,19 @@ async function startPaymentPolling(): Promise<void> {
   paymentStatus.value = ''
   await pollPaymentStatus()
 }
+
+onShow(() => {
+  if (!paymentNo.value || redirecting || isFinalPaymentStatus(paymentStatus.value)) {
+    return
+  }
+  if (!pollTimer) {
+    void startPaymentPolling()
+  }
+})
+
+onHide(() => {
+  clearPollTimer()
+})
 
 onUnload(() => {
   clearPollTimer()

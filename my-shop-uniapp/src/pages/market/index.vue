@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
   listSearchHotKeywordsWithFallback,
@@ -27,6 +27,9 @@ const recommendations = ref<string[]>([])
 const skuIdCache = new Map<number, number | null>()
 const skuLookupCache = new Map<number, Promise<number | null>>()
 const initialized = ref(false)
+const latestLoadRequestId = ref(0)
+
+let keywordRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
 const loggedIn = computed(() => isAuthenticated())
 const activeKeyword = computed(() => keyword.value.trim())
@@ -63,6 +66,8 @@ async function loadProducts(reset = false): Promise<void> {
   if (loading.value) {
     return
   }
+  const requestId = latestLoadRequestId.value + 1
+  latestLoadRequestId.value = requestId
   if (reset) {
     page.value = 1
     hasMore.value = true
@@ -78,14 +83,22 @@ async function loadProducts(reset = false): Promise<void> {
           sortOrder: 'desc'
         })
       : await listTodayHotSellingProductsWithFallback(page.value, size.value)
+    if (requestId !== latestLoadRequestId.value) {
+      return
+    }
     const items = result.documents.map(mapSearchDocumentToProduct)
     rows.value = reset ? items : rows.value.concat(items)
     hasMore.value = rows.value.length < result.total
     await refreshKeywords(activeKeyword.value)
   } catch (error) {
+    if (requestId !== latestLoadRequestId.value) {
+      return
+    }
     toast(error instanceof Error ? error.message : 'Failed to load products')
   } finally {
-    loading.value = false
+    if (requestId === latestLoadRequestId.value) {
+      loading.value = false
+    }
   }
 }
 
@@ -180,6 +193,18 @@ async function onAddToCart(item: ProductItem): Promise<void> {
 function goLogin(): void {
   navigateTo(Routes.login, { redirect: Routes.appHome })
 }
+
+watch(
+  () => activeKeyword.value,
+  (value) => {
+    if (keywordRefreshTimer) {
+      clearTimeout(keywordRefreshTimer)
+    }
+    keywordRefreshTimer = setTimeout(() => {
+      void refreshKeywords(value)
+    }, 250)
+  }
+)
 
 onShow(() => {
   if (initialized.value) {
