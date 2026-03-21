@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
@@ -47,15 +47,15 @@ import type {
 import { confirm, toast } from '../../../utils/ui'
 
 const tabs = [
-  { key: 'tokens', label: 'Token与授权' },
-  { key: 'system', label: '线程池' },
-  { key: 'category', label: '分类运维' },
-  { key: 'catalog', label: '商品目录' },
-  { key: 'search', label: '搜索运维' },
-  { key: 'shops', label: '店铺搜索' },
-  { key: 'batch', label: '批量运维' },
-  { key: 'payments', label: '支付运维' },
-  { key: 'stats', label: '统计运维' }
+  { key: 'tokens', label: 'Tokens and authorization' },
+  { key: 'system', label: 'Thread pools' },
+  { key: 'category', label: 'Category operations' },
+  { key: 'catalog', label: 'Product catalog' },
+  { key: 'search', label: 'Search operations' },
+  { key: 'shops', label: 'Shop search' },
+  { key: 'batch', label: 'Batch operations' },
+  { key: 'payments', label: 'Payment operations' },
+  { key: 'stats', label: 'Statistics operations' }
 ]
 
 const activeTab = ref('tokens')
@@ -73,13 +73,13 @@ function formatJson(value: unknown): string {
 
 function parseJson<T>(raw: string, label: string): T | null {
   if (!raw.trim()) {
-    toast(`${label} JSON 不能为空`)
+    toast(`${label} JSON cannot be empty`)
     return null
   }
   try {
     return JSON.parse(raw) as T
   } catch (error) {
-    toast(error instanceof Error ? error.message : `${label} JSON 解析失败`)
+    toast(error instanceof Error ? error.message : `Failed to parse ${label} JSON`)
     return null
   }
 }
@@ -94,7 +94,7 @@ function parseNumberList(raw: string): number[] {
 function requirePositiveId(raw: string, label: string): number | null {
   const value = Number(raw)
   if (!Number.isFinite(value) || value <= 0) {
-    toast(`请输入${label}`)
+    toast(`Please enter ${label}`)
     return null
   }
   return value
@@ -106,7 +106,7 @@ function parseOptionalNumber(raw: string, label: string): number | undefined | n
   }
   const value = Number(raw)
   if (!Number.isFinite(value)) {
-    toast(`${label}需要为数字`)
+    toast(`${label} must be numeric`)
     return null
   }
   return value
@@ -157,11 +157,11 @@ function resolveSearchPaging(): { page: number; size: number } | null {
   const page = Number(searchPage.value)
   const size = Number(searchSize.value)
   if (!Number.isInteger(page) || page < 0) {
-    toast('页码需为非负整数')
+    toast('Page must be a non-negative integer')
     return null
   }
   if (!Number.isInteger(size) || size <= 0) {
-    toast('分页大小需为正整数')
+    toast('Page size must be a positive integer')
     return null
   }
   searchPage.value = String(page)
@@ -170,12 +170,12 @@ function resolveSearchPaging(): { page: number; size: number } | null {
 }
 
 function resolvePriceRange(): { minPrice?: number; maxPrice?: number } | null {
-  const minPrice = parseOptionalNumber(searchMinPrice.value, '最低价')
+  const minPrice = parseOptionalNumber(searchMinPrice.value, 'Minimum price')
   if (minPrice === null) return null
-  const maxPrice = parseOptionalNumber(searchMaxPrice.value, '最高价')
+  const maxPrice = parseOptionalNumber(searchMaxPrice.value, 'Maximum price')
   if (maxPrice === null) return null
   if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
-    toast('最低价不能大于最高价')
+    toast('Minimum price cannot be greater than maximum price')
     return null
   }
   return { minPrice: minPrice ?? undefined, maxPrice: maxPrice ?? undefined }
@@ -184,11 +184,11 @@ function resolvePriceRange(): { minPrice?: number; maxPrice?: number } | null {
 function normalizeDateInput(value: string, label: string): string | null {
   const trimmed = value.trim()
   if (!trimmed) {
-    toast(`请输入${label}`)
+    toast(`Please enter ${label}`)
     return null
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    toast(`${label}格式应为 YYYY-MM-DD`)
+    toast(`${label} must use the YYYY-MM-DD format`)
     return null
   }
   return trimmed
@@ -213,139 +213,139 @@ const gitHubUserInfo = ref<Record<string, unknown> | null>(null)
 async function loadTokenStats(): Promise<void> {
   try {
     tokenStats.value = await getTokenStats()
-    toast('已获取 Token 统计', 'success')
+    toast('Token statistics loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadAuthorizationDetail(): Promise<void> {
   if (!authorizationId.value.trim()) {
-    toast('请输入授权 ID')
+    toast('Please enter the authorization ID')
     return
   }
   try {
     authorizationDetail.value = await getAuthorizationDetails(authorizationId.value.trim())
-    toast('已获取授权详情', 'success')
+    toast('Authorization details loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function revokeAuthorizationRow(): Promise<void> {
   if (!authorizationId.value.trim()) {
-    toast('请输入授权 ID')
+    toast('Please enter the authorization ID')
     return
   }
-  const ok = await confirm('确认撤销该授权？')
+  const ok = await confirm('Revoke this authorization?')
   if (!ok) return
   try {
     await revokeAuthorization(authorizationId.value.trim())
-    toast('已撤销', 'success')
+    toast('Authorization revoked', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '撤销失败')
+    toast(error instanceof Error ? error.message : 'Revoke failed')
   }
 }
 
 async function runTokenCleanup(): Promise<void> {
   try {
     cleanupResult.value = await cleanupExpiredTokens()
-    toast('已触发清理', 'success')
+    toast('Cleanup triggered', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '清理失败')
+    toast(error instanceof Error ? error.message : 'Cleanup failed')
   }
 }
 
 async function validateCurrentToken(): Promise<void> {
   try {
     tokenValidationMessage.value = await validateToken()
-    toast('Token 校验成功', 'success')
+    toast('Token validation succeeded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '校验失败')
+    toast(error instanceof Error ? error.message : 'Validation failed')
   }
 }
 
 async function loadStorageStructure(): Promise<void> {
   try {
     storageStructure.value = await getStorageStructure()
-    toast('已获取存储结构', 'success')
+    toast('Storage structure loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadBlacklistStats(): Promise<void> {
   try {
     blacklistStats.value = await getBlacklistStats()
-    toast('已获取黑名单统计', 'success')
+    toast('Blacklist statistics loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function addBlacklist(): Promise<void> {
   if (!blacklistToken.value.trim()) {
-    toast('请输入 Token')
+    toast('Please enter a token')
     return
   }
   try {
     await addTokenToBlacklist(blacklistToken.value.trim(), blacklistReason.value.trim() || undefined)
-    toast('已加入黑名单', 'success')
+    toast('Token added to the blacklist', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '添加失败')
+    toast(error instanceof Error ? error.message : 'Add failed')
   }
 }
 
 async function checkBlacklistStatus(): Promise<void> {
   if (!blacklistToken.value.trim()) {
-    toast('请输入 Token')
+    toast('Please enter a token')
     return
   }
   try {
     blacklistCheckResult.value = await checkBlacklist(blacklistToken.value.trim())
-    toast('已查询黑名单状态', 'success')
+    toast('Blacklist status loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '查询失败')
+    toast(error instanceof Error ? error.message : 'Query failed')
   }
 }
 
 async function cleanupBlacklistEntries(): Promise<void> {
   try {
     blacklistCleanupResult.value = await cleanupBlacklist()
-    toast('已触发黑名单清理', 'success')
+    toast('Blacklist cleanup triggered', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '清理失败')
+    toast(error instanceof Error ? error.message : 'Cleanup failed')
   }
 }
 
 async function loadGitHubStatus(): Promise<void> {
   try {
     gitHubStatus.value = await getGitHubAuthStatus()
-    toast('已获取 GitHub 授权状态', 'success')
+    toast('GitHub authorization status loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadGitHubUser(): Promise<void> {
   try {
     gitHubUserInfo.value = await getGitHubUserInfo()
-    toast('已获取 GitHub 用户', 'success')
+    toast('GitHub user loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function logoutAll(): Promise<void> {
   if (!logoutUsername.value.trim()) {
-    toast('请输入用户名')
+    toast('Please enter a username')
     return
   }
   try {
     await logoutAllSessions(logoutUsername.value.trim())
-    toast('已触发全量下线', 'success')
+    toast('Global logout triggered', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '操作失败')
+    toast(error instanceof Error ? error.message : 'Operation failed')
   }
 }
 // Thread pools
@@ -356,22 +356,22 @@ const threadPoolDetail = ref<Record<string, unknown> | null>(null)
 async function loadThreadPools(): Promise<void> {
   try {
     threadPools.value = await getThreadPools()
-    toast('已获取线程池信息', 'success')
+    toast('Thread pools loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadThreadPoolDetail(): Promise<void> {
   if (!threadPoolName.value.trim()) {
-    toast('请输入线程池名称')
+    toast('Please enter a thread pool name')
     return
   }
   try {
     threadPoolDetail.value = await getThreadPoolDetail(threadPoolName.value.trim())
-    toast('已获取线程池详情', 'success')
+    toast('Thread pool details loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -390,37 +390,37 @@ const categoryBatchResult = ref<unknown>(null)
 async function loadCategoryTree(): Promise<void> {
   try {
     categoryTree.value = await getCategoryTree(false)
-    toast('已获取分类树', 'success')
+    toast('Category tree loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadCategoryChildren(): Promise<void> {
   const id = Number(categoryIdInput.value)
   if (!Number.isFinite(id)) {
-    toast('请输入分类 ID')
+    toast('Please enter a category ID')
     return
   }
   try {
     categoryChildren.value = await getCategoryChildren(id, false)
-    toast('已获取子分类', 'success')
+    toast('Child categories loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadCategoryById(): Promise<void> {
   const id = Number(categoryIdInput.value)
   if (!Number.isFinite(id)) {
-    toast('请输入分类 ID')
+    toast('Please enter a category ID')
     return
   }
   try {
     categoryById.value = await getCategoryById(id)
-    toast('已获取分类详情', 'success')
+    toast('Category details loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -428,39 +428,39 @@ async function updateCategoryStatusBatchAction(): Promise<void> {
   const ids = parseNumberList(categoryBatchIds.value)
   const status = Number(categoryBatchStatus.value)
   if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('请输入批量 ID 和状态')
+    toast('Please enter batch IDs and a status value')
     return
   }
   try {
     categoryBatchResult.value = await updateCategoryStatusBatch(ids, status)
-    toast('批量状态已更新', 'success')
+    toast('Batch status updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function createCategoriesBatchAction(): Promise<void> {
-  const payload = parseJson<unknown[]>(categoryBatchPayload.value, '分类批量')
+  const payload = parseJson<unknown[]>(categoryBatchPayload.value, 'Category batch')
   if (!payload) return
   try {
     categoryBatchResult.value = await createCategoriesBatch(payload as never[])
-    toast('批量创建已提交', 'success')
+    toast('Batch create submitted', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '创建失败')
+    toast(error instanceof Error ? error.message : 'Create failed')
   }
 }
 
 async function deleteCategoriesBatchAction(): Promise<void> {
   const ids = parseNumberList(categoryBatchIds.value)
   if (ids.length === 0) {
-    toast('请输入批量 ID')
+    toast('Please enter batch IDs')
     return
   }
   try {
     categoryBatchResult.value = await deleteCategoriesBatch(ids)
-    toast('批量删除已提交', 'success')
+    toast('Batch delete submitted', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
@@ -468,14 +468,14 @@ async function updateCategorySortAction(): Promise<void> {
   const id = Number(categoryIdInput.value)
   const sort = Number(categorySortInput.value)
   if (!Number.isFinite(id) || !Number.isFinite(sort)) {
-    toast('请输入分类 ID 和排序值')
+    toast('Please enter a category ID and sort value')
     return
   }
   try {
     await updateCategorySort(id, sort)
-    toast('排序已更新', 'success')
+    toast('Sort order updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
@@ -483,14 +483,14 @@ async function moveCategoryAction(): Promise<void> {
   const id = Number(categoryIdInput.value)
   const parentId = Number(categoryMoveParent.value)
   if (!Number.isFinite(id) || !Number.isFinite(parentId)) {
-    toast('请输入分类 ID 和新父级 ID')
+    toast('Please enter a category ID and new parent ID')
     return
   }
   try {
     await moveCategory(id, parentId)
-    toast('分类已移动', 'success')
+    toast('Category moved', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '移动失败')
+    toast(error instanceof Error ? error.message : 'Move failed')
   }
 }
 // Product catalog
@@ -509,9 +509,9 @@ async function createSpuAction(): Promise<void> {
   if (!payload) return
   try {
     spuActionResult.value = await createSpu(payload)
-    toast('SPU 创建成功', 'success')
+    toast('SPU created', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '创建失败')
+    toast(error instanceof Error ? error.message : 'Create failed')
   }
 }
 
@@ -519,28 +519,28 @@ async function updateSpuAction(): Promise<void> {
   const id = Number(spuId.value)
   const payload = parseJson<SpuCreateRequest>(spuPayloadJson.value, 'SPU')
   if (!Number.isFinite(id) || !payload) {
-    toast('请输入 SPU ID 并提供 JSON')
+    toast('Please enter an SPU ID and provide JSON')
     return
   }
   try {
     spuActionResult.value = await updateSpu(id, payload)
-    toast('SPU 已更新', 'success')
+    toast('SPU updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function loadSpuDetail(): Promise<void> {
   const id = Number(spuId.value)
   if (!Number.isFinite(id)) {
-    toast('请输入 SPU ID')
+    toast('Please enter an SPU ID')
     return
   }
   try {
     spuDetail.value = await getSpu(id)
-    toast('已获取 SPU 详情', 'success')
+    toast('SPU details loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -548,28 +548,28 @@ async function loadSpuByCategory(): Promise<void> {
   const id = Number(spuCategoryId.value)
   const status = spuStatus.value ? Number(spuStatus.value) : undefined
   if (!Number.isFinite(id)) {
-    toast('请输入分类 ID')
+    toast('Please enter a category ID')
     return
   }
   try {
     spuList.value = await listSpuByCategory(id, Number.isFinite(status) ? status : undefined)
-    toast('已获取分类 SPU', 'success')
+    toast('Category SPUs loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadSkuList(): Promise<void> {
   const ids = parseNumberList(skuIds.value)
   if (ids.length === 0) {
-    toast('请输入 SKU ID 列表')
+    toast('Please enter a list of SKU IDs')
     return
   }
   try {
     skuList.value = await listSkuByIds(ids)
-    toast('已获取 SKU 列表', 'success')
+    toast('SKU list loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -577,14 +577,14 @@ async function updateSpuStatusAction(): Promise<void> {
   const id = Number(spuId.value)
   const status = Number(spuStatus.value)
   if (!Number.isFinite(id) || !Number.isFinite(status)) {
-    toast('请输入 SPU ID 和状态')
+    toast('Please enter an SPU ID and status')
     return
   }
   try {
     spuActionResult.value = await updateSpuStatus(id, status)
-    toast('状态已更新', 'success')
+    toast('Status updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
@@ -639,15 +639,15 @@ async function runBasicSearch(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('基础搜索完成', 'success')
+    toast('Basic search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
 async function runAdvancedSearch(): Promise<void> {
   if (!searchKeyword.value.trim()) {
-    toast('请输入关键词')
+    toast('Please enter a keyword')
     return
   }
   const paging = resolveSearchPaging()
@@ -662,14 +662,14 @@ async function runAdvancedSearch(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('高级搜索完成', 'success')
+    toast('Advanced search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
 async function runSearchByCategory(): Promise<void> {
-  const id = requirePositiveId(searchCategoryId.value, '分类 ID')
+  const id = requirePositiveId(searchCategoryId.value, 'category ID')
   if (!id) return
   const paging = resolveSearchPaging()
   if (!paging) return
@@ -679,14 +679,14 @@ async function runSearchByCategory(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('分类搜索完成', 'success')
+    toast('Category search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
 async function runSearchByShop(): Promise<void> {
-  const id = requirePositiveId(searchShopId.value, '店铺 ID')
+  const id = requirePositiveId(searchShopId.value, 'shop ID')
   if (!id) return
   const paging = resolveSearchPaging()
   if (!paging) return
@@ -696,14 +696,14 @@ async function runSearchByShop(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('店铺搜索完成', 'success')
+    toast('Shop search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
 async function runFilterByCategory(): Promise<void> {
-  const id = requirePositiveId(searchCategoryId.value, '分类 ID')
+  const id = requirePositiveId(searchCategoryId.value, 'category ID')
   if (!id) return
   const paging = resolveSearchPaging()
   if (!paging) return
@@ -712,14 +712,14 @@ async function runFilterByCategory(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('分类筛选完成', 'success')
+    toast('Category filter completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '筛选失败')
+    toast(error instanceof Error ? error.message : 'Filter failed')
   }
 }
 
 async function runFilterByBrand(): Promise<void> {
-  const id = requirePositiveId(searchBrandId.value, '品牌 ID')
+  const id = requirePositiveId(searchBrandId.value, 'brand ID')
   if (!id) return
   const paging = resolveSearchPaging()
   if (!paging) return
@@ -728,9 +728,9 @@ async function runFilterByBrand(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('品牌筛选完成', 'success')
+    toast('Brand filter completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '筛选失败')
+    toast(error instanceof Error ? error.message : 'Filter failed')
   }
 }
 
@@ -746,14 +746,14 @@ async function runFilterByPrice(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('价格筛选完成', 'success')
+    toast('Price filter completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '筛选失败')
+    toast(error instanceof Error ? error.message : 'Filter failed')
   }
 }
 
 async function runFilterByShop(): Promise<void> {
-  const id = requirePositiveId(searchShopId.value, '店铺 ID')
+  const id = requirePositiveId(searchShopId.value, 'shop ID')
   if (!id) return
   const paging = resolveSearchPaging()
   if (!paging) return
@@ -762,9 +762,9 @@ async function runFilterByShop(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('店铺筛选完成', 'success')
+    toast('Shop filter completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '筛选失败')
+    toast(error instanceof Error ? error.message : 'Filter failed')
   }
 }
 
@@ -909,9 +909,9 @@ async function runSearchRecommend(type: 'hot' | 'new' | 'recommended'): Promise<
     } else {
       searchResult.value = await listRecommendedProducts(paging.page, paging.size)
     }
-    toast('推荐列表获取完成', 'success')
+    toast('Recommendation list loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -920,11 +920,11 @@ async function runCombinedSearch(): Promise<void> {
   if (!paging) return
   const priceRange = resolvePriceRange()
   if (!priceRange) return
-  const categoryId = parseOptionalNumber(searchCategoryId.value, '分类 ID')
+  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
   if (categoryId === null) return
-  const brandId = parseOptionalNumber(searchBrandId.value, '品牌 ID')
+  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
   if (brandId === null) return
-  const shopId = parseOptionalNumber(searchShopId.value, '店铺 ID')
+  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
   if (shopId === null) return
   try {
     searchResult.value = await combinedSearchProducts({
@@ -937,9 +937,9 @@ async function runCombinedSearch(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('组合搜索完成', 'success')
+    toast('Combined search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -954,9 +954,9 @@ async function runSmartSearch(): Promise<void> {
       sortField: 'score',
       sortOrder: 'desc'
     })
-    toast('智能搜索完成', 'success')
+    toast('Smart search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -965,15 +965,15 @@ async function runSearchSuggest(): Promise<void> {
     searchResult.value = await getProductFilters({
       keyword: searchKeyword.value || undefined
     })
-    toast('搜索筛选已获取', 'success')
+    toast('Search filters loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function runSearchProducts(): Promise<void> {
   if (!searchKeyword.value.trim()) {
-    toast('请输入关键词')
+    toast('Please enter a keyword')
     return
   }
   const paging = resolveSearchPaging()
@@ -984,9 +984,9 @@ async function runSearchProducts(): Promise<void> {
       page: paging.page,
       size: paging.size
     })
-    toast('搜索完成', 'success')
+    toast('Search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -1073,27 +1073,27 @@ async function runShopSearch(): Promise<void> {
 async function loadShopById(): Promise<void> {
   const id = Number(shopId.value)
   if (!Number.isFinite(id)) {
-    toast('请输入店铺 ID')
+    toast('Please enter a shop ID')
     return
   }
   try {
     shopResult.value = await getShopById(id)
-    toast('已获取店铺详情', 'success')
+    toast('Shop details loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadShopSuggestions(): Promise<void> {
   if (!shopSuggestKeyword.value.trim()) {
-    toast('请输入关键词')
+    toast('Please enter a keyword')
     return
   }
   try {
     shopResult.value = await listShopSuggestions(shopSuggestKeyword.value.trim(), 10)
-    toast('已获取联想词', 'success')
+    toast('Suggestions loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -1113,31 +1113,31 @@ async function loadShopFilters(): Promise<void> {
 async function loadHotShops(): Promise<void> {
   try {
     shopResult.value = await listHotShops(10)
-    toast('已获取热门店铺', 'success')
+    toast('Hot shops loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadRecommendedShops(): Promise<void> {
   try {
     shopResult.value = await listRecommendedShops(0, 20)
-    toast('已获取推荐店铺', 'success')
+    toast('Recommended shops loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function searchShopsByGeo(): Promise<void> {
   if (!shopLocation.value.trim()) {
-    toast('请输入地址关键字')
+    toast('Please enter an address keyword')
     return
   }
   try {
     shopResult.value = await searchShopsByLocation(shopLocation.value.trim(), 0, 20)
-    toast('已按位置搜索', 'success')
+    toast('Location search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 // Bulk operations
@@ -1155,55 +1155,55 @@ const batchResult = ref<unknown>(null)
 
 async function findUser(): Promise<void> {
   if (!userFindUsername.value.trim()) {
-    toast('请输入用户名')
+    toast('Please enter a username')
     return
   }
   try {
     userFindResult.value = await findUserByUsername(userFindUsername.value.trim())
-    toast('已查询用户', 'success')
+    toast('User loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '查询失败')
+    toast(error instanceof Error ? error.message : 'Query failed')
   }
 }
 
 async function updateUsersBatchAction(): Promise<void> {
-  const payload = parseJson<unknown[]>(userBatchJson.value, '用户批量')
+  const payload = parseJson<unknown[]>(userBatchJson.value, 'User batch')
   if (!payload) return
   try {
     userBatchResult.value = await updateUsersBatch(payload as never[])
-    toast('批量更新已提交', 'success')
+    toast('Batch update submitted', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
 async function approveMerchantsBatchAction(): Promise<void> {
   const ids = parseNumberList(merchantBatchIds.value)
   if (ids.length === 0) {
-    toast('请输入商家 ID 列表')
+    toast('Please enter a list of merchant IDs')
     return
   }
   try {
     batchResult.value = await approveMerchantsBatch(ids, merchantBatchRemark.value || undefined)
-    toast('批量审核通过', 'success')
+    toast('Batch approval completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '操作失败')
+    toast(error instanceof Error ? error.message : 'Operation failed')
   }
 }
 
 async function deleteMerchantsBatchAction(): Promise<void> {
   const ids = parseNumberList(merchantBatchIds.value)
   if (ids.length === 0) {
-    toast('请输入商家 ID 列表')
+    toast('Please enter a list of merchant IDs')
     return
   }
-  const ok = await confirm('确认批量删除商家？')
+  const ok = await confirm('Delete the selected merchants in batch?')
   if (!ok) return
   try {
     batchResult.value = await deleteMerchantsBatch(ids)
-    toast('批量删除已提交', 'success')
+    toast('Batch delete submitted', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '删除失败')
+    toast(error instanceof Error ? error.message : 'Delete failed')
   }
 }
 
@@ -1211,14 +1211,14 @@ async function updateMerchantStatusBatchAction(): Promise<void> {
   const ids = parseNumberList(merchantBatchIds.value)
   const status = Number(merchantBatchStatus.value)
   if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('请输入商家 ID 和状态')
+    toast('Please enter merchant IDs and a status value')
     return
   }
   try {
     batchResult.value = await updateMerchantStatusBatch(ids, status)
-    toast('批量状态已更新', 'success')
+    toast('Batch status updated', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '更新失败')
+    toast(error instanceof Error ? error.message : 'Update failed')
   }
 }
 
@@ -1226,14 +1226,14 @@ async function reviewMerchantAuthBatchAction(): Promise<void> {
   const ids = parseNumberList(merchantAuthBatchIds.value)
   const status = Number(merchantAuthBatchStatus.value)
   if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('请输入商家 ID 和审核状态')
+    toast('Please enter merchant IDs and an auth status')
     return
   }
   try {
     batchResult.value = await reviewMerchantAuthBatch(ids, status, merchantAuthBatchRemark.value || undefined)
-    toast('批量审核已提交', 'success')
+    toast('Batch auth review submitted', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '操作失败')
+    toast(error instanceof Error ? error.message : 'Operation failed')
   }
 }
 
@@ -1244,35 +1244,35 @@ const paymentCallbackJson = ref('')
 const paymentResult = ref<unknown>(null)
 
 async function createPaymentOrderAction(): Promise<void> {
-  const payload = parseJson<PaymentOrderCommand>(paymentOrderJson.value, '支付单')
+  const payload = parseJson<PaymentOrderCommand>(paymentOrderJson.value, 'Payment order')
   if (!payload) return
   try {
     paymentResult.value = await createPaymentOrder(payload)
-    toast('支付单已创建', 'success')
+    toast('Payment order created', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '创建失败')
+    toast(error instanceof Error ? error.message : 'Create failed')
   }
 }
 
 async function createPaymentRefundAction(): Promise<void> {
-  const payload = parseJson<PaymentRefundCommand>(paymentRefundJson.value, '退款单')
+  const payload = parseJson<PaymentRefundCommand>(paymentRefundJson.value, 'Payment refund')
   if (!payload) return
   try {
     paymentResult.value = await createPaymentRefund(payload)
-    toast('退款单已创建', 'success')
+    toast('Payment refund created', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '创建失败')
+    toast(error instanceof Error ? error.message : 'Create failed')
   }
 }
 
 async function handlePaymentCallbackAction(): Promise<void> {
-  const payload = parseJson<PaymentCallbackCommand>(paymentCallbackJson.value, '回调')
+  const payload = parseJson<PaymentCallbackCommand>(paymentCallbackJson.value, 'Callback')
   if (!payload) return
   try {
     paymentResult.value = await handlePaymentCallback(payload)
-    toast('回调已处理', 'success')
+    toast('Callback processed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '处理失败')
+    toast(error instanceof Error ? error.message : 'Processing failed')
   }
 }
 
@@ -1286,35 +1286,35 @@ const statsRefreshResult = ref<unknown>(null)
 async function loadStatsOverviewAsync(): Promise<void> {
   try {
     statsOverviewAsync.value = await getStatisticsOverviewAsync()
-    toast('已获取异步统计', 'success')
+    toast('Async statistics loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function loadStatsTrendRange(): Promise<void> {
-  const start = normalizeDateInput(statsStartDate.value, '开始日期')
+  const start = normalizeDateInput(statsStartDate.value, 'Start date')
   if (!start) return
-  const end = normalizeDateInput(statsEndDate.value, '结束日期')
+  const end = normalizeDateInput(statsEndDate.value, 'End date')
   if (!end) return
   if (new Date(start).getTime() > new Date(end).getTime()) {
-    toast('开始日期不能晚于结束日期')
+    toast('Start date cannot be later than end date')
     return
   }
   try {
     statsTrendRange.value = await getRegistrationTrendRange(start, end)
-    toast('已获取趋势', 'success')
+    toast('Trend data loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
 async function refreshStatsCache(): Promise<void> {
   try {
     statsRefreshResult.value = await refreshStatisticsCache()
-    toast('缓存刷新已触发', 'success')
+    toast('Statistics cache refresh triggered', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '刷新失败')
+    toast(error instanceof Error ? error.message : 'Refresh failed')
   }
 }
 </script>
@@ -1333,12 +1333,12 @@ async function refreshStatsCache(): Promise<void> {
     </view>
 
     <view v-if="activeTab === 'tokens'" class="panel glass-card">
-      <text class="section-title">Token 统计</text>
+      <text class="section-title">Token statistics</text>
       <view class="row-inline">
-        <button class="btn-outline" @click="loadTokenStats">获取统计</button>
-        <button class="btn-outline" @click="loadStorageStructure">存储结构</button>
-        <button class="btn-outline" @click="runTokenCleanup">清理过期 Token</button>
-        <button class="btn-outline" @click="validateCurrentToken">校验当前 Token</button>
+        <button class="btn-outline" @click="loadTokenStats">Load statistics</button>
+        <button class="btn-outline" @click="loadStorageStructure">Storage structure</button>
+        <button class="btn-outline" @click="runTokenCleanup">Clean expired tokens</button>
+        <button class="btn-outline" @click="validateCurrentToken">Validate current token</button>
       </view>
       <text class="code-block">{{ formatJson(tokenStats) }}</text>
       <text class="code-block">{{ formatJson(storageStructure) }}</text>
@@ -1346,24 +1346,24 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ tokenValidationMessage || '--' }}</text>
 
       <view class="section">
-        <text class="section-title">授权详情</text>
-        <input v-model="authorizationId" class="input" placeholder="授权 ID" />
+        <text class="section-title">Authorization details</text>
+        <input v-model="authorizationId" class="input" placeholder="Authorization ID" />
         <view class="row-inline">
-          <button class="btn-outline" @click="loadAuthorizationDetail">查询</button>
-          <button class="btn-outline" @click="revokeAuthorizationRow">撤销</button>
+          <button class="btn-outline" @click="loadAuthorizationDetail">Load</button>
+          <button class="btn-outline" @click="revokeAuthorizationRow">Revoke</button>
         </view>
         <text class="code-block">{{ formatJson(authorizationDetail) }}</text>
       </view>
 
       <view class="section">
-        <text class="section-title">黑名单</text>
+        <text class="section-title">Blacklist</text>
         <input v-model="blacklistToken" class="input" placeholder="Token" />
-        <input v-model="blacklistReason" class="input" placeholder="原因(可选)" />
+        <input v-model="blacklistReason" class="input" placeholder="Reason (optional)" />
         <view class="row-inline">
-          <button class="btn-outline" @click="addBlacklist">加入黑名单</button>
-          <button class="btn-outline" @click="checkBlacklistStatus">查询状态</button>
-          <button class="btn-outline" @click="cleanupBlacklistEntries">清理黑名单</button>
-          <button class="btn-outline" @click="loadBlacklistStats">黑名单统计</button>
+          <button class="btn-outline" @click="addBlacklist">Add to blacklist</button>
+          <button class="btn-outline" @click="checkBlacklistStatus">Check status</button>
+          <button class="btn-outline" @click="cleanupBlacklistEntries">Clean blacklist</button>
+          <button class="btn-outline" @click="loadBlacklistStats">Blacklist statistics</button>
         </view>
         <text class="code-block">{{ formatJson(blacklistStats) }}</text>
         <text class="code-block">{{ formatJson(blacklistCheckResult) }}</text>
@@ -1371,79 +1371,79 @@ async function refreshStatsCache(): Promise<void> {
       </view>
 
       <view class="section">
-        <text class="section-title">GitHub 授权</text>
+        <text class="section-title">GitHub authorization</text>
         <view class="row-inline">
-          <button class="btn-outline" @click="loadGitHubStatus">授权状态</button>
-          <button class="btn-outline" @click="loadGitHubUser">用户信息</button>
+          <button class="btn-outline" @click="loadGitHubStatus">Authorization status</button>
+          <button class="btn-outline" @click="loadGitHubUser">User info</button>
         </view>
         <text class="code-block">{{ formatJson(gitHubStatus) }}</text>
         <text class="code-block">{{ formatJson(gitHubUserInfo) }}</text>
       </view>
 
       <view class="section">
-        <text class="section-title">全量下线</text>
-        <input v-model="logoutUsername" class="input" placeholder="用户名" />
-        <button class="btn-outline" @click="logoutAll">触发下线</button>
+        <text class="section-title">Global logout</text>
+        <input v-model="logoutUsername" class="input" placeholder="Username" />
+        <button class="btn-outline" @click="logoutAll">Trigger logout</button>
       </view>
     </view>
     <view v-if="activeTab === 'system'" class="panel glass-card">
-      <text class="section-title">线程池</text>
+      <text class="section-title">Thread pools</text>
       <view class="row-inline">
-        <button class="btn-outline" @click="loadThreadPools">获取线程池</button>
+        <button class="btn-outline" @click="loadThreadPools">Load thread pools</button>
       </view>
       <text class="code-block">{{ formatJson(threadPools) }}</text>
 
       <view class="section">
-        <text class="section-title">线程池详情</text>
-        <input v-model="threadPoolName" class="input" placeholder="线程池名称" />
-        <button class="btn-outline" @click="loadThreadPoolDetail">查询详情</button>
+        <text class="section-title">Thread pool details</text>
+        <input v-model="threadPoolName" class="input" placeholder="Thread pool name" />
+        <button class="btn-outline" @click="loadThreadPoolDetail">Load details</button>
         <text class="code-block">{{ formatJson(threadPoolDetail) }}</text>
       </view>
     </view>
 
     <view v-if="activeTab === 'category'" class="panel glass-card">
-      <text class="section-title">分类运维</text>
-      <input v-model="categoryIdInput" class="input" placeholder="分类 ID" />
-      <input v-model="categorySortInput" class="input" placeholder="排序值" />
-      <input v-model="categoryMoveParent" class="input" placeholder="新父级 ID" />
+      <text class="section-title">Category operations</text>
+      <input v-model="categoryIdInput" class="input" placeholder="Category ID" />
+      <input v-model="categorySortInput" class="input" placeholder="Sort value" />
+      <input v-model="categoryMoveParent" class="input" placeholder="New parent ID" />
       <view class="row-inline">
-        <button class="btn-outline" @click="loadCategoryTree">分类树</button>
-        <button class="btn-outline" @click="loadCategoryChildren">子分类</button>
-        <button class="btn-outline" @click="loadCategoryById">分类详情</button>
-        <button class="btn-outline" @click="updateCategorySortAction">更新排序</button>
-        <button class="btn-outline" @click="moveCategoryAction">移动分类</button>
+        <button class="btn-outline" @click="loadCategoryTree">Category tree</button>
+        <button class="btn-outline" @click="loadCategoryChildren">Child categories</button>
+        <button class="btn-outline" @click="loadCategoryById">Category details</button>
+        <button class="btn-outline" @click="updateCategorySortAction">Update sort</button>
+        <button class="btn-outline" @click="moveCategoryAction">Move category</button>
       </view>
       <text class="code-block">{{ formatJson(categoryTree) }}</text>
       <text class="code-block">{{ formatJson(categoryChildren) }}</text>
       <text class="code-block">{{ formatJson(categoryById) }}</text>
 
       <view class="section">
-        <text class="section-title">批量操作</text>
-        <input v-model="categoryBatchIds" class="input" placeholder="ID 列表(逗号分隔)" />
-        <input v-model="categoryBatchStatus" class="input" placeholder="状态" />
-        <textarea v-model="categoryBatchPayload" class="textarea" placeholder="批量创建 JSON" />
+        <text class="section-title">Batch operations</text>
+        <input v-model="categoryBatchIds" class="input" placeholder="ID list (comma separated)" />
+        <input v-model="categoryBatchStatus" class="input" placeholder="Status" />
+        <textarea v-model="categoryBatchPayload" class="textarea" placeholder="Batch create JSON" />
         <view class="row-inline">
-          <button class="btn-outline" @click="updateCategoryStatusBatchAction">批量状态</button>
-          <button class="btn-outline" @click="createCategoriesBatchAction">批量创建</button>
-          <button class="btn-outline" @click="deleteCategoriesBatchAction">批量删除</button>
+          <button class="btn-outline" @click="updateCategoryStatusBatchAction">Batch status</button>
+          <button class="btn-outline" @click="createCategoriesBatchAction">Batch create</button>
+          <button class="btn-outline" @click="deleteCategoriesBatchAction">Batch delete</button>
         </view>
         <text class="code-block">{{ formatJson(categoryBatchResult) }}</text>
       </view>
     </view>
     <view v-if="activeTab === 'catalog'" class="panel glass-card">
-      <text class="section-title">商品目录</text>
+      <text class="section-title">Product catalog</text>
       <input v-model="spuId" class="input" placeholder="SPU ID" />
-      <input v-model="spuStatus" class="input" placeholder="状态" />
-      <input v-model="spuCategoryId" class="input" placeholder="分类 ID" />
-      <input v-model="skuIds" class="input" placeholder="SKU ID 列表" />
-      <textarea v-model="spuPayloadJson" class="textarea" placeholder="SPU 创建/更新 JSON" />
+      <input v-model="spuStatus" class="input" placeholder="Status" />
+      <input v-model="spuCategoryId" class="input" placeholder="Category ID" />
+      <input v-model="skuIds" class="input" placeholder="SKU ID list" />
+      <textarea v-model="spuPayloadJson" class="textarea" placeholder="SPU create/update JSON" />
       <view class="row-inline">
-        <button class="btn-outline" @click="createSpuAction">创建 SPU</button>
-        <button class="btn-outline" @click="updateSpuAction">更新 SPU</button>
-        <button class="btn-outline" @click="loadSpuDetail">查询 SPU</button>
-        <button class="btn-outline" @click="loadSpuByCategory">分类 SPU</button>
-        <button class="btn-outline" @click="loadSkuList">SKU 列表</button>
-        <button class="btn-outline" @click="updateSpuStatusAction">更新状态</button>
+        <button class="btn-outline" @click="createSpuAction">Create SPU</button>
+        <button class="btn-outline" @click="updateSpuAction">Update SPU</button>
+        <button class="btn-outline" @click="loadSpuDetail">Load SPU</button>
+        <button class="btn-outline" @click="loadSpuByCategory">Category SPUs</button>
+        <button class="btn-outline" @click="loadSkuList">SKU list</button>
+        <button class="btn-outline" @click="updateSpuStatusAction">Update status</button>
       </view>
       <text class="code-block">{{ formatJson(spuActionResult) }}</text>
       <text class="code-block">{{ formatJson(spuDetail) }}</text>
@@ -1452,15 +1452,15 @@ async function refreshStatsCache(): Promise<void> {
     </view>
 
     <view v-if="activeTab === 'search'" class="panel glass-card">
-      <text class="section-title">搜索运维</text>
-      <input v-model="searchKeyword" class="input" placeholder="关键词" />
-      <input v-model="searchPage" class="input" placeholder="页码" />
-      <input v-model="searchSize" class="input" placeholder="分页大小" />
-      <input v-model="searchCategoryId" class="input" placeholder="分类 ID" />
-      <input v-model="searchShopId" class="input" placeholder="店铺 ID" />
-      <input v-model="searchBrandId" class="input" placeholder="品牌 ID" />
-      <input v-model="searchMinPrice" class="input" placeholder="最低价" />
-      <input v-model="searchMaxPrice" class="input" placeholder="最高价" />
+      <text class="section-title">Search operations</text>
+      <input v-model="searchKeyword" class="input" placeholder="Keyword" />
+      <input v-model="searchPage" class="input" placeholder="Page" />
+      <input v-model="searchSize" class="input" placeholder="Page size" />
+      <input v-model="searchCategoryId" class="input" placeholder="Category ID" />
+      <input v-model="searchShopId" class="input" placeholder="Shop ID" />
+      <input v-model="searchBrandId" class="input" placeholder="Brand ID" />
+      <input v-model="searchMinPrice" class="input" placeholder="Minimum price" />
+      <input v-model="searchMaxPrice" class="input" placeholder="Maximum price" />
       <input v-model="searchShopName" class="input" placeholder="Shop name" />
       <input v-model="searchCategoryName" class="input" placeholder="Category name" />
       <input v-model="searchBrandName" class="input" placeholder="Brand name" />
@@ -1479,34 +1479,34 @@ async function refreshStatsCache(): Promise<void> {
       <textarea v-model="searchComplexJson" class="textarea" placeholder="Complex search JSON" />
       <textarea v-model="searchFilterJson" class="textarea" placeholder="Filter search JSON" />
       <view class="row-inline">
-        <button class="btn-outline" @click="runBasicSearch">基础搜索</button>
-        <button class="btn-outline" @click="runAdvancedSearch">高级搜索</button>
-        <button class="btn-outline" @click="runSearchByCategory">分类搜索</button>
-        <button class="btn-outline" @click="runSearchByShop">店铺搜索</button>
-        <button class="btn-outline" @click="runFilterByCategory">分类筛选</button>
-        <button class="btn-outline" @click="runFilterByBrand">品牌筛选</button>
-        <button class="btn-outline" @click="runFilterByPrice">价格筛选</button>
-        <button class="btn-outline" @click="runFilterByShop">店铺筛选</button>
-        <button class="btn-outline" @click="runSearchProducts">搜索商品</button>
-        <button class="btn-outline" @click="runSearchSuggest">筛选信息</button>
+        <button class="btn-outline" @click="runBasicSearch">Basic search</button>
+        <button class="btn-outline" @click="runAdvancedSearch">Advanced search</button>
+        <button class="btn-outline" @click="runSearchByCategory">Search by category</button>
+        <button class="btn-outline" @click="runSearchByShop">Search by shop</button>
+        <button class="btn-outline" @click="runFilterByCategory">Filter by category</button>
+        <button class="btn-outline" @click="runFilterByBrand">Filter by brand</button>
+        <button class="btn-outline" @click="runFilterByPrice">Filter by price</button>
+        <button class="btn-outline" @click="runFilterByShop">Filter by shop</button>
+        <button class="btn-outline" @click="runSearchProducts">Search products</button>
+        <button class="btn-outline" @click="runSearchSuggest">Load filters</button>
         <button class="btn-outline" @click="populateProductSearchPayload('complex')">Build complex JSON</button>
         <button class="btn-outline" @click="populateProductSearchPayload('filter')">Build filter JSON</button>
-        <button class="btn-outline" @click="runComplexSearch">复杂搜索</button>
-        <button class="btn-outline" @click="runFilterSearch">筛选搜索</button>
-        <button class="btn-outline" @click="runCombinedSearch">组合搜索</button>
-        <button class="btn-outline" @click="runSmartSearch">智能搜索</button>
-        <button class="btn-outline" @click="runSearchRecommend('hot')">热门</button>
-        <button class="btn-outline" @click="runSearchRecommend('new')">新品</button>
-        <button class="btn-outline" @click="runSearchRecommend('recommended')">推荐</button>
+        <button class="btn-outline" @click="runComplexSearch">Complex search</button>
+        <button class="btn-outline" @click="runFilterSearch">Filter search</button>
+        <button class="btn-outline" @click="runCombinedSearch">Combined search</button>
+        <button class="btn-outline" @click="runSmartSearch">Smart search</button>
+        <button class="btn-outline" @click="runSearchRecommend('hot')">Hot</button>
+        <button class="btn-outline" @click="runSearchRecommend('new')">New</button>
+        <button class="btn-outline" @click="runSearchRecommend('recommended')">Recommended</button>
       </view>
       <text class="code-block">{{ formatJson(searchResult) }}</text>
     </view>
 
     <view v-if="activeTab === 'shops'" class="panel glass-card">
-      <text class="section-title">店铺搜索</text>
-      <input v-model="shopId" class="input" placeholder="店铺 ID" />
-      <input v-model="shopLocation" class="input" placeholder="位置关键词" />
-      <input v-model="shopSuggestKeyword" class="input" placeholder="联想词关键词" />
+      <text class="section-title">Shop search</text>
+      <input v-model="shopId" class="input" placeholder="Shop ID" />
+      <input v-model="shopLocation" class="input" placeholder="Location keyword" />
+      <input v-model="shopSuggestKeyword" class="input" placeholder="Suggestion keyword" />
       <input v-model="shopKeyword" class="input" placeholder="Keyword" />
       <input v-model="shopMerchantId" class="input" placeholder="Merchant ID" />
       <input v-model="shopStatus" class="input" placeholder="Status" />
@@ -1524,62 +1524,62 @@ async function refreshStatsCache(): Promise<void> {
       <textarea v-model="shopSearchJson" class="textarea" placeholder="Shop search JSON" />
       <view class="row-inline">
         <button class="btn-outline" @click="populateShopSearchPayload">Build shop JSON</button>
-        <button class="btn-outline" @click="runShopSearch">复杂搜索</button>
-        <button class="btn-outline" @click="loadShopFilters">筛选</button>
-        <button class="btn-outline" @click="loadShopById">查询店铺</button>
-        <button class="btn-outline" @click="loadShopSuggestions">联想词</button>
-        <button class="btn-outline" @click="loadHotShops">热门店铺</button>
-        <button class="btn-outline" @click="loadRecommendedShops">推荐店铺</button>
-        <button class="btn-outline" @click="searchShopsByGeo">位置搜索</button>
+        <button class="btn-outline" @click="runShopSearch">Complex search</button>
+        <button class="btn-outline" @click="loadShopFilters">Load filters</button>
+        <button class="btn-outline" @click="loadShopById">Load shop</button>
+        <button class="btn-outline" @click="loadShopSuggestions">Suggestions</button>
+        <button class="btn-outline" @click="loadHotShops">Hot shops</button>
+        <button class="btn-outline" @click="loadRecommendedShops">Recommended shops</button>
+        <button class="btn-outline" @click="searchShopsByGeo">Location search</button>
       </view>
       <text class="code-block">{{ formatJson(shopResult) }}</text>
     </view>
     <view v-if="activeTab === 'batch'" class="panel glass-card">
-      <text class="section-title">批量运维</text>
-      <input v-model="userFindUsername" class="input" placeholder="用户名" />
-      <button class="btn-outline" @click="findUser">查询用户</button>
+      <text class="section-title">Batch operations</text>
+      <input v-model="userFindUsername" class="input" placeholder="Username" />
+      <button class="btn-outline" @click="findUser">Load user</button>
       <text class="code-block">{{ formatJson(userFindResult) }}</text>
 
-      <textarea v-model="userBatchJson" class="textarea" placeholder="用户批量更新 JSON" />
-      <button class="btn-outline" @click="updateUsersBatchAction">批量更新用户</button>
+      <textarea v-model="userBatchJson" class="textarea" placeholder="User batch update JSON" />
+      <button class="btn-outline" @click="updateUsersBatchAction">Batch update users</button>
       <text class="code-block">{{ formatJson(userBatchResult) }}</text>
 
-      <input v-model="merchantBatchIds" class="input" placeholder="商家 ID 列表" />
-      <input v-model="merchantBatchStatus" class="input" placeholder="状态" />
-      <input v-model="merchantBatchRemark" class="input" placeholder="备注" />
+      <input v-model="merchantBatchIds" class="input" placeholder="Merchant ID list" />
+      <input v-model="merchantBatchStatus" class="input" placeholder="Status" />
+      <input v-model="merchantBatchRemark" class="input" placeholder="Remark" />
       <view class="row-inline">
-        <button class="btn-outline" @click="approveMerchantsBatchAction">批量通过</button>
-        <button class="btn-outline" @click="updateMerchantStatusBatchAction">批量更新状态</button>
-        <button class="btn-outline" @click="deleteMerchantsBatchAction">批量删除</button>
+        <button class="btn-outline" @click="approveMerchantsBatchAction">Batch approve</button>
+        <button class="btn-outline" @click="updateMerchantStatusBatchAction">Batch update status</button>
+        <button class="btn-outline" @click="deleteMerchantsBatchAction">Batch delete</button>
       </view>
 
-      <input v-model="merchantAuthBatchIds" class="input" placeholder="认证商家 ID 列表" />
-      <input v-model="merchantAuthBatchStatus" class="input" placeholder="认证状态" />
-      <input v-model="merchantAuthBatchRemark" class="input" placeholder="认证备注" />
-      <button class="btn-outline" @click="reviewMerchantAuthBatchAction">批量认证审核</button>
+      <input v-model="merchantAuthBatchIds" class="input" placeholder="Auth merchant ID list" />
+      <input v-model="merchantAuthBatchStatus" class="input" placeholder="Auth status" />
+      <input v-model="merchantAuthBatchRemark" class="input" placeholder="Auth remark" />
+      <button class="btn-outline" @click="reviewMerchantAuthBatchAction">Batch auth review</button>
       <text class="code-block">{{ formatJson(batchResult) }}</text>
     </view>
 
     <view v-if="activeTab === 'payments'" class="panel glass-card">
-      <text class="section-title">支付运维</text>
-      <textarea v-model="paymentOrderJson" class="textarea" placeholder="支付单 JSON" />
-      <button class="btn-outline" @click="createPaymentOrderAction">创建支付单</button>
-      <textarea v-model="paymentRefundJson" class="textarea" placeholder="退款单 JSON" />
-      <button class="btn-outline" @click="createPaymentRefundAction">创建退款单</button>
-      <textarea v-model="paymentCallbackJson" class="textarea" placeholder="回调 JSON" />
-      <button class="btn-outline" @click="handlePaymentCallbackAction">处理回调</button>
+      <text class="section-title">Payment operations</text>
+      <textarea v-model="paymentOrderJson" class="textarea" placeholder="Payment order JSON" />
+      <button class="btn-outline" @click="createPaymentOrderAction">Create payment order</button>
+      <textarea v-model="paymentRefundJson" class="textarea" placeholder="Payment refund JSON" />
+      <button class="btn-outline" @click="createPaymentRefundAction">Create payment refund</button>
+      <textarea v-model="paymentCallbackJson" class="textarea" placeholder="Callback JSON" />
+      <button class="btn-outline" @click="handlePaymentCallbackAction">Process callback</button>
       <text class="code-block">{{ formatJson(paymentResult) }}</text>
     </view>
 
     <view v-if="activeTab === 'stats'" class="panel glass-card">
-      <text class="section-title">统计运维</text>
+      <text class="section-title">Statistics operations</text>
       <view class="row-inline">
-        <button class="btn-outline" @click="loadStatsOverviewAsync">异步概览</button>
-        <button class="btn-outline" @click="refreshStatsCache">刷新缓存</button>
+        <button class="btn-outline" @click="loadStatsOverviewAsync">Async overview</button>
+        <button class="btn-outline" @click="refreshStatsCache">Refresh cache</button>
       </view>
-      <input v-model="statsStartDate" class="input" placeholder="开始日期 YYYY-MM-DD" />
-      <input v-model="statsEndDate" class="input" placeholder="结束日期 YYYY-MM-DD" />
-      <button class="btn-outline" @click="loadStatsTrendRange">查询趋势</button>
+      <input v-model="statsStartDate" class="input" placeholder="Start date YYYY-MM-DD" />
+      <input v-model="statsEndDate" class="input" placeholder="End date YYYY-MM-DD" />
+      <button class="btn-outline" @click="loadStatsTrendRange">Load trend</button>
       <text class="code-block">{{ formatJson(statsOverviewAsync) }}</text>
       <text class="code-block">{{ formatJson(statsTrendRange) }}</text>
       <text class="code-block">{{ formatJson(statsRefreshResult) }}</text>
