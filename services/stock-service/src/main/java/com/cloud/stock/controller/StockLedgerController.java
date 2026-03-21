@@ -25,7 +25,7 @@ public class StockLedgerController {
   private final StockLedgerService stockLedgerService;
 
   @GetMapping("/ledger/{skuId}")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('SCOPE_internal')")
+  @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "Get stock ledger by sku")
   public Result<StockLedgerVO> getLedger(@PathVariable Long skuId) {
     return Result.success(stockLedgerService.getLedgerBySkuId(skuId));

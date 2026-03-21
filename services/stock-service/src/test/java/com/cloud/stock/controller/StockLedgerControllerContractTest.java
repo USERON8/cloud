@@ -10,8 +10,7 @@ class StockLedgerControllerContractTest {
 
   @Test
   void stockEndpointsShouldDeclareExpectedAuthorization() throws Exception {
-    assertThat(annotationValue("getLedger"))
-        .isEqualTo("hasRole('ADMIN') or hasAuthority('SCOPE_internal')");
+    assertThat(annotationValue("getLedger")).isEqualTo("hasRole('ADMIN')");
     assertThat(annotationValue("reserve")).isEqualTo("hasAuthority('SCOPE_internal')");
     assertThat(annotationValue("confirm")).isEqualTo("hasAuthority('SCOPE_internal')");
     assertThat(annotationValue("release")).isEqualTo("hasAuthority('SCOPE_internal')");

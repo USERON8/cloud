@@ -26,6 +26,12 @@ class ResourceServerConfigContractTest {
     int paymentIndex =
         normalized.indexOf(
             ".pathMatchers(\"/api/payments/**\").hasAnyRole(\"USER\",\"MERCHANT\",\"ADMIN\")");
+    int userNotificationIndex =
+        normalized.indexOf(
+            ".pathMatchers(\"/api/user/notification/**\").hasAuthority(\"admin:all\")");
+    int userProfileIndex =
+        normalized.indexOf(
+            ".pathMatchers(\"/api/user/profile/**\",\"/api/user/address/**\").authenticated()");
     int stockLedgerIndex =
         normalized.indexOf(
             ".pathMatchers(HttpMethod.GET,\"/api/stocks/ledger/**\").hasRole(\"ADMIN\")");
@@ -38,6 +44,8 @@ class ResourceServerConfigContractTest {
     assertThat(websocketIndex).isGreaterThan(-1);
     assertThat(paymentCheckoutIndex).isGreaterThan(-1);
     assertThat(paymentIndex).isGreaterThan(-1);
+    assertThat(userNotificationIndex).isGreaterThan(-1);
+    assertThat(userProfileIndex).isGreaterThan(-1);
     assertThat(stockLedgerIndex).isGreaterThan(-1);
     assertThat(stockMutationIndex).isGreaterThan(-1);
     assertThat(anyIndex).isGreaterThan(-1);
@@ -45,6 +53,8 @@ class ResourceServerConfigContractTest {
     assertThat(productViewIndex).isLessThan(anyIndex);
     assertThat(websocketIndex).isLessThan(anyIndex);
     assertThat(paymentCheckoutIndex).isLessThan(paymentIndex);
+    assertThat(userNotificationIndex).isLessThan(userProfileIndex);
+    assertThat(userProfileIndex).isLessThan(anyIndex);
     assertThat(stockLedgerIndex).isLessThan(stockMutationIndex);
     assertThat(stockMutationIndex).isLessThan(anyIndex);
     assertThat(source).doesNotContain(".pathMatchers(\"/ws/**\").permitAll()");
@@ -52,5 +62,6 @@ class ResourceServerConfigContractTest {
     assertThat(source).doesNotContain("\"/product/**\"");
     assertThat(source).doesNotContain("\"/payment/**\"");
     assertThat(source).doesNotContain("\"/stock/**\"");
+    assertThat(source).doesNotContain(".pathMatchers(\"/api/user/**\").hasRole(\"USER\")");
   }
 }

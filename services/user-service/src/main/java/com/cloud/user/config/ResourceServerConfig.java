@@ -26,6 +26,8 @@ public class ResourceServerConfig {
                 "/api/statistics/**",
                 "/api/thread-pool/**")
             .hasRole("ADMIN")
+            .requestMatchers("/api/user/notification/**")
+            .hasAuthority("admin:all")
             .requestMatchers("/api/user/profile/**", "/api/user/address/**", "/api/merchant/**")
             .authenticated();
       }
