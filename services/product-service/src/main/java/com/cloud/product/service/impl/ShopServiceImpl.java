@@ -136,28 +136,38 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
   @Cacheable(
       cacheNames = "shopListCache",
       key =
-          "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.shopNameKeyword ?: 'null') + ':' + (#pageDTO.status ?: 'null')")
+          "'page:' + #pageDTO.current + ':' + #pageDTO.size + ':' + (#pageDTO.merchantId ?: 'null') + ':' + (#pageDTO.shopNameKeyword ?: 'null') + ':' + (#pageDTO.addressKeyword ?: 'null') + ':' + (#pageDTO.status ?: 'null') + ':' + (#pageDTO.createTimeSort ?: 'null') + ':' + (#pageDTO.updateTimeSort ?: 'null')")
   public PageResult<ShopVO> getShopsPage(ShopPageDTO pageDTO) {
     ShopPageDTO request = pageDTO == null ? new ShopPageDTO() : pageDTO;
     long current =
         request.getCurrent() == null || request.getCurrent() <= 0 ? 1L : request.getCurrent();
     long size = request.getSize() == null || request.getSize() <= 0 ? 20L : request.getSize();
     log.debug(
-        "Query shops by page: current={}, size={}, keyword={}, status={}",
+        "Query shops by page: current={}, size={}, merchantId={}, keyword={}, addressKeyword={}, status={}, createTimeSort={}, updateTimeSort={}",
         current,
         size,
+        request.getMerchantId(),
         request.getShopNameKeyword(),
-        request.getStatus());
+        request.getAddressKeyword(),
+        request.getStatus(),
+        request.getCreateTimeSort(),
+        request.getUpdateTimeSort());
 
     Page<Shop> page = new Page<>(current, size);
     LambdaQueryWrapper<Shop> queryWrapper = new LambdaQueryWrapper<>();
+    if (request.getMerchantId() != null) {
+      queryWrapper.eq(Shop::getMerchantId, request.getMerchantId());
+    }
     if (StrUtil.isNotBlank(request.getShopNameKeyword())) {
       queryWrapper.like(Shop::getShopName, request.getShopNameKeyword());
+    }
+    if (StrUtil.isNotBlank(request.getAddressKeyword())) {
+      queryWrapper.like(Shop::getAddress, request.getAddressKeyword());
     }
     if (request.getStatus() != null) {
       queryWrapper.eq(Shop::getStatus, request.getStatus());
     }
-    queryWrapper.orderByDesc(Shop::getCreatedAt);
+    applyPageSort(queryWrapper, request);
 
     Page<Shop> shopPage = page(page, queryWrapper);
     List<ShopVO> shopVOs = shopConverter.toVOList(shopPage.getRecords());
@@ -387,5 +397,22 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
   private int resolveShopListLimit() {
     return (shopListMaxSize == null || shopListMaxSize <= 0) ? 100 : shopListMaxSize;
+  }
+
+  private void applyPageSort(LambdaQueryWrapper<Shop> queryWrapper, ShopPageDTO request) {
+    boolean hasUpdateSort = StrUtil.isNotBlank(request.getUpdateTimeSort());
+    boolean hasCreateSort = StrUtil.isNotBlank(request.getCreateTimeSort());
+    if (hasUpdateSort) {
+      boolean asc = "asc".equalsIgnoreCase(request.getUpdateTimeSort());
+      queryWrapper.orderBy(true, asc, Shop::getUpdatedAt);
+      queryWrapper.orderBy(true, false, Shop::getCreatedAt);
+      return;
+    }
+    if (hasCreateSort) {
+      boolean asc = "asc".equalsIgnoreCase(request.getCreateTimeSort());
+      queryWrapper.orderBy(true, asc, Shop::getCreatedAt);
+      return;
+    }
+    queryWrapper.orderByDesc(Shop::getCreatedAt);
   }
 }
