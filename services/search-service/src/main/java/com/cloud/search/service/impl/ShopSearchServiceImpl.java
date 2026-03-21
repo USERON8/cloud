@@ -14,6 +14,8 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Highlight;
+import co.elastic.clients.elasticsearch.core.search.HighlightField;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -209,6 +211,8 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     int pageNum = normalizePage(request.getPage());
     int pageSize = normalizeSize(request.getSize());
     int from = pageNum * pageSize;
+    boolean includeAggregations = Boolean.TRUE.equals(request.getIncludeAggregations());
+    boolean highlight = Boolean.TRUE.equals(request.getHighlight());
     try {
       SearchResponse<Map> response =
           elasticsearchClient.search(
@@ -220,6 +224,12 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                             .from(from)
                             .size(pageSize)
                             .source(src -> src.fetch(true));
+                    if (includeAggregations) {
+                      builder.aggregations(buildShopAggregations());
+                    }
+                    if (highlight) {
+                      builder.highlight(buildShopHighlight());
+                    }
                     for (SortOptions sortOption :
                         buildShopSortOptions(request.getSortBy(), request.getSortOrder())) {
                       builder.sort(sortOption);
@@ -227,17 +237,39 @@ public class ShopSearchServiceImpl implements ShopSearchService {
                     return builder;
                   }),
               Map.class);
+      Map<String, List<String>> highlights = new LinkedHashMap<>();
       List<ShopDocument> list =
           response.hits().hits().stream()
               .map(
-                  hit ->
-                      hit.source() == null
-                          ? null
-                          : objectMapper.convertValue(hit.source(), ShopDocument.class))
+                  hit -> {
+                    if (hit.source() == null) {
+                      return null;
+                    }
+                    ShopDocument document =
+                        objectMapper.convertValue(hit.source(), ShopDocument.class);
+                    if (highlight && hit.highlight() != null && !hit.highlight().isEmpty()) {
+                      String key =
+                          document.getShopId() != null
+                              ? String.valueOf(document.getShopId())
+                              : hit.id();
+                      highlights.put(
+                          key, hit.highlight().values().stream().flatMap(List::stream).toList());
+                    }
+                    return document;
+                  })
               .filter(Objects::nonNull)
               .toList();
       long total = response.hits().total() == null ? list.size() : response.hits().total().value();
-      return SearchResultDTO.of(list, total, pageNum, pageSize, System.currentTimeMillis() - start);
+      Map<String, Object> aggregations =
+          includeAggregations ? processShopAggregations(response.aggregations()) : Map.of();
+      return SearchResultDTO.of(
+          list,
+          total,
+          pageNum,
+          pageSize,
+          System.currentTimeMillis() - start,
+          aggregations,
+          highlights);
     } catch (Exception e) {
       log.error("Optimized shop search failed", e);
       return SearchResultDTO.of(
@@ -458,7 +490,10 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     if (request == null) {
       return false;
     }
-    if (request.getMinProductCount() != null || request.getMinFollowCount() != null) {
+    if (request.getMinProductCount() != null
+        || request.getMinFollowCount() != null
+        || Boolean.TRUE.equals(request.getIncludeAggregations())
+        || Boolean.TRUE.equals(request.getHighlight())) {
       return true;
     }
     int filterCount = 0;
@@ -486,6 +521,35 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     SortOrder order = "asc".equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
     sortOptions.add(SortOptions.of(s -> s.field(f -> f.field(field).order(order))));
     return sortOptions;
+  }
+
+  private Highlight buildShopHighlight() {
+    return Highlight.of(
+        h ->
+            h.fields(
+                    "shopName",
+                    HighlightField.of(
+                        hf ->
+                            hf.preTags("<em class='highlight'>")
+                                .postTags("</em>")
+                                .fragmentSize(120)
+                                .numberOfFragments(1)))
+                .fields(
+                    "description",
+                    HighlightField.of(
+                        hf ->
+                            hf.preTags("<em class='highlight'>")
+                                .postTags("</em>")
+                                .fragmentSize(160)
+                                .numberOfFragments(1)))
+                .fields(
+                    "address",
+                    HighlightField.of(
+                        hf ->
+                            hf.preTags("<em class='highlight'>")
+                                .postTags("</em>")
+                                .fragmentSize(120)
+                                .numberOfFragments(1))));
   }
 
   private int normalizePage(Integer page) {

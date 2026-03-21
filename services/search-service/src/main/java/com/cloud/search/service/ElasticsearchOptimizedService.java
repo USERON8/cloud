@@ -360,6 +360,7 @@ public class ElasticsearchOptimizedService {
             : Math.min(safeRequest.getSize(), maxSearchSize());
     int safePage = safeRequest.getPage() == null ? 0 : Math.max(0, safeRequest.getPage());
     int safeFrom = safePage * safeSize;
+    int fetchSize = safeSize + 1;
     List<FieldValue> searchAfter = toSearchAfterValues(searchAfterValues);
     boolean useSearchAfter = searchAfter != null && !searchAfter.isEmpty();
 
@@ -380,7 +381,8 @@ public class ElasticsearchOptimizedService {
               SearchRequest.Builder builder =
                   s.index(PRODUCT_INDEX)
                       .query(query)
-                      .size(safeSize)
+                      .size(fetchSize)
+                      .trackTotalHits(t -> t.enabled(true))
                       .timeout(esRequestTimeoutMs + "ms")
                       .sort(
                           useSearchAfter
@@ -405,8 +407,10 @@ public class ElasticsearchOptimizedService {
 
     try {
       SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+      List<Hit<Map>> rawHits = response.hits().hits();
+      List<Hit<Map>> pageHits = trimHitsToPageSize(rawHits, safeSize);
       List<Map<String, Object>> products = new ArrayList<>();
-      for (Hit<Map> hit : response.hits().hits()) {
+      for (Hit<Map> hit : pageHits) {
         Map<String, Object> product =
             hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
         if (hit.highlight() != null && !hit.highlight().isEmpty()) {
@@ -421,7 +425,7 @@ public class ElasticsearchOptimizedService {
           Boolean.TRUE.equals(safeRequest.getIncludeAggregations())
               ? processAggregations(response.aggregations())
               : Map.of();
-      List<Object> nextSearchAfter = resolveNextSearchAfter(response.hits().hits(), safeSize);
+      List<Object> nextSearchAfter = resolveNextSearchAfter(rawHits, safeSize);
 
       if (StrUtil.isNotBlank(safeRequest.getKeyword())) {
         recordHotSearch(safeRequest.getKeyword());
@@ -623,13 +627,15 @@ public class ElasticsearchOptimizedService {
     Query query =
         buildProductSearchQuery(key.keyword(), key.categoryId(), key.minPrice(), key.maxPrice());
     boolean useSearchAfter = searchAfter != null && !searchAfter.isEmpty();
+    int fetchSize = key.size() + 1;
     SearchRequest searchRequest =
         SearchRequest.of(
             s -> {
               SearchRequest.Builder builder =
                   s.index(PRODUCT_INDEX)
                       .query(query)
-                      .size(key.size())
+                      .size(fetchSize)
+                      .trackTotalHits(t -> t.enabled(true))
                       .timeout(esRequestTimeoutMs + "ms")
                       .sort(
                           useSearchAfter
@@ -648,9 +654,11 @@ public class ElasticsearchOptimizedService {
 
     try {
       SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+      List<Hit<Map>> rawHits = response.hits().hits();
+      List<Hit<Map>> pageHits = trimHitsToPageSize(rawHits, key.size());
 
       List<Map<String, Object>> products = new ArrayList<>();
-      for (Hit<Map> hit : response.hits().hits()) {
+      for (Hit<Map> hit : pageHits) {
         Map<String, Object> product =
             hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
         if (hit.highlight() != null && !hit.highlight().isEmpty()) {
@@ -662,7 +670,7 @@ public class ElasticsearchOptimizedService {
 
       long total = response.hits().total() != null ? response.hits().total().value() : 0L;
       Map<String, Object> aggregations = processAggregations(response.aggregations());
-      List<Object> nextSearchAfter = resolveNextSearchAfter(response.hits().hits(), key.size());
+      List<Object> nextSearchAfter = resolveNextSearchAfter(rawHits, key.size());
       return SearchResultDTO.builder()
           .documents(products)
           .total(total)
@@ -1444,14 +1452,24 @@ public class ElasticsearchOptimizedService {
     return converted;
   }
 
+  private List<Hit<Map>> trimHitsToPageSize(List<Hit<Map>> hits, int size) {
+    if (hits == null || hits.isEmpty()) {
+      return List.of();
+    }
+    if (hits.size() <= size) {
+      return hits;
+    }
+    return new ArrayList<>(hits.subList(0, size));
+  }
+
   private List<Object> resolveNextSearchAfter(List<Hit<Map>> hits, int size) {
     if (hits == null || hits.isEmpty()) {
       return List.of();
     }
-    if (hits.size() < size) {
+    if (hits.size() <= size) {
       return List.of();
     }
-    Hit<Map> lastHit = hits.get(hits.size() - 1);
+    Hit<Map> lastHit = hits.get(size - 1);
     if (lastHit == null || lastHit.sort() == null || lastHit.sort().isEmpty()) {
       return List.of();
     }
@@ -1572,7 +1590,7 @@ public class ElasticsearchOptimizedService {
 
     public boolean hasMore() {
       if (searchAfter != null && !searchAfter.isEmpty()) {
-        return documents != null && documents.size() >= size;
+        return true;
       }
       return from + size < total;
     }

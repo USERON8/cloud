@@ -238,4 +238,79 @@ class ShopSearchServiceImplTest {
         .containsExactly("Counted Shop");
     assertThat(result.getTotal()).isEqualTo(1L);
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void searchShopsShouldReturnAggregationsAndHighlightsFromElasticsearch() throws Exception {
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setKeyword("cloud");
+    request.setIncludeAggregations(true);
+    request.setHighlight(true);
+
+    SearchResponse<Map> response = org.mockito.Mockito.mock(SearchResponse.class);
+    HitsMetadata<Map> hits = org.mockito.Mockito.mock(HitsMetadata.class);
+    TotalHits totalHits = TotalHits.of(total -> total.value(1L).relation(TotalHitsRelation.Eq));
+
+    when(elasticsearchClient.search(
+            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class)))
+        .thenReturn(response);
+    when(response.hits()).thenReturn(hits);
+    when(hits.total()).thenReturn(totalHits);
+    when(hits.hits())
+        .thenReturn(
+            List.of(
+                Hit.of(
+                    hit ->
+                        hit.index("shop_index")
+                            .id("12")
+                            .source(
+                                Map.of(
+                                    "shopId",
+                                    12,
+                                    "shopName",
+                                    "Cloud Highlight Shop",
+                                    "status",
+                                    1,
+                                    "recommended",
+                                    true))
+                            .highlight(
+                                Map.of(
+                                    "shopName",
+                                    List.of("<em class='highlight'>Cloud</em> Highlight Shop"))))));
+    when(response.aggregations())
+        .thenReturn(
+            Map.of(
+                "statusCount",
+                Aggregate.of(
+                    a ->
+                        a.lterms(
+                            t ->
+                                t.buckets(
+                                    b ->
+                                        b.array(
+                                            List.of(
+                                                LongTermsBucket.of(
+                                                    bucket -> bucket.key(1).docCount(1L))))))),
+                "recommendCount",
+                Aggregate.of(
+                    a ->
+                        a.lterms(
+                            t ->
+                                t.buckets(
+                                    b ->
+                                        b.array(
+                                            List.of(
+                                                LongTermsBucket.of(
+                                                    bucket -> bucket.key(1).docCount(1L)))))))));
+
+    var result = shopSearchService.searchShops(request);
+
+    verify(elasticsearchClient)
+        .search(any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class));
+    verifyNoInteractions(shopDocumentRepository);
+    assertThat(result.getAggregations())
+        .isEqualTo(Map.of("statusCount", Map.of(1, 1L), "recommendCount", Map.of(true, 1L)));
+    assertThat(result.getHighlights())
+        .containsEntry("12", List.of("<em class='highlight'>Cloud</em> Highlight Shop"));
+  }
 }

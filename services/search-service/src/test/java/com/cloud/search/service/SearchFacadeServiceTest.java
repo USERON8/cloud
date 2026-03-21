@@ -102,4 +102,31 @@ class SearchFacadeServiceTest {
     verifyNoInteractions(productSearchService);
     assertThat(result.getList()).extracting("productName").containsExactly("Sales Phone");
   }
+
+  @Test
+  void searchProductsShouldStopUsingPageFallbackForCursorPagination() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("phone");
+    request.setPage(0);
+    request.setSize(10);
+
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(List.of(Map.of("productName", "Paged Phone")))
+            .total(25L)
+            .from(0)
+            .size(10)
+            .aggregations(Map.of())
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(any(), any())).thenReturn(esResult);
+
+    var result = searchFacadeService.searchProducts(request, "[1,\"cursor\"]");
+
+    verify(elasticsearchOptimizedService).productSearchAfter(any(), any());
+    verifyNoInteractions(productSearchService);
+    assertThat(result.getHasPrevious()).isTrue();
+    assertThat(result.getHasNext()).isFalse();
+  }
 }

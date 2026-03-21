@@ -44,12 +44,14 @@ public class SearchFacadeService {
   private SearchResultDTO<ProductDocument> searchProductsViaElasticsearch(
       ProductSearchRequest request, String searchAfter) {
     List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+    boolean usedSearchAfter = !searchAfterValues.isEmpty();
     long start = System.currentTimeMillis();
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
     int safePage = resolvePage(request == null ? null : request.getPage());
     int safeSize = resolveSize(request == null ? null : request.getSize());
-    return toSearchResultDTO(esResult, safePage, safeSize, System.currentTimeMillis() - start);
+    return toSearchResultDTO(
+        esResult, safePage, safeSize, System.currentTimeMillis() - start, usedSearchAfter);
   }
 
   public SearchResultDTO<ProductDocument> getProductFilters(ProductSearchRequest request) {
@@ -61,6 +63,7 @@ public class SearchFacadeService {
     ProductSearchRequest aggregationRequest = copyRequest(request);
     aggregationRequest.setIncludeAggregations(true);
     List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+    boolean usedSearchAfter = !searchAfterValues.isEmpty();
     long start = System.currentTimeMillis();
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(aggregationRequest, searchAfterValues);
@@ -69,7 +72,8 @@ public class SearchFacadeService {
             esResult,
             resolvePage(aggregationRequest.getPage()),
             resolveSize(aggregationRequest.getSize()),
-            System.currentTimeMillis() - start);
+            System.currentTimeMillis() - start,
+            usedSearchAfter);
     result.setAggregations(normalizeProductAggregations(result.getAggregations()));
     return result;
   }
@@ -96,6 +100,7 @@ public class SearchFacadeService {
     String safeSortBy = (sortBy == null || sortBy.isBlank()) ? "hotScore" : sortBy;
     String safeSortDir = (sortDir == null || sortDir.isBlank()) ? "desc" : sortDir;
     List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+    boolean usedSearchAfter = !searchAfterValues.isEmpty();
     long start = System.currentTimeMillis();
 
     ElasticsearchOptimizedService.SearchResultDTO optimizedResult;
@@ -111,7 +116,7 @@ public class SearchFacadeService {
     }
 
     return toSearchResultDTO(
-        optimizedResult, safePage, safeSize, System.currentTimeMillis() - start);
+        optimizedResult, safePage, safeSize, System.currentTimeMillis() - start, usedSearchAfter);
   }
 
   public SearchResultDTO<ProductDocument> searchByCategory(
@@ -189,7 +194,7 @@ public class SearchFacadeService {
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
     return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start, true);
   }
 
   public SearchResultDTO<ProductDocument> getNewProducts(int page, int size, String searchAfter) {
@@ -207,7 +212,7 @@ public class SearchFacadeService {
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
     return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start, true);
   }
 
   public SearchResultDTO<ProductDocument> getHotProducts(int page, int size, String searchAfter) {
@@ -225,7 +230,7 @@ public class SearchFacadeService {
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
     return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start, true);
   }
 
   public SearchResultDTO<ProductDocument> getTodayHotSellingProducts(int page, int size) {
@@ -248,7 +253,7 @@ public class SearchFacadeService {
     ElasticsearchOptimizedService.SearchResultDTO esResult =
         elasticsearchOptimizedService.productSearchAfter(request, searchAfterValues);
     return toSearchResultDTO(
-        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start);
+        esResult, resolvePage(page), resolveSize(size), System.currentTimeMillis() - start, true);
   }
 
   public SearchResultDTO<ProductDocument> filterSearch(
@@ -326,7 +331,11 @@ public class SearchFacadeService {
   }
 
   private SearchResultDTO<ProductDocument> toSearchResultDTO(
-      ElasticsearchOptimizedService.SearchResultDTO esResult, int page, int size, long took) {
+      ElasticsearchOptimizedService.SearchResultDTO esResult,
+      int page,
+      int size,
+      long took,
+      boolean usedSearchAfter) {
     int safePage = resolvePage(page);
     int safeSize = resolveSize(size);
     List<ProductDocument> list =
@@ -337,15 +346,13 @@ public class SearchFacadeService {
                 .toList();
     long total = esResult == null ? list.size() : esResult.getTotal();
     int totalPages = safeSize <= 0 ? 0 : (int) Math.ceil((double) total / safeSize);
-    boolean hasPrevious = safePage > 0;
-    boolean hasNext;
-    if (esResult != null
-        && esResult.getSearchAfter() != null
-        && !esResult.getSearchAfter().isEmpty()) {
-      hasNext = esResult.hasMore();
-    } else {
-      hasNext = safePage < totalPages - 1;
-    }
+    boolean hasPrevious = usedSearchAfter || safePage > 0;
+    boolean hasNext =
+        usedSearchAfter
+            ? esResult != null
+                && esResult.getSearchAfter() != null
+                && !esResult.getSearchAfter().isEmpty()
+            : safePage < totalPages - 1;
     return SearchResultDTO.<ProductDocument>builder()
         .list(list)
         .total(total)
