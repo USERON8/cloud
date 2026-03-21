@@ -295,6 +295,8 @@ const merchantTotalPages = computed(() => Math.max(1, Math.ceil(merchantTotal.va
 const merchantDialogVisible = ref(false)
 const merchantEditId = ref<number | null>(null)
 const merchantForm = reactive<MerchantUpsertPayload>({
+  username: '',
+  password: '',
   merchantName: '',
   email: '',
   phone: '',
@@ -332,6 +334,8 @@ function changeMerchantPage(delta: number): void {
 
 function openMerchantEdit(row: MerchantInfo): void {
   merchantEditId.value = row.id
+  merchantForm.username = row.username
+  merchantForm.password = ''
   merchantForm.merchantName = row.merchantName
   merchantForm.email = row.email
   merchantForm.phone = row.phone
@@ -341,6 +345,8 @@ function openMerchantEdit(row: MerchantInfo): void {
 
 function openMerchantCreate(): void {
   merchantEditId.value = null
+  merchantForm.username = ''
+  merchantForm.password = ''
   merchantForm.merchantName = ''
   merchantForm.email = ''
   merchantForm.phone = ''
@@ -354,12 +360,21 @@ function closeMerchantDialog(): void {
 }
 
 async function saveMerchant(): Promise<void> {
+  const username = requireText(merchantForm.username, '商家用户名')
+  if (!username) return
   const merchantName = requireText(merchantForm.merchantName, '商家名称')
   if (!merchantName) return
+  const password = merchantForm.password?.trim() || ''
+  if (!merchantEditId.value && !password) {
+    toast('请输入商家密码')
+    return
+  }
   const status = normalizeStatus(merchantForm.status, '商家')
   if (status === null) return
   const payload: MerchantUpsertPayload = {
     ...merchantForm,
+    username,
+    password: password || undefined,
     merchantName,
     email: merchantForm.email.trim(),
     phone: merchantForm.phone.trim(),
@@ -768,6 +783,7 @@ const adminDialogVisible = ref(false)
 const adminEditId = ref<number | null>(null)
 const adminForm = reactive<AdminUpsertPayload>({
   username: '',
+  password: '',
   phone: '',
   realName: '',
   role: '',
@@ -797,6 +813,7 @@ function changeAdminPage(delta: number): void {
 function openAdminEdit(row: AdminInfo): void {
   adminEditId.value = row.id
   adminForm.username = row.username
+  adminForm.password = ''
   adminForm.phone = row.phone
   adminForm.realName = row.realName
   adminForm.role = row.role
@@ -807,6 +824,7 @@ function openAdminEdit(row: AdminInfo): void {
 function openAdminCreate(): void {
   adminEditId.value = null
   adminForm.username = ''
+  adminForm.password = ''
   adminForm.phone = ''
   adminForm.realName = ''
   adminForm.role = ''
@@ -822,13 +840,21 @@ function closeAdminDialog(): void {
 async function saveAdmin(): Promise<void> {
   const username = requireText(adminForm.username, '用户名')
   if (!username) return
+  const realName = requireText(adminForm.realName, '姓名')
+  if (!realName) return
+  const password = adminForm.password?.trim() || ''
+  if (!adminEditId.value && !password) {
+    toast('请输入管理员密码')
+    return
+  }
   const status = normalizeStatus(adminForm.status, '管理员')
   if (status === null) return
   const payload: AdminUpsertPayload = {
     ...adminForm,
     username,
+    password: password || undefined,
     phone: adminForm.phone.trim(),
-    realName: adminForm.realName.trim(),
+    realName,
     role: adminForm.role.trim(),
     status
   }
@@ -1031,6 +1057,13 @@ onMounted(() => {
       <view v-if="merchantDialogVisible" class="dialog">
         <text class="section-title">{{ merchantEditId ? '编辑商家' : '新增商家' }}</text>
         <view class="form">
+          <input v-model="merchantForm.username" class="input" placeholder="商家用户名" />
+          <input
+            v-model="merchantForm.password"
+            class="input"
+            :placeholder="merchantEditId ? '密码(留空则不修改)' : '密码'"
+            password
+          />
           <input v-model="merchantForm.merchantName" class="input" placeholder="商家名称" />
           <input v-model="merchantForm.email" class="input" placeholder="邮箱" />
           <input v-model="merchantForm.phone" class="input" placeholder="电话" />
@@ -1246,6 +1279,12 @@ onMounted(() => {
         <text class="section-title">{{ adminEditId ? '编辑管理员' : '新增管理员' }}</text>
         <view class="form">
           <input v-model="adminForm.username" class="input" placeholder="用户名" />
+          <input
+            v-model="adminForm.password"
+            class="input"
+            :placeholder="adminEditId ? '密码(留空则不修改)' : '密码'"
+            password
+          />
           <input v-model="adminForm.realName" class="input" placeholder="姓名" />
           <input v-model="adminForm.phone" class="input" placeholder="电话" />
           <input v-model="adminForm.role" class="input" placeholder="角色" />
