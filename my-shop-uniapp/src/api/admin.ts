@@ -26,6 +26,6 @@ export function updateAdminStatus(id: number, status: number): Promise<boolean> 
   return http.patch<boolean, boolean>(`/api/admin/${id}/status`, null, { params: { status } })
 }
 
-export function resetAdminPassword(id: number): Promise<boolean> {
-  return http.post<boolean, boolean>(`/api/admin/${id}/reset-password`)
+export function resetAdminPassword(id: number): Promise<string> {
+  return http.post<string, string>(`/api/admin/${id}/reset-password`)
 }

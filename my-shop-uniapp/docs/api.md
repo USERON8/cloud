@@ -31,7 +31,7 @@ Notes:
 | PUT | /api/admin/{param} | updateAdmin | id: number, payload: AdminUpsertPayload | body |
 | DELETE | /api/admin/{param} | deleteAdmin | id: number | - |
 | PATCH | /api/admin/{param}/status | updateAdminStatus | id: number, status: number | query |
-| POST | /api/admin/{param}/reset-password | resetAdminPassword | id: number | - |
+| POST | /api/admin/{param}/reset-password | resetAdminPassword | id: number | response: string |
 
 ## auth-tokens
 

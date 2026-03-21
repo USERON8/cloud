@@ -133,10 +133,10 @@ public class AdminController {
   @PostMapping("/{id}/reset-password")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Reset admin password", description = "Reset admin password to default")
-  public Result<Boolean> resetPassword(@Parameter(description = "Admin ID") @PathVariable Long id) {
+  public Result<String> resetPassword(@Parameter(description = "Admin ID") @PathVariable Long id) {
     String temporaryPassword =
         "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-    boolean result = adminService.resetPassword(id, temporaryPassword);
-    return Result.success("Password reset successful", result);
+    adminService.resetPassword(id, temporaryPassword);
+    return Result.success("Password reset successful", temporaryPassword);
   }
 }

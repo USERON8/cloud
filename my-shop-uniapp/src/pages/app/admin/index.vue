@@ -899,8 +899,8 @@ async function resetPassword(row: AdminInfo): Promise<void> {
   const ok = await confirm(`确认重置 ${row.username} 密码？`)
   if (!ok) return
   try {
-    await resetAdminPassword(row.id)
-    toast('重置请求已提交', 'success')
+    const temporaryPassword = await resetAdminPassword(row.id)
+    toast(`临时密码：${temporaryPassword}`, 'success')
   } catch (error) {
     toast(error instanceof Error ? error.message : '重置失败')
   }

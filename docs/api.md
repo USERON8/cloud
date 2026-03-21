@@ -343,7 +343,7 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | PUT | /api/admin/{id} | Update admin | hasAuthority('admin:all') | path=id, body=AdminUpsertRequestDTO | Result<Boolean> |
 | DELETE | /api/admin/{id} | Delete admin | hasAuthority('admin:all') | path=id | Result<Boolean> |
 | PATCH | /api/admin/{id}/status | Update admin status | hasAuthority('admin:all') | path=id, query=status | Result<Boolean> |
-| POST | /api/admin/{id}/reset-password | Reset admin password | hasAuthority('admin:all') | path=id | Result<Boolean> |
+| POST | /api/admin/{id}/reset-password | Reset admin password | hasAuthority('admin:all') | path=id | Result<String> |
 
 #### ThreadPoolMonitorController（/api/thread-pool）
 
