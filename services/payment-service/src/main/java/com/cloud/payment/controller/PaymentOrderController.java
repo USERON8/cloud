@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,9 +41,22 @@ public class PaymentOrderController {
   private final PaymentSecurityCacheService paymentSecurityCacheService;
 
   @PostMapping("/orders")
-  @PreAuthorize("hasAuthority('order:create')")
+  @PreAuthorize("isAuthenticated() and hasAuthority('order:create')")
   @Operation(summary = "Create payment order")
-  public Result<Long> createPaymentOrder(@Valid @RequestBody PaymentOrderCommandDTO command) {
+  public Result<Long> createPaymentOrder(
+      @Valid @RequestBody PaymentOrderCommandDTO command, Authentication authentication) {
+    Long currentUserId = requireCurrentUserId(authentication);
+    if (!SecurityPermissionUtils.isAdmin(authentication)) {
+      if (command.getUserId() == null) {
+        command.setUserId(currentUserId);
+      } else if (!Objects.equals(command.getUserId(), currentUserId)) {
+        throw new BizException(
+            ResultCode.FORBIDDEN, "forbidden to create payment order for another user");
+      }
+    } else if (command.getUserId() == null) {
+      throw new BizException(
+          ResultCode.BAD_REQUEST, "userId is required for admin payment creation");
+    }
     return Result.success(paymentOrderService.createPaymentOrder(command));
   }
 
@@ -188,6 +202,18 @@ public class PaymentOrderController {
     }
     String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
     return currentUserId != null && userId != null && currentUserId.equals(String.valueOf(userId));
+  }
+
+  private Long requireCurrentUserId(Authentication authentication) {
+    String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
+    if (userId == null || userId.isBlank()) {
+      throw new BizException("current user not found in token");
+    }
+    try {
+      return Long.parseLong(userId);
+    } catch (NumberFormatException ex) {
+      throw new BizException("invalid user_id in token");
+    }
   }
 
   private String buildHtmlPage(String title, String message) {

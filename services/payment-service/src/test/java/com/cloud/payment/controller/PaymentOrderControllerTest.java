@@ -2,10 +2,12 @@ package com.cloud.payment.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
+import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
@@ -29,6 +31,51 @@ class PaymentOrderControllerTest {
   @Mock private PaymentOrderService paymentOrderService;
 
   @Mock private PaymentSecurityCacheService paymentSecurityCacheService;
+
+  @Test
+  void createPaymentOrderShouldAllowOwner() {
+    PaymentOrderCommandDTO command = buildPaymentCommand();
+    when(paymentOrderService.createPaymentOrder(same(command))).thenReturn(11L);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result = controller.createPaymentOrder(command, authentication("12", "ROLE_USER"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isEqualTo(11L);
+    verify(paymentOrderService).createPaymentOrder(same(command));
+  }
+
+  @Test
+  void createPaymentOrderShouldRejectOtherUser() {
+    PaymentOrderCommandDTO command = buildPaymentCommand();
+    command.setUserId(18L);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () -> controller.createPaymentOrder(command, authentication("12", "ROLE_USER")));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
+    assertThat(exception.getMessage()).contains("another user");
+  }
+
+  @Test
+  void createPaymentOrderShouldBackfillCurrentUserForRegularUser() {
+    PaymentOrderCommandDTO command = buildPaymentCommand();
+    command.setUserId(null);
+    when(paymentOrderService.createPaymentOrder(same(command))).thenReturn(15L);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result = controller.createPaymentOrder(command, authentication("12", "ROLE_USER"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(command.getUserId()).isEqualTo(12L);
+    verify(paymentOrderService).createPaymentOrder(same(command));
+  }
 
   @Test
   void getPaymentOrderByNoShouldAllowOwner() {
@@ -266,5 +313,17 @@ class PaymentOrderControllerTest {
         builder.build(),
         Arrays.stream(authorities).map(SimpleGrantedAuthority::new).toList(),
         "tester");
+  }
+
+  private PaymentOrderCommandDTO buildPaymentCommand() {
+    PaymentOrderCommandDTO command = new PaymentOrderCommandDTO();
+    command.setPaymentNo("PAY-CREATE");
+    command.setMainOrderNo("M-1");
+    command.setSubOrderNo("S-1");
+    command.setUserId(12L);
+    command.setChannel("ALIPAY");
+    command.setIdempotencyKey("idem-create");
+    command.setAmount(java.math.BigDecimal.TEN);
+    return command;
   }
 }
