@@ -337,6 +337,12 @@ export interface PaymentOrderInfo {
   updatedAt?: string
 }
 
+export interface PaymentCheckoutSession {
+  paymentNo?: string
+  checkoutPath?: string
+  expiresInSeconds?: number
+}
+
 export interface PaymentRefundInfo {
   id?: number
   refundNo?: string

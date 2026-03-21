@@ -237,7 +237,9 @@ Use `@PreAuthorize` expressions as the source of truth. `Not annotated` means th
 | POST | /api/payments/orders | Create payment order | hasAuthority('order:create') | body=PaymentOrderCommandDTO | Result<Long> |
 | GET | /api/payments/orders/{paymentNo} | Get payment order by number | isAuthenticated() | path=paymentNo | Result<PaymentOrderVO> |
 | GET | /api/payments/orders/by-order | Get payment order by order numbers | isAuthenticated() | query=mainOrderNo,subOrderNo | Result<PaymentOrderVO> |
+| POST | /api/payments/orders/{paymentNo}/checkout-session | Create checkout session | isAuthenticated() | path=paymentNo | Result<PaymentCheckoutSessionVO> |
 | GET | /api/payments/orders/{paymentNo}/status | Get payment order status | isAuthenticated() | path=paymentNo | Result<Map<String,Object>> |
+| GET | /api/payments/checkout/{ticket} | Render checkout page | permitAll | path=ticket | text/html |
 | POST | /api/payments/callbacks | Handle payment callback | hasAuthority('order:refund') | body=PaymentCallbackCommandDTO | Result<Boolean> |
 | POST | /api/payments/refunds | Create payment refund | hasAuthority('order:refund') | body=PaymentRefundCommandDTO | Result<Long> |
 | GET | /api/payments/refunds/{refundNo} | Get refund by number | isAuthenticated() | path=refundNo | Result<PaymentRefundVO> |
@@ -681,6 +683,7 @@ Note: choose either `cartId` or the tuple (`spuId`, `skuId`, `quantity`). Single
 | OrderItem | services/order-service/src/main/java/com/cloud/order/entity/OrderItem.java |
 | AfterSale | services/order-service/src/main/java/com/cloud/order/entity/AfterSale.java |
 | PaymentOrderVO | common-parent/common-domain/src/main/java/com/cloud/common/domain/vo/payment/PaymentOrderVO.java |
+| PaymentCheckoutSessionVO | common-parent/common-domain/src/main/java/com/cloud/common/domain/vo/payment/PaymentCheckoutSessionVO.java |
 | PaymentRefundVO | common-parent/common-domain/src/main/java/com/cloud/common/domain/vo/payment/PaymentRefundVO.java |
 | SpuDetailVO | common-parent/common-domain/src/main/java/com/cloud/common/domain/vo/product/SpuDetailVO.java |
 | SkuDetailVO | common-parent/common-domain/src/main/java/com/cloud/common/domain/vo/product/SkuDetailVO.java |

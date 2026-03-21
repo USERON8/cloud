@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
+import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
@@ -16,12 +17,14 @@ import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
+import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ import org.springframework.util.StringUtils;
 public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private static final Set<String> COUNTED_REFUND_STATUSES = Set.of("REFUNDING", "REFUNDED");
+  private static final String CHECKOUT_PATH_PREFIX = "/api/payments/checkout/";
 
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
@@ -41,6 +45,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final OrderStatusRemoteService orderStatusRemoteService;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
+  private final List<PaymentProviderGateway> providerGateways;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -147,14 +152,58 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   @Override
   public PaymentOrderVO getPaymentOrderByOrderNo(String mainOrderNo, String subOrderNo) {
-    PaymentOrderEntity entity =
-        paymentOrderMapper.selectOne(
-            new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getMainOrderNo, mainOrderNo)
-                .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
-                .eq(PaymentOrderEntity::getDeleted, 0)
-                .last("LIMIT 1"));
+    PaymentOrderEntity entity = findPaymentOrderEntityByOrderNo(mainOrderNo, subOrderNo);
     return entity == null ? null : toOrderVO(entity);
+  }
+
+  @Override
+  public PaymentCheckoutSessionVO createCheckoutSession(String paymentNo) {
+    PaymentOrderEntity order = findPaymentOrderEntityByNo(paymentNo);
+    if (order == null) {
+      throw new BusinessException(ResultCode.NOT_FOUND, "payment order not found");
+    }
+    if (paymentOrderStateSupport.isTerminalStatus(order.getStatus())) {
+      throw new BusinessException("payment order is already finalized");
+    }
+    if (!PaymentOrderStateSupport.ORDER_STATUS_CREATED.equals(order.getStatus())) {
+      throw new BusinessException(
+          "payment order is not eligible for checkout: " + order.getStatus());
+    }
+
+    String ticket =
+        paymentSecurityCacheService.createCheckoutTicket(order.getPaymentNo(), order.getUserId());
+    PaymentCheckoutSessionVO session = new PaymentCheckoutSessionVO();
+    session.setPaymentNo(order.getPaymentNo());
+    session.setCheckoutPath(CHECKOUT_PATH_PREFIX + ticket);
+    session.setExpiresInSeconds(paymentSecurityCacheService.getCheckoutTicketTtlSeconds());
+    return session;
+  }
+
+  @Override
+  public String renderCheckoutPage(String ticket) {
+    PaymentSecurityCacheService.CheckoutTicket checkoutTicket =
+        paymentSecurityCacheService.getCheckoutTicket(ticket);
+    if (checkoutTicket == null) {
+      throw new BusinessException(ResultCode.NOT_FOUND, "payment checkout session expired");
+    }
+    PaymentOrderEntity order = findPaymentOrderEntityByNo(checkoutTicket.paymentNo());
+    if (order == null) {
+      throw new BusinessException(ResultCode.NOT_FOUND, "payment order not found");
+    }
+    if (!Objects.equals(order.getUserId(), checkoutTicket.userId())) {
+      throw new BusinessException(ResultCode.FORBIDDEN, "payment checkout session is invalid");
+    }
+    if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
+      return buildStatusPage("Payment completed", "This payment order has already been completed.");
+    }
+    if (PaymentOrderStateSupport.ORDER_STATUS_FAILED.equals(order.getStatus())) {
+      return buildStatusPage("Payment unavailable", "This payment order is no longer available.");
+    }
+    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    if (gateway == null) {
+      throw new BusinessException("unsupported payment channel: " + order.getChannel());
+    }
+    return gateway.buildCheckoutPage(order);
   }
 
   @Override
@@ -410,6 +459,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     return command.getMainOrderNo() + ":" + command.getSubOrderNo();
   }
 
+  private PaymentOrderEntity findPaymentOrderEntityByNo(String paymentNo) {
+    return paymentOrderMapper.selectOne(
+        new LambdaQueryWrapper<PaymentOrderEntity>()
+            .eq(PaymentOrderEntity::getPaymentNo, paymentNo)
+            .eq(PaymentOrderEntity::getDeleted, 0)
+            .last("LIMIT 1"));
+  }
+
   private PaymentOrderEntity findPaymentOrderEntityByOrderNo(
       String mainOrderNo, String subOrderNo) {
     return paymentOrderMapper.selectOne(
@@ -418,6 +475,75 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
             .eq(PaymentOrderEntity::getDeleted, 0)
             .last("LIMIT 1"));
+  }
+
+  private PaymentProviderGateway resolveGateway(String channel) {
+    for (PaymentProviderGateway gateway : providerGateways) {
+      if (gateway.supports(channel)) {
+        return gateway;
+      }
+    }
+    return null;
+  }
+
+  private String buildStatusPage(String title, String message) {
+    return """
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>%s</title>
+            <style>
+              body {
+                margin: 0;
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                background: #f4f7fb;
+                color: #1f2a37;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              }
+              main {
+                max-width: 420px;
+                padding: 24px;
+                border-radius: 18px;
+                background: #ffffff;
+                box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+                text-align: center;
+              }
+              h1 {
+                margin: 0 0 12px;
+                font-size: 24px;
+              }
+              p {
+                margin: 0;
+                line-height: 1.6;
+                color: #526072;
+              }
+            </style>
+          </head>
+          <body>
+            <main>
+              <h1>%s</h1>
+              <p>%s</p>
+            </main>
+          </body>
+        </html>
+        """
+        .formatted(escapeHtml(title), escapeHtml(title), escapeHtml(message));
+  }
+
+  private String escapeHtml(String value) {
+    if (value == null) {
+      return "";
+    }
+    return value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;");
   }
 
   private PaymentCallbackLogEntity findCallbackLogByCallbackNo(String callbackNo) {

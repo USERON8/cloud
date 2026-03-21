@@ -142,6 +142,7 @@ Notes:
 | --- | --- | --- | --- | --- |
 | GET | /api/payments/orders/{param} | getPaymentOrderByNo | paymentNo: string | - |
 | GET | /api/payments/orders/by-order | getPaymentOrderByOrderNo | mainOrderNo: string, subOrderNo: string | query |
+| POST | /api/payments/orders/{param}/checkout-session | createPaymentCheckoutSession | paymentNo: string | - |
 | GET | /api/payments/refunds/{param} | getRefundByNo | refundNo: string | - |
 | POST | /api/payments/orders | createPaymentOrder | payload: PaymentOrderCommand | body |
 | POST | /api/payments/refunds | createPaymentRefund | payload: PaymentRefundCommand | body |

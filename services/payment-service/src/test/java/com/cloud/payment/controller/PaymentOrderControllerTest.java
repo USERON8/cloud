@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
+import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
@@ -108,6 +109,59 @@ class PaymentOrderControllerTest {
 
     assertThat(exception.getCode()).isEqualTo(ResultCode.NOT_FOUND.getCode());
     assertThat(exception.getMessage()).contains("payment order not found");
+  }
+
+  @Test
+  void createCheckoutSessionShouldAllowOwner() {
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-CHECKOUT");
+    order.setUserId(12L);
+    PaymentCheckoutSessionVO session = new PaymentCheckoutSessionVO();
+    session.setPaymentNo("PAY-CHECKOUT");
+    session.setCheckoutPath("/api/payments/checkout/ticket-1");
+    session.setExpiresInSeconds(300L);
+    when(paymentOrderService.getPaymentOrderByNo("PAY-CHECKOUT")).thenReturn(order);
+    when(paymentOrderService.createCheckoutSession("PAY-CHECKOUT")).thenReturn(session);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    var result =
+        controller.createCheckoutSession("PAY-CHECKOUT", authentication("12", "ROLE_USER"));
+
+    assertThat(result.getCode()).isEqualTo(200);
+    assertThat(result.getData()).isSameAs(session);
+  }
+
+  @Test
+  void createCheckoutSessionShouldForbidOtherUser() {
+    PaymentOrderVO order = new PaymentOrderVO();
+    order.setPaymentNo("PAY-CHECKOUT");
+    order.setUserId(18L);
+    when(paymentOrderService.getPaymentOrderByNo("PAY-CHECKOUT")).thenReturn(order);
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    BizException exception =
+        assertThrows(
+            BizException.class,
+            () ->
+                controller.createCheckoutSession(
+                    "PAY-CHECKOUT", authentication("12", "ROLE_USER")));
+
+    assertThat(exception.getCode()).isEqualTo(ResultCode.FORBIDDEN.getCode());
+  }
+
+  @Test
+  void renderCheckoutPageShouldFallbackToHtmlErrorPage() {
+    when(paymentOrderService.renderCheckoutPage("expired-ticket"))
+        .thenThrow(new com.cloud.common.exception.BusinessException("checkout expired"));
+
+    PaymentOrderController controller =
+        new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);
+    String html = controller.renderCheckoutPage("expired-ticket");
+
+    assertThat(html).contains("Payment unavailable");
+    assertThat(html).contains("checkout expired");
   }
 
   @Test

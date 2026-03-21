@@ -8,7 +8,12 @@ import {
   completeOrder,
   listOrders
 } from '../../../api/order'
-import { createPaymentOrder, getPaymentOrderByOrderNo } from '../../../api/payment'
+import { resolveApiUrl } from '../../../api/http'
+import {
+  createPaymentCheckoutSession,
+  createPaymentOrder,
+  getPaymentOrderByOrderNo
+} from '../../../api/payment'
 import type { AfterSaleInfo, OrderItem } from '../../../types/domain'
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
@@ -71,6 +76,17 @@ function buildPaymentIdempotencyKey(order: OrderItem): string {
 function buildPaymentNo(order: OrderItem): string {
   const subOrderNo = order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, '') || String(order.id)
   return `PAY-${subOrderNo}`
+}
+
+function openCheckout(url: string): void {
+  navigateTo(
+    Routes.webview,
+    { url },
+    {
+      requiresAuth: true,
+      roles: ['USER', 'MERCHANT', 'ADMIN']
+    }
+  )
 }
 
 function resetAfterSaleDraft(): void {
@@ -152,9 +168,10 @@ async function onPay(order: OrderItem): Promise<void> {
   }
 
   payingOrderId.value = order.id
+  let paymentNo = ''
   try {
     const existingOrder = await getPaymentOrderByOrderNo(order.orderNo, order.subOrderNo)
-    const paymentNo = existingOrder?.paymentNo ?? buildPaymentNo(order)
+    paymentNo = existingOrder?.paymentNo ?? buildPaymentNo(order)
     if (!existingOrder) {
       await createPaymentOrder({
         paymentNo,
@@ -165,18 +182,24 @@ async function onPay(order: OrderItem): Promise<void> {
         channel: 'ALIPAY',
         idempotencyKey: buildPaymentIdempotencyKey(order)
       })
-      toast(`Payment order created: ${paymentNo}`, 'success')
     }
-    navigateTo(
-      Routes.appPayments,
-      { paymentNo },
-      {
-        requiresAuth: true,
-        roles: ['USER', 'MERCHANT', 'ADMIN']
-      }
-    )
+    const session = await createPaymentCheckoutSession(paymentNo)
+    if (!session.checkoutPath) {
+      throw new Error('Checkout session is missing checkoutPath')
+    }
+    openCheckout(resolveApiUrl(session.checkoutPath))
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to prepare payment')
+    if (paymentNo) {
+      navigateTo(
+        Routes.appPayments,
+        { paymentNo },
+        {
+          requiresAuth: true,
+          roles: ['USER', 'MERCHANT', 'ADMIN']
+        }
+      )
+    }
   } finally {
     payingOrderId.value = null
   }
@@ -312,7 +335,7 @@ onMounted(() => {
                 :loading="payingOrderId === item.id"
                 @click="onPay(item)"
               >
-                {{ payingOrderId === item.id ? 'Preparing payment...' : 'Pay now' }}
+                {{ payingOrderId === item.id ? 'Opening checkout...' : 'Pay now' }}
               </button>
               <button
                 v-if="canComplete(item)"

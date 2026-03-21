@@ -4,8 +4,11 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.request.AlipayTradeRefundRequest;
+import com.alipay.api.request.AlipayTradeWapPayRequest;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.alipay.api.response.AlipayTradeRefundResponse;
+import com.alipay.api.response.AlipayTradeWapPayResponse;
+import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
@@ -27,11 +30,42 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
   private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
 
   private final AlipayClient alipayClient;
+  private final AlipayConfig alipayConfig;
   private final ObjectMapper objectMapper;
 
   @Override
   public boolean supports(String channel) {
     return "ALIPAY".equalsIgnoreCase(channel);
+  }
+
+  @Override
+  public String buildCheckoutPage(PaymentOrderEntity order) {
+    AlipayTradeWapPayRequest request = new AlipayTradeWapPayRequest();
+    Map<String, Object> bizContent = new LinkedHashMap<>();
+    bizContent.put("out_trade_no", order.getPaymentNo());
+    bizContent.put("total_amount", order.getAmount().toPlainString());
+    bizContent.put(
+        "subject",
+        firstNonBlank(order.getSubOrderNo(), order.getMainOrderNo(), order.getPaymentNo()));
+    bizContent.put("product_code", "QUICK_WAP_WAY");
+    request.setBizContent(writeJson(bizContent));
+    if (StringUtils.hasText(alipayConfig.getNotifyUrl())) {
+      request.setNotifyUrl(alipayConfig.getNotifyUrl());
+    }
+    if (StringUtils.hasText(alipayConfig.getReturnUrl())) {
+      request.setReturnUrl(alipayConfig.getReturnUrl());
+    }
+
+    try {
+      AlipayTradeWapPayResponse response = alipayClient.pageExecute(request, "GET");
+      if (!StringUtils.hasText(response.getBody())) {
+        throw new IllegalStateException(
+            buildFailureMessage(response.getSubMsg(), response.getMsg()));
+      }
+      return response.getBody();
+    } catch (AlipayApiException ex) {
+      throw new IllegalStateException("Failed to build Alipay checkout page", ex);
+    }
   }
 
   @Override

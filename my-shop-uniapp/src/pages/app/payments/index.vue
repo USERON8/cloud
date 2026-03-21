@@ -2,7 +2,14 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
-import { getPaymentOrderByNo, getRefundByNo } from '../../../api/payment'
+import { resolveApiUrl } from '../../../api/http'
+import {
+  createPaymentCheckoutSession,
+  getPaymentOrderByNo,
+  getRefundByNo
+} from '../../../api/payment'
+import { navigateTo } from '../../../router/navigation'
+import { Routes } from '../../../router/routes'
 import type { PaymentOrderInfo, PaymentRefundInfo } from '../../../types/domain'
 import { formatDate, formatPrice } from '../../../utils/format'
 import { toast } from '../../../utils/ui'
@@ -11,6 +18,22 @@ const paymentNo = ref('')
 const refundNo = ref('')
 const paymentInfo = ref<PaymentOrderInfo | null>(null)
 const refundInfo = ref<PaymentRefundInfo | null>(null)
+const checkoutLoading = ref(false)
+
+function canOpenCheckout(): boolean {
+  return paymentInfo.value?.status === 'CREATED' && !!paymentInfo.value?.paymentNo
+}
+
+function openCheckout(url: string): void {
+  navigateTo(
+    Routes.webview,
+    { url },
+    {
+      requiresAuth: true,
+      roles: ['USER', 'MERCHANT', 'ADMIN']
+    }
+  )
+}
 
 async function queryPayment(): Promise<void> {
   if (!paymentNo.value.trim()) {
@@ -33,6 +56,26 @@ async function queryRefund(): Promise<void> {
     refundInfo.value = await getRefundByNo(refundNo.value.trim())
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to query the refund order')
+  }
+}
+
+async function openPaymentCheckout(): Promise<void> {
+  const targetPaymentNo = paymentInfo.value?.paymentNo || paymentNo.value.trim()
+  if (!targetPaymentNo) {
+    toast('Enter a payment number')
+    return
+  }
+  checkoutLoading.value = true
+  try {
+    const session = await createPaymentCheckoutSession(targetPaymentNo)
+    if (!session.checkoutPath) {
+      throw new Error('Checkout session is missing checkoutPath')
+    }
+    openCheckout(resolveApiUrl(session.checkoutPath))
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Failed to open checkout')
+  } finally {
+    checkoutLoading.value = false
   }
 }
 
@@ -65,6 +108,14 @@ onLoad((query) => {
         <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
         <text class="meta">Channel: {{ paymentInfo.channel || '--' }}</text>
         <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
+        <button
+          v-if="canOpenCheckout()"
+          class="btn-outline"
+          :loading="checkoutLoading"
+          @click="openPaymentCheckout"
+        >
+          Open checkout
+        </button>
       </view>
     </view>
 

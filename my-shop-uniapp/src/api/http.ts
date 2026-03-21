@@ -21,6 +21,10 @@ function buildApiUrl(path: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}${path}`
 }
 
+export function resolveApiUrl(path: string): string {
+  return buildApiUrl(path)
+}
+
 function buildUrl(path: string, params?: object): string {
   const base = buildApiUrl(path)
   if (!params) {

@@ -17,6 +17,8 @@ public class PaymentSecurityCacheService {
   private static final String STATUS_HASH_USER_ID = "userId";
   private static final String STATUS_HASH_STATUS = "status";
   private static final String RATE_PREFIX = "pay:rate:";
+  private static final String CHECKOUT_PREFIX = "pay:checkout:";
+  private static final String CHECKOUT_SEPARATOR = "|";
 
   private final StringRedisTemplate stringRedisTemplate;
 
@@ -37,6 +39,9 @@ public class PaymentSecurityCacheService {
 
   @Value("${payment.security.rate-limit.max-requests:20}")
   private int rateLimitMaxRequests;
+
+  @Value("${payment.security.checkout-ticket-ttl-seconds:300}")
+  private long checkoutTicketTtlSeconds;
 
   public PaymentSecurityCacheService(StringRedisTemplate stringRedisTemplate) {
     this.stringRedisTemplate = stringRedisTemplate;
@@ -199,6 +204,51 @@ public class PaymentSecurityCacheService {
     return Objects.equals("PAID", status) || Objects.equals("FAILED", status);
   }
 
+  public String createCheckoutTicket(String paymentNo, Long userId) {
+    if (paymentNo == null || paymentNo.isBlank() || userId == null) {
+      throw new IllegalArgumentException("paymentNo and userId are required for checkout tickets");
+    }
+    String ticket = java.util.UUID.randomUUID().toString().replace("-", "");
+    String key = CHECKOUT_PREFIX + ticket;
+    try {
+      stringRedisTemplate
+          .opsForValue()
+          .set(
+              key,
+              userId + CHECKOUT_SEPARATOR + paymentNo,
+              Duration.ofSeconds(getCheckoutTicketTtlSeconds()));
+      return ticket;
+    } catch (Exception ex) {
+      log.error("Create checkout ticket failed: paymentNo={}, userId={}", paymentNo, userId, ex);
+      throw new IllegalStateException("failed to create checkout ticket", ex);
+    }
+  }
+
+  public CheckoutTicket getCheckoutTicket(String ticket) {
+    if (ticket == null || ticket.isBlank()) {
+      return null;
+    }
+    String key = CHECKOUT_PREFIX + ticket;
+    try {
+      String value = stringRedisTemplate.opsForValue().get(key);
+      if (value == null || value.isBlank()) {
+        return null;
+      }
+      String[] parts = value.split("\\Q" + CHECKOUT_SEPARATOR + "\\E", 2);
+      if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
+        return null;
+      }
+      return new CheckoutTicket(Long.parseLong(parts[0]), parts[1]);
+    } catch (Exception ex) {
+      log.warn("Read checkout ticket failed: ticket={}", ticket, ex);
+      return null;
+    }
+  }
+
+  public long getCheckoutTicketTtlSeconds() {
+    return safeSeconds(checkoutTicketTtlSeconds, 300);
+  }
+
   private long safeSeconds(long value, long fallback) {
     if (value <= 0) {
       return fallback;
@@ -211,4 +261,6 @@ public class PaymentSecurityCacheService {
   }
 
   public record CachedStatus(Long userId, String status) {}
+
+  public record CheckoutTicket(Long userId, String paymentNo) {}
 }

@@ -2,6 +2,7 @@ import http from './http'
 import { BusinessError } from '../types/api'
 import type {
   PaymentCallbackCommand,
+  PaymentCheckoutSession,
   PaymentOrderCommand,
   PaymentOrderInfo,
   PaymentRefundCommand,
@@ -34,6 +35,12 @@ export function getRefundByNo(refundNo: string): Promise<PaymentRefundInfo> {
 
 export function createPaymentOrder(payload: PaymentOrderCommand): Promise<number> {
   return http.post<number, number>('/api/payments/orders', payload)
+}
+
+export function createPaymentCheckoutSession(paymentNo: string): Promise<PaymentCheckoutSession> {
+  return http.post<PaymentCheckoutSession, PaymentCheckoutSession>(
+    `/api/payments/orders/${paymentNo}/checkout-session`
+  )
 }
 
 export function createPaymentRefund(payload: PaymentRefundCommand): Promise<number> {

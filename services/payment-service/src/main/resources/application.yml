@@ -140,6 +140,7 @@ payment:
     idempotent-ttl-seconds: ${PAYMENT_IDEMPOTENT_TTL_SECONDS:600}
     result-ttl-seconds: ${PAYMENT_RESULT_TTL_SECONDS:600}
     status-ttl-seconds: ${PAYMENT_STATUS_TTL_SECONDS:3}
+    checkout-ticket-ttl-seconds: ${PAYMENT_CHECKOUT_TICKET_TTL_SECONDS:300}
     rate-limit:
       enabled: ${PAYMENT_RATE_LIMIT_ENABLED:true}
       window-seconds: ${PAYMENT_RATE_LIMIT_WINDOW_SECONDS:60}
@@ -182,6 +183,8 @@ alipay:
   charset: UTF-8
   format: json
   timeout: 30m
+  notify-url: ${ALIPAY_NOTIFY_URL:}
+  return-url: ${ALIPAY_RETURN_URL:}
 
 springdoc:
   group-configs:

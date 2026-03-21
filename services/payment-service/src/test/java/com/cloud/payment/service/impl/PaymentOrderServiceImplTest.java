@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
+import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
@@ -22,6 +23,7 @@ import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.PaymentCompensationService;
+import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
@@ -55,6 +57,8 @@ class PaymentOrderServiceImplTest {
 
   @Mock private PaymentSecurityCacheService paymentSecurityCacheService;
 
+  @Mock private PaymentProviderGateway paymentProviderGateway;
+
   private PaymentOrderServiceImpl service;
 
   @BeforeEach
@@ -70,7 +74,8 @@ class PaymentOrderServiceImplTest {
             paymentCompensationService,
             orderStatusRemoteService,
             paymentOrderStateSupport,
-            paymentSecurityCacheService);
+            paymentSecurityCacheService,
+            List.of(paymentProviderGateway));
   }
 
   @Test
@@ -122,6 +127,50 @@ class PaymentOrderServiceImplTest {
     verify(paymentSecurityCacheService)
         .cacheResult(command.getMainOrderNo() + ":" + command.getSubOrderNo(), 66L);
     verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
+  }
+
+  @Test
+  void createCheckoutSessionShouldReturnCheckoutPath() {
+    PaymentOrderEntity order = buildPaymentOrder("CREATED", BigDecimal.valueOf(100));
+    order.setPaymentNo("PAY-SESSION");
+    when(paymentOrderMapper.selectOne(any())).thenReturn(order);
+    when(paymentSecurityCacheService.createCheckoutTicket("PAY-SESSION", 9L))
+        .thenReturn("ticket-123");
+    when(paymentSecurityCacheService.getCheckoutTicketTtlSeconds()).thenReturn(300L);
+
+    PaymentCheckoutSessionVO session = service.createCheckoutSession("PAY-SESSION");
+
+    assertThat(session.getPaymentNo()).isEqualTo("PAY-SESSION");
+    assertThat(session.getCheckoutPath()).isEqualTo("/api/payments/checkout/ticket-123");
+    assertThat(session.getExpiresInSeconds()).isEqualTo(300L);
+  }
+
+  @Test
+  void renderCheckoutPageShouldUseProviderGateway() {
+    PaymentOrderEntity order = buildPaymentOrder("CREATED", BigDecimal.valueOf(100));
+    order.setPaymentNo("PAY-SESSION");
+    when(paymentSecurityCacheService.getCheckoutTicket("ticket-123"))
+        .thenReturn(new PaymentSecurityCacheService.CheckoutTicket(9L, "PAY-SESSION"));
+    when(paymentOrderMapper.selectOne(any())).thenReturn(order);
+    when(paymentProviderGateway.supports("ALIPAY")).thenReturn(true);
+    when(paymentProviderGateway.buildCheckoutPage(order)).thenReturn("<html>checkout</html>");
+
+    String html = service.renderCheckoutPage("ticket-123");
+
+    assertThat(html).contains("checkout");
+  }
+
+  @Test
+  void renderCheckoutPageShouldRejectMismatchedTicketOwner() {
+    PaymentOrderEntity order = buildPaymentOrder("CREATED", BigDecimal.valueOf(100));
+    order.setPaymentNo("PAY-SESSION");
+    when(paymentSecurityCacheService.getCheckoutTicket("ticket-123"))
+        .thenReturn(new PaymentSecurityCacheService.CheckoutTicket(88L, "PAY-SESSION"));
+    when(paymentOrderMapper.selectOne(any())).thenReturn(order);
+
+    assertThatThrownBy(() -> service.renderCheckoutPage("ticket-123"))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("checkout session is invalid");
   }
 
   @Test
