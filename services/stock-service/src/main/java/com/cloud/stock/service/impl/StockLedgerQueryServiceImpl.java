@@ -29,6 +29,8 @@ public class StockLedgerQueryServiceImpl implements StockLedgerQueryService {
   public Page<StockLedger> pageActiveLedgers(long pageIndex, int pageSize) {
     return stockLedgerMapper.selectPage(
         new Page<>(pageIndex, pageSize),
-        new LambdaQueryWrapper<StockLedger>().eq(StockLedger::getDeleted, 0));
+        new LambdaQueryWrapper<StockLedger>()
+            .eq(StockLedger::getDeleted, 0)
+            .eq(StockLedger::getStatus, 1));
   }
 }

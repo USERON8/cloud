@@ -63,4 +63,22 @@ public interface StockReservationMapper extends BaseMapper<StockReservation> {
             </script>
             """)
   int markRolledBackByIds(@Param("ids") List<Long> ids);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Update(
+      """
+            UPDATE stock_reservation
+            SET reserved_qty = reserved_qty - #{qty},
+                status = #{newStatus},
+                updated_at = NOW()
+            WHERE deleted = 0
+              AND id = #{id}
+              AND status = #{currentStatus}
+              AND reserved_qty >= #{qty}
+            """)
+  int adjustAfterRollback(
+      @Param("id") Long id,
+      @Param("qty") Integer qty,
+      @Param("currentStatus") String currentStatus,
+      @Param("newStatus") String newStatus);
 }

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class StockRedisCacheService {
 
+  private static final int ACTIVE_STATUS = 1;
   private static final String KEY_PREFIX = "stock:ledger:";
   private static final String FIELD_ID = "id";
   private static final String FIELD_SKU_ID = "skuId";
@@ -134,6 +135,10 @@ public class StockRedisCacheService {
     vo.setStatus(parseInteger(entries.get(FIELD_STATUS)));
     vo.setCreatedAt(parseDateTime(entries.get(FIELD_CREATED)));
     vo.setUpdatedAt(parseDateTime(entries.get(FIELD_UPDATED)));
+    if (!isActive(vo.getStatus())) {
+      stringRedisTemplate.delete(key);
+      return null;
+    }
     return vo;
   }
 
@@ -142,6 +147,10 @@ public class StockRedisCacheService {
       return;
     }
     String key = buildKey(ledger.getSkuId());
+    if (!isActive(ledger.getStatus())) {
+      stringRedisTemplate.delete(key);
+      return;
+    }
     Map<String, String> map = new HashMap<>();
     map.put(FIELD_ID, stringify(ledger.getId()));
     map.put(FIELD_SKU_ID, stringify(ledger.getSkuId()));
@@ -213,6 +222,10 @@ public class StockRedisCacheService {
     script.setResultType(Long.class);
     script.setScriptText(scriptText);
     return script;
+  }
+
+  private boolean isActive(Integer status) {
+    return status != null && status == ACTIVE_STATUS;
   }
 
   private String buildKey(Long skuId) {

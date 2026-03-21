@@ -3,6 +3,7 @@ package com.cloud.stock.service.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +43,7 @@ class StockRedisCacheServiceTest {
         Map.of(
             "id", "1",
             "skuId", "2",
+            "status", "1",
             "salable", "5",
             "reserved", "1",
             "onhand", "6");
@@ -74,6 +76,7 @@ class StockRedisCacheServiceTest {
     StockLedger ledger = new StockLedger();
     ledger.setId(3L);
     ledger.setSkuId(5L);
+    ledger.setStatus(1);
     ledger.setSalableQty(10);
     when(stockLedgerMapper.selectActiveBySkuId(5L)).thenReturn(ledger);
 
@@ -82,5 +85,33 @@ class StockRedisCacheServiceTest {
     assertThat(result).isNotNull();
     verify(hashOperations)
         .putAll(anyString(), org.mockito.ArgumentMatchers.<Map<Object, Object>>any());
+  }
+
+  @Test
+  void getLedgerFromCache_shouldDropInactiveEntries() {
+    Map<Object, Object> entries =
+        Map.of(
+            "id", "1",
+            "skuId", "8",
+            "status", "0",
+            "salable", "5");
+    when(hashOperations.entries("stock:ledger:8")).thenReturn(entries);
+
+    var result = stockRedisCacheService.getLedgerFromCache(8L);
+
+    assertThat(result).isNull();
+    verify(stringRedisTemplate).delete("stock:ledger:8");
+  }
+
+  @Test
+  void cacheLedger_shouldSkipInactiveLedger() {
+    StockLedger ledger = new StockLedger();
+    ledger.setSkuId(9L);
+    ledger.setStatus(0);
+
+    stockRedisCacheService.cacheLedger(ledger);
+
+    verify(stringRedisTemplate).delete("stock:ledger:9");
+    verify(hashOperations, never()).putAll(anyString(), org.mockito.ArgumentMatchers.anyMap());
   }
 }

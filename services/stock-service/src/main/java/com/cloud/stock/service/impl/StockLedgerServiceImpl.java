@@ -15,6 +15,7 @@ import com.cloud.stock.service.support.StockRedisCacheService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,13 +24,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
 public class StockLedgerServiceImpl implements StockLedgerService {
 
+  private static final String STATUS_RESERVED = "RESERVED";
+  private static final String STATUS_CONFIRMED = "CONFIRMED";
+  private static final String STATUS_RELEASED = "RELEASED";
+  private static final String STATUS_ROLLED_BACK = "ROLLED_BACK";
   private static final Set<String> RESERVE_COMPLETED_STATUSES = Set.of("RESERVED", "CONFIRMED");
   private static final Set<String> RESERVE_FORBIDDEN_STATUSES = Set.of("RELEASED", "ROLLED_BACK");
 
@@ -59,7 +62,10 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     if (safeSkuIds.isEmpty()) {
       return List.of();
     }
-    return stockLedgerMapper.listActiveBySkuIds(safeSkuIds).stream().map(this::toVO).toList();
+    return stockLedgerMapper.listActiveBySkuIds(safeSkuIds).stream()
+        .filter(ledger -> ledger != null && Integer.valueOf(1).equals(ledger.getStatus()))
+        .map(this::toVO)
+        .toList();
   }
 
   @Override
@@ -80,7 +86,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         throw new BusinessException("insufficient salable stock");
       }
 
-      reservation.setStatus("RESERVED");
+      reservation.setStatus(STATUS_RESERVED);
       stockReservationMapper.updateById(reservation);
       StockRedisCacheService.CacheResult cacheResult =
           stockRedisCacheService.applyReserveIfCached(command.getSkuId(), command.getQuantity());
@@ -109,14 +115,14 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     }
     ensureReservationQuantityMatches(reservation, command);
     String status = reservation.getStatus();
-    if ("RESERVED".equals(status) || "CONFIRMED".equals(status)) {
+    if (STATUS_RESERVED.equals(status) || STATUS_CONFIRMED.equals(status)) {
       return true;
     }
-    if ("ROLLED_BACK".equals(status) || "RELEASED".equals(status)) {
+    if (STATUS_ROLLED_BACK.equals(status) || STATUS_RELEASED.equals(status)) {
       return true;
     }
     if ("RESERVING".equals(status)) {
-      reservation.setStatus("RESERVED");
+      reservation.setStatus(STATUS_RESERVED);
       stockReservationMapper.updateById(reservation);
       return true;
     }
@@ -127,10 +133,10 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean confirm(StockOperateCommandDTO command) {
     StockReservation reservation = requireReservation(command);
-    if ("CONFIRMED".equals(reservation.getStatus())) {
+    if (STATUS_CONFIRMED.equals(reservation.getStatus())) {
       return true;
     }
-    if (!"RESERVED".equals(reservation.getStatus())) {
+    if (!STATUS_RESERVED.equals(reservation.getStatus())) {
       throw new BusinessException(
           "reservation status invalid for confirm: " + reservation.getStatus());
     }
@@ -141,7 +147,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       throw new BusinessException("confirm stock failed");
     }
 
-    reservation.setStatus("CONFIRMED");
+    reservation.setStatus(STATUS_CONFIRMED);
     stockReservationMapper.updateById(reservation);
 
     StockLedger after = requireLedger(command.getSkuId());
@@ -158,10 +164,10 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean release(StockOperateCommandDTO command) {
     StockReservation reservation = requireReservation(command);
-    if ("RELEASED".equals(reservation.getStatus())) {
+    if (STATUS_RELEASED.equals(reservation.getStatus())) {
       return true;
     }
-    if (!"RESERVED".equals(reservation.getStatus())) {
+    if (!STATUS_RESERVED.equals(reservation.getStatus())) {
       throw new BusinessException(
           "reservation status invalid for release: " + reservation.getStatus());
     }
@@ -171,7 +177,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       throw new BusinessException("release stock failed");
     }
 
-    reservation.setStatus("RELEASED");
+    reservation.setStatus(STATUS_RELEASED);
     stockReservationMapper.updateById(reservation);
 
     StockLedger after = requireLedger(command.getSkuId());
@@ -237,31 +243,60 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       }
     }
 
-    List<StockOperateCommandDTO> reservedCommands = new ArrayList<>();
-    List<StockOperateCommandDTO> confirmedCommands = new ArrayList<>();
-    Set<Long> rollbackReservationIds = new HashSet<>();
-
+    Map<String, StockOperateCommandDTO> normalizedByReservationKey = new LinkedHashMap<>();
     for (StockOperateCommandDTO command : validCommands) {
       if (command.getSubOrderNo() == null) {
         insertRollbackMarker(command);
         continue;
       }
-      StockReservation reservation =
-          reservationMap.get(buildReservationKey(command.getSubOrderNo(), command.getSkuId()));
+      String reservationKey = buildReservationKey(command.getSubOrderNo(), command.getSkuId());
+      StockOperateCommandDTO aggregated = normalizedByReservationKey.get(reservationKey);
+      if (aggregated == null) {
+        StockOperateCommandDTO copy = new StockOperateCommandDTO();
+        copy.setOrderNo(command.getOrderNo());
+        copy.setSubOrderNo(command.getSubOrderNo());
+        copy.setSkuId(command.getSkuId());
+        copy.setQuantity(command.getQuantity());
+        copy.setReason(command.getReason());
+        normalizedByReservationKey.put(reservationKey, copy);
+      } else {
+        aggregated.setQuantity(aggregated.getQuantity() + command.getQuantity());
+      }
+    }
+
+    List<StockOperateCommandDTO> reservedCommands = new ArrayList<>();
+    List<StockOperateCommandDTO> confirmedCommands = new ArrayList<>();
+    List<ReservationRollbackUpdate> reservationUpdates = new ArrayList<>();
+
+    for (Map.Entry<String, StockOperateCommandDTO> entry : normalizedByReservationKey.entrySet()) {
+      StockOperateCommandDTO command = entry.getValue();
+      StockReservation reservation = reservationMap.get(entry.getKey());
       if (reservation == null) {
         insertRollbackMarker(command);
         continue;
       }
       String previousStatus = reservation.getStatus();
-      if ("ROLLED_BACK".equals(previousStatus)) {
+      if (STATUS_ROLLED_BACK.equals(previousStatus)) {
         continue;
       }
-      if ("RESERVED".equals(previousStatus)) {
+      int rollbackQty = command.getQuantity();
+      Integer reservedQty = reservation.getReservedQty();
+      if (reservedQty == null || rollbackQty > reservedQty) {
+        throw new BusinessException(
+            "rollback quantity exceeds reserved quantity for subOrderNo="
+                + command.getSubOrderNo());
+      }
+      String nextStatus = rollbackQty == reservedQty ? STATUS_ROLLED_BACK : previousStatus;
+      if (STATUS_RESERVED.equals(previousStatus)) {
         reservedCommands.add(command);
-        rollbackReservationIds.add(reservation.getId());
-      } else if ("CONFIRMED".equals(previousStatus)) {
+        reservationUpdates.add(
+            new ReservationRollbackUpdate(
+                reservation.getId(), rollbackQty, previousStatus, nextStatus));
+      } else if (STATUS_CONFIRMED.equals(previousStatus)) {
         confirmedCommands.add(command);
-        rollbackReservationIds.add(reservation.getId());
+        reservationUpdates.add(
+            new ReservationRollbackUpdate(
+                reservation.getId(), rollbackQty, previousStatus, nextStatus));
       }
     }
 
@@ -283,10 +318,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       }
     }
 
-    if (!rollbackReservationIds.isEmpty()) {
-      int updated =
-          stockReservationMapper.markRolledBackByIds(new ArrayList<>(rollbackReservationIds));
-      if (updated != rollbackReservationIds.size()) {
+    for (ReservationRollbackUpdate update : reservationUpdates) {
+      int adjusted =
+          stockReservationMapper.adjustAfterRollback(
+              update.id(), update.quantity(), update.currentStatus(), update.newStatus());
+      if (adjusted != 1) {
         throw new BusinessException("rollback reservation status failed");
       }
     }
@@ -435,7 +471,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     marker.setSubOrderNo(command.getSubOrderNo());
     marker.setSkuId(command.getSkuId());
     marker.setReservedQty(command.getQuantity() == null ? 0 : command.getQuantity());
-    marker.setStatus("ROLLED_BACK");
+    marker.setStatus(STATUS_ROLLED_BACK);
     marker.setIdempotencyKey(buildIdempotencyKey(command));
     try {
       stockReservationMapper.insert(marker);
@@ -474,18 +510,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   }
 
   private void dispatchTxnWrite(StockTxn txn) {
-    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-      stockTxnAsyncWriter.write(txn);
-      return;
-    }
-    TransactionSynchronizationManager.registerSynchronization(
-        new TransactionSynchronization() {
-          @Override
-          public void afterCommit() {
-            stockTxnAsyncWriter.write(txn);
-          }
-        });
+    stockTxnAsyncWriter.write(txn);
   }
+
+  private record ReservationRollbackUpdate(
+      Long id, Integer quantity, String currentStatus, String newStatus) {}
 
   private StockLedgerVO toVO(StockLedger ledger) {
     StockLedgerVO vo = new StockLedgerVO();
