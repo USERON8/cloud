@@ -92,6 +92,10 @@ class PaymentOrderServiceImplTest {
     when(paymentSecurityCacheService.getCachedResult(
             command.getMainOrderNo() + ":" + command.getSubOrderNo()))
         .thenReturn(88L);
+    PaymentOrderEntity cached = new PaymentOrderEntity();
+    cached.setId(88L);
+    cached.setStatus("CREATED");
+    when(paymentOrderMapper.selectById(88L)).thenReturn(cached);
 
     Long result = service.createPaymentOrder(command);
 
@@ -127,6 +131,71 @@ class PaymentOrderServiceImplTest {
     verify(paymentSecurityCacheService)
         .cacheResult(command.getMainOrderNo() + ":" + command.getSubOrderNo(), 66L);
     verify(paymentOrderMapper, never()).insert(any(PaymentOrderEntity.class));
+  }
+
+  @Test
+  void createPaymentOrderShouldCreateNewOrderWhenLatestOrderFailed() {
+    PaymentOrderCommandDTO command = buildCommand();
+    OrderSubStatusVO status = new OrderSubStatusVO();
+    status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(command.getAmount());
+    PaymentOrderEntity failed = new PaymentOrderEntity();
+    failed.setId(66L);
+    failed.setMainOrderNo(command.getMainOrderNo());
+    failed.setSubOrderNo(command.getSubOrderNo());
+    failed.setStatus("FAILED");
+
+    when(orderStatusRemoteService.getSubOrderStatus(
+            command.getMainOrderNo(), command.getSubOrderNo()))
+        .thenReturn(status);
+    when(paymentSecurityCacheService.allowRateLimit(command.getUserId())).thenReturn(true);
+    when(paymentSecurityCacheService.getCachedResult(
+            command.getMainOrderNo() + ":" + command.getSubOrderNo()))
+        .thenReturn(null);
+    when(paymentOrderMapper.selectOne(any())).thenReturn(failed, null, null);
+    when(paymentSecurityCacheService.tryAcquireIdempotent(
+            command.getMainOrderNo() + ":" + command.getSubOrderNo(), command.getIdempotencyKey()))
+        .thenReturn(true);
+
+    Long result = service.createPaymentOrder(command);
+
+    assertThat(result).isNull();
+    verify(paymentSecurityCacheService)
+        .clearOrderState(command.getMainOrderNo() + ":" + command.getSubOrderNo());
+    verify(paymentOrderMapper).insert(any(PaymentOrderEntity.class));
+  }
+
+  @Test
+  void createPaymentOrderShouldIgnoreCachedFailedResult() {
+    PaymentOrderCommandDTO command = buildCommand();
+    OrderSubStatusVO status = new OrderSubStatusVO();
+    status.setOrderStatus("STOCK_RESERVED");
+    status.setUserId(command.getUserId());
+    status.setPayableAmount(command.getAmount());
+    PaymentOrderEntity failed = new PaymentOrderEntity();
+    failed.setId(88L);
+    failed.setStatus("FAILED");
+
+    when(orderStatusRemoteService.getSubOrderStatus(
+            command.getMainOrderNo(), command.getSubOrderNo()))
+        .thenReturn(status);
+    when(paymentSecurityCacheService.allowRateLimit(command.getUserId())).thenReturn(true);
+    when(paymentSecurityCacheService.getCachedResult(
+            command.getMainOrderNo() + ":" + command.getSubOrderNo()))
+        .thenReturn(88L);
+    when(paymentOrderMapper.selectById(88L)).thenReturn(failed);
+    when(paymentOrderMapper.selectOne(any())).thenReturn(null, null);
+    when(paymentSecurityCacheService.tryAcquireIdempotent(
+            command.getMainOrderNo() + ":" + command.getSubOrderNo(), command.getIdempotencyKey()))
+        .thenReturn(true);
+
+    Long result = service.createPaymentOrder(command);
+
+    assertThat(result).isNull();
+    verify(paymentSecurityCacheService)
+        .clearOrderState(command.getMainOrderNo() + ":" + command.getSubOrderNo());
+    verify(paymentOrderMapper).insert(any(PaymentOrderEntity.class));
   }
 
   @Test

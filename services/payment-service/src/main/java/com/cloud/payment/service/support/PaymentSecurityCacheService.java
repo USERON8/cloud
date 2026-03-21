@@ -118,6 +118,18 @@ public class PaymentSecurityCacheService {
     }
   }
 
+  public void clearOrderState(String orderKey) {
+    if (orderKey == null || orderKey.isBlank()) {
+      return;
+    }
+    try {
+      stringRedisTemplate.delete(IDEMPOTENT_PREFIX + orderKey);
+      stringRedisTemplate.delete(RESULT_PREFIX + orderKey);
+    } catch (Exception ex) {
+      log.warn("Clear payment order state cache failed: key={}", orderKey, ex);
+    }
+  }
+
   public CachedStatus getCachedStatus(String paymentKey) {
     if (paymentKey == null || paymentKey.isBlank()) {
       return null;

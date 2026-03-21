@@ -59,15 +59,22 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     String orderKey = buildOrderKey(command);
     Long cachedResult = paymentSecurityCacheService.getCachedResult(orderKey);
     if (cachedResult != null) {
-      return cachedResult;
+      PaymentOrderEntity cachedOrder = paymentOrderMapper.selectById(cachedResult);
+      if (canReusePaymentOrder(cachedOrder)) {
+        return cachedResult;
+      }
+      paymentSecurityCacheService.clearOrderState(orderKey);
     }
 
     PaymentOrderEntity existingByOrder =
         findPaymentOrderEntityByOrderNo(command.getMainOrderNo(), command.getSubOrderNo());
-    if (existingByOrder != null) {
+    if (canReusePaymentOrder(existingByOrder)) {
       paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
       paymentSecurityCacheService.cacheResult(orderKey, existingByOrder.getId());
       return existingByOrder.getId();
+    }
+    if (isFailedOrder(existingByOrder)) {
+      paymentSecurityCacheService.clearOrderState(orderKey);
     }
 
     PaymentOrderEntity existing =
@@ -474,7 +481,16 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             .eq(PaymentOrderEntity::getMainOrderNo, mainOrderNo)
             .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
             .eq(PaymentOrderEntity::getDeleted, 0)
+            .orderByDesc(PaymentOrderEntity::getId)
             .last("LIMIT 1"));
+  }
+
+  private boolean canReusePaymentOrder(PaymentOrderEntity order) {
+    return order != null && !isFailedOrder(order);
+  }
+
+  private boolean isFailedOrder(PaymentOrderEntity order) {
+    return order != null && PaymentOrderStateSupport.ORDER_STATUS_FAILED.equals(order.getStatus());
   }
 
   private PaymentProviderGateway resolveGateway(String channel) {
