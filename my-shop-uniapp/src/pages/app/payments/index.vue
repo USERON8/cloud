@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { useTimeoutPoll } from '@vueuse/core'
 import AppShell from '../../../components/AppShell.vue'
 import { resolveApiUrl } from '../../../api/http'
 import {
@@ -22,8 +23,6 @@ const refundInfo = ref<PaymentRefundInfo | null>(null)
 const checkoutLoading = ref(false)
 const pollAttempts = ref(0)
 const isPolling = ref(false)
-
-let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const FINAL_PAYMENT_STATUSES = new Set(['PAID', 'FAILED'])
 const MAX_POLL_ATTEMPTS = 15
@@ -52,13 +51,6 @@ function openCheckout(url: string): void {
       roles: ['USER', 'MERCHANT', 'ADMIN']
     }
   )
-}
-
-function clearPollTimer(): void {
-  if (pollTimer) {
-    clearTimeout(pollTimer)
-    pollTimer = null
-  }
 }
 
 function shouldKeepPolling(status?: string): boolean {
@@ -97,7 +89,7 @@ async function pollPaymentStatus(): Promise<void> {
   const targetPaymentNo = paymentNo.value.trim()
   if (!targetPaymentNo || pollAttempts.value >= MAX_POLL_ATTEMPTS) {
     isPolling.value = false
-    clearPollTimer()
+    paymentPoller.pause()
     return
   }
   isPolling.value = true
@@ -107,29 +99,29 @@ async function pollPaymentStatus(): Promise<void> {
     applyPaymentStatus(statusPayload)
     if (!shouldKeepPolling(statusPayload.status)) {
       isPolling.value = false
-      clearPollTimer()
+      paymentPoller.pause()
       await queryPayment(false)
-      return
     }
-    pollTimer = setTimeout(() => {
-      void pollPaymentStatus()
-    }, POLL_INTERVAL_MS)
   } catch (error) {
     isPolling.value = false
-    clearPollTimer()
+    paymentPoller.pause()
     toast(error instanceof Error ? error.message : 'Failed to refresh payment status')
   }
 }
 
+const paymentPoller = useTimeoutPoll(() => {
+  void pollPaymentStatus()
+}, POLL_INTERVAL_MS, { immediate: false })
+
 async function startPaymentPolling(): Promise<void> {
-  clearPollTimer()
+  paymentPoller.pause()
   pollAttempts.value = 0
+  isPolling.value = false
   await queryPayment(false)
   if (!shouldKeepPolling(paymentInfo.value?.status)) {
-    isPolling.value = false
     return
   }
-  void pollPaymentStatus()
+  paymentPoller.resume()
 }
 
 async function queryRefund(): Promise<void> {
@@ -195,12 +187,12 @@ onShow(() => {
 })
 
 onHide(() => {
-  clearPollTimer()
+  paymentPoller.pause()
   isPolling.value = false
 })
 
 onUnload(() => {
-  clearPollTimer()
+  paymentPoller.pause()
 })
 </script>
 

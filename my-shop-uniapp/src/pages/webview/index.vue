@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { ref } from 'vue'
+import { useTimeoutPoll } from '@vueuse/core'
 import { getPaymentStatus } from '../../api/payment'
 import { navigateTo, redirectTo } from '../../router/navigation'
 import { Routes } from '../../router/routes'
@@ -14,7 +15,6 @@ const MAX_POLL_ATTEMPTS = 20
 const POLL_INTERVAL_MS = 3000
 
 let pollAttempts = 0
-let pollTimer: ReturnType<typeof setTimeout> | null = null
 let redirecting = false
 
 onLoad((query) => {
@@ -41,13 +41,6 @@ function goToPaymentStatus(): void {
   )
 }
 
-function clearPollTimer(): void {
-  if (pollTimer) {
-    clearTimeout(pollTimer)
-    pollTimer = null
-  }
-}
-
 function isFinalPaymentStatus(status?: string): boolean {
   return !!status && FINAL_PAYMENT_STATUSES.has(status)
 }
@@ -69,7 +62,7 @@ function redirectToPaymentStatus(): void {
 
 async function pollPaymentStatus(): Promise<void> {
   if (!paymentNo.value || redirecting || pollAttempts >= MAX_POLL_ATTEMPTS) {
-    clearPollTimer()
+    webviewPoller.pause()
     return
   }
   pollAttempts += 1
@@ -77,41 +70,39 @@ async function pollPaymentStatus(): Promise<void> {
     const result = await getPaymentStatus(paymentNo.value)
     paymentStatus.value = result.status || ''
     if (isFinalPaymentStatus(result.status)) {
-      clearPollTimer()
+      webviewPoller.pause()
       redirectToPaymentStatus()
-      return
     }
   } catch {
     // Ignore polling failures and keep manual navigation available.
   }
-  pollTimer = setTimeout(() => {
-    void pollPaymentStatus()
-  }, POLL_INTERVAL_MS)
 }
 
+const webviewPoller = useTimeoutPoll(() => {
+  void pollPaymentStatus()
+}, POLL_INTERVAL_MS, { immediate: false })
+
 async function startPaymentPolling(): Promise<void> {
-  clearPollTimer()
+  webviewPoller.pause()
   pollAttempts = 0
   redirecting = false
   paymentStatus.value = ''
-  await pollPaymentStatus()
+  webviewPoller.resume()
 }
 
 onShow(() => {
   if (!paymentNo.value || redirecting || isFinalPaymentStatus(paymentStatus.value)) {
     return
   }
-  if (!pollTimer) {
-    void startPaymentPolling()
-  }
+  void startPaymentPolling()
 })
 
 onHide(() => {
-  clearPollTimer()
+  webviewPoller.pause()
 })
 
 onUnload(() => {
-  clearPollTimer()
+  webviewPoller.pause()
 })
 </script>
 
