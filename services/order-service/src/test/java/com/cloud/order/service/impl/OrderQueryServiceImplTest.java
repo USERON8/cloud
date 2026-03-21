@@ -65,6 +65,7 @@ class OrderQueryServiceImplTest {
     AfterSale afterSale = new AfterSale();
     afterSale.setId(30L);
     afterSale.setAfterSaleNo("AS-30");
+    afterSale.setAfterSaleType("RETURN_REFUND");
     when(afterSaleMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(afterSale);
 
     OrderSummaryDTO summary =
@@ -77,6 +78,7 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getMerchantId()).isEqualTo(300L);
     assertThat(summary.getAfterSaleId()).isEqualTo(30L);
     assertThat(summary.getAfterSaleNo()).isEqualTo("AS-30");
+    assertThat(summary.getAfterSaleType()).isEqualTo("RETURN_REFUND");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("NONE");
     assertThat(summary.getStatus()).isEqualTo(1);
   }
@@ -154,6 +156,7 @@ class OrderQueryServiceImplTest {
     AfterSale afterSale = new AfterSale();
     afterSale.setId(61L);
     afterSale.setAfterSaleNo("AS-61");
+    afterSale.setAfterSaleType("REFUND");
 
     when(orderMainMapper.selectPageByMerchant(
             org.mockito.ArgumentMatchers.any(),
@@ -176,6 +179,7 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getMerchantId()).isEqualTo(301L);
     assertThat(summary.getAfterSaleId()).isEqualTo(61L);
     assertThat(summary.getAfterSaleNo()).isEqualTo("AS-61");
+    assertThat(summary.getAfterSaleType()).isEqualTo("REFUND");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("APPLIED");
     assertThat(summary.getStatus()).isEqualTo(1);
   }

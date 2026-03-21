@@ -287,6 +287,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       if (latestAfterSale != null) {
         summary.setAfterSaleId(latestAfterSale.getId());
         summary.setAfterSaleNo(latestAfterSale.getAfterSaleNo());
+        summary.setAfterSaleType(latestAfterSale.getAfterSaleType());
       }
     }
     return summary;

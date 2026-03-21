@@ -52,7 +52,8 @@ public class OrderController {
           AfterSaleAction.REJECT,
           AfterSaleAction.WAIT_RETURN,
           AfterSaleAction.RETURN,
-          AfterSaleAction.RECEIVE);
+          AfterSaleAction.RECEIVE,
+          AfterSaleAction.PROCESS);
 
   private final OrderService orderService;
   private final OrderPlacementService orderPlacementService;

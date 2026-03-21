@@ -72,6 +72,7 @@ export interface OrderItem {
   merchantId?: number
   afterSaleId?: number
   afterSaleNo?: string
+  afterSaleType?: string
   shopId?: number
   totalAmount?: number
   payAmount?: number

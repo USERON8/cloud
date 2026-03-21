@@ -203,6 +203,36 @@ class OrderControllerTest {
         .hasMessageContaining("merchantId and shopId must match");
   }
 
+  @Test
+  void advanceAfterSaleStatusShouldAllowMerchantProcessAction() {
+    AfterSale afterSale = new AfterSale();
+    afterSale.setId(55L);
+    afterSale.setMerchantId(201L);
+    afterSale.setUserId(101L);
+    afterSale.setStatus("RECEIVED");
+
+    AfterSale updated = new AfterSale();
+    updated.setId(55L);
+    updated.setStatus("REFUNDING");
+    AfterSaleDTO response = new AfterSaleDTO();
+    response.setId(55L);
+    response.setStatus("REFUNDING");
+
+    when(orderService.getAfterSale(55L)).thenReturn(afterSale);
+    when(orderService.advanceAfterSaleStatus(
+            55L, com.cloud.order.enums.AfterSaleAction.PROCESS, "start refund"))
+        .thenReturn(updated);
+    when(afterSaleDtoConverter.toDto(updated)).thenReturn(response);
+
+    var result =
+        orderController.advanceAfterSaleStatus(
+            55L, "PROCESS", "start refund", authentication("201", "ROLE_MERCHANT", "order:refund"));
+
+    assertThat(result.getData()).isSameAs(response);
+    verify(orderService)
+        .advanceAfterSaleStatus(55L, com.cloud.order.enums.AfterSaleAction.PROCESS, "start refund");
+  }
+
   private CreateMainOrderRequest buildDirectOrderRequest() {
     CreateMainOrderRequest request = new CreateMainOrderRequest();
     request.setSpuId(10L);

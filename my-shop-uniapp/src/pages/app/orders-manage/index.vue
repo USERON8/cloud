@@ -60,6 +60,30 @@ function canRejectAfterSale(order: OrderItem): boolean {
   return typeof order.afterSaleId === 'number' && ['APPLIED', 'AUDITING'].includes(order.afterSaleStatus ?? '')
 }
 
+function canWaitReturn(order: OrderItem): boolean {
+  return (
+    typeof order.afterSaleId === 'number' &&
+    order.afterSaleStatus === 'APPROVED' &&
+    order.afterSaleType === 'RETURN_REFUND'
+  )
+}
+
+function canProcessRefund(order: OrderItem): boolean {
+  return (
+    typeof order.afterSaleId === 'number' &&
+    ((order.afterSaleStatus === 'APPROVED' && order.afterSaleType === 'REFUND') ||
+      order.afterSaleStatus === 'RECEIVED')
+  )
+}
+
+function canMarkReturned(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'WAIT_RETURN'
+}
+
+function canMarkReceived(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'RETURNED'
+}
+
 async function onShip(order: OrderItem): Promise<void> {
   if (typeof order.id !== 'number') return
   const shippingCompany = requireShippingField(shippingForm.shippingCompany, 'Shipping company')
@@ -90,7 +114,10 @@ async function onComplete(order: OrderItem): Promise<void> {
   }
 }
 
-async function onAdvanceAfterSale(order: OrderItem, action: 'AUDIT' | 'APPROVE' | 'REJECT'): Promise<void> {
+async function onAdvanceAfterSale(
+  order: OrderItem,
+  action: 'AUDIT' | 'APPROVE' | 'REJECT' | 'WAIT_RETURN' | 'RETURN' | 'RECEIVE' | 'PROCESS'
+): Promise<void> {
   if (typeof order.afterSaleId !== 'number' || typeof order.id !== 'number') {
     toast('This order is missing after-sale metadata')
     return
@@ -98,7 +125,11 @@ async function onAdvanceAfterSale(order: OrderItem, action: 'AUDIT' | 'APPROVE' 
   const labels: Record<typeof action, string> = {
     AUDIT: 'start review',
     APPROVE: 'approve',
-    REJECT: 'reject'
+    REJECT: 'reject',
+    WAIT_RETURN: 'wait for return',
+    RETURN: 'mark returned',
+    RECEIVE: 'mark received',
+    PROCESS: 'start refund'
   }
   const ok = await confirm(`Confirm ${labels[action]} for ${order.afterSaleNo ?? order.afterSaleId}?`)
   if (!ok) {
@@ -178,6 +209,38 @@ onMounted(() => {
               @click="onAdvanceAfterSale(item, 'REJECT')"
             >
               Reject
+            </button>
+            <button
+              v-if="canWaitReturn(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'WAIT_RETURN')"
+            >
+              Wait return
+            </button>
+            <button
+              v-if="canMarkReturned(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'RETURN')"
+            >
+              Mark returned
+            </button>
+            <button
+              v-if="canMarkReceived(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'RECEIVE')"
+            >
+              Mark received
+            </button>
+            <button
+              v-if="canProcessRefund(item)"
+              class="btn-outline"
+              :loading="afterSaleActingOrderId === item.id"
+              @click="onAdvanceAfterSale(item, 'PROCESS')"
+            >
+              Start refund
             </button>
           </view>
         </view>
