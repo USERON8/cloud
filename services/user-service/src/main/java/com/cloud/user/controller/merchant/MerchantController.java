@@ -96,8 +96,9 @@ public class MerchantController {
 
   @GetMapping("/{id}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#id, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#id, authentication))")
   @Operation(summary = "Get merchant by ID", description = "Get merchant details by merchant ID")
   public Result<MerchantDTO> getMerchantById(
       @Parameter(description = "Merchant ID")
@@ -128,8 +129,9 @@ public class MerchantController {
 
   @PutMapping("/{id}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#id, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#id, authentication))")
   @Operation(summary = "Update merchant", description = "Update merchant details")
   public Result<Boolean> updateMerchant(
       @Parameter(description = "Merchant ID") @PathVariable Long id,
@@ -187,8 +189,9 @@ public class MerchantController {
 
   @GetMapping("/{id}/statistics")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#id, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#id, authentication))")
   @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
   public Result<Object> getMerchantStatistics(
       @Parameter(description = "Merchant ID") @PathVariable Long id,

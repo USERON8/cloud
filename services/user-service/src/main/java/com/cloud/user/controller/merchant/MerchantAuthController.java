@@ -52,8 +52,9 @@ public class MerchantAuthController {
 
   @PostMapping("/apply/{merchantId}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
       summary = "Apply merchant auth",
       description = "Create or update merchant auth application")
@@ -103,8 +104,9 @@ public class MerchantAuthController {
 
   @PostMapping("/upload/license/{merchantId}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
       summary = "Upload business license",
       description = "Upload business license for merchant auth")
@@ -132,8 +134,9 @@ public class MerchantAuthController {
 
   @GetMapping("/get/{merchantId}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
       summary = "Get merchant auth",
       description = "Get merchant auth information by merchant ID")
@@ -156,8 +159,9 @@ public class MerchantAuthController {
 
   @DeleteMapping("/revoke/{merchantId}")
   @PreAuthorize(
-      "hasAuthority('merchant:manage') "
-          + "and @permissionManager.isMerchantOwner(#merchantId, authentication)")
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
       summary = "Revoke merchant auth",
       description = "Delete merchant auth application by merchant ID")
