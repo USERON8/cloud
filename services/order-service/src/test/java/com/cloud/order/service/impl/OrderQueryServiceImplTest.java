@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.cloud.order.dto.OrderSummaryDTO;
+import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
@@ -28,13 +30,15 @@ class OrderQueryServiceImplTest {
   @Mock private OrderMainMapper orderMainMapper;
   @Mock private OrderSubMapper orderSubMapper;
   @Mock private OrderItemMapper orderItemMapper;
+  @Mock private AfterSaleMapper afterSaleMapper;
 
   private OrderQueryServiceImpl orderQueryService;
 
   @BeforeEach
   void setUp() {
     orderQueryService =
-        new OrderQueryServiceImpl(orderService, orderMainMapper, orderSubMapper, orderItemMapper);
+        new OrderQueryServiceImpl(
+            orderService, orderMainMapper, orderSubMapper, orderItemMapper, afterSaleMapper);
   }
 
   @Test
@@ -57,6 +61,10 @@ class OrderQueryServiceImplTest {
 
     when(orderService.getMainOrder(10L)).thenReturn(main);
     when(orderService.listSubOrders(10L)).thenReturn(List.of(sub));
+    AfterSale afterSale = new AfterSale();
+    afterSale.setId(30L);
+    afterSale.setAfterSaleNo("AS-30");
+    when(afterSaleMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(afterSale);
 
     OrderSummaryDTO summary =
         orderQueryService.getOrderSummary(10L, authentication("1", "ROLE_ADMIN", "order:query"));
@@ -66,6 +74,8 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getSubOrderId()).isEqualTo(20L);
     assertThat(summary.getSubOrderNo()).isEqualTo("S-20");
     assertThat(summary.getMerchantId()).isEqualTo(300L);
+    assertThat(summary.getAfterSaleId()).isEqualTo(30L);
+    assertThat(summary.getAfterSaleNo()).isEqualTo("AS-30");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("NONE");
     assertThat(summary.getStatus()).isEqualTo(1);
   }
@@ -105,6 +115,8 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getSubOrderId()).isNull();
     assertThat(summary.getSubOrderNo()).isNull();
     assertThat(summary.getMerchantId()).isNull();
+    assertThat(summary.getAfterSaleId()).isNull();
+    assertThat(summary.getAfterSaleNo()).isNull();
     assertThat(summary.getAfterSaleStatus()).isNull();
     assertThat(summary.getStatus()).isEqualTo(2);
   }

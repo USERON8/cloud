@@ -70,6 +70,8 @@ export interface OrderItem {
   subOrderId?: number
   subOrderNo?: string
   merchantId?: number
+  afterSaleId?: number
+  afterSaleNo?: string
   shopId?: number
   totalAmount?: number
   payAmount?: number

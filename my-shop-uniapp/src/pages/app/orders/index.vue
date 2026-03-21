@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { applyAfterSale, cancelOrder, listOrders } from '../../../api/order'
+import { advanceAfterSaleStatus, applyAfterSale, cancelOrder, listOrders } from '../../../api/order'
 import type { AfterSaleInfo, OrderItem } from '../../../types/domain'
 import { formatDate, formatPrice } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
@@ -35,6 +35,10 @@ function canApplyAfterSale(order: OrderItem): boolean {
     [1, 2, 3].includes(order.status ?? -1) &&
     (!order.afterSaleStatus || order.afterSaleStatus === 'NONE')
   )
+}
+
+function canCancelAfterSale(order: OrderItem): boolean {
+  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'APPLIED'
 }
 
 function resetAfterSaleDraft(): void {
@@ -147,6 +151,27 @@ async function submitAfterSale(): Promise<void> {
   }
 }
 
+async function cancelAfterSale(order: OrderItem): Promise<void> {
+  if (!canCancelAfterSale(order) || typeof order.afterSaleId !== 'number') {
+    toast('This after-sale request cannot be cancelled')
+    return
+  }
+  const ok = await confirm(`Cancel after-sale request ${order.afterSaleNo ?? order.afterSaleId}?`)
+  if (!ok) {
+    return
+  }
+  refundingOrderId.value = order.id
+  try {
+    await advanceAfterSaleStatus(order.afterSaleId, 'CANCEL')
+    toast('After-sale request cancelled', 'success')
+    await loadOrders()
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Failed to cancel the after-sale request')
+  } finally {
+    refundingOrderId.value = null
+  }
+}
+
 onMounted(() => {
   void loadOrders()
 })
@@ -173,7 +198,7 @@ onMounted(() => {
               <text class="meta">Status: {{ statusText(item.status) }}</text>
               <text class="meta">Created: {{ formatDate(item.createdAt) }}</text>
               <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="meta">
-                After-sale: {{ item.afterSaleStatus }}
+                After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
               </text>
             </view>
             <view class="actions">
@@ -182,6 +207,9 @@ onMounted(() => {
               </button>
               <button v-if="canApplyAfterSale(item)" class="btn-outline" @click="openAfterSale(item)">
                 Apply after-sale
+              </button>
+              <button v-if="canCancelAfterSale(item)" class="btn-outline" @click="cancelAfterSale(item)">
+                Cancel after-sale
               </button>
               <button class="btn-outline" @click="onCancel(item)">Cancel</button>
             </view>

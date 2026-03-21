@@ -90,3 +90,9 @@ export function batchCompleteOrders(ids: number[]): Promise<number> {
 export function applyAfterSale(payload: AfterSaleInfo): Promise<AfterSaleInfo> {
   return http.post<AfterSaleInfo, AfterSaleInfo>('/api/orders/after-sales', payload)
 }
+
+export function advanceAfterSaleStatus(afterSaleId: number, action: string, remark?: string): Promise<AfterSaleInfo> {
+  return http.post<AfterSaleInfo, AfterSaleInfo>(`/api/orders/after-sales/${afterSaleId}/actions/${action}`, null, {
+    params: { remark }
+  })
+}

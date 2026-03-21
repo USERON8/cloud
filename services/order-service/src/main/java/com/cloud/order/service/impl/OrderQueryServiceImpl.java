@@ -9,8 +9,10 @@ import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.OrderSummaryDTO;
+import com.cloud.order.entity.AfterSale;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
+import com.cloud.order.mapper.AfterSaleMapper;
 import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
@@ -37,6 +39,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   private final OrderMainMapper orderMainMapper;
   private final OrderSubMapper orderSubMapper;
   private final OrderItemMapper orderItemMapper;
+  private final AfterSaleMapper afterSaleMapper;
 
   @Override
   public PageResult<OrderSummaryDTO> listOrders(
@@ -263,8 +266,25 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       summary.setSubOrderNo(sub.getSubOrderNo());
       summary.setMerchantId(sub.getMerchantId());
       summary.setAfterSaleStatus(sub.getAfterSaleStatus());
+      AfterSale latestAfterSale = findLatestAfterSale(sub.getId());
+      if (latestAfterSale != null) {
+        summary.setAfterSaleId(latestAfterSale.getId());
+        summary.setAfterSaleNo(latestAfterSale.getAfterSaleNo());
+      }
     }
     return summary;
+  }
+
+  private AfterSale findLatestAfterSale(Long subOrderId) {
+    if (subOrderId == null) {
+      return null;
+    }
+    return afterSaleMapper.selectOne(
+        new LambdaQueryWrapper<AfterSale>()
+            .eq(AfterSale::getSubOrderId, subOrderId)
+            .eq(AfterSale::getDeleted, 0)
+            .orderByDesc(AfterSale::getId)
+            .last("LIMIT 1"));
   }
 
   private Integer resolveStatusCode(List<OrderSub> subs) {
