@@ -40,7 +40,9 @@ const visibleNavItems = computed(() =>
   navItems.filter((item) => item.public || item.roles.includes(role.value))
 )
 
-const displayName = computed(() => sessionState.user?.nickname || sessionState.user?.username || 'Current User')
+const displayName = computed(
+  () => sessionState.user?.nickname || sessionState.user?.username || 'Current User'
+)
 const roleLabel = computed(() => role.value)
 
 function isActive(path: string): boolean {
@@ -63,7 +65,7 @@ async function handleLogout(): Promise<void> {
     // ignore
   } finally {
     clearSession()
-    uni.showToast({ title: '已退出', icon: 'success' })
+    uni.showToast({ title: 'Signed out', icon: 'success' })
     redirectTo(Routes.login)
   }
 }
@@ -79,7 +81,7 @@ async function handleLogout(): Promise<void> {
       <view class="user-meta">
         <view class="role-chip">{{ roleLabel }}</view>
         <text class="user-name">{{ displayName }}</text>
-        <button class="btn-outline" @click="handleLogout">退出登录</button>
+        <button class="btn-outline" @click="handleLogout">Sign out</button>
       </view>
     </view>
 
