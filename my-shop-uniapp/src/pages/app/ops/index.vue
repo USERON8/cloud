@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
+import { resolveApiUrl } from '../../../api/http'
 import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
 import {
   advancedSearch,
@@ -34,16 +35,24 @@ import {
 import { findUserByUsername, updateUsersBatch } from '../../../api/user-management'
 import { approveMerchantsBatch, deleteMerchantsBatch, updateMerchantStatusBatch } from '../../../api/merchant'
 import { reviewMerchantAuthBatch } from '../../../api/merchant-auth'
-import { createPaymentOrder, createPaymentRefund, handlePaymentCallback } from '../../../api/payment'
+import {
+  createPaymentCheckoutSession,
+  createPaymentOrder,
+  createPaymentRefund,
+  getPaymentOrderByNo,
+  getPaymentOrderByOrderNo,
+  getPaymentStatus
+} from '../../../api/payment'
 import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../../../api/statistics'
 import type {
-  PaymentCallbackCommand,
   PaymentOrderCommand,
   PaymentRefundCommand,
   ProductFilterRequest,
   ProductSearchRequest,
   SpuCreateRequest
 } from '../../../types/domain'
+import { navigateTo } from '../../../router/navigation'
+import { Routes } from '../../../router/routes'
 import { confirm, toast } from '../../../utils/ui'
 
 const tabs = [
@@ -1238,9 +1247,11 @@ async function reviewMerchantAuthBatchAction(): Promise<void> {
 }
 
 // Payment operations
+const paymentNoInput = ref('')
+const paymentMainOrderNo = ref('')
+const paymentSubOrderNo = ref('')
 const paymentOrderJson = ref('')
 const paymentRefundJson = ref('')
-const paymentCallbackJson = ref('')
 const paymentResult = ref<unknown>(null)
 
 async function createPaymentOrderAction(): Promise<void> {
@@ -1265,14 +1276,66 @@ async function createPaymentRefundAction(): Promise<void> {
   }
 }
 
-async function handlePaymentCallbackAction(): Promise<void> {
-  const payload = parseJson<PaymentCallbackCommand>(paymentCallbackJson.value, 'Callback')
-  if (!payload) return
+async function loadPaymentByNoAction(): Promise<void> {
+  if (!paymentNoInput.value.trim()) {
+    toast('Please enter a payment number')
+    return
+  }
   try {
-    paymentResult.value = await handlePaymentCallback(payload)
-    toast('Callback processed', 'success')
+    paymentResult.value = await getPaymentOrderByNo(paymentNoInput.value.trim())
+    toast('Payment order loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'Processing failed')
+    toast(error instanceof Error ? error.message : 'Load failed')
+  }
+}
+
+async function loadPaymentByOrderAction(): Promise<void> {
+  if (!paymentMainOrderNo.value.trim() || !paymentSubOrderNo.value.trim()) {
+    toast('Please enter both the main order number and sub order number')
+    return
+  }
+  try {
+    paymentResult.value = await getPaymentOrderByOrderNo(paymentMainOrderNo.value.trim(), paymentSubOrderNo.value.trim())
+    toast('Payment order lookup completed', 'success')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Lookup failed')
+  }
+}
+
+async function refreshPaymentStatusAction(): Promise<void> {
+  if (!paymentNoInput.value.trim()) {
+    toast('Please enter a payment number')
+    return
+  }
+  try {
+    paymentResult.value = await getPaymentStatus(paymentNoInput.value.trim())
+    toast('Payment status loaded', 'success')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Load failed')
+  }
+}
+
+async function openPaymentCheckoutAction(): Promise<void> {
+  if (!paymentNoInput.value.trim()) {
+    toast('Please enter a payment number')
+    return
+  }
+  try {
+    const session = await createPaymentCheckoutSession(paymentNoInput.value.trim())
+    if (!session.checkoutPath) {
+      throw new Error('Checkout session is missing checkoutPath')
+    }
+    navigateTo(
+      Routes.webview,
+      { url: resolveApiUrl(session.checkoutPath), paymentNo: paymentNoInput.value.trim() },
+      {
+        requiresAuth: true,
+        roles: ['USER', 'MERCHANT', 'ADMIN']
+      }
+    )
+    toast('Checkout page opened', 'success')
+  } catch (error) {
+    toast(error instanceof Error ? error.message : 'Open checkout failed')
   }
 }
 
@@ -1562,12 +1625,19 @@ async function refreshStatsCache(): Promise<void> {
 
     <view v-if="activeTab === 'payments'" class="panel glass-card">
       <text class="section-title">Payment operations</text>
+      <input v-model="paymentNoInput" class="input" placeholder="Payment number" />
+      <input v-model="paymentMainOrderNo" class="input" placeholder="Main order number" />
+      <input v-model="paymentSubOrderNo" class="input" placeholder="Sub order number" />
+      <view class="row-inline">
+        <button class="btn-outline" @click="loadPaymentByNoAction">Load by payment number</button>
+        <button class="btn-outline" @click="loadPaymentByOrderAction">Load by order numbers</button>
+        <button class="btn-outline" @click="refreshPaymentStatusAction">Load status</button>
+        <button class="btn-outline" @click="openPaymentCheckoutAction">Open checkout</button>
+      </view>
       <textarea v-model="paymentOrderJson" class="textarea" placeholder="Payment order JSON" />
       <button class="btn-outline" @click="createPaymentOrderAction">Create payment order</button>
       <textarea v-model="paymentRefundJson" class="textarea" placeholder="Payment refund JSON" />
       <button class="btn-outline" @click="createPaymentRefundAction">Create payment refund</button>
-      <textarea v-model="paymentCallbackJson" class="textarea" placeholder="Callback JSON" />
-      <button class="btn-outline" @click="handlePaymentCallbackAction">Process callback</button>
       <text class="code-block">{{ formatJson(paymentResult) }}</text>
     </view>
 

@@ -102,8 +102,8 @@ Primary APIs:
 - `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
 
 Notes:
-- Frontend still exposes `payOrder` and `batchPayOrders` helpers for compatibility, but the backend intentionally rejects direct pay state transitions.
 - Real payment starts from the payment module after order creation.
+- The frontend order module no longer exposes direct order pay helpers because the backend intentionally rejects direct pay state transitions.
 
 ### 5. Payment And Checkout
 

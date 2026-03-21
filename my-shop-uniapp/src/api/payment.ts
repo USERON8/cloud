@@ -1,7 +1,6 @@
 import http from './http'
 import { BusinessError } from '../types/api'
 import type {
-  PaymentCallbackCommand,
   PaymentCheckoutSession,
   PaymentOrderCommand,
   PaymentOrderInfo,
@@ -50,8 +49,4 @@ export function getPaymentStatus(paymentNo: string): Promise<PaymentStatusInfo> 
 
 export function createPaymentRefund(payload: PaymentRefundCommand): Promise<number> {
   return http.post<number, number>('/api/payments/refunds', payload)
-}
-
-export function handlePaymentCallback(payload: PaymentCallbackCommand): Promise<boolean> {
-  return http.post<boolean, boolean>('/api/payments/callbacks', payload)
 }

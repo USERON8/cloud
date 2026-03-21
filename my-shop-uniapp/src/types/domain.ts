@@ -404,15 +404,6 @@ export interface AfterSaleInfo {
   updatedAt?: string
 }
 
-export interface PaymentCallbackCommand {
-  paymentNo: string
-  callbackNo: string
-  callbackStatus: string
-  providerTxnNo?: string
-  idempotencyKey: string
-  payload?: string
-}
-
 export interface StockLedger {
   id?: number
   skuId?: number
