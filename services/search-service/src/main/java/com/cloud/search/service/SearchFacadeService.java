@@ -1,6 +1,5 @@
 package com.cloud.search.service;
 
-import cn.hutool.core.util.StrUtil;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
@@ -8,12 +7,9 @@ import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.mapper.SearchRequestMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,10 +48,20 @@ public class SearchFacadeService {
 
   public SearchResultDTO<ProductDocument> getProductFilters(
       ProductSearchRequest request, String searchAfter) {
-    SearchResultDTO<ProductDocument> base = searchProducts(request, searchAfter);
-    List<ProductDocument> list = base.getList() == null ? new ArrayList<>() : base.getList();
-    base.setAggregations(buildFilterAggregations(list));
-    return base;
+    ProductSearchRequest aggregationRequest = copyRequest(request);
+    aggregationRequest.setIncludeAggregations(true);
+    List<Object> searchAfterValues = parseSearchAfter(searchAfter);
+    long start = System.currentTimeMillis();
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        elasticsearchOptimizedService.productSearchAfter(aggregationRequest, searchAfterValues);
+    SearchResultDTO<ProductDocument> result =
+        toSearchResultDTO(
+        esResult,
+        resolvePage(aggregationRequest.getPage()),
+        resolveSize(aggregationRequest.getSize()),
+        System.currentTimeMillis() - start);
+    result.setAggregations(normalizeProductAggregations(result.getAggregations()));
+    return result;
   }
 
   public List<String> getSearchSuggestions(String keyword, Integer size) {
@@ -344,20 +350,57 @@ public class SearchFacadeService {
         .build();
   }
 
-  private Map<String, Object> buildFilterAggregations(List<ProductDocument> list) {
-    Map<String, Object> aggregations = new LinkedHashMap<>();
-    aggregations.put(
-        "categories",
-        list.stream()
-            .filter(item -> item != null && StrUtil.isNotBlank(item.getCategoryName()))
-            .collect(
-                Collectors.groupingBy(ProductDocument::getCategoryName, Collectors.counting())));
-    aggregations.put(
-        "brands",
-        list.stream()
-            .filter(item -> item != null && StrUtil.isNotBlank(item.getBrandName()))
-            .collect(Collectors.groupingBy(ProductDocument::getBrandName, Collectors.counting())));
-    return aggregations;
+  private Map<String, Object> normalizeProductAggregations(Map<String, Object> rawAggregations) {
+    if (rawAggregations == null || rawAggregations.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, Object> normalized = new LinkedHashMap<>();
+    normalized.put("categories", normalizeBucketCounts(rawAggregations.get("categories")));
+    normalized.put("brands", normalizeBucketCounts(rawAggregations.get("brands")));
+    if (rawAggregations.containsKey("priceRanges")) {
+      normalized.put("priceRanges", rawAggregations.get("priceRanges"));
+    }
+    return normalized;
+  }
+
+  private Map<String, Long> normalizeBucketCounts(Object rawBuckets) {
+    if (!(rawBuckets instanceof List<?> bucketList)) {
+      return Map.of();
+    }
+    Map<String, Long> normalized = new LinkedHashMap<>();
+    for (Object bucket : bucketList) {
+      if (!(bucket instanceof Map<?, ?> bucketMap)) {
+        continue;
+      }
+      Object keyValue = bucketMap.get("key");
+      Object countValue = bucketMap.get("count");
+      if (keyValue == null || countValue == null) {
+        continue;
+      }
+      String key = String.valueOf(keyValue).trim();
+      if (key.isEmpty()) {
+        continue;
+      }
+      long count;
+      if (countValue instanceof Number number) {
+        count = number.longValue();
+      } else {
+        try {
+          count = Long.parseLong(String.valueOf(countValue));
+        } catch (NumberFormatException ex) {
+          continue;
+        }
+      }
+      normalized.put(key, count);
+    }
+    return normalized;
+  }
+
+  private ProductSearchRequest copyRequest(ProductSearchRequest request) {
+    if (request == null) {
+      return new ProductSearchRequest();
+    }
+    return objectMapper.convertValue(request, ProductSearchRequest.class);
   }
 
   private List<Object> parseSearchAfter(String searchAfter) {

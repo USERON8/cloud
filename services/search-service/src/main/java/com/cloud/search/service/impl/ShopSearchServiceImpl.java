@@ -1,6 +1,17 @@
 package com.cloud.search.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -31,12 +42,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShopSearchServiceImpl implements ShopSearchService {
 
   private static final int ACTIVE_STATUS = 1;
+  private static final String SHOP_INDEX = "shop_index";
   private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
   private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
   private static final int PROCESSED_LOOKBACK_DAYS = 1;
   private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
   private final ShopDocumentRepository shopDocumentRepository;
+  private final ElasticsearchClient elasticsearchClient;
   private final ElasticsearchOperations elasticsearchOperations;
   private final StringRedisTemplate redisTemplate;
 
@@ -224,18 +237,7 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   @Transactional(readOnly = true)
   public SearchResultDTO<ShopDocument> getShopFilters(ShopSearchRequest request) {
     SearchResultDTO<ShopDocument> base = searchShops(request);
-    List<ShopDocument> list = base.getList() == null ? Collections.emptyList() : base.getList();
-
-    Map<String, Object> aggregations = new LinkedHashMap<>();
-    aggregations.put(
-        "statusCount",
-        list.stream()
-            .collect(Collectors.groupingBy(ShopDocument::getStatus, Collectors.counting())));
-    aggregations.put(
-        "recommendCount",
-        list.stream()
-            .collect(Collectors.groupingBy(ShopDocument::getRecommended, Collectors.counting())));
-    base.setAggregations(aggregations);
+    base.setAggregations(queryShopAggregations(request));
     return base;
   }
 
@@ -265,6 +267,115 @@ public class ShopSearchServiceImpl implements ShopSearchService {
           pageable);
     }
     return shopDocumentRepository.findByStatus(effectiveStatus, pageable);
+  }
+
+  private Map<String, Object> queryShopAggregations(ShopSearchRequest request) {
+    try {
+      SearchResponse<Map> response =
+          elasticsearchClient.search(
+              SearchRequest.of(
+                  s ->
+                      s.index(SHOP_INDEX)
+                          .query(buildShopQuery(request))
+                          .size(0)
+                          .aggregations(buildShopAggregations())),
+              Map.class);
+      return processShopAggregations(response.aggregations());
+    } catch (Exception e) {
+      log.error("Query shop aggregations failed", e);
+      return Map.of();
+    }
+  }
+
+  private Query buildShopQuery(ShopSearchRequest request) {
+    ShopSearchRequest safeRequest = request == null ? new ShopSearchRequest() : request;
+    int effectiveStatus = safeRequest.getStatus() != null ? safeRequest.getStatus() : ACTIVE_STATUS;
+    BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+
+    if (StrUtil.isNotBlank(safeRequest.getKeyword())) {
+      boolQuery.must(
+          Query.of(
+              q ->
+                  q.multiMatch(
+                      m ->
+                          m.query(safeRequest.getKeyword())
+                              .fields("shopName^3", "description", "address")
+                              .type(TextQueryType.BestFields)
+                              .fuzziness("AUTO"))));
+    }
+
+    boolQuery.filter(
+        Query.of(q -> q.term(t -> t.field("status").value(FieldValue.of(effectiveStatus)))));
+
+    if (safeRequest.getMerchantId() != null) {
+      boolQuery.filter(
+          Query.of(
+              q ->
+                  q.term(
+                      t ->
+                          t.field("merchantId")
+                              .value(FieldValue.of(safeRequest.getMerchantId())))));
+    }
+    if (safeRequest.getRecommended() != null) {
+      boolQuery.filter(
+          Query.of(
+              q ->
+                  q.term(
+                      t ->
+                          t.field("recommended")
+                              .value(FieldValue.of(safeRequest.getRecommended())))));
+    }
+    if (StrUtil.isNotBlank(safeRequest.getAddressKeyword())) {
+      boolQuery.filter(
+          Query.of(q -> q.match(m -> m.field("address").query(safeRequest.getAddressKeyword()))));
+    }
+    if (safeRequest.getMinRating() != null) {
+      boolQuery.filter(
+          Query.of(
+              q ->
+                  q.range(
+                      r ->
+                          r.number(
+                              n ->
+                                  n.field("rating")
+                                      .gte(safeRequest.getMinRating().doubleValue())))));
+    }
+    return Query.of(q -> q.bool(boolQuery.build()));
+  }
+
+  private Map<String, Aggregation> buildShopAggregations() {
+    Map<String, Aggregation> aggregations = new LinkedHashMap<>();
+    aggregations.put("statusCount", Aggregation.of(a -> a.terms(t -> t.field("status").size(10))));
+    aggregations.put(
+        "recommendCount", Aggregation.of(a -> a.terms(t -> t.field("recommended").size(2))));
+    return aggregations;
+  }
+
+  private Map<String, Object> processShopAggregations(Map<String, Aggregate> aggregations) {
+    if (aggregations == null || aggregations.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, Object> result = new LinkedHashMap<>();
+    for (Map.Entry<String, Aggregate> entry : aggregations.entrySet()) {
+      Aggregate aggregate = entry.getValue();
+      if (!aggregate.isLterms()) {
+        continue;
+      }
+      LongTermsAggregate terms = aggregate.lterms();
+      Map<Object, Long> buckets = new LinkedHashMap<>();
+      for (LongTermsBucket bucket : terms.buckets().array()) {
+        buckets.put(normalizeShopAggregationKey(entry.getKey(), bucket.key()), bucket.docCount());
+      }
+      result.put(entry.getKey(), buckets);
+    }
+    return result;
+  }
+
+  private Object normalizeShopAggregationKey(String aggregationName, long key) {
+    if ("recommendCount".equals(aggregationName)) {
+      return key != 0L;
+    }
+    return Math.toIntExact(key);
   }
 
   private int normalizePage(Integer page) {

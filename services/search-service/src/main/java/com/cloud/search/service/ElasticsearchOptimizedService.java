@@ -5,6 +5,10 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.RangeAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.RangeBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -32,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1030,7 +1035,7 @@ public class ElasticsearchOptimizedService {
     Map<String, Aggregation> aggregations = new HashMap<>();
 
     aggregations.put(
-        "categories", Aggregation.of(a -> a.terms(t -> t.field("categoryId").size(20))));
+        "categories", Aggregation.of(a -> a.terms(t -> t.field("categoryName.keyword").size(20))));
 
     aggregations.put(
         "brands", Aggregation.of(a -> a.terms(t -> t.field("brandName.keyword").size(20))));
@@ -1052,7 +1057,7 @@ public class ElasticsearchOptimizedService {
 
   private Map<String, Object> processAggregations(
       Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregate> aggregations) {
-    Map<String, Object> result = new HashMap<>();
+    Map<String, Object> result = new LinkedHashMap<>();
 
     if (aggregations == null || aggregations.isEmpty()) {
       return result;
@@ -1065,18 +1070,54 @@ public class ElasticsearchOptimizedService {
 
       if (aggregate.isSterms()) {
         StringTermsAggregate termsAggregate = aggregate.sterms();
-        List<Map<String, Object>> buckets = new ArrayList<>();
+        Map<String, Long> buckets = new LinkedHashMap<>();
         for (StringTermsBucket bucket : termsAggregate.buckets().array()) {
-          Map<String, Object> bucketData = new HashMap<>();
-          bucketData.put("key", bucket.key());
-          bucketData.put("count", bucket.docCount());
-          buckets.add(bucketData);
+          buckets.put(bucket.key().stringValue(), bucket.docCount());
+        }
+        result.put(name, buckets);
+        continue;
+      }
+
+      if (aggregate.isLterms()) {
+        LongTermsAggregate termsAggregate = aggregate.lterms();
+        Map<Object, Long> buckets = new LinkedHashMap<>();
+        for (LongTermsBucket bucket : termsAggregate.buckets().array()) {
+          buckets.put(normalizeLongTermsKey(name, bucket.key()), bucket.docCount());
+        }
+        result.put(name, buckets);
+        continue;
+      }
+
+      if (aggregate.isRange()) {
+        RangeAggregate rangeAggregate = aggregate.range();
+        Map<String, Long> buckets = new LinkedHashMap<>();
+        for (RangeBucket bucket : rangeAggregate.buckets().array()) {
+          buckets.put(resolveRangeBucketKey(bucket), bucket.docCount());
         }
         result.put(name, buckets);
       }
     }
 
     return result;
+  }
+
+  private Object normalizeLongTermsKey(String aggregationName, long key) {
+    if ("recommendCount".equals(aggregationName)) {
+      return key != 0L;
+    }
+    return Math.toIntExact(key);
+  }
+
+  private String resolveRangeBucketKey(RangeBucket bucket) {
+    if (bucket == null) {
+      return "unknown";
+    }
+    if (bucket.key() != null && !bucket.key().isBlank()) {
+      return bucket.key();
+    }
+    String from = bucket.from() == null ? "*" : bucket.from().toString();
+    String to = bucket.to() == null ? "*" : bucket.to().toString();
+    return from + "-" + to;
   }
 
   private void recordHotSearch(String keyword) {

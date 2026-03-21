@@ -6,11 +6,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.impl.ShopSearchServiceImpl;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +30,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 class ShopSearchServiceImplTest {
 
   @Mock private ShopDocumentRepository shopDocumentRepository;
+
+  @Mock private ElasticsearchClient elasticsearchClient;
 
   @Mock private ElasticsearchOperations elasticsearchOperations;
 
@@ -76,5 +83,58 @@ class ShopSearchServiceImplTest {
         .extracting(ShopDocument::getShopName)
         .containsExactly("Active Shop");
     verify(shopDocumentRepository).findByStatus(eq(1), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void getShopFiltersShouldUseElasticsearchAggregations() throws Exception {
+    ShopSearchRequest request = new ShopSearchRequest();
+    request.setKeyword("cloud");
+
+    ShopDocument active = new ShopDocument();
+    active.setShopName("Active Shop");
+
+    when(shopDocumentRepository.searchByKeywordAndStatus(eq("cloud"), eq(1), any()))
+        .thenReturn(new PageImpl<>(List.of(active), PageRequest.of(0, 20), 5));
+
+    SearchResponse<Map> response = org.mockito.Mockito.mock(SearchResponse.class);
+    when(elasticsearchClient.search(
+            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), eq(Map.class)))
+        .thenReturn(response);
+    when(response.aggregations())
+        .thenReturn(
+            Map.of(
+                "statusCount",
+                Aggregate.of(
+                    a ->
+                        a.lterms(
+                            t ->
+                                t.buckets(
+                                    b ->
+                                        b.array(
+                                            List.of(
+                                                LongTermsBucket.of(
+                                                    bucket -> bucket.key(1).docCount(5L))))))),
+                "recommendCount",
+                Aggregate.of(
+                    a ->
+                        a.lterms(
+                            t ->
+                                t.buckets(
+                                    b ->
+                                        b.array(
+                                            List.of(
+                                                LongTermsBucket.of(
+                                                    bucket -> bucket.key(1).docCount(3L)),
+                                                LongTermsBucket.of(
+                                                    bucket -> bucket.key(0).docCount(2L)))))))));
+
+    var result = shopSearchService.getShopFilters(request);
+
+    assertThat(result.getAggregations())
+        .isEqualTo(
+            Map.of(
+                "statusCount", Map.of(1, 5L),
+                "recommendCount", Map.of(true, 3L, false, 2L)));
   }
 }
