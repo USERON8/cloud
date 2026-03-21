@@ -83,7 +83,7 @@ jobs:
           CREATE DATABASE IF NOT EXISTS search_db;"
 
       - name: Run Integration Tests
-        run: mvn -B -Dtest=*IT,*ITTest -Dsurefire.failIfNoSpecifiedTests=false test
+        run: mvn -B -Dtest=*IT,*ITTest,*IntegrationTest,*ContractTest -Dsurefire.failIfNoSpecifiedTests=false test
 
       - name: Upload JUnit Reports
         if: always()
