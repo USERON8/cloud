@@ -112,6 +112,47 @@ function parseOptionalNumber(raw: string, label: string): number | undefined | n
   return value
 }
 
+function parseOptionalBoolean(raw: string, label: string): boolean | undefined | null {
+  const value = raw.trim().toLowerCase()
+  if (!value) {
+    return undefined
+  }
+  if (['true', '1', 'yes'].includes(value)) {
+    return true
+  }
+  if (['false', '0', 'no'].includes(value)) {
+    return false
+  }
+  toast(`${label} must be true or false`)
+  return null
+}
+
+function parseStringList(raw: string): string[] | undefined {
+  const values = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+  return values.length > 0 ? values : undefined
+}
+
+function compactPayload<T extends Record<string, unknown>>(payload: T): T {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => {
+      if (value === undefined || value === '') {
+        return false
+      }
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
+      return true
+    })
+  ) as T
+}
+
+function toPrettyJson(value: unknown): string {
+  return JSON.stringify(value, null, 2)
+}
+
 function resolveSearchPaging(): { page: number; size: number } | null {
   const page = Number(searchPage.value)
   const size = Number(searchSize.value)
@@ -556,6 +597,21 @@ const searchShopId = ref('')
 const searchBrandId = ref('')
 const searchMinPrice = ref('')
 const searchMaxPrice = ref('')
+const searchShopName = ref('')
+const searchCategoryName = ref('')
+const searchBrandName = ref('')
+const searchStatus = ref('')
+const searchStockStatus = ref('')
+const searchRecommended = ref('')
+const searchIsNew = ref('')
+const searchIsHot = ref('')
+const searchTags = ref('')
+const searchMinSalesCount = ref('')
+const searchMinRating = ref('')
+const searchSortBy = ref('')
+const searchSortOrder = ref('')
+const searchHighlight = ref('')
+const searchIncludeAggregations = ref('')
 const searchComplexJson = ref('')
 const searchFilterJson = ref('')
 const searchResult = ref<unknown>(null)
@@ -712,25 +768,133 @@ async function runFilterByShop(): Promise<void> {
   }
 }
 
+function buildProductSearchRequest(): ProductSearchRequest | null {
+  const paging = resolveSearchPaging()
+  if (!paging) return null
+  const priceRange = resolvePriceRange()
+  if (!priceRange) return null
+  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
+  if (categoryId === null) return null
+  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
+  if (shopId === null) return null
+  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
+  if (brandId === null) return null
+  const status = parseOptionalNumber(searchStatus.value, 'Status')
+  if (status === null) return null
+  const stockStatus = parseOptionalNumber(searchStockStatus.value, 'Stock status')
+  if (stockStatus === null) return null
+  const minSalesCount = parseOptionalNumber(searchMinSalesCount.value, 'Minimum sales count')
+  if (minSalesCount === null) return null
+  const minRating = parseOptionalNumber(searchMinRating.value, 'Minimum rating')
+  if (minRating === null) return null
+  const recommended = parseOptionalBoolean(searchRecommended.value, 'Recommended')
+  if (recommended === null) return null
+  const isNew = parseOptionalBoolean(searchIsNew.value, 'Is new')
+  if (isNew === null) return null
+  const isHot = parseOptionalBoolean(searchIsHot.value, 'Is hot')
+  if (isHot === null) return null
+  const highlight = parseOptionalBoolean(searchHighlight.value, 'Highlight')
+  if (highlight === null) return null
+  const includeAggregations = parseOptionalBoolean(searchIncludeAggregations.value, 'Include aggregations')
+  if (includeAggregations === null) return null
+  return compactPayload({
+    keyword: searchKeyword.value.trim() || undefined,
+    shopId: shopId ?? undefined,
+    shopName: searchShopName.value.trim() || undefined,
+    categoryId: categoryId ?? undefined,
+    categoryName: searchCategoryName.value.trim() || undefined,
+    brandId: brandId ?? undefined,
+    brandName: searchBrandName.value.trim() || undefined,
+    minPrice: priceRange.minPrice,
+    maxPrice: priceRange.maxPrice,
+    status: status ?? undefined,
+    stockStatus: stockStatus ?? undefined,
+    recommended: recommended ?? undefined,
+    isNew: isNew ?? undefined,
+    isHot: isHot ?? undefined,
+    tags: parseStringList(searchTags.value),
+    minSalesCount: minSalesCount ?? undefined,
+    minRating: minRating ?? undefined,
+    page: paging.page,
+    size: paging.size,
+    sortBy: searchSortBy.value.trim() || undefined,
+    sortOrder: searchSortOrder.value.trim() || undefined,
+    highlight: highlight ?? undefined,
+    includeAggregations: includeAggregations ?? undefined
+  })
+}
+
+function buildProductFilterRequest(): ProductFilterRequest | null {
+  const paging = resolveSearchPaging()
+  if (!paging) return null
+  const priceRange = resolvePriceRange()
+  if (!priceRange) return null
+  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
+  if (categoryId === null) return null
+  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
+  if (shopId === null) return null
+  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
+  if (brandId === null) return null
+  const minSalesCount = parseOptionalNumber(searchMinSalesCount.value, 'Minimum sales count')
+  if (minSalesCount === null) return null
+  const recommended = parseOptionalBoolean(searchRecommended.value, 'Recommended')
+  if (recommended === null) return null
+  const isNew = parseOptionalBoolean(searchIsNew.value, 'Is new')
+  if (isNew === null) return null
+  const isHot = parseOptionalBoolean(searchIsHot.value, 'Is hot')
+  if (isHot === null) return null
+  return compactPayload({
+    keyword: searchKeyword.value.trim() || undefined,
+    categoryId: categoryId ?? undefined,
+    brandId: brandId ?? undefined,
+    shopId: shopId ?? undefined,
+    minPrice: priceRange.minPrice,
+    maxPrice: priceRange.maxPrice,
+    minSalesCount: minSalesCount ?? undefined,
+    recommended: recommended ?? undefined,
+    isNew: isNew ?? undefined,
+    isHot: isHot ?? undefined,
+    sortBy: searchSortBy.value.trim() || undefined,
+    sortOrder: searchSortOrder.value.trim() || undefined,
+    page: paging.page,
+    size: paging.size
+  })
+}
+
+function populateProductSearchPayload(mode: 'complex' | 'filter'): void {
+  const payload = mode === 'complex' ? buildProductSearchRequest() : buildProductFilterRequest()
+  if (!payload) return
+  if (mode === 'complex') {
+    searchComplexJson.value = toPrettyJson(payload)
+  } else {
+    searchFilterJson.value = toPrettyJson(payload)
+  }
+  toast(`Prepared ${mode} search payload`, 'success')
+}
+
 async function runComplexSearch(): Promise<void> {
-  const payload = parseJson<ProductSearchRequest>(searchComplexJson.value, '复杂搜索')
+  const payload = searchComplexJson.value.trim()
+    ? parseJson<ProductSearchRequest>(searchComplexJson.value, 'Complex search')
+    : buildProductSearchRequest()
   if (!payload) return
   try {
     searchResult.value = await complexSearch(payload)
-    toast('复杂搜索完成', 'success')
+    toast('Complex search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
 async function runFilterSearch(): Promise<void> {
-  const payload = parseJson<ProductFilterRequest>(searchFilterJson.value, '筛选搜索')
+  const payload = searchFilterJson.value.trim()
+    ? parseJson<ProductFilterRequest>(searchFilterJson.value, 'Filter search')
+    : buildProductFilterRequest()
   if (!payload) return
   try {
     searchResult.value = await filterSearch(payload)
-    toast('筛选搜索完成', 'success')
+    toast('Filter search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -830,17 +994,79 @@ async function runSearchProducts(): Promise<void> {
 const shopId = ref('')
 const shopLocation = ref('')
 const shopSuggestKeyword = ref('')
+const shopKeyword = ref('')
+const shopMerchantId = ref('')
+const shopStatus = ref('')
+const shopMinRating = ref('')
+const shopMinProductCount = ref('')
+const shopMinFollowCount = ref('')
+const shopRecommended = ref('')
+const shopAddressKeyword = ref('')
+const shopPage = ref('0')
+const shopSize = ref('20')
+const shopSortBy = ref('')
+const shopSortOrder = ref('')
+const shopHighlight = ref('')
+const shopIncludeAggregations = ref('')
 const shopSearchJson = ref('')
 const shopResult = ref<unknown>(null)
 
+function buildShopSearchRequest(): ShopSearchRequest | null {
+  const merchantId = parseOptionalNumber(shopMerchantId.value, 'Merchant ID')
+  if (merchantId === null) return null
+  const status = parseOptionalNumber(shopStatus.value, 'Status')
+  if (status === null) return null
+  const minRating = parseOptionalNumber(shopMinRating.value, 'Minimum rating')
+  if (minRating === null) return null
+  const minProductCount = parseOptionalNumber(shopMinProductCount.value, 'Minimum product count')
+  if (minProductCount === null) return null
+  const minFollowCount = parseOptionalNumber(shopMinFollowCount.value, 'Minimum follow count')
+  if (minFollowCount === null) return null
+  const recommended = parseOptionalBoolean(shopRecommended.value, 'Recommended')
+  if (recommended === null) return null
+  const page = parseOptionalNumber(shopPage.value, 'Page')
+  if (page === null) return null
+  const size = parseOptionalNumber(shopSize.value, 'Size')
+  if (size === null) return null
+  const highlight = parseOptionalBoolean(shopHighlight.value, 'Highlight')
+  if (highlight === null) return null
+  const includeAggregations = parseOptionalBoolean(shopIncludeAggregations.value, 'Include aggregations')
+  if (includeAggregations === null) return null
+  return compactPayload({
+    keyword: shopKeyword.value.trim() || undefined,
+    merchantId: merchantId ?? undefined,
+    status: status ?? undefined,
+    minRating: minRating ?? undefined,
+    minProductCount: minProductCount ?? undefined,
+    minFollowCount: minFollowCount ?? undefined,
+    recommended: recommended ?? undefined,
+    addressKeyword: shopAddressKeyword.value.trim() || undefined,
+    page: page ?? 0,
+    size: size ?? 20,
+    sortBy: shopSortBy.value.trim() || undefined,
+    sortOrder: (shopSortOrder.value.trim() as 'asc' | 'desc' | '') || undefined,
+    highlight: highlight ?? undefined,
+    includeAggregations: includeAggregations ?? undefined
+  })
+}
+
+function populateShopSearchPayload(): void {
+  const payload = buildShopSearchRequest()
+  if (!payload) return
+  shopSearchJson.value = toPrettyJson(payload)
+  toast('Prepared shop search payload', 'success')
+}
+
 async function runShopSearch(): Promise<void> {
-  const payload = parseJson<ShopSearchRequest>(shopSearchJson.value, '店铺搜索')
+  const payload = shopSearchJson.value.trim()
+    ? parseJson<ShopSearchRequest>(shopSearchJson.value, 'Shop search')
+    : buildShopSearchRequest()
   if (!payload) return
   try {
     shopResult.value = await searchShops(payload)
-    toast('店铺搜索完成', 'success')
+    toast('Shop search completed', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '搜索失败')
+    toast(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -872,13 +1098,15 @@ async function loadShopSuggestions(): Promise<void> {
 }
 
 async function loadShopFilters(): Promise<void> {
-  const payload = parseJson<ShopSearchRequest>(shopSearchJson.value, '店铺过滤')
+  const payload = shopSearchJson.value.trim()
+    ? parseJson<ShopSearchRequest>(shopSearchJson.value, 'Shop filters')
+    : buildShopSearchRequest()
   if (!payload) return
   try {
     shopResult.value = await getShopFilters(payload)
-    toast('已获取筛选信息', 'success')
+    toast('Shop filters loaded', 'success')
   } catch (error) {
-    toast(error instanceof Error ? error.message : '获取失败')
+    toast(error instanceof Error ? error.message : 'Load failed')
   }
 }
 
@@ -1233,8 +1461,23 @@ async function refreshStatsCache(): Promise<void> {
       <input v-model="searchBrandId" class="input" placeholder="品牌 ID" />
       <input v-model="searchMinPrice" class="input" placeholder="最低价" />
       <input v-model="searchMaxPrice" class="input" placeholder="最高价" />
-      <textarea v-model="searchComplexJson" class="textarea" placeholder="复杂搜索 JSON" />
-      <textarea v-model="searchFilterJson" class="textarea" placeholder="筛选搜索 JSON" />
+      <input v-model="searchShopName" class="input" placeholder="Shop name" />
+      <input v-model="searchCategoryName" class="input" placeholder="Category name" />
+      <input v-model="searchBrandName" class="input" placeholder="Brand name" />
+      <input v-model="searchStatus" class="input" placeholder="Status" />
+      <input v-model="searchStockStatus" class="input" placeholder="Stock status" />
+      <input v-model="searchRecommended" class="input" placeholder="Recommended true/false" />
+      <input v-model="searchIsNew" class="input" placeholder="Is new true/false" />
+      <input v-model="searchIsHot" class="input" placeholder="Is hot true/false" />
+      <input v-model="searchTags" class="input" placeholder="Tags (comma separated)" />
+      <input v-model="searchMinSalesCount" class="input" placeholder="Minimum sales count" />
+      <input v-model="searchMinRating" class="input" placeholder="Minimum rating" />
+      <input v-model="searchSortBy" class="input" placeholder="Sort by" />
+      <input v-model="searchSortOrder" class="input" placeholder="Sort order asc/desc" />
+      <input v-model="searchHighlight" class="input" placeholder="Highlight true/false" />
+      <input v-model="searchIncludeAggregations" class="input" placeholder="Include aggregations true/false" />
+      <textarea v-model="searchComplexJson" class="textarea" placeholder="Complex search JSON" />
+      <textarea v-model="searchFilterJson" class="textarea" placeholder="Filter search JSON" />
       <view class="row-inline">
         <button class="btn-outline" @click="runBasicSearch">基础搜索</button>
         <button class="btn-outline" @click="runAdvancedSearch">高级搜索</button>
@@ -1246,6 +1489,8 @@ async function refreshStatsCache(): Promise<void> {
         <button class="btn-outline" @click="runFilterByShop">店铺筛选</button>
         <button class="btn-outline" @click="runSearchProducts">搜索商品</button>
         <button class="btn-outline" @click="runSearchSuggest">筛选信息</button>
+        <button class="btn-outline" @click="populateProductSearchPayload('complex')">Build complex JSON</button>
+        <button class="btn-outline" @click="populateProductSearchPayload('filter')">Build filter JSON</button>
         <button class="btn-outline" @click="runComplexSearch">复杂搜索</button>
         <button class="btn-outline" @click="runFilterSearch">筛选搜索</button>
         <button class="btn-outline" @click="runCombinedSearch">组合搜索</button>
@@ -1262,8 +1507,23 @@ async function refreshStatsCache(): Promise<void> {
       <input v-model="shopId" class="input" placeholder="店铺 ID" />
       <input v-model="shopLocation" class="input" placeholder="位置关键词" />
       <input v-model="shopSuggestKeyword" class="input" placeholder="联想词关键词" />
-      <textarea v-model="shopSearchJson" class="textarea" placeholder="店铺搜索 JSON" />
+      <input v-model="shopKeyword" class="input" placeholder="Keyword" />
+      <input v-model="shopMerchantId" class="input" placeholder="Merchant ID" />
+      <input v-model="shopStatus" class="input" placeholder="Status" />
+      <input v-model="shopMinRating" class="input" placeholder="Minimum rating" />
+      <input v-model="shopMinProductCount" class="input" placeholder="Minimum product count" />
+      <input v-model="shopMinFollowCount" class="input" placeholder="Minimum follow count" />
+      <input v-model="shopRecommended" class="input" placeholder="Recommended true/false" />
+      <input v-model="shopAddressKeyword" class="input" placeholder="Address keyword" />
+      <input v-model="shopPage" class="input" placeholder="Page" />
+      <input v-model="shopSize" class="input" placeholder="Size" />
+      <input v-model="shopSortBy" class="input" placeholder="Sort by" />
+      <input v-model="shopSortOrder" class="input" placeholder="Sort order asc/desc" />
+      <input v-model="shopHighlight" class="input" placeholder="Highlight true/false" />
+      <input v-model="shopIncludeAggregations" class="input" placeholder="Include aggregations true/false" />
+      <textarea v-model="shopSearchJson" class="textarea" placeholder="Shop search JSON" />
       <view class="row-inline">
+        <button class="btn-outline" @click="populateShopSearchPayload">Build shop JSON</button>
         <button class="btn-outline" @click="runShopSearch">复杂搜索</button>
         <button class="btn-outline" @click="loadShopFilters">筛选</button>
         <button class="btn-outline" @click="loadShopById">查询店铺</button>
