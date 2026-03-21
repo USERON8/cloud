@@ -5,6 +5,7 @@ import type {
   PaymentCheckoutSession,
   PaymentOrderCommand,
   PaymentOrderInfo,
+  PaymentStatusInfo,
   PaymentRefundCommand,
   PaymentRefundInfo
 } from '../types/domain'
@@ -41,6 +42,10 @@ export function createPaymentCheckoutSession(paymentNo: string): Promise<Payment
   return http.post<PaymentCheckoutSession, PaymentCheckoutSession>(
     `/api/payments/orders/${paymentNo}/checkout-session`
   )
+}
+
+export function getPaymentStatus(paymentNo: string): Promise<PaymentStatusInfo> {
+  return http.get<PaymentStatusInfo, PaymentStatusInfo>(`/api/payments/orders/${paymentNo}/status`)
 }
 
 export function createPaymentRefund(payload: PaymentRefundCommand): Promise<number> {

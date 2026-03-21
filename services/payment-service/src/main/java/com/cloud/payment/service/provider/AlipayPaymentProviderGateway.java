@@ -53,7 +53,8 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
       request.setNotifyUrl(alipayConfig.getNotifyUrl());
     }
     if (StringUtils.hasText(alipayConfig.getReturnUrl())) {
-      request.setReturnUrl(alipayConfig.getReturnUrl());
+      request.setReturnUrl(
+          appendCheckoutContext(alipayConfig.getReturnUrl(), order.getPaymentNo()));
     }
 
     try {
@@ -156,5 +157,20 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
       }
     }
     return null;
+  }
+
+  private String appendCheckoutContext(String url, String paymentNo) {
+    if (!StringUtils.hasText(url) || !StringUtils.hasText(paymentNo)) {
+      return url;
+    }
+    String result = url;
+    if (!result.contains("paymentNo=")) {
+      String separator = result.contains("?") ? "&" : "?";
+      result = result + separator + "paymentNo=" + paymentNo;
+    }
+    if (!result.contains("autoPoll=")) {
+      result = result + (result.contains("?") ? "&" : "?") + "autoPoll=1";
+    }
+    return result;
   }
 }

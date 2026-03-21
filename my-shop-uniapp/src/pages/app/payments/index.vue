@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import AppShell from '../../../components/AppShell.vue'
 import { resolveApiUrl } from '../../../api/http'
 import {
   createPaymentCheckoutSession,
   getPaymentOrderByNo,
+  getPaymentStatus,
   getRefundByNo
 } from '../../../api/payment'
 import { navigateTo } from '../../../router/navigation'
 import { Routes } from '../../../router/routes'
-import type { PaymentOrderInfo, PaymentRefundInfo } from '../../../types/domain'
+import type { PaymentOrderInfo, PaymentRefundInfo, PaymentStatusInfo } from '../../../types/domain'
 import { formatDate, formatPrice } from '../../../utils/format'
 import { toast } from '../../../utils/ui'
 
@@ -19,15 +20,33 @@ const refundNo = ref('')
 const paymentInfo = ref<PaymentOrderInfo | null>(null)
 const refundInfo = ref<PaymentRefundInfo | null>(null)
 const checkoutLoading = ref(false)
+const pollAttempts = ref(0)
+const isPolling = ref(false)
+
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+const FINAL_PAYMENT_STATUSES = new Set(['PAID', 'FAILED'])
+const MAX_POLL_ATTEMPTS = 15
+const POLL_INTERVAL_MS = 2000
 
 function canOpenCheckout(): boolean {
   return paymentInfo.value?.status === 'CREATED' && !!paymentInfo.value?.paymentNo
 }
 
+const paymentStatusHint = computed(() => {
+  if (isPolling.value) {
+    return 'Checking the latest payment status...'
+  }
+  if (paymentInfo.value?.status === 'CREATED') {
+    return 'Payment is still pending.'
+  }
+  return ''
+})
+
 function openCheckout(url: string): void {
   navigateTo(
     Routes.webview,
-    { url },
+    { url, paymentNo: paymentNo.value.trim() },
     {
       requiresAuth: true,
       roles: ['USER', 'MERCHANT', 'ADMIN']
@@ -35,16 +54,82 @@ function openCheckout(url: string): void {
   )
 }
 
-async function queryPayment(): Promise<void> {
-  if (!paymentNo.value.trim()) {
-    toast('Enter a payment number')
+function clearPollTimer(): void {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+}
+
+function shouldKeepPolling(status?: string): boolean {
+  return !!status && !FINAL_PAYMENT_STATUSES.has(status)
+}
+
+function applyPaymentStatus(statusPayload: PaymentStatusInfo | null): void {
+  if (!statusPayload?.status) {
+    return
+  }
+  paymentInfo.value = {
+    ...(paymentInfo.value ?? {}),
+    paymentNo: statusPayload.paymentNo ?? paymentInfo.value?.paymentNo ?? paymentNo.value.trim(),
+    status: statusPayload.status
+  }
+}
+
+async function queryPayment(showError = true): Promise<void> {
+  const targetPaymentNo = paymentNo.value.trim()
+  if (!targetPaymentNo) {
+    if (showError) {
+      toast('Enter a payment number')
+    }
     return
   }
   try {
-    paymentInfo.value = await getPaymentOrderByNo(paymentNo.value.trim())
+    paymentInfo.value = await getPaymentOrderByNo(targetPaymentNo)
   } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to query the payment order')
+    if (showError) {
+      toast(error instanceof Error ? error.message : 'Failed to query the payment order')
+    }
   }
+}
+
+async function pollPaymentStatus(): Promise<void> {
+  const targetPaymentNo = paymentNo.value.trim()
+  if (!targetPaymentNo || pollAttempts.value >= MAX_POLL_ATTEMPTS) {
+    isPolling.value = false
+    clearPollTimer()
+    return
+  }
+  isPolling.value = true
+  pollAttempts.value += 1
+  try {
+    const statusPayload = await getPaymentStatus(targetPaymentNo)
+    applyPaymentStatus(statusPayload)
+    if (!shouldKeepPolling(statusPayload.status)) {
+      isPolling.value = false
+      clearPollTimer()
+      await queryPayment(false)
+      return
+    }
+    pollTimer = setTimeout(() => {
+      void pollPaymentStatus()
+    }, POLL_INTERVAL_MS)
+  } catch (error) {
+    isPolling.value = false
+    clearPollTimer()
+    toast(error instanceof Error ? error.message : 'Failed to refresh payment status')
+  }
+}
+
+async function startPaymentPolling(): Promise<void> {
+  clearPollTimer()
+  pollAttempts.value = 0
+  await queryPayment(false)
+  if (!shouldKeepPolling(paymentInfo.value?.status)) {
+    isPolling.value = false
+    return
+  }
+  void pollPaymentStatus()
 }
 
 async function queryRefund(): Promise<void> {
@@ -72,6 +157,7 @@ async function openPaymentCheckout(): Promise<void> {
       throw new Error('Checkout session is missing checkoutPath')
     }
     openCheckout(resolveApiUrl(session.checkoutPath))
+    void startPaymentPolling()
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to open checkout')
   } finally {
@@ -80,14 +166,41 @@ async function openPaymentCheckout(): Promise<void> {
 }
 
 onLoad((query) => {
-  if (typeof query.paymentNo === 'string' && query.paymentNo.trim()) {
-    paymentNo.value = query.paymentNo.trim()
-    void queryPayment()
+  const queryPaymentNo =
+    typeof query.paymentNo === 'string' && query.paymentNo.trim()
+      ? query.paymentNo.trim()
+      : typeof query.out_trade_no === 'string' && query.out_trade_no.trim()
+        ? query.out_trade_no.trim()
+        : ''
+  const shouldAutoPoll = query.autoPoll === '1' || query.payment_return === '1'
+
+  if (queryPaymentNo) {
+    paymentNo.value = queryPaymentNo
+    if (shouldAutoPoll) {
+      void startPaymentPolling()
+    } else {
+      void queryPayment(false)
+    }
   }
   if (typeof query.refundNo === 'string' && query.refundNo.trim()) {
     refundNo.value = query.refundNo.trim()
     void queryRefund()
   }
+})
+
+onShow(() => {
+  if (paymentNo.value.trim() && shouldKeepPolling(paymentInfo.value?.status)) {
+    void startPaymentPolling()
+  }
+})
+
+onHide(() => {
+  clearPollTimer()
+  isPolling.value = false
+})
+
+onUnload(() => {
+  clearPollTimer()
 })
 </script>
 
@@ -108,6 +221,15 @@ onLoad((query) => {
         <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
         <text class="meta">Channel: {{ paymentInfo.channel || '--' }}</text>
         <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
+        <text v-if="paymentStatusHint" class="meta status-hint">{{ paymentStatusHint }}</text>
+        <button
+          v-if="paymentInfo.status === 'CREATED'"
+          class="btn-outline"
+          :loading="isPolling"
+          @click="startPaymentPolling"
+        >
+          {{ isPolling ? 'Checking status...' : 'Refresh status' }}
+        </button>
         <button
           v-if="canOpenCheckout()"
           class="btn-outline"
@@ -175,5 +297,9 @@ onLoad((query) => {
 .meta {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.status-hint {
+  color: #1f6feb;
 }
 </style>

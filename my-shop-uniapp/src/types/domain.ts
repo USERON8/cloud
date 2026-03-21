@@ -343,6 +343,11 @@ export interface PaymentCheckoutSession {
   expiresInSeconds?: number
 }
 
+export interface PaymentStatusInfo {
+  paymentNo?: string
+  status?: string
+}
+
 export interface PaymentRefundInfo {
   id?: number
   refundNo?: string

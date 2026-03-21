@@ -78,10 +78,10 @@ function buildPaymentNo(order: OrderItem): string {
   return `PAY-${subOrderNo}`
 }
 
-function openCheckout(url: string): void {
+function openCheckout(url: string, paymentNo: string): void {
   navigateTo(
     Routes.webview,
-    { url },
+    { url, paymentNo },
     {
       requiresAuth: true,
       roles: ['USER', 'MERCHANT', 'ADMIN']
@@ -187,13 +187,13 @@ async function onPay(order: OrderItem): Promise<void> {
     if (!session.checkoutPath) {
       throw new Error('Checkout session is missing checkoutPath')
     }
-    openCheckout(resolveApiUrl(session.checkoutPath))
+    openCheckout(resolveApiUrl(session.checkoutPath), paymentNo)
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to prepare payment')
     if (paymentNo) {
       navigateTo(
         Routes.appPayments,
-        { paymentNo },
+        { paymentNo, autoPoll: 1 },
         {
           requiresAuth: true,
           roles: ['USER', 'MERCHANT', 'ADMIN']
