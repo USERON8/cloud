@@ -4,7 +4,7 @@ import AppShell from '../../../components/AppShell.vue'
 import { sessionState } from '../../../auth/session'
 import type { MerchantAuthInfo, MerchantAuthPayload, MerchantInfo, MerchantUpsertPayload } from '../../../types/domain'
 import { getMerchantById, getMerchantStatistics, updateMerchant } from '../../../api/merchant'
-import { applyMerchantAuth, getMerchantAuth, revokeMerchantAuth } from '../../../api/merchant-auth'
+import { applyMerchantAuth, getMerchantAuth, revokeMerchantAuth, uploadMerchantBusinessLicense } from '../../../api/merchant-auth'
 import { confirm, toast } from '../../../utils/ui'
 
 const merchantInfo = ref<MerchantInfo | null>(null)
@@ -79,8 +79,6 @@ function extractUploadUrl(raw: string): string | null {
 }
 
 async function uploadAuthImage(field: UploadField): Promise<void> {
-  const target = resolveUploadUrl()
-  if (!target) return
   uploadState[field] = true
   try {
     const chooseResult = await uni.chooseImage({
@@ -93,6 +91,20 @@ async function uploadAuthImage(field: UploadField): Promise<void> {
       toast('未选择图片')
       return
     }
+
+    if (field === 'businessLicenseUrl') {
+      if (!merchantId.value) {
+        toast('商家会话缺失，请重新登录')
+        return
+      }
+      const result = await uploadMerchantBusinessLicense(merchantId.value, filePath)
+      authForm.businessLicenseUrl = result.previewUrl
+      toast('上传成功', 'success')
+      return
+    }
+
+    const target = resolveUploadUrl()
+    if (!target) return
     const uploadResult = await new Promise<UniApp.UploadFileSuccessCallbackResult>((resolve, reject) => {
       uni.uploadFile({
         url: target,

@@ -84,6 +84,7 @@ Notes:
 | Method | Path | Function | Parameters | Request |
 | --- | --- | --- | --- | --- |
 | POST | /api/merchant/auth/apply/{param} | applyMerchantAuth | merchantId: number, payload: MerchantAuthPayload | body |
+| POST | /api/merchant/auth/upload/license/{param} | uploadMerchantBusinessLicense | merchantId: number, filePath: string | multipart |
 | GET | /api/merchant/auth/get/{param} | getMerchantAuth | merchantId: number | - |
 | DELETE | /api/merchant/auth/revoke/{param} | revokeMerchantAuth | merchantId: number | - |
 | POST | /api/merchant/auth/review/{param} | reviewMerchantAuth | merchantId: number, authStatus: number, remark?: string | query |

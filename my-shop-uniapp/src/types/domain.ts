@@ -139,6 +139,7 @@ export interface UserUpsertPayload {
   email?: string
   status?: number
   password?: string
+  roles?: string[]
 }
 
 export interface AdminInfo {
@@ -205,6 +206,11 @@ export interface MerchantAuthPayload {
   idCardBackUrl: string
   contactPhone: string
   contactAddress: string
+}
+
+export interface MerchantAuthUploadResult {
+  fileKey: string
+  previewUrl: string
 }
 
 export interface CategoryItem {

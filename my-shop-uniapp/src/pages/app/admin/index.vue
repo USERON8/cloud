@@ -113,6 +113,9 @@ const userQuery = reactive({
   size: 10,
   username: '',
   email: '',
+  phone: '',
+  nickname: '',
+  status: '',
   roleCode: ''
 })
 const userSelection = ref<number[]>([])
@@ -124,8 +127,10 @@ const userForm = reactive<UserUpsertPayload>({
   nickname: '',
   email: '',
   avatarUrl: '',
-  status: 1
+  status: 1,
+  roles: []
 })
+const userRolesInput = ref('')
 
 const allUsersSelected = computed(
   () => userRows.value.length > 0 && userSelection.value.length === userRows.value.length
@@ -140,6 +145,9 @@ async function loadUsers(): Promise<void> {
       size: userQuery.size,
       username: userQuery.username || undefined,
       email: userQuery.email || undefined,
+      phone: userQuery.phone || undefined,
+      nickname: userQuery.nickname || undefined,
+      status: userQuery.status === '' ? undefined : toNumber(userQuery.status),
       roleCode: userQuery.roleCode || undefined
     })
     userRows.value = result.records
@@ -183,12 +191,15 @@ function openUserEdit(row: UserSummary): void {
   userForm.email = row.email
   userForm.avatarUrl = row.avatarUrl
   userForm.status = row.status ?? 1
+  userForm.roles = row.roles ? [...row.roles] : []
+  userRolesInput.value = row.roles?.join(', ') || ''
   userDialogVisible.value = true
 }
 
 function closeUserEdit(): void {
   userDialogVisible.value = false
   userEditId.value = null
+  userRolesInput.value = ''
 }
 
 async function saveUser(): Promise<void> {
@@ -207,7 +218,11 @@ async function saveUser(): Promise<void> {
     nickname: userForm.nickname.trim(),
     email: userForm.email.trim(),
     avatarUrl: userForm.avatarUrl.trim(),
-    status
+    status,
+    roles: userRolesInput.value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
   }
   try {
     await updateUser(userEditId.value, payload)
@@ -273,7 +288,8 @@ const merchantTotal = ref(0)
 const merchantQuery = reactive({
   page: 1,
   size: 10,
-  status: ''
+  status: '',
+  auditStatus: ''
 })
 const merchantTotalPages = computed(() => Math.max(1, Math.ceil(merchantTotal.value / merchantQuery.size)))
 const merchantDialogVisible = ref(false)
@@ -291,10 +307,12 @@ async function loadMerchants(): Promise<void> {
   merchantLoading.value = true
   try {
     const status = merchantQuery.status ? toNumber(merchantQuery.status) : undefined
+    const auditStatus = merchantQuery.auditStatus ? toNumber(merchantQuery.auditStatus) : undefined
     const result = await getMerchants({
       page: merchantQuery.page,
       size: merchantQuery.size,
-      status
+      status,
+      auditStatus
     })
     merchantRows.value = result.records
     merchantTotal.value = result.total
@@ -873,14 +891,14 @@ function onTabChange(key: string): void {
 }
 
 watch(
-  () => [userQuery.username, userQuery.email, userQuery.roleCode],
+  () => [userQuery.username, userQuery.email, userQuery.phone, userQuery.nickname, userQuery.status, userQuery.roleCode],
   () => {
     userQuery.page = 1
   }
 )
 
 watch(
-  () => merchantQuery.status,
+  () => [merchantQuery.status, merchantQuery.auditStatus],
   () => {
     merchantQuery.page = 1
   }
@@ -916,6 +934,9 @@ onMounted(() => {
       <view class="toolbar">
         <input v-model="userQuery.username" class="input" placeholder="用户名" />
         <input v-model="userQuery.email" class="input" placeholder="邮箱" />
+        <input v-model="userQuery.phone" class="input" placeholder="手机号" />
+        <input v-model="userQuery.nickname" class="input" placeholder="昵称" />
+        <input v-model="userQuery.status" class="input" placeholder="状态(0/1)" />
         <input v-model="userQuery.roleCode" class="input" placeholder="角色" />
         <button class="btn-primary" @click="loadUsers">查询</button>
       </view>
@@ -938,6 +959,7 @@ onMounted(() => {
           </view>
           <text class="muted">昵称：{{ row.nickname || '--' }}</text>
           <text class="muted">邮箱：{{ row.email || '--' }}</text>
+          <text class="muted">角色：{{ row.roles?.join(', ') || '--' }}</text>
           <text class="muted">状态：{{ userStatusText(row.status) }}</text>
           <view class="actions">
             <button class="btn-outline" @click="openUserEdit(row)">编辑</button>
@@ -960,6 +982,7 @@ onMounted(() => {
           <input v-model="userForm.email" class="input" placeholder="邮箱" />
           <input v-model="userForm.phone" class="input" placeholder="手机号" />
           <input v-model="userForm.avatarUrl" class="input" placeholder="头像 URL" />
+          <input v-model="userRolesInput" class="input" placeholder="角色(逗号分隔)" />
           <input v-model="userForm.status" class="input" placeholder="状态(0/1)" />
         </view>
         <view class="actions">
@@ -972,6 +995,7 @@ onMounted(() => {
     <view v-if="activeTab === 'merchants'" class="panel glass-card">
       <view class="toolbar">
         <input v-model="merchantQuery.status" class="input" placeholder="状态(可选)" />
+        <input v-model="merchantQuery.auditStatus" class="input" placeholder="审核状态(可选)" />
         <button class="btn-primary" @click="loadMerchants">查询</button>
         <button class="btn-outline" @click="openMerchantCreate">新增商家</button>
       </view>
