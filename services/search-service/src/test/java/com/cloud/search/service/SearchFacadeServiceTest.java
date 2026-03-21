@@ -129,4 +129,33 @@ class SearchFacadeServiceTest {
     assertThat(result.getHasPrevious()).isTrue();
     assertThat(result.getHasNext()).isFalse();
   }
+
+  @Test
+  void searchProductsShouldExposeHighlightsFromElasticsearch() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("cloud");
+    request.setHighlight(true);
+    request.setPage(0);
+    request.setSize(10);
+
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(List.of(Map.of("id", "1001", "productName", "Cloud Phone")))
+            .total(1L)
+            .from(0)
+            .size(10)
+            .aggregations(Map.of())
+            .highlights(Map.of("1001", List.of("<em class='highlight'>Cloud</em> Phone")))
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(eq(request), eq(List.of())))
+        .thenReturn(esResult);
+
+    var result = searchFacadeService.searchProducts(request, null);
+
+    assertThat(result.getHighlights())
+        .containsEntry("1001", List.of("<em class='highlight'>Cloud</em> Phone"));
+    assertThat(result.getList()).extracting("id").containsExactly("1001");
+  }
 }

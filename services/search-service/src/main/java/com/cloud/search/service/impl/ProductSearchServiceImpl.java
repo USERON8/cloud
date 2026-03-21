@@ -444,6 +444,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         .hasPrevious(page > 0)
         .took(took)
         .aggregations(esResult == null ? Map.of() : esResult.getAggregations())
+        .highlights(esResult == null ? Map.of() : esResult.getHighlights())
         .searchAfter(esResult == null ? List.of() : esResult.getSearchAfter())
         .build();
   }

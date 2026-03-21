@@ -410,11 +410,14 @@ public class ElasticsearchOptimizedService {
       List<Hit<Map>> rawHits = response.hits().hits();
       List<Hit<Map>> pageHits = trimHitsToPageSize(rawHits, safeSize);
       List<Map<String, Object>> products = new ArrayList<>();
+      Map<String, List<String>> highlights = new LinkedHashMap<>();
       for (Hit<Map> hit : pageHits) {
         Map<String, Object> product =
             hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
+        product.put("id", hit.id());
         if (hit.highlight() != null && !hit.highlight().isEmpty()) {
           product.put("highlight", hit.highlight());
+          highlights.put(hit.id(), flattenHighlights(hit.highlight()));
         }
         product.put("score", hit.score());
         products.add(product);
@@ -437,6 +440,7 @@ public class ElasticsearchOptimizedService {
           .from(useSearchAfter ? 0 : safeFrom)
           .size(safeSize)
           .aggregations(aggregations)
+          .highlights(highlights)
           .searchAfter(nextSearchAfter)
           .build();
     } catch (Exception e) {
@@ -658,11 +662,14 @@ public class ElasticsearchOptimizedService {
       List<Hit<Map>> pageHits = trimHitsToPageSize(rawHits, key.size());
 
       List<Map<String, Object>> products = new ArrayList<>();
+      Map<String, List<String>> highlights = new LinkedHashMap<>();
       for (Hit<Map> hit : pageHits) {
         Map<String, Object> product =
             hit.source() != null ? new HashMap<>(hit.source()) : new HashMap<>();
+        product.put("id", hit.id());
         if (hit.highlight() != null && !hit.highlight().isEmpty()) {
           product.put("highlight", hit.highlight());
+          highlights.put(hit.id(), flattenHighlights(hit.highlight()));
         }
         product.put("score", hit.score());
         products.add(product);
@@ -677,6 +684,7 @@ public class ElasticsearchOptimizedService {
           .from(key.from())
           .size(key.size())
           .aggregations(aggregations)
+          .highlights(highlights)
           .searchAfter(nextSearchAfter)
           .build();
     } catch (Exception ex) {
@@ -727,6 +735,13 @@ public class ElasticsearchOptimizedService {
     } catch (Exception ex) {
       throw new IllegalStateException("suggestions query failed", ex);
     }
+  }
+
+  private List<String> flattenHighlights(Map<String, List<String>> highlightFields) {
+    if (highlightFields == null || highlightFields.isEmpty()) {
+      return List.of();
+    }
+    return highlightFields.values().stream().flatMap(List::stream).toList();
   }
 
   private List<String> queryHotKeywordsFromRedis(int limit) {
@@ -1539,6 +1554,7 @@ public class ElasticsearchOptimizedService {
     private final int from;
     private final int size;
     private final Map<String, Object> aggregations;
+    private final Map<String, List<String>> highlights;
     private final List<Object> searchAfter;
 
     private SearchResultDTO(
@@ -1547,12 +1563,14 @@ public class ElasticsearchOptimizedService {
         int from,
         int size,
         Map<String, Object> aggregations,
+        Map<String, List<String>> highlights,
         List<Object> searchAfter) {
       this.documents = documents;
       this.total = total;
       this.from = from;
       this.size = size;
       this.aggregations = aggregations;
+      this.highlights = highlights;
       this.searchAfter = searchAfter;
     }
 
@@ -1561,7 +1579,7 @@ public class ElasticsearchOptimizedService {
     }
 
     public static SearchResultDTO empty(int from, int size) {
-      return new SearchResultDTO(List.of(), 0, from, size, Map.of(), List.of());
+      return new SearchResultDTO(List.of(), 0, from, size, Map.of(), Map.of(), List.of());
     }
 
     public List<Map<String, Object>> getDocuments() {
@@ -1584,6 +1602,10 @@ public class ElasticsearchOptimizedService {
       return aggregations;
     }
 
+    public Map<String, List<String>> getHighlights() {
+      return highlights;
+    }
+
     public List<Object> getSearchAfter() {
       return searchAfter;
     }
@@ -1601,6 +1623,7 @@ public class ElasticsearchOptimizedService {
       private int from;
       private int size;
       private Map<String, Object> aggregations;
+      private Map<String, List<String>> highlights;
       private List<Object> searchAfter;
 
       public SearchResultDTOBuilder documents(List<Map<String, Object>> documents) {
@@ -1628,13 +1651,19 @@ public class ElasticsearchOptimizedService {
         return this;
       }
 
+      public SearchResultDTOBuilder highlights(Map<String, List<String>> highlights) {
+        this.highlights = highlights;
+        return this;
+      }
+
       public SearchResultDTOBuilder searchAfter(List<Object> searchAfter) {
         this.searchAfter = searchAfter;
         return this;
       }
 
       public SearchResultDTO build() {
-        return new SearchResultDTO(documents, total, from, size, aggregations, searchAfter);
+        return new SearchResultDTO(
+            documents, total, from, size, aggregations, highlights, searchAfter);
       }
     }
   }

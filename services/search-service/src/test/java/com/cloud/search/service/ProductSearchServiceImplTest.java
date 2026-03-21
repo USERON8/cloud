@@ -202,4 +202,32 @@ class ProductSearchServiceImplTest {
         .extracting(ProductDocument::getProductName)
         .containsExactly("Cloud Phone");
   }
+
+  @Test
+  void getProductFilters_shouldExposeHighlightsFromElasticsearch() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("cloud");
+    request.setPage(0);
+    request.setSize(5);
+
+    var esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(List.of(Map.of("id", "1001", "productName", "Cloud Phone")))
+            .total(1L)
+            .from(0)
+            .size(5)
+            .aggregations(Map.of())
+            .highlights(Map.of("1001", List.of("<em class='highlight'>Cloud</em> Phone")))
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(any(), eq(List.of())))
+        .thenReturn(esResult);
+
+    var result = productSearchService.getProductFilters(request);
+
+    assertThat(result.getHighlights())
+        .containsEntry("1001", List.of("<em class='highlight'>Cloud</em> Phone"));
+    assertThat(result.getList()).extracting(ProductDocument::getId).containsExactly("1001");
+  }
 }
