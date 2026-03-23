@@ -4,16 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
 import com.cloud.user.module.entity.UserAddress;
+import com.cloud.user.service.cache.TransactionalUserAddressCacheService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,9 +31,7 @@ class UserAddressServiceImplTest {
 
   @Mock private UserAddressConverter userAddressConverter;
 
-  @Mock private CacheManager cacheManager;
-
-  @Mock private Cache cache;
+  @Mock private TransactionalUserAddressCacheService userAddressCacheService;
 
   private UserAddressServiceImpl userAddressService;
 
@@ -42,9 +39,9 @@ class UserAddressServiceImplTest {
   void setUp() {
     userAddressService =
         Mockito.spy(
-            new UserAddressServiceImpl(userAddressMapper, userAddressConverter, cacheManager));
+            new UserAddressServiceImpl(
+                userAddressMapper, userAddressConverter, userAddressCacheService));
     ReflectionTestUtils.setField(userAddressService, "baseMapper", userAddressMapper);
-    lenient().when(cacheManager.getCache("userAddressCache")).thenReturn(cache);
   }
 
   @Test
@@ -71,7 +68,8 @@ class UserAddressServiceImplTest {
     boolean result = userAddressService.save(entity);
 
     assertThat(result).isTrue();
-    verify(cache).evict("detail:9");
+    verify(userAddressCacheService, times(2)).evictUserList(1L);
+    verify(userAddressCacheService).putTransactional(entity);
   }
 
   @Test
@@ -87,7 +85,7 @@ class UserAddressServiceImplTest {
     when(userAddressMapper.selectById(2L)).thenReturn(existing);
 
     assertThatThrownBy(() -> userAddressService.updateById(update))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("No permission");
   }
 

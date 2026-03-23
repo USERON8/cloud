@@ -7,7 +7,7 @@ import com.cloud.common.domain.dto.user.UserAddressDTO;
 import com.cloud.common.domain.dto.user.UserAddressPageDTO;
 import com.cloud.common.domain.dto.user.UserAddressRequestDTO;
 import com.cloud.common.domain.vo.UserAddressVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.security.SecurityPermissionUtils;
@@ -16,15 +16,11 @@ import com.cloud.user.converter.UserAddressConverter;
 import com.cloud.user.mapper.UserAddressMapper;
 import com.cloud.user.module.entity.UserAddress;
 import com.cloud.user.service.UserAddressService;
+import com.cloud.user.service.cache.TransactionalUserAddressCacheService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,21 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserAddress>
     implements UserAddressService {
 
-  private static final String USER_ADDRESS_CACHE_NAME = "userAddressCache";
   private final UserAddressMapper userAddressMapper;
   private final UserAddressConverter userAddressConverter;
-  private final CacheManager cacheManager;
+  private final TransactionalUserAddressCacheService userAddressCacheService;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id"),
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
-      })
   public boolean save(UserAddress entity) {
     if (entity == null) {
-      throw new BusinessException("user address is required");
+      throw new BizException("user address is required");
     }
     entity.setCreatedAt(LocalDateTime.now());
     entity.setUpdatedAt(LocalDateTime.now());
@@ -61,21 +51,18 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     boolean saved = super.save(entity);
     if (!saved) {
       log.error("Failed to save user address");
-      throw new BusinessException(500, "Failed to save user address");
+      throw new BizException(500, "Failed to save user address");
     }
+    userAddressCacheService.putTransactional(entity);
+    userAddressCacheService.evictUserList(entity.getUserId());
     return true;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #entity.id"),
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #entity.userId")
-      })
   public boolean updateById(UserAddress entity) {
     if (entity == null || entity.getId() == null) {
-      throw new BusinessException("address id is required");
+      throw new BizException("address id is required");
     }
     entity.setUpdatedAt(LocalDateTime.now());
 
@@ -97,7 +84,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
           "Failed to update user address due to permission mismatch, addressId={}, userId={}",
           entity.getId(),
           userId);
-      throw new BusinessException("No permission to operate this address");
+      throw new BizException("No permission to operate this address");
     }
 
     if (Integer.valueOf(1).equals(entity.getIsDefault())) {
@@ -107,19 +94,26 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     boolean updated = super.updateById(entity);
     if (!updated) {
       log.error("Failed to update user address, addressId={}", entity.getId());
-      throw new BusinessException(500, "Failed to update user address");
+      throw new BizException(500, "Failed to update user address");
     }
+    refreshAddressCache(entity.getId(), existingAddress.getUserId());
     return true;
   }
 
+  @Override
   @Transactional(readOnly = true)
-  @Cacheable(
-      cacheNames = USER_ADDRESS_CACHE_NAME,
-      key = "'detail:' + #id",
-      unless = "#result == null")
   public UserAddressDTO getUserAddressByIdWithCache(Long id) {
+    TransactionalUserAddressCacheService.UserAddressCache cached =
+        userAddressCacheService.getById(id);
+    if (cached != null) {
+      return toDto(cached);
+    }
     UserAddress userAddress = userAddressMapper.selectById(id);
-    return userAddress != null ? userAddressConverter.toDTO(userAddress) : null;
+    if (userAddress == null) {
+      return null;
+    }
+    userAddressCacheService.putTransactional(userAddress);
+    return userAddressConverter.toDTO(userAddress);
   }
 
   @Override
@@ -131,13 +125,18 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     return getUserAddressByIdWithCache(id);
   }
 
+  @Override
   @Transactional(readOnly = true)
-  @Cacheable(
-      cacheNames = USER_ADDRESS_CACHE_NAME,
-      key = "'list:' + #userId",
-      unless = "#result == null || #result.isEmpty()")
   public List<UserAddressDTO> getUserAddressListByUserIdWithCache(Long userId) {
+    List<TransactionalUserAddressCacheService.UserAddressCache> cached =
+        userAddressCacheService.getByUserId(userId);
+    if (!cached.isEmpty()) {
+      return cached.stream().map(this::toDto).toList();
+    }
     List<UserAddress> userAddresses = lambdaQuery().eq(UserAddress::getUserId, userId).list();
+    if (!userAddresses.isEmpty()) {
+      userAddressCacheService.putUserListTransactional(userId, userAddresses);
+    }
     return userAddressConverter.toDTOList(userAddresses);
   }
 
@@ -145,14 +144,14 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
   @Transactional(rollbackFor = Exception.class)
   public UserAddressDTO createAddress(Long userId, UserAddressRequestDTO requestDTO) {
     if (userId == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     if (requestDTO == null) {
-      throw new BusinessException("address payload is required");
+      throw new BizException("address payload is required");
     }
     UserAddress entity = userAddressConverter.toEntity(requestDTO);
     if (entity == null) {
-      throw new BusinessException("invalid address payload");
+      throw new BizException("invalid address payload");
     }
     entity.setUserId(userId);
     save(entity);
@@ -163,14 +162,14 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
   @Transactional(rollbackFor = Exception.class)
   public UserAddressDTO updateAddress(Long addressId, UserAddressRequestDTO requestDTO) {
     if (addressId == null) {
-      throw new BusinessException("address id is required");
+      throw new BizException("address id is required");
     }
     if (requestDTO == null) {
-      throw new BusinessException("address payload is required");
+      throw new BizException("address payload is required");
     }
     UserAddress entity = userAddressConverter.toEntity(requestDTO);
     if (entity == null) {
-      throw new BusinessException("invalid address payload");
+      throw new BizException("invalid address payload");
     }
     entity.setId(addressId);
     updateById(entity);
@@ -183,13 +182,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     if (userId == null) {
       return List.of();
     }
-    List<UserAddress> userAddresses =
-        lambdaQuery()
-            .eq(UserAddress::getUserId, userId)
-            .orderByDesc(UserAddress::getIsDefault)
-            .orderByDesc(UserAddress::getUpdatedAt)
-            .list();
-    return userAddressConverter.toVOList(userAddresses);
+    return getUserAddressListByUserIdWithCache(userId).stream().map(this::toVo).toList();
   }
 
   @Override
@@ -198,16 +191,18 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     if (userId == null) {
       return null;
     }
-    UserAddress userAddress =
-        lambdaQuery().eq(UserAddress::getUserId, userId).eq(UserAddress::getIsDefault, 1).one();
-    return userAddress == null ? null : userAddressConverter.toVO(userAddress);
+    return getUserAddressListByUserIdWithCache(userId).stream()
+        .filter(address -> Integer.valueOf(1).equals(address.getIsDefault()))
+        .findFirst()
+        .map(this::toVo)
+        .orElse(null);
   }
 
   @Override
   @Transactional(readOnly = true)
   public PageResult<UserAddressVO> pageAddresses(UserAddressPageDTO pageDTO) {
     if (pageDTO == null) {
-      throw new BusinessException("page query payload is required");
+      throw new BizException("page query payload is required");
     }
     Page<UserAddress> page = PageUtils.buildPage(pageDTO);
     LambdaQueryWrapper<UserAddress> queryWrapper = new LambdaQueryWrapper<>();
@@ -291,29 +286,20 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
       throw new ResourceNotFoundException("address", String.valueOf(id));
     }
 
-    return removeByIdWithCacheEvict(id, existingAddress.getUserId());
-  }
-
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'detail:' + #addressId"),
-        @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
-      })
-  protected boolean removeByIdWithCacheEvict(Long addressId, Long userId) {
-    boolean removed = super.removeById(addressId);
+    boolean removed = super.removeById(id);
     if (!removed) {
-      log.error("Failed to delete user address, addressId={}", addressId);
-      throw new BusinessException(500, "Failed to delete user address");
+      log.error("Failed to delete user address, addressId={}", id);
+      throw new BizException(500, "Failed to delete user address");
     }
+    userAddressCacheService.evictTransactional(id, existingAddress.getUserId());
     return true;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = USER_ADDRESS_CACHE_NAME, key = "'list:' + #userId")
   public boolean resetDefaultAddress(Long userId) {
     if (userId == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
 
     List<Long> defaultIds =
@@ -336,12 +322,58 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserAddress>()
                 .eq(UserAddress::getUserId, userId)
                 .eq(UserAddress::getIsDefault, 1));
-    Cache cache = cacheManager.getCache(USER_ADDRESS_CACHE_NAME);
-    if (cache != null) {
-      for (Long addressId : defaultIds) {
-        cache.evict("detail:" + addressId);
-      }
+    userAddressCacheService.evictUserList(userId);
+    for (Long addressId : defaultIds) {
+      userAddressCacheService.evict(addressId, null);
     }
     return updated;
+  }
+
+  private void refreshAddressCache(Long addressId, Long userId) {
+    if (addressId == null) {
+      return;
+    }
+    UserAddress latest = userAddressMapper.selectById(addressId);
+    if (latest == null) {
+      userAddressCacheService.evictTransactional(addressId, userId);
+      return;
+    }
+    userAddressCacheService.putTransactional(latest);
+    userAddressCacheService.evictUserList(latest.getUserId());
+    if (userId != null && !userId.equals(latest.getUserId())) {
+      userAddressCacheService.evictUserList(userId);
+    }
+  }
+
+  private UserAddressDTO toDto(TransactionalUserAddressCacheService.UserAddressCache cached) {
+    UserAddressDTO dto = new UserAddressDTO();
+    dto.setId(cached.id());
+    dto.setUserId(cached.userId());
+    dto.setConsignee(cached.consignee());
+    dto.setPhone(cached.phone());
+    dto.setProvince(cached.province());
+    dto.setCity(cached.city());
+    dto.setDistrict(cached.district());
+    dto.setStreet(cached.street());
+    dto.setDetailAddress(cached.detailAddress());
+    dto.setIsDefault(cached.isDefault());
+    return dto;
+  }
+
+  private UserAddressVO toVo(UserAddressDTO dto) {
+    UserAddressVO vo = new UserAddressVO();
+    vo.setId(dto.getId());
+    vo.setUserId(dto.getUserId());
+    vo.setConsignee(dto.getConsignee());
+    vo.setPhone(dto.getPhone());
+    vo.setProvince(dto.getProvince());
+    vo.setCity(dto.getCity());
+    vo.setDistrict(dto.getDistrict());
+    vo.setStreet(dto.getStreet());
+    vo.setDetailAddress(dto.getDetailAddress());
+    vo.setIsDefault(dto.getIsDefault());
+    vo.setCreatedAt(dto.getCreatedAt());
+    vo.setUpdatedAt(dto.getUpdatedAt());
+    return vo;
   }
 }
