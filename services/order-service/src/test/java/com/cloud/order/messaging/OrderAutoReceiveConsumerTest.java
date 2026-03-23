@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.messaging.MessageIdempotencyService;
+import com.cloud.common.messaging.deadletter.DeadLetterService;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.enums.OrderAction;
@@ -26,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class OrderAutoReceiveConsumerTest {
 
   @Mock private MessageIdempotencyService messageIdempotencyService;
+  @Mock private DeadLetterService deadLetterService;
 
   @Mock private OrderService orderService;
 
@@ -38,7 +40,9 @@ class OrderAutoReceiveConsumerTest {
   void setUp() {
     objectMapper = new ObjectMapper();
     consumer = new OrderAutoReceiveConsumer(orderService, orderSubMapper);
+    ReflectionTestUtils.setField(consumer, "deadLetterService", deadLetterService);
     ReflectionTestUtils.setField(consumer, "messageIdempotencyService", messageIdempotencyService);
+    ReflectionTestUtils.setField(consumer, "mqObjectMapper", objectMapper);
   }
 
   @Test
