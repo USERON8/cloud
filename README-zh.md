@@ -28,6 +28,42 @@ Version: 1.1.0
 | `search-service` | `8087` | Elasticsearch 搜索 |
 | `my-shop-uniapp` | `5173`(dev) | Web/Android/iOS 前端（UniApp） |
 
+## 服务文档索引
+
+| 服务 | 文档 |
+| --- | --- |
+| `gateway` | [services/gateway/README.md](./services/gateway/README.md) |
+| `auth-service` | [services/auth-service/README.md](./services/auth-service/README.md) |
+| `user-service` | [services/user-service/README.md](./services/user-service/README.md) |
+| `order-service` | [services/order-service/README.md](./services/order-service/README.md) |
+| `product-service` | [services/product-service/README.md](./services/product-service/README.md) |
+| `stock-service` | [services/stock-service/README.md](./services/stock-service/README.md) |
+| `payment-service` | [services/payment-service/README.md](./services/payment-service/README.md) |
+| `search-service` | [services/search-service/README.md](./services/search-service/README.md) |
+
+## 当前缓存改造状态
+
+- `user-service`
+  - 用户基础信息缓存已经收敛为显式的 Redis 单级缓存。
+  - 用户地址缓存已经收敛为显式的 Redis 单级缓存。
+  - 管理员、商家、统计、异步预热、文件上传回写等路径仍然在使用 Spring Cache 注解或 `CacheManager`，整体缓存模型仍是混合态。
+- `search-service`
+  - 搜索热词列表已经接入 Redis 单级热点缓存。
+  - 今日热销商品 ID 列表已经接入 Redis 单级热点缓存。
+  - `ElasticsearchOptimizedService` 内部的热词和推荐词本地 L1 缓存已经去掉。
+  - 智能搜索结果缓存和搜索建议缓存仍保留 Caffeine L1 + Redis L2。
+- 其它服务
+  - 本轮未对缓存策略做重构。
+
+## 本轮已确认的问题
+
+- `user-service` 当前同时存在显式 Redis 缓存服务和 Spring Cache 注解，缓存模型并不统一，后续仍需要继续收口。
+- `search-service` 已经清掉热词相关的旧多级缓存残留，但智能搜索和建议词路径仍保留本地 L1 配置与实现。
+- 之前各服务 README 过于简略，无法真实反映运行方式。本轮已补齐，但如果要形成完整运维手册，仍需再做更细的接口与任务审计。
+- 历史审计文档仍建议保留参考：
+  - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)
+  - [docs/code-audit-2026-03-13-zh.md](./docs/code-audit-2026-03-13-zh.md)
+
 ## 快速启动
 
 1. 启动基础依赖（含端口占用清理）：

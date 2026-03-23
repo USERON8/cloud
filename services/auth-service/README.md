@@ -5,7 +5,16 @@ Handles OAuth 2.1 authorization code + PKCE flows, JWT issuance, session managem
 
 - Service name: `auth-service`
 - Port: `8081`
-- Dependencies: Redis and Nacos (MySQL is not required in the current dev profile)
+- Primary dependencies: Redis, Nacos, `user-service`
+
+## Responsibilities
+
+- Acts as the project authorization server.
+- Issues OAuth2 access tokens and refresh tokens.
+- Stores authorization, consent, code, and state data in Redis-backed services.
+- Coordinates local principal data with upstream `user-service`.
+- Supports browser login through standard OAuth2 authorization-code flow with PKCE.
+- Supports GitHub OAuth login as a third-party identity entrance.
 
 ## Core Endpoints
 
@@ -18,6 +27,17 @@ Handles OAuth 2.1 authorization code + PKCE flows, JWT issuance, session managem
 
 The legacy `POST /auth/sessions` login endpoint and `POST /auth/tokens/refresh` custom refresh endpoint were removed and are no longer supported.
 
+## Runtime Dependencies
+
+- Redis
+  - Authorization, consent, code, and short-lived auth data are stored here.
+- Nacos
+  - Service discovery and shared configuration.
+- `user-service`
+  - Principal bootstrap and user lookup.
+- `gateway`
+  - Public traffic normally enters through gateway first.
+
 ## Web Login Flow
 
 1. The frontend generates `state`, `code_verifier`, and `code_challenge`.
@@ -26,6 +46,18 @@ The legacy `POST /auth/sessions` login endpoint and `POST /auth/tokens/refresh` 
 4. The frontend calls `POST /oauth2/token` with `authorization_code` + `code_verifier` to exchange tokens.
 
 GitHub login completes third-party authentication first and then returns to the same local authorization code flow instead of issuing tokens directly.
+
+## Current Design Notes
+
+- The current implementation is Redis-heavy and does not require a local MySQL dependency in the dev profile.
+- This service is already close to the expected short-TTL auth/session cache model.
+- Dedicated Redis authorization services are used instead of relying only on generic Spring Cache annotations.
+
+## Known Findings In This Sync
+
+- This service was not deeply re-audited in the current cache-refactor round.
+- No code changes were made here during the current documentation sync.
+- If the team wants one unified cache playbook across services, `auth-service` should be treated as the reference for short-lived auth/session cache behavior.
 
 ## GitHub Login Configuration
 

@@ -8,6 +8,13 @@ Order and refund service covering the order lifecycle and batch status operation
 - Database bootstrap: `db/init/order-service/init.sql`
 - Test data: `db/test/order-service/test.sql`
 
+## Responsibilities
+
+- Creates and manages orders.
+- Coordinates checkout, cancellation, timeout handling, receipt confirmation, and refund initiation.
+- Owns after-sale entry points and refund orchestration.
+- Publishes reliable domain events to downstream services.
+
 ## Core Endpoints
 
 - Orders and after-sale flows: `/api/orders/**`
@@ -20,10 +27,14 @@ Order and refund service covering the order lifecycle and batch status operation
 - Consumer idempotency: `MessageIdempotencyService` (Redis) prevents replay side effects
 - Transaction model: Seata TCC is used for order placement inventory reservation; refunds use Seata SAGA compensation; timeout cancellation uses delayed RocketMQ messages
 
-## Inventory Interaction
+## Cross-Service Interactions
 
-- Dubbo calls to `stock-service`: `reserve`, `confirm`, `release`, `rollback`
-- Inventory is reserved during checkout with TCC, confirmed after payment success, and released or rolled back during cancellation or refund
+- `stock-service`
+  - Inventory reserve/confirm/release/rollback through Dubbo.
+- `payment-service`
+  - Payment completion drives final order state transitions.
+- `user-service`
+  - User and merchant related context is consumed indirectly through upstream flows.
 
 ## Scheduled Jobs
 
@@ -31,6 +42,12 @@ Order and refund service covering the order lifecycle and batch status operation
 - Order timeout cancellation is handled through delayed RocketMQ messages
 - Registered handler: `orderAutoConfirmReceiptJob`
 - Registered handler: `afterSaleAutoApproveJob`
+
+## Known Findings In This Sync
+
+- This service was not modified in the current cache cleanup round.
+- The current README now explicitly reflects that order consistency is centered on TCC + SAGA + Outbox, not on synchronous distributed database transactions.
+- Cache-specific behavior for order query acceleration was not re-audited in this round.
 
 ## Local Run
 

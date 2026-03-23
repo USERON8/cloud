@@ -8,6 +8,13 @@ Payment service for payment order management, refund processing, and payment cha
 - Database bootstrap: `db/init/payment-service/init.sql`
 - Test data: `db/test/payment-service/test.sql`
 
+## Responsibilities
+
+- Manages payment orders and refund orders.
+- Integrates payment provider callbacks and compensation flows.
+- Publishes payment success and refund completion events.
+- Provides payment-status lookup for order orchestration.
+
 ## Core Endpoints
 
 - Create payment order: `POST /api/payments/orders`
@@ -25,11 +32,23 @@ Payment service for payment order management, refund processing, and payment cha
 - Reliable delivery: `REFUND_COMPLETED` is persisted to `outbox_event` and published by `PaymentOutboxRelay`
 - Transaction model: payment success uses RocketMQ transactional messages; refunds use local transactions + Outbox
 
+## Current Design Notes
+
+- Payment success is treated as a high-value event and uses RocketMQ transactional messaging instead of only local outbox relay.
+- Refund completion remains on the local-transaction-plus-outbox pattern.
+- `payment-service` intentionally keeps Seata disabled while still cooperating with distributed business flows.
+
 ## Scheduled Jobs
 
 - Compensation jobs run through `XXL-JOB`
 - Registered handler: `paymentOrderReconcileJob`
 - Registered handler: `paymentRefundRetryJob`
+
+## Known Findings In This Sync
+
+- This service was not changed in the current documentation-and-cache sync.
+- The README now makes the split between transactional-message success handling and outbox-based refund handling explicit.
+- Cache and query optimization behavior here was not re-audited in the current round.
 
 ## Local Run
 

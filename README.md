@@ -30,6 +30,42 @@ Frontend: UniApp (Vue 3 + TypeScript).
 | `search-service` | `8087` | Elasticsearch search |
 | `my-shop-uniapp` | `5173` (dev) | Web/Android/iOS frontend (UniApp) |
 
+## Service Documentation Map
+
+| Service | Document |
+| --- | --- |
+| `gateway` | [services/gateway/README.md](./services/gateway/README.md) |
+| `auth-service` | [services/auth-service/README.md](./services/auth-service/README.md) |
+| `user-service` | [services/user-service/README.md](./services/user-service/README.md) |
+| `order-service` | [services/order-service/README.md](./services/order-service/README.md) |
+| `product-service` | [services/product-service/README.md](./services/product-service/README.md) |
+| `stock-service` | [services/stock-service/README.md](./services/stock-service/README.md) |
+| `payment-service` | [services/payment-service/README.md](./services/payment-service/README.md) |
+| `search-service` | [services/search-service/README.md](./services/search-service/README.md) |
+
+## Current Cache Rollout Status
+
+- `user-service`
+  - User basic info cache is explicitly implemented as Redis single-level cache.
+  - User address cache is explicitly implemented as Redis single-level cache.
+  - Admin, merchant, statistics, async warmup, and some file-upload related paths still use Spring Cache annotations or `CacheManager`.
+- `search-service`
+  - Hot keyword list is cached through Redis single-level hot-data cache.
+  - Today hot-selling product id list is cached through Redis single-level hot-data cache.
+  - Hot keyword and keyword recommendation paths inside `ElasticsearchOptimizedService` no longer keep local L1 caches.
+  - Smart search result cache and suggestion cache still keep local Caffeine L1 plus Redis L2.
+- Other services
+  - No cache-strategy refactor was performed in this sync round.
+
+## Known Findings From This Sync Round
+
+- `user-service` still mixes explicit Redis cache services with Spring Cache annotations, so the module is not yet on one coherent cache model.
+- `search-service` no longer uses the old dev-only multi-level cache configuration for hot data, but smart search and suggestions still keep Caffeine-based local caches and related configuration.
+- Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
+- Existing historical audit references remain useful:
+  - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)
+  - [docs/code-audit-2026-03-13-zh.md](./docs/code-audit-2026-03-13-zh.md)
+
 ## Quick Start
 
 1. Start infrastructure:
