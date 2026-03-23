@@ -5,6 +5,7 @@ import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.mapper.SearchRequestMapper;
+import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -23,6 +24,7 @@ public class SearchFacadeService {
   private final ProductSearchService productSearchService;
   private final ElasticsearchOptimizedService elasticsearchOptimizedService;
   private final SearchRequestMapper searchRequestMapper;
+  private final SearchHotDataCacheService searchHotDataCacheService;
   private final ObjectMapper objectMapper;
 
   public SearchResultDTO<ProductDocument> searchProducts(ProductSearchRequest request) {
@@ -85,7 +87,8 @@ public class SearchFacadeService {
 
   public List<String> getHotSearchKeywords(Integer size) {
     int safeSize = size == null ? 10 : size;
-    return elasticsearchOptimizedService.getHotSearchKeywords(safeSize);
+    return searchHotDataCacheService.getHotKeywords(
+        safeSize, () -> elasticsearchOptimizedService.getHotSearchKeywords(safeSize));
   }
 
   public List<String> getKeywordRecommendations(String keyword, Integer size) {

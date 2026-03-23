@@ -8,6 +8,7 @@ import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import com.cloud.search.service.support.HotKeywordKeys;
+import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.cloud.search.service.support.SellRankKeys;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   private final ProductDocumentRepository productDocumentRepository;
   private final StringRedisTemplate redisTemplate;
   private final ElasticsearchOptimizedService elasticsearchOptimizedService;
+  private final SearchHotDataCacheService searchHotDataCacheService;
   private final ObjectMapper objectMapper;
 
   @Value("${search.hot-keyword.daily-ttl-days:7}")
@@ -307,20 +309,26 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     int pageSize = normalizeSize(size);
 
     try {
-      var zSetOperations = redisTemplate.opsForZSet();
-      Long total = zSetOperations.size(SellRankKeys.TODAY_KEY);
-      if (total == null || total <= 0L) {
+      List<String> orderedIds =
+          searchHotDataCacheService.getTodayHotProductIds(
+              () -> {
+                var zSetOperations = redisTemplate.opsForZSet();
+                Long total = zSetOperations.size(SellRankKeys.TODAY_KEY);
+                if (total == null || total <= 0L) {
+                  return List.of();
+                }
+                var rankedProductIds =
+                    zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, total - 1L);
+                if (rankedProductIds == null || rankedProductIds.isEmpty()) {
+                  return List.of();
+                }
+                return rankedProductIds.stream().toList();
+              });
+
+      if (orderedIds.isEmpty()) {
         return SearchResultDTO.of(
             List.of(), 0L, pageNum, pageSize, System.currentTimeMillis() - start);
       }
-
-      var rankedProductIds = zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, total - 1L);
-      if (rankedProductIds == null || rankedProductIds.isEmpty()) {
-        return SearchResultDTO.of(
-            List.of(), total, pageNum, pageSize, System.currentTimeMillis() - start);
-      }
-
-      List<String> orderedIds = rankedProductIds.stream().toList();
       Map<String, ProductDocument> documentsById = new LinkedHashMap<>();
       for (ProductDocument document : productDocumentRepository.findAllById(orderedIds)) {
         if (document == null

@@ -5,6 +5,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.RemoteException;
+import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.cloud.search.service.support.SellRankKeys;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 public class SellRankRefreshXxlJob {
 
   private final StringRedisTemplate redisTemplate;
+  private final SearchHotDataCacheService searchHotDataCacheService;
 
   @Value("${search.sell-rank.limit:200}")
   private int limit;
@@ -49,6 +51,7 @@ public class SellRankRefreshXxlJob {
             "stat sell count today", () -> orderDubboApi.statSellCountToday(safeLimit));
     if (stats == null || stats.isEmpty()) {
       redisTemplate.delete(SellRankKeys.TODAY_KEY);
+      searchHotDataCacheService.evictTodayHotProductIds();
       XxlJobHelper.log("sellRankRefreshJob finished, empty stats");
       return;
     }
@@ -66,6 +69,7 @@ public class SellRankRefreshXxlJob {
               stat.getSellCount().doubleValue());
     }
     redisTemplate.expire(SellRankKeys.TODAY_KEY, safeTtlDays, TimeUnit.DAYS);
+    searchHotDataCacheService.evictTodayHotProductIds();
     String message = "sellRankRefreshJob finished, size=" + stats.size();
     XxlJobHelper.log(message);
     log.info(message);

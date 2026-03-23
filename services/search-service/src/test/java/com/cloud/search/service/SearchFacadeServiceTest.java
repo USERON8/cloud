@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.mapper.SearchRequestMapper;
+import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ class SearchFacadeServiceTest {
 
   @Mock private SearchRequestMapper searchRequestMapper;
 
+  @Mock private SearchHotDataCacheService searchHotDataCacheService;
+
   private SearchFacadeService searchFacadeService;
 
   @BeforeEach
@@ -37,7 +40,20 @@ class SearchFacadeServiceTest {
             productSearchService,
             elasticsearchOptimizedService,
             searchRequestMapper,
+            searchHotDataCacheService,
             new ObjectMapper());
+  }
+
+  @Test
+  void getHotSearchKeywordsShouldUseRedisHotCacheService() {
+    when(searchHotDataCacheService.getHotKeywords(eq(6), any()))
+        .thenReturn(List.of("iphone", "ipad"));
+
+    List<String> result = searchFacadeService.getHotSearchKeywords(6);
+
+    assertThat(result).containsExactly("iphone", "ipad");
+    verify(searchHotDataCacheService).getHotKeywords(eq(6), any());
+    verifyNoInteractions(productSearchService);
   }
 
   @Test

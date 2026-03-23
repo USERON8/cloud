@@ -128,6 +128,11 @@ app:
         rejected-execution-handler: CALLER_RUNS
 
 search:
+  cache:
+    hot-keywords:
+      ttl-seconds: ${SEARCH_CACHE_HOT_KEYWORDS_TTL_S:60}
+    today-hot-product-ids:
+      ttl-seconds: ${SEARCH_CACHE_TODAY_HOT_PRODUCT_IDS_TTL_S:120}
   notification:
     enabled: true
   statistics:

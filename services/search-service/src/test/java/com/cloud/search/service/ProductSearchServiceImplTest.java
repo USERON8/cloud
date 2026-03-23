@@ -12,9 +12,8 @@ import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.impl.ProductSearchServiceImpl;
 import com.cloud.search.service.support.HotKeywordKeys;
-import com.cloud.search.service.support.SellRankKeys;
+import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +42,8 @@ class ProductSearchServiceImplTest {
 
   @Mock private ZSetOperations<String, String> zSetOperations;
 
+  @Mock private SearchHotDataCacheService searchHotDataCacheService;
+
   private ProductSearchServiceImpl productSearchService;
 
   @BeforeEach
@@ -52,6 +53,7 @@ class ProductSearchServiceImplTest {
             productDocumentRepository,
             redisTemplate,
             elasticsearchOptimizedService,
+            searchHotDataCacheService,
             new ObjectMapper());
   }
 
@@ -132,10 +134,8 @@ class ProductSearchServiceImplTest {
     second.setId("1001");
     second.setStatus(1);
 
-    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
-    when(zSetOperations.size(SellRankKeys.TODAY_KEY)).thenReturn(2L);
-    when(zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, 1L))
-        .thenReturn(new LinkedHashSet<>(List.of("1001", "1002")));
+    when(searchHotDataCacheService.getTodayHotProductIds(any()))
+        .thenReturn(List.of("1001", "1002"));
     when(productDocumentRepository.findAllById(List.of("1001", "1002")))
         .thenReturn(List.of(second, first));
 
@@ -154,10 +154,8 @@ class ProductSearchServiceImplTest {
     inactive.setId("1002");
     inactive.setStatus(0);
 
-    when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
-    when(zSetOperations.size(SellRankKeys.TODAY_KEY)).thenReturn(2L);
-    when(zSetOperations.reverseRange(SellRankKeys.TODAY_KEY, 0L, 1L))
-        .thenReturn(new LinkedHashSet<>(List.of("1001", "1002")));
+    when(searchHotDataCacheService.getTodayHotProductIds(any()))
+        .thenReturn(List.of("1001", "1002"));
     when(productDocumentRepository.findAllById(List.of("1001", "1002")))
         .thenReturn(List.of(active, inactive));
 
