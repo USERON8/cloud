@@ -6,11 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
-import com.cloud.common.domain.dto.user.UserDTO;
-import com.cloud.common.domain.dto.user.UserPageDTO;
-import com.cloud.common.domain.dto.user.UserProfileDTO;
-import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
-import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
+import com.cloud.common.domain.dto.user.*;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.exception.EntityNotFoundException;
@@ -20,15 +16,9 @@ import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
-import com.cloud.user.service.support.UserInfoHashCacheService;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -44,7 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
   private final UserConverter userConverter;
   private final AuthPrincipalService authPrincipalService;
   private final CacheManager cacheManager;
-  private final UserInfoHashCacheService userInfoCacheService;
+  private final TransactionalUserCacheService userInfoCacheService;
 
   @Override
   @Transactional(readOnly = true)
@@ -53,7 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       throw new BusinessException("username is required");
     }
 
-    UserInfoHashCacheService.UserCache cached = userInfoCacheService.getByUsername(username);
+    TransactionalUserCacheService.UserCache cached = userInfoCacheService.getByUsername(username);
     if (cached != null) {
       return toDTOWithRoles(cached);
     }
@@ -62,7 +52,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (user == null) {
       return null;
     }
-    userInfoCacheService.put(user);
+    userInfoCacheService.putTransactional(user);
     return toDTOWithRoles(user);
   }
 
@@ -126,7 +116,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     boolean deleted = removeById(id);
     if (deleted) {
       authPrincipalService.deletePrincipal(id);
-      userInfoCacheService.evict(id, user.getUsername());
+      userInfoCacheService.evictTransactional(id, user.getUsername());
     }
     return deleted;
   }
@@ -156,7 +146,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         users.forEach(
             user -> {
               if (user != null && user.getId() != null) {
-                userInfoCacheService.evict(user.getId(), user.getUsername());
+                userInfoCacheService.evictTransactional(user.getId(), user.getUsername());
               }
             });
       }
@@ -170,7 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (id == null) {
       throw new BusinessException("user id is required");
     }
-    UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
+    TransactionalUserCacheService.UserCache cached = userInfoCacheService.getById(id);
     if (cached != null) {
       return toDTOWithRoles(cached);
     }
@@ -178,7 +168,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (user == null) {
       throw new EntityNotFoundException("user", id);
     }
-    userInfoCacheService.put(user);
+    userInfoCacheService.putTransactional(user);
     return toDTOWithRoles(user);
   }
 
@@ -188,7 +178,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (id == null) {
       throw new BusinessException("user id is required");
     }
-    UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
+    TransactionalUserCacheService.UserCache cached = userInfoCacheService.getById(id);
     if (cached != null) {
       return toProfileDTO(cached);
     }
@@ -196,7 +186,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (user == null) {
       throw new EntityNotFoundException("user", id);
     }
-    userInfoCacheService.put(user);
+    userInfoCacheService.putTransactional(user);
     return toProfileDTO(user);
   }
 
@@ -259,7 +249,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     Long userId = authPrincipalService.createPrincipal(principalDTO);
     User created = userId == null ? null : getById(userId);
     if (created != null) {
-      userInfoCacheService.put(created);
+      userInfoCacheService.putTransactional(created);
     }
     return userId;
   }
@@ -290,14 +280,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       Long userId = authPrincipalService.createPrincipal(authPrincipalDTO);
       User created = userId == null ? null : getById(userId);
       if (created != null) {
-        userInfoCacheService.put(created);
+        userInfoCacheService.putTransactional(created);
       }
       return userId;
     }
     User user = toUserEntity(profileUpsertDTO);
     boolean updated = updateById(user);
     if (updated) {
-      userInfoCacheService.put(getById(profileUpsertDTO.getId()));
+      userInfoCacheService.putTransactional(getById(profileUpsertDTO.getId()));
     }
     return profileUpsertDTO.getId();
   }
@@ -440,7 +430,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (deleted) {
       authPrincipalService.deletePrincipal(id);
       if (existingUser != null) {
-        userInfoCacheService.evict(id, existingUser.getUsername());
+        userInfoCacheService.evictTransactional(id, existingUser.getUsername());
       }
     }
     return deleted;
@@ -641,7 +631,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     return dto;
   }
 
-  private UserDTO toDTOWithRoles(UserInfoHashCacheService.UserCache cached) {
+  private UserDTO toDTOWithRoles(TransactionalUserCacheService.UserCache cached) {
     if (cached == null || cached.id() == null) {
       return null;
     }
@@ -717,7 +707,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     return profile;
   }
 
-  private UserProfileDTO toProfileDTO(UserInfoHashCacheService.UserCache cached) {
+  private UserProfileDTO toProfileDTO(TransactionalUserCacheService.UserCache cached) {
     if (cached == null || cached.id() == null) {
       return null;
     }
@@ -770,123 +760,111 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (existingUser == null || requestDTO == null) {
       return;
     }
-    Long id = existingUser.getId();
     String oldUsername = existingUser.getUsername();
-    String newUsername = StrUtil.blankToDefault(requestDTO.getUsername(), oldUsername);
-    Map<String, String> fields = new HashMap<>();
-    if (StrUtil.isNotBlank(newUsername)) {
-      fields.put("username", newUsername);
-    }
-    if (requestDTO.getPhone() != null) {
-      fields.put("phone", requestDTO.getPhone());
-    }
-    if (requestDTO.getNickname() != null) {
-      fields.put("nickname", requestDTO.getNickname());
-    }
-    if (requestDTO.getAvatarUrl() != null) {
-      fields.put("avatarUrl", requestDTO.getAvatarUrl());
-    }
-    if (requestDTO.getEmail() != null) {
-      fields.put("email", requestDTO.getEmail());
-    }
-    if (requestDTO.getStatus() != null) {
-      fields.put("status", String.valueOf(requestDTO.getStatus()));
-    }
-    applyUserCacheUpdate(id, oldUsername, newUsername, fields);
+    User snapshot = mergeUser(existingUser, requestDTO);
+    refreshUserCache(snapshot, oldUsername);
   }
 
   private void updateUserCache(User existingUser, UserProfileUpsertDTO profileUpsertDTO) {
     if (existingUser == null || profileUpsertDTO == null) {
       return;
     }
-    Long id = existingUser.getId();
     String oldUsername = existingUser.getUsername();
-    String newUsername = StrUtil.blankToDefault(profileUpsertDTO.getUsername(), oldUsername);
-    Map<String, String> fields = new HashMap<>();
-    if (StrUtil.isNotBlank(newUsername)) {
-      fields.put("username", newUsername);
-    }
-    if (profileUpsertDTO.getPhone() != null) {
-      fields.put("phone", profileUpsertDTO.getPhone());
-    }
-    if (profileUpsertDTO.getNickname() != null) {
-      fields.put("nickname", profileUpsertDTO.getNickname());
-    }
-    if (profileUpsertDTO.getAvatarUrl() != null) {
-      fields.put("avatarUrl", profileUpsertDTO.getAvatarUrl());
-    }
-    if (profileUpsertDTO.getEmail() != null) {
-      fields.put("email", profileUpsertDTO.getEmail());
-    }
-    if (profileUpsertDTO.getStatus() != null) {
-      fields.put("status", String.valueOf(profileUpsertDTO.getStatus()));
-    }
-    applyUserCacheUpdate(id, oldUsername, newUsername, fields);
+    User snapshot = mergeUser(existingUser, profileUpsertDTO);
+    refreshUserCache(snapshot, oldUsername);
   }
 
   private void updateUserCache(User entity) {
     if (entity == null || entity.getId() == null) {
       return;
     }
-    Map<String, String> fields = new HashMap<>();
-    if (entity.getUsername() != null) {
-      fields.put("username", entity.getUsername());
-    }
-    if (entity.getPhone() != null) {
-      fields.put("phone", entity.getPhone());
-    }
-    if (entity.getNickname() != null) {
-      fields.put("nickname", entity.getNickname());
-    }
-    if (entity.getAvatarUrl() != null) {
-      fields.put("avatarUrl", entity.getAvatarUrl());
-    }
-    if (entity.getEmail() != null) {
-      fields.put("email", entity.getEmail());
-    }
-    if (entity.getStatus() != null) {
-      fields.put("status", String.valueOf(entity.getStatus()));
-    }
-    if (fields.isEmpty()) {
+    User latest = getById(entity.getId());
+    if (latest == null) {
+      userInfoCacheService.evictTransactional(entity.getId(), entity.getUsername());
       return;
     }
-    userInfoCacheService.updateFields(entity.getId(), entity.getUsername(), fields);
+    refreshUserCache(latest, entity.getUsername());
   }
 
   private void updateUserStatusCache(Long id, Integer status) {
     if (id == null || status == null) {
       return;
     }
-    String username = resolveUsernameForCache(id);
-    Map<String, String> fields = new HashMap<>();
-    fields.put("status", String.valueOf(status));
-    userInfoCacheService.updateFields(id, username, fields);
-  }
-
-  private void applyUserCacheUpdate(
-      Long id, String oldUsername, String newUsername, Map<String, String> fields) {
-    if (id == null || fields == null || fields.isEmpty()) {
+    User latest = getById(id);
+    if (latest == null) {
+      userInfoCacheService.evictTransactional(id, null);
       return;
     }
-    if (StrUtil.isNotBlank(oldUsername)
-        && StrUtil.isNotBlank(newUsername)
-        && !StrUtil.equals(oldUsername, newUsername)) {
-      userInfoCacheService.updateUsernameAtomic(id, oldUsername, newUsername, fields);
-      return;
-    }
-    userInfoCacheService.updateFields(id, newUsername, fields);
+    latest.setStatus(status);
+    refreshUserCache(latest, latest.getUsername());
   }
 
-  private String resolveUsernameForCache(Long id) {
-    if (id == null) {
-      return null;
+  private User mergeUser(User existingUser, UserUpsertRequestDTO requestDTO) {
+    User merged = copyUser(existingUser);
+    merged.setUsername(
+        StrUtil.blankToDefault(requestDTO.getUsername(), existingUser.getUsername()));
+    merged.setPhone(
+        requestDTO.getPhone() == null ? existingUser.getPhone() : requestDTO.getPhone());
+    merged.setNickname(
+        requestDTO.getNickname() == null ? existingUser.getNickname() : requestDTO.getNickname());
+    merged.setAvatarUrl(
+        requestDTO.getAvatarUrl() == null
+            ? existingUser.getAvatarUrl()
+            : requestDTO.getAvatarUrl());
+    merged.setEmail(
+        requestDTO.getEmail() == null ? existingUser.getEmail() : requestDTO.getEmail());
+    merged.setStatus(
+        requestDTO.getStatus() == null ? existingUser.getStatus() : requestDTO.getStatus());
+    return merged;
+  }
+
+  private User mergeUser(User existingUser, UserProfileUpsertDTO profileUpsertDTO) {
+    User merged = copyUser(existingUser);
+    merged.setUsername(
+        StrUtil.blankToDefault(profileUpsertDTO.getUsername(), existingUser.getUsername()));
+    merged.setPhone(
+        profileUpsertDTO.getPhone() == null
+            ? existingUser.getPhone()
+            : profileUpsertDTO.getPhone());
+    merged.setNickname(
+        profileUpsertDTO.getNickname() == null
+            ? existingUser.getNickname()
+            : profileUpsertDTO.getNickname());
+    merged.setAvatarUrl(
+        profileUpsertDTO.getAvatarUrl() == null
+            ? existingUser.getAvatarUrl()
+            : profileUpsertDTO.getAvatarUrl());
+    merged.setEmail(
+        profileUpsertDTO.getEmail() == null
+            ? existingUser.getEmail()
+            : profileUpsertDTO.getEmail());
+    merged.setStatus(
+        profileUpsertDTO.getStatus() == null
+            ? existingUser.getStatus()
+            : profileUpsertDTO.getStatus());
+    return merged;
+  }
+
+  private User copyUser(User source) {
+    User copied = new User();
+    copied.setId(source.getId());
+    copied.setUsername(source.getUsername());
+    copied.setPhone(source.getPhone());
+    copied.setNickname(source.getNickname());
+    copied.setAvatarUrl(source.getAvatarUrl());
+    copied.setEmail(source.getEmail());
+    copied.setStatus(source.getStatus());
+    return copied;
+  }
+
+  private void refreshUserCache(User snapshot, String oldUsername) {
+    if (snapshot == null || snapshot.getId() == null) {
+      return;
     }
-    UserInfoHashCacheService.UserCache cached = userInfoCacheService.getById(id);
-    if (cached != null && StrUtil.isNotBlank(cached.username())) {
-      return cached.username();
+    if (StrUtil.isNotBlank(oldUsername) && !StrUtil.equals(oldUsername, snapshot.getUsername())) {
+      userInfoCacheService.evict(null, oldUsername);
     }
-    User user = getById(id);
-    return user == null ? null : user.getUsername();
+    userInfoCacheService.putTransactional(snapshot);
   }
 
   private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {

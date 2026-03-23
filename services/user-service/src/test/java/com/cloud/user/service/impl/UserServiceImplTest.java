@@ -4,17 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.User;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
-import com.cloud.user.service.support.UserInfoHashCacheService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +31,7 @@ class UserServiceImplTest {
 
   @Mock private CacheManager cacheManager;
 
-  @Mock private UserInfoHashCacheService userInfoHashCacheService;
+  @Mock private TransactionalUserCacheService transactionalUserCacheService;
 
   private UserServiceImpl service;
 
@@ -42,7 +40,7 @@ class UserServiceImplTest {
     service =
         spy(
             new UserServiceImpl(
-                userConverter, authPrincipalService, cacheManager, userInfoHashCacheService));
+                userConverter, authPrincipalService, cacheManager, transactionalUserCacheService));
   }
 
   @Test

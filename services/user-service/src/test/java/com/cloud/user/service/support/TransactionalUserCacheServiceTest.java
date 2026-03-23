@@ -1,14 +1,11 @@
 package com.cloud.user.service.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.cloud.user.module.entity.User;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,18 +19,18 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class UserInfoHashCacheServiceTest {
+class TransactionalUserCacheServiceTest {
 
   @Mock private StringRedisTemplate redisTemplate;
 
   @Mock private HashOperations<String, Object, Object> hashOperations;
 
-  @InjectMocks private UserInfoHashCacheService userInfoHashCacheService;
+  @InjectMocks private TransactionalUserCacheService transactionalUserCacheService;
 
   @BeforeEach
   void setUp() {
     when(redisTemplate.opsForHash()).thenReturn(hashOperations);
-    ReflectionTestUtils.setField(userInfoHashCacheService, "ttlSeconds", 120L);
+    ReflectionTestUtils.setField(transactionalUserCacheService, "ttlSeconds", 120L);
   }
 
   @Test
@@ -46,12 +43,12 @@ class UserInfoHashCacheServiceTest {
                 "email", "u1@example.com",
                 "status", "1"));
 
-    UserInfoHashCacheService.UserCache cache = userInfoHashCacheService.getById(1L);
+    TransactionalUserCacheService.UserCache cache = transactionalUserCacheService.getById(1L);
 
     assertThat(cache).isNotNull();
     assertThat(cache.id()).isEqualTo(1L);
     assertThat(cache.username()).isEqualTo("u1");
-    verify(redisTemplate, times(2)).expire(anyString(), any(Duration.class));
+    verify(redisTemplate).expire("user:info:1", Duration.ofSeconds(120));
   }
 
   @Test
@@ -62,7 +59,7 @@ class UserInfoHashCacheServiceTest {
     user.setEmail("user2@example.com");
     user.setStatus(1);
 
-    userInfoHashCacheService.put(user);
+    transactionalUserCacheService.put(user);
 
     verify(hashOperations, times(2)).putAll(anyString(), anyMap());
     verify(redisTemplate, times(2)).expire(anyString(), any(Duration.class));
