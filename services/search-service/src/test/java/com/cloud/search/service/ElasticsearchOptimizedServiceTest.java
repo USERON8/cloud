@@ -57,12 +57,8 @@ class ElasticsearchOptimizedServiceTest {
     ReflectionTestUtils.setField(service, "recommendationL2TtlSeconds", 60L);
     ReflectionTestUtils.setField(service, "smartSearchL1ExpireAfterWriteMs", 30000L);
     ReflectionTestUtils.setField(service, "suggestionL1ExpireAfterWriteMs", 20000L);
-    ReflectionTestUtils.setField(service, "hotKeywordsL1ExpireAfterWriteMs", 15000L);
-    ReflectionTestUtils.setField(service, "recommendationL1ExpireAfterWriteMs", 20000L);
     ReflectionTestUtils.setField(service, "smartSearchL1RefreshAfterWriteMs", 10000L);
     ReflectionTestUtils.setField(service, "suggestionL1RefreshAfterWriteMs", 8000L);
-    ReflectionTestUtils.setField(service, "hotKeywordsL1RefreshAfterWriteMs", 5000L);
-    ReflectionTestUtils.setField(service, "recommendationL1RefreshAfterWriteMs", 8000L);
     ReflectionTestUtils.setField(service, "l1MaxEntries", 100);
     ReflectionTestUtils.setField(service, "l1RecordStats", true);
     ReflectionTestUtils.invokeMethod(service, "initL1Caches");
@@ -80,7 +76,7 @@ class ElasticsearchOptimizedServiceTest {
   }
 
   @Test
-  void shouldLoadHotKeywordsFromRedisZSetAndReuseL1Cache() {
+  void shouldLoadHotKeywordsFromRedisZSetAndWriteRedisCache() {
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
     Set<String> hotKeywords = new LinkedHashSet<>(List.of("iphone", "xiaomi"));
@@ -88,10 +84,8 @@ class ElasticsearchOptimizedServiceTest {
     when(zSetOperations.reverseRange("search:hot:total", 0, 1)).thenReturn(hotKeywords);
 
     List<String> first = service.getHotSearchKeywords(2);
-    List<String> second = service.getHotSearchKeywords(2);
 
     assertThat(first).containsExactly("iphone", "xiaomi");
-    assertThat(second).containsExactly("iphone", "xiaomi");
     verify(zSetOperations, times(1)).reverseRange("search:hot:total", 0, 1);
     verify(valueOperations, times(1))
         .set(
@@ -112,6 +106,18 @@ class ElasticsearchOptimizedServiceTest {
 
     assertThat(recommendations).containsExactly("iphone", "iphone 15", "ipad", "watch");
     verifyNoInteractions(elasticsearchClient);
+  }
+
+  @Test
+  void shouldUseRecommendationRedisCacheWithoutExtraLookup() {
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.get("search:recommend:ip:4")).thenReturn("[\"iphone\",\"ipad\"]");
+
+    List<String> recommendations = service.getKeywordRecommendations("ip", 4);
+
+    assertThat(recommendations).containsExactly("iphone", "ipad");
+    verifyNoInteractions(elasticsearchClient);
+    verifyNoInteractions(zSetOperations);
   }
 
   @Test

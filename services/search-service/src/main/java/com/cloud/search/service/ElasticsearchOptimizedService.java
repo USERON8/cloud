@@ -74,8 +74,6 @@ public class ElasticsearchOptimizedService {
   private static final String CACHE_REBUILD_LOCK_PREFIX = "search:cache:rebuild:lock:";
   private static final String CACHE_NAME_SMART = "search.smart";
   private static final String CACHE_NAME_SUGGESTIONS = "search.suggestions";
-  private static final String CACHE_NAME_HOT = "search.hotKeywords";
-  private static final String CACHE_NAME_RECOMMEND = "search.recommendations";
 
   @Value("${search.optimized.cache.smart-search.l2-ttl-seconds:120}")
   private long smartSearchL2TtlSeconds;
@@ -97,25 +95,11 @@ public class ElasticsearchOptimizedService {
       "${search.optimized.cache.suggestions.l1-expire-after-write-ms:${search.optimized.cache.suggestions.l1-ttl-millis:20000}}")
   private long suggestionL1ExpireAfterWriteMs;
 
-  @Value(
-      "${search.optimized.cache.hot-keywords.l1-expire-after-write-ms:${search.optimized.cache.hot-keywords.l1-ttl-millis:15000}}")
-  private long hotKeywordsL1ExpireAfterWriteMs;
-
-  @Value(
-      "${search.optimized.cache.recommendations.l1-expire-after-write-ms:${search.optimized.cache.recommendations.l1-ttl-millis:20000}}")
-  private long recommendationL1ExpireAfterWriteMs;
-
   @Value("${search.optimized.cache.smart-search.l1-refresh-after-write-ms:10000}")
   private long smartSearchL1RefreshAfterWriteMs;
 
   @Value("${search.optimized.cache.suggestions.l1-refresh-after-write-ms:8000}")
   private long suggestionL1RefreshAfterWriteMs;
-
-  @Value("${search.optimized.cache.hot-keywords.l1-refresh-after-write-ms:5000}")
-  private long hotKeywordsL1RefreshAfterWriteMs;
-
-  @Value("${search.optimized.cache.recommendations.l1-refresh-after-write-ms:8000}")
-  private long recommendationL1RefreshAfterWriteMs;
 
   @Value("${search.optimized.cache.record-stats:true}")
   private boolean l1RecordStats;
@@ -164,8 +148,6 @@ public class ElasticsearchOptimizedService {
 
   private LoadingCache<SmartSearchCacheKey, SearchResultDTO> l1SmartSearchCache;
   private LoadingCache<KeywordLimitCacheKey, List<String>> l1SuggestionsCache;
-  private LoadingCache<LimitCacheKey, List<String>> l1HotKeywordsCache;
-  private LoadingCache<KeywordLimitCacheKey, List<String>> l1RecommendationsCache;
   private final Map<String, Timer> searchLatencyTimers = new ConcurrentHashMap<>();
   private final Map<String, Counter> esErrorCounters = new ConcurrentHashMap<>();
   private final AtomicLong hotKeywordExpireRefreshedAt = new AtomicLong(0L);
@@ -202,20 +184,6 @@ public class ElasticsearchOptimizedService {
             suggestionL1ExpireAfterWriteMs,
             suggestionL1RefreshAfterWriteMs,
             this::loadSuggestionsForCache);
-    l1HotKeywordsCache =
-        buildLoadingCache(
-            CACHE_NAME_HOT,
-            maxEntries,
-            hotKeywordsL1ExpireAfterWriteMs,
-            hotKeywordsL1RefreshAfterWriteMs,
-            this::loadHotKeywordsForCache);
-    l1RecommendationsCache =
-        buildLoadingCache(
-            CACHE_NAME_RECOMMEND,
-            maxEntries,
-            recommendationL1ExpireAfterWriteMs,
-            recommendationL1RefreshAfterWriteMs,
-            this::loadRecommendationsForCache);
   }
 
   private <K, V> LoadingCache<K, V> buildLoadingCache(
@@ -498,16 +466,9 @@ public class ElasticsearchOptimizedService {
     int safeLimit = normalizeKeywordLimit(limit);
     LimitCacheKey cacheKey = new LimitCacheKey(safeLimit);
 
-    List<String> l1Cached = l1HotKeywordsCache.getIfPresent(cacheKey);
-    if (l1Cached != null) {
-      recordTimer(sample, "hot-keywords", "l1-hit");
-      return l1HotKeywordsCache.get(cacheKey);
-    }
-
     String redisKey = buildHotKeywordCacheKey(cacheKey);
     StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
     if (l2Cached.hit()) {
-      l1HotKeywordsCache.put(cacheKey, l2Cached.value());
       recordTimer(sample, "hot-keywords", "l2-hit");
       return l2Cached.value();
     }
@@ -519,7 +480,6 @@ public class ElasticsearchOptimizedService {
         return List.of();
       }
       putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
-      l1HotKeywordsCache.put(cacheKey, result);
       recordTimer(sample, "hot-keywords", "redis-hit");
       return result;
     } catch (Exception e) {
@@ -536,23 +496,15 @@ public class ElasticsearchOptimizedService {
     int safeLimit = normalizeKeywordLimit(limit);
     KeywordLimitCacheKey cacheKey = new KeywordLimitCacheKey(safeKeyword.toLowerCase(), safeLimit);
 
-    List<String> l1Cached = l1RecommendationsCache.getIfPresent(cacheKey);
-    if (l1Cached != null) {
-      recordTimer(sample, "recommendations", "l1-hit");
-      return l1RecommendationsCache.get(cacheKey);
-    }
-
     String redisKey = buildRecommendationCacheKey(cacheKey);
     StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
     if (l2Cached.hit()) {
-      l1RecommendationsCache.put(cacheKey, l2Cached.value());
       recordTimer(sample, "recommendations", "l2-hit");
       return l2Cached.value();
     }
 
     List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
     putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
-    l1RecommendationsCache.put(cacheKey, result);
     recordTimer(sample, "recommendations", "computed");
     return result;
   }
@@ -586,38 +538,6 @@ public class ElasticsearchOptimizedService {
           List<String> result =
               querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
           putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
-          return result;
-        });
-  }
-
-  private List<String> loadHotKeywordsForCache(LimitCacheKey cacheKey) {
-    String redisKey = buildHotKeywordCacheKey(cacheKey);
-    return withCacheRebuildMutex(
-        buildRebuildLockKey(redisKey),
-        () -> readStringListCacheIfHit(redisKey),
-        () -> {
-          List<String> l2 = readStringListCacheIfHit(redisKey);
-          if (l2 != null) {
-            return l2;
-          }
-          List<String> result = queryHotKeywordsFromRedis(cacheKey.limit());
-          putStringListToRedis(redisKey, result, hotKeywordsL2TtlSeconds);
-          return result;
-        });
-  }
-
-  private List<String> loadRecommendationsForCache(KeywordLimitCacheKey cacheKey) {
-    String redisKey = buildRecommendationCacheKey(cacheKey);
-    return withCacheRebuildMutex(
-        buildRebuildLockKey(redisKey),
-        () -> readStringListCacheIfHit(redisKey),
-        () -> {
-          List<String> l2 = readStringListCacheIfHit(redisKey);
-          if (l2 != null) {
-            return l2;
-          }
-          List<String> result = computeRecommendations(cacheKey.keyword(), cacheKey.limit());
-          putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
           return result;
         });
   }
@@ -1400,8 +1320,7 @@ public class ElasticsearchOptimizedService {
   }
 
   private void clearL1HotCache() {
-    l1HotKeywordsCache.invalidateAll();
-    l1RecommendationsCache.invalidateAll();
+    // Hot keyword and recommendation paths now rely on Redis single-level cache only.
   }
 
   private void recordTimer(Timer.Sample sample, String operation, String result) {
