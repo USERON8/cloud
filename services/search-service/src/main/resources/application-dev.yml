@@ -35,19 +35,6 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 2
-cache:
-  multi-level:
-    enabled: true
-    l1:
-      type: caffeine
-      caffeine:
-        maximum-size: 1000
-        expire-after-write: 5m
-    l2:
-      type: redis
-      redis:
-        # Development-only fallback cache to avoid TTL conflicts with business caches.
-        time-to-live: 10m
 logging:
   level:
     com.cloud.search: debug

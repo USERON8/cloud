@@ -165,12 +165,8 @@ search:
         l1-refresh-after-write-ms: ${SEARCH_SUGGESTION_L1_REFRESH_MS:8000}
         l2-ttl-seconds: ${SEARCH_SUGGESTION_L2_TTL_S:300}
       hot-keywords:
-        l1-expire-after-write-ms: ${SEARCH_HOT_L1_EXPIRE_MS:15000}
-        l1-refresh-after-write-ms: ${SEARCH_HOT_L1_REFRESH_MS:5000}
         l2-ttl-seconds: ${SEARCH_HOT_L2_TTL_S:120}
       recommendations:
-        l1-expire-after-write-ms: ${SEARCH_RECOMMEND_L1_EXPIRE_MS:20000}
-        l1-refresh-after-write-ms: ${SEARCH_RECOMMEND_L1_REFRESH_MS:8000}
         l2-ttl-seconds: ${SEARCH_RECOMMEND_L2_TTL_S:300}
   hot-keyword:
     expire-refresh-seconds: ${SEARCH_HOT_REFRESH_EXPIRE_S:60}
