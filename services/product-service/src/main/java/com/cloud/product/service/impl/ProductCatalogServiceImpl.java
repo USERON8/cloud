@@ -209,6 +209,28 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   }
 
   @Override
+  public Map<Long, Long> mapSpuIdsBySkuIds(List<Long> skuIds) {
+    if (skuIds == null || skuIds.isEmpty()) {
+      return Map.of();
+    }
+    List<Long> safeSkuIds = skuIds.stream().filter(id -> id != null).distinct().toList();
+    if (safeSkuIds.isEmpty()) {
+      return Map.of();
+    }
+    List<Sku> skus =
+        skuMapper.selectList(
+            new LambdaQueryWrapper<Sku>().in(Sku::getId, safeSkuIds).eq(Sku::getDeleted, 0));
+    if (skus == null || skus.isEmpty()) {
+      return Map.of();
+    }
+    return skus.stream()
+        .filter(sku -> sku.getId() != null && sku.getSpuId() != null)
+        .collect(
+            java.util.stream.Collectors.toMap(
+                Sku::getId, Sku::getSpuId, (left, right) -> left, LinkedHashMap::new));
+  }
+
+  @Override
   public Boolean updateSpuStatus(Long spuId, Integer status) {
     Spu spu = spuMapper.selectById(spuId);
     if (spu == null || spu.getDeleted() == 1) {

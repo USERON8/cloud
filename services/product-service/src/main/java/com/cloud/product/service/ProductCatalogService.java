@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import java.util.List;
+import java.util.Map;
 
 public interface ProductCatalogService {
 
@@ -18,6 +19,8 @@ public interface ProductCatalogService {
   List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status);
 
   List<SkuDetailVO> listSkuByIds(List<Long> skuIds);
+
+  Map<Long, Long> mapSpuIdsBySkuIds(List<Long> skuIds);
 
   Boolean updateSpuStatus(Long spuId, Integer status);
 }

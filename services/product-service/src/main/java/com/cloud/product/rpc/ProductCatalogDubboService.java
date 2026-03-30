@@ -6,6 +6,7 @@ import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.product.service.ProductCatalogService;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
@@ -43,6 +44,11 @@ public class ProductCatalogDubboService implements ProductDubboApi {
   @Override
   public List<SkuDetailVO> listSkuByIds(List<Long> skuIds) {
     return productCatalogService.listSkuByIds(skuIds);
+  }
+
+  @Override
+  public Map<Long, Long> mapSpuIdsBySkuIds(List<Long> skuIds) {
+    return productCatalogService.mapSpuIdsBySkuIds(skuIds);
   }
 
   @Override

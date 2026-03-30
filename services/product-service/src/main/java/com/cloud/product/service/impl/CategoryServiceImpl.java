@@ -5,11 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.product.CategoryDTO;
 import com.cloud.product.mapper.CategoryMapper;
+import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.service.CategoryService;
+import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.cache.CategoryRedisCacheService;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +29,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     implements CategoryService {
 
   private final CategoryRedisCacheService categoryRedisCacheService;
+  private final ProductCatalogService productCatalogService;
+  private final ProductSyncMessageProducer productSyncMessageProducer;
 
   @Override
   @Transactional(readOnly = true)
@@ -220,12 +226,18 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
     Category category = new Category();
     BeanUtils.copyProperties(categoryDTO, category);
-    return this.updateById(category);
+    boolean updated = this.updateById(category);
+    if (updated) {
+      syncProductsByCategoryIds(List.of(category.getId()));
+    }
+    return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean deleteCategory(Long categoryId, Boolean force) {
+    Set<Long> affectedCategoryIds = new LinkedHashSet<>();
+    affectedCategoryIds.add(categoryId);
 
     if (Boolean.TRUE.equals(force)) {
 
@@ -233,10 +245,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
           this.list(new LambdaQueryWrapper<Category>().eq(Category::getParentId, categoryId));
       if (!CollectionUtils.isEmpty(children)) {
         List<Long> childIds = children.stream().map(Category::getId).collect(Collectors.toList());
+        affectedCategoryIds.addAll(childIds);
         this.removeByIds(childIds);
       }
     }
-    return this.removeById(categoryId);
+    boolean deleted = this.removeById(categoryId);
+    if (deleted) {
+      syncProductsByCategoryIds(affectedCategoryIds);
+    }
+    return deleted;
   }
 
   @Override
@@ -246,7 +263,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     Category category = new Category();
     category.setId(categoryId);
     category.setStatus(status);
-    return this.updateById(category);
+    boolean updated = this.updateById(category);
+    if (updated) {
+      syncProductsByCategoryIds(List.of(categoryId));
+    }
+    return updated;
   }
 
   @Override
@@ -272,8 +293,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean deleteCategoriesBatch(List<Long> categoryIds) {
-
-    return this.removeByIds(categoryIds);
+    boolean deleted = this.removeByIds(categoryIds);
+    if (deleted) {
+      syncProductsByCategoryIds(categoryIds);
+    }
+    return deleted;
   }
 
   @Override
@@ -297,6 +321,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
       } catch (Exception e) {
         log.warn("Batch update category status failed: id={}", categoryId, e);
       }
+    }
+    if (successCount > 0) {
+      syncProductsByCategoryIds(categoryIds);
     }
     return successCount;
   }
@@ -342,5 +369,26 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
       return new ArrayList<>();
     }
     return categories.stream().map(this::convertToDTO).collect(Collectors.toList());
+  }
+
+  private void syncProductsByCategoryIds(java.util.Collection<Long> categoryIds) {
+    if (CollectionUtils.isEmpty(categoryIds)) {
+      return;
+    }
+    for (Long categoryId : categoryIds) {
+      if (categoryId == null) {
+        continue;
+      }
+      List<com.cloud.common.domain.vo.product.SpuDetailVO> spus =
+          productCatalogService.listSpuByCategory(categoryId, null);
+      if (CollectionUtils.isEmpty(spus)) {
+        continue;
+      }
+      spus.stream()
+          .map(com.cloud.common.domain.vo.product.SpuDetailVO::getSpuId)
+          .filter(id -> id != null)
+          .distinct()
+          .forEach(productSyncMessageProducer::sendUpsert);
+    }
   }
 }

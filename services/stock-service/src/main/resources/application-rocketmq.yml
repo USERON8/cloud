@@ -40,6 +40,9 @@ spring:
           stockAlertProducer-out-0:
             producer:
               <<: *stockProducerDefaults
+          productSyncProducer-out-0:
+            producer:
+              <<: *stockProducerDefaults
       bindings:
         stockReserveRequestConsumer-in-0:
           destination: stock-reserve-request
@@ -58,6 +61,9 @@ spring:
           content-type: application/json
         stockAlertProducer-out-0:
           destination: stock-alert
+          content-type: application/json
+        productSyncProducer-out-0:
+          destination: product-sync
           content-type: application/json
 
 rocketmq:

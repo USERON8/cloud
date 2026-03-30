@@ -1,5 +1,6 @@
 package com.cloud.stock.messaging;
 
+import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
@@ -75,6 +76,37 @@ public class StockMessageProducer {
       return true;
     } catch (Exception ex) {
       log.warn("Send stock-alert event failed: skuId={}", event.getSkuId(), ex);
+      return false;
+    }
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public boolean sendProductSyncEvent(ProductSyncEvent event) {
+    if (event == null || event.getSpuId() == null) {
+      log.warn("Skip product-sync event: spuId missing");
+      return false;
+    }
+    try {
+      if (!StringUtils.hasText(event.getEventType())) {
+        event.setEventType("PRODUCT_UPSERT");
+      }
+      if (!StringUtils.hasText(event.getEventId())) {
+        event.setEventId(UUID.randomUUID().toString());
+      }
+      if (event.getTimestamp() == null) {
+        event.setTimestamp(System.currentTimeMillis());
+      }
+      String payload = objectMapper.writeValueAsString(event);
+      outboxEventService.enqueue(
+          "STOCK",
+          String.valueOf(event.getSpuId()),
+          event.getEventType(),
+          payload,
+          event.getEventId());
+      stockOutboxDispatcher.dispatchAfterCommit();
+      return true;
+    } catch (Exception ex) {
+      log.warn("Send product-sync event failed: spuId={}", event.getSpuId(), ex);
       return false;
     }
   }
