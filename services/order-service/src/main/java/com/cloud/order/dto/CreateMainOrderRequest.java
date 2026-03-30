@@ -13,23 +13,32 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+@Schema(description = "Create main order request")
 public class CreateMainOrderRequest {
+  @Schema(description = "User id, required for privileged creation")
   private Long userId;
 
+  @Schema(description = "Cart id for cart checkout")
   private Long cartId;
 
+  @Schema(description = "Spu id for single item checkout")
   private Long spuId;
 
+  @Schema(description = "Sku id for single item checkout")
   private Long skuId;
 
+  @Schema(description = "Purchase quantity for single item checkout")
   private Integer quantity;
 
-  @DecimalMin("0.00")
+  @Schema(description = "Total order amount")
+  @DecimalMin(value = "0.00", message = "totalAmount must be greater than or equal to 0")
   private BigDecimal totalAmount;
 
-  @DecimalMin("0.00")
+  @Schema(description = "Payable amount after discount")
+  @DecimalMin(value = "0.00", message = "payableAmount must be greater than or equal to 0")
   private BigDecimal payableAmount;
 
+  @Schema(description = "Order remark")
   private String remark;
 
   @NotBlank(message = "clientOrderId is required")
@@ -42,10 +51,13 @@ public class CreateMainOrderRequest {
   @Schema(hidden = true)
   private String idempotencyKey;
 
+  @Schema(description = "Receiver name")
   private String receiverName;
 
+  @Schema(description = "Receiver phone")
   private String receiverPhone;
 
+  @Schema(description = "Receiver address")
   private String receiverAddress;
 
   @Valid
@@ -62,46 +74,75 @@ public class CreateMainOrderRequest {
   }
 
   @Data
+  @Schema(description = "Create sub-order request")
   public static class CreateSubOrderRequest {
-    @NotNull private Long merchantId;
+    @Schema(description = "Merchant id", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "merchantId is required")
+    private Long merchantId;
 
-    @DecimalMin("0.00")
+    @Schema(description = "Sub-order item amount")
+    @DecimalMin(value = "0.00", message = "itemAmount must be greater than or equal to 0")
     private BigDecimal itemAmount;
 
-    @DecimalMin("0.00")
+    @Schema(description = "Shipping fee")
+    @DecimalMin(value = "0.00", message = "shippingFee must be greater than or equal to 0")
     private BigDecimal shippingFee;
 
-    @DecimalMin("0.00")
+    @Schema(description = "Discount amount")
+    @DecimalMin(value = "0.00", message = "discountAmount must be greater than or equal to 0")
     private BigDecimal discountAmount;
 
-    @DecimalMin("0.00")
+    @Schema(description = "Payable amount")
+    @DecimalMin(value = "0.00", message = "payableAmount must be greater than or equal to 0")
     private BigDecimal payableAmount;
 
+    @Schema(description = "Receiver name")
     private String receiverName;
+
+    @Schema(description = "Receiver phone")
     private String receiverPhone;
+
+    @Schema(description = "Receiver address")
     private String receiverAddress;
 
-    @Valid @NotEmpty private List<CreateOrderItemRequest> items;
+    @Schema(description = "Order items", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Valid
+    @NotEmpty(message = "items cannot be empty")
+    private List<CreateOrderItemRequest> items;
   }
 
   @Data
+  @Schema(description = "Create order item request")
   public static class CreateOrderItemRequest {
-    @NotNull private Long spuId;
+    @Schema(description = "Spu id", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "spuId is required")
+    private Long spuId;
 
-    @NotNull private Long skuId;
+    @Schema(description = "Sku id", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "skuId is required")
+    private Long skuId;
 
+    @Schema(description = "Sku code")
     private String skuCode;
+
+    @Schema(description = "Sku name")
     private String skuName;
+
+    @Schema(description = "Sku snapshot")
     private String skuSnapshot;
 
-    @NotNull private Integer quantity;
+    @Schema(description = "Quantity", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "quantity is required")
+    private Integer quantity;
 
     @NotNull
-    @DecimalMin("0.00")
+    @Schema(description = "Unit price", requiredMode = Schema.RequiredMode.REQUIRED)
+    @DecimalMin(value = "0.00", message = "unitPrice must be greater than or equal to 0")
     private BigDecimal unitPrice;
 
     @NotNull
-    @DecimalMin("0.00")
+    @Schema(description = "Total price", requiredMode = Schema.RequiredMode.REQUIRED)
+    @DecimalMin(value = "0.00", message = "totalPrice must be greater than or equal to 0")
     private BigDecimal totalPrice;
   }
 }

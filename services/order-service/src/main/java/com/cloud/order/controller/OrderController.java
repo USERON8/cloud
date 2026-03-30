@@ -20,6 +20,8 @@ import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -45,6 +47,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Order API", description = "Order creation and after-sale APIs")
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid request or business state"),
+  @ApiResponse(responseCode = "401", description = "Authentication required"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Order or after-sale resource not found"),
+  @ApiResponse(responseCode = "409", description = "Concurrent or status conflict"),
+  @ApiResponse(responseCode = "500", description = "Internal server error")
+})
 public class OrderController {
 
   private static final Set<AfterSaleAction> USER_AFTER_SALE_ACTIONS =
@@ -208,7 +218,7 @@ public class OrderController {
   @PreAuthorize("hasAuthority('order:refund')")
   @Operation(summary = "Apply after-sale")
   public Result<AfterSaleDTO> applyAfterSale(
-      @RequestBody AfterSaleDTO afterSaleDTO, Authentication authentication) {
+      @Valid @RequestBody AfterSaleDTO afterSaleDTO, Authentication authentication) {
     if (afterSaleDTO == null) {
       throw new BizException(ResultCode.BAD_REQUEST, "after sale payload is required");
     }

@@ -15,6 +15,8 @@ import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -37,6 +39,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Payment API", description = "Payment order and refund APIs")
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid request or payment state"),
+  @ApiResponse(responseCode = "401", description = "Authentication required"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Payment order or refund not found"),
+  @ApiResponse(responseCode = "409", description = "Payment state conflict"),
+  @ApiResponse(responseCode = "500", description = "Internal payment error")
+})
 public class PaymentOrderController {
 
   private final PaymentOrderService paymentOrderService;
