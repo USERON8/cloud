@@ -17,10 +17,6 @@ x-nacos-client-common: &nacos-client-common
   DUBBO_REGISTRY_PASSWORD: nacos
   DUBBO_REGISTRY_PARAMETERS_NAMESPACE: public
   DUBBO_REGISTRY_PARAMETERS_GROUP: DUBBO_GROUP
-  SEATA_TX_SERVICE_GROUP: default_tx_group
-  SEATA_TX_CLUSTER: default
-  SEATA_SERVICE_VGROUP_MAPPING_DEFAULT_TX_GROUP: default
-  SEATA_SERVICE_GROUPLIST_DEFAULT: seata-server:8091
   SPRING_CLOUD_NACOS_SERVER_ADDR: nacos:8848
   SPRING_CLOUD_NACOS_USERNAME: nacos
   SPRING_CLOUD_NACOS_PASSWORD: nacos
@@ -327,7 +323,6 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       GATEWAY_SIGNATURE_SECRET: ${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -370,8 +365,6 @@ services:
       APP_JWT_ALLOW_GENERATED_KEYPAIR: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:-true}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-cloud-github-client-dev}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-cloud-github-secret-dev}
-      SEATA_ENABLED: "false"
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -409,7 +402,6 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -447,8 +439,6 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SAGA_ENABLED: ${SEATA_SAGA_ENABLED:-false}
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -490,7 +480,6 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -528,7 +517,6 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -567,7 +555,6 @@ services:
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -603,13 +590,11 @@ services:
       AUTH_PORT: 8081
       ROCKETMQ_NAME_SERVER: namesrv:9876
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
-      SEATA_ENABLED: "false"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
     command:
       - java
       - -jar
@@ -950,38 +935,6 @@ services:
         source: ./docker-compose/xxl-job-admin/logs
         target: /data/applogs
     restart: unless-stopped
-  seata-server:
-    image: apache/seata-server:2.6.0.jdk17
-    container_name: cloud-seata-server
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      service_net:
-        ipv4_address: 172.28.0.133
-    mem_limit: 256m
-    ports:
-      - "${PORT_SEATA_SERVER:-18091}:8091"
-    environment:
-      SEATA_CONFIG_NAME: file:/seata-server/resources/registry
-
-      # Store transaction logs in MySQL
-      SEATA_STORE_MODE: db
-      SEATA_STORE_DB_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
-      SEATA_STORE_DB_URL: jdbc:mysql://mysql:3306/seata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-      SEATA_STORE_DB_USER: root
-      SEATA_STORE_DB_PASSWORD: root
-    volumes:
-      - type: bind
-        source: ./docker-compose/seata/config/registry.conf
-        target: /seata-server/resources/registry.conf
-        read_only: true
-      - type: bind
-        source: ./docker-compose/seata/config/file.conf
-        target: /seata-server/resources/file.conf
-        read_only: true
-    restart: unless-stopped
-
 # Compatibility note standardized.
 networks:
   service_net:

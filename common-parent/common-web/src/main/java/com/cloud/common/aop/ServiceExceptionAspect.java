@@ -27,7 +27,6 @@ public class ServiceExceptionAspect {
       "within(com.cloud..infrastructure..*)"
           + " || within(com.cloud..cache..*)"
           + " || within(com.cloud.user.cache.warmup..*)"
-          + " || within(com.cloud..tcc..*)"
           + " || within(com.cloud..task..*)"
           + " || within(com.cloud..outbox..*)"
           + " || within(com.cloud.search.messaging..*)"

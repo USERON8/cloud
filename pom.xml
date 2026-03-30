@@ -72,7 +72,6 @@
         <skywalking.version>9.6.0</skywalking.version>
         <xxl-job.version>2.4.0</xxl-job.version>
         <sentinel.version>1.8.8</sentinel.version>
-        <seata.version>2.3.0</seata.version>
         <rocketmq-spring.version>2.2.3</rocketmq-spring.version>
 
         <!-- Encoding-safe comment -->
@@ -338,12 +337,6 @@
                 <artifactId>alipay-sdk-java</artifactId>
                 <version>${alipay-sdk.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.seata</groupId>
-                <artifactId>seata-spring-boot-starter</artifactId>
-                <version>${seata.version}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 
