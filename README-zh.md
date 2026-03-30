@@ -44,20 +44,33 @@ Version: 1.1.0
 ## 当前缓存改造状态
 
 - `user-service`
-  - 用户基础信息缓存已经收敛为显式的 Redis 单级缓存。
-  - 用户地址缓存已经收敛为显式的 Redis 单级缓存。
-  - 管理员、商家、统计、异步预热、文件上传回写等路径仍然在使用 Spring Cache 注解或 `CacheManager`，整体缓存模型仍是混合态。
+  - 用户基础信息、地址、管理员、商家、商家认证、统计等缓存路径都已经统一成显式 Redis 单级缓存服务。
+  - 异步刷新和头像上传后的缓存回写，也已经统一到同一套显式 Redis 缓存模型。
+  - `UserApplication` 还保留了 `@EnableCaching`，但当前用户域业务流程已经不再依赖注解式缓存行为。
 - `search-service`
   - 搜索热词列表已经接入 Redis 单级热点缓存。
   - 今日热销商品 ID 列表已经接入 Redis 单级热点缓存。
   - `ElasticsearchOptimizedService` 内部的智能搜索、搜索建议、热词和推荐词都已经统一为 Redis 单级缓存。
-- 其它服务
-  - 本轮未对缓存策略做重构。
+  - 搜索热点路径遗留的本地 L1 配置和未使用的 Caffeine 依赖也已经清理掉。
+- `product-service`
+  - 商品详情继续保留 `ProductDetailCacheService` 的显式多级缓存设计，本地 Caffeine + Redis 仍然是当前热详情页方案。
+  - 分类树、店铺查询和统计缓存已经从 `Spring Cache` 注解切到显式 Redis 缓存服务。
+  - `ProductApplication` 已不再依赖 `@EnableCaching`。
+- `stock-service`
+  - 库存账本查询现在采用务实的多级缓存：超短 TTL 的本地 L1 + Redis 账本缓存。
+  - 预占、释放、确认、回滚等库存变更，跨请求一致性仍以 Redis Lua 更新结果为准。
+- `auth-service` 与 `gateway`
+  - JWT 黑名单校验在 Redis 不可用时默认改为 fail-closed，直接拒绝 token。
+  - 用户 access token 和内部 service access token 的默认有效期都已收短到 `PT15M`，避免严格拒绝策略把影响窗口拉得过长。
+  - `auth-service` 启动时会校验：在 fail-closed 模式下，不允许再把 access token TTL 配得更长。
 
 ## 本轮已确认的问题
 
-- `user-service` 当前同时存在显式 Redis 缓存服务和 Spring Cache 注解，缓存模型并不统一，后续仍需要继续收口。
+- `user-service` 业务缓存路径已经统一到显式 Redis 单级缓存，但框架层的 `@EnableCaching` 开关还在，后续如果继续改造，应该避免重新引入注解式缓存。
 - `search-service` 已经去掉热词、智能搜索和建议词的本地 L1 残留，但缓存新鲜度仍主要依赖 TTL 和失效时机，而不是严格的事件驱动失效。
+- `product-service` 当前是有意保留的分层方案：商品详情走多级缓存，分类和店铺走 Redis 单级缓存。后续如果继续优化，应该按场景扩展，而不是回退到通用注解缓存。
+- `stock-service` 现在已经有本地 L1 账本缓存，但跨节点的一致性仍主要依赖短 TTL 窗口，本轮还没有补事件驱动的 L1 失效。
+- JWT 黑名单 fail-closed 策略虽然更严格，但它把 Redis 可用性和短 access token TTL 绑定成了一组运维控制项，后续不能只改其中一个。
 - 之前各服务 README 过于简略，无法真实反映运行方式。本轮已补齐，但如果要形成完整运维手册，仍需再做更细的接口与任务审计。
 - 历史审计文档仍建议保留参考：
   - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)

@@ -46,20 +46,33 @@ Frontend: UniApp (Vue 3 + TypeScript).
 ## Current Cache Rollout Status
 
 - `user-service`
-  - User basic info cache is explicitly implemented as Redis single-level cache.
-  - User address cache is explicitly implemented as Redis single-level cache.
-  - Admin, merchant, statistics, async warmup, and some file-upload related paths still use Spring Cache annotations or `CacheManager`.
+  - User basic info, address, admin, merchant, merchant-auth, and statistics cache paths are unified to explicit Redis single-level cache services.
+  - Async refresh and avatar upload invalidation paths were also aligned to the same explicit Redis cache model.
+  - `UserApplication` still keeps `@EnableCaching`, but current user-domain business flows no longer depend on annotation-driven cache behavior.
 - `search-service`
   - Hot keyword list is cached through Redis single-level hot-data cache.
   - Today hot-selling product id list is cached through Redis single-level hot-data cache.
   - Smart search, suggestions, hot keywords, and keyword recommendations inside `ElasticsearchOptimizedService` now use Redis single-level cache only.
-- Other services
-  - No cache-strategy refactor was performed in this sync round.
+  - Legacy local L1 cache config and the unused Caffeine dependency were removed from the search hot-data path.
+- `product-service`
+  - Product detail keeps its explicit multi-level cache design in `ProductDetailCacheService` with local Caffeine plus Redis storage.
+  - Category tree and shop query/statistics cache paths were moved from `Spring Cache` annotations to explicit Redis cache services.
+  - `ProductApplication` no longer depends on `@EnableCaching`.
+- `stock-service`
+  - Stock ledger query reads now use a pragmatic multi-level cache: short-lived local L1 plus Redis ledger cache.
+  - Redis Lua updates remain the cross-request consistency source for reserve, release, confirm, and rollback flows.
+- `auth-service` and `gateway`
+  - JWT blacklist validation now defaults to fail-closed when Redis blacklist lookup is unavailable.
+  - Default user and internal access-token TTL are reduced to `PT15M` to keep fail-closed outage windows bounded.
+  - Startup validation in `auth-service` prevents a longer access-token TTL from being combined with fail-closed mode.
 
 ## Known Findings From This Sync Round
 
-- `user-service` still mixes explicit Redis cache services with Spring Cache annotations, so the module is not yet on one coherent cache model.
+- `user-service` business cache paths are now unified to explicit Redis single-level cache services, but the framework-level `@EnableCaching` switch is still present and could mislead future changes.
 - `search-service` no longer keeps Caffeine-based local caches for hot data, smart search, or suggestions, but freshness still depends on TTL plus invalidation timing rather than strict event-driven invalidation.
+- `product-service` intentionally remains mixed by design: hot product detail is multi-level, while category and shop cache paths are Redis single-level. That split should stay explicit in future work instead of drifting back to generic annotation caching.
+- `stock-service` now has a local L1 ledger cache, but cross-node L1 freshness still depends on the short TTL window because this round did not add an event-driven invalidation bus.
+- Fail-closed JWT blacklist validation is safer for logout and token revocation semantics, but it turns Redis availability and short access-token TTL into a coupled operational control.
 - Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
 - Existing historical audit references remain useful:
   - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)
