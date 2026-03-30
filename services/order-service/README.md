@@ -36,6 +36,12 @@ Order and refund service covering the order lifecycle and batch status operation
 - `user-service`
   - User and merchant related context is consumed indirectly through upstream flows.
 
+## Current Cache Model
+
+- `OrderAggregateCacheService` accelerates completed-order aggregate reads with short-lived local L1 plus Redis.
+- Cache scope is intentionally narrow: only completed main-order aggregates are cached.
+- Write and status-transition paths evict aggregate cache explicitly instead of relying on annotation-driven cache behavior.
+
 ## Scheduled Jobs
 
 - Business jobs run through `XXL-JOB`
@@ -45,9 +51,10 @@ Order and refund service covering the order lifecycle and batch status operation
 
 ## Known Findings In This Sync
 
-- This service was not modified in the current cache cleanup round.
+- Order aggregate query now uses a pragmatic multi-level cache: short-lived local L1 plus Redis aggregate cache, and only completed main-order aggregates are cached.
+- Cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund saga updates, and TCC reserve/cancel flows through `OrderAggregateCacheService.evict(...)`.
 - The current README now explicitly reflects that order consistency is centered on TCC + SAGA + Outbox, not on synchronous distributed database transactions.
-- Cache-specific behavior for order query acceleration was not re-audited in this round.
+- This cache remains read-optimization only. Order state truth is still owned by MySQL plus transactional workflows, not by cache.
 
 ## Local Run
 

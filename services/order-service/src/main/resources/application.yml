@@ -129,6 +129,10 @@ app:
     retry-backoff-seconds: ${OUTBOX_RETRY_BACKOFF_SECONDS:30}
 
 order:
+  cache:
+    aggregate-ttl-seconds: ${ORDER_CACHE_AGGREGATE_TTL_SECONDS:3600}
+    aggregate-l1-max-size: ${ORDER_CACHE_AGGREGATE_L1_MAX_SIZE:2000}
+    aggregate-l1-ttl-seconds: ${ORDER_CACHE_AGGREGATE_L1_TTL_SECONDS:15}
   async:
     enabled: true
   notification:
