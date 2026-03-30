@@ -91,7 +91,6 @@ service_environment_overrides() {
       printf '%s\n' "DUBBO_PROTOCOL_PORT=20888"
       ;;
     auth-service|search-service)
-      printf '%s\n' "SEATA_ENABLED=false"
       if [ "$service_name" = "search-service" ]; then
         printf '%s\n' "DUBBO_PROTOCOL_PORT=20890"
       fi

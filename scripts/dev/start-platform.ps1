@@ -91,8 +91,7 @@ function Wait-Infrastructure {
         @{ name = "nacos-grpc-compat"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_GRPC_COMPAT" -DefaultValue 12937) },
         @{ name = "rocketmq-namesrv"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011) },
         @{ name = "elasticsearch"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_ES_HTTP" -DefaultValue 19200) },
-        @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) },
-        @{ name = "seata-server"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_SEATA_SERVER" -DefaultValue 18091) }
+        @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) }
     )
 
     if ($WaitSkyWalking) {

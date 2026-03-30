@@ -185,9 +185,6 @@ function Get-ServiceEnvironmentOverrides {
 
     $overrides = @{}
     switch ($ServiceName) {
-        "auth-service" {
-            $overrides["SEATA_ENABLED"] = "false"
-        }
         "user-service" {
             $overrides["DUBBO_PROTOCOL_PORT"] = "20880"
             $overrides["APP_MYBATIS_ILLEGAL_SQL_ENABLED"] = "false"
@@ -205,7 +202,6 @@ function Get-ServiceEnvironmentOverrides {
             $overrides["DUBBO_PROTOCOL_PORT"] = "20888"
         }
         "search-service" {
-            $overrides["SEATA_ENABLED"] = "false"
             $overrides["DUBBO_PROTOCOL_PORT"] = "20890"
         }
     }
