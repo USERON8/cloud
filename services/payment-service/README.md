@@ -38,6 +38,16 @@ Payment service for payment order management, refund processing, and payment cha
 - Refund completion remains on the local-transaction-plus-outbox pattern.
 - `payment-service` intentionally keeps Seata disabled while still cooperating with distributed business flows.
 
+## Current Cache Model
+
+- `PaymentSecurityCacheService` uses explicit Redis single-level cache for:
+  - payment order idempotency keys
+  - payment result reuse keys
+  - short-lived payment status lookup cache
+  - checkout tickets
+  - per-user payment rate limiting
+- This cache layer is security and anti-duplication oriented, not a business read-acceleration layer.
+
 ## Scheduled Jobs
 
 - Compensation jobs run through `XXL-JOB`
@@ -46,9 +56,10 @@ Payment service for payment order management, refund processing, and payment cha
 
 ## Known Findings In This Sync
 
-- This service was not changed in the current documentation-and-cache sync.
+- `payment-service` already uses explicit Redis single-level cache through `PaymentSecurityCacheService` instead of annotation-driven cache behavior.
+- The current cache scope is intentionally narrow and focused on idempotency, short-lived status lookup, checkout tickets, and rate limiting.
 - The README now makes the split between transactional-message success handling and outbox-based refund handling explicit.
-- Cache and query optimization behavior here was not re-audited in the current round.
+- No extra local L1 cache was added here because payment correctness and anti-duplication semantics matter more than shaving a network hop.
 
 ## Local Run
 

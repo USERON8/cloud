@@ -64,6 +64,9 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - `order-service`
   - Completed main-order aggregate reads now use a pragmatic multi-level cache: short-lived local L1 plus Redis aggregate cache.
   - Aggregate cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund saga updates, and TCC reserve/cancel flows.
+- `payment-service`
+  - Payment security and anti-duplication paths use explicit Redis single-level cache for idempotency keys, result reuse, short-lived status lookup, checkout tickets, and rate limiting.
+  - No local L1 cache is used here because the cache role is correctness support and abuse control rather than domain read acceleration.
 - `auth-service` and `gateway`
   - JWT blacklist validation now defaults to fail-closed when Redis blacklist lookup is unavailable.
   - Default user and internal access-token TTL are reduced to `PT15M` to keep fail-closed outage windows bounded.
@@ -76,6 +79,7 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - `product-service` intentionally remains mixed by design: hot product detail is multi-level, while category and shop cache paths are Redis single-level. That split should stay explicit in future work instead of drifting back to generic annotation caching.
 - `stock-service` now has a local L1 ledger cache, but cross-node L1 freshness still depends on the short TTL window because this round did not add an event-driven invalidation bus.
 - `order-service` aggregate cache is intentionally narrow and only targets completed main-order reads, so it should stay a read optimization instead of expanding into an order-state source of truth.
+- `payment-service` cache scope is intentionally defensive and short-lived; if future work adds any local cache here, it needs a stronger justification than generic latency reduction.
 - Fail-closed JWT blacklist validation is safer for logout and token revocation semantics, but it turns Redis availability and short access-token TTL into a coupled operational control.
 - Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
 - Existing historical audit references remain useful:
