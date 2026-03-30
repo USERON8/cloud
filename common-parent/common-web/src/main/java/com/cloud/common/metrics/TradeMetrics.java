@@ -15,6 +15,9 @@ public class TradeMetrics {
   private static final String METRIC_PAYMENT = "trade_payment_total";
   private static final String METRIC_REFUND = "trade_refund_total";
   private static final String METRIC_STOCK_FREEZE = "trade_stock_freeze_total";
+  private static final String METRIC_ORDER_PLACEMENT = "trade_order_placement_total";
+  private static final String METRIC_STOCK_RELEASE = "trade_stock_release_total";
+  private static final String METRIC_PAYMENT_CALLBACK = "trade_payment_callback_total";
   private static final String METRIC_MESSAGE_CONSUME = "trade_message_consume_total";
 
   private final MeterRegistry meterRegistry;
@@ -34,6 +37,18 @@ public class TradeMetrics {
 
   public void incrementStockFreeze(String result) {
     increment(METRIC_STOCK_FREEZE, result, null);
+  }
+
+  public void incrementOrderPlacement(String result) {
+    increment(METRIC_ORDER_PLACEMENT, result, null);
+  }
+
+  public void incrementStockRelease(String result) {
+    increment(METRIC_STOCK_RELEASE, result, null);
+  }
+
+  public void incrementPaymentCallback(String result) {
+    increment(METRIC_PAYMENT_CALLBACK, result, null);
   }
 
   public void incrementMessageConsume(String eventType, String result) {

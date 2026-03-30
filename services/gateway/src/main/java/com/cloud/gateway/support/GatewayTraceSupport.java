@@ -1,36 +1,43 @@
 package com.cloud.gateway.support;
 
-import java.util.UUID;
+import com.cloud.common.trace.TraceIdUtil;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.server.ServerWebExchange;
 
 public final class GatewayTraceSupport {
 
+  public static final String TRACE_ID_ATTRIBUTE = "gateway.traceId";
+
   private GatewayTraceSupport() {}
 
   public static String resolveTraceId(ServerWebExchange exchange) {
-    return exchange == null ? generateTraceId() : resolveTraceId(exchange.getRequest());
+    if (exchange == null) {
+      return TraceIdUtil.generateTraceId();
+    }
+    Object cached = exchange.getAttribute(TRACE_ID_ATTRIBUTE);
+    if (cached instanceof String value && !value.isBlank()) {
+      return value;
+    }
+    String traceId = resolveTraceId(exchange.getRequest());
+    exchange.getAttributes().put(TRACE_ID_ATTRIBUTE, traceId);
+    return traceId;
   }
 
   public static String resolveTraceId(ServerHttpRequest request) {
     if (request == null || request.getHeaders() == null) {
-      return generateTraceId();
+      return TraceIdUtil.generateTraceId();
     }
-    String traceId = trim(request.getHeaders().getFirst("X-Trace-Id"));
+    String traceId = trim(request.getHeaders().getFirst(TraceIdUtil.TRACE_HEADER));
     if (traceId.isBlank()) {
-      traceId = trim(request.getHeaders().getFirst("X-B3-TraceId"));
+      traceId = trim(request.getHeaders().getFirst(TraceIdUtil.B3_TRACE_HEADER));
     }
     if (traceId.isBlank()) {
-      traceId = trim(request.getHeaders().getFirst("traceId"));
+      traceId = trim(request.getHeaders().getFirst(TraceIdUtil.LEGACY_TRACE_HEADER));
     }
-    return traceId.isBlank() ? generateTraceId() : traceId;
+    return traceId.isBlank() ? TraceIdUtil.generateTraceId() : traceId;
   }
 
   private static String trim(String value) {
-    return value == null ? "" : value.trim();
-  }
-
-  private static String generateTraceId() {
-    return UUID.randomUUID().toString().replace("-", "");
+    return TraceIdUtil.normalizeTraceId(value);
   }
 }

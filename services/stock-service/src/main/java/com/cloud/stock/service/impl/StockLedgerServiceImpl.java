@@ -146,40 +146,47 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean release(StockOperateCommandDTO command) {
     validateCommand(command);
-    List<StockReservation> reservations = requireReservations(command);
-    if (allMatchStatus(reservations, STATUS_RELEASED)) {
+    try {
+      List<StockReservation> reservations = requireReservations(command);
+      if (allMatchStatus(reservations, STATUS_RELEASED)) {
+        tradeMetrics.incrementStockRelease("success");
+        return true;
+      }
+      int releasedQty = 0;
+      for (StockReservation reservation : reservations) {
+        if (STATUS_RELEASED.equals(reservation.getStatus())) {
+          continue;
+        }
+        if (!STATUS_LOCKED.equals(reservation.getStatus())) {
+          throw new BusinessException(
+              "reservation status invalid for release: " + reservation.getStatus());
+        }
+        int updated =
+            stockSegmentMapper.releaseOnSegment(
+                reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
+        if (updated != 1) {
+          throw new BusinessException("release stock failed");
+        }
+        reservation.setStatus(STATUS_RELEASED);
+        stockReservationMapper.updateById(reservation);
+        releasedQty += reservation.getQuantity();
+        writeTxn(
+            command,
+            reservation.getSegmentId(),
+            reservation.getQuantity(),
+            "RELEASE",
+            command.getReason());
+      }
+      if (releasedQty > 0) {
+        stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
+        stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
+      }
+      tradeMetrics.incrementStockRelease("success");
       return true;
+    } catch (Exception ex) {
+      tradeMetrics.incrementStockRelease("failed");
+      throw ex;
     }
-    int releasedQty = 0;
-    for (StockReservation reservation : reservations) {
-      if (STATUS_RELEASED.equals(reservation.getStatus())) {
-        continue;
-      }
-      if (!STATUS_LOCKED.equals(reservation.getStatus())) {
-        throw new BusinessException(
-            "reservation status invalid for release: " + reservation.getStatus());
-      }
-      int updated =
-          stockSegmentMapper.releaseOnSegment(
-              reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
-      if (updated != 1) {
-        throw new BusinessException("release stock failed");
-      }
-      reservation.setStatus(STATUS_RELEASED);
-      stockReservationMapper.updateById(reservation);
-      releasedQty += reservation.getQuantity();
-      writeTxn(
-          command,
-          reservation.getSegmentId(),
-          reservation.getQuantity(),
-          "RELEASE",
-          command.getReason());
-    }
-    if (releasedQty > 0) {
-      stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
-      stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
-    }
-    return true;
   }
 
   @Override

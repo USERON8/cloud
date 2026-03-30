@@ -99,6 +99,7 @@ public class OrderServiceImpl implements OrderService {
       OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey);
       if (existing != null) {
         tradeMetrics.incrementOrder("success");
+        tradeMetrics.incrementOrderPlacement("success");
         return existing;
       }
 
@@ -117,6 +118,7 @@ public class OrderServiceImpl implements OrderService {
         OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey);
         if (duplicated != null) {
           tradeMetrics.incrementOrder("success");
+          tradeMetrics.incrementOrderPlacement("success");
           return duplicated;
         }
         throw duplicateKeyException;
@@ -155,9 +157,11 @@ public class OrderServiceImpl implements OrderService {
         }
       }
       tradeMetrics.incrementOrder("success");
+      tradeMetrics.incrementOrderPlacement("success");
       return main;
     } catch (Exception ex) {
       tradeMetrics.incrementOrder("failed");
+      tradeMetrics.incrementOrderPlacement("failed");
       throw ex;
     }
   }
