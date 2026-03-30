@@ -13,7 +13,6 @@
     <artifactId>search-service</artifactId>
 
     <dependencies>
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
@@ -44,7 +43,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -62,7 +60,6 @@
             <artifactId>dubbo-registry-nacos</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -74,7 +71,6 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
         </dependency>
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-web</artifactId>

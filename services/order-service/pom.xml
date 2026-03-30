@@ -13,7 +13,6 @@
     <artifactId>order-service</artifactId>
 
     <dependencies>
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -28,7 +27,6 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -47,7 +45,6 @@
             <artifactId>dubbo-registry-nacos</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -64,7 +61,6 @@
             </exclusions>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-3-starter</artifactId>
@@ -78,7 +74,6 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
         </dependency>
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.cloud</groupId>
             <artifactId>common-web</artifactId>

@@ -45,13 +45,11 @@
             <artifactId>hutool-core</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -69,7 +67,6 @@
             <artifactId>dubbo-registry-nacos</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -93,7 +90,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
