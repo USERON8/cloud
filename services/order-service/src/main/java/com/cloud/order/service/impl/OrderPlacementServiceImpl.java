@@ -39,9 +39,17 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public OrderAggregateResponse createOrder(CreateMainOrderRequest request) {
+    String clientOrderId = normalizeClientOrderId(request.getClientOrderId());
+    request.setClientOrderId(clientOrderId);
     String idempotencyKey =
         normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
     request.setIdempotencyKey(idempotencyKey);
+
+    OrderMain existingByClientOrderId =
+        orderMainMapper.selectActiveByClientOrderId(request.getUserId(), clientOrderId);
+    if (existingByClientOrderId != null) {
+      return requireAggregate(orderService.getOrderAggregate(existingByClientOrderId.getId()));
+    }
 
     OrderMain existing = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
     if (existing != null) {
@@ -171,5 +179,12 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
       return trimmed;
     }
     return prefix + trimmed;
+  }
+
+  private String normalizeClientOrderId(String clientOrderId) {
+    if (StrUtil.isBlank(clientOrderId)) {
+      throw new BizException("clientOrderId is required");
+    }
+    return clientOrderId.trim();
   }
 }

@@ -1,9 +1,11 @@
 package com.cloud.order.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -30,6 +32,14 @@ public class CreateMainOrderRequest {
 
   private String remark;
 
+  @NotBlank(message = "clientOrderId is required")
+  @Schema(
+      description = "Client-generated business order id",
+      requiredMode = Schema.RequiredMode.REQUIRED)
+  private String clientOrderId;
+
+  @JsonIgnore
+  @Schema(hidden = true)
   private String idempotencyKey;
 
   private String receiverName;
@@ -38,7 +48,10 @@ public class CreateMainOrderRequest {
 
   private String receiverAddress;
 
-  @Valid @JsonIgnore private List<CreateSubOrderRequest> subOrders;
+  @Valid
+  @JsonIgnore
+  @Schema(hidden = true)
+  private List<CreateSubOrderRequest> subOrders;
 
   @AssertTrue(message = "cartId or single item (spuId, skuId, quantity) is required")
   public boolean isOrderSourceValid() {

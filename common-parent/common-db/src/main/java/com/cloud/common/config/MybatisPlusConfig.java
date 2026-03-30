@@ -29,6 +29,15 @@ public class MybatisPlusConfig {
   @Value("${app.mybatis.illegal-sql-enabled:true}")
   private boolean illegalSqlEnabled;
 
+  @Value("${app.mybatis.id-generator.worker-id:#{null}}")
+  private Long workerId;
+
+  @Value("${app.mybatis.id-generator.datacenter-id:#{null}}")
+  private Long datacenterId;
+
+  @Value("${app.mybatis.id-generator.allow-random-fallback:true}")
+  private boolean allowRandomFallback;
+
   @Bean
   @Primary
   public MybatisPlusInterceptor mybatisPlusInterceptor() {
@@ -61,7 +70,7 @@ public class MybatisPlusConfig {
   @Bean
   @Primary
   public IdentifierGenerator identifierGenerator() {
-    return new ResilientIdentifierGenerator();
+    return new ResilientIdentifierGenerator(workerId, datacenterId, allowRandomFallback);
   }
 
   @Bean

@@ -92,8 +92,17 @@ public class OrderServiceImpl implements OrderService {
     try {
       String idempotencyKey =
           buildScopedIdempotencyKey(request.getUserId(), request.getIdempotencyKey());
+      String clientOrderId = buildClientOrderId(request.getClientOrderId());
       if (request.getSubOrders() == null || request.getSubOrders().isEmpty()) {
         throw new BizException("subOrders is required");
+      }
+
+      OrderMain existingByClientOrderId =
+          findActiveMainOrderByClientOrderId(request.getUserId(), clientOrderId);
+      if (existingByClientOrderId != null) {
+        tradeMetrics.incrementOrder("success");
+        tradeMetrics.incrementOrderPlacement("success");
+        return existingByClientOrderId;
       }
 
       OrderMain existing = findActiveMainOrderByIdempotencyKey(idempotencyKey);
@@ -110,11 +119,19 @@ public class OrderServiceImpl implements OrderService {
       main.setTotalAmount(defaultAmount(request.getTotalAmount()));
       main.setPayableAmount(defaultAmount(request.getPayableAmount()));
       main.setRemark(request.getRemark());
+      main.setClientOrderId(clientOrderId);
       main.setIdempotencyKey(idempotencyKey);
 
       try {
         orderMainMapper.insert(main);
       } catch (DuplicateKeyException duplicateKeyException) {
+        OrderMain duplicatedByClientOrderId =
+            findActiveMainOrderByClientOrderId(request.getUserId(), clientOrderId);
+        if (duplicatedByClientOrderId != null) {
+          tradeMetrics.incrementOrder("success");
+          tradeMetrics.incrementOrderPlacement("success");
+          return duplicatedByClientOrderId;
+        }
         OrderMain duplicated = findActiveMainOrderByIdempotencyKey(idempotencyKey);
         if (duplicated != null) {
           tradeMetrics.incrementOrder("success");
@@ -168,6 +185,10 @@ public class OrderServiceImpl implements OrderService {
 
   private OrderMain findActiveMainOrderByIdempotencyKey(String idempotencyKey) {
     return orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
+  }
+
+  private OrderMain findActiveMainOrderByClientOrderId(Long userId, String clientOrderId) {
+    return orderMainMapper.selectActiveByClientOrderId(userId, clientOrderId);
   }
 
   @Override
@@ -613,5 +634,12 @@ public class OrderServiceImpl implements OrderService {
       return trimmed;
     }
     return prefix + trimmed;
+  }
+
+  private String buildClientOrderId(String clientOrderId) {
+    if (StrUtil.isBlank(clientOrderId)) {
+      throw new BizException("clientOrderId is required");
+    }
+    return clientOrderId.trim();
   }
 }
