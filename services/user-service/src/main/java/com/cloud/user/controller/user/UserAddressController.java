@@ -19,14 +19,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user/address")
@@ -40,9 +33,7 @@ public class UserAddressController {
   @PostMapping("/add/{userId}")
   @Operation(summary = "Add user address", description = "Add a new address for user")
   public Result<UserAddressDTO> addAddress(
-      @PathVariable("userId")
-          @Parameter(description = "User ID")
-          @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
           Long userId,
       @RequestBody
           @Parameter(description = "Address payload")
@@ -61,7 +52,7 @@ public class UserAddressController {
   @PutMapping("/update/{addressId}")
   @Operation(summary = "Update user address", description = "Update address by address ID")
   public Result<UserAddressDTO> updateAddress(
-      @PathVariable("addressId")
+      @PathVariable
           @Parameter(description = "Address ID")
           @NotNull(message = "address id is required")
           Long addressId,
@@ -87,7 +78,7 @@ public class UserAddressController {
   @DeleteMapping("/delete/{addressId}")
   @Operation(summary = "Delete user address", description = "Delete address by address ID")
   public Result<Boolean> deleteAddress(
-      @PathVariable("addressId")
+      @PathVariable
           @Parameter(description = "Address ID")
           @NotNull(message = "address id is required")
           Long addressId,
@@ -108,9 +99,7 @@ public class UserAddressController {
   @GetMapping("/list/{userId}")
   @Operation(summary = "List user addresses", description = "List all addresses for one user")
   public Result<List<UserAddressVO>> getAddressList(
-      @PathVariable("userId")
-          @Parameter(description = "User ID")
-          @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
@@ -124,9 +113,7 @@ public class UserAddressController {
   @GetMapping("/default/{userId}")
   @Operation(summary = "Get default address", description = "Get default address for one user")
   public Result<UserAddressVO> getDefaultAddress(
-      @PathVariable("userId")
-          @Parameter(description = "User ID")
-          @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {

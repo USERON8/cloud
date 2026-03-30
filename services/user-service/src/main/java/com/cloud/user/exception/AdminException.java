@@ -1,10 +1,10 @@
 package com.cloud.user.exception;
 
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import lombok.Getter;
 
 @Getter
-public class AdminException extends BusinessException {
+public class AdminException extends BizException {
 
   public AdminException(int code, String message) {
     super(code, message);
