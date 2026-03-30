@@ -6,6 +6,7 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.messaging.event.OrderAutoReceiveEvent;
 import com.cloud.common.messaging.event.OrderShippedEvent;
+import com.cloud.common.messaging.event.StockReleaseRequestEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
@@ -20,11 +21,11 @@ import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.messaging.OrderAutoReceiveMessageProducer;
+import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.messaging.OrderShippedMessageProducer;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
-import com.cloud.order.service.support.StockReservationRemoteService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +53,7 @@ public class OrderServiceImpl implements OrderService {
 
   private static final Map<String, Set<String>> SUB_STATUS_TRANSITIONS =
       Map.of(
-          "CREATED", Set.of("STOCK_RESERVED", "CANCELLED", "CLOSED"),
+          "CREATED", Set.of("STOCK_RESERVED", "PAID", "CANCELLED", "CLOSED"),
           "STOCK_RESERVED", Set.of("PAID", "CANCELLED", "CLOSED"),
           "PAID", Set.of("SHIPPED", "CANCELLED", "CLOSED"),
           "SHIPPED", Set.of("DONE", "CLOSED"),
@@ -78,12 +79,12 @@ public class OrderServiceImpl implements OrderService {
   private final OrderSubMapper orderSubMapper;
   private final OrderItemMapper orderItemMapper;
   private final AfterSaleMapper afterSaleMapper;
-  private final StockReservationRemoteService stockReservationRemoteService;
   private final ObjectProvider<OrderRefundSagaCoordinator> orderRefundSagaCoordinatorProvider;
   private final TradeMetrics tradeMetrics;
   private final OrderAggregateCacheService orderAggregateCacheService;
   private final OrderShippedMessageProducer orderShippedMessageProducer;
   private final OrderAutoReceiveMessageProducer orderAutoReceiveMessageProducer;
+  private final OrderMessageProducer orderMessageProducer;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -434,6 +435,7 @@ public class OrderServiceImpl implements OrderService {
       }
       skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
     }
+    List<StockOperateCommandDTO> commands = new ArrayList<>(skuQuantities.size());
     for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
       StockOperateCommandDTO command = new StockOperateCommandDTO();
       command.setSubOrderNo(subOrder.getSubOrderNo());
@@ -441,7 +443,21 @@ public class OrderServiceImpl implements OrderService {
       command.setSkuId(entry.getKey());
       command.setQuantity(entry.getValue());
       command.setReason("cancel order " + subOrder.getSubOrderNo());
-      stockReservationRemoteService.release(command);
+      commands.add(command);
+    }
+    if (commands.isEmpty()) {
+      return;
+    }
+    StockReleaseRequestEvent event =
+        StockReleaseRequestEvent.builder()
+            .orderNo(orderNo)
+            .subOrderNo(subOrder.getSubOrderNo())
+            .reason("cancel order " + subOrder.getSubOrderNo())
+            .items(commands)
+            .build();
+    if (!orderMessageProducer.sendStockReleaseRequestEvent(event)) {
+      throw new IllegalStateException(
+          "failed to enqueue stock release request for subOrderNo=" + subOrder.getSubOrderNo());
     }
   }
 

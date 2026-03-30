@@ -1,11 +1,11 @@
 package com.cloud.stock.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cloud.stock.module.entity.StockLedger;
+import com.cloud.common.domain.vo.stock.StockLedgerVO;
 
 public interface StockLedgerQueryService {
 
-  Page<StockLedger> pageLowStockLedgers(long pageIndex, int pageSize);
+  Page<StockLedgerVO> pageLowStockLedgers(long pageIndex, int pageSize);
 
-  Page<StockLedger> pageActiveLedgers(long pageIndex, int pageSize);
+  Page<StockLedgerVO> pageActiveLedgers(long pageIndex, int pageSize);
 }

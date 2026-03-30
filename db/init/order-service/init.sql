@@ -307,23 +307,6 @@ CREATE TABLE IF NOT EXISTS after_sale_timeline
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS order_tcc_log
-(
-    id               BIGINT UNSIGNED PRIMARY KEY,
-    business_key     VARCHAR(128)    NOT NULL,
-    main_order_id    BIGINT UNSIGNED NULL,
-    main_order_no    VARCHAR(64)     NULL,
-    status           VARCHAR(16)     NOT NULL,
-    created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted          TINYINT         NOT NULL DEFAULT 0,
-    version          INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_order_tcc_business (business_key),
-    INDEX idx_order_tcc_status_deleted (status, deleted)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS outbox_event
 (
     id                 BIGINT UNSIGNED PRIMARY KEY,
@@ -364,20 +347,6 @@ CREATE TABLE IF NOT EXISTS inbox_consume_log
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
-  
-CREATE TABLE undo_log (
-  branch_id BIGINT NOT NULL,
-  xid VARCHAR(128) NOT NULL,
-  context VARCHAR(128) NOT NULL,
-  rollback_info LONGBLOB NOT NULL,
-  log_status INT NOT NULL,
-  log_created DATETIME NOT NULL,
-  log_modified DATETIME NOT NULL,
-  UNIQUE KEY ux_undo_log (xid,branch_id),
-  INDEX idx_undo_log_xid (xid),
-  INDEX idx_undo_log_branch (branch_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE IF NOT EXISTS dead_letter
 (
     id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

@@ -49,6 +49,15 @@ spring:
           refundCancelledProducer-out-0:
             producer:
               <<: *orderProducerDefaults
+          stockReserveRequestProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
+          stockConfirmRequestProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
+          stockReleaseRequestProducer-out-0:
+            producer:
+              <<: *orderProducerDefaults
           stockRestoreProducer-out-0:
             producer:
               <<: *orderProducerDefaults
@@ -76,6 +85,15 @@ spring:
           content-type: application/json
         refundCancelledProducer-out-0:
           destination: refund-cancelled
+          content-type: application/json
+        stockReserveRequestProducer-out-0:
+          destination: stock-reserve-request
+          content-type: application/json
+        stockConfirmRequestProducer-out-0:
+          destination: stock-confirm-request
+          content-type: application/json
+        stockReleaseRequestProducer-out-0:
+          destination: stock-release-request
           content-type: application/json
         stockRestoreProducer-out-0:
           destination: stock-restore

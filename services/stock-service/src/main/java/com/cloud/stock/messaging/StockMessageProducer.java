@@ -19,6 +19,7 @@ public class StockMessageProducer {
 
   private final OutboxEventService outboxEventService;
   private final ObjectMapper objectMapper;
+  private final StockOutboxDispatcher stockOutboxDispatcher;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
   public boolean sendStockFreezeFailedEvent(String orderNo, String reason) {
@@ -39,6 +40,7 @@ public class StockMessageProducer {
       String payload = objectMapper.writeValueAsString(event);
       outboxEventService.enqueue(
           "STOCK", trimmedOrderNo, event.getEventType(), payload, event.getEventId());
+      stockOutboxDispatcher.dispatchAfterCommit();
       return true;
     } catch (Exception ex) {
       log.warn("Send stock-freeze-failed event failed: orderNo={}", orderNo, ex);
@@ -69,6 +71,7 @@ public class StockMessageProducer {
           event.getEventType(),
           payload,
           event.getEventId());
+      stockOutboxDispatcher.dispatchAfterCommit();
       return true;
     } catch (Exception ex) {
       log.warn("Send stock-alert event failed: skuId={}", event.getSkuId(), ex);

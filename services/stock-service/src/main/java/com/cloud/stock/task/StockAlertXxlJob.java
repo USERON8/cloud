@@ -5,12 +5,12 @@ import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.task.XxlJobSupport;
 import com.cloud.stock.messaging.StockMessageProducer;
-import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.service.StockLedgerQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -64,7 +64,7 @@ public class StockAlertXxlJob {
       return;
     }
     int limit = alertLimit <= 0 ? 200 : alertLimit;
-    List<StockLedger> ledgers = loadLowStockLedgers(limit);
+    List<StockLedgerVO> ledgers = loadLowStockLedgers(limit);
     if (ledgers.isEmpty()) {
       XxlJobSupport.logMessage(log, "stockAlertJob finished, empty ledgers");
       return;
@@ -74,7 +74,7 @@ public class StockAlertXxlJob {
     Map<Long, Long> spuToMerchant = resolveSpuMerchantMapping(skuToSpu.values());
 
     int notified = 0;
-    for (StockLedger ledger : ledgers) {
+    for (StockLedgerVO ledger : ledgers) {
       if (ledger == null || ledger.getSkuId() == null) {
         continue;
       }
@@ -93,17 +93,17 @@ public class StockAlertXxlJob {
     XxlJobSupport.logCount(log, "stockAlertJob", "notified", notified);
   }
 
-  private List<StockLedger> loadLowStockLedgers(int limit) {
+  private List<StockLedgerVO> loadLowStockLedgers(int limit) {
     int pageSize = Math.min(DEFAULT_PAGE_SIZE, limit);
     int pageIndex = 1;
-    List<StockLedger> results = new ArrayList<>();
+    List<StockLedgerVO> results = new ArrayList<>();
     while (results.size() < limit) {
-      Page<StockLedger> page = stockLedgerQueryService.pageLowStockLedgers(pageIndex, pageSize);
-      List<StockLedger> records = page.getRecords();
+      Page<StockLedgerVO> page = stockLedgerQueryService.pageLowStockLedgers(pageIndex, pageSize);
+      List<StockLedgerVO> records = page.getRecords();
       if (records == null || records.isEmpty()) {
         break;
       }
-      for (StockLedger ledger : records) {
+      for (StockLedgerVO ledger : records) {
         results.add(ledger);
         if (results.size() >= limit) {
           break;
@@ -117,9 +117,9 @@ public class StockAlertXxlJob {
     return results;
   }
 
-  private Map<Long, Long> resolveSkuSpuMapping(List<StockLedger> ledgers) {
+  private Map<Long, Long> resolveSkuSpuMapping(List<StockLedgerVO> ledgers) {
     Set<Long> skuIds = new HashSet<>();
-    for (StockLedger ledger : ledgers) {
+    for (StockLedgerVO ledger : ledgers) {
       if (ledger != null && ledger.getSkuId() != null) {
         skuIds.add(ledger.getSkuId());
       }
@@ -160,7 +160,7 @@ public class StockAlertXxlJob {
     return mapping;
   }
 
-  private boolean sendAlertMessage(Long merchantId, StockLedger ledger) {
+  private boolean sendAlertMessage(Long merchantId, StockLedgerVO ledger) {
     try {
       Map<String, Object> message =
           Map.of(
@@ -169,7 +169,7 @@ public class StockAlertXxlJob {
               "data",
                   Map.of(
                       "skuId", ledger.getSkuId(),
-                      "salableQty", ledger.getSalableQty(),
+                      "availableQty", ledger.getAvailableQty(),
                       "alertThreshold", ledger.getAlertThreshold()),
               "timestamp", Instant.now().toEpochMilli());
       String payload = objectMapper.writeValueAsString(message);
@@ -182,12 +182,12 @@ public class StockAlertXxlJob {
     }
   }
 
-  private boolean sendAlertEvent(Long merchantId, StockLedger ledger) {
+  private boolean sendAlertEvent(Long merchantId, StockLedgerVO ledger) {
     StockAlertEvent event =
         StockAlertEvent.builder()
             .merchantId(merchantId)
             .skuId(ledger.getSkuId())
-            .salableQty(ledger.getSalableQty())
+            .salableQty(ledger.getAvailableQty())
             .alertThreshold(ledger.getAlertThreshold())
             .build();
     return stockMessageProducer.sendStockAlertEvent(event);

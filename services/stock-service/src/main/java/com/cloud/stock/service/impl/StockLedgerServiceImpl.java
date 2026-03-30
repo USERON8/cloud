@@ -4,24 +4,19 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
-import com.cloud.stock.mapper.StockLedgerMapper;
 import com.cloud.stock.mapper.StockReservationMapper;
+import com.cloud.stock.mapper.StockSegmentMapper;
 import com.cloud.stock.messaging.StockMessageProducer;
-import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.module.entity.StockReservation;
+import com.cloud.stock.module.entity.StockSegment;
 import com.cloud.stock.module.entity.StockTxn;
 import com.cloud.stock.service.StockLedgerService;
 import com.cloud.stock.service.support.StockRedisCacheService;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,14 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StockLedgerServiceImpl implements StockLedgerService {
 
-  private static final String STATUS_RESERVED = "RESERVED";
-  private static final String STATUS_CONFIRMED = "CONFIRMED";
+  private static final String STATUS_LOCKED = "LOCKED";
+  private static final String STATUS_SOLD = "SOLD";
   private static final String STATUS_RELEASED = "RELEASED";
-  private static final String STATUS_ROLLED_BACK = "ROLLED_BACK";
-  private static final Set<String> RESERVE_COMPLETED_STATUSES = Set.of("RESERVED", "CONFIRMED");
-  private static final Set<String> RESERVE_FORBIDDEN_STATUSES = Set.of("RELEASED", "ROLLED_BACK");
 
-  private final StockLedgerMapper stockLedgerMapper;
+  private final StockSegmentMapper stockSegmentMapper;
   private final StockReservationMapper stockReservationMapper;
   private final StockTxnAsyncWriter stockTxnAsyncWriter;
   private final StockMessageProducer stockMessageProducer;
@@ -55,45 +47,53 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     }
     List<Long> safeSkuIds =
         skuIds.stream()
-            .filter(skuId -> skuId != null)
+            .filter(id -> id != null)
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
             .stream()
             .toList();
     if (safeSkuIds.isEmpty()) {
       return List.of();
     }
-    return stockLedgerMapper.listActiveBySkuIds(safeSkuIds).stream()
-        .filter(ledger -> ledger != null && Integer.valueOf(1).equals(ledger.getStatus()))
-        .map(this::toVO)
-        .toList();
+    return stockSegmentMapper.listLedgersBySkuIds(safeSkuIds);
+  }
+
+  @Override
+  public Boolean preCheck(List<StockOperateCommandDTO> commands) {
+    return stockRedisCacheService.preCheck(commands);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean reserve(StockOperateCommandDTO command) {
+    validateCommand(command);
     try {
-      StockReservation reservation = insertReservationToken(command);
-      if (reservation == null) {
-        throw new BusinessException("stock reservation not found");
+      if (!Boolean.TRUE.equals(preCheck(List.of(command)))) {
+        throw new BusinessException("insufficient available stock");
       }
-      if (shouldSkipReserve(reservation, command)) {
+      List<StockReservation> existing = listReservations(command);
+      if (isReserveCompleted(existing, command)) {
         tradeMetrics.incrementStockFreeze("success");
         return true;
       }
-
-      int affected = stockLedgerMapper.reserve(command.getSkuId(), command.getQuantity());
-      if (affected <= 0) {
-        throw new BusinessException("insufficient salable stock");
+      if (!existing.isEmpty()) {
+        throw new BusinessException(
+            "reservation already exists for subOrderNo=" + command.getSubOrderNo());
       }
 
-      reservation.setStatus(STATUS_RESERVED);
-      stockReservationMapper.updateById(reservation);
-      StockRedisCacheService.CacheResult cacheResult =
-          stockRedisCacheService.applyReserveIfCached(command.getSkuId(), command.getQuantity());
-      if (cacheResult != StockRedisCacheService.CacheResult.OK) {
-        stockRedisCacheService.refreshFromDb(command.getSkuId());
+      List<SegmentAllocation> allocations = allocate(command);
+      for (SegmentAllocation allocation : allocations) {
+        StockReservation reservation = new StockReservation();
+        reservation.setMainOrderNo(command.getOrderNo());
+        reservation.setSubOrderNo(command.getSubOrderNo());
+        reservation.setSkuId(command.getSkuId());
+        reservation.setSegmentId(allocation.segmentId());
+        reservation.setQuantity(allocation.quantity());
+        reservation.setStatus(STATUS_LOCKED);
+        reservation.setIdempotencyKey(buildIdempotencyKey(command, allocation.segmentId()));
+        stockReservationMapper.insert(reservation);
+        writeTxn(command, allocation, "RESERVE", command.getReason());
       }
-      writeTxn(command, "RESERVE", command.getReason());
+      stockRedisCacheService.applyReserve(command.getSkuId(), command.getQuantity());
       tradeMetrics.incrementStockFreeze("success");
       return true;
     } catch (Exception ex) {
@@ -105,88 +105,75 @@ public class StockLedgerServiceImpl implements StockLedgerService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Boolean confirmReservation(StockOperateCommandDTO command) {
-    if (command == null) {
-      return true;
-    }
-    StockReservation reservation = getReservation(command);
-    if (reservation == null) {
-      return true;
-    }
-    ensureReservationQuantityMatches(reservation, command);
-    String status = reservation.getStatus();
-    if (STATUS_RESERVED.equals(status) || STATUS_CONFIRMED.equals(status)) {
-      return true;
-    }
-    if (STATUS_ROLLED_BACK.equals(status) || STATUS_RELEASED.equals(status)) {
-      return true;
-    }
-    if ("RESERVING".equals(status)) {
-      reservation.setStatus(STATUS_RESERVED);
-      stockReservationMapper.updateById(reservation);
-      return true;
-    }
-    return true;
-  }
-
-  @Override
-  @Transactional(rollbackFor = Exception.class)
   public Boolean confirm(StockOperateCommandDTO command) {
-    StockReservation reservation = requireReservation(command);
-    if (STATUS_CONFIRMED.equals(reservation.getStatus())) {
+    validateCommand(command);
+    List<StockReservation> reservations = requireReservations(command);
+    if (allMatchStatus(reservations, STATUS_SOLD)) {
       return true;
     }
-    if (!STATUS_RESERVED.equals(reservation.getStatus())) {
-      throw new BusinessException(
-          "reservation status invalid for confirm: " + reservation.getStatus());
+    for (StockReservation reservation : reservations) {
+      if (STATUS_SOLD.equals(reservation.getStatus())) {
+        continue;
+      }
+      if (!STATUS_LOCKED.equals(reservation.getStatus())) {
+        throw new BusinessException(
+            "reservation status invalid for confirm: " + reservation.getStatus());
+      }
+      int updated =
+          stockSegmentMapper.confirmLockedOnSegment(
+              reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
+      if (updated != 1) {
+        throw new BusinessException("confirm stock failed");
+      }
+      reservation.setStatus(STATUS_SOLD);
+      stockReservationMapper.updateById(reservation);
+      writeTxn(
+          command,
+          reservation.getSegmentId(),
+          reservation.getQuantity(),
+          "CONFIRM",
+          command.getReason());
     }
-
-    int affectedReserved = stockLedgerMapper.confirm(command.getSkuId(), command.getQuantity());
-    int affectedOnHand = stockLedgerMapper.deductOnHand(command.getSkuId(), command.getQuantity());
-    if (affectedReserved <= 0 || affectedOnHand <= 0) {
-      throw new BusinessException("confirm stock failed");
-    }
-
-    reservation.setStatus(STATUS_CONFIRMED);
-    stockReservationMapper.updateById(reservation);
-
-    StockLedger after = requireLedger(command.getSkuId());
-    StockRedisCacheService.CacheResult cacheResult =
-        stockRedisCacheService.applyConfirmIfCached(command.getSkuId(), command.getQuantity());
-    if (cacheResult != StockRedisCacheService.CacheResult.OK) {
-      stockRedisCacheService.cacheLedger(after);
-    }
-    writeTxn(command, "CONFIRM", after, command.getReason());
+    stockRedisCacheService.applyConfirmFromLocked(command.getSkuId(), command.getQuantity());
     return true;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean release(StockOperateCommandDTO command) {
-    StockReservation reservation = requireReservation(command);
-    if (STATUS_RELEASED.equals(reservation.getStatus())) {
+    validateCommand(command);
+    List<StockReservation> reservations = requireReservations(command);
+    if (allMatchStatus(reservations, STATUS_RELEASED)) {
       return true;
     }
-    if (!STATUS_RESERVED.equals(reservation.getStatus())) {
-      throw new BusinessException(
-          "reservation status invalid for release: " + reservation.getStatus());
+    int releasedQty = 0;
+    for (StockReservation reservation : reservations) {
+      if (STATUS_RELEASED.equals(reservation.getStatus())) {
+        continue;
+      }
+      if (!STATUS_LOCKED.equals(reservation.getStatus())) {
+        throw new BusinessException(
+            "reservation status invalid for release: " + reservation.getStatus());
+      }
+      int updated =
+          stockSegmentMapper.releaseOnSegment(
+              reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
+      if (updated != 1) {
+        throw new BusinessException("release stock failed");
+      }
+      reservation.setStatus(STATUS_RELEASED);
+      stockReservationMapper.updateById(reservation);
+      releasedQty += reservation.getQuantity();
+      writeTxn(
+          command,
+          reservation.getSegmentId(),
+          reservation.getQuantity(),
+          "RELEASE",
+          command.getReason());
     }
-
-    int affected = stockLedgerMapper.release(command.getSkuId(), command.getQuantity());
-    if (affected <= 0) {
-      throw new BusinessException("release stock failed");
+    if (releasedQty > 0) {
+      stockRedisCacheService.applyRelease(command.getSkuId(), releasedQty);
     }
-
-    reservation.setStatus(STATUS_RELEASED);
-    stockReservationMapper.updateById(reservation);
-
-    StockLedger after = requireLedger(command.getSkuId());
-    StockRedisCacheService.CacheResult cacheResult =
-        stockRedisCacheService.applyReleaseIfCached(command.getSkuId(), command.getQuantity());
-    if (cacheResult != StockRedisCacheService.CacheResult.OK) {
-      stockRedisCacheService.cacheLedger(after);
-    }
-    writeTxn(command, "RELEASE", after, command.getReason());
     return true;
   }
 
@@ -196,8 +183,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     if (command == null) {
       return true;
     }
-    rollbackBatch(List.of(command));
-    return true;
+    return rollbackBatch(List.of(command));
   }
 
   @Override
@@ -206,327 +192,223 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     if (commands == null || commands.isEmpty()) {
       return true;
     }
-
-    List<StockOperateCommandDTO> validCommands = new ArrayList<>();
-    Set<String> subOrderNos = new HashSet<>();
-    Set<Long> skuIds = new HashSet<>();
     for (StockOperateCommandDTO command : commands) {
-      if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+      if (command == null || command.getQuantity() == null || command.getQuantity() <= 0) {
         continue;
       }
-      if (command.getQuantity() <= 0) {
-        continue;
-      }
-      validCommands.add(command);
-      if (command.getSubOrderNo() != null) {
-        subOrderNos.add(command.getSubOrderNo());
-      }
-      skuIds.add(command.getSkuId());
+      validateCommand(command);
+      restoreReservation(command);
     }
-    if (validCommands.isEmpty()) {
-      return true;
-    }
-
-    Map<String, StockReservation> reservationMap = new HashMap<>();
-    if (!subOrderNos.isEmpty() && !skuIds.isEmpty()) {
-      List<StockReservation> reservations =
-          stockReservationMapper.selectActiveBySubOrderNosAndSkuIds(
-              new ArrayList<>(subOrderNos), new ArrayList<>(skuIds));
-      for (StockReservation reservation : reservations) {
-        if (reservation == null
-            || reservation.getSubOrderNo() == null
-            || reservation.getSkuId() == null) {
-          continue;
-        }
-        reservationMap.put(
-            buildReservationKey(reservation.getSubOrderNo(), reservation.getSkuId()), reservation);
-      }
-    }
-
-    Map<String, StockOperateCommandDTO> normalizedByReservationKey = new LinkedHashMap<>();
-    for (StockOperateCommandDTO command : validCommands) {
-      if (command.getSubOrderNo() == null) {
-        insertRollbackMarker(command);
-        continue;
-      }
-      String reservationKey = buildReservationKey(command.getSubOrderNo(), command.getSkuId());
-      StockOperateCommandDTO aggregated = normalizedByReservationKey.get(reservationKey);
-      if (aggregated == null) {
-        StockOperateCommandDTO copy = new StockOperateCommandDTO();
-        copy.setOrderNo(command.getOrderNo());
-        copy.setSubOrderNo(command.getSubOrderNo());
-        copy.setSkuId(command.getSkuId());
-        copy.setQuantity(command.getQuantity());
-        copy.setReason(command.getReason());
-        normalizedByReservationKey.put(reservationKey, copy);
-      } else {
-        aggregated.setQuantity(aggregated.getQuantity() + command.getQuantity());
-      }
-    }
-
-    List<StockOperateCommandDTO> reservedCommands = new ArrayList<>();
-    List<StockOperateCommandDTO> confirmedCommands = new ArrayList<>();
-    List<ReservationRollbackUpdate> reservationUpdates = new ArrayList<>();
-
-    for (Map.Entry<String, StockOperateCommandDTO> entry : normalizedByReservationKey.entrySet()) {
-      StockOperateCommandDTO command = entry.getValue();
-      StockReservation reservation = reservationMap.get(entry.getKey());
-      if (reservation == null) {
-        insertRollbackMarker(command);
-        continue;
-      }
-      String previousStatus = reservation.getStatus();
-      if (STATUS_ROLLED_BACK.equals(previousStatus)) {
-        continue;
-      }
-      int rollbackQty = command.getQuantity();
-      Integer reservedQty = reservation.getReservedQty();
-      if (reservedQty == null || rollbackQty > reservedQty) {
-        throw new BusinessException(
-            "rollback quantity exceeds reserved quantity for subOrderNo="
-                + command.getSubOrderNo());
-      }
-      String nextStatus = rollbackQty == reservedQty ? STATUS_ROLLED_BACK : previousStatus;
-      if (STATUS_RESERVED.equals(previousStatus)) {
-        reservedCommands.add(command);
-        reservationUpdates.add(
-            new ReservationRollbackUpdate(
-                reservation.getId(), rollbackQty, previousStatus, nextStatus));
-      } else if (STATUS_CONFIRMED.equals(previousStatus)) {
-        confirmedCommands.add(command);
-        reservationUpdates.add(
-            new ReservationRollbackUpdate(
-                reservation.getId(), rollbackQty, previousStatus, nextStatus));
-      }
-    }
-
-    Map<Long, Integer> reservedQtyBySku = aggregateQtyBySku(reservedCommands);
-    Map<Long, Integer> confirmedQtyBySku = aggregateQtyBySku(confirmedCommands);
-
-    if (!reservedQtyBySku.isEmpty()) {
-      List<StockOperateCommandDTO> aggregated = toAggregatedCommands(reservedQtyBySku);
-      int updated = stockLedgerMapper.batchRelease(aggregated);
-      if (updated != reservedQtyBySku.size()) {
-        throw new BusinessException("batch rollback release failed");
-      }
-    }
-    if (!confirmedQtyBySku.isEmpty()) {
-      List<StockOperateCommandDTO> aggregated = toAggregatedCommands(confirmedQtyBySku);
-      int updated = stockLedgerMapper.batchRollbackAfterConfirm(aggregated);
-      if (updated != confirmedQtyBySku.size()) {
-        throw new BusinessException("batch rollback confirm failed");
-      }
-    }
-
-    for (ReservationRollbackUpdate update : reservationUpdates) {
-      int adjusted =
-          stockReservationMapper.adjustAfterRollback(
-              update.id(), update.quantity(), update.currentStatus(), update.newStatus());
-      if (adjusted != 1) {
-        throw new BusinessException("rollback reservation status failed");
-      }
-    }
-
-    Map<Long, StockLedger> afterLedgers = new HashMap<>();
-    for (Long skuId : reservedQtyBySku.keySet()) {
-      afterLedgers.put(skuId, requireLedger(skuId));
-    }
-    for (Long skuId : confirmedQtyBySku.keySet()) {
-      afterLedgers.putIfAbsent(skuId, requireLedger(skuId));
-    }
-
-    for (StockOperateCommandDTO command : reservedCommands) {
-      StockLedger after = afterLedgers.get(command.getSkuId());
-      StockRedisCacheService.CacheResult cacheResult =
-          stockRedisCacheService.applyReleaseIfCached(command.getSkuId(), command.getQuantity());
-      if (cacheResult != StockRedisCacheService.CacheResult.OK && after != null) {
-        stockRedisCacheService.cacheLedger(after);
-      }
-      writeTxn(command, "ROLLBACK", after, command.getReason());
-    }
-    for (StockOperateCommandDTO command : confirmedCommands) {
-      StockLedger after = afterLedgers.get(command.getSkuId());
-      StockRedisCacheService.CacheResult cacheResult =
-          stockRedisCacheService.applyRollbackAfterConfirmIfCached(
-              command.getSkuId(), command.getQuantity());
-      if (cacheResult != StockRedisCacheService.CacheResult.OK && after != null) {
-        stockRedisCacheService.cacheLedger(after);
-      }
-      writeTxn(command, "ROLLBACK", after, command.getReason());
-    }
-
     return true;
   }
 
-  private StockReservation insertReservationToken(StockOperateCommandDTO command) {
-    StockReservation entity = new StockReservation();
-    entity.setSubOrderNo(command.getSubOrderNo());
-    entity.setSkuId(command.getSkuId());
-    entity.setReservedQty(command.getQuantity());
-    entity.setStatus("RESERVING");
-    entity.setIdempotencyKey(buildIdempotencyKey(command));
-    try {
-      stockReservationMapper.insert(entity);
-      return entity;
-    } catch (DuplicateKeyException duplicateKeyException) {
-      return getReservation(command);
-    }
-  }
-
-  private StockReservation getReservation(StockOperateCommandDTO command) {
-    return stockReservationMapper.selectActiveBySubOrderNoAndSkuId(
-        command.getSubOrderNo(), command.getSkuId());
-  }
-
-  private StockReservation requireReservation(StockOperateCommandDTO command) {
-    StockReservation reservation = getReservation(command);
-    if (reservation == null) {
-      throw new BusinessException("stock reservation not found");
-    }
-    ensureReservationQuantityMatches(reservation, command);
-    return reservation;
-  }
-
-  private StockLedger requireLedger(Long skuId) {
-    StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
-    if (ledger == null) {
-      throw new BusinessException("stock ledger not found for skuId=" + skuId);
-    }
-    return ledger;
-  }
-
-  private String buildIdempotencyKey(StockOperateCommandDTO command) {
-    return command.getSubOrderNo() + ":" + command.getSkuId();
-  }
-
-  private boolean shouldSkipReserve(StockReservation reservation, StockOperateCommandDTO command) {
-    ensureReservationQuantityMatches(reservation, command);
-    String status = reservation.getStatus();
-    if (RESERVE_COMPLETED_STATUSES.contains(status)) {
-      return true;
-    }
-    if (RESERVE_FORBIDDEN_STATUSES.contains(status)) {
-      throw new BusinessException(
-          "reservation already rolled back for subOrderNo=" + command.getSubOrderNo());
-    }
-    if ("RESERVING".equals(status)) {
-      return false;
-    }
-    throw new BusinessException("reservation status invalid for reserve: " + status);
-  }
-
-  private void handleReserveFailure(StockOperateCommandDTO command, Exception ex) {
-    if (command == null) {
-      return;
-    }
-    if (!isInsufficientStock(ex)) {
-      return;
-    }
-    String orderNo = command.getOrderNo();
-    if (orderNo == null || orderNo.isBlank()) {
-      return;
-    }
-    stockMessageProducer.sendStockFreezeFailedEvent(orderNo, ex.getMessage());
-  }
-
-  private boolean isInsufficientStock(Exception ex) {
-    if (ex == null || ex.getMessage() == null) {
-      return false;
-    }
-    return ex.getMessage().toLowerCase().contains("insufficient salable stock");
-  }
-
-  private String buildReservationKey(String subOrderNo, Long skuId) {
-    return subOrderNo + ":" + skuId;
-  }
-
-  private Map<Long, Integer> aggregateQtyBySku(List<StockOperateCommandDTO> commands) {
-    Map<Long, Integer> aggregate = new HashMap<>();
-    for (StockOperateCommandDTO command : commands) {
-      if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+  private void restoreReservation(StockOperateCommandDTO command) {
+    List<StockReservation> reservations = requireReservations(command);
+    int remaining = command.getQuantity();
+    int restoredFromLocked = 0;
+    int restoredFromSold = 0;
+    for (StockReservation reservation : reservations) {
+      if (remaining <= 0) {
+        break;
+      }
+      if (STATUS_RELEASED.equals(reservation.getStatus())) {
         continue;
       }
-      aggregate.merge(command.getSkuId(), command.getQuantity(), Integer::sum);
+      int movable = Math.min(remaining, defaultZero(reservation.getQuantity()));
+      if (movable <= 0) {
+        continue;
+      }
+      if (STATUS_LOCKED.equals(reservation.getStatus())) {
+        int updated =
+            stockSegmentMapper.releaseOnSegment(
+                reservation.getSkuId(), reservation.getSegmentId(), movable);
+        if (updated != 1) {
+          throw new BusinessException("rollback locked stock failed");
+        }
+        restoredFromLocked += movable;
+      } else if (STATUS_SOLD.equals(reservation.getStatus())) {
+        int updated =
+            stockSegmentMapper.restoreSoldOnSegment(
+                reservation.getSkuId(), reservation.getSegmentId(), movable);
+        if (updated != 1) {
+          throw new BusinessException("rollback sold stock failed");
+        }
+        restoredFromSold += movable;
+      } else {
+        throw new BusinessException(
+            "reservation status invalid for rollback: " + reservation.getStatus());
+      }
+      remaining -= movable;
+      reservation.setQuantity(reservation.getQuantity() - movable);
+      if (defaultZero(reservation.getQuantity()) == 0) {
+        reservation.setStatus(STATUS_RELEASED);
+      }
+      stockReservationMapper.updateById(reservation);
+      writeTxn(command, reservation.getSegmentId(), movable, "ROLLBACK", command.getReason());
     }
-    return aggregate;
+    if (remaining > 0) {
+      throw new BusinessException(
+          "rollback quantity exceeds reserved quantity for subOrderNo=" + command.getSubOrderNo());
+    }
+    if (restoredFromLocked > 0) {
+      stockRedisCacheService.applyRelease(command.getSkuId(), restoredFromLocked);
+    }
+    if (restoredFromSold > 0) {
+      stockRedisCacheService.applyRollbackFromSold(command.getSkuId(), restoredFromSold);
+    }
   }
 
-  private List<StockOperateCommandDTO> toAggregatedCommands(Map<Long, Integer> aggregated) {
-    List<StockOperateCommandDTO> commands = new ArrayList<>();
-    for (Map.Entry<Long, Integer> entry : aggregated.entrySet()) {
-      StockOperateCommandDTO command = new StockOperateCommandDTO();
-      command.setSkuId(entry.getKey());
-      command.setQuantity(entry.getValue());
-      command.setSubOrderNo("BATCH");
-      commands.add(command);
+  private List<SegmentAllocation> allocate(StockOperateCommandDTO command) {
+    List<StockSegment> segments = stockSegmentMapper.listActiveSegmentsBySkuId(command.getSkuId());
+    if (segments == null || segments.isEmpty()) {
+      throw new BusinessException("stock segment not found for skuId=" + command.getSkuId());
     }
-    return commands;
+    List<StockSegment> orderedSegments = reorderSegments(segments, command.getSubOrderNo());
+    int remaining = command.getQuantity();
+    List<SegmentAllocation> allocations = new ArrayList<>();
+    for (StockSegment segment : orderedSegments) {
+      int available = defaultZero(segment.getAvailableQty());
+      if (available <= 0) {
+        continue;
+      }
+      int take = Math.min(remaining, available);
+      if (take <= 0) {
+        continue;
+      }
+      int updated =
+          stockSegmentMapper.reserveOnSegment(command.getSkuId(), segment.getSegmentId(), take);
+      if (updated != 1) {
+        continue;
+      }
+      allocations.add(new SegmentAllocation(segment.getSegmentId(), take));
+      remaining -= take;
+      if (remaining == 0) {
+        break;
+      }
+    }
+    if (remaining > 0) {
+      throw new BusinessException("insufficient available stock");
+    }
+    return allocations;
   }
 
-  private void insertRollbackMarker(StockOperateCommandDTO command) {
-    if (command == null || command.getSubOrderNo() == null || command.getSkuId() == null) {
-      return;
+  private List<StockSegment> reorderSegments(List<StockSegment> segments, String subOrderNo) {
+    if (segments == null || segments.isEmpty()) {
+      return List.of();
     }
-    StockReservation marker = new StockReservation();
-    marker.setSubOrderNo(command.getSubOrderNo());
-    marker.setSkuId(command.getSkuId());
-    marker.setReservedQty(command.getQuantity() == null ? 0 : command.getQuantity());
-    marker.setStatus(STATUS_ROLLED_BACK);
-    marker.setIdempotencyKey(buildIdempotencyKey(command));
-    try {
-      stockReservationMapper.insert(marker);
-    } catch (DuplicateKeyException ignored) {
-
+    int size = segments.size();
+    int startIndex = Math.floorMod(subOrderNo == null ? 0 : subOrderNo.hashCode(), size);
+    List<StockSegment> ordered = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      ordered.add(segments.get((startIndex + i) % size));
     }
+    ordered.sort(Comparator.comparing(StockSegment::getSegmentId));
+    if (size > 1) {
+      List<StockSegment> rotated = new ArrayList<>(size);
+      for (int i = 0; i < size; i++) {
+        rotated.add(ordered.get((startIndex + i) % size));
+      }
+      return rotated;
+    }
+    return ordered;
   }
 
-  private void ensureReservationQuantityMatches(
-      StockReservation reservation, StockOperateCommandDTO command) {
-    if (reservation.getReservedQty() != null
-        && !reservation.getReservedQty().equals(command.getQuantity())) {
+  private List<StockReservation> listReservations(StockOperateCommandDTO command) {
+    List<StockReservation> reservations =
+        stockReservationMapper.listActiveBySubOrderNoAndSkuId(
+            command.getSubOrderNo(), command.getSkuId());
+    return reservations == null ? List.of() : reservations;
+  }
+
+  private List<StockReservation> requireReservations(StockOperateCommandDTO command) {
+    List<StockReservation> reservations = listReservations(command);
+    if (reservations.isEmpty()) {
+      throw new BusinessException("stock reservation not found");
+    }
+    int totalQuantity =
+        reservations.stream()
+            .filter(item -> !STATUS_RELEASED.equals(item.getStatus()))
+            .mapToInt(item -> defaultZero(item.getQuantity()))
+            .sum();
+    if (totalQuantity < command.getQuantity()) {
       throw new BusinessException(
           "reservation quantity mismatch for subOrderNo=" + command.getSubOrderNo());
     }
+    return reservations;
   }
 
-  private void writeTxn(StockOperateCommandDTO command, String txnType, String reason) {
-    writeTxn(command, txnType, null, reason);
+  private boolean isReserveCompleted(
+      List<StockReservation> reservations, StockOperateCommandDTO command) {
+    if (reservations == null || reservations.isEmpty()) {
+      return false;
+    }
+    int totalQuantity =
+        reservations.stream().mapToInt(item -> defaultZero(item.getQuantity())).sum();
+    if (totalQuantity != command.getQuantity()) {
+      return false;
+    }
+    return reservations.stream()
+        .allMatch(
+            item -> STATUS_LOCKED.equals(item.getStatus()) || STATUS_SOLD.equals(item.getStatus()));
+  }
+
+  private boolean allMatchStatus(List<StockReservation> reservations, String status) {
+    return reservations.stream().allMatch(item -> status.equals(item.getStatus()));
+  }
+
+  private String buildIdempotencyKey(StockOperateCommandDTO command, Integer segmentId) {
+    return command.getSubOrderNo() + ":" + command.getSkuId() + ":" + segmentId;
+  }
+
+  private void validateCommand(StockOperateCommandDTO command) {
+    if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+      throw new BusinessException("stock command is invalid");
+    }
+    if (command.getQuantity() <= 0) {
+      throw new BusinessException("stock quantity must be greater than 0");
+    }
+    if (command.getSubOrderNo() == null || command.getSubOrderNo().isBlank()) {
+      throw new BusinessException("subOrderNo is required");
+    }
+  }
+
+  private void handleReserveFailure(StockOperateCommandDTO command, Exception ex) {
+    if (!isInsufficientStock(ex) || command == null || command.getOrderNo() == null) {
+      return;
+    }
+    stockMessageProducer.sendStockFreezeFailedEvent(command.getOrderNo(), ex.getMessage());
+  }
+
+  private boolean isInsufficientStock(Exception ex) {
+    return ex != null
+        && ex.getMessage() != null
+        && ex.getMessage().toLowerCase().contains("insufficient available stock");
+  }
+
+  private int defaultZero(Integer value) {
+    return value == null ? 0 : value;
   }
 
   private void writeTxn(
-      StockOperateCommandDTO command, String txnType, StockLedger after, String reason) {
-    StockTxn txn = new StockTxn();
-    txn.setSkuId(command.getSkuId());
-    txn.setSubOrderNo(command.getSubOrderNo());
-    txn.setTxnType(txnType);
-    txn.setQuantity(command.getQuantity());
-    if (after != null) {
-      txn.setAfterOnHand(after.getOnHandQty());
-      txn.setAfterReserved(after.getReservedQty());
-      txn.setAfterSalable(after.getSalableQty());
-    }
-    txn.setRemark(reason);
-    dispatchTxnWrite(txn);
+      StockOperateCommandDTO command, SegmentAllocation allocation, String txnType, String reason) {
+    writeTxn(command, allocation.segmentId(), allocation.quantity(), txnType, reason);
   }
 
-  private void dispatchTxnWrite(StockTxn txn) {
+  private void writeTxn(
+      StockOperateCommandDTO command,
+      Integer segmentId,
+      Integer quantity,
+      String txnType,
+      String reason) {
+    StockTxn txn = new StockTxn();
+    txn.setSkuId(command.getSkuId());
+    txn.setSegmentId(segmentId);
+    txn.setSubOrderNo(command.getSubOrderNo());
+    txn.setTxnType(txnType);
+    txn.setQuantity(quantity);
+    txn.setRemark(reason);
     stockTxnAsyncWriter.write(txn);
   }
 
-  private record ReservationRollbackUpdate(
-      Long id, Integer quantity, String currentStatus, String newStatus) {}
-
-  private StockLedgerVO toVO(StockLedger ledger) {
-    StockLedgerVO vo = new StockLedgerVO();
-    vo.setId(ledger.getId());
-    vo.setSkuId(ledger.getSkuId());
-    vo.setOnHandQty(ledger.getOnHandQty());
-    vo.setReservedQty(ledger.getReservedQty());
-    vo.setSalableQty(ledger.getSalableQty());
-    vo.setAlertThreshold(ledger.getAlertThreshold());
-    vo.setStatus(ledger.getStatus());
-    vo.setCreatedAt(ledger.getCreatedAt());
-    vo.setUpdatedAt(ledger.getUpdatedAt());
-    return vo;
-  }
+  private record SegmentAllocation(Integer segmentId, Integer quantity) {}
 }

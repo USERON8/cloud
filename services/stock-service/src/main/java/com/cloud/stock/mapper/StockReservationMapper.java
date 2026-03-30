@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface StockReservationMapper extends BaseMapper<StockReservation> {
@@ -16,69 +15,23 @@ public interface StockReservationMapper extends BaseMapper<StockReservation> {
   @Select(
       """
             SELECT *
-            FROM stock_reservation FORCE INDEX (idx_stock_reservation_sub_sku_deleted)
+            FROM stock_reservation
             WHERE sub_order_no = #{subOrderNo}
               AND sku_id = #{skuId}
               AND deleted = 0
-            LIMIT 1
+            ORDER BY segment_id ASC, id ASC
             """)
-  StockReservation selectActiveBySubOrderNoAndSkuId(
+  List<StockReservation> listActiveBySubOrderNoAndSkuId(
       @Param("subOrderNo") String subOrderNo, @Param("skuId") Long skuId);
 
   @InterceptorIgnore(illegalSql = "1")
   @Select(
       """
-            <script>
             SELECT *
-            FROM stock_reservation FORCE INDEX (idx_stock_reservation_sub_sku_deleted)
-            WHERE deleted = 0
-            <if test='subOrderNos != null and subOrderNos.size() > 0'>
-              AND sub_order_no IN
-              <foreach collection='subOrderNos' item='subOrderNo' open='(' separator=',' close=')'>
-                #{subOrderNo}
-              </foreach>
-            </if>
-            <if test='skuIds != null and skuIds.size() > 0'>
-              AND sku_id IN
-              <foreach collection='skuIds' item='skuId' open='(' separator=',' close=')'>
-                #{skuId}
-              </foreach>
-            </if>
-            </script>
+            FROM stock_reservation
+            WHERE sub_order_no = #{subOrderNo}
+              AND deleted = 0
+            ORDER BY sku_id ASC, segment_id ASC, id ASC
             """)
-  List<StockReservation> selectActiveBySubOrderNosAndSkuIds(
-      @Param("subOrderNos") List<String> subOrderNos, @Param("skuIds") List<Long> skuIds);
-
-  @InterceptorIgnore(illegalSql = "1")
-  @Update(
-      """
-            <script>
-            UPDATE stock_reservation
-            SET status = 'ROLLED_BACK', updated_at = NOW()
-            WHERE deleted = 0
-              AND id IN
-              <foreach collection='ids' item='id' open='(' separator=',' close=')'>
-                #{id}
-              </foreach>
-            </script>
-            """)
-  int markRolledBackByIds(@Param("ids") List<Long> ids);
-
-  @InterceptorIgnore(illegalSql = "1")
-  @Update(
-      """
-            UPDATE stock_reservation
-            SET reserved_qty = reserved_qty - #{qty},
-                status = #{newStatus},
-                updated_at = NOW()
-            WHERE deleted = 0
-              AND id = #{id}
-              AND status = #{currentStatus}
-              AND reserved_qty >= #{qty}
-            """)
-  int adjustAfterRollback(
-      @Param("id") Long id,
-      @Param("qty") Integer qty,
-      @Param("currentStatus") String currentStatus,
-      @Param("newStatus") String newStatus);
+  List<StockReservation> listActiveBySubOrderNo(@Param("subOrderNo") String subOrderNo);
 }

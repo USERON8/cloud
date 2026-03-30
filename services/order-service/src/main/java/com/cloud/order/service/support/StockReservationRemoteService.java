@@ -5,6 +5,7 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
@@ -16,6 +17,17 @@ public class StockReservationRemoteService {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private StockDubboApi stockDubboApi;
+
+  public Boolean preCheck(List<StockOperateCommandDTO> commands) {
+    try {
+      return stockDubboApi.preCheck(commands);
+    } catch (RpcException ex) {
+      throw new RemoteException(
+          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when pre-checking", ex);
+    } catch (RuntimeException ex) {
+      throw translateException(ex);
+    }
+  }
 
   public Boolean reserve(StockOperateCommandDTO command) {
     try {
@@ -111,6 +123,8 @@ public class StockReservationRemoteService {
   }
 
   private boolean isInsufficientStock(String message) {
-    return message != null && message.toLowerCase().contains("insufficient salable stock");
+    return message != null
+        && (message.toLowerCase().contains("insufficient salable stock")
+            || message.toLowerCase().contains("insufficient available stock"));
   }
 }

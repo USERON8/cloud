@@ -112,17 +112,6 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
-        <!-- Encoding-safe comment -->
-        <dependency>
-            <groupId>org.apache.seata</groupId>
-            <artifactId>seata-spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.seata</groupId>
-            <artifactId>seata-saga-spring</artifactId>
-            <version>${seata.version}</version>
-        </dependency>
-
     </dependencies>
 
     <build>

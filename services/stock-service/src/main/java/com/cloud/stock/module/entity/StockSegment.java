@@ -8,20 +8,23 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("stock_ledger")
-public class StockLedger extends BaseEntity<StockLedger> {
+@TableName("stock_segment")
+public class StockSegment extends BaseEntity<StockSegment> {
 
   @TableField("sku_id")
   private Long skuId;
 
-  @TableField("on_hand_qty")
-  private Integer onHandQty;
+  @TableField("segment_id")
+  private Integer segmentId;
 
-  @TableField("reserved_qty")
-  private Integer reservedQty;
+  @TableField("available_qty")
+  private Integer availableQty;
 
-  @TableField("salable_qty")
-  private Integer salableQty;
+  @TableField("locked_qty")
+  private Integer lockedQty;
+
+  @TableField("sold_qty")
+  private Integer soldQty;
 
   @TableField("alert_threshold")
   private Integer alertThreshold;

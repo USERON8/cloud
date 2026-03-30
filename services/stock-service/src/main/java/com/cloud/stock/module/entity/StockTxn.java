@@ -14,6 +14,9 @@ public class StockTxn extends BaseEntity<StockTxn> {
   @TableField("sku_id")
   private Long skuId;
 
+  @TableField("segment_id")
+  private Integer segmentId;
+
   @TableField("sub_order_no")
   private String subOrderNo;
 
@@ -23,23 +26,23 @@ public class StockTxn extends BaseEntity<StockTxn> {
   @TableField("quantity")
   private Integer quantity;
 
-  @TableField("before_on_hand")
-  private Integer beforeOnHand;
+  @TableField("before_available")
+  private Integer beforeAvailable;
 
-  @TableField("after_on_hand")
-  private Integer afterOnHand;
+  @TableField("after_available")
+  private Integer afterAvailable;
 
-  @TableField("before_reserved")
-  private Integer beforeReserved;
+  @TableField("before_locked")
+  private Integer beforeLocked;
 
-  @TableField("after_reserved")
-  private Integer afterReserved;
+  @TableField("after_locked")
+  private Integer afterLocked;
 
-  @TableField("before_salable")
-  private Integer beforeSalable;
+  @TableField("before_sold")
+  private Integer beforeSold;
 
-  @TableField("after_salable")
-  private Integer afterSalable;
+  @TableField("after_sold")
+  private Integer afterSold;
 
   @TableField("remark")
   private String remark;

@@ -2,6 +2,9 @@ package com.cloud.order.messaging;
 
 import com.cloud.common.messaging.event.OrderCreatedEvent;
 import com.cloud.common.messaging.event.OrderTimeoutEvent;
+import com.cloud.common.messaging.event.StockConfirmRequestEvent;
+import com.cloud.common.messaging.event.StockReleaseRequestEvent;
+import com.cloud.common.messaging.event.StockReserveRequestEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.messaging.outbox.AbstractOutboxRelay;
 import com.cloud.common.messaging.outbox.OutboxEvent;
@@ -53,6 +56,9 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
       case "ORDER_CREATED" -> sendOrderCreated(event);
       case "ORDER_CANCELLED" -> sendOrderCancelled(event);
       case "ORDER_TIMEOUT" -> sendOrderTimeout(event);
+      case "STOCK_RESERVE_REQUEST" -> sendStockReserveRequest(event);
+      case "STOCK_CONFIRM_REQUEST" -> sendStockConfirmRequest(event);
+      case "STOCK_RELEASE_REQUEST" -> sendStockReleaseRequest(event);
       case "STOCK_RESTORE" -> sendStockRestore(event);
       default -> {
         log.warn(
@@ -95,5 +101,38 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
     StockRestoreEvent payload = readPayload(event, StockRestoreEvent.class);
     return sendMessage(
         "stockRestoreProducer-out-0", payload, payload.getRefundNo(), "STOCK_RESTORE");
+  }
+
+  private boolean sendStockReserveRequest(OutboxEvent event) throws Exception {
+    StockReserveRequestEvent payload = readPayload(event, StockReserveRequestEvent.class);
+    return sendMessage(
+        "stockReserveRequestProducer-out-0",
+        payload,
+        payload.getOrderNo(),
+        "STOCK_RESERVE_REQUEST",
+        payload.getEventId(),
+        payload.getEventType());
+  }
+
+  private boolean sendStockConfirmRequest(OutboxEvent event) throws Exception {
+    StockConfirmRequestEvent payload = readPayload(event, StockConfirmRequestEvent.class);
+    return sendMessage(
+        "stockConfirmRequestProducer-out-0",
+        payload,
+        payload.getSubOrderNo(),
+        "STOCK_CONFIRM_REQUEST",
+        payload.getEventId(),
+        payload.getEventType());
+  }
+
+  private boolean sendStockReleaseRequest(OutboxEvent event) throws Exception {
+    StockReleaseRequestEvent payload = readPayload(event, StockReleaseRequestEvent.class);
+    return sendMessage(
+        "stockReleaseRequestProducer-out-0",
+        payload,
+        payload.getSubOrderNo(),
+        "STOCK_RELEASE_REQUEST",
+        payload.getEventId(),
+        payload.getEventType());
   }
 }

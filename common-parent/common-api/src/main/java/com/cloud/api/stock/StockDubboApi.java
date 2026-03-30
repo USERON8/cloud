@@ -10,6 +10,8 @@ public interface StockDubboApi {
 
   List<StockLedgerVO> listLedgersBySkuIds(List<Long> skuIds);
 
+  Boolean preCheck(List<StockOperateCommandDTO> commands);
+
   Boolean reserve(StockOperateCommandDTO command);
 
   Boolean confirm(StockOperateCommandDTO command);

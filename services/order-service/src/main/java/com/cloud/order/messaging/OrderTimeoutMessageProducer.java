@@ -14,6 +14,7 @@ public class OrderTimeoutMessageProducer {
 
   private final OutboxEventService outboxEventService;
   private final ObjectMapper objectMapper;
+  private final OrderOutboxDispatcher orderOutboxDispatcher;
 
   public void sendAfterCommit(OrderTimeoutEvent event) {
     if (event == null) {
@@ -36,6 +37,7 @@ public class OrderTimeoutMessageProducer {
       String payload = objectMapper.writeValueAsString(event);
       outboxEventService.enqueue(
           "ORDER", event.getSubOrderNo(), event.getEventType(), payload, event.getEventId());
+      orderOutboxDispatcher.dispatchAfterCommit();
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException(
           "Failed to serialize order timeout event for subOrderNo=" + event.getSubOrderNo(), ex);
