@@ -25,11 +25,10 @@ Search service responsible for product and shop discovery, recommendations, and 
   - hot keyword list
   - today hot-selling product id list
 - Redis single-level cache inside `ElasticsearchOptimizedService`:
+  - smart search results
+  - search suggestions
   - hot keywords
   - keyword recommendations
-- Remaining multi-level cache paths:
-  - smart search results still keep local Caffeine L1 + Redis L2
-  - search suggestions still keep local Caffeine L1 + Redis L2
 
 ## Data Sources And Background Jobs
 
@@ -44,15 +43,17 @@ Search service responsible for product and shop discovery, recommendations, and 
   - hot keyword list
   - today hot-selling product id list
 - Removed stale dev-only `cache.multi-level` config from `application-dev.yml`
-- Removed stale hot-keyword and recommendation `l1-*` config from `application.yml`
+- Removed stale smart-search, suggestion, hot-keyword, and recommendation L1 config from `application.yml`
 - Removed local L1 caches for hot keywords and keyword recommendations in `ElasticsearchOptimizedService`
+- Removed remaining local L1 caches for smart search results and search suggestions in `ElasticsearchOptimizedService`
+- Removed the now-unused Caffeine dependency and refresh-executor config
 - Updated this README to match the actual implementation
 
 ## Known Findings In This Sync
 
-- `search-service` is still not fully unified under one cache model because smart search and search suggestions continue to use Caffeine L1 plus Redis L2.
-- The module still keeps Caffeine dependency and cache metrics because those two remaining paths depend on it.
-- The cache strategy is now much clearer for hot data, but search result caching remains more complex than the target single-level Redis approach.
+- `search-service` hot-data and keyword/search cache paths are now aligned to explicit Redis single-level cache.
+- Cache invalidation for hot keywords is still interval-driven, so correctness still depends on TTL plus invalidation timing rather than strong consistency.
+- If the team later wants stronger freshness for search-result cache, the next step should be explicit invalidation events tied to product index updates.
 
 ## Local Run
 

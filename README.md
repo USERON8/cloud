@@ -52,15 +52,14 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - `search-service`
   - Hot keyword list is cached through Redis single-level hot-data cache.
   - Today hot-selling product id list is cached through Redis single-level hot-data cache.
-  - Hot keyword and keyword recommendation paths inside `ElasticsearchOptimizedService` no longer keep local L1 caches.
-  - Smart search result cache and suggestion cache still keep local Caffeine L1 plus Redis L2.
+  - Smart search, suggestions, hot keywords, and keyword recommendations inside `ElasticsearchOptimizedService` now use Redis single-level cache only.
 - Other services
   - No cache-strategy refactor was performed in this sync round.
 
 ## Known Findings From This Sync Round
 
 - `user-service` still mixes explicit Redis cache services with Spring Cache annotations, so the module is not yet on one coherent cache model.
-- `search-service` no longer uses the old dev-only multi-level cache configuration for hot data, but smart search and suggestions still keep Caffeine-based local caches and related configuration.
+- `search-service` no longer keeps Caffeine-based local caches for hot data, smart search, or suggestions, but freshness still depends on TTL plus invalidation timing rather than strict event-driven invalidation.
 - Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
 - Existing historical audit references remain useful:
   - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)

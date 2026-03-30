@@ -24,15 +24,10 @@ import com.cloud.search.service.support.HotKeywordKeys;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
-import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,17 +37,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -71,9 +62,6 @@ public class ElasticsearchOptimizedService {
   private static final String EMPTY_LIST_CACHE_MARKER = "__EMPTY__";
   private static final String METRIC_SEARCH_LATENCY = "search.request.latency";
   private static final String METRIC_ES_ERROR = "search.es.error.count";
-  private static final String CACHE_REBUILD_LOCK_PREFIX = "search:cache:rebuild:lock:";
-  private static final String CACHE_NAME_SMART = "search.smart";
-  private static final String CACHE_NAME_SUGGESTIONS = "search.suggestions";
 
   @Value("${search.optimized.cache.smart-search.l2-ttl-seconds:120}")
   private long smartSearchL2TtlSeconds;
@@ -86,23 +74,6 @@ public class ElasticsearchOptimizedService {
 
   @Value("${search.optimized.cache.recommendations.l2-ttl-seconds:60}")
   private long recommendationL2TtlSeconds;
-
-  @Value(
-      "${search.optimized.cache.smart-search.l1-expire-after-write-ms:${search.optimized.cache.smart-search.l1-ttl-millis:30000}}")
-  private long smartSearchL1ExpireAfterWriteMs;
-
-  @Value(
-      "${search.optimized.cache.suggestions.l1-expire-after-write-ms:${search.optimized.cache.suggestions.l1-ttl-millis:20000}}")
-  private long suggestionL1ExpireAfterWriteMs;
-
-  @Value("${search.optimized.cache.smart-search.l1-refresh-after-write-ms:10000}")
-  private long smartSearchL1RefreshAfterWriteMs;
-
-  @Value("${search.optimized.cache.suggestions.l1-refresh-after-write-ms:8000}")
-  private long suggestionL1RefreshAfterWriteMs;
-
-  @Value("${search.optimized.cache.record-stats:true}")
-  private boolean l1RecordStats;
 
   @Value("${search.optimized.limit.default-search-size:20}")
   private int defaultSearchSize;
@@ -119,9 +90,6 @@ public class ElasticsearchOptimizedService {
   @Value("${search.optimized.elasticsearch.request-timeout-ms:700}")
   private int esRequestTimeoutMs;
 
-  @Value("${search.optimized.cache.l1-max-entries:5000}")
-  private int l1MaxEntries;
-
   @Value("${search.optimized.hot-keyword.expire-refresh-seconds:60}")
   private long hotKeywordExpireRefreshSeconds;
 
@@ -131,23 +99,10 @@ public class ElasticsearchOptimizedService {
   @Value("${search.hot-keyword.daily-ttl-days:7}")
   private long hotKeywordDailyTtlDays;
 
-  @Value("${search.optimized.cache.lock.wait-ms:120}")
-  private long cacheLockWaitMs;
-
-  @Value("${search.optimized.cache.lock.lease-ms:3000}")
-  private long cacheLockLeaseMs;
-
-  @Value("${search.optimized.cache.lock.retry-times:2}")
-  private int cacheLockRetryTimes;
-
   private final ElasticsearchClient elasticsearchClient;
   private final StringRedisTemplate redisTemplate;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final Executor cacheRefreshExecutor;
-
-  private LoadingCache<SmartSearchCacheKey, SearchResultDTO> l1SmartSearchCache;
-  private LoadingCache<KeywordLimitCacheKey, List<String>> l1SuggestionsCache;
   private final Map<String, Timer> searchLatencyTimers = new ConcurrentHashMap<>();
   private final Map<String, Counter> esErrorCounters = new ConcurrentHashMap<>();
   private final AtomicLong hotKeywordExpireRefreshedAt = new AtomicLong(0L);
@@ -158,63 +113,11 @@ public class ElasticsearchOptimizedService {
       ElasticsearchClient elasticsearchClient,
       StringRedisTemplate redisTemplate,
       ObjectMapper objectMapper,
-      MeterRegistry meterRegistry,
-      @Qualifier("searchCacheRefreshExecutor") Executor cacheRefreshExecutor) {
+      MeterRegistry meterRegistry) {
     this.elasticsearchClient = elasticsearchClient;
     this.redisTemplate = redisTemplate;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
-    this.cacheRefreshExecutor = cacheRefreshExecutor;
-  }
-
-  @PostConstruct
-  public void initL1Caches() {
-    long maxEntries = Math.max(100, l1MaxEntries);
-    l1SmartSearchCache =
-        buildLoadingCache(
-            CACHE_NAME_SMART,
-            maxEntries,
-            smartSearchL1ExpireAfterWriteMs,
-            smartSearchL1RefreshAfterWriteMs,
-            this::loadSmartSearchForCache);
-    l1SuggestionsCache =
-        buildLoadingCache(
-            CACHE_NAME_SUGGESTIONS,
-            maxEntries,
-            suggestionL1ExpireAfterWriteMs,
-            suggestionL1RefreshAfterWriteMs,
-            this::loadSuggestionsForCache);
-  }
-
-  private <K, V> LoadingCache<K, V> buildLoadingCache(
-      String cacheName,
-      long maximumSize,
-      long expireAfterWriteMs,
-      long refreshAfterWriteMs,
-      Function<K, V> loader) {
-    long safeExpire = Math.max(1_000L, expireAfterWriteMs);
-    long safeRefresh = Math.max(500L, Math.min(refreshAfterWriteMs, safeExpire - 1));
-
-    @SuppressWarnings("unchecked")
-    Caffeine<K, V> builder =
-        (Caffeine<K, V>)
-            Caffeine.newBuilder()
-                .maximumSize(Math.max(100L, maximumSize))
-                .expireAfterWrite(Duration.ofMillis(safeExpire))
-                .refreshAfterWrite(Duration.ofMillis(safeRefresh))
-                .executor(cacheRefreshExecutor);
-
-    if (l1RecordStats) {
-      builder.recordStats();
-    }
-
-    LoadingCache<K, V> cache =
-        builder
-            .buildAsync(
-                (key, executor) -> CompletableFuture.supplyAsync(() -> loader.apply(key), executor))
-            .synchronous();
-    CaffeineCacheMetrics.monitor(meterRegistry, cache, cacheName);
-    return cache;
   }
 
   @Transactional(readOnly = true)
@@ -244,16 +147,9 @@ public class ElasticsearchOptimizedService {
         new SmartSearchCacheKey(
             safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize);
 
-    SearchResultDTO l1Cached = l1SmartSearchCache.getIfPresent(cacheKey);
-    if (l1Cached != null) {
-      recordTimer(sample, "smart-search", "l1-hit");
-      return l1SmartSearchCache.get(cacheKey);
-    }
-
     String redisKey = buildSmartSearchCacheKey(cacheKey);
     SearchResultDTO l2Cached = getSmartSearchFromRedis(redisKey);
     if (l2Cached != null) {
-      l1SmartSearchCache.put(cacheKey, l2Cached);
       recordTimer(sample, "smart-search", "l2-hit");
       return l2Cached;
     }
@@ -261,7 +157,6 @@ public class ElasticsearchOptimizedService {
     try {
       SearchResultDTO result = querySmartSearchFromElasticsearch(cacheKey);
       putSmartSearchToRedis(redisKey, result);
-      l1SmartSearchCache.put(cacheKey, result);
       recordHotSearch(safeKeyword);
       recordTimer(sample, "smart-search", "es-hit");
       return result;
@@ -431,16 +326,9 @@ public class ElasticsearchOptimizedService {
     int safeLimit = normalizeKeywordLimit(limit);
     KeywordLimitCacheKey cacheKey = new KeywordLimitCacheKey(safeKeyword.toLowerCase(), safeLimit);
 
-    List<String> l1Cached = l1SuggestionsCache.getIfPresent(cacheKey);
-    if (l1Cached != null) {
-      recordTimer(sample, "suggestions", "l1-hit");
-      return l1SuggestionsCache.get(cacheKey);
-    }
-
     String redisKey = buildSuggestionCacheKey(cacheKey);
     StringListCacheResult l2Cached = getStringListFromRedis(redisKey);
     if (l2Cached.hit()) {
-      l1SuggestionsCache.put(cacheKey, l2Cached.value());
       recordTimer(sample, "suggestions", "l2-hit");
       return l2Cached.value();
     }
@@ -448,7 +336,6 @@ public class ElasticsearchOptimizedService {
     try {
       List<String> result = querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
       putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
-      l1SuggestionsCache.put(cacheKey, result);
       recordTimer(sample, "suggestions", "es-hit");
       return result;
 
@@ -507,39 +394,6 @@ public class ElasticsearchOptimizedService {
     putStringListToRedis(redisKey, result, recommendationL2TtlSeconds);
     recordTimer(sample, "recommendations", "computed");
     return result;
-  }
-
-  private SearchResultDTO loadSmartSearchForCache(SmartSearchCacheKey cacheKey) {
-    String redisKey = buildSmartSearchCacheKey(cacheKey);
-    return withCacheRebuildMutex(
-        buildRebuildLockKey(redisKey),
-        () -> getSmartSearchFromRedis(redisKey),
-        () -> {
-          SearchResultDTO l2 = getSmartSearchFromRedis(redisKey);
-          if (l2 != null) {
-            return l2;
-          }
-          SearchResultDTO result = querySmartSearchFromElasticsearch(cacheKey);
-          putSmartSearchToRedis(redisKey, result);
-          return result;
-        });
-  }
-
-  private List<String> loadSuggestionsForCache(KeywordLimitCacheKey cacheKey) {
-    String redisKey = buildSuggestionCacheKey(cacheKey);
-    return withCacheRebuildMutex(
-        buildRebuildLockKey(redisKey),
-        () -> readStringListCacheIfHit(redisKey),
-        () -> {
-          List<String> l2 = readStringListCacheIfHit(redisKey);
-          if (l2 != null) {
-            return l2;
-          }
-          List<String> result =
-              querySuggestionsFromElasticsearch(cacheKey.keyword(), cacheKey.limit());
-          putStringListToRedis(redisKey, result, suggestionL2TtlSeconds);
-          return result;
-        });
   }
 
   private SearchResultDTO querySmartSearchFromElasticsearch(SmartSearchCacheKey key) {
@@ -1252,64 +1106,6 @@ public class ElasticsearchOptimizedService {
       redisTemplate.opsForValue().set(key, json, addJitterTtlSeconds(ttlSeconds), TimeUnit.SECONDS);
     } catch (Exception e) {
       log.warn("Write string list cache failed, key={}", key, e);
-    }
-  }
-
-  private List<String> readStringListCacheIfHit(String redisKey) {
-    StringListCacheResult result = getStringListFromRedis(redisKey);
-    return result.hit() ? result.value() : null;
-  }
-
-  private String buildRebuildLockKey(String redisKey) {
-    return CACHE_REBUILD_LOCK_PREFIX + redisKey;
-  }
-
-  private <T> T withCacheRebuildMutex(
-      String lockKey,
-      java.util.function.Supplier<T> readFromCache,
-      java.util.function.Supplier<T> rebuild) {
-    String token = java.util.UUID.randomUUID().toString();
-    Boolean acquired =
-        redisTemplate
-            .opsForValue()
-            .setIfAbsent(lockKey, token, Math.max(500L, cacheLockLeaseMs), TimeUnit.MILLISECONDS);
-
-    if (Boolean.TRUE.equals(acquired)) {
-      try {
-        return rebuild.get();
-      } finally {
-        safeUnlock(lockKey, token);
-      }
-    }
-
-    int retries = Math.max(1, cacheLockRetryTimes);
-    long waitSlice = Math.max(20L, cacheLockWaitMs / retries);
-    for (int i = 0; i < retries; i++) {
-      sleepQuietly(waitSlice);
-      T cached = readFromCache.get();
-      if (cached != null) {
-        return cached;
-      }
-    }
-    return rebuild.get();
-  }
-
-  private void safeUnlock(String lockKey, String token) {
-    try {
-      String current = redisTemplate.opsForValue().get(lockKey);
-      if (token.equals(current)) {
-        redisTemplate.delete(lockKey);
-      }
-    } catch (Exception e) {
-      log.warn("Unlock cache rebuild key failed, key={}", lockKey, e);
-    }
-  }
-
-  private void sleepQuietly(long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
     }
   }
 

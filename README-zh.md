@@ -50,15 +50,14 @@ Version: 1.1.0
 - `search-service`
   - 搜索热词列表已经接入 Redis 单级热点缓存。
   - 今日热销商品 ID 列表已经接入 Redis 单级热点缓存。
-  - `ElasticsearchOptimizedService` 内部的热词和推荐词本地 L1 缓存已经去掉。
-  - 智能搜索结果缓存和搜索建议缓存仍保留 Caffeine L1 + Redis L2。
+  - `ElasticsearchOptimizedService` 内部的智能搜索、搜索建议、热词和推荐词都已经统一为 Redis 单级缓存。
 - 其它服务
   - 本轮未对缓存策略做重构。
 
 ## 本轮已确认的问题
 
 - `user-service` 当前同时存在显式 Redis 缓存服务和 Spring Cache 注解，缓存模型并不统一，后续仍需要继续收口。
-- `search-service` 已经清掉热词相关的旧多级缓存残留，但智能搜索和建议词路径仍保留本地 L1 配置与实现。
+- `search-service` 已经去掉热词、智能搜索和建议词的本地 L1 残留，但缓存新鲜度仍主要依赖 TTL 和失效时机，而不是严格的事件驱动失效。
 - 之前各服务 README 过于简略，无法真实反映运行方式。本轮已补齐，但如果要形成完整运维手册，仍需再做更细的接口与任务审计。
 - 历史审计文档仍建议保留参考：
   - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)

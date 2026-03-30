@@ -15,7 +15,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,11 +42,10 @@ class ElasticsearchOptimizedServiceTest {
 
   @BeforeEach
   void setUp() {
-    Executor directExecutor = Runnable::run;
     meterRegistry = new SimpleMeterRegistry();
     service =
         new ElasticsearchOptimizedService(
-            elasticsearchClient, redisTemplate, new ObjectMapper(), meterRegistry, directExecutor);
+            elasticsearchClient, redisTemplate, new ObjectMapper(), meterRegistry);
     ReflectionTestUtils.setField(service, "defaultSearchSize", 20);
     ReflectionTestUtils.setField(service, "defaultKeywordSize", 10);
     ReflectionTestUtils.setField(service, "maxSearchSize", 100);
@@ -55,13 +53,6 @@ class ElasticsearchOptimizedServiceTest {
     ReflectionTestUtils.setField(service, "suggestionL2TtlSeconds", 120L);
     ReflectionTestUtils.setField(service, "hotKeywordsL2TtlSeconds", 30L);
     ReflectionTestUtils.setField(service, "recommendationL2TtlSeconds", 60L);
-    ReflectionTestUtils.setField(service, "smartSearchL1ExpireAfterWriteMs", 30000L);
-    ReflectionTestUtils.setField(service, "suggestionL1ExpireAfterWriteMs", 20000L);
-    ReflectionTestUtils.setField(service, "smartSearchL1RefreshAfterWriteMs", 10000L);
-    ReflectionTestUtils.setField(service, "suggestionL1RefreshAfterWriteMs", 8000L);
-    ReflectionTestUtils.setField(service, "l1MaxEntries", 100);
-    ReflectionTestUtils.setField(service, "l1RecordStats", true);
-    ReflectionTestUtils.invokeMethod(service, "initL1Caches");
   }
 
   @Test
@@ -118,20 +109,5 @@ class ElasticsearchOptimizedServiceTest {
     assertThat(recommendations).containsExactly("iphone", "ipad");
     verifyNoInteractions(elasticsearchClient);
     verifyNoInteractions(zSetOperations);
-  }
-
-  @Test
-  void shouldExposeCaffeineCacheMetricsForPrometheus() {
-    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get("search:suggest:phone:5")).thenReturn("[\"phone\"]");
-
-    service.getSearchSuggestions("phone", 5);
-
-    assertThat(meterRegistry.find("cache.gets").tag("cache", "search.suggestions").meter())
-        .isNotNull();
-    assertThat(meterRegistry.find("cache.evictions").tag("cache", "search.suggestions").meter())
-        .isNotNull();
-    assertThat(meterRegistry.find("cache.load.duration").tag("cache", "search.suggestions").meter())
-        .isNotNull();
   }
 }
