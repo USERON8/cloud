@@ -3,11 +3,12 @@ package com.cloud.user.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.user.mapper.UserMapper;
+import com.cloud.user.module.entity.User;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import java.awt.image.BufferedImage;
@@ -21,8 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,11 +36,7 @@ class MinioServiceImplTest {
 
   @Mock private MinioClient minioClient;
 
-  @Mock private CacheManager cacheManager;
-
-  @Mock private Cache userCache;
-
-  @Mock private Cache userListCache;
+  @Mock private TransactionalUserCacheService userCacheService;
 
   @InjectMocks private MinioServiceImpl minioService;
 
@@ -49,8 +44,6 @@ class MinioServiceImplTest {
   void setUp() {
     ReflectionTestUtils.setField(minioService, "bucketName", "avatars");
     ReflectionTestUtils.setField(minioService, "publicEndpoint", "http://cdn.test");
-    lenient().when(cacheManager.getCache("user")).thenReturn(userCache);
-    lenient().when(cacheManager.getCache("userList")).thenReturn(userListCache);
 
     Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").claim("user_id", "5").build();
     JwtAuthenticationToken auth =
@@ -70,7 +63,11 @@ class MinioServiceImplTest {
     ImageIO.write(image, "png", outputStream);
     MockMultipartFile file =
         new MockMultipartFile("file", "avatar.png", "image/png", outputStream.toByteArray());
+    User existingUser = new User();
+    existingUser.setId(5L);
+    existingUser.setUsername("alice");
 
+    when(userMapper.selectById(5L)).thenReturn(existingUser);
     when(userMapper.updateById(
             org.mockito.ArgumentMatchers.<com.cloud.user.module.entity.User>any()))
         .thenReturn(1);
@@ -79,8 +76,7 @@ class MinioServiceImplTest {
 
     assertThat(url).startsWith("http://cdn.test/avatars/avatar/5/");
     verify(minioClient).putObject(any(PutObjectArgs.class));
-    verify(userCache).evict(5L);
-    verify(userListCache).clear();
+    verify(userCacheService).putTransactional(existingUser);
   }
 
   @Test

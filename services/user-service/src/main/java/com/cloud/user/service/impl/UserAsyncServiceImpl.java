@@ -10,6 +10,7 @@ import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserAsyncService;
 import com.cloud.user.service.UserService;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,8 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
@@ -43,7 +42,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
   private final UserService userService;
   private final UserMapper userMapper;
   private final UserConverter userConverter;
-  private final CacheManager cacheManager;
+  private final TransactionalUserCacheService userCacheService;
   private final RedisTemplate<String, Object> redisTemplate;
 
   @Override
@@ -277,15 +276,13 @@ public class UserAsyncServiceImpl implements UserAsyncService {
 
   private void refreshUserCacheDirect(Long userId) {
     try {
-      Cache userCache = cacheManager.getCache("user");
-      Cache userInfoCache = cacheManager.getCache("userInfo");
-      if (userCache != null) {
-        userCache.evict(userId);
+      User latest = userMapper.selectById(userId);
+      if (latest == null) {
+        userCacheService.evictTransactional(userId, null);
+        return;
       }
-      if (userInfoCache != null) {
-        userInfoCache.evict(userId);
-      }
-      userService.getUserById(userId);
+      userCacheService.evictTransactional(userId, latest.getUsername());
+      userCacheService.putTransactional(latest);
     } catch (Exception e) {
       log.error("Failed to refresh user cache asynchronously, userId={}", userId, e);
     }

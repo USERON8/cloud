@@ -2,6 +2,7 @@ package com.cloud.user.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,7 +11,9 @@ import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
+import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserService;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,7 +34,7 @@ class UserAsyncServiceImplTest {
 
   @Mock private UserConverter userConverter;
 
-  @Mock private CacheManager cacheManager;
+  @Mock private TransactionalUserCacheService userCacheService;
 
   @Mock private RedisTemplate<String, Object> redisTemplate;
 
@@ -42,7 +44,7 @@ class UserAsyncServiceImplTest {
   void setUp() {
     userAsyncService =
         new UserAsyncServiceImpl(
-            userService, userMapper, userConverter, cacheManager, redisTemplate);
+            userService, userMapper, userConverter, userCacheService, redisTemplate);
   }
 
   @Test
@@ -82,5 +84,19 @@ class UserAsyncServiceImplTest {
 
     assertThat(result).containsEntry("ok", true).containsEntry("bad", false);
     assertThat(result).doesNotContainKey(" ");
+  }
+
+  @Test
+  void refreshUserCacheAsync_refreshesExplicitRedisCache() {
+    User latest = new User();
+    latest.setId(9L);
+    latest.setUsername("alice");
+    when(userMapper.selectById(9L)).thenReturn(latest);
+
+    userAsyncService.refreshUserCacheAsync(9L).join();
+
+    verify(userCacheService).evictTransactional(9L, "alice");
+    verify(userCacheService).putTransactional(latest);
+    verify(userService, never()).getUserById(9L);
   }
 }

@@ -4,6 +4,7 @@ import com.cloud.common.utils.UserContextUtils;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MinioService;
+import com.cloud.user.service.cache.TransactionalUserCacheService;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -17,8 +18,6 @@ import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,7 +38,7 @@ public class MinioServiceImpl implements MinioService {
 
   private final UserMapper userMapper;
   private final MinioClient minioClient;
-  private final CacheManager cacheManager;
+  private final TransactionalUserCacheService userCacheService;
 
   @Value("${minio.bucket-name:cloud-shop-avatars}")
   private String bucketName;
@@ -60,6 +59,7 @@ public class MinioServiceImpl implements MinioService {
 
     try {
       Long userId = getCurrentUserId();
+      User existingUser = userMapper.selectById(userId);
 
       String originalFilename = file.getOriginalFilename();
       String extension = "";
@@ -81,7 +81,7 @@ public class MinioServiceImpl implements MinioService {
       user.setId(userId);
       user.setAvatarUrl(avatarUrl);
       userMapper.updateById(user);
-      evictUserCaches(userId);
+      refreshUserCache(existingUser, avatarUrl);
       return avatarUrl;
     } catch (Exception e) {
       log.error("Failed to upload avatar", e);
@@ -216,17 +216,11 @@ public class MinioServiceImpl implements MinioService {
     }
   }
 
-  private void evictUserCaches(Long userId) {
-    if (userId == null) {
+  private void refreshUserCache(User existingUser, String avatarUrl) {
+    if (existingUser == null || existingUser.getId() == null) {
       return;
     }
-    Cache userCache = cacheManager.getCache("user");
-    if (userCache != null) {
-      userCache.evict(userId);
-    }
-    Cache userListCache = cacheManager.getCache("userList");
-    if (userListCache != null) {
-      userListCache.clear();
-    }
+    existingUser.setAvatarUrl(avatarUrl);
+    userCacheService.putTransactional(existingUser);
   }
 }
