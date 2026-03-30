@@ -4,6 +4,7 @@ import com.cloud.common.config.RocketMQConfig;
 import com.cloud.common.config.properties.MessageProperties;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.deadletter.DeadLetterOpsService;
+import com.cloud.common.messaging.outbox.OutboxEventMapper;
 import com.cloud.common.messaging.outbox.OutboxProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -43,5 +44,33 @@ public class MessagingSupportAutoConfiguration {
       MessageProperties messageProperties,
       MeterRegistry meterRegistry) {
     return new DeadLetterMonitor(deadLetterOpsService, messageProperties, meterRegistry);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      name = "app.message.monitor.admin-endpoint-enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public RocketMqConsumerTopology rocketMqConsumerTopology(
+      ListableBeanFactory beanFactory, MessageProperties messageProperties) {
+    return new RocketMqConsumerTopology(beanFactory, messageProperties);
+  }
+
+  @Bean
+  @ConditionalOnBean({RocketMqConsumerTopology.class, DeadLetterOpsService.class})
+  @ConditionalOnProperty(
+      name = "app.message.monitor.admin-endpoint-enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public RocketMqGovernanceController rocketMqGovernanceController(
+      RocketMqConsumerTopology consumerTopology, DeadLetterOpsService deadLetterOpsService) {
+    return new RocketMqGovernanceController(consumerTopology, deadLetterOpsService);
+  }
+
+  @Bean
+  @ConditionalOnBean({OutboxEventMapper.class, MeterRegistry.class})
+  public OutboxMetricsMonitor outboxMetricsMonitor(
+      OutboxEventMapper outboxEventMapper, MeterRegistry meterRegistry) {
+    return new OutboxMetricsMonitor(outboxEventMapper, meterRegistry);
   }
 }

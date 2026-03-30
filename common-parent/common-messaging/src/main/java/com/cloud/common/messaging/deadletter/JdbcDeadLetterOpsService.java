@@ -18,6 +18,9 @@ public class JdbcDeadLetterOpsService implements DeadLetterOpsService {
       "SELECT id, topic, msg_id, payload, fail_reason, error_msg, status, service, created_at, handled_at "
           + "FROM dead_letter WHERE status = 0 ORDER BY created_at DESC LIMIT ?";
 
+  private static final String COUNT_PENDING_BY_TOPIC_SQL =
+      "SELECT COUNT(1) FROM dead_letter WHERE status = 0 AND topic = ?";
+
   private static final String MARK_HANDLED_SQL =
       "UPDATE dead_letter SET status = 1, handled_at = NOW() WHERE topic = ? AND msg_id = ? AND status = 0";
 
@@ -46,6 +49,17 @@ public class JdbcDeadLetterOpsService implements DeadLetterOpsService {
     } catch (Exception ex) {
       log.warn("List pending dead letters failed: limit={}", safeLimit, ex);
       return List.of();
+    }
+  }
+
+  @Override
+  public long countPendingByTopic(String topic) {
+    try {
+      Long count = jdbcTemplate.queryForObject(COUNT_PENDING_BY_TOPIC_SQL, Long.class, safe(topic));
+      return count == null ? 0L : count;
+    } catch (Exception ex) {
+      log.warn("Count pending dead letters by topic failed: topic={}", topic, ex);
+      return 0L;
     }
   }
 

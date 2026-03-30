@@ -3,18 +3,13 @@ package com.cloud.common.messaging.config;
 import com.cloud.common.config.properties.MessageProperties;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.admin.ConsumeStats;
 import org.apache.rocketmq.remoting.protocol.admin.OffsetWrapper;
-import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -29,8 +24,9 @@ public class RocketMqLagMonitor implements InitializingBean, DisposableBean {
   private final ListableBeanFactory beanFactory;
   private final MeterRegistry meterRegistry;
   private final MessageProperties messageProperties;
+  private final RocketMqConsumerTopology consumerTopology;
   private final Map<String, AtomicLong> lagGaugeValues = new ConcurrentHashMap<>();
-  private final Set<MonitorTarget> targets = new LinkedHashSet<>();
+  private final Map<String, MonitorTarget> targets = new ConcurrentHashMap<>();
 
   @Value("${rocketmq.name-server:${spring.cloud.stream.rocketmq.binder.name-server:}}")
   private String nameServer;
@@ -44,6 +40,7 @@ public class RocketMqLagMonitor implements InitializingBean, DisposableBean {
     this.beanFactory = beanFactory;
     this.meterRegistry = meterRegistry;
     this.messageProperties = messageProperties;
+    this.consumerTopology = new RocketMqConsumerTopology(beanFactory, messageProperties);
   }
 
   @Override
@@ -68,10 +65,10 @@ public class RocketMqLagMonitor implements InitializingBean, DisposableBean {
     if (adminExt == null || targets.isEmpty()) {
       return;
     }
-    long threshold = Math.max(0L, messageProperties.getMonitor().getLagAlertThreshold());
-    for (MonitorTarget target : targets) {
+    for (MonitorTarget target : targets.values()) {
       long lag = queryLag(target);
       gaugeValue(target).set(lag);
+      long threshold = Math.max(0L, target.lagAlertThreshold());
       if (lag >= threshold && threshold > 0) {
         log.warn(
             "RocketMQ backlog exceeded threshold: topic={}, consumerGroup={}, lag={}, threshold={}",
@@ -91,24 +88,15 @@ public class RocketMqLagMonitor implements InitializingBean, DisposableBean {
   }
 
   private void discoverTargets() {
-    String[] beanNames = beanFactory.getBeanNamesForAnnotation(RocketMQMessageListener.class);
-    List<MonitorTarget> discovered = new ArrayList<>();
-    for (String beanName : beanNames) {
-      Class<?> beanType = beanFactory.getType(beanName);
-      if (beanType == null) {
-        continue;
-      }
-      RocketMQMessageListener listener = beanType.getAnnotation(RocketMQMessageListener.class);
-      if (listener == null) {
-        continue;
-      }
-      if (!StringUtils.hasText(listener.topic())
-          || !StringUtils.hasText(listener.consumerGroup())) {
-        continue;
-      }
-      discovered.add(new MonitorTarget(listener.topic(), listener.consumerGroup()));
+    for (RocketMqConsumerTopology.ConsumerTarget consumerTarget :
+        consumerTopology.discoverConsumers()) {
+      MonitorTarget target =
+          new MonitorTarget(
+              consumerTarget.getTopic(),
+              consumerTarget.getConsumerGroup(),
+              consumerTarget.getLagAlertThreshold());
+      targets.put(target.consumerGroup() + "@" + target.topic(), target);
     }
-    targets.addAll(discovered);
   }
 
   private long queryLag(MonitorTarget target) {
@@ -152,5 +140,5 @@ public class RocketMqLagMonitor implements InitializingBean, DisposableBean {
         });
   }
 
-  private record MonitorTarget(String topic, String consumerGroup) {}
+  private record MonitorTarget(String topic, String consumerGroup, long lagAlertThreshold) {}
 }

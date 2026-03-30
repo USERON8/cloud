@@ -1,5 +1,7 @@
 package com.cloud.common.config.properties;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -63,5 +65,19 @@ public class MessageProperties {
     private int deadLetterQueryLimit = 100;
 
     private boolean adminEndpointEnabled = true;
+
+    private List<TargetConfig> targets = new ArrayList<>();
+  }
+
+  @Data
+  public static class TargetConfig {
+
+    private String topic;
+
+    private String consumerGroup;
+
+    private long lagAlertThreshold = -1L;
+
+    private int maxReconsumeTimes = -1;
   }
 }
