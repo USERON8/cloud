@@ -33,16 +33,6 @@ spring:
             refresh: true
         import-check:
           enabled: false
-  cache:
-    type: caffeine
-    caffeine:
-      spec: initialCapacity=${PRODUCT_CACHE_INITIAL_CAPACITY:150},maximumSize=${PRODUCT_CACHE_MAX_SIZE:1500},expireAfterWrite=${PRODUCT_CACHE_EXPIRE_AFTER_WRITE:45m},expireAfterAccess=${PRODUCT_CACHE_EXPIRE_AFTER_ACCESS:20m}${PRODUCT_CACHE_RECORD_STATS_SUFFIX:,recordStats}
-    cache-names:
-      - categoryCache
-      - categoryTreeCache
-      - shopCache
-      - shopListCache
-
 logging:
   file:
     name: ${logging.file.path}/product-service.log
@@ -50,7 +40,6 @@ logging:
     root: INFO
     com.cloud.product: DEBUG
     com.baomidou.mybatisplus: DEBUG
-    org.springframework.cache: DEBUG
     org.springframework.data.redis: DEBUG
 
 mybatis-plus:
@@ -81,6 +70,10 @@ app:
 
 product:
   cache:
+    category:
+      ttl-seconds: ${PRODUCT_CACHE_CATEGORY_TTL_SECONDS:1800}
+    shop:
+      ttl-seconds: ${PRODUCT_CACHE_SHOP_TTL_SECONDS:1800}
     guard:
       detail-ttl-seconds: ${PRODUCT_CACHE_DETAIL_TTL_SECONDS:1800}
       detail-jitter-seconds: ${PRODUCT_CACHE_DETAIL_JITTER_SECONDS:300}

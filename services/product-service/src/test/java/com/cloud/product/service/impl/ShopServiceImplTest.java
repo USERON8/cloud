@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -16,6 +17,7 @@ import com.cloud.product.converter.ShopConverter;
 import com.cloud.product.module.dto.ShopPageDTO;
 import com.cloud.product.module.entity.Shop;
 import com.cloud.product.module.vo.ShopVO;
+import com.cloud.product.service.cache.ShopRedisCacheService;
 import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +30,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ShopServiceImplTest {
 
   @Mock private ShopConverter shopConverter;
+  @Mock private ShopRedisCacheService shopRedisCacheService;
 
   private ShopServiceImpl service;
 
   @BeforeEach
   void setUp() {
-    service = spy(new ShopServiceImpl(shopConverter));
+    service = spy(new ShopServiceImpl(shopConverter, shopRedisCacheService));
     TableInfoHelper.initTableInfo(
         new MapperBuilderAssistant(new MybatisConfiguration(), "shop-service-test"), Shop.class);
   }
@@ -51,6 +54,7 @@ class ShopServiceImplTest {
 
   @Test
   void getShopsByMerchantIdShouldMapResult() {
+    when(shopRedisCacheService.getMerchantList(99L, 1)).thenReturn(null);
     Shop shop = new Shop();
     shop.setId(11L);
     doReturn(List.of(shop))
@@ -67,6 +71,7 @@ class ShopServiceImplTest {
 
   @Test
   void getShopsPageShouldHonorMerchantAddressAndUpdateSortFields() {
+    when(shopRedisCacheService.getPage(any())).thenReturn(null);
     Shop shop = new Shop();
     shop.setId(21L);
 

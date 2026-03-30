@@ -7,32 +7,40 @@ import com.cloud.common.domain.dto.product.CategoryDTO;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.service.CategoryService;
+import com.cloud.product.service.cache.CategoryRedisCacheService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     implements CategoryService {
 
+  private final CategoryRedisCacheService categoryRedisCacheService;
+
   @Override
   @Transactional(readOnly = true)
-  @Cacheable(cacheNames = "categoryTreeCache", key = "'tree'")
   public List<Category> getCategoryTree() {
-
-    return this.list(
-        new LambdaQueryWrapper<Category>()
-            .eq(Category::getLevel, 1)
-            .eq(Category::getStatus, 1)
-            .orderByAsc(Category::getSortOrder));
+    List<Category> cached = categoryRedisCacheService.getEntityTree();
+    if (cached != null) {
+      return cached;
+    }
+    List<Category> categories =
+        this.list(
+            new LambdaQueryWrapper<Category>()
+                .eq(Category::getLevel, 1)
+                .eq(Category::getStatus, 1)
+                .orderByAsc(Category::getSortOrder));
+    categoryRedisCacheService.putEntityTree(categories);
+    return categories;
   }
 
   @Override
@@ -55,58 +63,59 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public boolean save(Category entity) {
-
-    return super.save(entity);
+    boolean saved = super.save(entity);
+    if (saved) {
+      categoryRedisCacheService.clearAll();
+    }
+    return saved;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public boolean updateById(Category entity) {
-
-    return super.updateById(entity);
+    boolean updated = super.updateById(entity);
+    if (updated) {
+      categoryRedisCacheService.clearAll();
+    }
+    return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public boolean removeById(java.io.Serializable id) {
-
-    return super.removeById(id);
+    boolean removed = super.removeById(id);
+    if (removed) {
+      categoryRedisCacheService.clearAll();
+    }
+    return removed;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public boolean removeByIds(java.util.Collection<?> idList) {
-
-    return super.removeByIds(idList);
+    boolean removed = super.removeByIds(idList);
+    if (removed) {
+      categoryRedisCacheService.clearAll();
+    }
+    return removed;
   }
 
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
-  public void clearCategoryCache() {}
+  public void clearCategoryCache() {
+    categoryRedisCacheService.clearAll();
+  }
 
-  @CacheEvict(cacheNames = "categoryCache", key = "'children:' + #categoryId")
-  public void evictCategoryCache(Long categoryId) {}
+  public void evictCategoryCache(Long categoryId) {
+    categoryRedisCacheService.clearAll();
+  }
 
   @Override
   @Transactional(readOnly = true)
-  @Cacheable(
-      cacheNames = "categoryTreeCache",
-      key = "'tree-dto:' + (#onlyEnabled == null ? 'all' : #onlyEnabled)")
   public List<CategoryDTO> getCategoryTree(Boolean onlyEnabled) {
+    List<CategoryDTO> cached = categoryRedisCacheService.getDtoTree(onlyEnabled);
+    if (cached != null) {
+      return cached;
+    }
 
     LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
     if (Boolean.TRUE.equals(onlyEnabled)) {
@@ -143,7 +152,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
           first.setChildren(secondLevel);
         });
 
-    return convertToDTO(firstLevel);
+    List<CategoryDTO> result = convertToDTO(firstLevel);
+    categoryRedisCacheService.putDtoTree(onlyEnabled, result);
+    return result;
   }
 
   @Override
@@ -194,9 +205,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public CategoryDTO createCategory(CategoryDTO categoryDTO) {
 
     Category category = new Category();
@@ -208,9 +216,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean updateCategory(CategoryDTO categoryDTO) {
 
     Category category = new Category();
@@ -220,9 +225,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean deleteCategory(Long categoryId, Boolean force) {
 
     if (Boolean.TRUE.equals(force)) {
@@ -239,9 +241,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean updateCategoryStatus(Long categoryId, Integer status) {
 
     Category category = new Category();
@@ -252,9 +251,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean updateCategorySort(Long categoryId, Integer sort) {
 
     Category category = new Category();
@@ -265,9 +261,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean moveCategory(Long categoryId, Long targetParentId) {
 
     Category category = new Category();
@@ -278,9 +271,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public Boolean deleteCategoriesBatch(List<Long> categoryIds) {
 
     return this.removeByIds(categoryIds);
@@ -288,9 +278,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public int updateCategoryStatusBatch(List<Long> categoryIds, Integer status) {
     if (CollectionUtils.isEmpty(categoryIds) || status == null) {
       return 0;
@@ -316,9 +303,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(
-      cacheNames = {"categoryCache", "categoryTreeCache"},
-      allEntries = true)
   public int createCategoriesBatch(List<CategoryDTO> categoryList) {
     if (CollectionUtils.isEmpty(categoryList)) {
       return 0;

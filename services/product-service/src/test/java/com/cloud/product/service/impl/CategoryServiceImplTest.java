@@ -3,20 +3,26 @@ package com.cloud.product.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.product.CategoryDTO;
 import com.cloud.product.module.entity.Category;
+import com.cloud.product.service.cache.CategoryRedisCacheService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceImplTest {
 
+  @Mock private CategoryRedisCacheService categoryRedisCacheService;
+
   @Test
   void getCategoryTree_buildsHierarchy() {
-    CategoryServiceImpl service = spy(new CategoryServiceImpl());
+    when(categoryRedisCacheService.getDtoTree(true)).thenReturn(null);
+    CategoryServiceImpl service = spy(new CategoryServiceImpl(categoryRedisCacheService));
 
     Category level1 = new Category();
     level1.setId(1L);
