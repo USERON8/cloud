@@ -1,6 +1,6 @@
 # Cloud Shop API Guide
 
-Generated on: 2026-03-21
+Generated on: 2026-03-30
 Source of truth: `services/**/controller/*.java`, gateway security rules, and current frontend integration under `my-shop-uniapp/src/api/*.ts`.
 
 ## Base URLs
@@ -13,6 +13,7 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 
 ## Authorization Model
 
+- Public traffic is authenticated and normalized at `gateway` first; downstream services restore trusted identity from gateway-signed internal headers.
 - `Public`: no explicit controller restriction.
 - `Authenticated`: `isAuthenticated()`.
 - `Admin`: `hasAuthority('admin:all')` or `ROLE_ADMIN` where noted.
@@ -105,6 +106,7 @@ Notes:
 1. Create order
    - `POST /api/orders`
    - Header: `Idempotency-Key`
+   - Body field: `clientOrderId`
    - Regular users can only create orders for themselves.
 2. Query order
    - `GET /api/orders`
@@ -198,11 +200,16 @@ Important behavior:
    - `POST /api/stocks/rollback`
 2. Gateway search fallback
    - `GET /gateway/fallback/search`
+3. MQ governance and dead-letter utilities
+   - `GET /internal/mq/governance/consumers`
+   - `GET /internal/mq/dead-letters/pending`
+   - `POST /internal/mq/dead-letters/handle`
 
 Notes:
 - Stock ledger reads require admin.
 - Stock mutation endpoints require internal scope.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
+- MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
 
 ## Endpoint Index
 
@@ -298,12 +305,15 @@ Notes:
 | GET | `/api/search/shops/recommended` | Public |
 | GET | `/api/search/shops/by-location` | Public |
 | GET | `/gateway/fallback/search` | Gateway utility |
+| GET | `/internal/mq/governance/consumers` | Internal ops |
+| GET | `/internal/mq/dead-letters/pending` | Internal ops |
+| POST | `/internal/mq/dead-letters/handle` | Internal ops |
 
 ### Orders And After-Sale
 
 | Method | Path | Access | Notes |
 | --- | --- | --- | --- |
-| POST | `/api/orders` | `order:create` | Requires `Idempotency-Key`. |
+| POST | `/api/orders` | `order:create` | Requires `Idempotency-Key` header and `clientOrderId` body field. |
 | GET | `/api/orders` | `order:query` | `shopId` is a legacy alias of `merchantId`. |
 | GET | `/api/orders/{orderId}` | `order:query` |  |
 | POST | `/api/orders/{orderId}/pay` | `order:create` | Intentionally blocked in service layer. |
@@ -411,9 +421,11 @@ Notes:
 
 - Endpoint: `POST /api/orders`
 - Header: `Idempotency-Key`
+- Field: `clientOrderId`
 - Single-item checkout must include `spuId`, `skuId`, `quantity`, `receiverName`, `receiverPhone`, `receiverAddress`.
 - Cart checkout uses `cartId` plus the same receiver fields.
 - Regular users cannot impersonate another `userId`.
+- `clientOrderId` is the strict business idempotency key on the order domain and must stay stable across retries from the same client intent.
 
 ### Create payment order request
 

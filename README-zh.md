@@ -14,6 +14,13 @@ Version: 1.1.0
 - 用户通知改为 RocketMQ 异步投递（`user-notification`），失败会重试。
 - 当前不再依赖 Seata 协调器，跨服务一致性统一采用本地事务、Outbox、RocketMQ 和消费端幂等。
 
+## 当前平台治理
+
+- `gateway` 负责公开 JWT 校验、内部身份头签名转发，以及路由级和用户级 Sentinel 双层限流。
+- 共享远程调用统一走 `RemoteCallSupport`，收口超时、fallback 和异常语义。
+- MQ 治理已经补上消费者拓扑发现、lag 阈值、死信运维端点和 outbox 积压指标。
+- 商品/分类/店铺/库存缓存统一采用 Cache-Aside + 事务提交后延迟双删。
+
 ## 模块与端口
 
 | 模块 | 端口 | 说明 |

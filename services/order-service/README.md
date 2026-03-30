@@ -27,6 +27,13 @@ Order and refund service covering the order lifecycle and batch status operation
 - Consumer idempotency: `MessageIdempotencyService` (Redis) prevents replay side effects
 - Transaction model: local transaction + outbox + RocketMQ reliable delivery + consumer idempotency; timeout cancellation uses delayed RocketMQ messages
 
+## Idempotency And Remote Calls
+
+- Order creation now requires both `Idempotency-Key` and request-body `clientOrderId`
+- `clientOrderId` is the strict business idempotency key scoped to the user and used to safely return the existing active main order on retries
+- Remote payment and stock interactions use shared `RemoteCallSupport`
+- Query-style remote calls may degrade explicitly, while command-style remote calls fail fast and keep business semantics explicit
+
 ## Cross-Service Interactions
 
 - `stock-service`
@@ -54,6 +61,8 @@ Order and refund service covering the order lifecycle and batch status operation
 - Order aggregate query now uses a pragmatic multi-level cache: short-lived local L1 plus Redis aggregate cache, and only completed main-order aggregates are cached.
 - Cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund updates, and stock command flows through `OrderAggregateCacheService.evict(...)`.
 - The current README reflects that order placement now uses eventual consistency instead of Seata-based distributed transactions.
+- Duplicate order submission handling now combines header idempotency with `clientOrderId` business deduplication.
+- Shared remote-call handling has replaced scattered Dubbo exception translation in order-side support services.
 - This cache remains read-optimization only. Order state truth is still owned by MySQL plus transactional workflows, not by cache.
 
 ## Local Run

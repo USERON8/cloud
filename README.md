@@ -16,6 +16,13 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
 - No Seata coordinator is required. Cross-service consistency uses local transactions, Outbox, RocketMQ, and idempotent consumers.
 
+## Current Platform Governance
+
+- `gateway` validates public JWTs, signs internal identity headers, and applies both route-level and user-level Sentinel rules.
+- Shared remote service calls use `RemoteCallSupport` to standardize timeout, fallback, and error translation semantics.
+- MQ governance includes consumer topology discovery, lag thresholds, dead-letter admin endpoints, and outbox backlog metrics.
+- Product/category/shop/stock caches now follow Cache-Aside plus delayed double delete after commit.
+
 ## Modules And Ports
 
 | Module | Port | Description |

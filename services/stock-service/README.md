@@ -31,13 +31,15 @@ Inventory service supporting segmented reservation, release, confirmation, stock
 
 - `stock_segment` splits one SKU into multiple rows to reduce hot-row contention.
 - `StockRedisCacheService` keeps a Redis summary per SKU and uses Lua for fast availability pre-check.
-- Reservation, confirmation, and release reconcile MySQL state first and then refresh Redis summary state.
+- Reservation, confirmation, release, and rollback reconcile MySQL state first and then evict Redis summary state after commit with delayed second eviction.
+- Stock changes also trigger product-search sync for affected SKUs.
 
 ## Known Findings In This Sync
 
 - The ledger query path uses Redis summary cache backed by aggregated `stock_segment` queries.
 - Redis Lua currently guards entry-side availability checks before database allocation runs.
-- Cross-node cache freshness still depends on short TTL plus explicit refresh after writes.
+- Cross-node cache freshness now follows post-commit eviction plus delayed double delete instead of in-transaction cache writes.
+- Delayed RocketMQ timeout handling is part of the normal stock release path for unpaid orders.
 
 ## Local Run
 

@@ -36,7 +36,7 @@ The legacy `POST /auth/sessions` login endpoint and `POST /auth/tokens/refresh` 
 - `user-service`
   - Principal bootstrap and user lookup.
 - `gateway`
-  - Public traffic normally enters through gateway first.
+  - Public traffic normally enters through gateway first, and downstream business services now trust gateway-signed internal identity instead of validating the external user JWT again.
 
 ## Web Login Flow
 
@@ -53,6 +53,7 @@ GitHub login completes third-party authentication first and then returns to the 
 - This service is already close to the expected short-TTL auth/session cache model.
 - Dedicated Redis authorization services are used instead of relying only on generic Spring Cache annotations.
 - JWT blacklist validation now defaults to fail-closed, so access-token TTL must stay short.
+- Gateway-first authentication is now the default request model for business traffic.
 
 ## Known Findings In This Sync
 
