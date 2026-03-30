@@ -109,7 +109,10 @@ app:
         rejected-execution-handler: CALLER_RUNS
   jwt:
     test-mode: true
-    access-token-validity: PT2H
+    access-token-validity: PT15M
+    service-access-token-validity: PT15M
+    refresh-token-validity: P7D
+    authorization-code-validity: PT5M
     test-token-validity: P365D
     keys:
       private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
@@ -132,6 +135,10 @@ app:
       internal:
         id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
         secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
+  security:
+    jwt:
+      blacklist-fail-closed: ${APP_SECURITY_JWT_BLACKLIST_FAIL_CLOSED:true}
+      max-fail-closed-access-token-validity: ${APP_SECURITY_JWT_MAX_FAIL_CLOSED_ACCESS_TOKEN_VALIDITY:PT15M}
 
 xxl:
   job:

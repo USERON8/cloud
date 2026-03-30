@@ -52,12 +52,13 @@ GitHub login completes third-party authentication first and then returns to the 
 - The current implementation is Redis-heavy and does not require a local MySQL dependency in the dev profile.
 - This service is already close to the expected short-TTL auth/session cache model.
 - Dedicated Redis authorization services are used instead of relying only on generic Spring Cache annotations.
+- JWT blacklist validation now defaults to fail-closed, so access-token TTL must stay short.
 
 ## Known Findings In This Sync
 
-- This service was not deeply re-audited in the current cache-refactor round.
-- No code changes were made here during the current documentation sync.
-- If the team wants one unified cache playbook across services, `auth-service` should be treated as the reference for short-lived auth/session cache behavior.
+- Blacklist Redis failures now reject tokens by default instead of temporarily allowing them.
+- Default user and internal access-token TTL are reduced to `PT15M`, and startup validation prevents longer access-token TTL when fail-closed mode is enabled.
+- If the team later changes this policy, they should treat `app.security.jwt.blacklist-fail-closed` and the access-token TTL settings as one combined control, not separate knobs.
 
 ## GitHub Login Configuration
 

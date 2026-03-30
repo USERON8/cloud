@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BlacklistAwareJwtDecoderTest {
@@ -27,18 +28,19 @@ class BlacklistAwareJwtDecoderTest {
   @BeforeEach
   void setUp() {
     decoder = new BlacklistAwareJwtDecoder(delegate, tokenBlacklistService);
+    ReflectionTestUtils.setField(decoder, "blacklistFailClosed", true);
   }
 
   @Test
-  void decodeShouldAllowTokenWhenBlacklistLookupFails() {
+  void decodeShouldRejectTokenWhenBlacklistLookupFailsInFailClosedMode() {
     Jwt jwt = buildJwt("token-a");
     when(delegate.decode("token-a")).thenReturn(jwt);
     when(tokenBlacklistService.isBlacklisted(jwt))
         .thenThrow(new IllegalStateException("redis unavailable"));
 
-    Jwt result = decoder.decode("token-a");
-
-    assertThat(result).isSameAs(jwt);
+    assertThatThrownBy(() -> decoder.decode("token-a"))
+        .isInstanceOf(JwtValidationException.class)
+        .hasMessageContaining("JWT blacklist validation unavailable");
   }
 
   @Test
@@ -56,6 +58,19 @@ class BlacklistAwareJwtDecoderTest {
     assertThatThrownBy(() -> decoder.decode("token-b"))
         .isInstanceOf(JwtValidationException.class)
         .hasMessageContaining("JWT token has been revoked");
+  }
+
+  @Test
+  void decodeShouldAllowWhenFailClosedDisabledAndBlacklistLookupFails() {
+    Jwt jwt = buildJwt("token-c");
+    ReflectionTestUtils.setField(decoder, "blacklistFailClosed", false);
+    when(delegate.decode("token-c")).thenReturn(jwt);
+    when(tokenBlacklistService.isBlacklisted(jwt))
+        .thenThrow(new IllegalStateException("redis unavailable"));
+
+    Jwt result = decoder.decode("token-c");
+
+    assertThat(result).isSameAs(jwt);
   }
 
   private Jwt buildJwt(String tokenValue) {

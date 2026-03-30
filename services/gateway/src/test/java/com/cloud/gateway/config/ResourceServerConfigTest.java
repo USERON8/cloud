@@ -11,6 +11,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Mono;
 
 class ResourceServerConfigTest {
@@ -24,17 +25,18 @@ class ResourceServerConfigTest {
     Environment environment = Mockito.mock(Environment.class);
     Mockito.when(environment.getActiveProfiles()).thenReturn(new String[0]);
     config = new ResourceServerConfig(reactiveStringRedisTemplate, environment);
+    ReflectionTestUtils.setField(config, "blacklistFailClosed", true);
   }
 
   @Test
-  void validateBlacklistShouldAllowTokenWhenRedisIsUnavailable() {
+  void validateBlacklistShouldRejectTokenWhenRedisIsUnavailableInFailClosedMode() {
     Jwt jwt = buildJwt("token-a");
     Mockito.when(reactiveStringRedisTemplate.hasKey("auth:blacklist:token-a"))
         .thenReturn(Mono.error(new IllegalStateException("redis down")));
 
-    Jwt result = config.validateBlacklist(jwt, "token-a").block();
-
-    assertThat(result).isSameAs(jwt);
+    assertThatThrownBy(() -> config.validateBlacklist(jwt, "token-a").block())
+        .isInstanceOf(BadJwtException.class)
+        .hasMessageContaining("blacklist validation unavailable");
   }
 
   @Test
@@ -50,6 +52,18 @@ class ResourceServerConfigTest {
     assertThatThrownBy(() -> config.validateBlacklist(jwt, "token-b").block())
         .isInstanceOf(BadJwtException.class)
         .hasMessageContaining("Token is blacklisted");
+  }
+
+  @Test
+  void validateBlacklistShouldAllowTokenWhenFailClosedDisabled() {
+    Jwt jwt = buildJwt("token-c");
+    ReflectionTestUtils.setField(config, "blacklistFailClosed", false);
+    Mockito.when(reactiveStringRedisTemplate.hasKey("auth:blacklist:token-c"))
+        .thenReturn(Mono.error(new IllegalStateException("redis down")));
+
+    Jwt result = config.validateBlacklist(jwt, "token-c").block();
+
+    assertThat(result).isSameAs(jwt);
   }
 
   private Jwt buildJwt(String tokenValue) {

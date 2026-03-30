@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
@@ -27,6 +28,9 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
   private final JwtDecoder delegate;
   private final TokenBlacklistService tokenBlacklistService;
   private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
+
+  @Value("${app.security.jwt.blacklist-fail-closed:true}")
+  private boolean blacklistFailClosed = true;
 
   @Override
   public Jwt decode(String token) throws JwtException {
@@ -55,6 +59,14 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
             ex);
         throw blacklistedException();
       }
+      if (blacklistFailClosed) {
+        log.error(
+            "JWT blacklist validation failed in fail-closed mode: subject={}, jti={}",
+            jwt.getSubject(),
+            jwt.getId(),
+            ex);
+        throw blacklistServiceUnavailableException();
+      }
       log.error(
           "JWT blacklist validation failed, allow token temporarily: subject={}, jti={}",
           jwt.getSubject(),
@@ -70,6 +82,17 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
         "JWT token has been revoked",
         OAuth2TokenValidatorResult.failure(
                 new OAuth2Error("blacklisted", "Token is blacklisted", null))
+            .getErrors());
+  }
+
+  private JwtValidationException blacklistServiceUnavailableException() {
+    return new JwtValidationException(
+        "JWT blacklist validation unavailable",
+        OAuth2TokenValidatorResult.failure(
+                new OAuth2Error(
+                    "blacklist_unavailable",
+                    "Token blacklist validation is temporarily unavailable",
+                    null))
             .getErrors());
   }
 

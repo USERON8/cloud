@@ -1,7 +1,9 @@
 package com.cloud.auth.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -25,6 +27,14 @@ class OAuth21AuthorizationServerConfigTest {
     ReflectionTestUtils.setField(config, "mobileClientId", "mobile-client");
     ReflectionTestUtils.setField(config, "mobileClientSecret", "mobile-secret");
     ReflectionTestUtils.setField(config, "mobileRedirectUris", "weixin://oauth2/callback");
+    ReflectionTestUtils.setField(config, "accessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.setField(config, "serviceAccessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.setField(config, "refreshTokenValidity", Duration.ofDays(7));
+    ReflectionTestUtils.setField(config, "authorizationCodeValidity", Duration.ofMinutes(5));
+    ReflectionTestUtils.setField(config, "blacklistFailClosed", true);
+    ReflectionTestUtils.setField(
+        config, "maxFailClosedAccessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.invokeMethod(config, "validateTokenPolicy");
 
     RegisteredClientRepository repository = config.registeredClientRepository();
     var webClient = repository.findByClientId("web-client");
@@ -58,6 +68,14 @@ class OAuth21AuthorizationServerConfigTest {
     ReflectionTestUtils.setField(config, "mobileClientId", "mobile-client");
     ReflectionTestUtils.setField(config, "mobileClientSecret", "{noop}mobile-secret");
     ReflectionTestUtils.setField(config, "mobileRedirectUris", "weixin://oauth2/callback");
+    ReflectionTestUtils.setField(config, "accessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.setField(config, "serviceAccessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.setField(config, "refreshTokenValidity", Duration.ofDays(7));
+    ReflectionTestUtils.setField(config, "authorizationCodeValidity", Duration.ofMinutes(5));
+    ReflectionTestUtils.setField(config, "blacklistFailClosed", true);
+    ReflectionTestUtils.setField(
+        config, "maxFailClosedAccessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.invokeMethod(config, "validateTokenPolicy");
 
     RegisteredClientRepository repository = config.registeredClientRepository();
 
@@ -67,5 +85,18 @@ class OAuth21AuthorizationServerConfigTest {
         .isEqualTo("{noop}internal-secret");
     assertThat(repository.findByClientId("mobile-client").getClientSecret())
         .isEqualTo("{noop}mobile-secret");
+  }
+
+  @Test
+  void validateTokenPolicyShouldRejectLongAccessTokenWhenFailClosedEnabled() {
+    OAuth21AuthorizationServerConfig config = new OAuth21AuthorizationServerConfig(passwordEncoder);
+    ReflectionTestUtils.setField(config, "accessTokenValidity", Duration.ofHours(2));
+    ReflectionTestUtils.setField(config, "serviceAccessTokenValidity", Duration.ofMinutes(15));
+    ReflectionTestUtils.setField(config, "blacklistFailClosed", true);
+    ReflectionTestUtils.setField(
+        config, "maxFailClosedAccessTokenValidity", Duration.ofMinutes(15));
+
+    assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(config, "validateTokenPolicy"))
+        .hasMessageContaining("access-token-validity");
   }
 }

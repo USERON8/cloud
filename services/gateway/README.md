@@ -43,8 +43,8 @@ The gateway enables `DedupeResponseHeader` to prevent duplicate `Access-Control-
 
 ## Known Findings In This Sync
 
-- This service was not code-refactored in the current round.
-- The README now makes route ownership and gateway-specific fallback behavior explicit.
+- JWT blacklist Redis failures now reject tokens by default in gateway fail-closed mode.
+- Gateway JWT validation now assumes short-lived access tokens from `auth-service`; otherwise a strict blacklist outage policy becomes operationally expensive.
 - Gateway fallback cache should be treated separately from business caches because its role is degradation control, not domain read acceleration.
 
 ## Local Run

@@ -76,6 +76,9 @@ public class ResourceServerConfig {
   @Value("${app.security.api-docs-enabled:false}")
   private boolean apiDocsEnabled;
 
+  @Value("${app.security.jwt.blacklist-fail-closed:true}")
+  private boolean blacklistFailClosed = true;
+
   @Bean
   public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
     if (securityTestMode) {
@@ -383,6 +386,14 @@ public class ResourceServerConfig {
                     jwt.getId(),
                     ex);
                 return Mono.error(new BadJwtException("Token is blacklisted"));
+              }
+              if (blacklistFailClosed) {
+                log.error(
+                    "Gateway blacklist validation failed in fail-closed mode: sub={}, jti={}",
+                    jwt.getSubject(),
+                    jwt.getId(),
+                    ex);
+                return Mono.error(new BadJwtException("Token blacklist validation unavailable"));
               }
               log.error(
                   "Gateway blacklist validation failed, allow token temporarily: sub={}, jti={}",

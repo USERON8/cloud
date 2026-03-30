@@ -1,5 +1,6 @@
 package com.cloud.auth.config;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
@@ -62,6 +63,48 @@ public class OAuth21AuthorizationServerConfig {
 
   @Value("${app.oauth2.clients.mobile.redirect-uris:weixin://oauth2/callback}")
   private String mobileRedirectUris;
+
+  @Value("${app.jwt.access-token-validity:PT15M}")
+  private Duration accessTokenValidity;
+
+  @Value("${app.jwt.refresh-token-validity:P7D}")
+  private Duration refreshTokenValidity;
+
+  @Value("${app.jwt.authorization-code-validity:PT5M}")
+  private Duration authorizationCodeValidity;
+
+  @Value("${app.jwt.service-access-token-validity:PT15M}")
+  private Duration serviceAccessTokenValidity;
+
+  @Value("${app.security.jwt.blacklist-fail-closed:true}")
+  private boolean blacklistFailClosed;
+
+  @Value("${app.security.jwt.max-fail-closed-access-token-validity:PT15M}")
+  private Duration maxFailClosedAccessTokenValidity;
+
+  @PostConstruct
+  void validateTokenPolicy() {
+    if (!blacklistFailClosed) {
+      return;
+    }
+    Duration maxAllowed =
+        maxFailClosedAccessTokenValidity == null
+            ? Duration.ofMinutes(15)
+            : maxFailClosedAccessTokenValidity;
+    if (accessTokenValidity != null && accessTokenValidity.compareTo(maxAllowed) > 0) {
+      throw new IllegalStateException(
+          "app.jwt.access-token-validity must not exceed "
+              + maxAllowed
+              + " when app.security.jwt.blacklist-fail-closed=true");
+    }
+    if (serviceAccessTokenValidity != null
+        && serviceAccessTokenValidity.compareTo(maxAllowed) > 0) {
+      throw new IllegalStateException(
+          "app.jwt.service-access-token-validity must not exceed "
+              + maxAllowed
+              + " when app.security.jwt.blacklist-fail-closed=true");
+    }
+  }
 
   @Bean
   public AuthorizationServerSettings authorizationServerSettings() {
@@ -136,10 +179,10 @@ public class OAuth21AuthorizationServerConfig {
 
   private TokenSettings userTokenSettings() {
     return TokenSettings.builder()
-        .accessTokenTimeToLive(Duration.ofHours(2))
-        .refreshTokenTimeToLive(Duration.ofDays(7))
+        .accessTokenTimeToLive(accessTokenValidity)
+        .refreshTokenTimeToLive(refreshTokenValidity)
         .reuseRefreshTokens(false)
-        .authorizationCodeTimeToLive(Duration.ofMinutes(5))
+        .authorizationCodeTimeToLive(authorizationCodeValidity)
         .idTokenSignatureAlgorithm(
             org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
         .build();
@@ -147,7 +190,7 @@ public class OAuth21AuthorizationServerConfig {
 
   private TokenSettings serviceTokenSettings() {
     return TokenSettings.builder()
-        .accessTokenTimeToLive(Duration.ofHours(1))
+        .accessTokenTimeToLive(serviceAccessTokenValidity)
         .reuseRefreshTokens(false)
         .build();
   }
