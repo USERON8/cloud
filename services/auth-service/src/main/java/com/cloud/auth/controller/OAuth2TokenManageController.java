@@ -7,7 +7,11 @@ import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +34,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth/tokens")
 @Tag(name = "OAuth2 Token Management", description = "OAuth2 token management and monitoring APIs")
+@Validated
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid token management parameters"),
+  @ApiResponse(responseCode = "401", description = "Authentication required"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Authorization or token resource not found"),
+  @ApiResponse(responseCode = "500", description = "Internal token management error")
+})
 public class OAuth2TokenManageController {
 
   private final OAuth2AuthorizationService authorizationService;
@@ -78,7 +91,10 @@ public class OAuth2TokenManageController {
   @GetMapping("/authorization/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getAuthorizationDetails(
-      @Parameter(description = "Authorization ID") @PathVariable String id) {
+      @Parameter(description = "Authorization ID")
+          @PathVariable
+          @NotBlank(message = "authorization id cannot be blank")
+          String id) {
     OAuth2Authorization authorization = authorizationService.findById(id);
     if (authorization == null) {
       log.warn("Authorization not found: id={}", id);
@@ -117,7 +133,10 @@ public class OAuth2TokenManageController {
   @DeleteMapping("/authorization/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> revokeAuthorization(
-      @Parameter(description = "Authorization ID") @PathVariable String id) {
+      @Parameter(description = "Authorization ID")
+          @PathVariable
+          @NotBlank(message = "authorization id cannot be blank")
+          String id) {
     boolean revoked = tokenManagementService.revokeAuthorizationById(id, "admin_revocation");
     if (!revoked) {
       log.warn("Authorization not found: id={}", id);
@@ -188,8 +207,14 @@ public class OAuth2TokenManageController {
   @PostMapping("/blacklist/add")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> addToBlacklist(
-      @Parameter(description = "Token value") @RequestParam String tokenValue,
-      @Parameter(description = "Revocation reason") @RequestParam(defaultValue = "admin_manual")
+      @Parameter(description = "Token value")
+          @RequestParam
+          @NotBlank(message = "tokenValue cannot be blank")
+          String tokenValue,
+      @Parameter(description = "Revocation reason")
+          @RequestParam(defaultValue = "admin_manual")
+          @NotBlank(message = "reason cannot be blank")
+          @Size(max = 64, message = "reason must be less than or equal to 64 characters")
           String reason) {
     OAuth2Authorization authorization = authorizationService.findByToken(tokenValue, null);
     String subject = authorization != null ? authorization.getPrincipalName() : "unknown";
@@ -205,7 +230,10 @@ public class OAuth2TokenManageController {
   @GetMapping("/blacklist/check")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> checkBlacklist(
-      @Parameter(description = "Token value") @RequestParam String tokenValue) {
+      @Parameter(description = "Token value")
+          @RequestParam
+          @NotBlank(message = "tokenValue cannot be blank")
+          String tokenValue) {
     boolean isBlacklisted = tokenBlacklistService.isBlacklisted(tokenValue);
     Map<String, Object> result = new HashMap<>();
     result.put("tokenValue", tokenValue.substring(0, Math.min(tokenValue.length(), 20)) + "...");

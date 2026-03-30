@@ -12,13 +12,20 @@ import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.MinioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +41,16 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/merchant/auth")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Auth", description = "Merchant authentication APIs")
+@Validated
+@ApiResponses({
+  @ApiResponse(
+      responseCode = "400",
+      description = "Invalid merchant auth parameters or review state"),
+  @ApiResponse(responseCode = "401", description = "Authentication required"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Merchant or auth record not found"),
+  @ApiResponse(responseCode = "500", description = "Internal merchant auth service error")
+})
 public class MerchantAuthController {
 
   private static final int STATUS_PENDING = 0;
@@ -62,6 +79,7 @@ public class MerchantAuthController {
       @PathVariable("merchantId")
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long merchantId,
       @RequestBody
           @Parameter(description = "Merchant auth request body")
@@ -114,13 +132,17 @@ public class MerchantAuthController {
       @PathVariable("merchantId")
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long merchantId,
-      @RequestPart("file") MultipartFile file) {
+      @RequestPart("file") @NotNull(message = "file is required") MultipartFile file) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
       throw new BizException(ResultCode.FORBIDDEN, "no permission to upload business license");
     }
     if (merchantService.getById(merchantId) == null) {
       throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
+    }
+    if (file.isEmpty()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "file cannot be empty");
     }
 
     String objectName = minioService.uploadBusinessLicense(merchantId, file);
@@ -144,6 +166,7 @@ public class MerchantAuthController {
       @PathVariable("merchantId")
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long merchantId) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
       throw new BizException(ResultCode.FORBIDDEN, "no permission to query merchant auth");
@@ -169,6 +192,7 @@ public class MerchantAuthController {
       @PathVariable("merchantId")
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long merchantId) {
     if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
       throw new BizException(ResultCode.FORBIDDEN, "no permission to revoke merchant auth");
@@ -192,10 +216,13 @@ public class MerchantAuthController {
       @PathVariable("merchantId")
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long merchantId,
       @RequestParam("authStatus")
           @Parameter(description = "Auth status")
           @NotNull(message = "auth status is required")
+          @Min(value = 1, message = "auth status must be 1 or 2")
+          @Max(value = 2, message = "auth status must be 1 or 2")
           Integer authStatus,
       @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
           String remark) {
@@ -233,6 +260,8 @@ public class MerchantAuthController {
       @RequestParam("authStatus")
           @Parameter(description = "Auth status")
           @NotNull(message = "auth status is required")
+          @Min(value = 0, message = "auth status must be between 0 and 2")
+          @Max(value = 2, message = "auth status must be between 0 and 2")
           Integer authStatus) {
     if (!isValidAuthStatus(authStatus)) {
       throw new BizException(ResultCode.BAD_REQUEST, "invalid auth status");
@@ -309,10 +338,16 @@ public class MerchantAuthController {
       @RequestBody
           @Parameter(description = "Merchant IDs")
           @NotNull(message = "merchant ids are required")
-          List<Long> merchantIds,
+          @NotEmpty(message = "merchant ids cannot be empty")
+          List<
+                  @NotNull(message = "merchant id cannot be null")
+                  @Positive(message = "merchant id must be positive") Long>
+              merchantIds,
       @RequestParam("authStatus")
           @Parameter(description = "Auth status")
           @NotNull(message = "auth status is required")
+          @Min(value = 1, message = "auth status must be 1 or 2")
+          @Max(value = 2, message = "auth status must be 1 or 2")
           Integer authStatus,
       @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
           String remark) {
