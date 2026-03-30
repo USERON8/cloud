@@ -39,7 +39,7 @@ When work resumes, start from this order:
 1. `docs/dev-startup.md`
 2. `docs/observability-stack.md`
 3. `docs/performance-baseline.md`
-4. `docs/seata-order-transaction.md`
+4. `docs/transaction-strategy.md`
 5. `docs/TEST_SCRIPT_INDEX.md`
 
 ## Related Entry Points

@@ -168,27 +168,3 @@ xxl:
       log-path: ${XXL_JOB_LOG_PATH:${logging.file.path}/xxl-job}
       log-retention-days: ${XXL_JOB_LOG_RETENTION_DAYS:30}
 
-seata:
-  enabled: ${SEATA_ENABLED:true}
-  application-id: ${spring.application.name}
-  tx-service-group: ${SEATA_TX_SERVICE_GROUP:default_tx_group}
-  enable-auto-data-source-proxy: true
-  undo-log:
-    retention-days: ${SEATA_UNDO_LOG_RETENTION_DAYS:7}
-  data-source-proxy-mode: AT
-  service:
-    vgroup-mapping:
-      default_tx_group: ${SEATA_TX_CLUSTER:default}
-    grouplist:
-      default: ${SEATA_SERVER_ADDR:127.0.0.1:18091}
-  registry:
-    type: ${SEATA_REGISTRY_TYPE:file}
-    nacos:
-      application: ${SEATA_REGISTRY_APPLICATION:seata-server}
-      server-addr: ${SEATA_REGISTRY_SERVER_ADDR:${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}}
-      group: ${SEATA_REGISTRY_GROUP:SEATA_GROUP}
-      namespace: ${SEATA_REGISTRY_NAMESPACE:}
-      cluster: ${SEATA_TX_CLUSTER:default}
-      username: ${SEATA_REGISTRY_USERNAME:${NACOS_USERNAME:nacos}}
-      password: ${SEATA_REGISTRY_PASSWORD:${NACOS_PASSWORD:nacos}}
-

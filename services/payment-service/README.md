@@ -36,7 +36,7 @@ Payment service for payment order management, refund processing, and payment cha
 
 - Payment success is treated as a high-value event and uses RocketMQ transactional messaging instead of only local outbox relay.
 - Refund completion remains on the local-transaction-plus-outbox pattern.
-- `payment-service` intentionally keeps Seata disabled while still cooperating with distributed business flows.
+- `payment-service` now participates in the unified eventual-consistency model without any Seata dependency.
 
 ## Current Cache Model
 
