@@ -15,6 +15,7 @@ import com.cloud.user.converter.AdminConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
+import com.cloud.user.service.cache.TransactionalAdminCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +34,7 @@ class AdminServiceImplTest {
 
   @Mock private AuthPrincipalService authPrincipalService;
 
-  @Mock private CacheManager cacheManager;
+  @Mock private TransactionalAdminCacheService adminCacheService;
 
   private AdminServiceImpl adminService;
 
@@ -42,7 +42,8 @@ class AdminServiceImplTest {
   void setUp() {
     adminService =
         Mockito.spy(
-            new AdminServiceImpl(adminMapper, adminConverter, authPrincipalService, cacheManager));
+            new AdminServiceImpl(
+                adminMapper, adminConverter, authPrincipalService, adminCacheService));
     ReflectionTestUtils.setField(adminService, "baseMapper", adminMapper);
   }
 

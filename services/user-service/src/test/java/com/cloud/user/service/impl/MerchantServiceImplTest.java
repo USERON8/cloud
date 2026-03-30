@@ -18,6 +18,7 @@ import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.mapper.MerchantMapper;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.Merchant;
+import com.cloud.user.service.cache.TransactionalMerchantCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ class MerchantServiceImplTest {
 
   @Mock private AuthPrincipalService authPrincipalService;
 
-  @Mock private CacheManager cacheManager;
+  @Mock private TransactionalMerchantCacheService merchantCacheService;
 
   private MerchantServiceImpl merchantService;
 
@@ -54,7 +54,7 @@ class MerchantServiceImplTest {
                 userMapper,
                 merchantConverter,
                 authPrincipalService,
-                cacheManager));
+                merchantCacheService));
     ReflectionTestUtils.setField(merchantService, "baseMapper", merchantMapper);
   }
 

@@ -12,17 +12,12 @@ import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
 import com.cloud.user.service.AdminService;
+import com.cloud.user.service.cache.TransactionalAdminCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -39,26 +34,34 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   private final AdminMapper adminMapper;
   private final AdminConverter adminConverter;
   private final AuthPrincipalService authPrincipalService;
-  private final CacheManager cacheManager;
+  private final TransactionalAdminCacheService adminCacheService;
 
   @Override
   @Transactional(readOnly = true)
-  @Cacheable(cacheNames = ADMIN_CACHE, key = "#id", unless = "#result == null")
   public AdminDTO getAdminById(Long id) throws AdminException.AdminNotFoundException {
+    TransactionalAdminCacheService.AdminCache cached = adminCacheService.getById(id);
+    if (cached != null) {
+      return toDTO(cached);
+    }
     Admin admin = getById(id);
     if (admin == null) {
       log.warn("Admin not found, adminId={}", id);
       throw new AdminException.AdminNotFoundException(id);
     }
+    adminCacheService.putTransactional(admin);
     return adminConverter.toDTO(admin);
   }
 
   @Override
   @Transactional(readOnly = true)
-  @Cacheable(cacheNames = ADMIN_CACHE, key = "'username:' + #username", unless = "#result == null")
   public AdminDTO getAdminByUsername(String username) throws AdminException.AdminNotFoundException {
     if (StrUtil.isBlank(username)) {
       throw new IllegalArgumentException("username is required");
+    }
+
+    TransactionalAdminCacheService.AdminCache cached = adminCacheService.getByUsername(username);
+    if (cached != null) {
+      return toDTO(cached);
     }
 
     Admin admin = lambdaQuery().eq(Admin::getUsername, username).one();
@@ -66,6 +69,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       log.warn("Admin not found, username={}", username);
       throw new AdminException.AdminNotFoundException(username);
     }
+    adminCacheService.putTransactional(admin);
     return adminConverter.toDTO(admin);
   }
 
@@ -105,7 +109,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CachePut(cacheNames = ADMIN_CACHE, key = "#result.id")
   @DistributedLock(
       key = "'create:' + #requestDTO.username",
       prefix = "admin",
@@ -140,16 +143,12 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       throw new AdminException("failed to create admin");
     }
     authPrincipalService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
+    adminCacheService.putTransactional(admin);
     return adminConverter.toDTO(admin);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id"),
-        @CacheEvict(cacheNames = ADMIN_CACHE, key = "'username:' + #requestDTO.username")
-      })
   @DistributedLock(
       key = "'update:' + #id",
       prefix = "admin",
@@ -202,14 +201,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     if (updated) {
       Admin current = resolveCurrentAdmin(requestDTO, existingAdmin);
       authPrincipalService.updatePrincipal(toAuthPrincipalDTO(current, requestDTO.getPassword()));
-      evictUsernameCacheIfChanged(existingAdmin.getUsername(), requestDTO.getUsername());
+      refreshAdminCache(current, existingAdmin.getUsername());
     }
     return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   @DistributedLock(
       key = "'delete:' + #id",
       prefix = "admin",
@@ -225,22 +223,29 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     boolean removed = removeById(id);
     if (removed) {
       authPrincipalService.deletePrincipal(id);
+      adminCacheService.evictTransactional(id, admin.getUsername());
     }
     return removed;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, allEntries = true)
   public boolean batchDeleteAdmins(List<Long> ids) {
     if (CollectionUtils.isEmpty(ids)) {
       return true;
     }
+    List<Admin> admins = listByIds(ids);
     boolean removed = removeByIds(ids);
     if (removed) {
       ids.forEach(
           id -> {
             authPrincipalService.deletePrincipal(id);
+          });
+      admins.forEach(
+          admin -> {
+            if (admin != null) {
+              adminCacheService.evictTransactional(admin.getId(), admin.getUsername());
+            }
           });
     }
     return removed;
@@ -248,7 +253,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   public boolean updateAdminStatus(Long id, Integer status)
       throws AdminException.AdminNotFoundException {
     Admin admin = getById(id);
@@ -263,27 +267,25 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       authPrincipalDTO.setId(admin.getId());
       authPrincipalDTO.setStatus(admin.getStatus());
       authPrincipalService.updatePrincipal(authPrincipalDTO);
+      adminCacheService.putTransactional(admin);
     }
     return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   public boolean enableAdmin(Long id) throws AdminException.AdminNotFoundException {
     return updateAdminStatus(id, STATUS_ENABLED);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   public boolean disableAdmin(Long id) throws AdminException.AdminNotFoundException {
     return updateAdminStatus(id, STATUS_DISABLED);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   public boolean resetPassword(Long id, String newPassword)
       throws AdminException.AdminNotFoundException {
     if (StrUtil.isBlank(newPassword)) {
@@ -305,7 +307,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
   public boolean changePassword(Long id, String oldPassword, String newPassword)
       throws AdminException.AdminNotFoundException, AdminException.AdminPasswordException {
     if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
@@ -326,12 +327,15 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   }
 
   @Override
-  @CacheEvict(cacheNames = ADMIN_CACHE, key = "#id")
-  public void evictAdminCache(Long id) {}
+  public void evictAdminCache(Long id) {
+    Admin admin = id == null ? null : getById(id);
+    adminCacheService.evictTransactional(id, admin == null ? null : admin.getUsername());
+  }
 
   @Override
-  @CacheEvict(cacheNames = ADMIN_CACHE, allEntries = true)
-  public void evictAllAdminCache() {}
+  public void evictAllAdminCache() {
+    adminCacheService.clearAll();
+  }
 
   private Admin toAdminEntity(AdminUpsertRequestDTO requestDTO) {
     Admin admin = new Admin();
@@ -370,20 +374,28 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     return authPrincipalDTO;
   }
 
-  private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
-    if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
+  private void refreshAdminCache(Admin admin, String oldUsername) {
+    if (admin == null || admin.getId() == null) {
       return;
     }
-    if (StrUtil.equals(oldUsername, newUsername)) {
-      return;
+    if (StrUtil.isNotBlank(oldUsername) && !StrUtil.equals(oldUsername, admin.getUsername())) {
+      adminCacheService.evict(null, oldUsername);
     }
-    Cache cache = cacheManager.getCache(ADMIN_CACHE);
-    if (cache != null) {
-      cache.evict("username:" + oldUsername);
-    }
+    adminCacheService.putTransactional(admin);
   }
 
   private List<String> resolveAdminRoles(String role) {
     return List.of("ROLE_ADMIN");
+  }
+
+  private AdminDTO toDTO(TransactionalAdminCacheService.AdminCache cached) {
+    AdminDTO dto = new AdminDTO();
+    dto.setId(cached.id());
+    dto.setUsername(cached.username());
+    dto.setRealName(cached.realName());
+    dto.setPhone(cached.phone());
+    dto.setRole(cached.role());
+    dto.setStatus(cached.status());
+    return dto;
   }
 }

@@ -8,16 +8,12 @@ import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.cache.TransactionalMerchantAuthCacheService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +26,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
   private static final String MERCHANT_AUTH_CACHE_NAME = "merchantAuthCache";
   private final MerchantAuthMapper merchantAuthMapper;
   private final MerchantAuthConverter merchantAuthConverter;
-  private final CacheManager cacheManager;
+  private final TransactionalMerchantAuthCacheService merchantAuthCacheService;
   private final MerchantService merchantService;
 
   public MerchantAuthDTO getMerchantAuthById(Long id) {
@@ -38,20 +34,33 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
   }
 
   @Transactional(readOnly = true)
-  @Cacheable(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #id", unless = "#result == null")
   public MerchantAuthDTO getMerchantAuthByIdWithCache(Long id) {
+    TransactionalMerchantAuthCacheService.MerchantAuthCache cached =
+        merchantAuthCacheService.getById(id);
+    if (cached != null) {
+      return toDTO(cached);
+    }
     MerchantAuth merchantAuth = merchantAuthMapper.selectById(id);
-    return merchantAuth != null ? merchantAuthConverter.toDTO(merchantAuth) : null;
+    if (merchantAuth == null) {
+      return null;
+    }
+    merchantAuthCacheService.putTransactional(merchantAuth);
+    return merchantAuthConverter.toDTO(merchantAuth);
   }
 
   @Transactional(readOnly = true)
-  @Cacheable(
-      cacheNames = MERCHANT_AUTH_CACHE_NAME,
-      key = "'merchantId:' + #merchantId",
-      unless = "#result == null")
   public MerchantAuthDTO getMerchantAuthByMerchantIdWithCache(Long merchantId) {
+    TransactionalMerchantAuthCacheService.MerchantAuthCache cached =
+        merchantAuthCacheService.getByMerchantId(merchantId);
+    if (cached != null) {
+      return toDTO(cached);
+    }
     MerchantAuth merchantAuth = lambdaQuery().eq(MerchantAuth::getMerchantId, merchantId).one();
-    return merchantAuth != null ? merchantAuthConverter.toDTO(merchantAuth) : null;
+    if (merchantAuth == null) {
+      return null;
+    }
+    merchantAuthCacheService.putTransactional(merchantAuth);
+    return merchantAuthConverter.toDTO(merchantAuth);
   }
 
   @Override
@@ -66,42 +75,32 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     }
     boolean removed = super.removeById(merchantAuth.getId());
     if (removed) {
-      Cache cache = cacheManager.getCache(MERCHANT_AUTH_CACHE_NAME);
-      if (cache != null) {
-        cache.evict("id:" + merchantAuth.getId());
-        cache.evict("merchantId:" + merchantId);
-      }
+      merchantAuthCacheService.evictTransactional(merchantAuth.getId(), merchantId);
     }
     return removed;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
-        @CacheEvict(
-            cacheNames = MERCHANT_AUTH_CACHE_NAME,
-            key = "'merchantId:' + #merchantAuth.merchantId")
-      })
   public boolean updateById(MerchantAuth merchantAuth) {
     merchantAuth.setUpdatedAt(LocalDateTime.now());
-    return super.updateById(merchantAuth);
+    boolean updated = super.updateById(merchantAuth);
+    if (updated) {
+      merchantAuthCacheService.putTransactional(merchantAuth);
+    }
+    return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = MERCHANT_AUTH_CACHE_NAME, key = "'id:' + #merchantAuth.id"),
-        @CacheEvict(
-            cacheNames = MERCHANT_AUTH_CACHE_NAME,
-            key = "'merchantId:' + #merchantAuth.merchantId")
-      })
   public boolean save(MerchantAuth merchantAuth) {
     merchantAuth.setCreatedAt(LocalDateTime.now());
     merchantAuth.setUpdatedAt(LocalDateTime.now());
-    return super.save(merchantAuth);
+    boolean saved = super.save(merchantAuth);
+    if (saved) {
+      merchantAuthCacheService.putTransactional(merchantAuth);
+    }
+    return saved;
   }
 
   @Override
@@ -214,5 +213,22 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
       }
     }
     return successCount;
+  }
+
+  private MerchantAuthDTO toDTO(TransactionalMerchantAuthCacheService.MerchantAuthCache cached) {
+    MerchantAuthDTO dto = new MerchantAuthDTO();
+    dto.setId(cached.id());
+    dto.setMerchantId(cached.merchantId());
+    dto.setBusinessLicenseNumber(cached.businessLicenseNumber());
+    dto.setBusinessLicenseUrl(cached.businessLicenseUrl());
+    dto.setIdCardFrontUrl(cached.idCardFrontUrl());
+    dto.setIdCardBackUrl(cached.idCardBackUrl());
+    dto.setContactPhone(cached.contactPhone());
+    dto.setContactAddress(cached.contactAddress());
+    dto.setAuthStatus(cached.authStatus());
+    dto.setAuthRemark(cached.authRemark());
+    dto.setCreatedAt(cached.createdAt());
+    dto.setUpdatedAt(cached.updatedAt());
+    return dto;
   }
 }

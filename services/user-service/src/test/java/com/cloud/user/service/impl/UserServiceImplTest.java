@@ -20,7 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
@@ -28,8 +27,6 @@ class UserServiceImplTest {
   @Mock private UserConverter userConverter;
 
   @Mock private AuthPrincipalService authPrincipalService;
-
-  @Mock private CacheManager cacheManager;
 
   @Mock private TransactionalUserCacheService transactionalUserCacheService;
 
@@ -40,7 +37,7 @@ class UserServiceImplTest {
     service =
         spy(
             new UserServiceImpl(
-                userConverter, authPrincipalService, cacheManager, transactionalUserCacheService));
+                userConverter, authPrincipalService, transactionalUserCacheService));
   }
 
   @Test

@@ -6,6 +6,7 @@ import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
+import com.cloud.user.service.cache.UserStatisticsCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -21,9 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
@@ -38,12 +36,15 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   private final UserMapper userMapper;
   private final RedisTemplate<String, Object> redisTemplate;
   private final AuthPrincipalService authPrincipalService;
-  private final CacheManager cacheManager;
+  private final UserStatisticsCacheService userStatisticsCacheService;
 
   @Override
-  @Cacheable(cacheNames = "user:statistics", key = "'overview'", unless = "#result == null")
   public UserStatisticsVO getUserStatisticsOverview() {
     try {
+      UserStatisticsVO cached = userStatisticsCacheService.getOverview();
+      if (cached != null) {
+        return cached;
+      }
       UserStatisticsVO vo = new UserStatisticsVO();
       vo.setTotalUsers(userMapper.selectCount(null));
       vo.setTodayNewUsers(countTodayNewUsers());
@@ -52,6 +53,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
       vo.setRoleDistribution(getRoleDistribution());
       vo.setUserStatusDistribution(getUserStatusDistribution());
       vo.setGrowthRate(calculateUserGrowthRate(7));
+      userStatisticsCacheService.putOverview(vo);
       return vo;
     } catch (Exception e) {
       log.error("Failed to get user statistics overview", e);
@@ -66,11 +68,15 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   }
 
   @Override
-  @Cacheable(cacheNames = "user:statistics", key = "'registration:' + #startDate + ':' + #endDate")
   public Map<LocalDate, Long> getUserRegistrationTrend(LocalDate startDate, LocalDate endDate) {
     try {
       if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
         return Collections.emptyMap();
+      }
+      Map<LocalDate, Long> cached =
+          userStatisticsCacheService.getRegistrationTrend(startDate, endDate);
+      if (cached != null) {
+        return cached;
       }
       Map<LocalDate, Long> trend = new LinkedHashMap<>();
       LocalDate current = startDate;
@@ -121,6 +127,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
           trend.put(day, count);
         }
       }
+      userStatisticsCacheService.putRegistrationTrend(startDate, endDate, trend);
       return trend;
     } catch (Exception e) {
       log.error("Failed to get registration trend", e);
@@ -138,10 +145,15 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   }
 
   @Override
-  @Cacheable(cacheNames = "user:statistics", key = "'role_distribution'")
   public Map<String, Long> getRoleDistribution() {
     try {
-      return authPrincipalService.getRoleDistribution();
+      Map<String, Long> cached = userStatisticsCacheService.getRoleDistribution();
+      if (cached != null) {
+        return cached;
+      }
+      Map<String, Long> distribution = authPrincipalService.getRoleDistribution();
+      userStatisticsCacheService.putRoleDistribution(distribution);
+      return distribution;
     } catch (Exception e) {
       log.error("Failed to get role distribution", e);
       return Collections.emptyMap();
@@ -155,15 +167,19 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   }
 
   @Override
-  @Cacheable(cacheNames = "user:statistics", key = "'status_distribution'")
   public Map<String, Long> getUserStatusDistribution() {
     try {
+      Map<String, Long> cached = userStatisticsCacheService.getStatusDistribution();
+      if (cached != null) {
+        return cached;
+      }
       Map<String, Long> distribution = new HashMap<>();
       long total = userMapper.selectCount(null);
       long active = userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getStatus, 1));
       long inactive = Math.max(total - active, 0L);
       distribution.put("active", active);
       distribution.put("inactive", inactive);
+      userStatisticsCacheService.putStatusDistribution(distribution);
       return distribution;
     } catch (Exception e) {
       log.error("Failed to get user status distribution", e);
@@ -178,10 +194,13 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   }
 
   @Override
-  @Cacheable(cacheNames = "user:statistics", key = "'active:' + #days")
   public Long countActiveUsers(Integer days) {
     try {
       int safeDays = days == null || days <= 0 ? 7 : days;
+      Long cached = userStatisticsCacheService.getActiveUsers(safeDays);
+      if (cached != null) {
+        return cached;
+      }
       Set<String> keys = scanKeys("user:last_login:*");
       if (keys == null || keys.isEmpty()) {
         return 0L;
@@ -210,6 +229,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
           count++;
         }
       }
+      userStatisticsCacheService.putActiveUsers(safeDays, count);
       return count;
     } catch (Exception e) {
       log.error("Failed to count active users", e);
@@ -338,28 +358,17 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
   @Async("userStatisticsExecutor")
   public CompletableFuture<Boolean> refreshStatisticsCacheAsync() {
     try {
+      userStatisticsCacheService.clearAll();
       UserStatisticsVO overview = getUserStatisticsOverview();
       Map<String, Long> roleDistribution = overview.getRoleDistribution();
       Map<String, Long> statusDistribution = overview.getUserStatusDistribution();
       Long active7 = overview.getActiveUsers();
       Long active30 = countActiveUsers(30);
-
-      Cache cache = cacheManager.getCache("user:statistics");
-      if (cache != null) {
-        cache.put("overview", overview);
-        if (roleDistribution != null) {
-          cache.put("role_distribution", roleDistribution);
-        }
-        if (statusDistribution != null) {
-          cache.put("status_distribution", statusDistribution);
-        }
-        if (active7 != null) {
-          cache.put("active:7", active7);
-        }
-        if (active30 != null) {
-          cache.put("active:30", active30);
-        }
-      }
+      userStatisticsCacheService.putOverview(overview);
+      userStatisticsCacheService.putRoleDistribution(roleDistribution);
+      userStatisticsCacheService.putStatusDistribution(statusDistribution);
+      userStatisticsCacheService.putActiveUsers(7, active7);
+      userStatisticsCacheService.putActiveUsers(30, active30);
       return CompletableFuture.completedFuture(true);
     } catch (Exception e) {
       log.error("Failed to refresh statistics cache", e);

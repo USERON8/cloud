@@ -8,7 +8,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.*;
 import com.cloud.common.domain.vo.user.UserVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
@@ -20,10 +20,6 @@ import com.cloud.user.service.cache.TransactionalUserCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,14 +29,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   private final UserConverter userConverter;
   private final AuthPrincipalService authPrincipalService;
-  private final CacheManager cacheManager;
   private final TransactionalUserCacheService userInfoCacheService;
 
   @Override
   @Transactional(readOnly = true)
   public UserDTO findByUsername(String username) {
     if (StrUtil.isBlank(username)) {
-      throw new BusinessException("username is required");
+      throw new BizException("username is required");
     }
 
     TransactionalUserCacheService.UserCache cached = userInfoCacheService.getByUsername(username);
@@ -99,15 +94,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire user delete lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public boolean deleteUserById(Long id) {
     if (id == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     User user = getById(id);
     if (user == null) {
@@ -128,15 +117,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 30,
       failMessage = "failed to acquire user batch delete lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public boolean deleteUsersByIds(Collection<Long> userIds) {
     if (userIds == null || userIds.isEmpty()) {
-      throw new BusinessException("user ids are required");
+      throw new BizException("user ids are required");
     }
     List<User> users = listByIds(userIds);
     boolean deleted = removeByIds(userIds);
@@ -158,7 +141,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
   @Transactional(readOnly = true)
   public UserDTO getUserById(Long id) {
     if (id == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     TransactionalUserCacheService.UserCache cached = userInfoCacheService.getById(id);
     if (cached != null) {
@@ -176,7 +159,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
   @Transactional(readOnly = true)
   public UserProfileDTO getProfileById(Long id) {
     if (id == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     TransactionalUserCacheService.UserCache cached = userInfoCacheService.getById(id);
     if (cached != null) {
@@ -224,17 +207,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire user create lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true)
-      })
   public Long createUser(UserUpsertRequestDTO requestDTO) {
     if (requestDTO == null) {
-      throw new BusinessException("user payload is required");
+      throw new BizException("user payload is required");
     }
     if (StrUtil.isBlank(requestDTO.getPassword())) {
-      throw new BusinessException("password is required");
+      throw new BizException("password is required");
     }
     authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), null);
     List<String> roles =
@@ -256,14 +234,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true)
-      })
   public Long createProfile(UserProfileUpsertDTO profileUpsertDTO) {
     if (profileUpsertDTO == null || profileUpsertDTO.getId() == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     User existing = getById(profileUpsertDTO.getId());
     if (existing == null) {
@@ -299,16 +272,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire user update lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "user", key = "'username:' + #requestDTO.username"),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public Boolean updateUser(Long id, UserUpsertRequestDTO requestDTO) {
     if (id == null || requestDTO == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
 
     User existingUser = getById(id);
@@ -321,7 +287,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       long count =
           lambdaQuery().eq(User::getUsername, requestDTO.getUsername()).ne(User::getId, id).count();
       if (count > 0) {
-        throw new BusinessException("username already exists");
+        throw new BizException("username already exists");
       }
       authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
     }
@@ -331,7 +297,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     boolean updated = updateById(user);
     if (updated) {
       authPrincipalService.updatePrincipal(toAuthPrincipalDTO(id, requestDTO, existingUser));
-      evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
       updateUserCache(existingUser, requestDTO);
     }
     return updated;
@@ -339,16 +304,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#profileUpsertDTO.id"),
-        @CacheEvict(cacheNames = "user", key = "'username:' + #profileUpsertDTO.username"),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public Boolean updateProfile(UserProfileUpsertDTO profileUpsertDTO) {
     if (profileUpsertDTO == null || profileUpsertDTO.getId() == null) {
-      throw new BusinessException("user id is required");
+      throw new BizException("user id is required");
     }
     User existingUser = getById(profileUpsertDTO.getId());
     if (existingUser == null) {
@@ -364,21 +322,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public boolean updateUsersBatch(List<UserUpsertRequestDTO> requestDTOList) {
     if (requestDTOList == null || requestDTOList.isEmpty()) {
-      throw new BusinessException("user payload list is required");
+      throw new BizException("user payload list is required");
     }
     List<User> entities = new ArrayList<>(requestDTOList.size());
     Map<Long, User> existingUsers = new HashMap<>(requestDTOList.size());
     for (UserUpsertRequestDTO requestDTO : requestDTOList) {
       if (requestDTO == null || requestDTO.getId() == null) {
-        throw new BusinessException("user id is required");
+        throw new BizException("user id is required");
       }
       User existingUser = getById(requestDTO.getId());
       if (existingUser == null) {
@@ -404,7 +356,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       }
       authPrincipalService.updatePrincipal(
           toAuthPrincipalDTO(requestDTO.getId(), requestDTO, existingUser));
-      evictUsernameCacheIfChanged(existingUser.getUsername(), requestDTO.getUsername());
       updateUserCache(existingUser, requestDTO);
     }
     return true;
@@ -417,13 +368,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire user delete lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public Boolean deleteUser(Long id) {
     User existingUser = getById(id);
     boolean deleted = removeById(id);
@@ -443,11 +387,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire user status lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "userList", allEntries = true)
-      })
   public Boolean updateUserStatus(Long id, Integer status) {
     User user = new User();
     user.setId(id);
@@ -458,7 +397,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       authPrincipalDTO.setId(id);
       authPrincipalDTO.setStatus(status);
       authPrincipalService.updatePrincipal(authPrincipalDTO);
-      updateUserStatusCache(id, status);
+      updateUserStatusCache(id, status, null);
     }
     return updated;
   }
@@ -470,11 +409,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire reset password lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public String resetPassword(Long id) {
     if (getById(id) == null) {
       throw new EntityNotFoundException("user", id);
@@ -494,17 +428,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 15,
       failMessage = "failed to acquire change password lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#id"),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public Boolean changePassword(Long id, String oldPassword, String newPassword) {
     if (getById(id) == null) {
       throw new EntityNotFoundException("user", id);
     }
     if (!authPrincipalService.changePassword(id, oldPassword, newPassword)) {
-      throw new BusinessException("old password mismatch");
+      throw new BizException("old password mismatch");
     }
     return true;
   }
@@ -516,19 +445,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       leaseTime = 30,
       failMessage = "failed to acquire batch update status lock")
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true)
-      })
   public Integer batchUpdateUserStatus(Collection<Long> userIds, Integer status) {
     if (userIds == null || userIds.isEmpty()) {
-      throw new BusinessException("user ids are required");
+      throw new BizException("user ids are required");
     }
     if (status == null) {
-      throw new BusinessException("status is required");
+      throw new BizException("status is required");
     }
 
+    List<User> existingUsers = listByIds(userIds);
     LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
     wrapper.in(User::getId, userIds);
 
@@ -543,18 +468,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             authPrincipalDTO.setStatus(status);
             authPrincipalService.updatePrincipal(authPrincipalDTO);
           });
+      if (existingUsers != null) {
+        existingUsers.forEach(
+            user -> {
+              if (user != null && user.getId() != null) {
+                updateUserStatusCache(user.getId(), status, user.getUsername());
+              }
+            });
+      }
     }
     return updated ? userIds.size() : 0;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", allEntries = true),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public boolean updateBatchById(Collection<User> entityList) {
     if (entityList == null || entityList.isEmpty()) {
       return false;
@@ -593,29 +520,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#entity.id"),
-        @CacheEvict(cacheNames = "userList", allEntries = true)
-      })
   public boolean save(User entity) {
-    return super.save(entity);
+    boolean saved = super.save(entity);
+    if (saved) {
+      refreshUserCache(entity, null);
+    }
+    return saved;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = "user", key = "#entity.id"),
-        @CacheEvict(
-            cacheNames = "user",
-            key = "'username:' + #entity.username",
-            condition = "#entity.username != null"),
-        @CacheEvict(cacheNames = "userList", allEntries = true),
-        @CacheEvict(cacheNames = "auth", allEntries = true)
-      })
   public boolean updateById(User entity) {
-    return super.updateById(entity);
+    if (entity == null || entity.getId() == null) {
+      return false;
+    }
+    User existing = getById(entity.getId());
+    boolean updated = super.updateById(entity);
+    if (!updated) {
+      return false;
+    }
+    User latest = getById(entity.getId());
+    if (latest == null) {
+      userInfoCacheService.evictTransactional(
+          entity.getId(), existing == null ? entity.getUsername() : existing.getUsername());
+      return true;
+    }
+    refreshUserCache(latest, existing == null ? entity.getUsername() : existing.getUsername());
+    return true;
   }
 
   private UserDTO toDTOWithRoles(User user) {
@@ -786,17 +717,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     refreshUserCache(latest, entity.getUsername());
   }
 
-  private void updateUserStatusCache(Long id, Integer status) {
+  private void updateUserStatusCache(Long id, Integer status, String oldUsername) {
     if (id == null || status == null) {
       return;
     }
     User latest = getById(id);
     if (latest == null) {
-      userInfoCacheService.evictTransactional(id, null);
+      userInfoCacheService.evictTransactional(id, oldUsername);
       return;
     }
     latest.setStatus(status);
-    refreshUserCache(latest, latest.getUsername());
+    refreshUserCache(latest, oldUsername);
   }
 
   private User mergeUser(User existingUser, UserUpsertRequestDTO requestDTO) {
@@ -865,18 +796,5 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       userInfoCacheService.evict(null, oldUsername);
     }
     userInfoCacheService.putTransactional(snapshot);
-  }
-
-  private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
-    if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
-      return;
-    }
-    if (StrUtil.equals(oldUsername, newUsername)) {
-      return;
-    }
-    Cache cache = cacheManager.getCache("user");
-    if (cache != null) {
-      cache.evict("username:" + oldUsername);
-    }
   }
 }

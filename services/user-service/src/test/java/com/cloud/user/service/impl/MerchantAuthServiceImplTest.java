@@ -2,7 +2,6 @@ package com.cloud.user.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,14 +11,13 @@ import com.cloud.user.converter.MerchantAuthConverter;
 import com.cloud.user.mapper.MerchantAuthMapper;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.cache.TransactionalMerchantAuthCacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,9 +27,7 @@ class MerchantAuthServiceImplTest {
 
   @Mock private MerchantAuthConverter merchantAuthConverter;
 
-  @Mock private CacheManager cacheManager;
-
-  @Mock private Cache cache;
+  @Mock private TransactionalMerchantAuthCacheService merchantAuthCacheService;
 
   @Mock private MerchantService merchantService;
 
@@ -42,9 +38,11 @@ class MerchantAuthServiceImplTest {
     merchantAuthService =
         Mockito.spy(
             new MerchantAuthServiceImpl(
-                merchantAuthMapper, merchantAuthConverter, cacheManager, merchantService));
+                merchantAuthMapper,
+                merchantAuthConverter,
+                merchantAuthCacheService,
+                merchantService));
     ReflectionTestUtils.setField(merchantAuthService, "baseMapper", merchantAuthMapper);
-    lenient().when(cacheManager.getCache("merchantAuthCache")).thenReturn(cache);
   }
 
   @Test
@@ -77,8 +75,7 @@ class MerchantAuthServiceImplTest {
     boolean removed = merchantAuthService.removeByMerchantId(9L);
 
     assertThat(removed).isTrue();
-    verify(cache).evict("id:2");
-    verify(cache).evict("merchantId:9");
+    verify(merchantAuthCacheService).evictTransactional(2L, 9L);
   }
 
   @Test
@@ -91,5 +88,6 @@ class MerchantAuthServiceImplTest {
     assertThat(saved).isTrue();
     assertThat(auth.getCreatedAt()).isNotNull();
     assertThat(auth.getUpdatedAt()).isNotNull();
+    verify(merchantAuthCacheService).putTransactional(auth);
   }
 }

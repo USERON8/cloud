@@ -31,12 +31,11 @@ User domain service covering consumers, merchants, administrators, and merchant 
 - Redis single-level cache already implemented explicitly for:
   - user basic info
   - user address data
-- Mixed legacy cache usage still exists for:
   - admin service
   - merchant service
   - merchant-auth service
   - statistics service
-  - some async and file upload related invalidation paths
+  - async user refresh and file upload invalidation paths
 
 ## Authorization Rules
 
@@ -49,15 +48,16 @@ User domain service covering consumers, merchants, administrators, and merchant 
 
 - Replaced previous partial user-info cache implementation with explicit Redis single-level cache service.
 - Replaced previous partial user-address cache implementation with explicit Redis single-level cache service.
-- Updated `UserServiceImpl` and `UserAddressServiceImpl` to use those cache services directly.
-- Added and updated targeted tests for user and address cache services.
+- Replaced legacy cache invalidation in async refresh and avatar upload flows with explicit Redis cache updates.
+- Replaced admin, merchant, merchant-auth, and statistics service cache usage with explicit Redis single-level cache services.
+- Removed remaining `Spring Cache` dependency from `UserServiceImpl` and aligned user write paths with explicit Redis cache refresh and eviction.
+- Added and updated targeted tests for the user, address, admin, merchant, merchant-auth, and statistics cache paths.
 
 ## Known Findings In This Sync
 
-- `user-service` still has mixed cache styles and is not yet fully unified.
-- A large amount of Spring Cache annotation-based behavior still remains outside the user-info and user-address paths.
-- `CacheManager` is still directly referenced by several user-related implementations, so the service currently has both explicit Redis cache services and annotation-driven cache behavior.
-- Further cleanup should continue in admin, merchant, merchant-auth, statistics, async warmup, and file-upload related paths.
+- Business cache paths in `user-service` are now unified to explicit Redis single-level cache services.
+- `UserApplication` still enables Spring caching at framework level, but current user-domain business flows no longer depend on annotation-driven cache behavior.
+- Future cache work in this service should prefer extending the existing explicit cache services instead of reintroducing `CacheManager` or `@Cacheable` style annotations.
 
 ## Local Run
 

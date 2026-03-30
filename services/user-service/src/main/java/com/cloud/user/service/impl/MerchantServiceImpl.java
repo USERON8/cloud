@@ -16,6 +16,7 @@ import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.cache.TransactionalMerchantCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,11 +25,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -51,15 +47,20 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
   private final UserMapper userMapper;
   private final MerchantConverter merchantConverter;
   private final AuthPrincipalService authPrincipalService;
-  private final CacheManager cacheManager;
+  private final TransactionalMerchantCacheService merchantCacheService;
 
   @Override
   @Transactional(readOnly = true)
   public MerchantDTO getMerchantById(Long id) throws MerchantException.MerchantNotFoundException {
+    TransactionalMerchantCacheService.MerchantCache cached = merchantCacheService.getById(id);
+    if (cached != null) {
+      return toEnrichedDTO(cached);
+    }
     Merchant merchant = getById(id);
     if (merchant == null) {
       throw new MerchantException.MerchantNotFoundException(id);
     }
+    merchantCacheService.putTransactional(merchant);
     return toEnrichedDTO(merchant);
   }
 
@@ -71,10 +72,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       throw new IllegalArgumentException("username is required");
     }
 
+    TransactionalMerchantCacheService.MerchantCache cached =
+        merchantCacheService.getByUsername(username);
+    if (cached != null) {
+      return toEnrichedDTO(cached);
+    }
+
     Merchant merchant = lambdaQuery().eq(Merchant::getUsername, username).one();
     if (merchant == null) {
       throw new MerchantException.MerchantNotFoundException(username);
     }
+    merchantCacheService.putTransactional(merchant);
     return toEnrichedDTO(merchant);
   }
 
@@ -86,10 +94,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       throw new IllegalArgumentException("merchantName is required");
     }
 
+    TransactionalMerchantCacheService.MerchantCache cached =
+        merchantCacheService.getByMerchantName(merchantName);
+    if (cached != null) {
+      return toEnrichedDTO(cached);
+    }
+
     Merchant merchant = lambdaQuery().eq(Merchant::getMerchantName, merchantName).one();
     if (merchant == null) {
       throw new MerchantException.MerchantNotFoundException(merchantName);
     }
+    merchantCacheService.putTransactional(merchant);
     return toEnrichedDTO(merchant);
   }
 
@@ -122,7 +137,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CachePut(cacheNames = MERCHANT_CACHE, key = "#result.id")
   @DistributedLock(
       key = "'create:' + #requestDTO.username",
       prefix = "merchant",
@@ -165,16 +179,12 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
     authPrincipalService.createPrincipal(
         toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
+    merchantCacheService.putTransactional(merchant);
     return toEnrichedDTO(merchant);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Caching(
-      evict = {
-        @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id"),
-        @CacheEvict(cacheNames = MERCHANT_CACHE, key = "'username:' + #requestDTO.username")
-      })
   @DistributedLock(
       key = "'update:' + #id",
       prefix = "merchant",
@@ -238,14 +248,13 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       Merchant current = resolveCurrentMerchant(requestDTO, existing);
       authPrincipalService.updatePrincipal(
           toAuthPrincipalDTO(current, requestDTO.getEmail(), requestDTO.getPassword()));
-      evictUsernameCacheIfChanged(existing.getUsername(), requestDTO.getUsername());
+      refreshMerchantCache(current, existing.getUsername(), existing.getMerchantName());
     }
     return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   @DistributedLock(
       key = "'delete:' + #id",
       prefix = "merchant",
@@ -260,22 +269,31 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     boolean removed = removeById(id);
     if (removed) {
       authPrincipalService.deletePrincipal(id);
+      merchantCacheService.evictTransactional(
+          id, merchant.getUsername(), merchant.getMerchantName());
     }
     return removed;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, allEntries = true)
   public boolean batchDeleteMerchants(List<Long> ids) {
     if (CollectionUtils.isEmpty(ids)) {
       return true;
     }
+    List<Merchant> merchants = listByIds(ids);
     boolean removed = removeByIds(ids);
     if (removed) {
       ids.forEach(
           id -> {
             authPrincipalService.deletePrincipal(id);
+          });
+      merchants.forEach(
+          merchant -> {
+            if (merchant != null) {
+              merchantCacheService.evictTransactional(
+                  merchant.getId(), merchant.getUsername(), merchant.getMerchantName());
+            }
           });
     }
     return removed;
@@ -283,7 +301,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   public boolean updateMerchantStatus(Long id, Integer status)
       throws MerchantException.MerchantNotFoundException {
     Merchant merchant = getById(id);
@@ -298,11 +315,11 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     if (updated) {
       Merchant refreshed = getById(id);
       if (refreshed != null) {
-        MerchantDTO merchantDTO = toEnrichedDTO(refreshed);
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
         authPrincipalDTO.setId(refreshed.getId());
         authPrincipalDTO.setStatus(refreshed.getStatus());
         authPrincipalService.updatePrincipal(authPrincipalDTO);
+        merchantCacheService.putTransactional(refreshed);
       }
     }
     return updated;
@@ -332,7 +349,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   @DistributedLock(
       key = "'audit:' + #id",
       prefix = "merchant",
@@ -349,26 +365,27 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       throw new MerchantException.MerchantAuditException("invalid audit status: " + auditStatus);
     }
     merchant.setAuditStatus(auditStatus);
-    return updateById(merchant);
+    boolean updated = updateById(merchant);
+    if (updated) {
+      merchantCacheService.putTransactional(merchant);
+    }
+    return updated;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   public boolean enableMerchant(Long id) throws MerchantException.MerchantNotFoundException {
     return updateMerchantStatus(id, STATUS_ENABLED);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   public boolean disableMerchant(Long id) throws MerchantException.MerchantNotFoundException {
     return updateMerchantStatus(id, STATUS_DISABLED);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   @DistributedLock(
       key = "'approve:' + #id",
       prefix = "merchant",
@@ -411,7 +428,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
   @DistributedLock(
       key = "'reject:' + #id",
       prefix = "merchant",
@@ -451,12 +467,18 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
   }
 
   @Override
-  @CacheEvict(cacheNames = MERCHANT_CACHE, key = "#id")
-  public void evictMerchantCache(Long id) {}
+  public void evictMerchantCache(Long id) {
+    Merchant merchant = id == null ? null : getById(id);
+    merchantCacheService.evictTransactional(
+        id,
+        merchant == null ? null : merchant.getUsername(),
+        merchant == null ? null : merchant.getMerchantName());
+  }
 
   @Override
-  @CacheEvict(cacheNames = MERCHANT_CACHE, allEntries = true)
-  public void evictAllMerchantCache() {}
+  public void evictAllMerchantCache() {
+    merchantCacheService.clearAll();
+  }
 
   private MerchantDTO toEnrichedDTO(Merchant merchant) {
     MerchantDTO merchantDTO = merchantConverter.toDTO(merchant);
@@ -476,6 +498,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(merchant.getId()));
 
     return merchantDTO;
+  }
+
+  private MerchantDTO toEnrichedDTO(TransactionalMerchantCacheService.MerchantCache cached) {
+    Merchant merchant = new Merchant();
+    merchant.setId(cached.id());
+    merchant.setUsername(cached.username());
+    merchant.setMerchantName(cached.merchantName());
+    merchant.setPhone(cached.phone());
+    merchant.setStatus(cached.status());
+    merchant.setAuditStatus(cached.auditStatus());
+    return toEnrichedDTO(merchant);
   }
 
   private List<MerchantDTO> toEnrichedDTOList(List<Merchant> merchants) {
@@ -593,16 +626,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     return authPrincipalDTO;
   }
 
-  private void evictUsernameCacheIfChanged(String oldUsername, String newUsername) {
-    if (StrUtil.isBlank(oldUsername) || StrUtil.isBlank(newUsername)) {
+  private void refreshMerchantCache(Merchant merchant, String oldUsername, String oldMerchantName) {
+    if (merchant == null || merchant.getId() == null) {
       return;
     }
-    if (StrUtil.equals(oldUsername, newUsername)) {
-      return;
+    if (StrUtil.isNotBlank(oldUsername) && !StrUtil.equals(oldUsername, merchant.getUsername())) {
+      merchantCacheService.evict(null, oldUsername, null);
     }
-    Cache cache = cacheManager.getCache(MERCHANT_CACHE);
-    if (cache != null) {
-      cache.evict("username:" + oldUsername);
+    if (StrUtil.isNotBlank(oldMerchantName)
+        && !StrUtil.equals(oldMerchantName, merchant.getMerchantName())) {
+      merchantCacheService.evict(null, null, oldMerchantName);
     }
+    merchantCacheService.putTransactional(merchant);
   }
 }
