@@ -32,6 +32,10 @@ app:
     public-actuator-enabled: false
     testenv-bypass-enabled: true
     test-token-value: TEST_ENV_PERMANENT_TOKEN
+    internal-identity:
+      enabled: ${APP_SECURITY_INTERNAL_IDENTITY_ENABLED:true}
+      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET}}
+      timestamp-skew-seconds: ${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}
     cors:
       allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
   mybatis:
