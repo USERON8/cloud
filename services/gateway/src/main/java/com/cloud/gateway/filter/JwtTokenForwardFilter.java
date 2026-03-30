@@ -1,6 +1,7 @@
 package com.cloud.gateway.filter;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.gateway.support.GatewayTraceSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -19,6 +20,8 @@ import reactor.core.publisher.Mono;
 public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
   private static final String[] FORWARDED_IDENTITY_HEADERS = {
+    "Authorization",
+    "X-Auth-Token",
     "X-User-Name",
     "X-User-Id",
     "X-User-Nickname",
@@ -26,7 +29,7 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
     "X-Client-Id",
     "X-User-Scopes",
     "X-User-Roles",
-    "X-Auth-Token"
+    "X-Trace-Id"
   };
 
   @Override
@@ -51,11 +54,11 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                             for (String header : FORWARDED_IDENTITY_HEADERS) {
                               headers.remove(header);
                             }
-                            headers.set("Authorization", "Bearer " + token);
-                            headers.set("X-Auth-Token", token);
                           });
 
-              addUserInfoHeaders(requestBuilder, jwt);
+              requestBuilder.header("Authorization", "Bearer " + token);
+              requestBuilder.header("X-Auth-Token", token);
+              addUserInfoHeaders(requestBuilder, jwt, exchange);
 
               ServerHttpRequest request = requestBuilder.build();
 
@@ -67,7 +70,8 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         .flatMap(chain::filter);
   }
 
-  private void addUserInfoHeaders(ServerHttpRequest.Builder requestBuilder, Jwt jwt) {
+  private void addUserInfoHeaders(
+      ServerHttpRequest.Builder requestBuilder, Jwt jwt, ServerWebExchange exchange) {
     try {
 
       addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
@@ -90,6 +94,9 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                 .map(Object::toString)
                 .collect(java.util.stream.Collectors.joining(" ")));
       }
+
+      addHeaderIfPresent(
+          requestBuilder, "X-Trace-Id", GatewayTraceSupport.resolveTraceId(exchange));
 
       log.debug("Added user claim headers for user {}", jwt.getClaimAsString("username"));
 

@@ -1,7 +1,9 @@
 package com.cloud.gateway.config;
 
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.security.AudienceTokenValidator;
 import com.cloud.common.security.InternalScopeClientValidator;
+import com.cloud.gateway.support.GatewayResponseWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -48,6 +50,7 @@ public class ResourceServerConfig {
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
   private final Environment environment;
+  private final GatewayResponseWriter gatewayResponseWriter;
   private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
 
   @Value(
@@ -231,44 +234,20 @@ public class ResourceServerConfig {
                     .authenticationEntryPoint(
                         (exchange, ex) -> {
                           log.warn("OAuth2 authentication failed: {}", ex.getMessage());
-                          exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                          exchange
-                              .getResponse()
-                              .getHeaders()
-                              .add("Content-Type", "application/json;charset=UTF-8");
-                          String body =
-                              "{\"code\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication failed\",\"timestamp\":"
-                                  + System.currentTimeMillis()
-                                  + "}";
-                          return exchange
-                              .getResponse()
-                              .writeWith(
-                                  Mono.just(
-                                      exchange
-                                          .getResponse()
-                                          .bufferFactory()
-                                          .wrap(body.getBytes())));
+                          return gatewayResponseWriter.writeError(
+                              exchange,
+                              HttpStatus.UNAUTHORIZED,
+                              ResultCode.UNAUTHORIZED,
+                              "Authentication failed");
                         })
                     .accessDeniedHandler(
                         (exchange, ex) -> {
                           log.warn("OAuth2 access denied: {}", ex.getMessage());
-                          exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                          exchange
-                              .getResponse()
-                              .getHeaders()
-                              .add("Content-Type", "application/json;charset=UTF-8");
-                          String body =
-                              "{\"code\":403,\"error\":\"Forbidden\",\"message\":\"Insufficient permissions\",\"timestamp\":"
-                                  + System.currentTimeMillis()
-                                  + "}";
-                          return exchange
-                              .getResponse()
-                              .writeWith(
-                                  Mono.just(
-                                      exchange
-                                          .getResponse()
-                                          .bufferFactory()
-                                          .wrap(body.getBytes())));
+                          return gatewayResponseWriter.writeError(
+                              exchange,
+                              HttpStatus.FORBIDDEN,
+                              ResultCode.FORBIDDEN,
+                              "Insufficient permissions");
                         }));
 
     return http.build();
