@@ -132,6 +132,8 @@ public class ResourceServerConfig {
                           "/csrf",
                           "/error",
                           "/gateway/fallback/search",
+                          "/gateway/fallback/payment",
+                          "/gateway/fallback/user",
                           "/static/**",
                           "/public/**")
                       .permitAll()

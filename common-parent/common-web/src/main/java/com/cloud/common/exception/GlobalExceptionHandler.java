@@ -57,8 +57,9 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Result<String>> handleRemoteException(
       RemoteException e, HttpServletRequest request) {
     exceptionReporter.reportRemote(e, request);
-    return buildResponse(
-        503, Result.error(e.getCode(), "Remote service is unavailable, please retry later"));
+    int httpStatus = resolveRemoteHttpStatus(e);
+    String message = resolveRemoteMessage(e);
+    return buildResponse(httpStatus, Result.error(e.getCode(), message));
   }
 
   @ExceptionHandler(ValidationException.class)
@@ -281,5 +282,34 @@ public class GlobalExceptionHandler {
 
   private <T> ResponseEntity<Result<T>> buildResponse(int httpStatus, Result<T> body) {
     return ResponseEntity.status(httpStatus).body(body);
+  }
+
+  private String resolveRemoteMessage(RemoteException exception) {
+    if (exception == null) {
+      return "Remote service is unavailable, please retry later";
+    }
+    if (exception.isTimeout()) {
+      return "Remote service timeout, please retry later";
+    }
+    if (exception.isRejected()) {
+      return "Remote service is busy, please retry later";
+    }
+    if (exception.isProviderError()) {
+      return "Remote service failed, please retry later";
+    }
+    return "Remote service is unavailable, please retry later";
+  }
+
+  private int resolveRemoteHttpStatus(RemoteException exception) {
+    if (exception == null) {
+      return 503;
+    }
+    if (exception.isTimeout()) {
+      return 504;
+    }
+    if (exception.isRejected()) {
+      return 429;
+    }
+    return 503;
   }
 }
