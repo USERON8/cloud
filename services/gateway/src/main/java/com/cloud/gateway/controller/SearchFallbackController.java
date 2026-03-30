@@ -70,25 +70,27 @@ public class SearchFallbackController {
       ServerWebExchange exchange,
       @RequestParam(value = "route", required = false) String explicitRoute) {
     String originalPath = resolveOriginalPath(exchange);
-    MultiValueMap<String, String> queryParams =
+    MultiValueMap<String, String> rawQueryParams =
         new LinkedMultiValueMap<>(exchange.getRequest().getQueryParams());
     String routeType = resolveRouteType(originalPath, explicitRoute);
+    MultiValueMap<String, String> cacheQueryParams =
+        normalizeCacheQueryParams(routeType, rawQueryParams);
     Timer.Sample sample = Timer.start(meterRegistry);
 
-    String cacheKey = buildCacheKey(routeType, queryParams);
-    String cachedBody = searchFallbackCache.get(routeType, cacheKey, queryParams);
+    String cacheKey = buildCacheKey(routeType, cacheQueryParams);
+    String cachedBody = searchFallbackCache.get(routeType, cacheKey, cacheQueryParams);
     if (cachedBody != null) {
       counter(routeType, "cache_hit").increment();
       return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(cachedBody))
           .doFinally(signal -> sample.stop(latencyTimer(routeType)));
     }
 
-    return routeFallback(routeType, queryParams)
+    return routeFallback(routeType, rawQueryParams)
         .timeout(Duration.ofMillis(fallbackTimeoutMs))
         .doOnSuccess(
             response -> {
               counter(routeType, "success").increment();
-              cacheIfEligible(routeType, cacheKey, response, queryParams);
+              cacheIfEligible(routeType, cacheKey, response, cacheQueryParams);
             })
         .onErrorResume(
             ex -> {
@@ -96,7 +98,7 @@ public class SearchFallbackController {
               log.warn(
                   "Search fallback degraded: path={}, query={}, reason={}",
                   originalPath,
-                  queryParams,
+                  rawQueryParams,
                   ex.getMessage());
               return Mono.just(degradedResponse(routeType, "downstream unavailable"));
             })
@@ -307,6 +309,22 @@ public class SearchFallbackController {
                       });
             });
     return builder.toString();
+  }
+
+  private MultiValueMap<String, String> normalizeCacheQueryParams(
+      String routeType, MultiValueMap<String, String> queryParams) {
+    LinkedMultiValueMap<String, String> normalized = new LinkedMultiValueMap<>();
+    String keyword = normalizeKeyword(queryParams != null ? queryParams.getFirst("keyword") : null);
+    if (StrUtil.isNotBlank(keyword)) {
+      normalized.add("keyword", keyword);
+    }
+
+    if ("suggestions".equals(routeType)) {
+      normalized.add(
+          "size",
+          String.valueOf(parseSize(queryParams != null ? queryParams.getFirst("size") : null)));
+    }
+    return normalized;
   }
 
   private void cacheIfEligible(

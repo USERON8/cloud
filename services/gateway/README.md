@@ -39,6 +39,7 @@ The gateway enables `DedupeResponseHeader` to prevent duplicate `Access-Control-
 
 - Sentinel is enabled and protects order routes by default (`80 QPS / 1s`, overrideable through environment variables)
 - Search fallback cache: `SearchFallbackCache` stores fallback responses with route- and parameter-aware TTLs
+- Cache keys are normalized from route-effective params only, so irrelevant query params do not fragment degraded-cache hit rate
   - Configuration prefix: `app.search.fallback.cache`
 
 ## Known Findings In This Sync
