@@ -7,17 +7,21 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -44,15 +48,22 @@ public class StockRedisCacheService {
   @Value("${stock.cache.ledger.l1-ttl-seconds:3}")
   private long l1TtlSeconds;
 
+  @Value("${stock.cache.ledger.delayed-double-delete-ms:500}")
+  private long delayedDoubleDeleteMs;
+
   private final StringRedisTemplate stringRedisTemplate;
   private final StockSegmentMapper stockSegmentMapper;
+  private final TaskScheduler taskScheduler;
   private final DefaultRedisScript<Long> preCheckScript;
   private Cache<Long, StockLedgerVO> localLedgerCache;
 
   public StockRedisCacheService(
-      StringRedisTemplate stringRedisTemplate, StockSegmentMapper stockSegmentMapper) {
+      StringRedisTemplate stringRedisTemplate,
+      StockSegmentMapper stockSegmentMapper,
+      TaskScheduler taskScheduler) {
     this.stringRedisTemplate = stringRedisTemplate;
     this.stockSegmentMapper = stockSegmentMapper;
+    this.taskScheduler = taskScheduler;
     this.preCheckScript =
         buildScript(
             """
@@ -163,6 +174,24 @@ public class StockRedisCacheService {
     cacheLedger(ledger);
   }
 
+  public void evictLedgerAfterCommit(Long skuId) {
+    if (skuId == null) {
+      return;
+    }
+    runAfterCommit(
+        () -> {
+          deleteLedgerNow(skuId);
+          scheduleDelayedDelete(skuId);
+        });
+  }
+
+  public void evictLedgersAfterCommit(Collection<Long> skuIds) {
+    if (skuIds == null || skuIds.isEmpty()) {
+      return;
+    }
+    skuIds.stream().filter(Objects::nonNull).distinct().forEach(this::evictLedgerAfterCommit);
+  }
+
   public boolean preCheck(List<StockOperateCommandDTO> commands) {
     if (commands == null || commands.isEmpty()) {
       return true;
@@ -199,51 +228,6 @@ public class StockRedisCacheService {
     return Objects.equals(result, CACHE_OK);
   }
 
-  public void applyReserve(Long skuId, Integer qty) {
-    mutateLocalLedger(
-        skuId,
-        ledger -> {
-          ledger.setAvailableQty(ledger.getAvailableQty() - qty);
-          ledger.setLockedQty(ledger.getLockedQty() + qty);
-        });
-  }
-
-  public void applyRelease(Long skuId, Integer qty) {
-    mutateLocalLedger(
-        skuId,
-        ledger -> {
-          ledger.setLockedQty(ledger.getLockedQty() - qty);
-          ledger.setAvailableQty(ledger.getAvailableQty() + qty);
-        });
-  }
-
-  public void applyConfirmFromLocked(Long skuId, Integer qty) {
-    mutateLocalLedger(
-        skuId,
-        ledger -> {
-          ledger.setLockedQty(ledger.getLockedQty() - qty);
-          ledger.setSoldQty(ledger.getSoldQty() + qty);
-        });
-  }
-
-  public void applyDirectSell(Long skuId, Integer qty) {
-    mutateLocalLedger(
-        skuId,
-        ledger -> {
-          ledger.setAvailableQty(ledger.getAvailableQty() - qty);
-          ledger.setSoldQty(ledger.getSoldQty() + qty);
-        });
-  }
-
-  public void applyRollbackFromSold(Long skuId, Integer qty) {
-    mutateLocalLedger(
-        skuId,
-        ledger -> {
-          ledger.setSoldQty(ledger.getSoldQty() - qty);
-          ledger.setAvailableQty(ledger.getAvailableQty() + qty);
-        });
-  }
-
   private DefaultRedisScript<Long> buildScript(String scriptText) {
     DefaultRedisScript<Long> script = new DefaultRedisScript<>();
     script.setResultType(Long.class);
@@ -272,23 +256,6 @@ public class StockRedisCacheService {
 
   private void putLocalLedger(StockLedgerVO ledger) {
     localLedgerCache.put(ledger.getSkuId(), copyVo(ledger));
-  }
-
-  private void mutateLocalLedger(Long skuId, Consumer<StockLedgerVO> mutator) {
-    if (skuId == null) {
-      return;
-    }
-    StockLedgerVO cached = localLedgerCache.getIfPresent(skuId);
-    if (cached == null) {
-      refreshFromDb(skuId);
-      cached = localLedgerCache.getIfPresent(skuId);
-      if (cached == null) {
-        return;
-      }
-    }
-    mutator.accept(cached);
-    cached.setUpdatedAt(LocalDateTime.now());
-    cacheLedger(cached);
   }
 
   private String stringify(Object value) {
@@ -328,5 +295,36 @@ public class StockRedisCacheService {
     copy.setCreatedAt(source.getCreatedAt());
     copy.setUpdatedAt(source.getUpdatedAt());
     return copy;
+  }
+
+  private void deleteLedgerNow(Long skuId) {
+    localLedgerCache.invalidate(skuId);
+    try {
+      stringRedisTemplate.delete(buildKey(skuId));
+    } catch (Exception ex) {
+      log.warn("Delete stock ledger cache failed: skuId={}", skuId, ex);
+    }
+  }
+
+  private void runAfterCommit(Runnable task) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              task.run();
+            }
+          });
+      return;
+    }
+    task.run();
+  }
+
+  private void scheduleDelayedDelete(Long skuId) {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(() -> deleteLedgerNow(skuId), Instant.now().plusMillis(delayMs));
   }
 }

@@ -72,7 +72,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   public boolean save(Category entity) {
     boolean saved = super.save(entity);
     if (saved) {
-      categoryRedisCacheService.clearAll();
+      categoryRedisCacheService.clearAllAfterCommit();
     }
     return saved;
   }
@@ -82,7 +82,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   public boolean updateById(Category entity) {
     boolean updated = super.updateById(entity);
     if (updated) {
-      categoryRedisCacheService.clearAll();
+      categoryRedisCacheService.clearAllAfterCommit();
     }
     return updated;
   }
@@ -92,7 +92,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   public boolean removeById(java.io.Serializable id) {
     boolean removed = super.removeById(id);
     if (removed) {
-      categoryRedisCacheService.clearAll();
+      categoryRedisCacheService.clearAllAfterCommit();
     }
     return removed;
   }
@@ -102,17 +102,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   public boolean removeByIds(java.util.Collection<?> idList) {
     boolean removed = super.removeByIds(idList);
     if (removed) {
-      categoryRedisCacheService.clearAll();
+      categoryRedisCacheService.clearAllAfterCommit();
     }
     return removed;
   }
 
   public void clearCategoryCache() {
-    categoryRedisCacheService.clearAll();
+    categoryRedisCacheService.clearAllAfterCommit();
   }
 
   public void evictCategoryCache(Long categoryId) {
-    categoryRedisCacheService.clearAll();
+    categoryRedisCacheService.clearAllAfterCommit();
   }
 
   @Override

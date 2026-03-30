@@ -149,7 +149,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       oldSku.setDeleted(1);
       skuMapper.updateById(oldSku);
     }
-    productDetailCacheService.evict(spuId);
+    productDetailCacheService.evictAfterCommit(spuId);
     productSyncMessageProducer.sendUpsert(spuId);
     return true;
   }
@@ -239,7 +239,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     spu.setStatus(status);
     boolean updated = spuMapper.updateById(spu) > 0;
     if (updated) {
-      productDetailCacheService.evict(spuId);
+      productDetailCacheService.evictAfterCommit(spuId);
       productSyncMessageProducer.sendUpsert(spuId);
     }
     return updated;

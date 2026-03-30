@@ -95,7 +95,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         stockReservationMapper.insert(reservation);
         writeTxn(command, allocation, "RESERVE", command.getReason());
       }
-      stockRedisCacheService.applyReserve(command.getSkuId(), command.getQuantity());
+      stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
       stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
       tradeMetrics.incrementStockFreeze("success");
       return true;
@@ -137,7 +137,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
           "CONFIRM",
           command.getReason());
     }
-    stockRedisCacheService.applyConfirmFromLocked(command.getSkuId(), command.getQuantity());
+    stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
     stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
     return true;
   }
@@ -176,7 +176,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
           command.getReason());
     }
     if (releasedQty > 0) {
-      stockRedisCacheService.applyRelease(command.getSkuId(), releasedQty);
+      stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
       stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
     }
     return true;
@@ -255,11 +255,8 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       throw new BusinessException(
           "rollback quantity exceeds reserved quantity for subOrderNo=" + command.getSubOrderNo());
     }
-    if (restoredFromLocked > 0) {
-      stockRedisCacheService.applyRelease(command.getSkuId(), restoredFromLocked);
-    }
-    if (restoredFromSold > 0) {
-      stockRedisCacheService.applyRollbackFromSold(command.getSkuId(), restoredFromSold);
+    if (restoredFromLocked > 0 || restoredFromSold > 0) {
+      stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
     }
     if (restoredFromLocked > 0 || restoredFromSold > 0) {
       stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));

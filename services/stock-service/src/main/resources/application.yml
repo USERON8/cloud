@@ -74,6 +74,7 @@ stock:
     ledger:
       l1-max-size: ${STOCK_CACHE_LEDGER_L1_MAX_SIZE:2000}
       l1-ttl-seconds: ${STOCK_CACHE_LEDGER_L1_TTL_SECONDS:3}
+      delayed-double-delete-ms: ${STOCK_CACHE_LEDGER_DELAYED_DOUBLE_DELETE_MS:500}
   async:
     enabled: true
   notification:

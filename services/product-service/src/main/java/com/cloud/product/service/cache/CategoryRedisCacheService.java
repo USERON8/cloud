@@ -5,13 +5,17 @@ import com.cloud.product.module.entity.Category;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -24,9 +28,13 @@ public class CategoryRedisCacheService {
 
   private final StringRedisTemplate stringRedisTemplate;
   private final ObjectMapper objectMapper;
+  private final TaskScheduler taskScheduler;
 
   @Value("${product.cache.category.ttl-seconds:1800}")
   private long ttlSeconds;
+
+  @Value("${product.cache.category.delayed-double-delete-ms:500}")
+  private long delayedDoubleDeleteMs;
 
   public List<Category> getEntityTree() {
     return get(KEY_ENTITY_TREE, new TypeReference<List<Category>>() {});
@@ -45,6 +53,18 @@ public class CategoryRedisCacheService {
   }
 
   public void clearAll() {
+    clearAllNow();
+  }
+
+  public void clearAllAfterCommit() {
+    runAfterCommit(
+        () -> {
+          clearAllNow();
+          scheduleDelayedDelete();
+        });
+  }
+
+  private void clearAllNow() {
     try {
       Set<String> keys = stringRedisTemplate.keys(PREFIX + "*");
       if (keys != null && !keys.isEmpty()) {
@@ -86,5 +106,27 @@ public class CategoryRedisCacheService {
 
   private Duration ttl() {
     return Duration.ofSeconds(Math.max(60L, ttlSeconds));
+  }
+
+  private void runAfterCommit(Runnable task) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              task.run();
+            }
+          });
+      return;
+    }
+    task.run();
+  }
+
+  private void scheduleDelayedDelete() {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(this::clearAllNow, Instant.now().plusMillis(delayMs));
   }
 }
