@@ -70,6 +70,10 @@ app:
         rejected-execution-handler: CALLER_RUNS
 
 stock:
+  cache:
+    ledger:
+      l1-max-size: ${STOCK_CACHE_LEDGER_L1_MAX_SIZE:2000}
+      l1-ttl-seconds: ${STOCK_CACHE_LEDGER_L1_TTL_SECONDS:3}
   async:
     enabled: true
   notification:

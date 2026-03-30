@@ -30,13 +30,14 @@ Inventory service supporting stock increments and decrements, reservation and re
 ## Current Design Notes
 
 - `stock-service` is a high-frequency read/write boundary and a strong candidate for explicit multi-level cache review.
-- The repository already contains `StockRedisCacheService`, which indicates inventory read caching is an active design concern.
+- `StockRedisCacheService` now provides a short-lived local L1 ledger cache in front of the Redis ledger cache.
 - Because stock consistency requirements are tighter than user/search hot-data paths, cache choices here must be validated against reservation semantics first.
 
 ## Known Findings In This Sync
 
-- This module was not changed in the current round.
-- Existing stock cache implementation was not re-audited here, only identified as one of the next places that needs a dedicated review if cache cleanup continues.
+- The ledger query path is now a pragmatic multi-level cache: very short-lived local L1 plus Redis ledger cache.
+- Redis Lua updates still remain the cross-request consistency source for reserve, release, confirm, and rollback adjustments.
+- Cross-node L1 freshness still depends on the short TTL window because this round did not add an event-driven L1 invalidation bus.
 
 ## Local Run
 

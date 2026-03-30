@@ -35,6 +35,7 @@ class StockRedisCacheServiceTest {
   @BeforeEach
   void setUp() {
     lenient().when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+    stockRedisCacheService.init();
   }
 
   @Test
@@ -58,6 +59,26 @@ class StockRedisCacheServiceTest {
   }
 
   @Test
+  void getLedgerFromCache_prefersLocalL1Cache() {
+    Map<Object, Object> entries =
+        Map.of(
+            "id", "5",
+            "skuId", "6",
+            "status", "1",
+            "salable", "9",
+            "reserved", "1",
+            "onhand", "10");
+    when(hashOperations.entries("stock:ledger:6")).thenReturn(entries);
+
+    var first = stockRedisCacheService.getLedgerFromCache(6L);
+    var second = stockRedisCacheService.getLedgerFromCache(6L);
+
+    assertThat(first).isNotNull();
+    assertThat(second).isNotNull();
+    verify(hashOperations, org.mockito.Mockito.times(1)).entries("stock:ledger:6");
+  }
+
+  @Test
   void applyReserveIfCached_returnsOk() {
     when(stringRedisTemplate.execute(
             org.mockito.ArgumentMatchers.<DefaultRedisScript<Long>>any(),
@@ -68,6 +89,33 @@ class StockRedisCacheServiceTest {
     var result = stockRedisCacheService.applyReserveIfCached(10L, 2);
 
     assertThat(result).isEqualTo(StockRedisCacheService.CacheResult.OK);
+  }
+
+  @Test
+  void applyReserveIfCached_updatesLocalL1Cache() {
+    Map<Object, Object> entries =
+        Map.of(
+            "id", "7",
+            "skuId", "10",
+            "status", "1",
+            "salable", "8",
+            "reserved", "1",
+            "onhand", "9");
+    when(hashOperations.entries("stock:ledger:10")).thenReturn(entries);
+    when(stringRedisTemplate.execute(
+            org.mockito.ArgumentMatchers.<DefaultRedisScript<Long>>any(),
+            org.mockito.ArgumentMatchers.<List<String>>any(),
+            anyString()))
+        .thenReturn(1L);
+
+    stockRedisCacheService.getLedgerFromCache(10L);
+    stockRedisCacheService.applyReserveIfCached(10L, 2);
+    var result = stockRedisCacheService.getLedgerFromCache(10L);
+
+    assertThat(result).isNotNull();
+    assertThat(result.getSalableQty()).isEqualTo(6);
+    assertThat(result.getReservedQty()).isEqualTo(3);
+    verify(hashOperations, org.mockito.Mockito.times(1)).entries("stock:ledger:10");
   }
 
   @Test
