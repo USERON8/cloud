@@ -6,13 +6,17 @@ import com.cloud.product.module.vo.ShopVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -29,9 +33,13 @@ public class ShopRedisCacheService {
 
   private final StringRedisTemplate stringRedisTemplate;
   private final ObjectMapper objectMapper;
+  private final TaskScheduler taskScheduler;
 
   @Value("${product.cache.shop.ttl-seconds:1800}")
   private long ttlSeconds;
+
+  @Value("${product.cache.shop.delayed-double-delete-ms:500}")
+  private long delayedDoubleDeleteMs;
 
   public ShopVO getById(Long id) {
     if (id == null) {
@@ -91,6 +99,21 @@ public class ShopRedisCacheService {
     if (id == null) {
       return;
     }
+    evictByIdNow(id);
+  }
+
+  public void evictByIdAfterCommit(Long id) {
+    if (id == null) {
+      return;
+    }
+    runAfterCommit(
+        () -> {
+          evictByIdNow(id);
+          scheduleDelayedDeleteById(id);
+        });
+  }
+
+  private void evictByIdNow(Long id) {
     try {
       stringRedisTemplate.delete(idKey(id));
     } catch (Exception ex) {
@@ -99,6 +122,18 @@ public class ShopRedisCacheService {
   }
 
   public void clearAll() {
+    clearAllNow();
+  }
+
+  public void clearAllAfterCommit() {
+    runAfterCommit(
+        () -> {
+          clearAllNow();
+          scheduleDelayedClearAll();
+        });
+  }
+
+  private void clearAllNow() {
     try {
       Set<String> keys = stringRedisTemplate.keys(PREFIX + "*");
       if (keys != null && !keys.isEmpty()) {
@@ -198,5 +233,35 @@ public class ShopRedisCacheService {
 
   private Duration ttl() {
     return Duration.ofSeconds(Math.max(60L, ttlSeconds));
+  }
+
+  private void runAfterCommit(Runnable task) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              task.run();
+            }
+          });
+      return;
+    }
+    task.run();
+  }
+
+  private void scheduleDelayedDeleteById(Long id) {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(() -> evictByIdNow(id), Instant.now().plusMillis(delayMs));
+  }
+
+  private void scheduleDelayedClearAll() {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(this::clearAllNow, Instant.now().plusMillis(delayMs));
   }
 }

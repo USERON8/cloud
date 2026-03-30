@@ -75,6 +75,7 @@ product:
       delayed-double-delete-ms: ${PRODUCT_CACHE_CATEGORY_DELAYED_DOUBLE_DELETE_MS:500}
     shop:
       ttl-seconds: ${PRODUCT_CACHE_SHOP_TTL_SECONDS:1800}
+      delayed-double-delete-ms: ${PRODUCT_CACHE_SHOP_DELAYED_DOUBLE_DELETE_MS:500}
     guard:
       detail-ttl-seconds: ${PRODUCT_CACHE_DETAIL_TTL_SECONDS:1800}
       detail-jitter-seconds: ${PRODUCT_CACHE_DETAIL_JITTER_SECONDS:300}

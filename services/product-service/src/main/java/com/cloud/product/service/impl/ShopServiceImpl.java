@@ -49,7 +49,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!saved) {
       throw new BusinessException("Create shop failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return shop.getId();
   }
 
@@ -66,7 +66,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!updated) {
       throw new BusinessException("Update shop failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return true;
   }
 
@@ -80,7 +80,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!deleted) {
       throw new BusinessException("Delete shop failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return true;
   }
 
@@ -95,7 +95,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!deleted) {
       throw new BusinessException("Batch delete shops failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return true;
   }
 
@@ -301,12 +301,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
   @Override
   public void evictShopCache(Long id) {
-    shopRedisCacheService.evictById(id);
+    shopRedisCacheService.evictByIdAfterCommit(id);
   }
 
   @Override
   public void evictAllShopCache() {
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
   }
 
   @Override
@@ -389,7 +389,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!updated) {
       throw new BusinessException(operation + " shop failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return true;
   }
 
@@ -403,7 +403,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     if (!updated) {
       throw new BusinessException(operation + " shops failed");
     }
-    shopRedisCacheService.clearAll();
+    shopRedisCacheService.clearAllAfterCommit();
     return true;
   }
 
