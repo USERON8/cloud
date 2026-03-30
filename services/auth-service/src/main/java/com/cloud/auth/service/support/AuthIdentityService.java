@@ -9,15 +9,13 @@ import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
-import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.RemoteException;
+import com.cloud.common.remote.RemoteCallSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +30,7 @@ public class AuthIdentityService {
 
   private final AuthProfileSyncService authProfileSyncService;
   private final OAuthAccountCacheService oauthAccountCacheService;
+  private final RemoteCallSupport remoteCallSupport;
 
   @Transactional(readOnly = true)
   public AuthPrincipalDTO findByUsername(String username) {
@@ -294,11 +293,6 @@ public class AuthIdentityService {
   }
 
   private <T> T invokeAuthService(String action, Supplier<T> supplier) {
-    try {
-      return supplier.get();
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "auth-service unavailable when " + action, ex);
-    }
+    return remoteCallSupport.query("auth-service." + action, supplier);
   }
 }

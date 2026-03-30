@@ -5,9 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.RemoteException;
+import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.entity.Cart;
 import com.cloud.order.entity.CartItem;
@@ -22,7 +21,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +33,7 @@ public class OrderPlacementSupport {
 
   private final CartMapper cartMapper;
   private final CartItemMapper cartItemMapper;
+  private final RemoteCallSupport remoteCallSupport;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private ProductDubboApi productDubboApi;
@@ -272,11 +271,6 @@ public class OrderPlacementSupport {
   }
 
   private <T> T invokeProductService(String action, Supplier<T> supplier) {
-    try {
-      return supplier.get();
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "product-service unavailable when " + action, ex);
-    }
+    return remoteCallSupport.query("product-service." + action, supplier);
   }
 }
