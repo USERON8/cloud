@@ -5,10 +5,10 @@ import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.RemoteException;
+import com.cloud.common.remote.RemoteCallSupport;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,12 +18,12 @@ public class StockReservationRemoteService {
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private StockDubboApi stockDubboApi;
 
+  private final RemoteCallSupport remoteCallSupport;
+
   public Boolean preCheck(List<StockOperateCommandDTO> commands) {
     try {
-      return stockDubboApi.preCheck(commands);
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when pre-checking", ex);
+      return remoteCallSupport.query(
+          "stock-service.preCheck", () -> stockDubboApi.preCheck(commands));
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -31,10 +31,8 @@ public class StockReservationRemoteService {
 
   public Boolean reserve(StockOperateCommandDTO command) {
     try {
-      return stockDubboApi.reserve(command);
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when reserving", ex);
+      return remoteCallSupport.command(
+          "stock-service.reserve", () -> stockDubboApi.reserve(command));
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -42,10 +40,8 @@ public class StockReservationRemoteService {
 
   public Boolean confirm(StockOperateCommandDTO command) {
     try {
-      return stockDubboApi.confirm(command);
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when confirming", ex);
+      return remoteCallSupport.command(
+          "stock-service.confirm", () -> stockDubboApi.confirm(command));
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -53,10 +49,8 @@ public class StockReservationRemoteService {
 
   public Boolean release(StockOperateCommandDTO command) {
     try {
-      return stockDubboApi.release(command);
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when releasing", ex);
+      return remoteCallSupport.command(
+          "stock-service.release", () -> stockDubboApi.release(command));
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }
@@ -64,10 +58,8 @@ public class StockReservationRemoteService {
 
   public Boolean rollback(StockOperateCommandDTO command) {
     try {
-      return stockDubboApi.rollback(command);
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "stock-service unavailable when rolling back", ex);
+      return remoteCallSupport.command(
+          "stock-service.rollback", () -> stockDubboApi.rollback(command));
     } catch (RuntimeException ex) {
       throw translateException(ex);
     }

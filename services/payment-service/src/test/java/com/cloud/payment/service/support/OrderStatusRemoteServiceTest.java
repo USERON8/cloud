@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.api.order.OrderDubboApi;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
+import com.cloud.common.remote.RemoteCallSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,7 @@ class OrderStatusRemoteServiceTest {
 
   @BeforeEach
   void setUp() {
-    orderStatusRemoteService = new OrderStatusRemoteService();
+    orderStatusRemoteService = new OrderStatusRemoteService(new RemoteCallSupport(null));
     ReflectionTestUtils.setField(orderStatusRemoteService, "orderDubboApi", orderDubboApi);
   }
 
