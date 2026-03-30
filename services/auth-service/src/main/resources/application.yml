@@ -14,6 +14,7 @@ spring:
     import: "optional:nacos:common.yaml"
   profiles:
     active: dev
+    include: rocketmq
   main:
     allow-circular-references: true
   cloud:
