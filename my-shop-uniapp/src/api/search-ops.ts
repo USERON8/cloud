@@ -10,7 +10,7 @@ import type {
   SmartSearchResult
 } from '../types/domain'
 
-const SEARCH_FALLBACK_TIMEOUT_MS = Number(import.meta.env.VITE_SEARCH_FALLBACK_TIMEOUT || 1200)
+const SEARCH_FALLBACK_TIMEOUT_MS = Number(import.meta.env.VITE_SEARCH_FALLBACK_TIMEOUT || 5000)
 const SUGGESTION_CACHE_TTL = 30_000
 const HOT_KEYWORD_CACHE_TTL = 60_000
 const RECOMMENDATION_CACHE_TTL = 45_000
