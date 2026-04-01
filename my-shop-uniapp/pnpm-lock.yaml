@@ -62,6 +62,9 @@ importers:
       '@vueuse/core':
         specifier: ^11.3.0
         version: 11.3.0(vue@3.4.21(typescript@5.9.3))
+      '@vueuse/shared':
+        specifier: ^11.3.0
+        version: 11.3.0(vue@3.4.21(typescript@5.9.3))
       axios:
         specifier: ^1.13.6
         version: 1.13.6
@@ -74,6 +77,9 @@ importers:
       vue:
         specifier: ^3.4.21
         version: 3.4.21(typescript@5.9.3)
+      vue-demi:
+        specifier: ^0.14.10
+        version: 0.14.10(vue@3.4.21(typescript@5.9.3))
       vue-i18n:
         specifier: ^9.14.4
         version: 9.14.4(vue@3.4.21(typescript@5.9.3))
