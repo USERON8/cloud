@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import * as uniModule from '@dcloudio/vite-plugin-uni'
 import path from 'node:path'
 
+const buildPlatform = process.env.UNI_PLATFORM || 'h5'
+
 const uni =
   (uniModule as unknown as { default?: { default?: () => unknown } }).default?.default ??
   (uniModule as unknown as { default?: () => unknown }).default ??
@@ -14,7 +16,7 @@ if (typeof uniPlugin !== 'function') {
 export default defineConfig({
   plugins: [uniPlugin()],
   build: {
-    outDir: 'dist'
+    outDir: `dist/${buildPlatform}`
   },
   resolve: {
     alias: {
