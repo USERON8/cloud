@@ -73,7 +73,7 @@ async function loadProducts(reset = false): Promise<void> {
   }
   loading.value = true
   try {
-    const result = activeKeyword.value
+    let result = activeKeyword.value
       ? await smartSearchProductsWithFallback({
           keyword: activeKeyword.value,
           page: page.value,
@@ -82,6 +82,22 @@ async function loadProducts(reset = false): Promise<void> {
           sortOrder: 'desc'
         })
       : await listTodayHotSellingProductsWithFallback(page.value, size.value)
+
+    if (!activeKeyword.value && reset && result.documents.length === 0) {
+      await refreshKeywords('')
+      const fallbackKeyword = hotKeywords.value[0] || recommendations.value[0] || ''
+      if (fallbackKeyword) {
+        keyword.value = fallbackKeyword
+        result = await smartSearchProductsWithFallback({
+          keyword: fallbackKeyword,
+          page: 1,
+          size: size.value,
+          sortField: 'score',
+          sortOrder: 'desc'
+        })
+      }
+    }
+
     if (requestId !== latestLoadRequestId.value) {
       return
     }
@@ -159,16 +175,17 @@ async function resolveCartSkuId(item: ProductItem): Promise<number | null> {
 }
 
 async function onAddToCart(item: ProductItem): Promise<void> {
+  if (!loggedIn.value) {
+    toast('Sign in to add items to cart')
+    goLogin()
+    return
+  }
   if (typeof item.price !== 'number' || item.price <= 0) {
     toast('Product price is unavailable')
     return
   }
   if (typeof item.shopId !== 'number' || item.shopId <= 0) {
     toast('Shop information is unavailable')
-    return
-  }
-  if (typeof item.stockQuantity === 'number' && item.stockQuantity <= 0) {
-    toast('Product is out of stock')
     return
   }
   try {
@@ -183,6 +200,10 @@ async function onAddToCart(item: ProductItem): Promise<void> {
       price: item.price,
       shopId: item.shopId
     })
+    if (typeof item.stockQuantity === 'number' && item.stockQuantity <= 0) {
+      toast('Added to cart. Search stock data may be stale.', 'success')
+      return
+    }
     toast('Added to cart', 'success')
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Failed to add product to cart')
@@ -261,7 +282,9 @@ onShow(() => {
           <text class="product-meta">{{ formatPrice(item.price) }}</text>
           <text class="product-meta">Stock {{ item.stockQuantity ?? '--' }}</text>
         </view>
-        <button class="btn-outline" @click="onAddToCart(item)">Add to cart</button>
+        <button class="btn-outline" @click="onAddToCart(item)">
+          {{ loggedIn ? 'Add to cart' : 'Sign in to add' }}
+        </button>
       </view>
     </view>
 
